@@ -4,15 +4,14 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.duration._
-import akka.stream.{ ActorMaterializer, ClosedShape }
+import akka.stream.ClosedShape
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TimingTest
 
-class TickSourceSpec extends StreamSpec {
+import scala.concurrent.duration._
 
-  implicit val materializer = ActorMaterializer()
+class TickSourceSpec extends StreamSpec {
 
   "A Flow based on tick publisher" must {
     "produce ticks" taggedAs TimingTest in assertAllStagesStopped {

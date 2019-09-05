@@ -5,19 +5,32 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import akka.actor.Actor
+import akka.actor.ActorIdentity
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ActorSystemImpl
+import akka.actor.Identify
+import akka.actor.Props
 import akka.actor.Status.Failure
-import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, ActorSystemImpl, Identify, Props }
 import akka.pattern._
+import akka.stream._
+import akka.stream.impl.streamref.SinkRefImpl
+import akka.stream.impl.streamref.SourceRefImpl
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.scaladsl._
-import akka.stream._
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit, TestProbe }
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
+import akka.testkit.TestKit
+import akka.testkit.TestProbe
 import akka.util.ByteString
 import com.typesafe.config._
 
 import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
 
 object StreamRefsSpec {
@@ -28,7 +41,8 @@ object StreamRefsSpec {
   }
 
   class DataSourceActor(probe: ActorRef) extends Actor with ActorLogging {
-    implicit val mat = ActorMaterializer()
+
+    import context.system
 
     def receive = {
       case "give" =>
@@ -155,21 +169,26 @@ object StreamRefsSpec {
       remote {
         artery.canonical.port = 0
         classic.netty.tcp.port = 0
+        use-unsafe-remote-features-outside-cluster = on
       }
     }
   """).withFallback(ConfigFactory.load())
   }
+
+  object SnitchActor {
+    def props(probe: ActorRef) = Props(new SnitchActor(probe))
+  }
+  class SnitchActor(probe: ActorRef) extends Actor {
+    def receive = {
+      case msg => probe ! msg
+    }
+  }
 }
 
-class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSender {
+class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSender {
   import StreamRefsSpec._
 
-  def this() {
-    this(StreamRefsSpec.config())
-  }
-
   val remoteSystem = ActorSystem("RemoteSystem", StreamRefsSpec.config())
-  implicit val mat = ActorMaterializer()
 
   override protected def beforeTermination(): Unit =
     TestKit.shutdownActorSystem(remoteSystem)
@@ -403,6 +422,30 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       // will be cancelled immediately, since it's 2nd:
       p2.ensureSubscription()
       p2.expectCancellation()
+    }
+
+  }
+
+  "The StreamRefResolver" must {
+
+    "serialize and deserialize SourceRefs" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(StreamRefsSpec.SnitchActor.props(probe.ref))
+      val sourceRef = SourceRefImpl[String](ref)
+      val resolver = StreamRefResolver(system)
+      val result = resolver.resolveSourceRef(resolver.toSerializationFormat(sourceRef))
+      result.asInstanceOf[SourceRefImpl[String]].initialPartnerRef ! "ping"
+      probe.expectMsg("ping")
+    }
+
+    "serialize and deserialize SinkRefs" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(StreamRefsSpec.SnitchActor.props(probe.ref))
+      val sinkRef = SinkRefImpl[String](ref)
+      val resolver = StreamRefResolver(system)
+      val result = resolver.resolveSinkRef(resolver.toSerializationFormat(sinkRef))
+      result.asInstanceOf[SinkRefImpl[String]].initialPartnerRef ! "ping"
+      probe.expectMsg("ping")
     }
 
   }

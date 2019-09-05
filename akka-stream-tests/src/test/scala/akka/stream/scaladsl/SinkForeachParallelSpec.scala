@@ -4,14 +4,15 @@
 
 package akka.stream.scaladsl
 
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
-import akka.stream.ActorMaterializer
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.testkit.{ TestLatch, TestProbe }
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 import com.github.ghik.silencer.silent
 
 import scala.concurrent.Await
@@ -20,8 +21,6 @@ import scala.util.control.NoStackTrace
 
 @silent // tests deprecated APIs
 class SinkForeachParallelSpec extends StreamSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "A ForeachParallel" must {
     "produce elements in the order they are ready" in assertAllStagesStopped {

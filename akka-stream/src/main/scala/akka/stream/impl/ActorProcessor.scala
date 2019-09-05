@@ -6,11 +6,12 @@ package akka.stream.impl
 
 import akka.actor._
 import akka.annotation.InternalApi
-import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings, Attributes }
+import akka.stream.{ AbruptTerminationException, Attributes }
 import akka.stream.actor.ActorSubscriber.OnSubscribe
 import akka.stream.actor.ActorSubscriberMessage.{ OnComplete, OnError, OnNext }
 import org.reactivestreams.{ Processor, Subscriber, Subscription }
 import akka.event.Logging
+import akka.stream.ActorAttributes
 import akka.util.unused
 
 /**
@@ -250,15 +251,19 @@ import akka.util.unused
 
 }
 
+private[akka] object ActorProcessorImpl {
+  case object SubscriptionTimeout
+}
+
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] abstract class ActorProcessorImpl(
-    attributes: Attributes,
-    val settings: ActorMaterializerSettings)
+@InternalApi private[akka] abstract class ActorProcessorImpl(attributes: Attributes)
     extends Actor
     with ActorLogging
     with Pump {
+
+  private val debugLoggingEnabled = attributes.mandatoryAttribute[ActorAttributes.DebugLogging].enabled
 
   protected val primaryInputs: Inputs = {
     val initialInputBufferSize = attributes.mandatoryAttribute[Attributes.InputBuffer].initial
@@ -268,6 +273,7 @@ import akka.util.unused
   }
 
   protected val primaryOutputs: Outputs = new SimpleOutputs(self, this)
+  def subTimeoutHandling: Receive
 
   /**
    * Subclass may override [[#activeReceive]]
@@ -279,12 +285,13 @@ import akka.util.unused
     }
   }
 
-  def activeReceive: Receive = primaryInputs.subreceive.orElse[Any, Unit](primaryOutputs.subreceive)
+  def activeReceive: Receive =
+    primaryInputs.subreceive.orElse[Any, Unit](primaryOutputs.subreceive).orElse(subTimeoutHandling)
 
   protected def onError(e: Throwable): Unit = fail(e)
 
   protected def fail(e: Throwable): Unit = {
-    if (settings.debugLogging)
+    if (debugLoggingEnabled)
       log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()
     primaryOutputs.error(e)

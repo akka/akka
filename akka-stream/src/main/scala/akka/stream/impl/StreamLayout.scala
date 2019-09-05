@@ -176,10 +176,10 @@ import scala.util.control.NonFatal
                 case _     => pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
               }
           }
-        case _ =>
+        case state @ _ =>
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(_).onSubscribe.rec($s) spec violation")
           // spec violation
-          tryCancel(s)
+          tryCancel(s, new IllegalStateException(s"VirtualProcessor in wrong state [$state]. Spec violation"))
       }
     }
 
@@ -223,7 +223,7 @@ import scala.util.control.NonFatal
             set(Inert)
 
           case Inert =>
-            tryCancel(subscription)
+            tryCancel(subscription, new IllegalStateException("VirtualProcessor was already subscribed to."))
 
           case other =>
             throw new IllegalStateException(
@@ -234,7 +234,7 @@ import scala.util.control.NonFatal
     } catch {
       case NonFatal(ex) =>
         set(Inert)
-        tryCancel(subscription)
+        tryCancel(subscription, ex)
         tryOnError(establishing.subscriber, ex)
     }
   }
@@ -397,7 +397,7 @@ import scala.util.control.NonFatal
       if (n < 1) {
         if (VirtualProcessor.Debug)
           println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}.WrappedSubscription($real).request($n)")
-        tryCancel(real)
+        tryCancel(real, new IllegalArgumentException(s"Demand must not be < 1 but was $n"))
         VirtualProcessor.this.getAndSet(Inert) match {
           case Both(subscriber)  => rejectDueToNonPositiveDemand(subscriber)
           case est: Establishing => rejectDueToNonPositiveDemand(est.subscriber)
@@ -455,10 +455,12 @@ import scala.util.control.NonFatal
  * the use of `Inert.subscriber` as a tombstone.
  */
 @InternalApi private[impl] class VirtualPublisher[T] extends AtomicReference[AnyRef] with Publisher[T] {
+
   import ReactiveStreamsCompliance._
   import VirtualProcessor.Inert
   override def subscribe(subscriber: Subscriber[_ >: T]): Unit = {
     requireNonNullSubscriber(subscriber)
+    if (VirtualProcessor.Debug) println(s"$this.subscribe: $subscriber")
     @tailrec def rec(): Unit = {
       get() match {
         case null =>
@@ -492,6 +494,23 @@ import scala.util.control.NonFatal
 
       case unexpected =>
         throw new IllegalStateException(s"internal error, unexpected state: $unexpected")
+    }
+  }
+
+  // this is when the subscription timeout hits, implemented like this to
+  // avoid allocating a separate object for that
+  def onSubscriptionTimeout(am: ActorMaterializer, mode: StreamSubscriptionTimeoutTerminationMode): Unit = {
+    import StreamSubscriptionTimeoutTerminationMode._
+    get() match {
+      case null | _: Publisher[_] =>
+        mode match {
+          case CancelTermination => subscribe(new CancellingSubscriber[T])
+          case WarnTermination =>
+            am.logger.warning("Subscription timeout for {}", this)
+          case NoopTermination => // never happens
+        }
+
+      case _ => // we're ok
     }
   }
 

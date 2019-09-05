@@ -10,10 +10,8 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Scheduler;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.japi.function.Procedure;
-import akka.persistence.typed.SnapshotSelectionCriteria;
-import akka.persistence.typed.EventAdapter;
+import akka.persistence.typed.*;
 import akka.actor.testkit.typed.javadsl.TestInbox;
-import akka.persistence.typed.PersistenceId;
 
 import java.time.Duration;
 import java.util.*;
@@ -27,14 +25,14 @@ public class PersistentActorCompileOnlyTest {
 
     // #event-wrapper
     public static class Wrapper<T> {
-      private final T t;
+      private final T event;
 
-      public Wrapper(T t) {
-        this.t = t;
+      public Wrapper(T event) {
+        this.event = event;
       }
 
-      public T getT() {
-        return t;
+      public T getEvent() {
+        return event;
       }
     }
 
@@ -46,11 +44,20 @@ public class PersistentActorCompileOnlyTest {
       }
 
       @Override
-      public SimpleEvent fromJournal(Wrapper<SimpleEvent> simpleEventWrapper) {
-        return simpleEventWrapper.getT();
+      public String manifest(SimpleEvent event) {
+        return "";
+      }
+
+      @Override
+      public EventSeq<SimpleEvent> fromJournal(
+          Wrapper<SimpleEvent> simpleEventWrapper, String manifest) {
+        return EventSeq.single(simpleEventWrapper.getEvent());
       }
     }
     // #event-wrapper
+
+    // try varargs
+    private EventSeq<SimpleEvent> many = EventSeq.many(new SimpleEvent("a"), new SimpleEvent("b"));
 
     public static class SimpleCommand {
       public final String data;
@@ -110,6 +117,22 @@ public class PersistentActorCompileOnlyTest {
             return new EventAdapterExample();
           }
           // #install-event-adapter
+
+          @Override
+          public SnapshotAdapter<SimpleState> snapshotAdapter() {
+            return new SnapshotAdapter<SimpleState>() {
+
+              @Override
+              public Object toJournal(SimpleState simpleState) {
+                return simpleState;
+              }
+
+              @Override
+              public SimpleState fromJournal(Object from) {
+                return (SimpleState) from;
+              }
+            };
+          }
         };
 
     static class AdditionalSettings

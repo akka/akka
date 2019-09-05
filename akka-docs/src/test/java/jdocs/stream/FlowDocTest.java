@@ -33,19 +33,16 @@ import static org.junit.Assert.assertEquals;
 public class FlowDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("FlowDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -54,16 +51,16 @@ public class FlowDocTest extends AbstractJavaTest {
     final Source<Integer, NotUsed> source =
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
     source.map(x -> 0); // has no effect on source, since it's immutable
-    source.runWith(Sink.fold(0, (agg, next) -> agg + next), mat); // 55
+    source.runWith(Sink.fold(0, (agg, next) -> agg + next), system); // 55
 
     // returns new Source<Integer>, with `map()` appended
     final Source<Integer, NotUsed> zeroes = source.map(x -> 0);
     final Sink<Integer, CompletionStage<Integer>> fold =
         Sink.<Integer, Integer>fold(0, (agg, next) -> agg + next);
-    zeroes.runWith(fold, mat); // 0
+    zeroes.runWith(fold, system); // 0
     // #source-immutable
 
-    int result = zeroes.runWith(fold, mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
+    int result = zeroes.runWith(fold, system).toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(0, result);
   }
 
@@ -80,7 +77,7 @@ public class FlowDocTest extends AbstractJavaTest {
     final RunnableGraph<CompletionStage<Integer>> runnable = source.toMat(sink, Keep.right());
 
     // materialize the flow
-    final CompletionStage<Integer> sum = runnable.run(mat);
+    final CompletionStage<Integer> sum = runnable.run(system);
     // #materialization-in-steps
 
     int result = sum.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -96,7 +93,7 @@ public class FlowDocTest extends AbstractJavaTest {
         Sink.<Integer, Integer>fold(0, (aggr, next) -> aggr + next);
 
     // materialize the flow, getting the Sinks materialized value
-    final CompletionStage<Integer> sum = source.runWith(sink, mat);
+    final CompletionStage<Integer> sum = source.runWith(sink, system);
     // #materialization-runWith
 
     int result = sum.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -113,8 +110,8 @@ public class FlowDocTest extends AbstractJavaTest {
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10)).toMat(sink, Keep.right());
 
     // get the materialized value of the FoldSink
-    final CompletionStage<Integer> sum1 = runnable.run(mat);
-    final CompletionStage<Integer> sum2 = runnable.run(mat);
+    final CompletionStage<Integer> sum1 = runnable.run(system);
+    final CompletionStage<Integer> sum2 = runnable.run(system);
 
     // sum1 and sum2 are different Futures!
     // #stream-reuse
@@ -135,7 +132,7 @@ public class FlowDocTest extends AbstractJavaTest {
     // akka.actor.Cancellable
     final Source<Object, Cancellable> timer = Source.tick(oneSecond, oneSecond, tick);
 
-    Sink.ignore().runWith(timer, mat);
+    Sink.ignore().runWith(timer, system);
 
     final Source<String, Cancellable> timerMap = timer.map(t -> "tick");
     // WRONG: returned type is not the timers Cancellable!
@@ -144,7 +141,7 @@ public class FlowDocTest extends AbstractJavaTest {
 
     // #compound-source-is-not-keyed-run
     // retain the materialized map, in order to retrieve the timer's Cancellable
-    final Cancellable timerCancellable = timer.to(Sink.ignore()).run(mat);
+    final Cancellable timerCancellable = timer.to(Sink.ignore()).run(system);
     timerCancellable.cancel();
     // #compound-source-is-not-keyed-run
   }
@@ -239,10 +236,10 @@ public class FlowDocTest extends AbstractJavaTest {
 
     // Using runWith will always give the materialized values of the stages added
     // by runWith() itself
-    CompletionStage<Integer> r4 = source.via(flow).runWith(sink, mat);
-    CompletableFuture<Optional<Integer>> r5 = flow.to(sink).runWith(source, mat);
+    CompletionStage<Integer> r4 = source.via(flow).runWith(sink, system);
+    CompletableFuture<Optional<Integer>> r5 = flow.to(sink).runWith(source, system);
     Pair<CompletableFuture<Optional<Integer>>, CompletionStage<Integer>> r6 =
-        flow.runWith(source, sink, mat);
+        flow.runWith(source, sink, system);
 
     // Using more complex combinations
     RunnableGraph<Pair<CompletableFuture<Optional<Integer>>, Cancellable>> r7 =
@@ -280,12 +277,12 @@ public class FlowDocTest extends AbstractJavaTest {
     Source<String, ActorRef> matValuePoweredSource = Source.actorRef(100, OverflowStrategy.fail());
 
     Pair<ActorRef, Source<String, NotUsed>> actorRefSourcePair =
-        matValuePoweredSource.preMaterialize(mat);
+        matValuePoweredSource.preMaterialize(system);
 
     actorRefSourcePair.first().tell("Hello!", ActorRef.noSender());
 
     // pass source around for materialization
-    actorRefSourcePair.second().runWith(Sink.foreach(System.out::println), mat);
+    actorRefSourcePair.second().runWith(Sink.foreach(System.out::println), system);
     // #source-prematerialization
   }
 
@@ -293,15 +290,6 @@ public class FlowDocTest extends AbstractJavaTest {
     // #flow-async
     Source.range(1, 3).map(x -> x + 1).async().map(x -> x * 2).to(Sink.ignore());
     // #flow-async
-  }
-
-  static {
-    // #materializer-from-system
-    ActorSystem system = ActorSystem.create("ExampleSystem");
-
-    // created from `system`:
-    ActorMaterializer mat = ActorMaterializer.create(system);
-    // #materializer-from-system
   }
 
   // #materializer-from-actor-context
@@ -336,10 +324,11 @@ public class FlowDocTest extends AbstractJavaTest {
 
   // #materializer-from-system-in-actor
   final class RunForever extends AbstractActor {
-    final ActorMaterializer mat;
 
-    RunForever(ActorMaterializer mat) {
-      this.mat = mat;
+    private final Materializer materializer;
+
+    public RunForever(Materializer materializer) {
+      this.materializer = materializer;
     }
 
     @Override
@@ -350,7 +339,7 @@ public class FlowDocTest extends AbstractJavaTest {
                   tryDone -> {
                     System.out.println("Terminated stream: " + tryDone);
                   }),
-              mat);
+              materializer);
     }
 
     @Override

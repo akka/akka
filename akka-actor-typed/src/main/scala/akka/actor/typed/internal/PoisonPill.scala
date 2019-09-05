@@ -7,6 +7,7 @@ package akka.actor.typed.internal
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
+import akka.actor.typed.BehaviorSignalInterceptor
 import akka.actor.typed.Signal
 import akka.annotation.InternalApi
 
@@ -33,12 +34,7 @@ import akka.annotation.InternalApi
  * application protocol. Persistent actors handle `PoisonPill` and run side effects after persist
  * and process stashed messages before stopping.
  */
-@InternalApi private[akka] final class PoisonPillInterceptor[M] extends BehaviorInterceptor[M, M] {
-  override def aroundReceive(
-      ctx: TypedActorContext[M],
-      msg: M,
-      target: BehaviorInterceptor.ReceiveTarget[M]): Behavior[M] =
-    target(ctx, msg)
+@InternalApi private[akka] final class PoisonPillInterceptor[M] extends BehaviorSignalInterceptor[M] {
 
   override def aroundSignal(
       ctx: TypedActorContext[M],

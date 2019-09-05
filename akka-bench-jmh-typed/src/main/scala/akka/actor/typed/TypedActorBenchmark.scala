@@ -54,7 +54,7 @@ class TypedActorBenchmark {
   def setup(): Unit = {
     akka.actor.BenchmarkActors.requireRightNumberOfCores(threads)
     system = ActorSystem(
-      TypedBenchmarkActors.echoActorsSupervisor(numMessagesPerActorPair, numActors, dispatcher, batchSize, timeout),
+      TypedBenchmarkActors.echoActorsSupervisor(numMessagesPerActorPair, numActors, dispatcher, batchSize),
       "TypedActorBenchmark",
       ConfigFactory.parseString(s"""
        akka.actor {

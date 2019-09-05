@@ -89,5 +89,33 @@ class ActorPathSpec extends WordSpec with Matchers {
       ActorPath.fromString("akka://mysys/user/boom/*")
     }
 
+    "detect valid and invalid chars in host names when not using AddressFromURIString, e.g. docker host given name" in {
+      Seq(
+        Address("akka", "sys", Some("valid"), Some(0)),
+        Address("akka", "sys", Some("is_valid.org"), Some(0)),
+        Address("akka", "sys", Some("fu.is_valid.org"), Some(0))).forall(_.hasInvalidHostCharacters) shouldBe false
+
+      Seq(Address("akka", "sys", Some("in_valid"), Some(0)), Address("akka", "sys", Some("invalid._org"), Some(0)))
+        .forall(_.hasInvalidHostCharacters) shouldBe true
+
+      intercept[MalformedURLException](AddressFromURIString("akka://sys@in_valid:5001"))
+    }
+
+    "not fail fast if the check is called on valid chars in host names" in {
+      Seq(
+        Address("akka", "sys", Some("localhost"), Some(0)),
+        Address("akka", "sys", Some("is_valid.org"), Some(0)),
+        Address("akka", "sys", Some("fu.is_valid.org"), Some(0))).foreach(_.checkHostCharacters())
+    }
+
+    "fail fast if the check is called when invalid chars are in host names" in {
+      Seq(
+        Address("akka", "sys", Some("localhost"), Some(0)),
+        Address("akka", "sys", Some("is_valid.org"), Some(0)),
+        Address("akka", "sys", Some("fu.is_valid.org"), Some(0))).foreach(_.checkHostCharacters())
+
+      intercept[IllegalArgumentException](Address("akka", "sys", Some("in_valid"), Some(0)).checkHostCharacters())
+      intercept[IllegalArgumentException](Address("akka", "sys", Some("invalid._org"), Some(0)).checkHostCharacters())
+    }
   }
 }

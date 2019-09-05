@@ -32,11 +32,16 @@ object RestartNodeMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(
-    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = 5s
       akka.cluster.allow-weakly-up-members = off
       #akka.remote.use-passive-connections = off
-      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
+      # test is using Java serialization and not priority to rewrite
+      akka.actor.allow-java-serialization = on
+      akka.actor.warn-about-java-serializer-usage = off
+      """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   /**
    * This was used together with sleep in EndpointReader before deliverAndAck

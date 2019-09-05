@@ -5,7 +5,7 @@
 package akka.actor.typed.internal.adapter
 
 import akka.actor.typed.Behavior
-import akka.actor.typed.eventstream._
+import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
@@ -16,21 +16,21 @@ import akka.annotation.InternalApi
  */
 @InternalApi private[akka] object EventStreamAdapter {
 
-  private[akka] val behavior: Behavior[Command] =
+  private[akka] val behavior: Behavior[EventStream.Command] =
     Behaviors.setup { ctx =>
       val eventStream = ctx.system.toUntyped.eventStream
       eventStreamBehavior(eventStream)
     }
 
-  private def eventStreamBehavior(eventStream: akka.event.EventStream): Behavior[Command] =
+  private def eventStreamBehavior(eventStream: akka.event.EventStream): Behavior[EventStream.Command] =
     Behaviors.receiveMessage {
-      case Publish(event) =>
+      case EventStream.Publish(event) =>
         eventStream.publish(event)
         Behaviors.same
-      case s @ Subscribe(subscriber) =>
+      case s @ EventStream.Subscribe(subscriber) =>
         eventStream.subscribe(subscriber.toUntyped, s.topic)
         Behaviors.same
-      case Unsubscribe(subscriber) =>
+      case EventStream.Unsubscribe(subscriber) =>
         eventStream.unsubscribe(subscriber.toUntyped)
         Behaviors.same
     }

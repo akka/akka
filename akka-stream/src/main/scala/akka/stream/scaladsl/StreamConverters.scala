@@ -11,7 +11,7 @@ import java.util.stream.{ Collector, StreamSupport }
 import akka.stream.{ Attributes, IOResult, SinkShape }
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamSink, OutputStreamSourceStage }
+import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamGraphStage, OutputStreamSourceStage }
 import akka.util.ByteString
 
 import scala.concurrent.duration.Duration._
@@ -23,9 +23,6 @@ import akka.NotUsed
  * Converters for interacting with the blocking `java.io` streams APIs and Java 8 Streams
  */
 object StreamConverters {
-
-  import Source.{ shape => sourceShape }
-  import Sink.{ shape => sinkShape }
 
   /**
    * Creates a Source from an [[InputStream]] created by the given function.
@@ -45,9 +42,9 @@ object StreamConverters {
    * @param in a function which creates the InputStream to read from
    * @param chunkSize the size of each read operation, defaults to 8192
    */
-  def fromInputStream(in: () => InputStream, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] =
-    Source.fromGraph(
-      new InputStreamSource(in, chunkSize, DefaultAttributes.inputStreamSource, sourceShape("InputStreamSource")))
+  def fromInputStream(in: () => InputStream, chunkSize: Int = 8192): Source[ByteString, Future[IOResult]] = {
+    Source.fromGraph(new InputStreamSource(in, chunkSize))
+  }
 
   /**
    * Creates a Source which when materialized will return an [[OutputStream]] which it is possible
@@ -80,8 +77,7 @@ object StreamConverters {
    * will cancel the stream when the [[OutputStream]] is no longer writable.
    */
   def fromOutputStream(out: () => OutputStream, autoFlush: Boolean = false): Sink[ByteString, Future[IOResult]] =
-    Sink.fromGraph(
-      new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink"), autoFlush))
+    Sink.fromGraph(new OutputStreamGraphStage(out, autoFlush))
 
   /**
    * Creates a Sink which when materialized will return an [[InputStream]] which it is possible
@@ -112,11 +108,14 @@ object StreamConverters {
    */
   def javaCollector[T, R](collectorFactory: () => java.util.stream.Collector[T, _ <: Any, R]): Sink[T, Future[R]] =
     Flow[T]
-      .fold(() => new CollectorState[T, R](collectorFactory().asInstanceOf[Collector[T, Any, R]])) {
-        (state, elem) => () =>
-          state().update(elem)
+      .fold {
+        new FirstCollectorState[T, R](collectorFactory.asInstanceOf[() => java.util.stream.Collector[T, Any, R]]): CollectorState[
+          T,
+          R]
+      } { (state, elem) =>
+        state.update(elem)
       }
-      .map(state => state().finish())
+      .map(state => state.finish())
       .toMat(Sink.head)(Keep.right)
       .withAttributes(DefaultAttributes.javaCollector)
 
@@ -137,14 +136,14 @@ object StreamConverters {
       Sink
         .fromGraph(GraphDSL.create(Sink.head[R]) { implicit b => sink =>
           import GraphDSL.Implicits._
-          val collector = collectorFactory().asInstanceOf[Collector[T, Any, R]]
+          val factory = collectorFactory.asInstanceOf[() => Collector[T, Any, R]]
           val balance = b.add(Balance[T](parallelism))
-          val merge = b.add(Merge[() => CollectorState[T, R]](parallelism))
+          val merge = b.add(Merge[CollectorState[T, R]](parallelism))
 
           for (i <- 0 until parallelism) {
             val worker = Flow[T]
-              .fold(() => new CollectorState(collector)) { (state, elem) => () =>
-                state().update(elem)
+              .fold(new FirstCollectorState(factory): CollectorState[T, R]) { (state, elem) =>
+                state.update(elem)
               }
               .async
 
@@ -152,10 +151,10 @@ object StreamConverters {
           }
 
           merge.out
-            .fold(() => new ReducerState(collector)) { (state, elem) => () =>
-              state().update(elem().accumulated)
+            .fold(new FirstReducerState(factory): ReducerState[T, R]) { (state, elem) =>
+              state.update(elem.accumulated())
             }
-            .map(state => state().finish()) ~> sink.in
+            .map(state => state.finish()) ~> sink.in
 
           SinkShape(balance.in)
         })

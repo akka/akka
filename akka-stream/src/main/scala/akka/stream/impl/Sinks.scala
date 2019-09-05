@@ -4,15 +4,7 @@
 
 package akka.stream.impl
 
-import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
-import scala.collection.mutable
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import scala.util.control.NonFatal
+import java.util.function.BinaryOperator
 
 import akka.NotUsed
 import akka.actor.ActorRef
@@ -21,6 +13,7 @@ import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
 import akka.stream.impl.QueueSink.Output
@@ -34,6 +27,16 @@ import akka.stream.stage._
 import akka.util.ccompat._
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.collection.mutable
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -88,7 +91,19 @@ import org.reactivestreams.Subscriber
    * subscription a VirtualProcessor would perform (and it also saves overhead).
    */
   override def create(context: MaterializationContext): (AnyRef, Publisher[In]) = {
+
     val proc = new VirtualPublisher[In]
+    context.materializer match {
+      case am: ActorMaterializer =>
+        val StreamSubscriptionTimeout(timeout, mode) =
+          context.effectiveAttributes.mandatoryAttribute[StreamSubscriptionTimeout]
+        if (mode != StreamSubscriptionTimeoutTerminationMode.noop) {
+          am.scheduleOnce(timeout, new Runnable {
+            def run(): Unit = proc.onSubscriptionTimeout(am, mode)
+          })
+        }
+      case _ => // not possible to setup timeout
+    }
     (proc, proc)
   }
 
@@ -106,12 +121,10 @@ import org.reactivestreams.Subscriber
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
     val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val impl = actorMaterializer.actorOf(
-      context,
-      FanoutProcessorImpl.props(context.effectiveAttributes, actorMaterializer.settings))
+    val impl = actorMaterializer.actorOf(context, FanoutProcessorImpl.props(context.effectiveAttributes))
     val fanoutProcessor = new ActorProcessor[In, In](impl)
-    impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
+    impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
     (fanoutProcessor, fanoutProcessor)
   }
 
@@ -173,32 +186,6 @@ import org.reactivestreams.Subscriber
     new ActorSubscriberSink[In](props, attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[In, ActorRef] =
     new ActorSubscriberSink[In](props, attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] final class ActorRefSink[In](
-    ref: ActorRef,
-    onCompleteMessage: Any,
-    onFailureMessage: Throwable => Any,
-    val attributes: Attributes,
-    shape: SinkShape[In])
-    extends SinkModule[In, NotUsed](shape) {
-
-  override def create(context: MaterializationContext) = {
-    val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val maxInputBufferSize = context.effectiveAttributes.mandatoryAttribute[Attributes.InputBuffer].max
-    val subscriberRef = actorMaterializer.actorOf(
-      context,
-      ActorRefSinkActor.props(ref, maxInputBufferSize, onCompleteMessage, onFailureMessage))
-    (akka.stream.actor.ActorSubscriber[In](subscriberRef), NotUsed)
-  }
-
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, NotUsed] =
-    new ActorRefSink[In](ref, onCompleteMessage, onFailureMessage, attributes, shape)
-  override def withAttributes(attr: Attributes): SinkModule[In, NotUsed] =
-    new ActorRefSink[In](ref, onCompleteMessage, onFailureMessage, attr, amendShape(attr))
 }
 
 /**
@@ -372,7 +359,7 @@ import org.reactivestreams.Subscriber
       override def preStart(): Unit = {
         // Allocates one additional element to hold stream
         // closed/failure indicators
-        buffer = Buffer(maxBuffer + 1, materializer)
+        buffer = Buffer(maxBuffer + 1, inheritedAttributes)
         setKeepGoing(true)
         pull(in)
       }
@@ -448,18 +435,78 @@ import org.reactivestreams.Subscriber
 /**
  * INTERNAL API
  *
+ * Helper class to be able to express collection as a fold using mutable data without
+ * accidentally sharing state between materializations
+ */
+@InternalApi private[akka] trait CollectorState[T, R] {
+  def accumulated(): Any
+  def update(elem: T): CollectorState[T, R]
+  def finish(): R
+}
+
+/**
+ * INTERNAL API
+ *
  * Helper class to be able to express collection as a fold using mutable data
  */
-@InternalApi private[akka] final class CollectorState[T, R](val collector: java.util.stream.Collector[T, Any, R]) {
-  lazy val accumulated = collector.supplier().get()
-  private lazy val accumulator = collector.accumulator()
+@InternalApi private[akka] final class FirstCollectorState[T, R](
+    collectorFactory: () => java.util.stream.Collector[T, Any, R])
+    extends CollectorState[T, R] {
 
-  def update(elem: T): CollectorState[T, R] = {
+  override def update(elem: T): CollectorState[T, R] = {
+    // on first update, return a new mutable collector to ensure not
+    // sharing collector between streams
+    val collector = collectorFactory()
+    val accumulator = collector.accumulator()
+    val accumulated = collector.supplier().get()
+    accumulator.accept(accumulated, elem)
+    new MutableCollectorState(collector, accumulator, accumulated)
+  }
+
+  override def accumulated(): Any = {
+    // only called if it is asked about accumulated before accepting a first element
+    val collector = collectorFactory()
+    collector.supplier().get()
+  }
+
+  override def finish(): R = {
+    // only called if completed without elements
+    val collector = collectorFactory()
+    collector.finisher().apply(collector.supplier().get())
+  }
+}
+
+/**
+ * INTERNAL API
+ *
+ * Helper class to be able to express collection as a fold using mutable data
+ */
+@InternalApi private[akka] final class MutableCollectorState[T, R](
+    collector: java.util.stream.Collector[T, Any, R],
+    accumulator: java.util.function.BiConsumer[Any, T],
+    val accumulated: Any)
+    extends CollectorState[T, R] {
+
+  override def update(elem: T): CollectorState[T, R] = {
     accumulator.accept(accumulated, elem)
     this
   }
 
-  def finish(): R = collector.finisher().apply(accumulated)
+  override def finish(): R = {
+    // only called if completed without elements
+    collector.finisher().apply(accumulated)
+  }
+}
+
+/**
+ * INTERNAL API
+ *
+ * Helper class to be able to express reduce as a fold for parallel collector without
+ * accidentally sharing state between materializations
+ */
+@InternalApi private[akka] trait ReducerState[T, R] {
+  def update(batch: Any): ReducerState[T, R]
+  def finish(): R
 }
 
 /**
@@ -467,13 +514,38 @@ import org.reactivestreams.Subscriber
  *
  * Helper class to be able to express reduce as a fold for parallel collector
  */
-@InternalApi private[akka] final class ReducerState[T, R](val collector: java.util.stream.Collector[T, Any, R]) {
-  private var reduced: Any = null.asInstanceOf[Any]
-  private lazy val combiner = collector.combiner()
+@InternalApi private[akka] final class FirstReducerState[T, R](
+    collectorFactory: () => java.util.stream.Collector[T, Any, R])
+    extends ReducerState[T, R] {
 
   def update(batch: Any): ReducerState[T, R] = {
-    if (reduced == null) reduced = batch
-    else reduced = combiner(reduced, batch)
+    // on first update, return a new mutable collector to ensure not
+    // sharing collector between streams
+    val collector = collectorFactory()
+    val combiner = collector.combiner()
+    new MutableReducerState(collector, combiner, batch)
+  }
+
+  def finish(): R = {
+    // only called if completed without elements
+    val collector = collectorFactory()
+    collector.finisher().apply(null)
+  }
+}
+
+/**
+ * INTERNAL API
+ *
+ * Helper class to be able to express reduce as a fold for parallel collector
+ */
+@InternalApi private[akka] final class MutableReducerState[T, R](
+    val collector: java.util.stream.Collector[T, Any, R],
+    val combiner: BinaryOperator[Any],
+    var reduced: Any)
+    extends ReducerState[T, R] {
+
+  def update(batch: Any): ReducerState[T, R] = {
+    reduced = combiner(reduced, batch)
     this
   }
 
@@ -605,10 +677,9 @@ import org.reactivestreams.Subscriber
               }
             }
           }
-          override def onDownstreamFinish(): Unit = {
-            if (!isClosed(in)) {
-              cancel(in)
-            }
+
+          override def onDownstreamFinish(cause: Throwable): Unit = {
+            if (!isClosed(in)) cancel(in, cause)
             maybeCompleteStage()
           }
         })

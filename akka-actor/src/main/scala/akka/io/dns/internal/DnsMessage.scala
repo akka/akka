@@ -156,7 +156,7 @@ private[internal] object Message {
     }
 
     import scala.language.implicitConversions
-    @silent
+    @silent("deprecated")
     implicit def flattener[T](tried: Try[T]): GenTraversableOnce[T] =
       if (flags.isTruncated) tried.toOption
       else

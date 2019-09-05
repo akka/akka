@@ -148,8 +148,9 @@ private[akka] object Running {
           val newState = state.applyEvent(setup, event)
 
           val eventToPersist = adaptEvent(event)
+          val eventAdapterManifest = setup.eventAdapter.manifest(event)
 
-          val newState2 = internalPersist(newState, eventToPersist)
+          val newState2 = internalPersist(setup.context, msg, newState, eventToPersist, eventAdapterManifest)
 
           val shouldSnapshotAfterPersist = setup.shouldSnapshot(newState2.state, event, newState2.seqNr)
 
@@ -169,9 +170,9 @@ private[akka] object Running {
                 (currentState.applyEvent(setup, event), shouldSnapshot)
             }
 
-            val eventsToPersist = events.map(adaptEvent)
+            val eventsToPersist = events.map(evt => (adaptEvent(evt), setup.eventAdapter.manifest(evt)))
 
-            val newState2 = internalPersistAll(eventsToPersist, newState)
+            val newState2 = internalPersistAll(setup.context, msg, newState, eventsToPersist)
 
             persistingEvents(newState2, state, events.size, shouldSnapshotAfterPersist, sideEffects)
 
@@ -264,12 +265,20 @@ private[akka] object Running {
         state = state.updateLastSequenceNr(p)
         eventCounter += 1
 
+        onWriteSuccess(setup.context, p)
+
         // only once all things are applied we can revert back
-        if (eventCounter < numberOfEvents) this
-        else {
+        if (eventCounter < numberOfEvents) {
+          onWriteDone(setup.context, p)
+          this
+        } else {
           visibleState = state
           if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null) {
-            tryUnstashOne(applySideEffects(sideEffects, state))
+            val newState = applySideEffects(sideEffects, state)
+
+            onWriteDone(setup.context, p)
+
+            tryUnstashOne(newState)
           } else {
             internalSaveSnapshot(state)
             storingSnapshot(state, sideEffects, shouldSnapshotAfterPersist)
@@ -285,15 +294,13 @@ private[akka] object Running {
 
         case WriteMessageRejected(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
-            // current + 1 as it is the inflight event that that has failed
-            onWriteRejected(setup.context, cause, p.payload, currentSequenceNumber + 1)
+            onWriteRejected(setup.context, cause, p)
             throw new EventRejectedException(setup.persistenceId, p.sequenceNr, cause)
           } else this
 
         case WriteMessageFailure(p, cause, id) =>
           if (id == setup.writerIdentity.instanceId) {
-            // current + 1 as it is the inflight event that that has failed
-            onWriteFailed(setup.context, cause, p.payload, currentSequenceNumber + 1)
+            onWriteFailed(setup.context, cause, p)
             throw new JournalFailureException(setup.persistenceId, p.sequenceNr, p.payload.getClass.getName, cause)
           } else this
 
@@ -337,7 +344,7 @@ private[akka] object Running {
           setup.log.debug("Discarding message [{}], because actor is to be stopped.", cmd)
         Behaviors.unhandled
       } else {
-        stashUser(cmd)
+        stashInternal(cmd)
         Behaviors.same
       }
     }
@@ -507,13 +514,13 @@ private[akka] object Running {
   private[akka] def onWriteFailed(
       @unused ctx: ActorContext[_],
       @unused reason: Throwable,
-      @unused event: Any,
-      @unused sequenceNr: Long): Unit = ()
+      @unused event: PersistentRepr): Unit = ()
   @InternalStableApi
   private[akka] def onWriteRejected(
       @unused ctx: ActorContext[_],
       @unused reason: Throwable,
-      @unused event: Any,
-      @unused sequenceNr: Long): Unit = ()
-
+      @unused event: PersistentRepr): Unit = ()
+  @InternalStableApi
+  private[akka] def onWriteSuccess(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
+  private[akka] def onWriteDone(@unused ctx: ActorContext[_], @unused event: PersistentRepr): Unit = ()
 }

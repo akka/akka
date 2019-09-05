@@ -39,10 +39,10 @@ public class KillSwitchTest extends StreamTest {
         Source.fromPublisher(upstream)
             .viaMat(killSwitch.flow(), Keep.right())
             .to(Sink.fromSubscriber(downstream))
-            .run(materializer);
+            .run(system);
 
     final CompletionStage<Done> completionStage =
-        Source.single(1).via(killSwitch.flow()).runWith(Sink.ignore(), materializer);
+        Source.single(1).via(killSwitch.flow()).runWith(Sink.ignore(), system);
 
     downstream.request(1);
     upstream.sendNext(1);
@@ -66,7 +66,7 @@ public class KillSwitchTest extends StreamTest {
 
     Source.fromPublisher(upstream)
         .viaMat(killSwitch.flow(), Keep.right())
-        .runWith(Sink.fromSubscriber(downstream), materializer);
+        .runWith(Sink.fromSubscriber(downstream), system);
 
     downstream.request(1);
     upstream.sendNext(1);
@@ -92,7 +92,7 @@ public class KillSwitchTest extends StreamTest {
         Source.fromPublisher(upstream)
             .viaMat(killSwitchFlow, Keep.right())
             .to(Sink.fromSubscriber(downstream))
-            .run(materializer);
+            .run(system);
 
     downstream.request(1);
     upstream.sendNext(1);

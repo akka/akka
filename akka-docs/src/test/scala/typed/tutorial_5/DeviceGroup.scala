@@ -14,27 +14,33 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 
 object DeviceGroup {
-  def apply(groupId: String): Behavior[DeviceGroupMessage] =
+  def apply(groupId: String): Behavior[Command] =
     Behaviors.setup(context => new DeviceGroup(context, groupId))
 
-  trait DeviceGroupMessage
+  trait Command
 
-  private final case class DeviceTerminated(device: ActorRef[Device.DeviceMessage], groupId: String, deviceId: String)
-      extends DeviceGroupMessage
+  private final case class DeviceTerminated(device: ActorRef[Device.Command], groupId: String, deviceId: String)
+      extends Command
 
 }
 
 //#query-added
-class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId: String)
-    extends AbstractBehavior[DeviceGroup.DeviceGroupMessage] {
+class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
+    extends AbstractBehavior[DeviceGroup.Command] {
   import DeviceGroup._
-  import DeviceManager._
+  import DeviceManager.{
+    DeviceRegistered,
+    ReplyDeviceList,
+    RequestAllTemperatures,
+    RequestDeviceList,
+    RequestTrackDevice
+  }
 
-  private var deviceIdToActor = Map.empty[String, ActorRef[Device.DeviceMessage]]
+  private var deviceIdToActor = Map.empty[String, ActorRef[Device.Command]]
 
   context.log.info("DeviceGroup {} started", groupId)
 
-  override def onMessage(msg: DeviceGroupMessage): Behavior[DeviceGroupMessage] =
+  override def onMessage(msg: Command): Behavior[Command] =
     msg match {
       //#query-added
       case trackMsg @ RequestTrackDevice(`groupId`, deviceId, replyTo) =>
@@ -81,7 +87,7 @@ class DeviceGroup(context: ActorContext[DeviceGroup.DeviceGroupMessage], groupId
           Behaviors.unhandled
     }
 
-  override def onSignal: PartialFunction[Signal, Behavior[DeviceGroupMessage]] = {
+  override def onSignal: PartialFunction[Signal, Behavior[Command]] = {
     case PostStop =>
       context.log.info("DeviceGroup {} stopped", groupId)
       this

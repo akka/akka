@@ -5,12 +5,11 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import scala.collection.immutable
-import scala.concurrent.duration._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+
+import scala.collection.immutable
+import scala.concurrent.duration._
 
 class FlowIteratorSpec extends AbstractFlowIteratorSpec {
   override def testName = "A Flow based on an iterator producing function"
@@ -22,8 +21,6 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
   override def testName = "A Flow based on an iterable"
   override def createSource(elements: Int): Source[Int, NotUsed] =
     Source(1 to elements)
-
-  implicit def mmaterializer = super.materializer
 
   "produce onError when iterator throws" in {
     val iterable = new immutable.Iterable[Int] {
@@ -69,12 +66,10 @@ class FlowIterableSpec extends AbstractFlowIteratorSpec {
   }
 }
 
-abstract class AbstractFlowIteratorSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  private val m = ActorMaterializer(settings)
-  implicit final def materializer = m
+abstract class AbstractFlowIteratorSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+""") {
 
   def testName: String
 

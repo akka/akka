@@ -45,7 +45,11 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   override def isLocal = true
 
   // impl InternalRecipientRef, ask not supported
-  override def provider: ActorRefProvider = throw new UnsupportedOperationException("no provider")
+  override def provider: ActorRefProvider =
+    throw new UnsupportedOperationException(
+      "ActorRefs created for synchronous testing cannot be used as targets for asking. Use asynchronous testing instead. " +
+      "See https://doc.akka.io/docs/akka/current/typed/testing.html#asynchronous-testing")
+
   // impl InternalRecipientRef
   def isTerminated: Boolean = false
 }

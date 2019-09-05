@@ -29,7 +29,11 @@ object ActorsLeakSpec {
        akka.remote.classic.transport-failure-detector.heartbeat-interval = 1 s
        akka.remote.classic.transport-failure-detector.acceptable-heartbeat-pause = 3 s
        akka.remote.classic.quarantine-after-silence = 3 s
+       akka.remote.use-unsafe-remote-features-outside-cluster = on
        akka.test.filter-leeway = 12 s
+       # test is using Java serialization and not priority to rewrite
+       akka.actor.allow-java-serialization = on
+       akka.actor.warn-about-java-serializer-usage = off
       """)
 
   def collectLiveActors(root: Option[ActorRef]): immutable.Seq[ActorRef] = {

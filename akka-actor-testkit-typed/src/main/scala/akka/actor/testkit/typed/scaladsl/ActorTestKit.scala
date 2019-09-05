@@ -6,23 +6,22 @@ package akka.actor.testkit.typed.scaladsl
 
 import java.util.concurrent.TimeoutException
 
-import akka.actor.typed.scaladsl.AskPattern._
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.internal.ActorTestKitGuardian
+import akka.actor.testkit.typed.internal.TestKitUtils
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
-import akka.annotation.ApiMayChange
+import akka.actor.typed.scaladsl.AskPattern._
 import akka.annotation.InternalApi
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.internal.ActorTestKitGuardian
-import akka.actor.testkit.typed.internal.TestKitUtils
+import akka.util.Timeout
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.util.Timeout
 
 object ActorTestKit {
 
@@ -33,11 +32,15 @@ object ActorTestKit {
    * e.g. threads will include the name.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from `application-test.conf` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   * The application.conf of your project is not used in this case.
    */
   def apply(): ActorTestKit =
     new ActorTestKit(
       name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-      config = noConfigSet,
+      config = ApplicationTestConfig,
       settings = None)
 
   /**
@@ -47,9 +50,28 @@ object ActorTestKit {
    * e.g. threads will include the name.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from `application-test.conf` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   * The application.conf of your project is not used in this case.
    */
   def apply(name: String): ActorTestKit =
-    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = noConfigSet, settings = None)
+    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = ApplicationTestConfig, settings = None)
+
+  /**
+   * Create a testkit named from the class that is calling this method,
+   * and use a custom config for the actor system.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   */
+  def apply(customConfig: Config): ActorTestKit =
+    new ActorTestKit(
+      name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
+      config = customConfig,
+      settings = None)
 
   /**
    * Create a named testkit, and use a custom config for the actor system.
@@ -90,9 +112,10 @@ object ActorTestKit {
   def shutdown(system: ActorSystem[_], timeout: Duration, throwIfShutdownFails: Boolean = false): Unit =
     TestKitUtils.shutdown(system, timeout, throwIfShutdownFails)
 
-  // place holder for no custom config specified to avoid the boilerplate
-  // of an option for config in the trait
-  private val noConfigSet = ConfigFactory.parseString("")
+  /**
+   * Config loaded from `application-test.conf`, which is used if no specific config is given.
+   */
+  val ApplicationTestConfig: Config = ConfigFactory.load("application-test")
 
 }
 
@@ -108,15 +131,16 @@ object ActorTestKit {
  *
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
-@ApiMayChange
 final class ActorTestKit private[akka] (val name: String, val config: Config, settings: Option[TestKitSettings]) {
 
   implicit def testKitSettings: TestKitSettings =
     settings.getOrElse(TestKitSettings(system))
 
-  private val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
-    if (config eq ActorTestKit.noConfigSet) ActorSystem(ActorTestKitGuardian.testKitGuardian, name)
-    else ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
+    ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
 
   implicit def system: ActorSystem[Nothing] = internalSystem
 
@@ -187,12 +211,17 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    */
   def createTestProbe[M](name: String): TestProbe[M] = TestProbe(name)(system)
 
+  /**
+   * Additional testing utilities for serialization.
+   */
+  val serializationTestKit: SerializationTestKit = new SerializationTestKit(internalSystem)
+
   // FIXME needed for Akka internal tests but, users shouldn't spawn system actors?
   @InternalApi
   private[akka] def systemActor[T](behavior: Behavior[T], name: String): ActorRef[T] =
-    Await.result(system.systemActorOf(behavior, name), timeout.duration)
+    system.systemActorOf(behavior, name)
 
   @InternalApi
   private[akka] def systemActor[T](behavior: Behavior[T]): ActorRef[T] =
-    Await.result(system.systemActorOf(behavior, childName.next()), timeout.duration)
+    system.systemActorOf(behavior, childName.next())
 }

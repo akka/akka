@@ -19,8 +19,6 @@ object GraphDSLCompileSpec {
 class GraphDSLCompileSpec extends StreamSpec {
   import GraphDSLCompileSpec._
 
-  implicit val materializer = ActorMaterializer()
-
   def op[In, Out] = new GraphStage[FlowShape[In, Out]] {
     val in = Inlet[In]("op.in")
     val out = Outlet[Out]("op.out")

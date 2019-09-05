@@ -16,6 +16,7 @@ import akka.actor.Nobody
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.remote.RemoteNodeDeathWatchSpec.UnwatchIt
+import akka.remote.RemoteNodeDeathWatchSpec.WatchIt
 import akka.remote.RemoteWatcher.Stats
 import akka.remote.routing.RemoteRouterConfig
 import akka.remote.testconductor.RoleName
@@ -39,7 +40,7 @@ class RemotingFeaturesConfig(val useUnsafe: Boolean, artery: Boolean) extends Mu
   val iterationCount = 10
 
   protected val baseConfig = ConfigFactory.parseString(s"""
-      akka.remote.use-unsafe-remote-features-without-cluster = $useUnsafe
+      akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
       akka.remote.artery.advanced.flight-recorder.enabled = off
@@ -118,6 +119,28 @@ abstract class RemotingFeaturesSafeSpec
         val actor = system.actorOf(Props(classOf[ProbeActor], probe.ref), "sampleActor")
         actor ! Identify(1)
         expectMsgType[ActorIdentity].ref.get.path.address.hasGlobalScope shouldBe false
+      }
+    }
+
+    "not receive Terminated on stop with watch attempt" in {
+      runOn(second) {
+        system.actorOf(Props(classOf[ProbeActor], probe.ref), "terminating")
+      }
+      runOn(first) {
+        val watcher = system.actorOf(Props(classOf[ProbeActor], probe.ref), "watch-terminating")
+        val terminating = identify(second, "terminating")
+        watcher ! WatchIt(terminating)
+      }
+      enterBarrier("watch-t-attempted")
+
+      runOn(second) {
+        val terminating = identify(second, "terminating")
+        system.stop(terminating)
+      }
+      enterBarrier("t-stopped")
+
+      runOn(first) {
+        probe.expectNoMessage(2.seconds)
       }
     }
   }
@@ -328,7 +351,7 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
     }
   }
 
-  s"Deploy routers with expected behavior if 'akka.remote.use-unsafe-remote-features-without-cluster=$useUnsafe'" must {
+  s"Deploy routers with expected behavior if 'akka.remote.use-unsafe-remote-features-outside-cluster=$useUnsafe'" must {
     "deployments" in {
       runOn(first, second, third, fourth) {
         val deployment1 = system.asInstanceOf[ActorSystemImpl].provider.deployer.lookup(List("service-hello"))

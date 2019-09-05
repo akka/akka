@@ -237,7 +237,7 @@ private[akka] class RemoteActorRefProvider(
           rootGuardian,
           remotingTerminator,
           _log,
-          untrustedMode = remoteSettings.UntrustedMode)
+          untrustedMode = remoteSettings.untrustedMode)
         local.registerExtraNames(Map(("remote", d)))
         d
       },
@@ -320,7 +320,7 @@ private[akka] class RemoteActorRefProvider(
       "remote-deployment-watcher")
 
   /** Can be overridden when using RemoteActorRefProvider as a superclass rather than directly */
-  protected def warnIfDirectUse() = {
+  protected def warnIfDirectUse(): Unit = {
     if (remoteSettings.WarnAboutDirectUse) {
       log.warning(
         "Using the 'remote' ActorRefProvider directly, which is a low-level layer. " +
@@ -331,12 +331,11 @@ private[akka] class RemoteActorRefProvider(
   // Log on `init` similar to `warnIfDirectUse`.
   private[akka] def warnIfUseUnsafeWithoutCluster(): Unit =
     if (!settings.HasCluster) {
-      val msg =
-        if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
-          "`akka.remote.use-unsafe-remote-features-without-cluster` has been enabled."
-        else
-          "Using Akka Cluster is recommended if you need remote watch and deploy."
-      log.warning(s"Cluster not in use - {}", msg)
+      if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
+        log.info(
+          "Akka Cluster not in use - enabling unsafe features anyway because `akka.remote.use-unsafe-remote-features-outside-cluster` has been enabled.")
+      else
+        log.warning("Akka Cluster not in use - Using Akka Cluster is recommended if you need remote watch and deploy.")
     }
 
   protected def warnOnUnsafe(message: String): Unit =
@@ -344,7 +343,7 @@ private[akka] class RemoteActorRefProvider(
     else log.debug(message)
 
   /** Logs if deathwatch message is intentionally dropped. To disable
-   * warnings set `akka.remote.warn-unsafe-watch-without-cluster` to `off`
+   * warnings set `akka.remote.warn-unsafe-watch-outside-cluster` to `off`
    * or use Akka Cluster.
    */
   private[akka] def warnIfUnsafeDeathwatchWithoutCluster(watchee: ActorRef, watcher: ActorRef, action: String): Unit =
@@ -426,11 +425,6 @@ private[akka] class RemoteActorRefProvider(
         }
       }
 
-      def warnThenFallback() = {
-        warnIfNotRemoteActorRef(path)
-        local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
-      }
-
       (Iterator(props.deploy) ++ deployment.iterator).reduce((a, b) => b.withFallback(a)) match {
         case d @ Deploy(_, _, _, RemoteScope(address), _, _) =>
           if (hasAddress(address)) {
@@ -456,13 +450,16 @@ private[akka] class RemoteActorRefProvider(
                   (RootActorPath(address) / "remote" / localAddress.protocol / localAddress.hostPort / path.elements)
                     .withUid(path.uid)
                 new RemoteActorRef(transport, localAddress, rpath, supervisor, Some(props), Some(d))
-              } else warnThenFallback()
+              } else {
+                warnIfNotRemoteActorRef(path)
+                local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
+              }
 
             } catch {
               case NonFatal(e) => throw new IllegalArgumentException(s"remote deployment failed for [$path]", e)
             }
         case _ =>
-          warnThenFallback()
+          local.actorOf(system, props, supervisor, path, systemService, deployment.headOption, false, async)
       }
     }
 
@@ -662,7 +659,7 @@ private[akka] class RemoteActorRef private[akka] (
   // used by artery to direct messages to separate specialized streams
   @volatile private[remote] var cachedSendQueueIndex: Int = -1
 
-  @silent
+  @silent("deprecated")
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
     s.headOption match {
@@ -691,21 +688,30 @@ private[akka] class RemoteActorRef private[akka] (
   def isWatchIntercepted(watchee: ActorRef, watcher: ActorRef): Boolean = {
     // If watchee != this then watcher should == this. This is a reverse watch, and it is not intercepted
     // If watchee == this, only the watches from remoteWatcher are sent on the wire, on behalf of other watchers
-    val intercept = provider.remoteWatcher.exists(remoteWatcher => watcher != remoteWatcher) && watchee == this
-    if (intercept) provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "remote Watch/Unwatch")
-    intercept
+    provider.remoteWatcher.exists(remoteWatcher => watcher != remoteWatcher) && watchee == this
   }
 
   def sendSystemMessage(message: SystemMessage): Unit =
     try {
       //send to remote, unless watch message is intercepted by the remoteWatcher
       message match {
-        case Watch(watchee, watcher) if isWatchIntercepted(watchee, watcher) =>
-          provider.remoteWatcher.foreach(_ ! RemoteWatcher.WatchRemote(watchee, watcher))
+        case Watch(watchee, watcher) =>
+          if (isWatchIntercepted(watchee, watcher))
+            provider.remoteWatcher.foreach(_ ! RemoteWatcher.WatchRemote(watchee, watcher))
+          else if (provider.remoteWatcher.isDefined)
+            remote.send(message, OptionVal.None, this)
+          else
+            provider.warnIfUnsafeDeathwatchWithoutCluster(watchee, watcher, "remote Watch")
+
         //Unwatch has a different signature, need to pattern match arguments against InternalActorRef
-        case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) if isWatchIntercepted(watchee, watcher) =>
-          provider.remoteWatcher.foreach(_ ! RemoteWatcher.UnwatchRemote(watchee, watcher))
-        case _ => remote.send(message, OptionVal.None, this)
+        case Unwatch(watchee: InternalActorRef, watcher: InternalActorRef) =>
+          if (isWatchIntercepted(watchee, watcher))
+            provider.remoteWatcher.foreach(_ ! RemoteWatcher.UnwatchRemote(watchee, watcher))
+          else if (provider.remoteWatcher.isDefined)
+            remote.send(message, OptionVal.None, this)
+
+        case _ =>
+          remote.send(message, OptionVal.None, this)
       }
     } catch handleException(message, Actor.noSender)
 

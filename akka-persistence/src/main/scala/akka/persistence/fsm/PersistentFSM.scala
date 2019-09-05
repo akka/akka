@@ -62,6 +62,7 @@ private[akka] class SnapshotAfter(config: Config) extends Extension {
  * State Data is constructed based on domain events, according to user's implementation of applyEvent function.
  *
  */
+@deprecated("Use EventSourcedBehavior", "2.6.0")
 trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with PersistentFSMBase[S, D, E] with ActorLogging {
   import akka.persistence.fsm.PersistentFSM._
 
@@ -119,7 +120,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
   /**
    * Discover the latest recorded state
    */
-  @silent
+  @silent("deprecated")
   override def receiveRecover: Receive = {
     case domainEventTag(event)                      => startWith(stateName, applyEvent(event, stateData))
     case StateChangeEvent(stateIdentifier, timeout) => startWith(statesMap(stateIdentifier), stateData, timeout)
@@ -178,6 +179,7 @@ trait PersistentFSM[S <: FSMState, D, E] extends PersistentActor with Persistent
   }
 }
 
+@deprecated("Use EventSourcedBehavior", "2.6.0")
 object PersistentFSM {
 
   /**
@@ -194,6 +196,7 @@ object PersistentFSM {
 
   /**
    * Persisted on state change
+   * Not deprecated as used for users migrating from PersistentFSM to EventSourcedBehavior
    *
    * @param stateIdentifier FSM state identifier
    * @param timeout FSM state timeout
@@ -483,6 +486,7 @@ object PersistentFSM {
  * Persistent Finite State Machine actor abstract base class.
  *
  */
+@deprecated("Use EventSourcedBehavior", "2.6.0")
 abstract class AbstractPersistentFSM[S <: FSMState, D, E]
     extends AbstractPersistentFSMBase[S, D, E]
     with PersistentFSM[S, D, E] {
@@ -519,7 +523,8 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
  * Persistent Finite State Machine actor abstract base class with FSM Logging
  *
  */
-@silent
+@silent("deprecated")
+@deprecated("Use EventSourcedBehavior", "2.6.0")
 abstract class AbstractPersistentLoggingFSM[S <: FSMState, D, E]
     extends AbstractPersistentFSM[S, D, E]
     with LoggingPersistentFSM[S, D, E]

@@ -13,6 +13,8 @@ import akka.persistence.typed.javadsl.CommandHandlerWithReplyBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventHandlerBuilder;
 import akka.persistence.typed.javadsl.ReplyEffect;
+import akka.serialization.jackson.CborSerializable;
+import com.fasterxml.jackson.annotation.JsonCreator;
 
 import java.math.BigDecimal;
 
@@ -36,12 +38,13 @@ public interface AccountExampleWithEventHandlersInState {
 
     // Command
     // #reply-command
-    interface AccountCommand<Reply> extends ExpectingReply<Reply> {}
+    interface AccountCommand<Reply> extends ExpectingReply<Reply>, CborSerializable {}
     // #reply-command
 
     public static class CreateAccount implements AccountCommand<OperationResult> {
       private final ActorRef<OperationResult> replyTo;
 
+      @JsonCreator
       public CreateAccount(ActorRef<OperationResult> replyTo) {
         this.replyTo = replyTo;
       }
@@ -85,6 +88,7 @@ public interface AccountExampleWithEventHandlersInState {
     public static class GetBalance implements AccountCommand<CurrentBalance> {
       private final ActorRef<CurrentBalance> replyTo;
 
+      @JsonCreator
       public GetBalance(ActorRef<CurrentBalance> replyTo) {
         this.replyTo = replyTo;
       }
@@ -98,6 +102,7 @@ public interface AccountExampleWithEventHandlersInState {
     public static class CloseAccount implements AccountCommand<OperationResult> {
       private final ActorRef<OperationResult> replyTo;
 
+      @JsonCreator
       public CloseAccount(ActorRef<OperationResult> replyTo) {
         this.replyTo = replyTo;
       }
@@ -110,7 +115,7 @@ public interface AccountExampleWithEventHandlersInState {
 
     // Reply
     // #reply-command
-    interface AccountCommandReply {}
+    interface AccountCommandReply extends CborSerializable {}
 
     interface OperationResult extends AccountCommandReply {}
 
@@ -121,6 +126,7 @@ public interface AccountExampleWithEventHandlersInState {
     public static class Rejected implements OperationResult {
       public final String reason;
 
+      @JsonCreator
       public Rejected(String reason) {
         this.reason = reason;
       }
@@ -130,19 +136,21 @@ public interface AccountExampleWithEventHandlersInState {
     public static class CurrentBalance implements AccountCommandReply {
       public final BigDecimal balance;
 
+      @JsonCreator
       public CurrentBalance(BigDecimal balance) {
         this.balance = balance;
       }
     }
 
     // Event
-    interface AccountEvent {}
+    interface AccountEvent extends CborSerializable {}
 
     public static class AccountCreated implements AccountEvent {}
 
     public static class Deposited implements AccountEvent {
       public final BigDecimal amount;
 
+      @JsonCreator
       Deposited(BigDecimal amount) {
         this.amount = amount;
       }
@@ -151,6 +159,7 @@ public interface AccountExampleWithEventHandlersInState {
     public static class Withdrawn implements AccountEvent {
       public final BigDecimal amount;
 
+      @JsonCreator
       Withdrawn(BigDecimal amount) {
         this.amount = amount;
       }
@@ -159,7 +168,7 @@ public interface AccountExampleWithEventHandlersInState {
     public static class AccountClosed implements AccountEvent {}
 
     // State
-    interface Account {}
+    interface Account extends CborSerializable {}
 
     public static class EmptyAccount implements Account {
       OpenedAccount openedAccount() {
@@ -168,8 +177,9 @@ public interface AccountExampleWithEventHandlersInState {
     }
 
     public static class OpenedAccount implements Account {
-      private final BigDecimal balance;
+      final BigDecimal balance;
 
+      @JsonCreator
       public OpenedAccount(BigDecimal balance) {
         this.balance = balance;
       }

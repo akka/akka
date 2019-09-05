@@ -5,21 +5,22 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream._
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
+import scala.concurrent.Promise
 
-class LazyFlowSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
-  implicit val materializer = ActorMaterializer(settings)
+class LazyFlowSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 1
+    akka.stream.materializer.max-input-buffer-size = 1
+  """) {
 
   val ex = TE("")
 

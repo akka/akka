@@ -5,15 +5,14 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
+
 import scala.concurrent.duration._
 
-class FlowIntersperseSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowIntersperseSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   "A Intersperse" must {
     "inject element between existing elements" in {

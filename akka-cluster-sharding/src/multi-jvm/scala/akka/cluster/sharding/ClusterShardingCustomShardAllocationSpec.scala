@@ -85,7 +85,9 @@ abstract class ClusterShardingCustomShardAllocationSpecConfig(val mode: String) 
   val first = role("first")
   val second = role("second")
 
-  commonConfig(ConfigFactory.parseString(s"""
+  commonConfig(
+    ConfigFactory
+      .parseString(s"""
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
@@ -101,7 +103,9 @@ abstract class ClusterShardingCustomShardAllocationSpecConfig(val mode: String) 
     akka.cluster.sharding.state-store-mode = "$mode"
     akka.cluster.sharding.rebalance-interval = 1 s
     #akka.cluster.sharding.retry-interval = 5 s
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
+    """)
+      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 object PersistentClusterShardingCustomShardAllocationSpecConfig

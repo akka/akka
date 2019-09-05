@@ -404,7 +404,7 @@ private[akka] object ActorCell {
  * supported APIs in this place. This is not the API you were looking
  * for! (waves hand)
  */
-@silent
+@silent("deprecated")
 private[akka] class ActorCell(
     val system: ActorSystemImpl,
     val self: InternalActorRef,
@@ -535,9 +535,10 @@ private[akka] class ActorCell(
     val timeoutBeforeReceive = cancelReceiveTimeoutIfNeeded(msg)
     try {
       currentMessage = messageHandle
-      msg match {
-        case _: AutoReceivedMessage => autoReceiveMessage(messageHandle)
-        case msg                    => receiveMessage(msg)
+      if (msg.isInstanceOf[AutoReceivedMessage]) {
+        autoReceiveMessage(messageHandle)
+      } else {
+        receiveMessage(msg)
       }
       currentMessage = null // reset current message after successful invocation
     } catch handleNonFatalOrInterruptedException { e =>

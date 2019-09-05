@@ -41,7 +41,7 @@ Scala
 :   @@snip [DeviceGroup.scala](/akka-docs/src/test/scala/typed/tutorial_5/DeviceManager.scala) { #query-protocol }
 
 Java
-:   @@snip [DeviceGroup.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/DeviceManagerProtocol.java) { #query-protocol }
+:   @@snip [DeviceGroup.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/DeviceManager.java) { #query-protocol }
 
 ## Implementing the query
 

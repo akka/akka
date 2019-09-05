@@ -10,13 +10,19 @@ import akka.routing._
 import akka.util.WildcardIndex
 import com.github.ghik.silencer.silent
 import com.typesafe.config._
-
 import scala.annotation.tailrec
+
+import akka.annotation.InternalApi
 
 object Deploy {
   final val NoDispatcherGiven = ""
   final val NoMailboxGiven = ""
   val local = Deploy(scope = LocalScope)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] final val DispatcherSameAsParent = ".."
 }
 
 /**
@@ -93,7 +99,7 @@ trait Scope {
   def withFallback(other: Scope): Scope
 }
 
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 abstract class LocalScope extends Scope
 
@@ -102,7 +108,7 @@ abstract class LocalScope extends Scope
  * which do not set a different scope. It is also the only scope handled by
  * the LocalActorRefProvider.
  */
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 case object LocalScope extends LocalScope {
 
@@ -117,7 +123,7 @@ case object LocalScope extends LocalScope {
 /**
  * This is the default value and as such allows overrides.
  */
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 abstract class NoScopeGiven extends Scope
 @SerialVersionUID(1L)

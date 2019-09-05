@@ -4,17 +4,17 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.{ AbruptStageTerminationException, ActorMaterializer }
-import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber
+import akka.stream.AbruptStageTerminationException
+import akka.stream.ActorMaterializer
 import akka.testkit.DefaultTimeout
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 class MaybeSourceSpec extends StreamSpec with DefaultTimeout {
-
-  implicit val materializer = ActorMaterializer()
 
   "The Maybe Source" must {
 

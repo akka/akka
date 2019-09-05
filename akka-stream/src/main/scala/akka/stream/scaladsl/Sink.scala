@@ -4,26 +4,30 @@
 
 package akka.stream.scaladsl
 
-import akka.{ Done, NotUsed }
-import akka.dispatch.ExecutionContexts
-import akka.actor.{ ActorRef, Props, Status }
+import akka.actor.ActorRef
+import akka.actor.Status
 import akka.annotation.InternalApi
-import akka.stream.actor.ActorSubscriber
+import akka.dispatch.ExecutionContexts
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl._
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.stage._
-import akka.stream.{ javadsl, _ }
-import org.reactivestreams.{ Publisher, Subscriber }
+import akka.stream.javadsl
+import akka.stream._
+import akka.util.ccompat._
+import akka.Done
+import akka.NotUsed
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
 
 import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success, Try }
-import scala.collection.immutable
-import akka.util.ccompat._
-
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 
 /**
  * A `Sink` is a set of stream processing steps that has one open input.
@@ -48,6 +52,9 @@ final class Sink[-In, +Mat](override val traversalBuilder: LinearTraversalBuilde
   /**
    * Connect this `Sink` to a `Source` and run it. The returned value is the materialized value
    * of the `Source`, e.g. the `Subscriber` of a [[Source#subscriber]].
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
    */
   def runWith[Mat2](source: Graph[SourceShape[In], Mat2])(implicit materializer: Materializer): Mat2 =
     Source.fromGraph(source).to(this).run()
@@ -440,8 +447,7 @@ object Sink {
       ref: ActorRef,
       onCompleteMessage: Any,
       onFailureMessage: Throwable => Any): Sink[T, NotUsed] =
-    fromGraph(
-      new ActorRefSink(ref, onCompleteMessage, onFailureMessage, DefaultAttributes.actorRefSink, shape("ActorRefSink")))
+    fromGraph(new ActorRefSinkStage[T](ref, onCompleteMessage, onFailureMessage))
 
   /**
    * Sends the elements of the stream to the given `ActorRef`.
@@ -459,13 +465,7 @@ object Sink {
    * limiting operator in front of this `Sink`.
    */
   def actorRef[T](ref: ActorRef, onCompleteMessage: Any): Sink[T, NotUsed] =
-    fromGraph(
-      new ActorRefSink(
-        ref,
-        onCompleteMessage,
-        t => Status.Failure(t),
-        DefaultAttributes.actorRefSink,
-        shape("ActorRefSink")))
+    fromGraph(new ActorRefSinkStage[T](ref, onCompleteMessage, t => Status.Failure(t)))
 
   /**
    * INTERNAL API
@@ -524,21 +524,6 @@ object Sink {
       onCompleteMessage: Any,
       onFailureMessage: (Throwable) => Any = Status.Failure): Sink[T, NotUsed] =
     actorRefWithAck(ref, _ => identity, _ => onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
-
-  /**
-   * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
-   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` must
-   * be [[akka.stream.actor.ActorSubscriber]].
-   *
-   * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
-   */
-  @deprecated(
-    "Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
-    since = "2.5.0")
-  def actorSubscriber[T](props: Props): Sink[T, ActorRef] = {
-    require(classOf[ActorSubscriber].isAssignableFrom(props.actorClass()), "Actor must be ActorSubscriber")
-    fromGraph(new ActorSubscriberSink(props, DefaultAttributes.actorSubscriberSink, shape("ActorSubscriberSink")))
-  }
 
   /**
    * Creates a `Sink` that is materialized as an [[akka.stream.scaladsl.SinkQueueWithCancel]].

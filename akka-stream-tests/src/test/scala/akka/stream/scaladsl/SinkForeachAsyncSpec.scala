@@ -4,23 +4,27 @@
 
 package akka.stream.scaladsl
 
-import java.util.concurrent.{ CountDownLatch, Executors, TimeUnit }
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 
 import akka.Done
 import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.ActorMaterializer
-import akka.stream.Supervision.{ resumingDecider, stoppingDecider }
+import akka.stream.Supervision.resumingDecider
+import akka.stream.Supervision.stoppingDecider
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.testkit.{ TestLatch, TestProbe }
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future }
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
 import scala.language.postfixOps
 import scala.util.control.NoStackTrace
 
 class SinkForeachAsyncSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
 
   "A foreachAsync" must {
     "handle empty source" in assertAllStagesStopped {

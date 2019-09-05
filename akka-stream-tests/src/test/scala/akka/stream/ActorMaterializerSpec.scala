@@ -10,14 +10,14 @@ import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.testkit.{ ImplicitSender, TestActor, TestProbe }
+import akka.testkit.{ ImplicitSender, TestProbe }
 import com.github.ghik.silencer.silent
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Failure, Try }
 
-@silent // tests deprecated APIs
+@silent
 class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
   "ActorMaterializer" must {
@@ -84,14 +84,6 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
       val Failure(_) = p.expectMsgType[Try[Done]]
     }
 
-    "handle properly broken Props" in {
-      val m = ActorMaterializer.create(system)
-      an[IllegalArgumentException] should be thrownBy
-      Await.result(
-        Source.actorPublisher(Props(classOf[TestActor], "wrong", "arguments")).runWith(Sink.head)(m),
-        3.seconds)
-    }
-
     "report correctly if it has been shut down from the side" in {
       val sys = ActorSystem()
       val m = ActorMaterializer.create(sys)
@@ -103,6 +95,8 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 }
 
 object ActorMaterializerSpec {
+
+  @silent("deprecated")
   class ActorWithMaterializer(p: TestProbe) extends Actor {
     private val settings: ActorMaterializerSettings =
       ActorMaterializerSettings(context.system).withDispatcher("akka.test.stream-dispatcher")

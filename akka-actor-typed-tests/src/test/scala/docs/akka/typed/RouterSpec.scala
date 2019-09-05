@@ -23,7 +23,7 @@ object RouterSpec {
     sealed trait Command
     case class DoLog(text: String) extends Command
 
-    val behavior: Behavior[Command] = Behaviors.setup { ctx =>
+    def apply(): Behavior[Command] = Behaviors.setup { ctx =>
       ctx.log.info("Starting worker")
 
       Behaviors.receiveMessage {
@@ -39,17 +39,26 @@ object RouterSpec {
   val serviceKey = ServiceKey[Worker.Command]("log-worker")
 }
 
-class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with WordSpecLike {
   import RouterSpec._
 
   "The routing sample" must {
 
     "show pool routing" in {
+      // trixery to monitor worker but make the sample look like we use it directly
+      val probe = createTestProbe[RouterSpec.Worker.Command]()
+      object Worker {
+        def apply(): Behavior[RouterSpec.Worker.Command] =
+          Behaviors.monitor(probe.ref, RouterSpec.Worker())
+
+        def DoLog(text: String) = RouterSpec.Worker.DoLog(text)
+      }
+
       spawn(Behaviors.setup[Unit] { ctx =>
         // #pool
         val pool = Routers.pool(poolSize = 4)(() =>
           // make sure the workers are restarted if they fail
-          Behaviors.supervise(Worker.behavior).onFailure[Exception](SupervisorStrategy.restart))
+          Behaviors.supervise(Worker()).onFailure[Exception](SupervisorStrategy.restart))
         val router = ctx.spawn(pool, "worker-pool")
 
         (0 to 10).foreach { n =>
@@ -61,17 +70,30 @@ class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         val alternativePool = pool.withPoolSize(2).withRoundRobinRouting()
         // #strategy
 
+        val alternativeRouter = ctx.spawn(alternativePool, "alternative-pool")
+        alternativeRouter ! Worker.DoLog("msg")
+
         Behaviors.empty
       })
+
+      probe.receiveMessages(10)
     }
 
     "show group routing" in {
+      // trixery to monitor worker but make the sample look like we use it directly
+      val probe = createTestProbe[RouterSpec.Worker.Command]()
+      object Worker {
+        def apply(): Behavior[RouterSpec.Worker.Command] =
+          Behaviors.monitor(probe.ref, RouterSpec.Worker())
+
+        def DoLog(text: String) = RouterSpec.Worker.DoLog(text)
+      }
 
       spawn(Behaviors.setup[Unit] { ctx =>
         // #group
         // this would likely happen elsewhere - if we create it locally we
         // can just as well use a pool
-        val worker = ctx.spawn(Worker.behavior, "worker")
+        val worker = ctx.spawn(Worker(), "worker")
         ctx.system.receptionist ! Receptionist.Register(serviceKey, worker)
 
         val group = Routers.group(serviceKey);
@@ -88,6 +110,8 @@ class RouterSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
         Behaviors.empty
       })
+
+      probe.receiveMessages(10)
     }
   }
 }

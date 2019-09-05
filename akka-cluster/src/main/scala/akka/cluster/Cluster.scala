@@ -96,7 +96,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Java API: roles that this member has
    */
-  @silent
+  @silent("deprecated")
   def getSelfRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
 
@@ -164,7 +164,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
         override def maxFrequency: Double = systemScheduler.maxFrequency
 
-        @silent
+        @silent("deprecated")
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
             implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, interval, runnable)
@@ -300,8 +300,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * The name of the [[akka.actor.ActorSystem]] must be the same for all members of a
    * cluster.
    */
-  def join(address: Address): Unit =
+  def join(address: Address): Unit = {
+    address.checkHostCharacters()
     clusterCore ! ClusterUserAction.JoinTo(fillLocal(address))
+  }
 
   private def fillLocal(address: Address): Address = {
     // local address might be used if grabbed from actorRef.path.address
@@ -317,8 +319,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
    * When it has successfully joined it must be restarted to be able to join another
    * cluster or to join the same cluster again.
    */
-  def joinSeedNodes(seedNodes: immutable.Seq[Address]): Unit =
+  def joinSeedNodes(seedNodes: immutable.Seq[Address]): Unit = {
+    seedNodes.foreach(_.checkHostCharacters())
     clusterCore ! InternalClusterAction.JoinSeedNodes(seedNodes.toVector.map(fillLocal))
+  }
 
   /**
    * Java API

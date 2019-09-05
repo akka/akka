@@ -31,7 +31,6 @@ object ClusterReceptionistSpec {
       akka.actor {
         provider = cluster
         serialize-messages = off
-        allow-java-serialization = true
         serializers {
           test = "akka.cluster.typed.internal.receptionist.ClusterReceptionistSpec$$PingSerializer"
         }
@@ -192,7 +191,10 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
           clusterNode1.manager ! Leave(clusterNode2.selfMember.address)
         }
 
-        regProbe1.expectMessage(10.seconds, Listing(PingKey, Set(service1)))
+        regProbe1.awaitAssert({
+          // we will also potentially get an update that the service was unreachable before the expected one
+          regProbe1.expectMessage(10.seconds, Listing(PingKey, Set(service1)))
+        }, 10.seconds)
 
         // register another after removal
         val service1b = testKit1.spawn(pingPongBehavior)
@@ -244,7 +246,10 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
 
         clusterNode2.manager ! Down(clusterNode1.selfMember.address)
         // service1 removed
-        regProbe2.expectMessage(10.seconds, Listing(PingKey, Set(service2)))
+        regProbe2.awaitAssert({
+          // we will also potentially get an update that the service was unreachable before the expected one
+          regProbe2.expectMessage(10.seconds, Listing(PingKey, Set(service2)))
+        }, 10.seconds)
       } finally {
         testKit1.shutdownTestKit()
         testKit2.shutdownTestKit()
@@ -299,8 +304,11 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
         system2.terminate()
         Await.ready(system2.whenTerminated, 10.seconds)
         clusterNode1.manager ! Down(clusterNode2.selfMember.address)
+        regProbe1.awaitAssert({
 
-        regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+          // we will also potentially get an update that the service was unreachable before the expected one
+          regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+        }, 10.seconds)
       } finally {
         testKit1.shutdownTestKit()
         testKit2.shutdownTestKit()
@@ -584,7 +592,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers {
     "not conflict with the ClusterClient receptionist default name" in {
       val testKit = ActorTestKit(s"ClusterReceptionistSpec-test-9", ClusterReceptionistSpec.config)
       try {
-        testKit.system.systemActorOf(Behaviors.ignore, "receptionist")(3.seconds)
+        testKit.system.systemActorOf(Behaviors.ignore, "receptionist")
       } finally {
         testKit.shutdownTestKit()
       }

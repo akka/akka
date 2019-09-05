@@ -6,6 +6,10 @@ The core of Akka Cluster is the cluster membership, to keep track of what nodes 
 their health. There are several @ref:[Higher level Cluster tools](cluster-usage.md#higher-level-cluster-tools) that are built
 on top of the cluster membership.
 
+You need to enable @ref:[serialization](serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
+
 ## Dependency
 
 To use Akka Cluster, you must add the following dependency in your project:
@@ -714,9 +718,9 @@ unreachable cluster node has been downed and removed.
 If you encounter suspicious false positives when the system is under load you should
 define a separate dispatcher for the cluster actors as described in [Cluster Dispatcher](#cluster-dispatcher).
 
-@@@ div { .group-scala }
-
 ## How to Test
+
+@@@ div { .group-scala }
 
 @ref:[Multi Node Testing](multi-node-testing.md) is useful for testing cluster applications.
 
@@ -771,8 +775,6 @@ the actor system for a specific role. This can also be used to grab the `akka.ac
 @@@
 
 @@@ div { .group-java }
-
-## How to Test
 
 Currently testing with the `sbt-multi-jvm` plugin is only documented for Scala.
 Go to the corresponding Scala version of this page for details.
@@ -867,7 +869,6 @@ You can enable verbose logging of cluster events at info level, e.g. for tempora
 akka.cluster.log-info-verbose = on
 ```
 
-<a id="cluster-dispatcher"></a>
 ### Cluster Dispatcher
 
 Under the hood the cluster extension is implemented with actors. To protect them against

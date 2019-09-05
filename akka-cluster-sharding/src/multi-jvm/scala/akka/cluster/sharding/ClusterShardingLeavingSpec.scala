@@ -7,6 +7,7 @@ package akka.cluster.sharding
 import java.io.File
 
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
@@ -20,12 +21,13 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
+import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
 
 object ClusterShardingLeavingSpec {
-  case class Ping(id: String)
+  case class Ping(id: String) extends CborSerializable
 
   class Entity extends Actor {
     def receive = {
@@ -33,8 +35,8 @@ object ClusterShardingLeavingSpec {
     }
   }
 
-  case object GetLocations
-  case class Locations(locations: Map[String, ActorRef])
+  case object GetLocations extends CborSerializable
+  case class Locations(locations: Map[String, ActorRef]) extends CborSerializable
 
   class ShardLocations extends Actor {
     var locations: Locations = _
@@ -59,7 +61,9 @@ abstract class ClusterShardingLeavingSpecConfig(val mode: String) extends MultiN
   val third = role("third")
   val fourth = role("fourth")
 
-  commonConfig(ConfigFactory.parseString(s"""
+  commonConfig(
+    ConfigFactory
+      .parseString(s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.classic.log-remote-lifecycle-events = off
@@ -79,7 +83,9 @@ abstract class ClusterShardingLeavingSpecConfig(val mode: String) extends MultiN
       dir = target/ClusterShardingLeavingSpec/sharding-ddata
       map-size = 10 MiB
     }
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
+    """)
+      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 object PersistentClusterShardingLeavingSpecConfig extends ClusterShardingLeavingSpecConfig("persistence")

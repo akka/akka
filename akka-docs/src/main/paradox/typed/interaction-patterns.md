@@ -222,6 +222,7 @@ In an actual session child you would likely want to include some form of timeout
  * Children have life cycles that must be managed to not create a resource leak, it can be easy to miss a scenario where the session actor is not stopped
  * It increases complexity, since each such child can execute concurrently with other children and the parent
  
+<a id="typed-scheduling"></a>
 ## Scheduling messages to self
 
 The following example demonstrates how to use timers to schedule messages to an actor. 
@@ -284,5 +285,23 @@ timer that ticks once every second for ten seconds.
 which may in worst case cause undesired load on the system. `scheduleWithFixedDelay` is often preferred.
 
 @@@
+
+## Responding to a sharded actor
+
+The normal pattern for expecting a reply is to include an @apidoc[akka.actor.typed.ActorRef] in the message, typically a message adapter. This can be used
+for a sharded actor but if @scala[`ctx.self`]@java[`ctx.getSelf()`] is sent and the sharded actor is moved or passivated then the reply 
+will sent to dead letters.
+
+An alternative is to send the `entityId` in the message and have the reply sent via sharding:
+
+Scala
+:  @@snip [sharded.response](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #sharded-response }
+
+Java
+:  @@snip [sharded.response](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingReplyCompileOnlyTest.java) { #sharded-response }
+
+A disadvantage is that a message adapter can't be used so the response has to be in the protocol of the actor being responded to. Additionally the `EntityTypeKey`
+could be included in the message if it is not known statically.
+
 
 

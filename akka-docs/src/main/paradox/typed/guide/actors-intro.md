@@ -25,7 +25,7 @@ With objects, when a method returns, it releases control of its executing thread
 much like objects, they react to messages and return execution when they finish processing the current message.
 In this way, actors actually achieve the execution we imagined for objects:
 
-![actors interact with each other by sending messages](../../guide/diagrams/actor_graph.png)
+![actors interact with each other by sending messages](diagrams/actor_graph.png)
 
 An important difference between passing messages and calling methods is that messages have no return value.
 By sending a message, an actor delegates work to another actor. As we saw in @ref:[The illusion of a call stack](actors-motivation.md#the-illusion-of-a-call-stack),
@@ -41,7 +41,7 @@ different actors work concurrently with each other so that an actor system can p
 Since there is always at most one message being processed per actor,
 the invariants of an actor can be kept without synchronization. This happens automatically without using locks:
 
-![messages do not invalidate invariants as they are processed sequentially](../../guide/diagrams/serialized_timeline_invariants.png)
+![messages do not invalidate invariants as they are processed sequentially](diagrams/serialized_timeline_invariants.png)
 
 In summary, this is what happens when an actor receives a message:
 

@@ -5,7 +5,6 @@
 package akka.actor.typed.eventstream
 
 import scala.concurrent.duration._
-import scala.language.postfixOps
 
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import org.scalatest.WordSpecLike
@@ -13,6 +12,7 @@ import org.scalatest.WordSpecLike
 class EventStreamSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   import EventStreamSpec._
+  import EventStream._
 
   private final val ShortWait = 100.millis
 

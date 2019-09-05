@@ -16,8 +16,9 @@ import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.javadsl
 import akka.actor.typed.scaladsl
-import akka.annotation.InternalApi
-import akka.util.ConstantFun
+import akka.actor.typed.scaladsl.ActorContext
+import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.util.{ unused, ConstantFun }
 
 /**
  * INTERNAL API
@@ -27,14 +28,15 @@ import akka.util.ConstantFun
     def apply(f: T => Unit): Unit = f(message)
   }
 
-  def apply[T](capacity: Int): StashBufferImpl[T] =
-    new StashBufferImpl(capacity, null, null)
+  def apply[T](ctx: ActorContext[T], capacity: Int): StashBufferImpl[T] =
+    new StashBufferImpl(ctx, capacity, null, null)
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] final class StashBufferImpl[T] private (
+    ctx: ActorContext[T],
     val capacity: Int,
     private var _first: StashBufferImpl.Node[T],
     private var _last: StashBufferImpl.Node[T])
@@ -60,7 +62,7 @@ import akka.util.ConstantFun
         s"Couldn't add [${message.getClass.getName}] " +
         s"because stash with capacity [$capacity] is full")
 
-    val node = new Node(null, message)
+    val node = createNode(message, ctx)
     if (isEmpty) {
       _first = node
       _last = node
@@ -68,12 +70,19 @@ import akka.util.ConstantFun
       _last.next = node
       _last = node
     }
+
     _size += 1
     this
   }
 
-  private def dropHead(): T = {
-    val message = head
+  @InternalStableApi
+  private def createNode(message: T, @unused ctx: scaladsl.ActorContext[T]): Node[T] = {
+    new Node(null, message)
+  }
+
+  @InternalStableApi
+  private def dropHeadForUnstash(): Node[T] = {
+    val message = rawHead
     _first = _first.next
     _size -= 1
     if (isEmpty)
@@ -81,6 +90,10 @@ import akka.util.ConstantFun
 
     message
   }
+
+  private def rawHead: Node[T] =
+    if (nonEmpty) _first
+    else throw new NoSuchElementException("head of empty buffer")
 
   override def head: T =
     if (nonEmpty) _first.message
@@ -96,24 +109,24 @@ import akka.util.ConstantFun
 
   override def forEach(f: Consumer[T]): Unit = foreach(f.accept)
 
-  override def unstashAll(ctx: scaladsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
-    unstash(ctx, behavior, size, ConstantFun.scalaIdentityFunction[T])
+  override def unstashAll(behavior: Behavior[T]): Behavior[T] = {
+    val behav = unstash(behavior, size, ConstantFun.scalaIdentityFunction[T])
+    stashCleared(ctx)
+    behav
+  }
 
-  override def unstashAll(ctx: javadsl.ActorContext[T], behavior: Behavior[T]): Behavior[T] =
-    unstashAll(ctx.asScala, behavior)
-
-  override def unstash(
-      ctx: scaladsl.ActorContext[T],
-      behavior: Behavior[T],
-      numberOfMessages: Int,
-      wrap: T => T): Behavior[T] = {
+  override def unstash(behavior: Behavior[T], numberOfMessages: Int, wrap: T => T): Behavior[T] = {
     if (isEmpty)
       behavior // optimization
     else {
       val iter = new Iterator[T] {
         override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
-        override def next(): T = wrap(StashBufferImpl.this.dropHead())
-      }.take(numberOfMessages)
+        override def next(): T = {
+          val next = StashBufferImpl.this.dropHeadForUnstash()
+          unstashed(ctx, next)
+          wrap(next.message)
+        }
+      }.take(math.min(numberOfMessages, size))
       interpretUnstashedMessages(behavior, ctx, iter)
     }
   }
@@ -178,15 +191,18 @@ import akka.util.ConstantFun
       scalaCtx.system.deadLetters ! DeadLetter(msg, untypedDeadLetters, ctx.asScala.self.toUntyped))
   }
 
-  override def unstash(
-      ctx: javadsl.ActorContext[T],
-      behavior: Behavior[T],
-      numberOfMessages: Int,
-      wrap: JFunction[T, T]): Behavior[T] =
-    unstash(ctx.asScala, behavior, numberOfMessages, x => wrap.apply(x))
+  override def unstash(behavior: Behavior[T], numberOfMessages: Int, wrap: JFunction[T, T]): Behavior[T] =
+    unstash(behavior, numberOfMessages, x => wrap.apply(x))
 
   override def toString: String =
     s"StashBuffer($size/$capacity)"
+
+  @InternalStableApi
+  private[akka] def unstashed(@unused ctx: ActorContext[T], @unused node: Node[T]): Unit = ()
+
+  @InternalStableApi
+  private def stashCleared(@unused ctx: ActorContext[T]): Unit = ()
+
 }
 
 /**

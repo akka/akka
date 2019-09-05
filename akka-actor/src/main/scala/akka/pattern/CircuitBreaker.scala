@@ -23,7 +23,6 @@ import scala.concurrent.TimeoutException
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
 import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
-
 import com.github.ghik.silencer.silent
 
 import scala.compat.java8.FutureConverters
@@ -196,14 +195,14 @@ class CircuitBreaker(
    * Holds reference to current state of CircuitBreaker - *access only via helper methods*
    */
   @volatile
-  @silent
+  @silent("never used")
   private[this] var _currentStateDoNotCallMeDirectly: State = Closed
 
   /**
    * Holds reference to current resetTimeout of CircuitBreaker - *access only via helper methods*
    */
   @volatile
-  @silent
+  @silent("never used")
   private[this] var _currentResetTimeoutDoNotCallMeDirectly: FiniteDuration = resetTimeout
 
   /**
@@ -440,15 +439,6 @@ class CircuitBreaker(
    * @param callback Handler to be invoked on state change
    * @return CircuitBreaker for fluent usage
    */
-  @deprecated("Use addOnOpenListener instead", "2.5.0")
-  def onOpen(callback: Runnable): CircuitBreaker = addOnOpenListener(callback)
-
-  /**
-   * Java API for onOpen
-   *
-   * @param callback Handler to be invoked on state change
-   * @return CircuitBreaker for fluent usage
-   */
   def addOnOpenListener(callback: Runnable): CircuitBreaker = {
     Open.addListener(callback)
     this
@@ -462,15 +452,6 @@ class CircuitBreaker(
    * @return CircuitBreaker for fluent usage
    */
   def onHalfOpen(callback: => Unit): CircuitBreaker = addOnHalfOpenListener(new Runnable { def run = callback })
-
-  /**
-   * JavaAPI for onHalfOpen
-   *
-   * @param callback Handler to be invoked on state change
-   * @return CircuitBreaker for fluent usage
-   */
-  @deprecated("Use addOnHalfOpenListener instead", "2.5.0")
-  def onHalfOpen(callback: Runnable): CircuitBreaker = addOnHalfOpenListener(callback)
 
   /**
    * JavaAPI for onHalfOpen
@@ -492,15 +473,6 @@ class CircuitBreaker(
    * @return CircuitBreaker for fluent usage
    */
   def onClose(callback: => Unit): CircuitBreaker = addOnCloseListener(new Runnable { def run = callback })
-
-  /**
-   * JavaAPI for onClose
-   *
-   * @param callback Handler to be invoked on state change
-   * @return CircuitBreaker for fluent usage
-   */
-  @deprecated("Use addOnCloseListener instead", "2.5.0")
-  def onClose(callback: Runnable): CircuitBreaker = addOnCloseListener(callback)
 
   /**
    * JavaAPI for onClose

@@ -13,7 +13,7 @@ import akka.annotation.InternalApi
 /**
  * An input port of a StreamLayout.Module. This type logically belongs
  * into the impl package but must live here due to how `sealed` works.
- * It is also used in the Java DSL for “untyped Inlets” as a work-around
+ * It is also used in the Java DSL for “classic Inlets” as a work-around
  * for otherwise unreasonable existential types.
  */
 sealed abstract class InPort { self: Inlet[_] =>
@@ -39,7 +39,7 @@ sealed abstract class InPort { self: Inlet[_] =>
 /**
  * An output port of a StreamLayout.Module. This type logically belongs
  * into the impl package but must live here due to how `sealed` works.
- * It is also used in the Java DSL for “untyped Outlets” as a work-around
+ * It is also used in the Java DSL for “classic Outlets” as a work-around
  * for otherwise unreasonable existential types.
  */
 sealed abstract class OutPort { self: Outlet[_] =>

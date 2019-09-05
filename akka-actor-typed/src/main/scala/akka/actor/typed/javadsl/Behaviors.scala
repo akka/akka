@@ -8,7 +8,13 @@ import java.util.Collections
 import java.util.function.{ Supplier, Function => JFunction }
 
 import akka.actor.typed._
-import akka.actor.typed.internal.{ BehaviorImpl, Supervisor, TimerSchedulerImpl, WithMdcBehaviorInterceptor }
+import akka.actor.typed.internal.{
+  BehaviorImpl,
+  StashBufferImpl,
+  Supervisor,
+  TimerSchedulerImpl,
+  WithMdcBehaviorInterceptor
+}
 import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
 import akka.util.unused
@@ -39,6 +45,14 @@ object Behaviors {
    */
   def setup[T](factory: akka.japi.function.Function[ActorContext[T], Behavior[T]]): Behavior[T] =
     BehaviorImpl.DeferredBehavior(ctx => factory.apply(ctx.asJava))
+
+  /**
+   * Support for stashing messages to unstash at a later timej.
+   */
+  def withStash[T](capacity: Int, factory: java.util.function.Function[StashBuffer[T], Behavior[T]]): Behavior[T] =
+    setup(ctx => {
+      factory(StashBufferImpl[T](ctx.asScala, capacity))
+    })
 
   /**
    * Return this behavior from message processing in order to advise the
@@ -182,9 +196,15 @@ object Behaviors {
    * monitor [[akka.actor.typed.ActorRef]] before invoking the wrapped behavior. The
    * wrapped behavior can evolve (i.e. return different behavior) without needing to be
    * wrapped in a `monitor` call again.
+   *
+   * @param interceptMessageClass Ensures that the messages of this class or a subclass thereof will be
+   *                              sent to the `monitor`. Other message types (e.g. a private protocol)
+   *                              will bypass the interceptor and be continue to the inner behavior.
+   * @param monitor The messages will also be sent to this `ActorRef`
+   * @param behavior The inner behavior that is decorated
    */
-  def monitor[T](monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
-    scaladsl.Behaviors.monitor(monitor, behavior)
+  def monitor[T](interceptMessageClass: Class[T], monitor: ActorRef[T], behavior: Behavior[T]): Behavior[T] =
+    scaladsl.Behaviors.monitor(monitor, behavior)(ClassTag(interceptMessageClass))
 
   /**
    * Behavior decorator that logs all messages to the [[akka.actor.typed.Behavior]] using the provided
@@ -250,34 +270,39 @@ object Behaviors {
   }
 
   /**
-   * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
+   * Transform the incoming messages by placing a funnel in front of the wrapped `Behavior`: the supplied
    * PartialFunction decides which message to pull in (those that it is defined
    * at) and may transform the incoming message to place them into the wrapped
    * Behavior’s type hierarchy. Signals are not transformed.
    *
    * Example:
    * {{{
-   * Behavior<String> s = Behaviors.receive((ctx, msg) -> {
-   *     System.out.println(msg);
-   *     return Behaviors.same();
-   *   });
-   * Behavior<Number> n = Behaviors.widened(s, pf -> pf.
-   *         match(BigInteger.class, i -> "BigInteger(" + i + ")").
-   *         match(BigDecimal.class, d -> "BigDecimal(" + d + ")")
+   *   Behavior<String> s = Behaviors.receive((ctx, msg) -> {
+   *      return Behaviors.same();
+   *    });
+   *   Behavior<Number> n = Behaviors.transformMessages(Number.class, s, pf ->
+   *     pf
+   *         .match(BigInteger.class, i -> "BigInteger(" + i + ")")
+   *         .match(BigDecimal.class, d -> "BigDecimal(" + d + ")")
    *         // drop all other kinds of Number
-   *     );
+   *       );
    * }}}
    *
-   *
+   * @param interceptMessageClass Ensures that only messages of this class or a subclass thereof will be
+   *                              intercepted. Other message types (e.g. a private protocol) will bypass
+   *                              the interceptor and be continue to the inner behavior untouched.
    * @param behavior
    *          the behavior that will receive the selected messages
    * @param selector
    *          a partial function builder for describing the selection and
    *          transformation
-   * @return a behavior of the widened type
+   * @return a behavior of the `Outer` type
    */
-  def widened[T, U](behavior: Behavior[T], selector: JFunction[PFBuilder[U, T], PFBuilder[U, T]]): Behavior[U] =
-    BehaviorImpl.widened(behavior, selector.apply(new PFBuilder).build())
+  def transformMessages[Outer, Inner](
+      interceptMessageClass: Class[Outer],
+      behavior: Behavior[Inner],
+      selector: JFunction[PFBuilder[Outer, Inner], PFBuilder[Outer, Inner]]): Behavior[Outer] =
+    BehaviorImpl.transformMessages(behavior, selector.apply(new PFBuilder).build())(ClassTag(interceptMessageClass))
 
   /**
    * Support for scheduled `self` messages in an actor.
@@ -292,6 +317,9 @@ object Behaviors {
   /**
    * Per message MDC (Mapped Diagnostic Context) logging.
    *
+   * @param interceptMessageClass Ensures that only messages of this class or a subclass thereof will be
+   *                              intercepted. Other message types (e.g. a private protocol) will bypass
+   *                              the interceptor and be continue to the inner behavior untouched.
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
    *                 each message processing by the inner behavior is done.
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
@@ -300,21 +328,28 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
+      interceptMessageClass: Class[T],
       mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
       behavior: Behavior[T]): Behavior[T] =
-    withMdc(Collections.emptyMap[String, Any], mdcForMessage, behavior)
+    withMdc(interceptMessageClass, Collections.emptyMap[String, Any], mdcForMessage, behavior)
 
   /**
    * Static MDC (Mapped Diagnostic Context)
    *
+   * @param interceptMessageClass Ensures that only messages of this class or a subclass thereof will be
+   *                              intercepted. Other message types (e.g. a private protocol) will bypass
+   *                              the interceptor and be continue to the inner behavior untouched.
    * @param staticMdc This MDC is setup in the logging context for every message
    * @param behavior The actual behavior handling the messages, the MDC is used for the log entries logged through
    *                 `ActorContext.log`
    *
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
-  def withMdc[T](staticMdc: java.util.Map[String, Any], behavior: Behavior[T]): Behavior[T] =
-    withMdc(staticMdc, null, behavior)
+  def withMdc[T](
+      interceptMessageClass: Class[T],
+      staticMdc: java.util.Map[String, Any],
+      behavior: Behavior[T]): Behavior[T] =
+    withMdc(interceptMessageClass, staticMdc, null, behavior)
 
   /**
    * Combination of static and per message MDC (Mapped Diagnostic Context).
@@ -325,6 +360,9 @@ object Behaviors {
    *
    * * The `staticMdc` or `mdcForMessage` may be empty.
    *
+   * @param interceptMessageClass Ensures that only messages of this class or a subclass thereof will be
+   *                              intercepted. Other message types (e.g. a private protocol) will bypass
+   *                              the interceptor and be continue to the inner behavior untouched.
    * @param staticMdc A static MDC applied for each message
    * @param mdcForMessage Is invoked before each message is handled, allowing to setup MDC, MDC is cleared after
    *                 each message processing by the inner behavior is done.
@@ -334,6 +372,7 @@ object Behaviors {
    * See also [[akka.actor.typed.Logger.withMdc]]
    */
   def withMdc[T](
+      interceptMessageClass: Class[T],
       staticMdc: java.util.Map[String, Any],
       mdcForMessage: akka.japi.function.Function[T, java.util.Map[String, Any]],
       behavior: Behavior[T]): Behavior[T] = {
@@ -349,7 +388,7 @@ object Behaviors {
         asScalaMap(mdcForMessage.apply(message))
       }
 
-    WithMdcBehaviorInterceptor[T](asScalaMap(staticMdc), mdcForMessageFun, behavior)
+    WithMdcBehaviorInterceptor[T](asScalaMap(staticMdc), mdcForMessageFun, behavior)(ClassTag(interceptMessageClass))
   }
 
 }

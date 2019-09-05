@@ -46,6 +46,14 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Sourc
     new SourceWithContext(delegate.withAttributes(attr))
 
   /**
+   * Context-preserving variant of [[akka.stream.scaladsl.Source.mapMaterializedValue]].
+   *
+   * @see [[akka.stream.scaladsl.Source.mapMaterializedValue]]
+   */
+  def mapMaterializedValue[Mat2](f: Mat => Mat2): SourceWithContext[Out, Ctx, Mat2] =
+    new SourceWithContext(delegate.mapMaterializedValue(f))
+
+  /**
    * Connect this [[akka.stream.scaladsl.SourceWithContext]] to a [[akka.stream.scaladsl.Sink]],
    * concatenating the processing steps of both.
    */
@@ -62,6 +70,9 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Sourc
   /**
    * Connect this [[akka.stream.scaladsl.SourceWithContext]] to a [[akka.stream.scaladsl.Sink]] and run it.
    * The returned value is the materialized value of the `Sink`.
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
    */
   def runWith[Mat2](sink: Graph[SinkShape[(Out, Ctx)], Mat2])(implicit materializer: Materializer): Mat2 =
     delegate.runWith(sink)

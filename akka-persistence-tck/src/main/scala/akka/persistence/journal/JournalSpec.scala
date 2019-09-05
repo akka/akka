@@ -7,19 +7,19 @@ package akka.persistence.journal
 import akka.persistence.scalatest.{ MayVerb, OptionalTests }
 
 import scala.concurrent.duration._
-import scala.collection.immutable.Seq
-
 import akka.actor._
 import akka.persistence._
 import akka.persistence.JournalProtocol._
 import akka.testkit._
-
+import akka.util.unused
 import com.typesafe.config._
 
 object JournalSpec {
   val config: Config = ConfigFactory.parseString(s"""
     akka.persistence.publish-plugin-commands = on
     akka.actor {
+      serialize-messages = off
+      serialize-creators = off
       serializers {
         persistence-tck-test = "${classOf[TestSerializer].getName}"
       }
@@ -68,7 +68,7 @@ abstract class JournalSpec(config: Config)
    * test case. `pid` is the `persistenceId` that will be used in the test.
    * This method may be needed to clean pre-existing events from the log.
    */
-  def preparePersistenceId(pid: String): Unit = ()
+  def preparePersistenceId(@unused pid: String): Unit = ()
 
   /**
    * Implementation may override and return false if it does not
@@ -79,7 +79,7 @@ abstract class JournalSpec(config: Config)
   def journal: ActorRef =
     extension.journalFor(null)
 
-  def replayedMessage(snr: Long, deleted: Boolean = false, confirms: Seq[String] = Nil): ReplayedMessage =
+  def replayedMessage(snr: Long, deleted: Boolean = false): ReplayedMessage =
     ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, "", deleted, Actor.noSender, writerUuid))
 
   def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String): Unit = {
@@ -203,7 +203,7 @@ abstract class JournalSpec(config: Config)
         receiverProbe.expectMsg(replayedMessage(i))
       }
 
-      receiverProbe2.expectNoMsg(200.millis)
+      receiverProbe2.expectNoMessage(200.millis)
     }
 
     "not reset highestSequenceNr after message deletion" in {

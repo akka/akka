@@ -234,7 +234,7 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
         def behv(count: Int): Behavior[Wrapped] =
           Behaviors
-            .receiveMessage[Wrapped] { wrapped =>
+            .receiveMessage[Wrapped] { _ =>
               probe.ref ! count
               if (count == 3) {
                 throw new TestException("boom")

@@ -6,8 +6,7 @@ package akka.actor.typed
 
 import akka.actor.typed.scaladsl.{ Behaviors => SBehaviors }
 import akka.actor.typed.scaladsl.{ AbstractBehavior => SAbstractBehavior }
-import akka.actor.typed.javadsl.{ ActorContext => JActorContext, Behaviors => JBehaviors }
-import akka.japi.function.{ Function => F1e, Function2 => F2, Procedure2 => P2 }
+import akka.actor.typed.javadsl.{ Behaviors => JBehaviors }
 import akka.japi.pf.{ FI, PFBuilder }
 import java.util.function.{ Function => F1 }
 
@@ -17,9 +16,11 @@ import akka.actor.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
+import com.github.ghik.silencer.silent
 
 object BehaviorSpec {
   sealed trait Command {
+    @silent
     def expectedResponse(context: TypedActorContext[Command]): Seq[Event] = Nil
   }
   case object GetSelf extends Command {
@@ -70,7 +71,9 @@ object BehaviorSpec {
   trait Common extends WordSpecLike with Matchers with TypeCheckedTripleEquals {
     type Aux >: Null <: AnyRef
     def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux)
+    @silent("never used")
     def checkAux(signal: Signal, aux: Aux): Unit = ()
+    @silent("never used")
     def checkAux(command: Command, aux: Aux): Unit = ()
 
     case class Init(behv: Behavior[Command], inbox: TestInbox[Event], aux: Aux) {
@@ -94,7 +97,7 @@ object BehaviorSpec {
       Init(behv, inbox, aux)
     }
 
-    def mkCtx(requirePreStart: Boolean = false): Setup =
+    def mkCtx(): Setup =
       init().mkCtx()
 
     implicit class Check(val setup: Setup) {
@@ -187,7 +190,7 @@ object BehaviorSpec {
   trait Lifecycle extends Common {
     "Lifecycle" must {
       "must react to PreStart" in {
-        mkCtx(requirePreStart = true)
+        pending
       }
 
       "must react to PostStop" in {
@@ -469,11 +472,11 @@ class MutableScalaBehaviorSpec extends Messages with Become with Stoppable {
     }
 }
 
-class WidenedScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with Siphon {
+class TransformMessagesScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse with Siphon {
 
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    val inbox = TestInbox[Command]("widenedListener")
-    super.behavior(monitor)._1.widen[Command] { case c => inbox.ref ! c; c } -> inbox
+    val inbox = TestInbox[Command]("transformMessagesListener")
+    super.behavior(monitor)._1.transformMessages[Command] { case c => inbox.ref ! c; c } -> inbox
   }
 }
 
@@ -586,10 +589,10 @@ class ImmutableJavaBehaviorSpec extends Messages with Become with Stoppable {
     }
 }
 
-class WidenedJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse with Siphon {
+class TransformMessagesJavaBehaviorSpec extends ImmutableWithSignalJavaBehaviorSpec with Reuse with Siphon {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    val inbox = TestInbox[Command]("widenedListener")
-    JBehaviors.widened(super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x => {
+    val inbox = TestInbox[Command]("transformMessagesListener")
+    JBehaviors.transformMessages(classOf[Command], super.behavior(monitor)._1, pf(_.`match`(classOf[Command], fi(x => {
       inbox.ref ! x
       x
     })))) -> inbox

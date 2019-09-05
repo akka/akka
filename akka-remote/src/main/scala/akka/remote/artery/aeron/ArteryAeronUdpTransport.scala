@@ -68,7 +68,6 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
 
   private val taskRunner = new TaskRunner(system, settings.Advanced.Aeron.IdleCpuLevel)
 
-  private def inboundChannel = s"aeron:udp?endpoint=${bindAddress.address.host.get}:${bindAddress.address.port.get}"
   private def outboundChannel(a: Address) = s"aeron:udp?endpoint=${a.host.get}:${a.port.get}"
 
   override protected def startTransport(): Unit = {
@@ -301,7 +300,10 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         createFlightRecorderEventSink()))
   }
 
-  private def aeronSource(streamId: Int, pool: EnvelopeBufferPool): Source[EnvelopeBuffer, AeronSource.AeronLifecycle] =
+  private def aeronSource(
+      streamId: Int,
+      pool: EnvelopeBufferPool,
+      inboundChannel: String): Source[EnvelopeBuffer, AeronSource.AeronLifecycle] =
     Source.fromGraph(
       new AeronSource(
         inboundChannel,
@@ -317,21 +319,37 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
         settings.Advanced.Aeron.IdleCpuLevel < 5) 0 // also don't spin for small IdleCpuLevels
     else 50 * settings.Advanced.Aeron.IdleCpuLevel - 240
 
-  override protected def runInboundStreams(): Unit = {
-    runInboundControlStream()
-    runInboundOrdinaryMessagesStream()
+  override protected def bindInboundStreams(): (Int, Int) = {
+    (settings.Canonical.Port, settings.Bind.Port) match {
+      case (0, 0) =>
+        val p = autoSelectPort(settings.Bind.Hostname)
+        (p, p)
+      case (0, _) =>
+        (settings.Bind.Port, settings.Bind.Port)
+      case (_, 0) =>
+        (settings.Canonical.Port, autoSelectPort(settings.Bind.Hostname))
+      case _ =>
+        (settings.Canonical.Port, settings.Bind.Port)
+    }
+  }
+
+  override protected def runInboundStreams(port: Int, bindPort: Int): Unit = {
+    val inboundChannel = s"aeron:udp?endpoint=${settings.Bind.Hostname}:$bindPort"
+
+    runInboundControlStream(inboundChannel)
+    runInboundOrdinaryMessagesStream(inboundChannel)
 
     if (largeMessageChannelEnabled) {
-      runInboundLargeMessagesStream()
+      runInboundLargeMessagesStream(inboundChannel)
     }
     blockUntilChannelActive()
   }
 
-  private def runInboundControlStream(): Unit = {
+  private def runInboundControlStream(inboundChannel: String): Unit = {
     if (isShutdown) throw ShuttingDown
 
     val (resourceLife, ctrl, completed) =
-      aeronSource(ControlStreamId, envelopeBufferPool)
+      aeronSource(ControlStreamId, envelopeBufferPool, inboundChannel)
         .via(inboundFlow(settings, NoInboundCompressions))
         .toMat(inboundControlSink)({ case (a, (c, d)) => (a, c, d) })
         .run()(controlMaterializer)
@@ -339,15 +357,15 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     attachControlMessageObserver(ctrl)
 
     updateStreamMatValues(ControlStreamId, resourceLife, completed)
-    attachInboundStreamRestart("Inbound control stream", completed, () => runInboundControlStream())
+    attachInboundStreamRestart("Inbound control stream", completed, () => runInboundControlStream(inboundChannel))
   }
 
-  private def runInboundOrdinaryMessagesStream(): Unit = {
+  private def runInboundOrdinaryMessagesStream(inboundChannel: String): Unit = {
     if (isShutdown) throw ShuttingDown
 
     val (resourceLife, inboundCompressionAccess, completed) =
       if (inboundLanes == 1) {
-        aeronSource(OrdinaryStreamId, envelopeBufferPool)
+        aeronSource(OrdinaryStreamId, envelopeBufferPool, inboundChannel)
           .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
           .toMat(inboundSink(envelopeBufferPool))({ case ((a, b), c) => (a, b, c) })
           .run()(materializer)
@@ -355,7 +373,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       } else {
         val laneKillSwitch = KillSwitches.shared("laneKillSwitch")
         val laneSource: Source[InboundEnvelope, (AeronLifecycle, InboundCompressionAccess)] =
-          aeronSource(OrdinaryStreamId, envelopeBufferPool)
+          aeronSource(OrdinaryStreamId, envelopeBufferPool, inboundChannel)
             .via(laneKillSwitch.flow)
             .viaMat(inboundFlow(settings, _inboundCompressions))(Keep.both)
             .via(Flow.fromGraph(new DuplicateHandshakeReq(inboundLanes, this, system, envelopeBufferPool)))
@@ -395,19 +413,25 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     setInboundCompressionAccess(inboundCompressionAccess)
 
     updateStreamMatValues(OrdinaryStreamId, resourceLife, completed)
-    attachInboundStreamRestart("Inbound message stream", completed, () => runInboundOrdinaryMessagesStream())
+    attachInboundStreamRestart(
+      "Inbound message stream",
+      completed,
+      () => runInboundOrdinaryMessagesStream(inboundChannel))
   }
 
-  private def runInboundLargeMessagesStream(): Unit = {
+  private def runInboundLargeMessagesStream(inboundChannel: String): Unit = {
     if (isShutdown) throw ShuttingDown
 
-    val (resourceLife, completed) = aeronSource(LargeStreamId, largeEnvelopeBufferPool)
+    val (resourceLife, completed) = aeronSource(LargeStreamId, largeEnvelopeBufferPool, inboundChannel)
       .via(inboundLargeFlow(settings))
       .toMat(inboundSink(largeEnvelopeBufferPool))(Keep.both)
       .run()(materializer)
 
     updateStreamMatValues(LargeStreamId, resourceLife, completed)
-    attachInboundStreamRestart("Inbound large message stream", completed, () => runInboundLargeMessagesStream())
+    attachInboundStreamRestart(
+      "Inbound large message stream",
+      completed,
+      () => runInboundLargeMessagesStream(inboundChannel))
   }
 
   private def updateStreamMatValues(
@@ -437,4 +461,14 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
       }(system.dispatchers.internalDispatcher)
   }
 
+  def autoSelectPort(hostname: String): Int = {
+    import java.nio.channels.DatagramChannel
+    import java.net.InetSocketAddress
+
+    val socket = DatagramChannel.open().socket()
+    socket.bind(new InetSocketAddress(hostname, 0))
+    val port = socket.getLocalPort
+    socket.close()
+    port
+  }
 }

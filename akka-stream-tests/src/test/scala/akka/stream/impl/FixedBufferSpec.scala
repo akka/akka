@@ -4,9 +4,13 @@
 
 package akka.stream.impl
 
-import akka.stream.testkit.StreamSpec
+import akka.stream.ActorAttributes
+import akka.stream.ActorAttributes.MaxFixedBufferSize
 import akka.stream.ActorMaterializerSettings
+import akka.stream.testkit.StreamSpec
+import com.github.ghik.silencer.silent
 
+@silent("deprecated")
 class FixedBufferSpec extends StreamSpec {
 
   for (size <- List(1, 3, 4)) {
@@ -114,10 +118,10 @@ class FixedBufferSpec extends StreamSpec {
   }
 
   "Buffer factory" must {
-    val default = ActorMaterializerSettings(system)
+    val default = ActorMaterializerSettings(system).toAttributes
 
     "default to one billion for maxFixedBufferSize" in {
-      default.maxFixedBufferSize should ===(1000000000)
+      default.mandatoryAttribute[MaxFixedBufferSize].size should ===(1000000000)
     }
 
     "produce BoundedBuffers when capacity > max-fixed-buffer-size" in {
@@ -130,7 +134,7 @@ class FixedBufferSpec extends StreamSpec {
     }
 
     "produce FixedSizeBuffers when max-fixed-buffer-size < BoundedBufferSize" in {
-      val settings = default.withMaxFixedBufferSize(9)
+      val settings = default and ActorAttributes.maxFixedBufferSize(9)
       Buffer(5, settings) shouldBe a[FixedSizeBuffer.ModuloFixedSizeBuffer[_]]
       Buffer(10, settings) shouldBe a[FixedSizeBuffer.ModuloFixedSizeBuffer[_]]
       Buffer(16, settings) shouldBe a[FixedSizeBuffer.PowerOfTwoFixedSizeBuffer[_]]

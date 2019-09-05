@@ -7,24 +7,22 @@ package akka.stream.scaladsl
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-class FlowExtrapolateSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowExtrapolateSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+    # see the ordering guarantee needed by the for loop below
+    akka.stream.materializer.debug.fuzzing-mode = off
+  """) {
 
   "Extrapolate" must {
 
     "pass-through elements unchanged when there is no rate difference" in {
-      // Shadow the fuzzed materializer (see the ordering guarantee needed by the for loop below).
-      implicit val materializer = ActorMaterializer(settings.withFuzzing(false))
-
       val publisher = TestPublisher.probe[Int]()
       val subscriber = TestSubscriber.probe[Int]()
 

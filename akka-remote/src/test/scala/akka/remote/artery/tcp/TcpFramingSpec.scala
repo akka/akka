@@ -5,11 +5,6 @@
 package akka.remote.artery
 package tcp
 
-import scala.util.Random
-
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.impl.io.ByteStringParser.ParsingException
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Framing.FramingException
@@ -19,15 +14,16 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.util.ByteString
 
-class TcpFramingSpec extends AkkaSpec with ImplicitSender {
-  import TcpFraming.encodeFrameHeader
+import scala.util.Random
 
-  private val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  private implicit val mat = ActorMaterializer(matSettings)(system)
+class TcpFramingSpec extends AkkaSpec("""
+    akka.stream.materializer.debug.fuzzing-mode = on
+  """) with ImplicitSender {
+  import TcpFraming.encodeFrameHeader
 
   private val afr = IgnoreEventSink
 
-  private val framingFlow = Flow[ByteString].via(new TcpFraming(afr))
+  private val framingFlow = Flow[ByteString].via(new TcpFraming(() => afr))
 
   private val payload5 = ByteString((1 to 5).map(_.toByte).toArray)
 

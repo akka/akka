@@ -204,6 +204,7 @@ akka {
 }
 ```
 
+<a id="logging-remote"></a>
 ### Auxiliary remote logging options
 
 If you want to see all messages that are sent through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are sent by the transport layer, not by an actor.
@@ -324,7 +325,6 @@ Instead log messages are printed to stdout (System.out). The default log level f
 stdout logger is `WARNING` and it can be silenced completely by setting
 `akka.stdout-loglevel=OFF`.
 
-<a id="slf4j"></a>
 ## SLF4J
 
 Akka provides a logger for [SLF4J](http://www.slf4j.org/). This module is available in the 'akka-slf4j.jar'.
@@ -532,7 +532,7 @@ trigger emails and other notifications immediately.
 Markers are available through the LoggingAdapters, when obtained via `Logging.withMarker`.
 The first argument passed into all log calls then should be a `akka.event.LogMarker`.
 
-The slf4j bridge provided by akka in `akka-slf4j` will automatically pick up this marker value and make it available to SLF4J.
+The slf4j bridge provided by Akka in `akka-slf4j` will automatically pick up this marker value and make it available to SLF4J.
 For example you could use it like this:
 
 ```
@@ -550,7 +550,7 @@ A more advanced (including most Akka added information) example pattern would be
 It is also possible to use the `org.slf4j.Marker` with the `LoggingAdapter` when using slf4j.
 
 Since the akka-actor library avoids depending on any specific logging library, the support for this is included in `akka-slf4j`,
-which provides the `Slf4jLogMarker` type which can be passed in as first argument instead of the logging framework agnostic LogMarker 
+which provides the `Slf4jLogMarker` type which can be passed in as first argument instead of the logging framework agnostic LogMarker
 type from `akka-actor`. The most notable difference between the two is that slf4j's Markers can have child markers, so one can
 rely more information using them rather than just a single string.
 

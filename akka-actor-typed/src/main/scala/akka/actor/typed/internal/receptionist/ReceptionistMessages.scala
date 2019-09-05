@@ -8,7 +8,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.annotation.InternalApi
-
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -43,7 +42,11 @@ private[akka] object ReceptionistMessages {
 
   final case class Find[T] private[akka] (key: ServiceKey[T], replyTo: ActorRef[Receptionist.Listing]) extends Command
 
-  final case class Listing[T] private[akka] (key: ServiceKey[T], _serviceInstances: Set[ActorRef[T]])
+  final case class Listing[T] private[akka] (
+      key: ServiceKey[T],
+      _serviceInstances: Set[ActorRef[T]],
+      _allServiceInstances: Set[ActorRef[T]],
+      servicesWereAddedOrRemoved: Boolean)
       extends Receptionist.Listing {
 
     def isForKey(key: ServiceKey[_]): Boolean = key == this.key
@@ -56,6 +59,15 @@ private[akka] object ReceptionistMessages {
 
     def getServiceInstances[M](key: ServiceKey[M]): java.util.Set[ActorRef[M]] =
       serviceInstances(key).asJava
+
+    override def allServiceInstances[M](key: ServiceKey[M]): Set[ActorRef[M]] = {
+      if (key != this.key)
+        throw new IllegalArgumentException(s"Wrong key [$key] used, must use listing key [${this.key}]")
+      _allServiceInstances.asInstanceOf[Set[ActorRef[M]]]
+    }
+
+    override def getAllServiceInstances[M](key: ServiceKey[M]): java.util.Set[ActorRef[M]] =
+      allServiceInstances(key).asJava
   }
 
   final case class Subscribe[T] private[akka] (key: ServiceKey[T], subscriber: ActorRef[Receptionist.Listing])

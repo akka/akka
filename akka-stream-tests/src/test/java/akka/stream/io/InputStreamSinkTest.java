@@ -41,7 +41,7 @@ public class InputStreamSinkTest extends StreamTest {
 
     final Sink<ByteString, InputStream> sink = StreamConverters.asInputStream(timeout);
     final List<ByteString> list = Collections.singletonList(ByteString.fromString("a"));
-    final InputStream stream = Source.from(list).runWith(sink, materializer);
+    final InputStream stream = Source.from(list).runWith(sink, system);
 
     byte[] a = new byte[1];
     stream.read(a);

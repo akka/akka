@@ -43,7 +43,7 @@ object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
   nodeConfig(first, second, third)(ConfigFactory.parseString("akka.cluster.roles = [worker]"))
 
   object ImportantSingleton {
-    case class Response(msg: Any, address: Address)
+    case class Response(msg: Any, address: Address) extends JavaSerializable
 
     def props(): Props = Props(new ImportantSingleton())
   }

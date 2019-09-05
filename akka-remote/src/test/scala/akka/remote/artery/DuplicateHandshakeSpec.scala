@@ -8,8 +8,8 @@ import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.remote.UniqueAddress
 import akka.remote.artery.OutboundHandshake.HandshakeReq
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+import akka.serialization.SerializationExtension
+import akka.serialization.SerializerWithStringManifest
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.TestSubscriber
@@ -18,13 +18,11 @@ import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.util.OptionVal
-import akka.serialization.SerializationExtension
-import akka.serialization.SerializerWithStringManifest
 
-class DuplicateHandshakeSpec extends AkkaSpec with ImplicitSender {
+class DuplicateHandshakeSpec extends AkkaSpec("""
+      akka.stream.materializer.debug.fuzzing-mode = on
+  """) with ImplicitSender {
 
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
   val pool = new EnvelopeBufferPool(1034 * 1024, 128)
   val serialization = SerializationExtension(system)
 

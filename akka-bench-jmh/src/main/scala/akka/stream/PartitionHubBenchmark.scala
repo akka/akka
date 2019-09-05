@@ -38,8 +38,6 @@ class PartitionHubBenchmark {
 
   implicit val system = ActorSystem("PartitionHubBenchmark", config)
 
-  var materializer: ActorMaterializer = _
-
   @Param(Array("2", "5", "10", "20", "30"))
   var NumberOfStreams = 0
 
@@ -50,9 +48,8 @@ class PartitionHubBenchmark {
 
   @Setup
   def setup(): Unit = {
-    val settings = ActorMaterializerSettings(system)
-    materializer = ActorMaterializer(settings)
-
+    // eager init of materializer
+    SystemMaterializer(system).materializer
     testSource = Source.fromGraph(new BenchTestSource(OperationsPerInvocation))
   }
 
@@ -69,12 +66,12 @@ class PartitionHubBenchmark {
 
     val source = testSource.runWith(
       PartitionHub.sink[java.lang.Integer](
-        (size, elem) => elem.intValue % NumberOfStreams,
+        (_, elem) => elem.intValue % NumberOfStreams,
         startAfterNrOfConsumers = NumberOfStreams,
-        bufferSize = BufferSize))(materializer)
+        bufferSize = BufferSize))
 
     for (_ <- 0 until NumberOfStreams)
-      source.runWith(new LatchSink(N / NumberOfStreams, latch))(materializer)
+      source.runWith(new LatchSink(N / NumberOfStreams, latch))
 
     if (!latch.await(30, TimeUnit.SECONDS)) {
       dumpMaterializer()
@@ -90,11 +87,10 @@ class PartitionHubBenchmark {
 
     val source = testSource.runWith(
       Sink.fromGraph(
-        new FixedSizePartitionHub(_.intValue % NumberOfStreams, lanes = NumberOfStreams, bufferSize = BufferSize)))(
-      materializer)
+        new FixedSizePartitionHub(_.intValue % NumberOfStreams, lanes = NumberOfStreams, bufferSize = BufferSize)))
 
     for (_ <- 0 until NumberOfStreams)
-      source.runWith(new LatchSink(N / NumberOfStreams, latch))(materializer)
+      source.runWith(new LatchSink(N / NumberOfStreams, latch))
 
     if (!latch.await(30, TimeUnit.SECONDS)) {
       dumpMaterializer()
@@ -103,8 +99,8 @@ class PartitionHubBenchmark {
   }
 
   private def dumpMaterializer(): Unit = {
-    implicit val ec = materializer.system.dispatcher
-    StreamTestKit.printDebugDump(materializer.supervisor)
+    implicit val ec = system.dispatcher
+    StreamTestKit.printDebugDump(ActorMaterializerHelper.downcast(SystemMaterializer(system).materializer).supervisor)
   }
 
 }

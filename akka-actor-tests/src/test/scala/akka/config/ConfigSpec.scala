@@ -31,10 +31,8 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getBoolean("akka.daemonic") should ===(false)
 
-        // WARNING: This setting should be off in the default reference.conf, but should be on when running
-        // the test suite.
-        getBoolean("akka.actor.serialize-messages") should ===(true)
-        settings.SerializeAllMessages should ===(true)
+        getBoolean("akka.actor.serialize-messages") should ===(false)
+        settings.SerializeAllMessages should ===(false)
 
         getInt("akka.scheduler.ticks-per-wheel") should ===(512)
         getDuration("akka.scheduler.tick-duration", TimeUnit.MILLISECONDS) should ===(10L)
@@ -76,6 +74,9 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
 
         getBoolean("akka.coordinated-shutdown.run-by-actor-system-terminate") should ===(true)
         settings.CoordinatedShutdownRunByActorSystemTerminate should ===(true)
+
+        getBoolean("akka.actor.allow-java-serialization") should ===(false)
+        settings.AllowJavaSerialization should ===(false)
       }
 
       {

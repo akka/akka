@@ -20,6 +20,7 @@ object NullEmptyStateSpec {
   private val conf = ConfigFactory.parseString(s"""
       akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+      akka.persistence.journal.inmem.test-serialization = on
     """)
 }
 

@@ -50,8 +50,6 @@ class FlowMapBenchmark {
 
   implicit val system = ActorSystem("test", config)
 
-  var materializer: ActorMaterializer = _
-
   @Param(Array("true", "false"))
   var UseGraphStageIdentity = false
 
@@ -69,16 +67,14 @@ class FlowMapBenchmark {
 
   @Setup
   def setup(): Unit = {
-    val settings = ActorMaterializerSettings(system).withInputBuffer(initialInputBufferSize, initialInputBufferSize)
-
-    materializer = ActorMaterializer(settings)
-
     flow = mkMaps(Source.fromGraph(new BenchTestSource(100000)), numberOfMapOps) {
       if (UseGraphStageIdentity)
         GraphStages.identity[java.lang.Integer]
       else
         Flow[java.lang.Integer].map(identity)
     }
+    // eager init of materializer
+    SystemMaterializer(system).materializer
   }
 
   @TearDown
@@ -92,7 +88,10 @@ class FlowMapBenchmark {
     val lock = new Semaphore(1) // todo rethink what is the most lightweight way to await for a streams completion
     lock.acquire()
 
-    flow.runWith(Sink.onComplete(_ => lock.release()))(materializer)
+    flow
+      .toMat(Sink.onComplete(_ => lock.release()))(Keep.right)
+      .withAttributes(Attributes.inputBuffer(initialInputBufferSize, initialInputBufferSize))
+      .run()
 
     lock.acquire()
   }
@@ -100,7 +99,7 @@ class FlowMapBenchmark {
   // source setup
   private def mkMaps[O, Mat](source: Source[O, Mat], count: Int)(flow: => Graph[FlowShape[O, O], _]): Source[O, Mat] = {
     var f = source
-    for (i <- 1 to count)
+    for (_ <- 1 to count)
       f = f.via(flow)
     f
   }

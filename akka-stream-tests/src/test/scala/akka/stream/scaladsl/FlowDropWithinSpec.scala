@@ -4,13 +4,11 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.duration._
-import akka.stream.ActorMaterializer
 import akka.stream.testkit._
 
-class FlowDropWithinSpec extends StreamSpec {
+import scala.concurrent.duration._
 
-  implicit val materializer = ActorMaterializer()
+class FlowDropWithinSpec extends StreamSpec {
 
   "A DropWithin" must {
 

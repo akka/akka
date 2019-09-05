@@ -58,7 +58,8 @@ to `application`—may be overridden using the `config.resource` property
 If you are writing an Akka application, keep your configuration in
 `application.conf` at the root of the class path. If you are writing an
 Akka-based library, keep its configuration in `reference.conf` at the root
-of the JAR file.
+of the JAR file. It's not supported to override a config property owned by
+one library in a `reference.conf` of another library.
 
 @@@
 

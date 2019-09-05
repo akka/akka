@@ -4,11 +4,14 @@
 
 package akka.stream.scaladsl
 
+import akka.stream.ClosedShape
 import akka.stream.testkit.TestPublisher.Probe
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream.{ ActorMaterializer, ClosedShape }
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import org.scalacheck.Gen
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
@@ -23,8 +26,6 @@ object GraphZipLatestSpec {
 
 class GraphZipLatestSpec extends StreamSpec with ScalaCheckPropertyChecks with ScalaFutures {
   import GraphZipLatestSpec._
-
-  implicit val materializer = ActorMaterializer()
 
   "ZipLatest" must {
     "only emit when at least one pair is available" in assertAllStagesStopped {

@@ -36,7 +36,7 @@ object UseRoleIgnoredMultiJvmSpec extends MultiNodeConfig {
     }
   }
 
-  final case class Reply(routeeType: RouteeType, ref: ActorRef)
+  final case class Reply(routeeType: RouteeType, ref: ActorRef) extends JavaSerializable
 
   sealed trait RouteeType extends Serializable
   object PoolRoutee extends RouteeType

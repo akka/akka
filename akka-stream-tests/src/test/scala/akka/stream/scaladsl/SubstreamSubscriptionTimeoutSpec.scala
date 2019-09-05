@@ -4,36 +4,24 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import scala.concurrent.Await
-import scala.concurrent.duration._
 
-class SubstreamSubscriptionTimeoutSpec(conf: String) extends StreamSpec(conf) {
+class SubstreamSubscriptionTimeoutSpec extends StreamSpec("""
+  akka.stream.materializer {
+    initial-input-buffer-size = 2
+    max-input-buffer-size = 2
+    subscription-timeout {
+      mode = cancel
+      timeout = 300 ms
+    }
+  }
+""") {
   import FlowGroupBySpec._
-
-  def this(subscriptionTimeout: FiniteDuration) {
-    this(s"""
-          |akka.stream.materializer {
-          |  subscription-timeout {
-          |    mode = cancel
-          |
-          |    timeout = ${subscriptionTimeout.toMillis}ms
-          |  }
-          |}""".stripMargin)
-  }
-
-  def this() {
-    this(300.millis)
-  }
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val dispatcher = system.dispatcher
-  implicit val materializer = ActorMaterializer(settings)
+  import system.dispatcher
 
   "groupBy and splitwhen" must {
 

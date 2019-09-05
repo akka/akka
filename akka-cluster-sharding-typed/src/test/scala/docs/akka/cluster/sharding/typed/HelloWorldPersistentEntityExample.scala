@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import akka.serialization.jackson.CborSerializable
 
 object HelloWorldPersistentEntityExample {
 
@@ -48,16 +49,16 @@ object HelloWorldPersistentEntityExample {
   object HelloWorld {
 
     // Command
-    trait Command
+    trait Command extends CborSerializable
     final case class Greet(whom: String)(val replyTo: ActorRef[Greeting]) extends Command
     // Response
-    final case class Greeting(whom: String, numberOfPeople: Int)
+    final case class Greeting(whom: String, numberOfPeople: Int) extends CborSerializable
 
     // Event
-    final case class Greeted(whom: String)
+    final case class Greeted(whom: String) extends CborSerializable
 
     // State
-    private final case class KnownPeople(names: Set[String]) {
+    final case class KnownPeople(names: Set[String]) extends CborSerializable {
       def add(name: String): KnownPeople = copy(names = names + name)
 
       def numberOfPeople: Int = names.size

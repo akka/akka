@@ -26,7 +26,7 @@ private[akka] object BalancingRoutingLogic {
  * INTERNAL API
  * Selects the first routee, balancing will be done by the dispatcher.
  */
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 private[akka] final class BalancingRoutingLogic extends RoutingLogic {
   override def select(message: Any, routees: immutable.IndexedSeq[Routee]): Routee =

@@ -26,7 +26,6 @@ object ClusterSingletonApiSpec {
       akka.actor {
         provider = cluster
         serialize-messages = off
-        allow-java-serialization = off
 
         serializers {
           test = "akka.cluster.typed.ClusterSingletonApiSpec$$PingSerializer"

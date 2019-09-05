@@ -10,15 +10,16 @@ import akka.routing._
 import akka.event._
 import akka.util.Helpers
 import akka.util.Collections.EmptyImmutableSeq
-
 import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
+
 import akka.ConfigurationException
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.dispatch.Dispatchers
 import akka.serialization.Serialization
 import akka.util.OptionVal
 
@@ -415,7 +416,10 @@ private[akka] class LocalActorRefProvider private[akka] (
       terminationPromise.completeWith(causeOfTermination.future) // Signal termination downstream, idempotent
     }
 
-    @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
+    /**
+     * INTERNAL API
+     */
+    @InternalApi
     override private[akka] def isTerminated: Boolean = !isWalking
 
     override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
@@ -513,8 +517,12 @@ private[akka] class LocalActorRefProvider private[akka] (
     // make user provided guardians not run on internal dispatcher
     val dispatcher =
       system.guardianProps match {
-        case None        => internalDispatcher
-        case Some(props) => system.dispatchers.lookup(props.dispatcher)
+        case None => internalDispatcher
+        case Some(props) =>
+          val dispatcherId =
+            if (props.deploy.dispatcher == Deploy.DispatcherSameAsParent) Dispatchers.DefaultDispatcherId
+            else props.dispatcher
+          system.dispatchers.lookup(dispatcherId)
       }
     val ref = new LocalActorRef(
       system,
@@ -621,17 +629,29 @@ private[akka] class LocalActorRefProvider private[akka] (
           }
         }
 
+        def parentDispatcher: String = supervisor match {
+          case withCell: ActorRefWithCell => withCell.underlying.props.dispatcher
+          case _                          => Deploy.NoDispatcherGiven
+        }
+
         val props2 =
           // mailbox and dispatcher defined in deploy should override props
           (if (lookupDeploy) deployer.lookup(path) else deploy) match {
             case Some(d) =>
               (d.dispatcher, d.mailbox) match {
-                case (Deploy.NoDispatcherGiven, Deploy.NoMailboxGiven) => props
-                case (dsp, Deploy.NoMailboxGiven)                      => props.withDispatcher(dsp)
-                case (Deploy.NoMailboxGiven, mbx)                      => props.withMailbox(mbx)
-                case (dsp, mbx)                                        => props.withDispatcher(dsp).withMailbox(mbx)
+                case (Deploy.NoDispatcherGiven, Deploy.NoMailboxGiven)      => props
+                case (Deploy.DispatcherSameAsParent, Deploy.NoMailboxGiven) => props.withDispatcher(parentDispatcher)
+                case (dsp, Deploy.NoMailboxGiven)                           => props.withDispatcher(dsp)
+                case (Deploy.NoDispatcherGiven, mbx)                        => props.withMailbox(mbx)
+                case (Deploy.DispatcherSameAsParent, mbx)                   => props.withDispatcher(parentDispatcher).withMailbox(mbx)
+                case (dsp, mbx)                                             => props.withDispatcher(dsp).withMailbox(mbx)
               }
-            case _ => props // no deployment config found
+            case _ =>
+              // no deployment config found
+              if (props.deploy.dispatcher == Deploy.DispatcherSameAsParent)
+                props.withDispatcher(parentDispatcher)
+              else
+                props
           }
 
         if (!system.dispatchers.hasDispatcher(props2.dispatcher))

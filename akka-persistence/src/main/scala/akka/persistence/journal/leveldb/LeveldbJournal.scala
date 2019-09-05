@@ -11,10 +11,12 @@ import akka.util.Timeout
 import akka.util.Helpers.ConfigOps
 import akka.persistence.PersistentRepr
 import scala.concurrent.Future
+
 import akka.persistence.JournalProtocol.RecoverySuccess
 import akka.persistence.JournalProtocol.ReplayMessagesFailure
 import akka.pattern.pipe
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 /**
  * INTERNAL API.
@@ -144,6 +146,9 @@ private[persistence] class SharedLeveldbJournal extends AsyncWriteProxy {
   }
 }
 
+/**
+ * For testing only.
+ */
 object SharedLeveldbJournal {
 
   /**
@@ -153,4 +158,25 @@ object SharedLeveldbJournal {
    */
   def setStore(store: ActorRef, system: ActorSystem): Unit =
     Persistence(system).journalFor(null) ! AsyncWriteProxy.SetStore(store)
+
+  /**
+   * Configuration to enable `TestJavaSerializer` in `akka-testkit` for
+   * for the messages used by `SharedLeveldbJournal`.
+   *
+   * For testing only.
+   */
+  def configToEnableJavaSerializationForTest: Config = {
+    ConfigFactory.parseString(s"""
+    akka.actor.serialization-bindings {
+      "akka.persistence.journal.AsyncWriteTarget$$WriteMessages" = java-test
+      "akka.persistence.journal.AsyncWriteTarget$$DeleteMessagesTo" = java-test
+      "akka.persistence.journal.AsyncWriteTarget$$ReplayMessages" = java-test
+      "akka.persistence.journal.AsyncWriteTarget$$ReplaySuccess" = java-test
+      "akka.persistence.journal.AsyncWriteTarget$$ReplayFailure" = java-test
+      "akka.persistence.JournalProtocol$$Message" = java-test
+      "akka.persistence.SnapshotProtocol$$Message" = java-test
+      "scala.collection.immutable.Vector" = java-test
+    }
+    """)
+  }
 }

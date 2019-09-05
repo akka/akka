@@ -22,9 +22,10 @@ object AccountExampleSpec {
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
-
+      
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """)
+      akka.persistence.journal.inmem.test-serialization = on
+      """)
 
 }
 
@@ -65,17 +66,28 @@ class AccountExampleSpec extends ScalaTestWithActorTestKit(AccountExampleSpec.co
       probe.expectMessage(Confirmed)
       ref ! Withdraw(10, probe.ref)
       probe.expectMessage(Confirmed)
+
+      // The same probe can be used with other commands too:
+      ref ! GetBalance(probe.ref)
+      probe.expectMessage(CurrentBalance(90))
     }
 
     "reject Withdraw overdraft" in {
+      // AccountCommand[_] is the command type, but it should also be possible to narrow it to
+      // AccountCommand[OperationResult]
       val probe = createTestProbe[OperationResult]()
-      val ref = ClusterSharding(system).entityRefFor(AccountEntity.TypeKey, "3")
+      val ref = ClusterSharding(system).entityRefFor[AccountCommand[OperationResult]](AccountEntity.TypeKey, "3")
       ref ! CreateAccount(probe.ref)
       probe.expectMessage(Confirmed)
       ref ! Deposit(100, probe.ref)
       probe.expectMessage(Confirmed)
       ref ! Withdraw(110, probe.ref)
       probe.expectMessageType[Rejected]
+
+      // ... thus restricting the entity ref from being sent other commands, e.g.:
+      // val probe2 = createTestProbe[CurrentBalance]()
+      // val msg = GetBalance(probe2.ref)
+      // ref ! msg // type mismatch: GetBalance NOT =:= AccountCommand[OperationResult]
     }
 
     "handle GetBalance" in {
@@ -102,6 +114,31 @@ class AccountExampleSpec extends ScalaTestWithActorTestKit(AccountExampleSpec.co
       ref.ask(Deposit(100, _)).futureValue should ===(Confirmed)
       ref.ask(Withdraw(10, _)).futureValue should ===(Confirmed)
       ref.ask(GetBalance(_)).map(_.balance).futureValue should ===(90)
+    }
+
+    "verifySerialization" in {
+      val opProbe = createTestProbe[OperationResult]()
+      serializationTestKit.verifySerialization(CreateAccount(opProbe.ref))
+      serializationTestKit.verifySerialization(Deposit(100, opProbe.ref))
+      serializationTestKit.verifySerialization(Withdraw(90, opProbe.ref))
+      serializationTestKit.verifySerialization(CloseAccount(opProbe.ref))
+
+      serializationTestKit.verifySerialization(Confirmed)
+      serializationTestKit.verifySerialization(Rejected("overdraft"))
+
+      val getProbe = createTestProbe[CurrentBalance]()
+      serializationTestKit.verifySerialization(GetBalance(getProbe.ref))
+
+      serializationTestKit.verifySerialization(CurrentBalance(100))
+
+      serializationTestKit.verifySerialization(AccountCreated)
+      serializationTestKit.verifySerialization(Deposited(100))
+      serializationTestKit.verifySerialization(Withdrawn(90))
+      serializationTestKit.verifySerialization(AccountClosed)
+
+      serializationTestKit.verifySerialization(EmptyAccount)
+      serializationTestKit.verifySerialization(OpenedAccount(100))
+      serializationTestKit.verifySerialization(ClosedAccount)
     }
 
   }

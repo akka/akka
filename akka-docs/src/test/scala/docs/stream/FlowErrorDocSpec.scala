@@ -5,12 +5,9 @@
 package docs.stream
 
 import scala.concurrent.Await
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.Supervision
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
-import akka.stream.Attributes
 import akka.stream.ActorAttributes
 import scala.concurrent.duration._
 
@@ -18,7 +15,6 @@ class FlowErrorDocSpec extends AkkaSpec {
 
   "demonstrate fail stream" in {
     //#stop
-    implicit val materializer = ActorMaterializer()
     val source = Source(0 to 5).map(100 / _)
     val result = source.runWith(Sink.fold(0)(_ + _))
     // division by zero will fail the stream and the
@@ -36,9 +32,13 @@ class FlowErrorDocSpec extends AkkaSpec {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
     }
-    implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withSupervisionStrategy(decider))
     val source = Source(0 to 5).map(100 / _)
-    val result = source.runWith(Sink.fold(0)(_ + _))
+    val runnableGraph =
+      source.toMat(Sink.fold(0)(_ + _))(Keep.right)
+
+    val withCustomSupervision = runnableGraph.withAttributes(ActorAttributes.supervisionStrategy(decider))
+
+    val result = withCustomSupervision.run()
     // the element causing division by zero will be dropped
     // result here will be a Future completed with Success(228)
     //#resume
@@ -48,7 +48,6 @@ class FlowErrorDocSpec extends AkkaSpec {
 
   "demonstrate resume section" in {
     //#resume-section
-    implicit val materializer = ActorMaterializer()
     val decider: Supervision.Decider = {
       case _: ArithmeticException => Supervision.Resume
       case _                      => Supervision.Stop
@@ -69,7 +68,6 @@ class FlowErrorDocSpec extends AkkaSpec {
 
   "demonstrate restart section" in {
     //#restart-section
-    implicit val materializer = ActorMaterializer()
     val decider: Supervision.Decider = {
       case _: IllegalArgumentException => Supervision.Restart
       case _                           => Supervision.Stop
@@ -91,7 +89,6 @@ class FlowErrorDocSpec extends AkkaSpec {
   }
 
   "demonstrate recover" in {
-    implicit val materializer = ActorMaterializer()
     //#recover
     Source(0 to 6)
       .map(n =>
@@ -117,7 +114,6 @@ stream truncated
   }
 
   "demonstrate recoverWithRetries" in {
-    implicit val materializer = ActorMaterializer()
     //#recoverWithRetries
     val planB = Source(List("five", "six", "seven", "eight"))
 

@@ -12,13 +12,18 @@ import akka.remote.transport.Transport._
 import akka.remote.transport.{ AssociationRegistry => _, _ }
 import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
 import akka.util.ByteString
-
 import scala.concurrent.{ Await, Future }
 
+import com.github.ghik.silencer.silent
+
+@silent("deprecated")
 abstract class GenericTransportSpec(withAkkaProtocol: Boolean = false)
     extends AkkaSpec("""
          akka.remote.artery.enabled = false
-         akka.actor.provider = remote 
+         akka.actor.provider = remote
+         # test is using Java serialization and not priority to rewrite
+         akka.actor.allow-java-serialization = on
+         akka.actor.warn-about-java-serializer-usage = off
       """)
     with DefaultTimeout
     with ImplicitSender {

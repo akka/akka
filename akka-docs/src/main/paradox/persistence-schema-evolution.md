@@ -1,4 +1,4 @@
-# Persistence - Schema Evolution
+# Schema Evolution for Event Sourced Actors
 
 ## Dependency
 

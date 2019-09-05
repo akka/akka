@@ -4,20 +4,21 @@
 
 package akka.remote.artery
 
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.CyclicBarrier
 import java.util.concurrent.TimeUnit
+
 import akka.actor.ActorSystem
+import akka.stream.KillSwitches
+import akka.stream.OverflowStrategy
+import akka.stream.SystemMaterializer
 import akka.stream.scaladsl._
 import com.typesafe.config.ConfigFactory
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 import org.openjdk.jmh.annotations._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.OverflowStrategy
-import java.util.concurrent.CyclicBarrier
-import java.util.concurrent.CountDownLatch
-import akka.stream.KillSwitches
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
@@ -32,12 +33,10 @@ class SendQueueBenchmark {
 
   implicit val system = ActorSystem("SendQueueBenchmark", config)
 
-  var materializer: ActorMaterializer = _
-
   @Setup
   def setup(): Unit = {
-    val settings = ActorMaterializerSettings(system)
-    materializer = ActorMaterializer(settings)
+    // eager init of materializer
+    SystemMaterializer(system).materializer
   }
 
   @TearDown
@@ -58,7 +57,7 @@ class SendQueueBenchmark {
     val (queue, killSwitch) = source
       .viaMat(KillSwitches.single)(Keep.both)
       .toMat(new BarrierSink(N, latch, burstSize, barrier))(Keep.left)
-      .run()(materializer)
+      .run()
 
     var n = 1
     while (n <= N) {
@@ -87,7 +86,7 @@ class SendQueueBenchmark {
     val (ref, killSwitch) = source
       .viaMat(KillSwitches.single)(Keep.both)
       .toMat(new BarrierSink(N, latch, burstSize, barrier))(Keep.left)
-      .run()(materializer)
+      .run()
 
     var n = 1
     while (n <= N) {
@@ -117,7 +116,7 @@ class SendQueueBenchmark {
     val (sendQueue, killSwitch) = source
       .viaMat(KillSwitches.single)(Keep.both)
       .toMat(new BarrierSink(N, latch, burstSize, barrier))(Keep.left)
-      .run()(materializer)
+      .run()
     sendQueue.inject(queue)
 
     var n = 1

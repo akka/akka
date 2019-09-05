@@ -24,7 +24,7 @@ The tutorial application consists of two main components:
 
 The following diagram illustrates the example application architecture. Since we are interested in the state of each sensor device, we will model devices as actors. The running application will create as many instances of device actors and device groups as necessary.
 
-![box diagram of the architecture](../../guide/diagrams/arch_boxes_diagram.png)
+![box diagram of the architecture](diagrams/arch_boxes_diagram.png)
 
 ## What you will learn in this tutorial
 This tutorial introduces and illustrates:

@@ -6,12 +6,12 @@ package akka.stream.javadsl
 
 import akka.NotUsed
 import akka.event.LoggingAdapter
-import akka.japi.{ function, Util }
+import akka.japi.{ function, Pair, Util }
 import akka.stream._
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
-
 import akka.util.ccompat.JavaConverters._
+
 import scala.annotation.unchecked.uncheckedVariance
 import scala.concurrent.duration.FiniteDuration
 import java.util.Comparator
@@ -665,7 +665,7 @@ class SubSource[Out, Mat](
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  @silent
+  @silent("deprecated")
   def groupedWithin(n: Int, d: java.time.Duration): SubSource[java.util.List[Out @uncheckedVariance], Mat] =
     groupedWithin(n, d.asScala)
 
@@ -713,7 +713,7 @@ class SubSource[Out, Mat](
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  @silent
+  @silent("deprecated")
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
@@ -762,7 +762,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def dropWithin(d: java.time.Duration): SubSource[Out, Mat] =
     dropWithin(d.asScala)
 
@@ -879,7 +879,7 @@ class SubSource[Out, Mat](
    * @param of time to shift all messages
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  @silent
+  @silent("deprecated")
   def delay(of: java.time.Duration, strategy: DelayOverflowStrategy): SubSource[Out, Mat] =
     delay(of.asScala, strategy)
 
@@ -1029,7 +1029,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
-  @silent
+  @silent("deprecated")
   def takeWithin(d: java.time.Duration): SubSource[Out, Mat] =
     takeWithin(d.asScala)
 
@@ -1490,6 +1490,52 @@ class SubSource[Out, Mat](
     new SubSource(delegate.interleave(that, segmentSize))
 
   /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * '''Emits when''' an element is available from some input and each input emits at least one element from stream start
+   *
+   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   */
+  def mergeLatest[M](
+      that: Graph[SourceShape[Out], M],
+      eagerComplete: Boolean): javadsl.SubSource[java.util.List[Out], Mat] =
+    new SubSource(delegate.mergeLatest(that, eagerComplete).map(_.asJava))
+
+  /**
+   * Merge two sources. Prefer one source if both sources have elements ready.
+   *
+   * '''emits''' when one of the inputs has an element available. If multiple have elements available, prefer the 'right' one when 'preferred' is 'true', or the 'left' one when 'preferred' is 'false'.
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePreferred[M](
+      that: Graph[SourceShape[Out], M],
+      preferred: Boolean,
+      eagerComplete: Boolean): javadsl.SubSource[Out, Mat] =
+    new SubSource(delegate.mergePreferred(that, preferred, eagerComplete))
+
+  /**
+   * Merge two sources. Prefer the sources depending on the 'priority' parameters.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePrioritized[M](
+      that: Graph[SourceShape[Out], M],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerComplete: Boolean): javadsl.SubSource[Out, Mat] =
+    new SubSource(delegate.mergePrioritized(that, leftPriority, rightPriority, eagerComplete))
+
+  /**
    * Merge the given [[Source]] to this [[Source]], taking elements as they arrive from input streams,
    * picking always the smallest of the available elements (waiting for one element from each side
    * to be available). This means that possible contiguity of the input streams is not exploited to avoid
@@ -1520,6 +1566,23 @@ class SubSource[Out, Mat](
    */
   def zip[T](source: Graph[SourceShape[T], _]): SubSource[akka.japi.Pair[Out @uncheckedVariance, T], Mat] =
     new SubSource(delegate.zip(source).map { case (o, t) => akka.japi.Pair.create(o, t) })
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAll[U, A >: Out](
+      that: Graph[SourceShape[U], _],
+      thisElem: A,
+      thatElem: U): SubSource[akka.japi.Pair[A, U], Mat] =
+    new SubSource(delegate.zipAll(that, thisElem, thatElem).map { case (a, u) => Pair.create(a, u) })
 
   /**
    * Combine the elements of current [[Flow]] and the given [[Source]] into a stream of tuples, picking always the latest element of each.
@@ -1615,7 +1678,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def initialTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
     initialTimeout(timeout.asScala)
 
@@ -1648,7 +1711,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def completionTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
     completionTimeout(timeout.asScala)
 
@@ -1683,7 +1746,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def idleTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
     idleTimeout(timeout.asScala)
 
@@ -1718,7 +1781,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def backpressureTimeout(timeout: java.time.Duration): SubSource[Out, Mat] =
     backpressureTimeout(timeout.asScala)
 
@@ -1761,7 +1824,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): SubSource[Out, Mat] =
     keepAlive(maxIdle.asScala, injectedElem)
 
@@ -2125,7 +2188,7 @@ class SubSource[Out, Mat](
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def initialDelay(delay: java.time.Duration): SubSource[Out, Mat] =
     initialDelay(delay.asScala)
 

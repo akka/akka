@@ -4,17 +4,18 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.AbruptTerminationException
+import akka.stream.ActorMaterializer
 
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
+import scala.concurrent.Future
 
-class CollectionSinkSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val mat = ActorMaterializer(settings)
+class CollectionSinkSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   "Sink.collection" when {
     "using Seq as Collection" must {

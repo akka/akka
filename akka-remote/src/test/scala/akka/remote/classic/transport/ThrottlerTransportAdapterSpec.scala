@@ -11,9 +11,10 @@ import akka.remote.transport.{ TestTransport, ThrottlerTransportAdapter }
 import akka.remote.{ EndpointException, RemoteActorRefProvider }
 import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender, TestEvent, TimingTest }
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 
 object ThrottlerTransportAdapterSpec {
   val configA: Config =
@@ -31,7 +32,10 @@ object ThrottlerTransportAdapterSpec {
       remote.classic.netty.tcp.applied-adapters = ["trttl"]
       remote.classic.netty.tcp.port = 0
     }
-                                                   """)
+    # test is using Java serialization and not priority to rewrite
+    akka.actor.allow-java-serialization = on
+    akka.actor.warn-about-java-serializer-usage = off
+    """)
 
   class Echo extends Actor {
     override def receive = {
@@ -69,6 +73,7 @@ object ThrottlerTransportAdapterSpec {
   final case class Lost(msg: String)
 }
 
+@silent("deprecated")
 class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {
 
   val systemB = ActorSystem("systemB", system.settings.config)
@@ -155,6 +160,7 @@ class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSende
   override def afterTermination(): Unit = shutdown(systemB)
 }
 
+@silent("deprecated")
 class ThrottlerTransportAdapterGenericSpec extends GenericTransportSpec(withAkkaProtocol = true) {
 
   def transportName = "ThrottlerTransportAdapter"

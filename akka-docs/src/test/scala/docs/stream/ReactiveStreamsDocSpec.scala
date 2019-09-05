@@ -5,7 +5,6 @@
 package docs.stream
 
 import akka.NotUsed
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit._
 import org.reactivestreams.Processor
@@ -13,8 +12,6 @@ import akka.testkit.AkkaSpec
 
 class ReactiveStreamsDocSpec extends AkkaSpec {
   import TwitterStreamQuickstartDocSpec._
-
-  implicit val materializer = ActorMaterializer()
 
   //#imports
   import org.reactivestreams.Publisher

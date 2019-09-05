@@ -17,6 +17,9 @@ import scala.annotation.tailrec
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 
+import akka.stream.SystemMaterializer
+import com.github.ghik.silencer.silent
+
 trait ScriptedTest extends Matchers {
 
   class ScriptException(msg: String) extends RuntimeException(msg)
@@ -227,6 +230,11 @@ trait ScriptedTest extends Matchers {
     }
 
   }
+
+  @silent("deprecated")
+  def runScript[In, Out, M](script: Script[In, Out])(op: Flow[In, In, NotUsed] => Flow[In, Out, M])(
+      implicit system: ActorSystem): Unit =
+    runScript(script, SystemMaterializer(system).materializer.settings)(op)(system)
 
   def runScript[In, Out, M](
       script: Script[In, Out],

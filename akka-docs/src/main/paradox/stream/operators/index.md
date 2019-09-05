@@ -16,7 +16,7 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 |Source|<a name="cycle"></a>@ref[cycle](Source/cycle.md)|Stream iterator in cycled manner.|
 |Source|<a name="empty"></a>@ref[empty](Source/empty.md)|Complete right away without ever emitting any elements.|
 |Source|<a name="failed"></a>@ref[failed](Source/failed.md)|Fail directly with a user specified exception.|
-|Source|<a name="from"></a>@ref[from](Source/from.md)|Stream the values of an `Iterable`.|
+|Source|<a name="from"></a>@ref[@scala[apply]@java[from]](Source/from.md)|Stream the values of an @scala[`immutable.Seq`]@java[`Iterable`].|
 |Source|<a name="fromcompletionstage"></a>@ref[fromCompletionStage](Source/fromCompletionStage.md)|Send the single value of the `CompletionStage` when it completes and there is demand.|
 |Source|<a name="fromfuture"></a>@ref[fromFuture](Source/fromFuture.md)|Send the single value of the `Future` when it completes and there is demand.|
 |Source|<a name="fromfuturesource"></a>@ref[fromFutureSource](Source/fromFutureSource.md)|Streams the elements of the given future source once it successfully completes.|
@@ -245,10 +245,14 @@ the inputs in different ways.
 |Source/Flow|<a name="concat"></a>@ref[concat](Source-or-Flow/concat.md)|After completion of the original upstream the elements of the given source will be emitted.|
 |Source/Flow|<a name="interleave"></a>@ref[interleave](Source-or-Flow/interleave.md)|Emits a specifiable number of elements from the original source, then from the provided source and repeats.|
 |Source/Flow|<a name="merge"></a>@ref[merge](Source-or-Flow/merge.md)|Merge multiple sources.|
+|Source/Flow|<a name="mergelatest"></a>@ref[mergeLatest](Source-or-Flow/mergeLatest.md)|Merge multiple sources.|
+|Source/Flow|<a name="mergepreferred"></a>@ref[mergePreferred](Source-or-Flow/mergePreferred.md)|Merge multiple sources.|
+|Source/Flow|<a name="mergeprioritized"></a>@ref[mergePrioritized](Source-or-Flow/mergePrioritized.md)|Merge multiple sources.|
 |Source/Flow|<a name="mergesorted"></a>@ref[mergeSorted](Source-or-Flow/mergeSorted.md)|Merge multiple sources.|
 |Source/Flow|<a name="orelse"></a>@ref[orElse](Source-or-Flow/orElse.md)|If the primary source completes without emitting any elements, the elements from the secondary source are emitted.|
 |Source/Flow|<a name="prepend"></a>@ref[prepend](Source-or-Flow/prepend.md)|Prepends the given source to the flow, consuming it until completion before the original source is consumed.|
 |Source/Flow|<a name="zip"></a>@ref[zip](Source-or-Flow/zip.md)|Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream.|
+|Source/Flow|<a name="zipall"></a>@ref[zipAll](Source-or-Flow/zipAll.md)|Combines all elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream.|
 |Source/Flow|<a name="ziplatest"></a>@ref[zipLatest](Source-or-Flow/zipLatest.md)|Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream, picking always the latest element of each.|
 |Source/Flow|<a name="ziplatestwith"></a>@ref[zipLatestWith](Source-or-Flow/zipLatestWith.md)|Combines elements from multiple sources through a `combine` function and passes the returned value downstream, picking always the latest element of each.|
 |Source/Flow|<a name="zipwith"></a>@ref[zipWith](Source-or-Flow/zipWith.md)|Combines elements from multiple sources through a `combine` function and passes the returned value downstream.|
@@ -334,7 +338,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [queue](Source/queue.md)
 * [unfoldResource](Source/unfoldResource.md)
 * [unfoldResourceAsync](Source/unfoldResourceAsync.md)
-* [from](Source/from.md)
+* [@scala[apply]@java[from]](Source/from.md)
 * [range](Source/range.md)
 * [concat](Source-or-Flow/concat.md)
 * [prepend](Source-or-Flow/prepend.md)
@@ -344,8 +348,12 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [wireTap](Source-or-Flow/wireTap.md)
 * [interleave](Source-or-Flow/interleave.md)
 * [merge](Source-or-Flow/merge.md)
+* [mergeLatest](Source-or-Flow/mergeLatest.md)
+* [mergePreferred](Source-or-Flow/mergePreferred.md)
+* [mergePrioritized](Source-or-Flow/mergePrioritized.md)
 * [mergeSorted](Source-or-Flow/mergeSorted.md)
 * [zip](Source-or-Flow/zip.md)
+* [zipAll](Source-or-Flow/zipAll.md)
 * [zipLatest](Source-or-Flow/zipLatest.md)
 * [zipWith](Source-or-Flow/zipWith.md)
 * [zipLatestWith](Source-or-Flow/zipLatestWith.md)

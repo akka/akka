@@ -28,9 +28,7 @@ object ReplicatorMapDeltaSpec extends MultiNodeConfig {
     akka.log-dead-letters-during-shutdown = off
     akka.actor {
       serialize-messages = off
-      allow-java-serialization = off
     }
-    #akka.remote.artery.enabled = on
     """))
 
   testTransport(on = true)
@@ -331,7 +329,7 @@ class ReplicatorMapDeltaSpec extends MultiNodeSpec(ReplicatorMapDeltaSpec) with 
 
       enterBarrier("replicated-2")
       // no OversizedPayloadException logging
-      errorLogProbe.expectNoMessage(100.millis)
+      errorLogProbe.expectNoMessage()
 
       enterBarrierAfterTestStep()
     }

@@ -6,7 +6,6 @@ package akka.persistence.typed.internal
 
 import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
-
 import akka.actor.Cancellable
 import akka.actor.typed.Logger
 import akka.actor.typed.scaladsl.ActorContext
@@ -14,8 +13,7 @@ import akka.actor.ActorRef
 import akka.actor.typed.Signal
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.typed.EventAdapter
-import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import akka.util.ConstantFun
@@ -44,7 +42,8 @@ private[akka] final class BehaviorSetup[C, E, S](
     val writerIdentity: EventSourcedBehaviorImpl.WriterIdentity,
     private val signalHandler: PartialFunction[(S, Signal), Unit],
     val tagger: E => Set[String],
-    val eventAdapter: EventAdapter[E, _],
+    val eventAdapter: EventAdapter[E, Any],
+    val snapshotAdapter: SnapshotAdapter[S],
     val snapshotWhen: (S, E, Long) => Boolean,
     val recovery: Recovery,
     val retention: RetentionCriteria,
@@ -155,7 +154,7 @@ private[akka] object MDC {
   val ReplayingEvents   = "replay-evts"
   val RunningCmds       = "running-cmnds"
   val PersistingEvents  = "persist-evts"
-  val StoringSnapshot  = "storing-snapshot"
+  val StoringSnapshot   = "storing-snapshot"
   // format: ON
 
   def create(persistenceId: PersistenceId, phaseName: String): Map[String, Any] = {

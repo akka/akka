@@ -120,8 +120,8 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     extends SerializerWithStringManifest {
   import JacksonSerializer.GadgetClassBlacklist
 
-  // FIXME it should be possible to implement ByteBufferSerializer as well, using Jackson's
-  //       ByteBufferBackedOutputStream/ByteBufferBackedInputStream
+  // TODO issue #27107: it should be possible to implement ByteBufferSerializer as well, using Jackson's
+  //      ByteBufferBackedOutputStream/ByteBufferBackedInputStream
 
   private val log = Logging.withMarker(system, getClass)
   private val conf = JacksonObjectMapperProvider.configForBinding(bindingName, system.settings.config)
@@ -175,6 +175,12 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
       if (bytes.length > compressLargerThan) compress(bytes)
       else bytes
 
+    logToBinaryDuration(obj, startTime, bytes, result)
+
+    result
+  }
+
+  private def logToBinaryDuration(obj: AnyRef, startTime: Long, bytes: Array[Byte], result: Array[Byte]) = {
     if (isDebugEnabled) {
       val durationMicros = (System.nanoTime - startTime) / 1000
       if (bytes.length == result.length)
@@ -191,8 +197,6 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
           result.length,
           bytes.length)
     }
-
-    result
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
@@ -214,28 +218,54 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
           s"behind version $fromVersion of deserialized type [$manifestClassName]")
       case _ => manifestClassName
     }
+
     if (className ne manifestClassName)
       checkAllowedClassName(className)
 
-    val clazz = system.dynamicAccess.getClassFor[AnyRef](className) match {
-      case Success(c) => c
-      case Failure(_) =>
-        throw new NotSerializableException(
-          s"Cannot find manifest class [$className] for serializer [${getClass.getName}].")
+    if (isCaseObject(className)) {
+      val result = system.dynamicAccess.getObjectFor[AnyRef](className) match {
+        case Success(obj) => obj
+        case Failure(_) =>
+          throw new NotSerializableException(
+            s"Cannot find manifest case object [$className] for serializer [${getClass.getName}].")
+      }
+      val clazz = result.getClass
+      checkAllowedClass(clazz)
+      // no migrations for case objects, since no json tree
+      logFromBinaryDuration(bytes, bytes, startTime, clazz)
+      result
+    } else {
+      val clazz = system.dynamicAccess.getClassFor[AnyRef](className) match {
+        case Success(c) => c
+        case Failure(_) =>
+          throw new NotSerializableException(
+            s"Cannot find manifest class [$className] for serializer [${getClass.getName}].")
+      }
+      checkAllowedClass(clazz)
+
+      val decompressBytes = if (compressed) decompress(bytes) else bytes
+
+      val result = migration match {
+        case Some(transformer) if fromVersion < transformer.currentVersion =>
+          val jsonTree = objectMapper.readTree(decompressBytes)
+          val newJsonTree = transformer.transform(fromVersion, jsonTree)
+          objectMapper.treeToValue(newJsonTree, clazz)
+        case _ =>
+          objectMapper.readValue(decompressBytes, clazz)
+      }
+
+      logFromBinaryDuration(bytes, decompressBytes, startTime, clazz)
+
+      result
+
     }
-    checkAllowedClass(clazz)
+  }
 
-    val decompressBytes = if (compressed) decompress(bytes) else bytes
-
-    val result = migration match {
-      case Some(transformer) if fromVersion < transformer.currentVersion =>
-        val jsonTree = objectMapper.readTree(decompressBytes)
-        val newJsonTree = transformer.transform(fromVersion, jsonTree)
-        objectMapper.treeToValue(newJsonTree, clazz)
-      case _ =>
-        objectMapper.readValue(decompressBytes, clazz)
-    }
-
+  private def logFromBinaryDuration(
+      bytes: Array[Byte],
+      decompressBytes: Array[Byte],
+      startTime: Long,
+      clazz: Class[_ <: AnyRef]) = {
     if (isDebugEnabled) {
       val durationMicros = (System.nanoTime - startTime) / 1000
       if (bytes.length == decompressBytes.length)
@@ -252,9 +282,10 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
           bytes.length,
           decompressBytes.length)
     }
-
-    result
   }
+
+  private def isCaseObject(className: String): Boolean =
+    className.length > 0 && className.charAt(className.length - 1) == '$'
 
   private def checkAllowedClassName(className: String): Unit = {
     if (!blacklist.isAllowedClassName(className)) {
@@ -306,12 +337,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
       // serializizer within the Jackson family, but we don't trust other serializers
       // because they might be bound to open-ended interfaces like java.io.Serializable.
       val boundSerializer = serialization.serializerFor(clazz)
-      boundSerializer.isInstanceOf[JacksonSerializer] ||
-      // FIXME this is probably not needed when we have the more flexible configuration in place and
-      //       can bind use the plain JacksonJsonSerializer for the old serializerId
-      // to support rolling updates in Lagom we also trust the binding to the Lagom 1.5.x JacksonJsonSerializer,
-      // which is named OldJacksonJsonSerializer in Lagom 1.6.x
-      boundSerializer.getClass.getName == "com.lightbend.lagom.internal.jackson.OldJacksonJsonSerializer"
+      boundSerializer.isInstanceOf[JacksonSerializer]
     } catch {
       case NonFatal(_) => false // not bound
     }
@@ -367,7 +393,6 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
   def decompress(bytes: Array[Byte]): Array[Byte] = {
     val in = new GZIPInputStream(new ByteArrayInputStream(bytes))
     val out = new ByteArrayOutputStream()
-    // FIXME pool of recycled buffers?
     val buffer = new Array[Byte](BufferSize)
 
     @tailrec def readChunk(): Unit = in.read(buffer) match {

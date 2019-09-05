@@ -37,7 +37,7 @@ public class FlowWithContextTest extends StreamTest {
     final CompletionStage<List<Pair<Integer, String>>> result =
         Source.single(new Pair<>(1, "context"))
             .via(flow.map(n -> n + 1).mapContext(ctx -> ctx + "-mapped"))
-            .runWith(Sink.seq(), materializer);
+            .runWith(Sink.seq(), system);
     final List<Pair<Integer, String>> pairs = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
     assertEquals(1, pairs.size());
     assertEquals(Integer.valueOf(2), pairs.get(0).first());
@@ -54,9 +54,7 @@ public class FlowWithContextTest extends StreamTest {
     final FlowWithContext<Integer, NotUsed, String, NotUsed, NotUsed> flow3 = flow1.via(flow2);
 
     final CompletionStage<List<Pair<String, NotUsed>>> result =
-        Source.single(new Pair<>(1, notUsed()))
-            .via(flow3.asFlow())
-            .runWith(Sink.seq(), materializer);
+        Source.single(new Pair<>(1, notUsed())).via(flow3.asFlow()).runWith(Sink.seq(), system);
 
     List<Pair<String, NotUsed>> pairs = result.toCompletableFuture().get(3, TimeUnit.SECONDS);
 

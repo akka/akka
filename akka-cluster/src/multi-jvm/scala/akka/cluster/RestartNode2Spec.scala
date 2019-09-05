@@ -26,13 +26,18 @@ object RestartNode2SpecMultiJvmSpec extends MultiNodeConfig {
   val seed2 = role("seed2")
 
   commonConfig(
-    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.cluster.auto-down-unreachable-after = 2s
       akka.cluster.retry-unsuccessful-join-after = 3s
       akka.cluster.allow-weakly-up-members = off
       akka.remote.retry-gate-closed-for = 45s
       akka.remote.log-remote-lifecycle-events = INFO
-      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
+      # test is using Java serialization and not priority to rewrite
+      akka.actor.allow-java-serialization = on
+      akka.actor.warn-about-java-serializer-usage = off
+      """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 

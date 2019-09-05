@@ -39,6 +39,10 @@ one of the supported Jackson formats: `jackson-json` or `jackson-cbor`
 
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #serialization-bindings }
 
+A good convention would be to name the marker interface `CborSerializable` or `JsonSerializable`.
+In this documentation we have used `MySerializable` to make it clear that the marker interface itself is not
+provided by Akka.
+
 That is all that is needed for basic classes where Jackson understands the structure. A few cases that requires
 annotations are described below.
 
@@ -135,6 +139,11 @@ If you haven't defined the annotations you will see an exception like this:
 InvalidDefinitionException: Cannot construct instance of `...` (no Creators, like default construct, exist): abstract types either need to be mapped to concrete types, have custom deserializer, or contain additional type information
 ```
 
+Note that this is not needed for a top level class, but for fields inside it. In this example `Animal` is
+used inside of `Zoo`, which is sent as a message or persisted. If `Animal` was sent or persisted standalone
+the annotations are not needed because then it is the concrete subclasses `Lion` or `Elephant` that are
+serialized.
+
 When specifying allowed subclasses with those annotations the class names will not be included in the serialized
 representation and that is important for @ref:[preventing loading of malicious serialization gadgets](#security)
 when deserializing.
@@ -143,6 +152,24 @@ when deserializing.
 
 Don't use `@JsonTypeInfo(use = Id.CLASS)` or `ObjectMapper.enableDefaultTyping` since that is a security risk
 when using polymorphic types.
+
+@@@
+
+@@@ div {.group-scala}
+
+### ADT with trait and case object
+
+In Scala it's common to use a sealed trait and case objects to represent enums. If the values are case classes
+the `@JsonSubTypes` annotation as described above works, but if the values are case objects it will not.
+The annotation requires a `Class` and there is no way to define that in an annotation for a `case object`.
+
+This can be solved by implementing a custom serialization for the enums. Annotate the `trait` with
+`@JsonSerialize` and `@JsonDeserialize` and implement the serialization with `StdSerializer` and
+`StdDeserializer`.
+
+Scala
+:  @@snip [CustomAdtSerializer.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/CustomAdtSerializer.scala) { #adt-trait-object }
+
 
 @@@
 
@@ -169,17 +196,25 @@ Adding an optional field can be done without any migration code. The default val
 
 Old class:
 
+Scala
+:  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1/ItemAdded.scala) { #add-optional }
+
 Java
 :  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1/ItemAdded.java) { #add-optional }
 
-TODO: Scala examples
 
 New class with a new optional `discount` property and a new `note` field with default value:
+
+Scala
+:  @@snip [ItemAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/ItemAdded.scala) { #add-optional }
 
 Java
 :  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/ItemAdded.java) { #add-optional }
 
 Let's say we want to have a mandatory `discount` property without default value instead:
+
+Scala
+:  @@snip [ItemAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2b/ItemAdded.scala) { #add-mandatory }
 
 Java
 :  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2b/ItemAdded.java) { #add-mandatory }
@@ -187,6 +222,9 @@ Java
 To add a new mandatory field we have to use a `JacksonMigration` class and set the default value in the migration code.
 
 This is how a migration class would look like for adding a `discount` field:
+
+Scala
+:  @@snip [ItemAddedMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2b/ItemAddedMigration.scala) { #add-mandatory }
 
 Java
 :  @@snip [ItemAddedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2b/ItemAddedMigration.java) { #add-mandatory }
@@ -206,14 +244,22 @@ The migration class must be defined in configuration file:
 
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #migrations-conf }
 
+The same thing could have been done for the `note` field, adding a default value of `""` in the `ItemAddedMigration`.
+
 ### Rename Field
 
 Let's say that we want to rename the `productId` field to `itemId` in the previous example.
+
+Scala
+:  @@snip [ItemAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2c/ItemAdded.scala) { #rename }
 
 Java
 :  @@snip [ItemAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2c/ItemAdded.java) { #rename }
 
 The migration code would look like:
+
+Scala
+:  @@snip [ItemAddedMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2c/ItemAddedMigration.scala) { #rename }
 
 Java
 :  @@snip [ItemAddedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2c/ItemAddedMigration.java) { #rename }
@@ -224,20 +270,32 @@ In a similar way we can do arbitrary structural changes.
 
 Old class:
 
+Scala
+:  @@snip [Customer.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1/Customer.scala) { #structural }
+
 Java
 :  @@snip [Customer.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1/Customer.java) { #structural }
 
 New class:
+
+Scala
+:  @@snip [Customer.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/Customer.scala) { #structural }
 
 Java
 :  @@snip [Customer.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/Customer.java) { #structural }
 
 with the `Address` class:
 
+Scala
+:  @@snip [Address.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/Address.scala) { #structural }
+
 Java
 :  @@snip [Address.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/Address.java) { #structural }
 
 The migration code would look like:
+
+Scala
+:  @@snip [CustomerMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/CustomerMigration.scala) { #structural }
 
 Java
 :  @@snip [CustomerMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/CustomerMigration.java) { #structural }
@@ -248,15 +306,24 @@ It is also possible to rename the class. For example, let's rename `OrderAdded` 
 
 Old class:
 
+Scala
+:  @@snip [OrderAdded.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v1/OrderAdded.scala) { #rename-class }
+
 Java
 :  @@snip [OrderAdded.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v1/OrderAdded.java) { #rename-class }
 
 New class:
 
+Scala
+:  @@snip [OrderPlaced.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/OrderPlaced.scala) { #rename-class }
+
 Java
 :  @@snip [OrderPlaced.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/OrderPlaced.java) { #rename-class }
 
 The migration code would look like:
+
+Scala
+:  @@snip [OrderPlacedMigration.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/v2a/OrderPlacedMigration.scala) { #rename-class }
 
 Java
 :  @@snip [OrderPlacedMigration.java](/akka-serialization-jackson/src/test/java/jdoc/akka/serialization/jackson/v2a/OrderPlacedMigration.java) { #rename-class }
@@ -315,7 +382,7 @@ different settings for remote messages and persisted events.
 
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #several-config }
 
-## Additional configuration
+## Additional features
 
 Additional Jackson serialization features can be enabled/disabled in configuration. The default values from
 Jackson are used aside from the the following that are changed in Akka's default configuration.

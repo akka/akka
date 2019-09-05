@@ -4,23 +4,20 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.TestSink
-
 import java.util.concurrent.ThreadLocalRandom.{ current => random }
+
 import akka.stream.ActorAttributes._
+import akka.stream.Attributes
 import akka.stream.Supervision._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
 
 import scala.util.control.NoStackTrace
 
-class FlowFilterSpec extends StreamSpec with ScriptedTest {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowFilterSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) with ScriptedTest {
 
   "A Filter" must {
 
@@ -29,15 +26,16 @@ class FlowFilterSpec extends StreamSpec with ScriptedTest {
         Script(TestConfig.RandomTestRange.map { _ =>
           val x = random.nextInt(); Seq(x) -> (if ((x & 1) == 0) Seq(x) else Seq())
         }: _*)
-      TestConfig.RandomTestRange.foreach(_ => runScript(script, settings)(_.filter(_ % 2 == 0)))
+      TestConfig.RandomTestRange.foreach(_ => runScript(script)(_.filter(_ % 2 == 0)))
     }
 
     "not blow up with high request counts" in {
-      val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
-      implicit val materializer = ActorMaterializer(settings)
-
       val probe = TestSubscriber.manualProbe[Int]()
-      Source(List.fill(1000)(0) ::: List(1)).filter(_ != 0).runWith(Sink.fromSubscriber(probe))
+      Source(List.fill(1000)(0) ::: List(1))
+        .filter(_ != 0)
+        .toMat(Sink.fromSubscriber(probe))(Keep.right)
+        .withAttributes(Attributes.inputBuffer(1, 1))
+        .run()
 
       val subscription = probe.expectSubscription()
       for (_ <- 1 to 10000) {
@@ -71,7 +69,7 @@ class FlowFilterSpec extends StreamSpec with ScriptedTest {
           val x = random.nextInt()
           Seq(x) -> (if ((x & 1) == 1) Seq(x) else Seq())
         }: _*)
-      TestConfig.RandomTestRange.foreach(_ => runScript(script, settings)(_.filterNot(_ % 2 == 0)))
+      TestConfig.RandomTestRange.foreach(_ => runScript(script)(_.filterNot(_ % 2 == 0)))
     }
   }
 

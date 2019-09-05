@@ -18,16 +18,36 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static jdocs.typed.tutorial_5.DeviceManagerProtocol.*;
-
 // #query-full
 // #query-outline
-public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> {
+public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQuery.Command> {
 
-  public static Behavior<DeviceGroupQueryMessage> createBehavior(
-      Map<String, ActorRef<DeviceProtocol.DeviceMessage>> deviceIdToActor,
+  public interface Command {}
+
+  private static enum CollectionTimeout implements Command {
+    INSTANCE
+  }
+
+  static class WrappedRespondTemperature implements Command {
+    final Device.RespondTemperature response;
+
+    WrappedRespondTemperature(Device.RespondTemperature response) {
+      this.response = response;
+    }
+  }
+
+  private static class DeviceTerminated implements Command {
+    final String deviceId;
+
+    private DeviceTerminated(String deviceId) {
+      this.deviceId = deviceId;
+    }
+  }
+
+  public static Behavior<Command> create(
+      Map<String, ActorRef<Device.Command>> deviceIdToActor,
       long requestId,
-      ActorRef<RespondAllTemperatures> requester,
+      ActorRef<DeviceManager.RespondAllTemperatures> requester,
       Duration timeout) {
     return Behaviors.setup(
         context ->
@@ -37,56 +57,34 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
                         deviceIdToActor, requestId, requester, timeout, context, timers)));
   }
 
-  private static enum CollectionTimeout implements DeviceGroupQueryMessage {
-    INSTANCE
-  }
-
-  static class WrappedRespondTemperature implements DeviceGroupQueryMessage {
-    final DeviceProtocol.RespondTemperature response;
-
-    WrappedRespondTemperature(DeviceProtocol.RespondTemperature response) {
-      this.response = response;
-    }
-  }
-
-  private static class DeviceTerminated implements DeviceGroupQueryMessage {
-    final String deviceId;
-
-    private DeviceTerminated(String deviceId) {
-      this.deviceId = deviceId;
-    }
-  }
-
   private final long requestId;
-  private final ActorRef<RespondAllTemperatures> requester;
+  private final ActorRef<DeviceManager.RespondAllTemperatures> requester;
   // #query-outline
   // #query-state
-  private Map<String, TemperatureReading> repliesSoFar = new HashMap<>();
+  private Map<String, DeviceManager.TemperatureReading> repliesSoFar = new HashMap<>();
   private final Set<String> stillWaiting;
 
   // #query-state
   // #query-outline
 
-  public DeviceGroupQuery(
-      Map<String, ActorRef<DeviceProtocol.DeviceMessage>> deviceIdToActor,
+  private DeviceGroupQuery(
+      Map<String, ActorRef<Device.Command>> deviceIdToActor,
       long requestId,
-      ActorRef<RespondAllTemperatures> requester,
+      ActorRef<DeviceManager.RespondAllTemperatures> requester,
       Duration timeout,
-      ActorContext<DeviceGroupQueryMessage> context,
-      TimerScheduler<DeviceGroupQueryMessage> timers) {
+      ActorContext<Command> context,
+      TimerScheduler<Command> timers) {
     this.requestId = requestId;
     this.requester = requester;
 
     timers.startSingleTimer(CollectionTimeout.class, CollectionTimeout.INSTANCE, timeout);
 
-    ActorRef<DeviceProtocol.RespondTemperature> respondTemperatureAdapter =
-        context.messageAdapter(
-            DeviceProtocol.RespondTemperature.class, WrappedRespondTemperature::new);
+    ActorRef<Device.RespondTemperature> respondTemperatureAdapter =
+        context.messageAdapter(Device.RespondTemperature.class, WrappedRespondTemperature::new);
 
-    for (Map.Entry<String, ActorRef<DeviceProtocol.DeviceMessage>> entry :
-        deviceIdToActor.entrySet()) {
+    for (Map.Entry<String, ActorRef<Device.Command>> entry : deviceIdToActor.entrySet()) {
       context.watchWith(entry.getValue(), new DeviceTerminated(entry.getKey()));
-      entry.getValue().tell(new DeviceProtocol.ReadTemperature(0L, respondTemperatureAdapter));
+      entry.getValue().tell(new Device.ReadTemperature(0L, respondTemperatureAdapter));
     }
     stillWaiting = new HashSet<>(deviceIdToActor.keySet());
   }
@@ -94,7 +92,7 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
   // #query-outline
   // #query-state
   @Override
-  public Receive<DeviceGroupQueryMessage> createReceive() {
+  public Receive<Command> createReceive() {
     return newReceiveBuilder()
         .onMessage(WrappedRespondTemperature.class, this::onRespondTemperature)
         .onMessage(DeviceTerminated.class, this::onDeviceTerminated)
@@ -102,12 +100,12 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
         .build();
   }
 
-  private Behavior<DeviceGroupQueryMessage> onRespondTemperature(WrappedRespondTemperature r) {
-    TemperatureReading reading =
+  private Behavior<Command> onRespondTemperature(WrappedRespondTemperature r) {
+    DeviceManager.TemperatureReading reading =
         r.response
             .value
-            .map(v -> (TemperatureReading) new Temperature(v))
-            .orElse(TemperatureNotAvailable.INSTANCE);
+            .map(v -> (DeviceManager.TemperatureReading) new DeviceManager.Temperature(v))
+            .orElse(DeviceManager.TemperatureNotAvailable.INSTANCE);
 
     String deviceId = r.response.deviceId;
     repliesSoFar.put(deviceId, reading);
@@ -116,17 +114,17 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
     return respondWhenAllCollected();
   }
 
-  private Behavior<DeviceGroupQueryMessage> onDeviceTerminated(DeviceTerminated terminated) {
+  private Behavior<Command> onDeviceTerminated(DeviceTerminated terminated) {
     if (stillWaiting.contains(terminated.deviceId)) {
-      repliesSoFar.put(terminated.deviceId, DeviceNotAvailable.INSTANCE);
+      repliesSoFar.put(terminated.deviceId, DeviceManager.DeviceNotAvailable.INSTANCE);
       stillWaiting.remove(terminated.deviceId);
     }
     return respondWhenAllCollected();
   }
 
-  private Behavior<DeviceGroupQueryMessage> onCollectionTimeout(CollectionTimeout timeout) {
+  private Behavior<Command> onCollectionTimeout(CollectionTimeout timeout) {
     for (String deviceId : stillWaiting) {
-      repliesSoFar.put(deviceId, DeviceTimedOut.INSTANCE);
+      repliesSoFar.put(deviceId, DeviceManager.DeviceTimedOut.INSTANCE);
     }
     stillWaiting.clear();
     return respondWhenAllCollected();
@@ -134,9 +132,9 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQueryMessage> 
   // #query-state
 
   // #query-collect-reply
-  private Behavior<DeviceGroupQueryMessage> respondWhenAllCollected() {
+  private Behavior<Command> respondWhenAllCollected() {
     if (stillWaiting.isEmpty()) {
-      requester.tell(new RespondAllTemperatures(requestId, repliesSoFar));
+      requester.tell(new DeviceManager.RespondAllTemperatures(requestId, repliesSoFar));
       return Behaviors.stopped();
     } else {
       return this;

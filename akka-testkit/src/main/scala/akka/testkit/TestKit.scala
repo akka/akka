@@ -666,10 +666,12 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectNoMsg(remainingOrDefault)`, but correctly treating the timeFactor.
+   * Assert that no message is received. Waits for the default period configured as
+   * `akka.test.expect-no-message-default`.
+   * That timeout is scaled using the configuration entry "akka.test.timefactor".
    */
   @deprecated(message = "Use expectNoMessage instead", since = "2.5.5")
-  def expectNoMsg(): Unit = { expectNoMsg_internal(remainingOrDefault) }
+  def expectNoMsg(): Unit = expectNoMessage()
 
   /**
    * Assert that no message is received for the specified time.
@@ -689,9 +691,12 @@ trait TestKitBase {
   }
 
   /**
-   * Same as `expectNoMessage(remainingOrDefault)`, but correctly treating the timeFactor.
+   * Assert that no message is received. Waits for the default period configured as
+   * `akka.test.expect-no-message-default`.
+   * That timeout is scaled using the configuration entry "akka.test.timefactor".
    */
-  def expectNoMessage(): Unit = { expectNoMsg_internal(remainingOrDefault) }
+  def expectNoMessage(): Unit =
+    expectNoMsg_internal(testKitSettings.ExpectNoMessageDefaultTimeout.dilated)
 
   private def expectNoMsg_internal(max: FiniteDuration): Unit = {
     val finish = System.nanoTime() + max.toNanos

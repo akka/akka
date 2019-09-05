@@ -5,6 +5,7 @@
 package jdocs.akka.cluster.typed;
 
 // #cluster-imports
+import akka.actor.Address;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
 import akka.cluster.ClusterEvent;
@@ -78,19 +79,20 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
       Cluster cluster = Cluster.get(system);
       Cluster cluster2 = Cluster.get(system2);
 
-      // #cluster-subscribe
       TestProbe<ClusterEvent.MemberEvent> testProbe = TestProbe.create(system);
-      cluster
-          .subscriptions()
-          .tell(Subscribe.create(testProbe.ref(), ClusterEvent.MemberEvent.class));
+      ActorRef<ClusterEvent.MemberEvent> subscriber = testProbe.getRef();
+      // #cluster-subscribe
+      cluster.subscriptions().tell(Subscribe.create(subscriber, ClusterEvent.MemberEvent.class));
       // #cluster-subscribe
 
+      Address anotherMemberAddress = cluster2.selfMember().address();
       // #cluster-leave-example
-      cluster.manager().tell(Leave.create(cluster2.selfMember().address()));
+      cluster.manager().tell(Leave.create(anotherMemberAddress));
+      // subscriber will receive events MemberLeft, MemberExited and MemberRemoved
+      // #cluster-leave-example
       testProbe.expectMessageClass(ClusterEvent.MemberLeft.class);
       testProbe.expectMessageClass(ClusterEvent.MemberExited.class);
       testProbe.expectMessageClass(ClusterEvent.MemberRemoved.class);
-      // #cluster-leave-example
 
     } finally {
       system.terminate();

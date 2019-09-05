@@ -4,15 +4,25 @@ The previous section about @ref:[Actor Systems](actor-systems.md) explained how 
 hierarchies and are the smallest unit when building an application. This
 section looks at one such actor in isolation, explaining the concepts you
 encounter while implementing it. For a more in depth reference with all the
-details please refer to @ref:[Actors](../actors.md).
+details please refer to @ref:[Introduction to Actors](../typed/actors.md).
 
-An actor is a container for [State](#state), [Behavior](#behavior), a [Mailbox](#mailbox), [Child Actors](#child-actors)
-and a [Supervisor Strategy](#supervisor-strategy). All of this is encapsulated behind an [Actor
-Reference](#actor-reference). One noteworthy aspect is that actors have an explicit lifecycle,
+The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) as defined by
+Hewitt, Bishop and Steiger in 1973 is a computational model that expresses
+exactly what it means for computation to be distributed. The processing
+units—Actors—can only communicate by exchanging messages and upon reception of a
+message an Actor can do the following three fundamental actions:
+
+  1. send a finite number of messages to Actors it knows
+  2. create a finite number of new Actors
+  3. designate the behavior to be applied to the next message
+
+An actor is a container for @ref:[State](#state), @ref:[Behavior](#behavior), a @ref:[Mailbox](#mailbox), @ref:[Child Actors](#child-actors)
+and a @ref:[Supervisor Strategy](#supervisor-strategy). All of this is encapsulated behind an @ref:[Actor Reference](#actor-reference).
+One noteworthy aspect is that actors have an explicit lifecycle,
 they are not automatically destroyed when no longer referenced; after having
 created one, it is your responsibility to make sure that it will eventually be
 terminated as well—which also gives you control over how resources are released
-[When an Actor Terminates](#when-an-actor-terminates).
+@ref:[When an Actor Terminates](#when-an-actor-terminates).
 
 ## Actor Reference
 
@@ -22,17 +32,20 @@ outside using actor references, which are objects that can be passed around
 freely and without restriction. This split into inner and outer object enables
 transparency for all the desired operations: restarting an actor without
 needing to update references elsewhere, placing the actual actor object on
-remote hosts, sending messages to actors in completely different applications.
+remote hosts, sending messages to actors independent of where they are running.
 But the most important aspect is that it is not possible to look inside an
 actor and get hold of its state from the outside, unless the actor unwisely
 publishes this information itself.
 
+Actor references are parameterized and only messages that are of the specified
+type can be sent to them.
+
 ## State
 
 Actor objects will typically contain some variables which reflect possible
-states the actor may be in. This can be an explicit state machine (e.g. using
-the @ref:[FSM](../fsm.md) module), or it could be a counter, set of listeners,
-pending requests, etc. These data are what make an actor valuable, and they
+states the actor may be in. This can be an explicit state machine,
+or it could be a counter, set of listeners, pending requests, etc.
+These data are what make an actor valuable, and they
 must be protected from corruption by other actors. The good news is that Akka
 actors conceptually each have their own light-weight thread, which is
 completely shielded from the rest of the system. This means that instead of
@@ -52,7 +65,7 @@ the actor. This is to enable the ability of self-healing of the system.
 
 Optionally, an actor's state can be automatically recovered to the state
 before a restart by persisting received messages and replaying them after
-restart (see @ref:[Persistence](../persistence.md)).
+restart (see @ref:[Event Sourcing](../typed/persistence.md)).
 
 ## Behavior
 
@@ -63,10 +76,48 @@ client is authorized, deny it otherwise. This behavior may change over time,
 e.g. because different clients obtain authorization over time, or because the
 actor may go into an “out-of-service” mode and later come back. These changes
 are achieved by either encoding them in state variables which are read from the
-behavior logic, or the function itself may be swapped out at runtime, see the
-`become` and `unbecome` operations. However, the initial behavior defined
+behavior logic, or the function itself may be swapped out at runtime, by returning
+a different behavior to be used for next message. However, the initial behavior defined
 during construction of the actor object is special in the sense that a restart
 of the actor will reset its behavior to this initial one.
+
+Messages can be sent to an @ref:[actor Reference](#actor-reference) and behind
+this façade there is a behavior that receives the message and acts upon it. The
+binding between Actor reference and behavior can change over time, but that is not
+visible on the outside.
+
+Actor references are parameterized and only messages that are of the specified type
+can be sent to them. The association between an actor reference and its type
+parameter must be made when the actor reference (and its Actor) is created.
+For this purpose each behavior is also parameterized with the type of messages
+it is able to process. Since the behavior can change behind the actor reference
+façade, designating the next behavior is a constrained operation: the successor
+must handle the same type of messages as its predecessor. This is necessary in
+order to not invalidate the actor references that refer to this Actor.
+
+What this enables is that whenever a message is sent to an Actor we can
+statically ensure that the type of the message is one that the Actor declares
+to handle—we can avoid the mistake of sending completely pointless messages.
+What we cannot statically ensure, though, is that the behavior behind the
+actor reference will be in a given state when our message is received. The
+fundamental reason is that the association between actor reference and behavior
+is a dynamic runtime property, the compiler cannot know it while it translates
+the source code.
+
+This is the same as for normal Java objects with internal variables: when
+compiling the program we cannot know what their value will be, and if the
+result of a method call depends on those variables then the outcome is
+uncertain to a degree—we can only be certain that the returned value is of a
+given type.
+
+The reply message type of an Actor command is described by the type of the
+actor reference for the reply-to that is contained within the message. This
+allows a conversation to be described in terms of its types: the reply will
+be of type A, but it might also contain an address of type B, which then allows
+the other Actor to continue the conversation by sending a message of type B to
+this new actor reference. While we cannot statically express the “current” state
+of an Actor, we can express the current state of a protocol between two Actors,
+since that is just given by the last message type that was received or sent.
 
 ## Mailbox
 
@@ -97,27 +148,22 @@ behavior is overridden.
 
 ## Child Actors
 
-Each actor is potentially a supervisor: if it creates children for delegating
+Each actor is potentially a parent: if it creates children for delegating
 sub-tasks, it will automatically supervise them. The list of children is
 maintained within the actor’s context and the actor has access to it.
-Modifications to the list are done by creating (`context.actorOf(...)`) or
-stopping (`context.stop(child)`) children and these actions are reflected
-immediately. The actual creation and termination actions happen behind the
-scenes in an asynchronous way, so they do not “block” their supervisor.
+Modifications to the list are done by spawning or stopping children and
+these actions are reflected immediately. The actual creation and termination
+actions happen behind the scenes in an asynchronous way, so they do not “block”
+their parent.
 
 ## Supervisor Strategy
 
 The final piece of an actor is its strategy for handling faults of its
 children. Fault handling is then done transparently by Akka, applying one
-of the strategies described in @ref:[Supervision and Monitoring](supervision.md) for each incoming failure.
+of the strategies described in @ref:[Fault Tolerance](../typed/fault-tolerance.md)
+for each incoming failure.
 As this strategy is fundamental to how an actor system is structured, it
 cannot be changed once an actor has been created.
-
-Considering that there is only one such strategy for each actor, this means
-that if different strategies apply to the various children of an actor, the
-children should be grouped beneath intermediate supervisors with matching
-strategies, preferring once more the structuring of actor systems according to
-the splitting of tasks into sub-tasks.
 
 ## When an Actor Terminates
 
@@ -129,9 +175,3 @@ The mailbox is then replaced within the actor reference with a system mailbox,
 redirecting all new messages to the EventStream as DeadLetters. This
 is done on a best effort basis, though, so do not rely on it in order to
 construct “guaranteed delivery”.
-
-The reason for not just silently dumping the messages was inspired by our
-tests: we register the TestEventListener on the event bus to which the dead
-letters are forwarded, and that will log a warning for every dead letter
-received—this has been very helpful for deciphering test failures more quickly.
-It is conceivable that this feature may also be of use for other purposes.

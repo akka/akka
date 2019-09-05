@@ -27,7 +27,8 @@ public class LoggerSourceTest extends JUnitSuite {
   private static final Config config =
       ConfigFactory.parseString(
           "akka.loggers = [akka.testkit.TestEventListener] \n"
-              + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
+              + "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n"
+              + "akka.persistence.journal.inmem.test-serialization = on \n");
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 

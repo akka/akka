@@ -7,24 +7,26 @@ package akka.stream.io
 import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
 import java.nio.file._
 
-import akka.actor.ActorSystem
-import akka.dispatch.{ Dispatchers, ExecutionContexts }
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.stream.impl.StreamSupervisor
-import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.scaladsl.{ FileIO, Sink, Source }
-import akka.stream.testkit._
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.dispatch.ExecutionContexts
 import akka.stream._
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.impl.StreamSupervisor.Children
+import akka.stream.scaladsl.{ FileIO, Keep, Sink, Source }
+import akka.stream.testkit.Utils._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ByteString
+import com.github.ghik.silencer.silent
 import com.google.common.jimfs.{ Configuration, Jimfs }
+import org.scalatest.concurrent.ScalaFutures
 
 import scala.collection.mutable.ListBuffer
-import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import scala.concurrent.{ Await, Future }
+import scala.util.Success
 
-class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
+@silent
+class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
   implicit val materializer = ActorMaterializer(settings)
@@ -157,40 +159,40 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
 
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
       targetFile { f =>
-        val sys = ActorSystem("FileSinkSpec-dispatcher-testing-1", UnboundedMailboxConfig)
-        val materializer = ActorMaterializer()(sys)
+        val forever = Source.maybe.toMat(FileIO.toPath(f))(Keep.left).run()
         try {
-          Source.fromIterator(() => Iterator.continually(TestByteStrings.head)).runWith(FileIO.toPath(f))(materializer)
-
           materializer
             .asInstanceOf[PhasedFusingActorMaterializer]
             .supervisor
             .tell(StreamSupervisor.GetChildren, testActor)
-          val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
-          // haven't figured out why this returns the aliased id rather than the id, but the stage is going away so whatever
-          assertDispatcher(ref, Dispatchers.DefaultBlockingDispatcherId)
-        } finally shutdown(sys)
+          val children = expectMsgType[Children]
+          val ref = withClue(children) {
+            val fileSink = children.children.find(_.path.toString contains "fileSink")
+            fileSink shouldBe defined
+            fileSink.get
+          }
+          assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
+        } finally {
+          forever.complete(Success(None))
+        }
       }
     }
 
     "allow overriding the dispatcher using Attributes" in assertAllStagesStopped {
       targetFile { f =>
-        val sys = ActorSystem("FileSinkSpec-dispatcher-testing-2", UnboundedMailboxConfig)
-        val materializer = ActorMaterializer()(sys)
-
+        val forever = Source.maybe
+          .toMat(FileIO.toPath(f).addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))(Keep.left)
+          .run()
         try {
-          Source
-            .fromIterator(() => Iterator.continually(TestByteStrings.head))
-            .to(FileIO.toPath(f).addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))
-            .run()(materializer)
-
           materializer
             .asInstanceOf[PhasedFusingActorMaterializer]
             .supervisor
             .tell(StreamSupervisor.GetChildren, testActor)
           val ref = expectMsgType[Children].children.find(_.path.toString contains "fileSink").get
           assertDispatcher(ref, "akka.actor.default-dispatcher")
-        } finally shutdown(sys)
+        } finally {
+          forever.complete(Success(None))
+        }
       }
     }
 
@@ -207,22 +209,23 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
             }(ExecutionContexts.sameThreadExecutionContext)))
 
         Await.result(completion, 3.seconds)
-
         checkFileContents(f, TestLines.head)
       }
     }
 
     "complete materialized future with an exception when upstream fails" in assertAllStagesStopped {
+      val te = TE("oh no")
       targetFile { f =>
         val completion = Source(TestByteStrings)
           .map { bytes =>
-            if (bytes.contains('b')) throw new Error("bees!")
+            if (bytes.contains('b')) throw te
             bytes
           }
           .runWith(FileIO.toPath(f))
 
-        val ex = intercept[AbruptIOTerminationException] { Await.result(completion, 3.seconds) }
-        ex.ioResult.count should equal(1001)
+        val ex = intercept[IOOperationIncompleteException] { Await.result(completion, 3.seconds) }
+        ex.count should equal(1001)
+        ex.getCause should equal(te)
         checkFileContents(f, TestLines.takeWhile(!_.contains('b')).mkString(""))
       }
     }
@@ -231,7 +234,7 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
       val completion =
         Source.single(ByteString("42")).runWith(FileIO.toPath(fs.getPath("/I/hope/this/file/doesnt/exist.txt")))
 
-      completion.failed.futureValue shouldBe an[NoSuchFileException]
+      completion.failed.futureValue.getCause shouldBe an[NoSuchFileException]
     }
   }
 

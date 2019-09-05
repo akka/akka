@@ -4,11 +4,13 @@
 
 package akka.stream.impl
 
-import akka.stream.{ AbruptTerminationException, ActorMaterializerSettings }
+import akka.stream.AbruptTerminationException
 
 import scala.collection.immutable
 import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.stream.ActorAttributes
+import akka.stream.Attributes
 import akka.util.unused
 import org.reactivestreams.Subscription
 
@@ -257,16 +259,20 @@ import org.reactivestreams.Subscription
 /**
  * INTERNAL API
  */
-@DoNotInherit private[akka] abstract class FanOut(val settings: ActorMaterializerSettings, val outputCount: Int)
+@DoNotInherit private[akka] abstract class FanOut(attributes: Attributes, val outputCount: Int)
     extends Actor
     with ActorLogging
     with Pump {
   import FanOut._
 
   protected val outputBunch = new OutputBunch(outputCount, self, this)
-  protected val primaryInputs: Inputs = new BatchingInputBuffer(settings.maxInputBufferSize, this) {
-    override def onError(e: Throwable): Unit = fail(e)
+  protected val primaryInputs: Inputs = {
+    val maxInputBufferSize = attributes.mandatoryAttribute[Attributes.InputBuffer].max
+    new BatchingInputBuffer(maxInputBufferSize, this) {
+      override def onError(e: Throwable): Unit = fail(e)
+    }
   }
+  private val debugLoggingEnabled = attributes.mandatoryAttribute[ActorAttributes.DebugLogging].enabled
 
   override def pumpFinished(): Unit = {
     primaryInputs.cancel()
@@ -277,7 +283,7 @@ import org.reactivestreams.Subscription
   override def pumpFailed(e: Throwable): Unit = fail(e)
 
   protected def fail(e: Throwable): Unit = {
-    if (settings.debugLogging)
+    if (debugLoggingEnabled)
       log.debug("fail due to: {}", e.getMessage)
     primaryInputs.cancel()
     outputBunch.cancel(e)
@@ -301,15 +307,14 @@ import org.reactivestreams.Subscription
  * INTERNAL API
  */
 @InternalApi private[akka] object Unzip {
-  def props(settings: ActorMaterializerSettings): Props =
-    Props(new Unzip(settings)).withDeploy(Deploy.local)
+  def props(attributes: Attributes): Props =
+    Props(new Unzip(attributes)).withDeploy(Deploy.local)
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class Unzip(_settings: ActorMaterializerSettings)
-    extends FanOut(_settings, outputCount = 2) {
+@InternalApi private[akka] class Unzip(attributes: Attributes) extends FanOut(attributes, outputCount = 2) {
   outputBunch.markAllOutputs()
 
   initialPhase(

@@ -86,13 +86,6 @@ object AbstractActor {
     def getChildren(): java.lang.Iterable[ActorRef]
 
     /**
-     * Returns a reference to the named child or null if no child with
-     * that name exists.
-     */
-    @deprecated("Use findChild instead", "2.5.0")
-    def getChild(name: String): ActorRef
-
-    /**
      * Returns a reference to the named child if it exists.
      *
      * *Warning*: This method is not thread-safe and must not be accessed from threads other
@@ -280,7 +273,7 @@ abstract class AbstractActor extends Actor {
   // TODO In 2.6.0 we can remove deprecation and make the method final
   @deprecated("Override preRestart with message parameter with Optional type instead", "2.5.0")
   @throws(classOf[Exception])
-  @silent
+  @silent("deprecated")
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
     import scala.compat.java8.OptionConverters._
     preRestart(reason, message.asJava)

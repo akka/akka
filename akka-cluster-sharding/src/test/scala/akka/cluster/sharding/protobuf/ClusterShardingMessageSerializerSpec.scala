@@ -4,12 +4,17 @@
 
 package akka.cluster.sharding.protobuf
 
+import scala.concurrent.duration._
+
+import akka.actor.Address
 import akka.actor.ExtendedActorSystem
-import akka.testkit.AkkaSpec
 import akka.actor.Props
+import akka.cluster.sharding.Shard
+import akka.cluster.sharding.ShardCoordinator
+import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.sharding.{ Shard, ShardCoordinator, ShardRegion }
 import akka.serialization.SerializationExtension
+import akka.testkit.AkkaSpec
 
 class ClusterShardingMessageSerializerSpec extends AkkaSpec {
   import ShardCoordinator.Internal._
@@ -86,13 +91,27 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     }
 
     "be able to serialize ShardRegionStats" in {
-      checkSerialization(ShardRegion.ShardRegionStats(Map.empty[ShardId, Int]))
-      checkSerialization(ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23)))
+      checkSerialization(ShardRegion.ShardRegionStats(Map.empty[ShardId, Int], Set.empty[ShardId]))
+      checkSerialization(ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")))
     }
 
     "be able to serialize StartEntity" in {
       checkSerialization(ShardRegion.StartEntity("42"))
       checkSerialization(ShardRegion.StartEntityAck("13", "37"))
+    }
+
+    "be able to serialize GetCurrentRegions" in {
+      checkSerialization(ShardRegion.GetCurrentRegions)
+      checkSerialization(
+        ShardRegion.CurrentRegions(Set(Address("akka", "sys", "a", 2552), Address("akka", "sys", "b", 2552))))
+    }
+
+    "be able to serialize GetClusterShardingStats" in {
+      checkSerialization(ShardRegion.GetClusterShardingStats(3.seconds))
+      checkSerialization(
+        ShardRegion.ClusterShardingStats(Map(
+          Address("akka", "sys", "a", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")),
+          Address("akka", "sys", "b", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")))))
     }
   }
 }

@@ -6,11 +6,11 @@ package akka.actor.typed
 
 import scala.annotation.switch
 import scala.annotation.tailrec
+import scala.reflect.ClassTag
 
 import akka.actor.InvalidMessageException
 import akka.actor.typed.internal.BehaviorImpl
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
-import akka.actor.typed.internal.BehaviorImpl.OrElseBehavior
 import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
 import akka.actor.typed.internal.BehaviorTags
 import akka.actor.typed.internal.InterceptorImpl
@@ -59,16 +59,6 @@ abstract class Behavior[T](private[akka] val _tag: Int) { behavior =>
    */
   @InternalApi private[akka] final def unsafeCast[U]: Behavior[U] = this.asInstanceOf[Behavior[U]]
 
-  /**
-   * Composes this `Behavior` with a fallback `Behavior` which
-   * is used when this `Behavior` doesn't handle the message or signal, i.e.
-   * when `unhandled` is returned.
-   *
-   *  @param that the fallback `Behavior`
-   **/
-  final def orElse(that: Behavior[T]): Behavior[T] = BehaviorImpl.DeferredBehavior[T] { ctx =>
-    new OrElseBehavior[T](Behavior.start(this, ctx), Behavior.start(that, ctx))
-  }
 }
 
 /**
@@ -117,26 +107,36 @@ abstract class ExtensibleBehavior[T] extends Behavior[T](BehaviorTags.Extensible
 
 object Behavior {
 
-  final implicit class BehaviorDecorators[T](val behavior: Behavior[T]) extends AnyVal {
+  final implicit class BehaviorDecorators[Inner](val behavior: Behavior[Inner]) extends AnyVal {
 
     /**
-     * Widen the wrapped Behavior by placing a funnel in front of it: the supplied
+     * Transform the incoming messages by placing a funnel in front of the wrapped `Behavior`: the supplied
      * PartialFunction decides which message to pull in (those that it is defined
      * at) and may transform the incoming message to place them into the wrapped
      * Behavior’s type hierarchy. Signals are not transformed.
      *
      * Example:
      * {{{
-     * receive[String] { (ctx, msg) => println(msg); same }.widen[Number] {
-     *   case b: BigDecimal => s"BigDecimal(&dollar;b)"
-     *   case i: BigInteger => s"BigInteger(&dollar;i)"
-     *   // all other kinds of Number will be `unhandled`
-     * }
+     *   val b: Behavior[Number] =
+     *     Behaviors
+     *       .receive[String] { (ctx, msg) =>
+     *         println(msg)
+     *         Behaviors.same
+     *       }
+     *       .transformMessages[Number] {
+     *         case b: BigDecimal => s"BigDecimal(&dollar;b)"
+     *         case i: BigInt     => s"BigInteger(&dollar;i)"
+     *         // all other kinds of Number will be `unhandled`
+     *       }
      * }}}
      *
+     * The `ClassTag` for `Outer` ensures that only messages of this class or a subclass thereof will be
+     * intercepted. Other message types (e.g. a private protocol) will bypass
+     * the interceptor and be continue to the inner behavior untouched.
+     *
      */
-    def widen[U](matcher: PartialFunction[U, T]): Behavior[U] =
-      BehaviorImpl.widened(behavior, matcher)
+    def transformMessages[Outer: ClassTag](matcher: PartialFunction[Outer, Inner]): Behavior[Outer] =
+      BehaviorImpl.transformMessages(behavior, matcher)
 
   }
 

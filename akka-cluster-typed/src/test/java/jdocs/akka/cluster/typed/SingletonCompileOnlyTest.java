@@ -5,82 +5,117 @@
 package jdocs.akka.cluster.typed;
 
 import akka.actor.typed.*;
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
 
-// #import
-import akka.cluster.typed.*;
 import java.time.Duration;
+
+// #import
+import akka.cluster.typed.ClusterSingleton;
+import akka.cluster.typed.SingletonActor;
+
 // #import
 
-public class SingletonCompileOnlyTest {
+public interface SingletonCompileOnlyTest {
 
   // #counter
-  interface CounterCommand {}
+  public class Counter extends AbstractBehavior<Counter.Command> {
 
-  public static class Increment implements CounterCommand {}
+    public interface Command {}
 
-  public static class GoodByeCounter implements CounterCommand {}
-
-  public static class GetValue implements CounterCommand {
-    private final ActorRef<Integer> replyTo;
-
-    public GetValue(ActorRef<Integer> replyTo) {
-      this.replyTo = replyTo;
+    public enum Increment implements Command {
+      INSTANCE
     }
-  }
 
-  public static Behavior<CounterCommand> counter(String entityId, Integer value) {
-    return Behaviors.receive(CounterCommand.class)
-        .onMessage(Increment.class, msg -> counter(entityId, value + 1))
-        .onMessage(
-            GetValue.class,
-            msg -> {
-              msg.replyTo.tell(value);
-              return Behaviors.same();
-            })
-        .onMessage(GoodByeCounter.class, msg -> Behaviors.stopped())
-        .build();
+    public static class GetValue implements Command {
+      private final ActorRef<Integer> replyTo;
+
+      public GetValue(ActorRef<Integer> replyTo) {
+        this.replyTo = replyTo;
+      }
+    }
+
+    public enum GoodByeCounter implements Command {
+      INSTANCE
+    }
+
+    public static Behavior<Command> create() {
+      return Behaviors.setup(Counter::new);
+    }
+
+    private final ActorContext<Command> context;
+    private int value = 0;
+
+    private Counter(ActorContext<Command> context) {
+      this.context = context;
+    }
+
+    @Override
+    public Receive<Command> createReceive() {
+      return newReceiveBuilder()
+          .onMessage(Increment.class, msg -> onIncrement())
+          .onMessage(GetValue.class, this::onGetValue)
+          .onMessage(GoodByeCounter.class, msg -> onGoodByCounter())
+          .build();
+    }
+
+    private Behavior<Command> onIncrement() {
+      value++;
+      return this;
+    }
+
+    private Behavior<Command> onGetValue(GetValue msg) {
+      msg.replyTo.tell(value);
+      return this;
+    }
+
+    private Behavior<Command> onGoodByCounter() {
+      // Possible async action then stop
+      return this;
+    }
   }
   // #counter
 
   ActorSystem system = ActorSystem.create(Behaviors.empty(), "SingletonExample");
 
-  public void example() {
+  public static void example() {
 
     // #singleton
     ClusterSingleton singleton = ClusterSingleton.get(system);
     // Start if needed and provide a proxy to a named singleton
-    ActorRef<CounterCommand> proxy =
-        singleton.init(SingletonActor.of(counter("TheCounter", 0), "GlobalCounter"));
+    ActorRef<Counter.Command> proxy =
+        singleton.init(SingletonActor.of(Counter.create(), "GlobalCounter"));
 
-    proxy.tell(new Increment());
+    proxy.tell(Counter.Increment.INSTANCE);
     // #singleton
 
   }
 
-  public void customStopMessage() {
+  public static void customStopMessage() {
     ClusterSingleton singleton = ClusterSingleton.get(system);
     // #stop-message
-    SingletonActor<CounterCommand> counterSingleton =
-        SingletonActor.of(counter("TheCounter", 0), "GlobalCounter")
-            .withStopMessage(new GoodByeCounter());
-    ActorRef<CounterCommand> proxy = singleton.init(counterSingleton);
+    SingletonActor<Counter.Command> counterSingleton =
+        SingletonActor.of(Counter.create(), "GlobalCounter")
+            .withStopMessage(Counter.GoodByeCounter.INSTANCE);
+    ActorRef<Counter.Command> proxy = singleton.init(counterSingleton);
     // #stop-message
-    proxy.tell(new Increment()); // avoid unused warning
+    proxy.tell(Counter.Increment.INSTANCE); // avoid unused warning
   }
 
-  public void backoff() {
+  public static void backoff() {
     // #backoff
     ClusterSingleton singleton = ClusterSingleton.get(system);
-    ActorRef<CounterCommand> proxy =
+    ActorRef<Counter.Command> proxy =
         singleton.init(
             SingletonActor.of(
-                Behaviors.supervise(counter("TheCounter", 0))
+                Behaviors.supervise(Counter.create())
                     .onFailure(
                         SupervisorStrategy.restartWithBackoff(
                             Duration.ofSeconds(1), Duration.ofSeconds(10), 0.2)),
                 "GlobalCounter"));
     // #backoff
-    proxy.tell(new Increment()); // avoid unused warning
+    proxy.tell(Counter.Increment.INSTANCE); // avoid unused warning
   }
 }

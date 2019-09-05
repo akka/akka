@@ -16,14 +16,17 @@ import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
 import akka.remote.AddressUidExtension
 import akka.util.TypedMultiMap
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import akka.actor.Address
 import akka.cluster.ClusterEvent.ClusterDomainEvent
 import akka.cluster.ClusterEvent.ClusterShuttingDown
 import akka.cluster.ClusterEvent.MemberJoined
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
+import akka.cluster.ClusterEvent.ReachabilityEvent
+import akka.cluster.ClusterEvent.ReachableMember
+import akka.cluster.ClusterEvent.UnreachableMember
 import akka.cluster.ddata.SelfUniqueAddress
 
 // just to provide a log class
@@ -60,6 +63,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       extends InternalCommand
   private final case class NodeAdded(addresses: UniqueAddress) extends InternalCommand
   private final case class NodeRemoved(addresses: UniqueAddress) extends InternalCommand
+  private final case class NodeUnreachable(addresses: UniqueAddress) extends InternalCommand
+  private final case class NodeReachable(addresses: UniqueAddress) extends InternalCommand
   private final case class ChangeFromReplicator(key: DDataKey, value: ORMultiMap[ServiceKey[_], Entry])
       extends InternalCommand
   private case object RemoveTick extends InternalCommand
@@ -109,11 +114,13 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         // remove entries when members are removed
         val clusterEventMessageAdapter: ActorRef[ClusterDomainEvent] =
           ctx.messageAdapter[ClusterDomainEvent] {
-            case MemberJoined(member)     => NodeAdded(member.uniqueAddress)
-            case MemberWeaklyUp(member)   => NodeAdded(member.uniqueAddress)
-            case MemberUp(member)         => NodeAdded(member.uniqueAddress)
-            case MemberRemoved(member, _) => NodeRemoved(member.uniqueAddress)
-            case ClusterShuttingDown      => NodeRemoved(setup.cluster.selfUniqueAddress)
+            case MemberJoined(member)      => NodeAdded(member.uniqueAddress)
+            case MemberWeaklyUp(member)    => NodeAdded(member.uniqueAddress)
+            case MemberUp(member)          => NodeAdded(member.uniqueAddress)
+            case MemberRemoved(member, _)  => NodeRemoved(member.uniqueAddress)
+            case UnreachableMember(member) => NodeUnreachable(member.uniqueAddress)
+            case ReachableMember(member)   => NodeReachable(member.uniqueAddress)
+            case ClusterShuttingDown       => NodeRemoved(setup.cluster.selfUniqueAddress)
             case other =>
               throw new IllegalStateException(s"Unexpected ClusterDomainEvent $other. Please report bug.")
           }
@@ -124,6 +131,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           classOf[MemberWeaklyUp],
           classOf[MemberUp],
           classOf[MemberRemoved],
+          classOf[ReachabilityEvent],
           ClusterShuttingDown.getClass)
 
         // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
@@ -211,6 +219,20 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         }
       }
 
+      def reachabilityChanged(keysForNode: Set[AbstractServiceKey], newRegistry: ShardedServiceRegistry): Unit = {
+        keysForNode.foreach { changedKey =>
+          val serviceKey = changedKey.asServiceKey
+
+          val subscribers = subscriptions.get(changedKey)
+          if (subscribers.nonEmpty) {
+            val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
+            val listing =
+              ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved = false)
+            subscribers.foreach(_ ! listing)
+          }
+        }
+      }
+
       def onCommand(cmd: Command): Behavior[Command] = cmd match {
         case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>
           if (serviceInstance.path.address.hasLocalScope) {
@@ -231,15 +253,18 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           Behaviors.same
 
         case ReceptionistMessages.Find(key, replyTo) =>
-          replyTo ! ReceptionistMessages.Listing(key.asServiceKey, registry.activeActorRefsFor(key, selfUniqueAddress))
+          val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
+          replyTo ! ReceptionistMessages.Listing(key.asServiceKey, reachable, all, servicesWereAddedOrRemoved = true)
           Behaviors.same
 
         case ReceptionistMessages.Subscribe(key, subscriber) =>
           watchWith(ctx, subscriber, SubscriberTerminated(key, subscriber))
 
           // immediately reply with initial listings to the new subscriber
-          val listing =
-            ReceptionistMessages.Listing(key.asServiceKey, registry.activeActorRefsFor(key, selfUniqueAddress))
+          val listing = {
+            val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
+            ReceptionistMessages.Listing(key.asServiceKey, reachable, all, servicesWereAddedOrRemoved = true)
+          }
           subscriber ! listing
 
           next(newSubscriptions = subscriptions.inserted(key)(subscriber))
@@ -287,9 +312,9 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
               val subscribers = subscriptions.get(changedKey)
               if (subscribers.nonEmpty) {
+                val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
                 val listing =
-                  ReceptionistMessages
-                    .Listing(serviceKey, newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress))
+                  ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved = true)
                 subscribers.foreach(_ ! listing)
               }
 
@@ -339,6 +364,30 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
             next(registry.removeNode(uniqueAddress))
           }
+
+        case NodeUnreachable(uniqueAddress) =>
+          val keysForNode = registry.keysFor(uniqueAddress)
+          val newRegistry = registry.addUnreachable(uniqueAddress)
+          if (keysForNode.nonEmpty) {
+            ctx.log.debug(
+              "ClusterReceptionist [{}] - Node with registered services unreachable [{}]",
+              cluster.selfAddress,
+              uniqueAddress)
+            reachabilityChanged(keysForNode, newRegistry)
+          }
+          next(newRegistry)
+
+        case NodeReachable(uniqueAddress) =>
+          val keysForNode = registry.keysFor(uniqueAddress)
+          val newRegistry = registry.removeUnreachable(uniqueAddress)
+          if (keysForNode.nonEmpty) {
+            ctx.log.debug(
+              "ClusterReceptionist [{}] - Node with registered services reachable again [{}]",
+              cluster.selfAddress,
+              uniqueAddress)
+            reachabilityChanged(keysForNode, newRegistry)
+          }
+          next(newRegistry)
 
         case RemoveTick =>
           // ok to update from several nodes but more efficient to try to do it from one node

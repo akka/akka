@@ -4,6 +4,8 @@
 
 package akka.actor.typed.internal
 
+import scala.reflect.ClassTag
+
 import akka.actor.typed
 
 import akka.actor.typed.scaladsl.Behaviors
@@ -74,9 +76,10 @@ private[akka] final class InterceptorImpl[O, I](
     new InterceptorImpl(interceptor, newNested)
 
   override def receive(ctx: typed.TypedActorContext[O], msg: O): Behavior[O] = {
-    val interceptMessageType = interceptor.interceptMessageType
+    // TODO performance optimization could maybe to avoid isAssignableFrom if interceptMessageClass is Class[Object]?
+    val interceptMessageClass = interceptor.interceptMessageClass
     val result =
-      if (interceptMessageType == null || interceptMessageType.isAssignableFrom(msg.getClass))
+      if ((interceptMessageClass ne null) && interceptor.interceptMessageClass.isAssignableFrom(msg.getClass))
         interceptor.aroundReceive(ctx, msg, receiveTarget)
       else
         receiveTarget.apply(ctx, msg.asInstanceOf[I])
@@ -115,16 +118,13 @@ private[akka] final class InterceptorImpl[O, I](
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class MonitorInterceptor[T](actorRef: ActorRef[T]) extends BehaviorInterceptor[T, T] {
+private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRef[T])
+    extends BehaviorInterceptor[T, T] {
   import BehaviorInterceptor._
 
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
     actorRef ! msg
     target(ctx, msg)
-  }
-
-  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    target(ctx, signal)
   }
 
   // only once to the same actor in the same behavior stack
@@ -136,22 +136,31 @@ private[akka] final case class MonitorInterceptor[T](actorRef: ActorRef[T]) exte
 }
 
 /**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object LogMessagesInterceptor {
+  def apply[T](opts: LogOptions): BehaviorInterceptor[T, T] = {
+    new LogMessagesInterceptor(opts).asInstanceOf[BehaviorInterceptor[T, T]]
+  }
+}
+
+/**
  * Log all messages for this decorated ReceiveTarget[T] to logger before receiving it ourselves.
  *
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class LogMessagesInterceptor[T](opts: LogOptions) extends BehaviorInterceptor[T, T] {
+private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends BehaviorInterceptor[Any, Any] {
 
   import BehaviorInterceptor._
 
-  override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
+  override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
     if (opts.enabled)
       opts.logger.getOrElse(ctx.asScala.log).log(opts.level, "received message {}", msg)
     target(ctx, msg)
   }
 
-  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+  override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
     if (opts.enabled)
       opts.logger.getOrElse(ctx.asScala.log).log(opts.level, "received signal {}", signal)
     target(ctx, signal)
@@ -159,8 +168,8 @@ private[akka] final case class LogMessagesInterceptor[T](opts: LogOptions) exten
 
   // only once in the same behavior stack
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
-    case LogMessagesInterceptor(`opts`) => true
-    case _                              => false
+    case a: LogMessagesInterceptor => a.opts == opts
+    case _                         => false
   }
 }
 
@@ -168,42 +177,40 @@ private[akka] final case class LogMessagesInterceptor[T](opts: LogOptions) exten
  * INTERNAL API
  */
 @InternalApi
-private[akka] object WidenedInterceptor {
+private[akka] object TransformMessagesInterceptor {
 
-  private final val _any2null = (_: Any) => null
-  private final def any2null[T] = _any2null.asInstanceOf[Any => T]
+  private final val _notMatchIndicator: Any = new AnyRef
+  private final val _any2NotMatchIndicator = (_: Any) => _notMatchIndicator
+  private final def any2NotMatchIndicator[T] = _any2NotMatchIndicator.asInstanceOf[Any => T]
 }
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[akka] final case class WidenedInterceptor[O, I](matcher: PartialFunction[O, I])
+private[akka] final case class TransformMessagesInterceptor[O: ClassTag, I](matcher: PartialFunction[O, I])
     extends BehaviorInterceptor[O, I] {
   import BehaviorInterceptor._
-  import WidenedInterceptor._
+  import TransformMessagesInterceptor._
 
   override def isSame(other: BehaviorInterceptor[Any, Any]): Boolean = other match {
     // If they use the same pf instance we can allow it, to have one way to workaround defining
     // "recursive" narrowed behaviors.
-    case WidenedInterceptor(`matcher`)    => true
-    case WidenedInterceptor(otherMatcher) =>
+    case TransformMessagesInterceptor(`matcher`)    => true
+    case TransformMessagesInterceptor(otherMatcher) =>
       // there is no safe way to allow this
       throw new IllegalStateException(
-        "Widen can only be used one time in the same behavior stack. " +
+        "transformMessages can only be used one time in the same behavior stack. " +
         s"One defined in ${LineNumbers(matcher)}, and another in ${LineNumbers(otherMatcher)}")
     case _ => false
   }
 
   def aroundReceive(ctx: TypedActorContext[O], msg: O, target: ReceiveTarget[I]): Behavior[I] = {
-    matcher.applyOrElse(msg, any2null) match {
-      case null        => Behaviors.unhandled
-      case transformed => target(ctx, transformed)
+    matcher.applyOrElse(msg, any2NotMatchIndicator) match {
+      case result if _notMatchIndicator == result => Behaviors.unhandled
+      case transformed                            => target(ctx, transformed)
     }
   }
 
-  def aroundSignal(ctx: TypedActorContext[O], signal: Signal, target: SignalTarget[I]): Behavior[I] =
-    target(ctx, signal)
-
-  override def toString: String = s"Widen(${LineNumbers(matcher)})"
+  override def toString: String = s"TransformMessages(${LineNumbers(matcher)})"
 }

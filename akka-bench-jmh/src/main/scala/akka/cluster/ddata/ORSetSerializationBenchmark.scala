@@ -41,7 +41,6 @@ class ORSetSerializationBenchmark {
     akka.remote.artery.canonical.port = 0
     akka.actor {
       serialize-messages = off
-      allow-java-serialization = off
     }
     """)
 
@@ -52,8 +51,10 @@ class ORSetSerializationBenchmark {
   private val ref2 = (1 to 10).map(n => system2.actorOf(Props.empty, s"ref2-$n"))
 
   private val orSet = {
-    val set1 = ref1.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(Cluster(system1), r) }
-    val set2 = ref2.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(Cluster(system2), r) }
+    val selfUniqueAddress1 = SelfUniqueAddress(Cluster(system1).selfUniqueAddress)
+    val selfUniqueAddress2 = SelfUniqueAddress(Cluster(system2).selfUniqueAddress)
+    val set1 = ref1.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(selfUniqueAddress1, r) }
+    val set2 = ref2.foldLeft(ORSet.empty[ActorRef]) { case (acc, r) => acc.add(selfUniqueAddress2, r) }
     set1.merge(set2)
   }
 

@@ -143,7 +143,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       val behv =
         Behaviors.receive[String] {
           case (context, "start-ask") =>
-            context.ask[Question, Long](probe.ref)(Question(_)) {
+            context.ask[Question, Long](probe.ref, Question(_)) {
               case Success(42L) =>
                 throw new RuntimeException("Unsupported number")
               case _ => "test"

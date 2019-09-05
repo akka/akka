@@ -7,8 +7,7 @@ package akka.actor.testkit.typed.javadsl
 import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.typed.{ ActorRef, Behavior, Signal }
-import akka.annotation.DoNotInherit
-
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 import java.util.concurrent.ThreadLocalRandom
 
 object BehaviorTestKit {
@@ -17,6 +16,7 @@ object BehaviorTestKit {
   /**
    * JAVA API
    */
+  @ApiMayChange
   def create[T](initialBehavior: Behavior[T], name: String): BehaviorTestKit[T] = {
     val uid = ThreadLocalRandom.current().nextInt()
     new BehaviorTestKitImpl((address / name).withUid(uid), initialBehavior)
@@ -25,6 +25,7 @@ object BehaviorTestKit {
   /**
    * JAVA API
    */
+  @ApiMayChange
   def create[T](initialBehavior: Behavior[T]): BehaviorTestKit[T] =
     create(initialBehavior, "testkit")
 
@@ -39,6 +40,7 @@ object BehaviorTestKit {
  * For asynchronous testing of `Behavior`s running see [[ActorTestKit]]
  */
 @DoNotInherit
+@ApiMayChange
 abstract class BehaviorTestKit[T] {
 
   /**

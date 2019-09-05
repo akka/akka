@@ -7,14 +7,8 @@ package aeron
 
 import java.io.File
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
-
 import akka.actor.ExtendedActorSystem
 import akka.remote.artery.aeron.AeronSink.GaveUpMessageException
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.testkit.AkkaSpec
@@ -24,7 +18,13 @@ import io.aeron.Aeron
 import io.aeron.driver.MediaDriver
 import org.agrona.IoUtil
 
-class AeronSinkSpec extends AkkaSpec with ImplicitSender {
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+class AeronSinkSpec extends AkkaSpec("""
+    akka.stream.materializer.debug.fuzzing-mode = on
+  """) with ImplicitSender {
 
   val driver = MediaDriver.launchEmbedded()
 
@@ -42,9 +42,6 @@ class AeronSinkSpec extends AkkaSpec with ImplicitSender {
   }
 
   val pool = new EnvelopeBufferPool(1034 * 1024, 128)
-
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
 
   override def afterTermination(): Unit = {
     taskRunner.stop()

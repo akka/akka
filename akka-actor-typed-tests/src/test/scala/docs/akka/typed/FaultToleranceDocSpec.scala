@@ -8,7 +8,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ DeathPactException, SupervisorStrategy }
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
+import com.github.ghik.silencer.silent
 
+@silent("never used")
 class FaultToleranceDocSpec extends ScalaTestWithActorTestKit("""
       # silenced to not put noise in test logs
       akka.loglevel = off

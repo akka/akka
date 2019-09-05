@@ -6,14 +6,11 @@ package docs.persistence.query
 
 import akka.NotUsed
 import akka.actor._
-import akka.persistence.{ PersistentActor, Recovery }
 import akka.persistence.query._
-import akka.stream.{ ActorMaterializer, FlowShape }
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.javadsl
 import akka.testkit.AkkaSpec
 import akka.util.Timeout
-import docs.persistence.query.PersistenceQueryDocSpec.TheOneWhoWritesToQueryJournal
 import org.reactivestreams.Subscriber
 
 import scala.collection.immutable
@@ -151,7 +148,6 @@ object PersistenceQueryDocSpec {
 
     //#projection-into-different-store-rs
     implicit val system = ActorSystem()
-    implicit val mat = ActorMaterializer()
 
     val readJournal =
       PersistenceQuery(system).readJournalFor[MyScaladslReadJournal](JournalId)
@@ -202,8 +198,6 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
       """)
   }
 
-  implicit val mat = ActorMaterializer()
-
   class BasicUsage {
     //#basic-usage
     // obtain read journal by plugin id
@@ -215,7 +209,6 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
       readJournal.eventsByPersistenceId("user-1337", 0, Long.MaxValue)
 
     // materialize stream, consuming events
-    implicit val mat = ActorMaterializer()
     source.runForeach { event =>
       println("Event: " + event)
     }

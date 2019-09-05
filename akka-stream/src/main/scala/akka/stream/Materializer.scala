@@ -4,6 +4,7 @@
 
 package akka.stream
 
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.Cancellable
 import akka.annotation.InternalApi
 import com.github.ghik.silencer.silent
@@ -23,7 +24,7 @@ import scala.concurrent.duration.FiniteDuration
  *
  * Once the SPI is final this notice will be removed.
  */
-@silent // deprecatedName(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
+@silent("deprecated") // Name(symbol) is deprecated but older Scala versions don't have a string signature, since "2.5.8"
 abstract class Materializer {
 
   /**
@@ -142,6 +143,16 @@ abstract class Materializer {
     "scheduleAtFixedRate, but scheduleWithFixedDelay is often preferred.",
     since = "2.6.0")
   def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable
+
+}
+
+object Materializer {
+
+  /**
+   * Implicitly provides the system wide materializer from a classic or typed `ActorSystem`
+   */
+  implicit def matFromSystem(implicit provider: ClassicActorSystemProvider): Materializer =
+    SystemMaterializer(provider.classicSystem).materializer
 
 }
 

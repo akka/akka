@@ -9,6 +9,7 @@ import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import scala.concurrent.duration._
+
 import akka.actor._
 import akka.remote.{ RARP, RemoteActorRefProvider, RemotingMultiNodeSpec }
 import akka.remote.testconductor.RoleName
@@ -19,6 +20,7 @@ import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 import akka.remote.artery.compress.CompressionProtocol.Events.ReceivedActorRefCompressionTable
+import akka.serialization.jackson.CborSerializable
 
 object MaxThroughputSpec extends MultiNodeConfig {
   val first = role("first")
@@ -82,16 +84,17 @@ object MaxThroughputSpec extends MultiNodeConfig {
        # Set to 10 by default. Might be worthwhile to experiment with.
        # throughput = 100
      }
-     """)
+    """)
 
   commonConfig(debugConfig(on = false).withFallback(cfg).withFallback(RemotingMultiNodeSpec.commonConfig))
 
   case object Run
-  sealed trait Echo extends DeadLetterSuppression with JavaSerializable
+  sealed trait Echo extends DeadLetterSuppression with CborSerializable
+  final case object StartAck extends Echo
   final case class Start(correspondingReceiver: ActorRef) extends Echo
   final case object End extends Echo
-  final case class Warmup(msg: AnyRef)
-  final case class EndResult(totalReceived: Long) extends JavaSerializable
+  final case class Warmup(payload: AnyRef) extends CborSerializable
+  final case class EndResult(totalReceived: Long) extends CborSerializable
   final case class FlowControl(id: Int, burstStartTime: Long) extends Echo
 
   sealed trait Target {
@@ -129,7 +132,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
       case Start(corresponding) =>
         if (corresponding == self) correspondingSender = sender()
-        sender() ! Start
+        sender() ! StartAck
 
       case End if endMessagesMissing > 1 =>
         endMessagesMissing -= 1 // wait for End message from all senders
@@ -216,7 +219,7 @@ object MaxThroughputSpec extends MultiNodeConfig {
     }
 
     def warmup: Receive = {
-      case Start =>
+      case StartAck =>
         println(
           s"${self.path.name}: Starting benchmark of $totalMessages messages with burst size " +
           s"$burstSize and payload size $payloadSize")

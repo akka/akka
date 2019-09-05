@@ -1,4 +1,7 @@
-# Distributed Publish Subscribe in Cluster
+# Classic Distributed Publish Subscribe in Cluster
+
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see FIXME https://github.com/akka/akka/issues/26338.
 
 ## Dependency
 

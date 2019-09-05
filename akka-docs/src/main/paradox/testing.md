@@ -1,4 +1,7 @@
-# Testing Actor Systems
+# Testing Classic Actors
+
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref[testing](typed/testing.md).
 
 ## Dependency
 
@@ -20,6 +23,7 @@ perform tests.
 
 Akka comes with a dedicated module `akka-testkit` for supporting tests.
 
+<a id="async-integration-testing"></a>
 ## Asynchronous Testing: `TestKit`
 
 Testkit allows you to test your actors in a controlled but realistic
@@ -277,7 +281,7 @@ Scala
 Java
 :   @@snip [TestKitDocTest.java](/akka-docs/src/test/java/jdocs/testkit/TestKitDocTest.java) { #test-within }
 
-The block @scala[given to]@java[in] `within` must complete after a @ref:[Duration](common/duration.md) which
+The block @scala[given to]@java[in] `within` must complete after a duration which
 is between `min` and `max`, where the former defaults to zero. The
 deadline calculated by adding the `max` parameter to the block's start
 time is implicitly available within the block to all examination methods, if
@@ -566,10 +570,12 @@ Which of these methods is the best depends on what is most important to test. Th
 most generic option is to create the parent actor by passing it a function that is
 responsible for the Actor creation, but @scala[the]@java[using `TestProbe` or having a] fabricated parent is often sufficient.
 
-<a id="callingthreaddispatcher"></a>
 ## CallingThreadDispatcher
 
-The `CallingThreadDispatcher` serves good purposes in unit testing, as
+The `CallingThreadDispatcher` runs invocations on the current thread only. This
+dispatcher does not create any new threads.
+
+It is possible to use the `CallingThreadDispatcher` in unit testing, as
 described above, but originally it was conceived in order to allow contiguous
 stack traces to be generated in case of an error. As this special dispatcher
 runs everything which would normally be queued directly on the current thread,
@@ -649,21 +655,11 @@ the second line and never reach the fourth line, which would unblock it on a
 normal dispatcher.
 
 Thus, keep in mind that the `CallingThreadDispatcher` is not a
-general-purpose replacement for the normal dispatchers. On the other hand it
-may be quite useful to run your actor network on it for testing, because if it
-runs without dead-locking chances are very high that it will not dead-lock in
-production.
-
-@@@ warning
-
-The above sentence is unfortunately not a strong guarantee, because your
-code might directly or indirectly change its behavior when running on a
-different dispatcher. If you are looking for a tool to help you debug
-dead-locks, the `CallingThreadDispatcher` may help with certain error
+general-purpose replacement for the normal dispatchers. If you are looking 
+for a tool to help you debug dead-locks,
+the `CallingThreadDispatcher` may help with certain error
 scenarios, but keep in mind that it has may give false negatives as well as
 false positives.
-
-@@@
 
 ### Thread Interruptions
 
@@ -823,6 +819,7 @@ adapted to work with Akka 2.x.
 
 @@@
 
+<a id="sync-testing"></a>
 ## Synchronous Testing: `TestActorRef`
 
 Testing the business logic inside `Actor` classes can be divided into

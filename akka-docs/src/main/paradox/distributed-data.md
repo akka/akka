@@ -1,5 +1,8 @@
-# Distributed Data
+# Classic Distributed Data
 
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref:[distributed-data](typed/distributed-data.md).
+ 
 ## Dependency
 
 To use Akka Distributed Data, you must add the following dependency in your project:
@@ -355,7 +358,6 @@ types that support both updates and removals, for example `ORMap` or `ORSet`.
 
 @@@
 
-<a id="delta-crdt"></a>
 ### delta-CRDT
 
 [Delta State Replicated Data Types](http://arxiv.org/abs/1603.01529)
@@ -739,7 +741,6 @@ This would be possible if a node with durable data didn't participate in the pru
 be stopped for longer time than this duration and if it is joining again after this
 duration its data should first be manually removed (from the lmdb directory).
 
-<a id="crdt-garbage"></a>
 ### CRDT Garbage
 
 One thing that can be problematic with CRDTs is that some data types accumulate history (garbage).

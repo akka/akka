@@ -44,7 +44,7 @@ public class JsonFramingTest extends StreamTest {
                   acc.add(entry.utf8String());
                   return acc;
                 },
-                materializer);
+                system);
     // #using-json-framing
 
     List<String> frames = result.toCompletableFuture().get(5, TimeUnit.SECONDS);

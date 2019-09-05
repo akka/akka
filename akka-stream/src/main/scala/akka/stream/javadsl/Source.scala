@@ -7,8 +7,7 @@ package akka.stream.javadsl
 import java.util
 import java.util.Optional
 
-import akka.actor.{ ActorRef, Cancellable, Props }
-import akka.annotation.ApiMayChange
+import akka.actor.{ ActorRef, Cancellable }
 import akka.event.LoggingAdapter
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
@@ -20,6 +19,7 @@ import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
 import akka.util.ccompat.JavaConverters._
+
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
@@ -28,6 +28,7 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 import java.util.function.{ BiFunction, Supplier }
 
+import akka.actor.ClassicActorSystemProvider
 import akka.util.unused
 import com.github.ghik.silencer.silent
 
@@ -225,7 +226,7 @@ object Source {
    * element is produced it will not receive that tick element later. It will
    * receive new tick elements as soon as it has requested more elements.
    */
-  @silent
+  @silent("deprecated")
   def tick[O](initialDelay: java.time.Duration, interval: java.time.Duration, tick: O): javadsl.Source[O, Cancellable] =
     Source.tick(initialDelay.asScala, interval.asScala, tick)
 
@@ -285,19 +286,6 @@ object Source {
    */
   def asSubscriber[T](): Source[T, Subscriber[T]] =
     new Source(scaladsl.Source.asSubscriber)
-
-  /**
-   * Creates a `Source` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
-   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
-   * be [[akka.stream.actor.ActorPublisher]].
-   *
-   * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
-   */
-  @deprecated(
-    "Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
-    since = "2.5.0")
-  def actorPublisher[T](props: Props): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorPublisher(props))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
@@ -579,6 +567,20 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   /**
    * Materializes this Source, immediately returning (1) its materialized value, and (2) a new Source
    * that can be used to consume elements from the newly materialized Source.
+   *
+   * Note that the `ActorSystem` can be used as the `systemProvider` parameter.
+   */
+  def preMaterialize(systemProvider: ClassicActorSystemProvider)
+      : Pair[Mat @uncheckedVariance, Source[Out @uncheckedVariance, NotUsed]] = {
+    val (mat, src) = delegate.preMaterialize()(SystemMaterializer(systemProvider.classicSystem).materializer)
+    Pair(mat, new Source(src))
+  }
+
+  /**
+   * Materializes this Source, immediately returning (1) its materialized value, and (2) a new Source
+   * that can be used to consume elements from the newly materialized Source.
+   *
+   * Prefer the method taking an `ActorSystem` unless you have special requirements.
    */
   def preMaterialize(
       materializer: Materializer): Pair[Mat @uncheckedVariance, Source[Out @uncheckedVariance, NotUsed]] = {
@@ -675,6 +677,17 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a `Sink.asPublisher`.
+   *
+   * Note that the classic or typed `ActorSystem` can be used as the `systemProvider` parameter.
+   */
+  def runWith[M](sink: Graph[SinkShape[Out], M], systemProvider: ClassicActorSystemProvider): M =
+    delegate.runWith(sink)(SystemMaterializer(systemProvider.classicSystem).materializer)
+
+  /**
+   * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
+   * of the `Sink`, e.g. the `Publisher` of a `Sink.asPublisher`.
+   *
+   * Prefer the method taking an `ActorSystem` unless you have special requirements
    */
   def runWith[M](sink: Graph[SinkShape[Out], M], materializer: Materializer): M =
     delegate.runWith(sink)(materializer)
@@ -686,6 +699,24 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
+   *
+   * Note that the classic or typed `ActorSystem` can be used as the `systemProvider` parameter.
+   */
+  def runFold[U](
+      zero: U,
+      f: function.Function2[U, Out, U],
+      systemProvider: ClassicActorSystemProvider): CompletionStage[U] =
+    runWith(Sink.fold(zero, f), systemProvider)
+
+  /**
+   * Shortcut for running this `Source` with a fold function.
+   * The given function is invoked for every received element, giving it its previous
+   * output (or the given `zero` value) and the element as input.
+   * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure is signaled in the stream.
+   *
+   * Prefer the method taking an ActorSystem unless you have special requirements.
    */
   def runFold[U](zero: U, f: function.Function2[U, Out, U], materializer: Materializer): CompletionStage[U] =
     runWith(Sink.fold(zero, f), materializer)
@@ -697,6 +728,23 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
    * function evaluation when the input stream ends, or completed with `Failure`
    * if there is a failure is signaled in the stream.
+   *
+   * Note that the classic or typed `ActorSystem` can be used as the `systemProvider` parameter.
+   */
+  def runFoldAsync[U](
+      zero: U,
+      f: function.Function2[U, Out, CompletionStage[U]],
+      systemProvider: ClassicActorSystemProvider): CompletionStage[U] = runWith(Sink.foldAsync(zero, f), systemProvider)
+
+  /**
+   * Shortcut for running this `Source` with an asynchronous fold function.
+   * The given function is invoked for every received element, giving it its previous
+   * output (or the given `zero` value) and the element as input.
+   * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure is signaled in the stream.
+   *
+   * Prefer the method taking an `ActorSystem` unless you have special requirements
    */
   def runFoldAsync[U](
       zero: U,
@@ -715,6 +763,28 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * the reduce operator will fail its downstream with a [[NoSuchElementException]],
    * which is semantically in-line with that Scala's standard library collections
    * do in such situations.
+   *
+   * Note that the classic or typed `ActorSystem` can be used as the `systemProvider` parameter.
+   */
+  def runReduce(
+      f: function.Function2[Out, Out, Out],
+      systemProvider: ClassicActorSystemProvider): CompletionStage[Out] =
+    runWith(Sink.reduce(f), systemProvider.classicSystem)
+
+  /**
+   * Shortcut for running this `Source` with a reduce function.
+   * The given function is invoked for every received element, giving it its previous
+   * output (from the second ones) an the element as input.
+   * The returned [[java.util.concurrent.CompletionStage]] will be completed with value of the final
+   * function evaluation when the input stream ends, or completed with `Failure`
+   * if there is a failure is signaled in the stream.
+   *
+   * If the stream is empty (i.e. completes before signalling any elements),
+   * the reduce operator will fail its downstream with a [[NoSuchElementException]],
+   * which is semantically in-line with that Scala's standard library collections
+   * do in such situations.
+   *
+   * Prefer the method taking an `ActorSystem` unless you have special requirements
    */
   def runReduce(f: function.Function2[Out, Out, Out], materializer: Materializer): CompletionStage[Out] =
     runWith(Sink.reduce(f), materializer)
@@ -1092,6 +1162,98 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     new Source(delegate.mergeMat(that, eagerComplete)(combinerToScala(matF)))
 
   /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * '''Emits when''' an element is available from some input and each input emits at least one element from stream start
+   *
+   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   */
+  def mergeLatest[M](
+      that: Graph[SourceShape[Out], M],
+      eagerComplete: Boolean): javadsl.Source[java.util.List[Out], Mat] =
+    new Source(delegate.mergeLatest(that, eagerComplete).map(_.asJava))
+
+  /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * @see [[#mergeLatest]].
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergeLatestMat[Mat2, Mat3](
+      that: Graph[SourceShape[Out], Mat2],
+      eagerComplete: Boolean,
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[java.util.List[Out], Mat3] =
+    new Source(delegate.mergeLatestMat(that, eagerComplete)(combinerToScala(matF))).map(_.asJava)
+
+  /**
+   * Merge two sources. Prefer one source if both sources have elements ready.
+   *
+   * '''emits''' when one of the inputs has an element available. If multiple have elements available, prefer the 'right' one when 'preferred' is 'true', or the 'left' one when 'preferred' is 'false'.
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePreferred[M](
+      that: Graph[SourceShape[Out], M],
+      preferred: Boolean,
+      eagerComplete: Boolean): javadsl.Source[Out, Mat] =
+    new Source(delegate.mergePreferred(that, preferred, eagerComplete))
+
+  /**
+   * Merge two sources. Prefer one source if both sources have elements ready.
+   *
+   * @see [[#mergePreferred]]
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergePreferredMat[Mat2, Mat3](
+      that: Graph[SourceShape[Out], Mat2],
+      preferred: Boolean,
+      eagerComplete: Boolean,
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[Out, Mat3] =
+    new Source(delegate.mergePreferredMat(that, preferred, eagerComplete)(combinerToScala(matF)))
+
+  /**
+   * Merge two sources. Prefer the sources depending on the 'priority' parameters.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePrioritized[M](
+      that: Graph[SourceShape[Out], M],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerComplete: Boolean): javadsl.Source[Out, Mat] =
+    new Source(delegate.mergePrioritized(that, leftPriority, rightPriority, eagerComplete))
+
+  /**
+   * Merge multiple sources. Prefer the sources depending on the 'priority' parameters.
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergePrioritizedMat[Mat2, Mat3](
+      that: Graph[SourceShape[Out], Mat2],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerComplete: Boolean,
+      matF: function.Function2[Mat, Mat2, Mat3]): javadsl.Source[Out, Mat3] =
+    new Source(delegate.mergePrioritizedMat(that, leftPriority, rightPriority, eagerComplete)(combinerToScala(matF)))
+
+  /**
    * Merge the given [[Source]] to this [[Source]], taking elements as they arrive from input streams,
    * picking always the smallest of the available elements (waiting for one element from each side
    * to be available). This means that possible contiguity of the input streams is not exploited to avoid
@@ -1153,6 +1315,37 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
       that: Graph[SourceShape[T], M],
       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
     this.viaMat(Flow.create[Out].zipMat(that, Keep.right[NotUsed, M]), matF)
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem: A, thatElem: U): Source[Pair[A, U], Mat] =
+    new Source(delegate.zipAll(that, thisElem, thatElem).map { case (a, u) => Pair.create(a, u) })
+
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * @see [[#zipAll]]
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem: A, thatElem: U)(
+      matF: (Mat, Mat2) => Mat3): Source[Pair[A, U], Mat3] =
+    new Source(delegate.zipAllMat(that, thisElem, thatElem)(matF).map { case (a, u) => Pair.create(a, u) })
 
   /**
    * Combine the elements of 2 streams into a stream of tuples, picking always the latest element of each.
@@ -1277,6 +1470,20 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * The returned [[java.util.concurrent.CompletionStage]] will be completed normally when reaching the
    * normal end of the stream, or completed exceptionally if there is a failure is signaled in
    * the stream.
+   *
+   * Note that the classic or typed `ActorSystem` can be used as the `systemProvider` parameter.
+   */
+  def runForeach(f: function.Procedure[Out], systemProvider: ClassicActorSystemProvider): CompletionStage[Done] =
+    runWith(Sink.foreach(f), systemProvider)
+
+  /**
+   * Shortcut for running this `Source` with a foreach procedure. The given procedure is invoked
+   * for each received element.
+   * The returned [[java.util.concurrent.CompletionStage]] will be completed normally when reaching the
+   * normal end of the stream, or completed exceptionally if there is a failure is signaled in
+   * the stream.
+   *
+   * Prefer the method taking an `ActorSystem` unless you have special requirements
    */
   def runForeach(f: function.Procedure[Out], materializer: Materializer): CompletionStage[Done] =
     runWith(Sink.foreach(f), materializer)
@@ -1405,7 +1612,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * '''Cancels when''' downstream cancels
    *
    */
-  @silent
+  @silent("deprecated")
   def recoverWith(pf: PartialFunction[Throwable, _ <: Graph[SourceShape[Out], NotUsed]]): Source[Out, Mat] =
     new Source(delegate.recoverWith(pf))
 
@@ -2080,7 +2287,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * `n` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  @silent
+  @silent("deprecated")
   def groupedWithin(n: Int, d: java.time.Duration): javadsl.Source[java.util.List[Out @uncheckedVariance], Mat] =
     groupedWithin(n, d.asScala)
 
@@ -2128,7 +2335,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * `maxWeight` must be positive, and `d` must be greater than 0 seconds, otherwise
    * IllegalArgumentException is thrown.
    */
-  @silent
+  @silent("deprecated")
   def groupedWeightedWithin(
       maxWeight: Long,
       costFn: function.Function[Out, java.lang.Long],
@@ -2190,7 +2397,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * @param of time to shift all messages
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  @silent
+  @silent("deprecated")
   def delay(of: java.time.Duration, strategy: DelayOverflowStrategy): Source[Out, Mat] =
     delay(of.asScala, strategy)
 
@@ -2236,7 +2443,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def dropWithin(d: java.time.Duration): javadsl.Source[Out, Mat] =
     dropWithin(d.asScala)
 
@@ -2362,7 +2569,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels or timer fires
    */
-  @silent
+  @silent("deprecated")
   def takeWithin(d: java.time.Duration): javadsl.Source[Out, Mat] =
     takeWithin(d.asScala)
 
@@ -2911,7 +3118,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def initialTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     initialTimeout(timeout.asScala)
 
@@ -2944,7 +3151,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def completionTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     completionTimeout(timeout.asScala)
 
@@ -2979,7 +3186,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def idleTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     idleTimeout(timeout.asScala)
 
@@ -3014,7 +3221,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def backpressureTimeout(timeout: java.time.Duration): javadsl.Source[Out, Mat] =
     backpressureTimeout(timeout.asScala)
 
@@ -3057,7 +3264,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def keepAlive(maxIdle: java.time.Duration, injectedElem: function.Creator[Out]): javadsl.Source[Out, Mat] =
     keepAlive(maxIdle.asScala, injectedElem)
 
@@ -3463,7 +3670,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *
    * '''Cancels when''' downstream cancels
    */
-  @silent
+  @silent("deprecated")
   def initialDelay(delay: java.time.Duration): javadsl.Source[Out, Mat] =
     initialDelay(delay.asScala)
 
@@ -3597,10 +3804,6 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def log(name: String): javadsl.Source[Out, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
 
-  /**
-   * API MAY CHANGE
-   */
-  @ApiMayChange
   def asSourceWithContext[Ctx](extractContext: function.Function[Out, Ctx]): SourceWithContext[Out, Ctx, Mat] =
     new scaladsl.SourceWithContext(this.asScala.map(x => (x, extractContext.apply(x)))).asJava
 }

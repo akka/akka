@@ -1,4 +1,4 @@
-# Akka Extensions
+# Classic Akka Extensions
 
 If you want to add features to Akka, there is a very elegant, but powerful mechanism for doing so.
 It's called Akka Extensions and is comprised of 2 basic components: an `Extension` and an `ExtensionId`.

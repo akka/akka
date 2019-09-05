@@ -51,6 +51,8 @@ private[akka] class ClusterActorRefProvider(
     Cluster(system)
   }
 
+  override protected def warnIfDirectUse(): Unit = ()
+
   override protected def createRemoteWatcher(system: ActorSystemImpl): ActorRef = {
     // make sure Cluster extension is initialized/loaded from init thread
     Cluster(system)
@@ -124,7 +126,7 @@ private[akka] class ClusterDeployer(_settings: ActorSystem.Settings, _pm: Dynami
 
 }
 
-@silent
+@silent("@SerialVersionUID has no effect")
 @SerialVersionUID(1L)
 abstract class ClusterScope extends Scope
 

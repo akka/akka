@@ -18,6 +18,11 @@ import akka.testkit._
 object ConsistentHashingRouterSpec {
 
   val config = """
+    akka.actor {
+      serialize-messages = off
+      # consistent hashing is serializing the hash key, unless it's bytes or string
+      allow-java-serialization = on
+    }
     akka.actor.deployment {
       /router1 {
         router = consistent-hashing-pool

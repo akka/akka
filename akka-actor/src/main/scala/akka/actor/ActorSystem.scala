@@ -13,12 +13,14 @@ import akka.actor.dungeon.ChildrenContainer
 import akka.actor.setup.{ ActorSystemSetup, Setup }
 import akka.annotation.InternalApi
 import akka.ConfigurationException
+import akka.annotation.DoNotInherit
 import akka.dispatch._
 import akka.event._
 import akka.japi.Util.immutableSeq
 import akka.util.Helpers.toRootLowerCase
 import akka.util._
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters
@@ -370,8 +372,8 @@ object ActorSystem {
     final val UnstartedPushTimeout: Timeout = Timeout(config.getMillisDuration("akka.actor.unstarted-push-timeout"))
 
     final val AllowJavaSerialization: Boolean = getBoolean("akka.actor.allow-java-serialization")
-    final val EnableAdditionalSerializationBindings: Boolean =
-      !AllowJavaSerialization || getBoolean("akka.actor.enable-additional-serialization-bindings")
+    @deprecated("Always enabled from Akka 2.6.0", "2.6.0")
+    final val EnableAdditionalSerializationBindings: Boolean = true
     final val SerializeAllMessages: Boolean = getBoolean("akka.actor.serialize-messages")
     final val SerializeAllCreators: Boolean = getBoolean("akka.actor.serialize-creators")
 
@@ -470,7 +472,7 @@ object ActorSystem {
  * extending [[akka.actor.ExtendedActorSystem]] instead, but beware that you
  * are completely on your own in that case!
  */
-abstract class ActorSystem extends ActorRefFactory {
+abstract class ActorSystem extends ActorRefFactory with ClassicActorSystemProvider {
   import ActorSystem._
 
   /**
@@ -674,6 +676,7 @@ abstract class ActorSystem extends ActorRefFactory {
  * actually roll your own Akka, beware that you are completely on your own in
  * that case!
  */
+@DoNotInherit
 abstract class ExtendedActorSystem extends ActorSystem {
 
   /**
@@ -694,6 +697,9 @@ abstract class ExtendedActorSystem extends ActorSystem {
   /**
    * Create an actor in the "/system" namespace. This actor will be shut down
    * during system.terminate only after all user actors have terminated.
+   *
+   * This is only intended to be used by libraries (and Akka itself).
+   * Applications should use ordinary `actorOf`.
    */
   def systemActorOf(props: Props, name: String): ActorRef
 
@@ -916,6 +922,8 @@ private[akka] class ActorSystemImpl(
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
 
+  override private[akka] def classicSystem: ActorSystem = this
+
   // Used for ManifestInfo.checkSameVersion
   private def allModules: List[String] =
     List(
@@ -938,6 +946,7 @@ private[akka] class ActorSystemImpl(
       "akka-persistence-shared",
       "akka-persistence-typed",
       "akka-protobuf",
+      "akka-protobuf-v3",
       "akka-remote",
       "akka-slf4j",
       "akka-stream",

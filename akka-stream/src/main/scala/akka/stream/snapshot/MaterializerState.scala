@@ -4,10 +4,12 @@
 
 package akka.stream.snapshot
 
+import akka.actor.ActorSystem
 import akka.actor.{ ActorPath, ActorRef }
 import akka.annotation.{ ApiMayChange, DoNotInherit, InternalApi }
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.pattern.ask
+import akka.stream.SystemMaterializer
 import akka.stream.impl.fusing.ActorGraphInterpreter
 import akka.stream.{ Attributes, Materializer }
 import akka.util.Timeout
@@ -25,6 +27,17 @@ import scala.concurrent.duration._
  * of the running streams.
  */
 object MaterializerState {
+
+  /**
+   * Dump stream snapshots of all streams of the default system materializer.
+   */
+  @ApiMayChange
+  def streamSnapshots(system: ActorSystem): Future[immutable.Seq[StreamSnapshot]] = {
+    SystemMaterializer(system).materializer match {
+      case impl: PhasedFusingActorMaterializer =>
+        requestFromSupervisor(impl.supervisor)(impl.system.dispatchers.internalDispatcher)
+    }
+  }
 
   /**
    * Dump stream snapshots of all streams of the given materializer.

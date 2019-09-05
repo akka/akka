@@ -34,7 +34,7 @@ Considering the principles outlined in the previous section, We will model the d
 * At the next level, group actors each supervise the device actors for one group id (e.g. one home). They also provide services, such as querying temperature readings from all of the available devices in their group.
 * Device actors manage all the interactions with the actual device sensors, such as storing temperature readings.
 
-![device manager tree](../../guide/diagrams/device_manager_tree.png)
+![device manager tree](diagrams/device_manager_tree.png)
 
 We chose this three-layered architecture for these reasons:
 
@@ -70,7 +70,7 @@ Scala
 :   @@snip [DeviceManager.scala](/akka-docs/src/test/scala/typed/tutorial_4/DeviceManager.scala) { #device-registration-msgs }
 
 Java
-:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/DeviceManagerProtocol.java) { #device-registration-msgs }
+:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/DeviceManager.java) { #device-registration-msgs }
 
 In this case we have not included a request ID field in the messages. Since registration happens once, when the component connects the system to some network protocol, the ID is not important. However, it is usually a best practice to include a request ID.
 
@@ -141,7 +141,7 @@ Scala
 :   @@snip [DeviceManager.scala](/akka-docs/src/test/scala/typed/tutorial_4/DeviceManager.scala) { #device-list-msgs }
 
 Java
-:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/DeviceManagerProtocol.java) { #device-list-msgs }
+:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/DeviceManager.java) { #device-list-msgs }
 
 
 Scala
@@ -156,17 +156,17 @@ We are almost ready to test the removal of devices. But, we still need the follo
  * To be notified once the device actor is stopped. We can use the _Death Watch_ facility for this purpose, too.
 
 Scala
-:   @@snip [DeviceManager.scala](/akka-docs/src/test/scala/typed/tutorial_4/Device.scala) { #passivate-msg }
+:   @@snip [Device.scala](/akka-docs/src/test/scala/typed/tutorial_4/Device.scala) { #passivate-msg }
 
 Java
-:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/DeviceProtocol.java) { #passivate-msg }
+:   @@snip [Device.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/Device.java) { #passivate-msg }
 
 
 Scala
-:   @@snip [DeviceManager.scala](/akka-docs/src/test/scala/typed/tutorial_4/Device.scala) { #device-with-passivate }
+:   @@snip [Device.scala](/akka-docs/src/test/scala/typed/tutorial_4/Device.scala) { #device-with-passivate }
 
 Java
-:   @@snip [DeviceManager.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/Device.java) { #device-with-passivate }
+:   @@snip [Device.java](/akka-docs/src/test/java/jdocs/typed/tutorial_4/Device.java) { #device-with-passivate }
 
 
 We add two more test cases now. In the first, we test that we get back the list of proper IDs once we have added a few devices. The second test case makes sure that the device ID is properly removed after the device actor has been stopped.  The `TestProbe` has a `expectTerminated` method that we can easily use to assert that the device actor has been terminated.

@@ -9,7 +9,6 @@ import scala.concurrent.duration._
 
 import akka.actor.{ ActorSystem, Deploy, TypedActor, TypedProps }
 import akka.testkit.AkkaSpec
-import akka.util.IgnoreForScala212
 import TypedActorRemoteDeploySpec._
 
 import com.typesafe.config._
@@ -20,7 +19,8 @@ object TypedActorRemoteDeploySpec {
       akka.actor.provider = remote
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
-      akka.remote.use-unsafe-remote-features-without-cluster = on
+      akka.remote.use-unsafe-remote-features-outside-cluster = on
+      akka.actor.allow-java-serialization = on
       """)
 
   trait RemoteNameService {
@@ -57,11 +57,11 @@ class TypedActorRemoteDeploySpec extends AkkaSpec(conf) {
 
   "Typed actors" must {
 
-    "be possible to deploy remotely and communicate with" taggedAs IgnoreForScala212 in {
+    "be possible to deploy remotely and communicate with" in {
       verify({ _.getName }, remoteName)
     }
 
-    "be possible to deploy remotely and be able to dereference self" taggedAs IgnoreForScala212 in {
+    "be possible to deploy remotely and be able to dereference self" in {
       verify({ _.getNameSelfDeref }, remoteName)
     }
 

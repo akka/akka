@@ -22,19 +22,16 @@ import java.util.List;
 public class SubstreamDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("FlowDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -47,26 +44,26 @@ public class SubstreamDocTest extends AbstractJavaTest {
     Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
         .groupBy(3, elem -> elem % 3)
         .to(Sink.ignore())
-        .run(mat);
+        .run(system);
     // #groupBy2
 
     // #groupBy3
     Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
         .groupBy(3, elem -> elem % 3)
         .mergeSubstreams()
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // #groupBy3
 
     // #groupBy4
     Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
         .groupBy(3, elem -> elem % 3)
         .mergeSubstreamsWithParallelism(2)
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // concatSubstreams is equivalent to mergeSubstreamsWithParallelism(1)
     Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10))
         .groupBy(3, elem -> elem % 3)
         .concatSubstreams()
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // #groupBy4
   }
 
@@ -89,7 +86,7 @@ public class SubstreamDocTest extends AbstractJavaTest {
         .map(x -> 1)
         .reduce((x, y) -> x + y)
         .to(Sink.foreach(x -> System.out.println(x)))
-        .run(mat);
+        .run(system);
     // #wordCount
     Thread.sleep(1000);
   }
@@ -99,13 +96,13 @@ public class SubstreamDocTest extends AbstractJavaTest {
     // #flatMapConcat
     Source.from(Arrays.asList(1, 2))
         .flatMapConcat(i -> Source.from(Arrays.asList(i, i, i)))
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // #flatMapConcat
 
     // #flatMapMerge
     Source.from(Arrays.asList(1, 2))
         .flatMapMerge(2, i -> Source.from(Arrays.asList(i, i, i)))
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // #flatMapMerge
   }
 }

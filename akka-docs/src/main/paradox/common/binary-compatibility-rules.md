@@ -83,6 +83,22 @@ This is because modules may assume internals changes across module boundaries, f
 in Clustering may have required an internals change in Actor, however it is not public API, 
 thus such change is considered safe.
 
+If you accidentally mix Akka versions, for example through transitive
+dependencies, you might get a warning at run time such as:
+
+```
+Detected possible incompatible versions on the classpath. Please note that a given Akka version MUST be the same
+across all modules of Akka that you are using, e.g. if you use [2.5.20] all other modules that are released together
+MUST be of the same version. Make sure you're using a compatible set of libraries. Possibly conflicting versions
+[2.5.19, 2.5.20] in libraries [akka-persistence:2.5.19, akka-cluster-sharding:2.5.19, akka-protobuf:2.5.19,
+akka-persistence-query:2.5.19, akka-actor:2.5.20, akka-slf4j:2.5.19, akka-remote:2.5.19, akka-cluster:2.5.19,
+akka-distributed-data:2.5.19, akka-stream:2.5.19, akka-cluster-tools:2.5.19]
+```
+
+The fix is typically to pick the highest Akka version, and add explicit
+dependencies to your project as needed. For example, in the example above
+you might want to add dependencies for 2.5.20.
+
 @@@ note
 
 We recommend keeping an `akkaVersion` variable in your build file, and re-use it for all
@@ -136,8 +152,8 @@ possible, however these markers allow to experiment, gather feedback and stabili
 
 ## Binary Compatibility Checking Toolchain
 
-Akka uses the Lightbend maintained [Migration Manager](https://github.com/typesafehub/migration-manager), 
-called `MiMa` for short, for enforcing binary compatibility is kept where it was promised.
+Akka uses the Lightbend maintained [MiMa](https://github.com/lightbend/mima),
+for enforcing binary compatibility is kept where it was promised.
 
 All Pull Requests must pass MiMa validation (which happens automatically), and if failures are detected,
 manual exception overrides may be put in place if the change happened to be in an Internal API for example.
@@ -146,7 +162,3 @@ manual exception overrides may be put in place if the change happened to be in a
 
 Scala does not maintain serialization compatibility across major versions. This means that if Java serialization is used
 there is no guarantee objects can be cleanly deserialized if serialized with a different version of Scala.
-
-The internal Akka Protobuf serializers that can be enabled explicitly with `enable-additional-serialization-bindings`
-or implicitly with `akka.actor.allow-java-serialization = off` (which is preferable from a security standpoint)
-does not suffer from this problem.

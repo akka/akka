@@ -5,24 +5,25 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler }
 import akka.stream._
+import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.OutHandler
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.TestLatch
+import akka.util.OptionVal
+import org.scalatest.exceptions.TestFailedException
 
 import scala.concurrent._
 import scala.concurrent.duration._
 
-import akka.stream.impl.TraversalBuilder
-import akka.stream.impl.fusing.GraphStages.SingleSource
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import org.scalatest.exceptions.TestFailedException
-import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.TestLatch
-import akka.util.OptionVal
-
 class FlowFlattenMergeSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   def src10(i: Int) = Source(i until (i + 10))
@@ -132,8 +133,6 @@ class FlowFlattenMergeSpec extends StreamSpec {
     }
 
     "cancel substreams when failing map function" in assertAllStagesStopped {
-      val settings = ActorMaterializerSettings(system).withSyncProcessingLimit(1).withInputBuffer(1, 1)
-      val mat = ActorMaterializer(settings)
       val p = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
       val latch = TestLatch()
@@ -144,7 +143,9 @@ class FlowFlattenMergeSpec extends StreamSpec {
             Await.ready(latch, 3.seconds)
             throw ex
         })
-        .runWith(Sink.head)(mat)
+        .toMat(Sink.head)(Keep.right)
+        .withAttributes(ActorAttributes.syncProcessingLimit(1) and Attributes.inputBuffer(1, 1))
+        .run()
       p.expectRequest()
       latch.countDown()
       p.expectCancellation()

@@ -7,18 +7,21 @@ package akka.stream.impl
 import java.util.concurrent.TimeoutException
 
 import akka.Done
+import akka.stream._
 import akka.stream.scaladsl._
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream._
-import org.scalatest.{ Matchers, WordSpecLike }
+import org.scalatest.Matchers
+import org.scalatest.WordSpecLike
 
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
 
 class TimeoutsSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
 
   "InitialTimeout" must {
 
@@ -333,6 +336,51 @@ class TimeoutsSpec extends StreamSpec {
       downRead.expectSubscriptionAndError(te)
       downWrite.expectCancellation()
     }
+
+  }
+
+  "Subscription timeouts" must {
+
+    val subscriptionTimeout =
+      ActorAttributes.streamSubscriptionTimeout(100.millis, StreamSubscriptionTimeoutTerminationMode.cancel)
+
+    "be effective for dangling downstream (no fanout)" in assertAllStagesStopped {
+      val upstream = TestPublisher.probe()
+      val (sub, _) =
+        Source.asSubscriber
+          .viaMat(Flow[Int].map(_.toString))(Keep.left)
+          .toMat(Sink.asPublisher(fanout = false))(Keep.both)
+          .withAttributes(subscriptionTimeout)
+          .run()
+      upstream.subscribe(sub)
+      upstream.expectCancellation()
+    }
+
+    "be effective for dangling downstream (with fanout)" in assertAllStagesStopped {
+      val upstream = TestPublisher.probe()
+      val (sub, _) =
+        Source.asSubscriber
+          .viaMat(Flow[Int].map(_.toString))(Keep.left)
+          .toMat(Sink.asPublisher(fanout = true))(Keep.both)
+          .withAttributes(subscriptionTimeout)
+          .run()
+      upstream.subscribe(sub)
+      upstream.expectCancellation()
+    }
+
+    // this one seems close to impossible to actually implement
+    "be effective for dangling upstream" in pendingUntilFixed(assertAllStagesStopped {
+      val downstream = TestSubscriber.probe[String]()
+      val (_, pub) =
+        Source.asSubscriber
+          .viaMat(Flow[Int].map(_.toString))(Keep.left)
+          .toMat(Sink.asPublisher(fanout = false))(Keep.both)
+          .withAttributes(subscriptionTimeout)
+          .run()
+      pub.subscribe(downstream)
+      downstream.ensureSubscription()
+      downstream.expectError() shouldBe a[SubscriptionTimeoutException]
+    })
 
   }
 

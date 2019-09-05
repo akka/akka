@@ -149,7 +149,17 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    */
   def tagsFor(@unused event: Event): java.util.Set[String] = Collections.emptySet()
 
+  /**
+   * Transform the event in another type before giving to the journal. Can be used to wrap events
+   * in types Journals understand but is of a different type than `Event`.
+   */
   def eventAdapter(): EventAdapter[Event, _] = NoOpEventAdapter.instance[Event]
+
+  /**
+   * Transform the state into another type before giving it to and from the journal. Can be used
+   * to migrate from different state types e.g. when migration from PersistentFSM to Typed Persistence
+   */
+  def snapshotAdapter(): SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State]
 
   /**
    * INTERNAL API: DeferredBehavior init
@@ -174,6 +184,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       .withRetention(retentionCriteria.asScala)
       .withTagger(tagger)
       .eventAdapter(eventAdapter())
+      .snapshotAdapter(snapshotAdapter())
       .withJournalPluginId(journalPluginId)
       .withSnapshotPluginId(snapshotPluginId)
       .withSnapshotSelectionCriteria(snapshotSelectionCriteria)

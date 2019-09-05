@@ -8,11 +8,16 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.Done
 import akka.stream.impl.LazySource
-import akka.stream.stage.{ GraphStage, GraphStageLogic }
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream.{ ActorMaterializer, Attributes, Outlet, SourceShape }
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.stream.Attributes
+import akka.stream.Outlet
+import akka.stream.SourceShape
 import akka.testkit.DefaultTimeout
 import org.scalatest.concurrent.ScalaFutures
 
@@ -20,8 +25,6 @@ import scala.collection.immutable.Seq
 import scala.concurrent.Future
 
 class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
-
-  implicit val materializer = ActorMaterializer()
 
   "A lazy source" should {
     "work like a normal source, happy path" in assertAllStagesStopped {

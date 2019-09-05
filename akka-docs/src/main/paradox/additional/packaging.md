@@ -47,6 +47,7 @@ The plugin configuration might look like this:
  <version>1.5</version>
  <executions>
   <execution>
+   <id>shade-my-jar</id>
    <phase>package</phase>
    <goals>
     <goal>shade</goal>

@@ -17,7 +17,6 @@ import scala.concurrent.{ Await, Future, Promise }
 
 class FutureFlattenSourceSpec extends StreamSpec {
 
-  implicit val materializer = ActorMaterializer()
   implicit def ec = system.dispatcher
 
   "Future source" must {

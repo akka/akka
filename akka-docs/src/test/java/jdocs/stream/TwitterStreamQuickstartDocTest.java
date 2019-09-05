@@ -41,19 +41,15 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
 
-  static Materializer mat;
-
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("TwitterStreamQuickstartDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   abstract static class Model {
@@ -201,11 +197,10 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
 
   abstract static class Example1 {
     // #first-sample
-    // #materializer-setup
+    // #system-setup
     final ActorSystem system = ActorSystem.create("reactive-tweets");
-    final Materializer mat = ActorMaterializer.create(system);
     // #first-sample
-    // #materializer-setup
+    // #system-setup
   }
 
   static class Example2 {
@@ -263,12 +258,12 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
     // #first-sample
 
     // #authors-foreachsink-println
-    authors.runWith(Sink.foreach(a -> System.out.println(a)), mat);
+    authors.runWith(Sink.foreach(a -> System.out.println(a)), system);
     // #first-sample
     // #authors-foreachsink-println
 
     // #authors-foreach-println
-    authors.runForeach(a -> System.out.println(a), mat);
+    authors.runForeach(a -> System.out.println(a), system);
     // #authors-foreach-println
   }
 
@@ -310,7 +305,7 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
                   b.from(bcast).via(toTags).to(hashtags);
                   return ClosedShape.getInstance();
                 }))
-        .run(mat);
+        .run(system);
     // #graph-dsl-broadcast
   }
 
@@ -329,7 +324,7 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
     tweets
         .buffer(10, OverflowStrategy.dropHead())
         .map(t -> slowComputation(t))
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // #tweets-slow-consumption-dropHead
   }
 
@@ -342,7 +337,7 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
     final RunnableGraph<CompletionStage<Integer>> counter =
         tweets.map(t -> 1).toMat(sumSink, Keep.right());
 
-    final CompletionStage<Integer> sum = counter.run(mat);
+    final CompletionStage<Integer> sum = counter.run(system);
 
     sum.thenAcceptAsync(
         c -> System.out.println("Total tweets processed: " + c), system.dispatcher());
@@ -350,7 +345,7 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
 
     new Object() {
       // #tweets-fold-count-oneline
-      final CompletionStage<Integer> sum = tweets.map(t -> 1).runWith(sumSink, mat);
+      final CompletionStage<Integer> sum = tweets.map(t -> 1).runWith(sumSink, system);
       // #tweets-fold-count-oneline
     };
   }
@@ -370,9 +365,9 @@ public class TwitterStreamQuickstartDocTest extends AbstractJavaTest {
             .toMat(sumSink, Keep.right());
 
     // materialize the stream once in the morning
-    final CompletionStage<Integer> morningTweetsCount = counterRunnableGraph.run(mat);
+    final CompletionStage<Integer> morningTweetsCount = counterRunnableGraph.run(system);
     // and once in the evening, reusing the blueprint
-    final CompletionStage<Integer> eveningTweetsCount = counterRunnableGraph.run(mat);
+    final CompletionStage<Integer> eveningTweetsCount = counterRunnableGraph.run(system);
     // #tweets-runnable-flow-materialized-twice
 
   }

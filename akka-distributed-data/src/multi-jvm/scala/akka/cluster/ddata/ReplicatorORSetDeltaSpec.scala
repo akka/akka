@@ -25,7 +25,6 @@ object ReplicatorORSetDeltaSpec extends MultiNodeConfig {
     akka.log-dead-letters-during-shutdown = off
     akka.actor {
       serialize-messages = off
-      allow-java-serialization = off
     }
     """))
 

@@ -7,9 +7,9 @@ package akka.stream.scaladsl
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.Done
-import akka.stream.ActorMaterializer
-import akka.stream.testkit.{ StreamSpec, TestSubscriber }
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber
 import akka.testkit.DefaultTimeout
 import org.scalatest.concurrent.ScalaFutures
 
@@ -17,9 +17,7 @@ import scala.concurrent.Future
 
 class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
-  private implicit val mat: ActorMaterializer = ActorMaterializer()
-
-  import mat.executionContext
+  import system.dispatcher
 
   "A lazy async source" should {
 

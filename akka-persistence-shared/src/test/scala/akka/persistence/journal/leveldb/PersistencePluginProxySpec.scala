@@ -12,7 +12,7 @@ import com.typesafe.config.ConfigFactory
 
 object PersistencePluginProxySpec {
   lazy val config =
-    ConfigFactory.parseString("""
+    ConfigFactory.parseString(s"""
       akka {
         actor {
           provider = remote
@@ -44,7 +44,7 @@ object PersistencePluginProxySpec {
         log-dead-letters-during-shutdown = off
         test.single-expect-default = 10s
       }
-    """)
+    """).withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
 
   lazy val startTargetConfig =
     ConfigFactory.parseString("""

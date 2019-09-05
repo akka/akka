@@ -24,7 +24,7 @@ object RemoteRouterSpec {
 
 class RemoteRouterSpec
     extends AkkaSpec(ConfigFactory.parseString("""
-    akka.remote.use-unsafe-remote-features-without-cluster = on
+    akka.remote.use-unsafe-remote-features-outside-cluster = on
     akka.actor.deployment {
       /remote-override {
         router = round-robin-pool

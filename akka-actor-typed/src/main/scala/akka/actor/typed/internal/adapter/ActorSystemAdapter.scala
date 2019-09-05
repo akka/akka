@@ -2,27 +2,37 @@
  * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.typed
-package internal
-package adapter
+package akka.actor.typed.internal.adapter
 
 import java.util.concurrent.CompletionStage
 
-import akka.actor
+import scala.compat.java8.FutureConverters
+import scala.concurrent.ExecutionContextExecutor
+
 import akka.Done
+import akka.actor
+import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
-import akka.{ actor => untyped }
-
-import scala.concurrent.ExecutionContextExecutor
-import akka.util.Timeout
-
-import scala.concurrent.Future
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
+import akka.actor.typed.Dispatchers
+import akka.actor.typed.Logger
+import akka.actor.typed.Props
+import akka.actor.typed.Scheduler
+import akka.actor.typed.Settings
+import akka.actor.typed.internal.ActorRefImpl
+import akka.actor.typed.internal.ExtensionsImpl
+import akka.actor.typed.internal.InternalRecipientRef
+import akka.actor.typed.internal.PropsImpl.DispatcherDefault
+import akka.actor.typed.internal.PropsImpl.DispatcherFromConfig
+import akka.actor.typed.internal.PropsImpl.DispatcherSameAsParent
+import akka.actor.typed.internal.SystemMessage
 import akka.annotation.InternalApi
-
-import scala.compat.java8.FutureConverters
-import akka.actor.ActorRefProvider
 import akka.event.LoggingFilterWithMarker
+import akka.{ actor => untyped }
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
@@ -34,14 +44,16 @@ import akka.event.LoggingFilterWithMarker
 @InternalApi private[akka] class ActorSystemAdapter[-T](val untypedSystem: untyped.ActorSystemImpl)
     extends ActorSystem[T]
     with ActorRef[T]
-    with internal.ActorRefImpl[T]
-    with internal.InternalRecipientRef[T]
+    with ActorRefImpl[T]
+    with InternalRecipientRef[T]
     with ExtensionsImpl {
 
   // note that the untypedSystem may not be initialized yet here, and that is fine because
   // it is unlikely that anything gets a hold of the extension until the system is started
 
   import ActorRefAdapter.sendSystemMessage
+
+  override private[akka] def classicSystem: untyped.ActorSystem = untypedSystem
 
   // Members declared in akka.actor.typed.ActorRef
   override def tell(msg: T): Unit = {
@@ -52,7 +64,7 @@ import akka.event.LoggingFilterWithMarker
   // impl ActorRefImpl
   override def isLocal: Boolean = true
   // impl ActorRefImpl
-  override def sendSystem(signal: internal.SystemMessage): Unit = sendSystemMessage(untypedSystem.guardian, signal)
+  override def sendSystem(signal: SystemMessage): Unit = sendSystemMessage(untypedSystem.guardian, signal)
 
   // impl InternalRecipientRef
   override def provider: ActorRefProvider = untypedSystem.provider
@@ -71,6 +83,7 @@ import akka.event.LoggingFilterWithMarker
       selector match {
         case DispatcherDefault(_)         => untypedSystem.dispatcher
         case DispatcherFromConfig(str, _) => untypedSystem.dispatchers.lookup(str)
+        case DispatcherSameAsParent(_)    => untypedSystem.dispatcher
       }
     override def shutdown(): Unit = () // there was no shutdown in untyped Akka
   }
@@ -78,7 +91,7 @@ import akka.event.LoggingFilterWithMarker
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = untypedSystem.dispatcher
   override val log: Logger = new LoggerAdapterImpl(
     untypedSystem.eventStream,
-    getClass,
+    classOf[ActorSystem[_]],
     name,
     LoggingFilterWithMarker.wrap(untypedSystem.logFilter))
   override def logConfiguration(): Unit = untypedSystem.logConfiguration()
@@ -98,10 +111,9 @@ import akka.event.LoggingFilterWithMarker
   override lazy val getWhenTerminated: CompletionStage[akka.Done] =
     FutureConverters.toJava(whenTerminated)
 
-  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props)(
-      implicit timeout: Timeout): Future[ActorRef[U]] = {
+  override def systemActorOf[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
     val ref = untypedSystem.systemActorOf(PropsAdapter(() => behavior, props), name)
-    Future.successful(ActorRefAdapter(ref))
+    ActorRefAdapter(ref)
   }
 
 }
@@ -122,11 +134,11 @@ private[akka] object ActorSystemAdapter {
   }
 
   /**
-   * An untyped extension to load configured typed extensions. It is loaded via
+   * A classic extension to load configured typed extensions. It is loaded via
    * akka.library-extensions. `loadExtensions` cannot be called from the AdapterExtension
    * directly because the adapter is created too early during typed actor system creation.
    *
-   * When on the classpath typed extensions will be loaded for untyped ActorSystems as well.
+   * When on the classpath typed extensions will be loaded for classic ActorSystems as well.
    */
   class LoadTypedExtensions(system: untyped.ExtendedActorSystem) extends untyped.Extension {
     ActorSystemAdapter.AdapterExtension(system).adapter.loadExtensions()
@@ -143,7 +155,7 @@ private[akka] object ActorSystemAdapter {
       case adapter: ActorSystemAdapter[_] => adapter.untypedSystem
       case _ =>
         throw new UnsupportedOperationException(
-          "only adapted untyped ActorSystem permissible " +
+          "Only adapted classic ActorSystem permissible " +
           s"($sys of class ${sys.getClass.getName})")
     }
 }

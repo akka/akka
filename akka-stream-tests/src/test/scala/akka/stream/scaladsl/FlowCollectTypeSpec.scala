@@ -5,12 +5,8 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 
 class FlowCollectTypeSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-  implicit val materializer = ActorMaterializer(settings)
 
   sealed class Fruit
   class Orange extends Fruit

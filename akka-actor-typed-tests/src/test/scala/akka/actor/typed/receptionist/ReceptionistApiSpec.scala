@@ -50,7 +50,7 @@ object ReceptionistApiSpec {
 
     Behaviors.setup[Any] { context =>
       // oneoff ask inside of actor, this should be a rare use case
-      context.ask(system.receptionist)(Receptionist.Find(key)) {
+      context.ask(system.receptionist, Receptionist.Find(key)) {
         case Success(key.Listing(services)) => services // Set[ActorRef[String]] !!
         case _                              => "unexpected"
       }
@@ -69,16 +69,15 @@ object ReceptionistApiSpec {
       // to cover as much of the API as possible
       context.system.receptionist ! Receptionist.Register(key, context.self.narrow, context.self.narrow)
 
-      Behaviors.receive { (context, message) =>
-        message match {
-          case key.Listing(services) =>
-            services.foreach(_ ! "woho")
-            Behaviors.same
-          case key.Registered(service) => // ack on Register above
-            service ! "woho"
-            Behaviors.same
-        }
+      Behaviors.receiveMessage {
+        case key.Listing(services) =>
+          services.foreach(_ ! "woho")
+          Behaviors.same
+        case key.Registered(service) => // ack on Register above
+          service ! "woho"
+          Behaviors.same
       }
+
     }
   }
 

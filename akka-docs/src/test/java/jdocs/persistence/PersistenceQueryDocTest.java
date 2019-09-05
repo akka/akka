@@ -33,7 +33,6 @@ import java.util.concurrent.TimeUnit;
 public class PersistenceQueryDocTest {
 
   final ActorSystem system = ActorSystem.create();
-  final ActorMaterializer mat = ActorMaterializer.create(system);
 
   public
   // #advanced-journal-query-types
@@ -217,8 +216,7 @@ public class PersistenceQueryDocTest {
         readJournal.eventsByPersistenceId("user-1337", 0, Long.MAX_VALUE);
 
     // materialize stream, consuming events
-    ActorMaterializer mat = ActorMaterializer.create(system);
-    source.runForeach(event -> System.out.println("Event: " + event), mat);
+    source.runForeach(event -> System.out.println("Event: " + event), system);
     // #basic-usage
   }
 
@@ -261,7 +259,6 @@ public class PersistenceQueryDocTest {
 
   void demonstrateEventsByTag() {
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
 
     final MyJavadslReadJournal readJournal =
         PersistenceQuery.get(system)
@@ -284,7 +281,7 @@ public class PersistenceQueryDocTest {
                   acc.add(e);
                   return acc;
                 },
-                mat);
+                system);
 
     // start another query, from the known offset
     Source<EventEnvelope, NotUsed> blue = readJournal.eventsByTag("blue", new Sequence(10));
@@ -293,7 +290,6 @@ public class PersistenceQueryDocTest {
 
   void demonstrateMaterializedQueryValues() {
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
 
     final MyJavadslReadJournal readJournal =
         PersistenceQuery.get(system)
@@ -326,7 +322,7 @@ public class PersistenceQueryDocTest {
               System.out.println("Event payload: " + event.payload);
               return event.payload;
             })
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
 
     // #advanced-journal-query-usage
   }
@@ -339,7 +335,6 @@ public class PersistenceQueryDocTest {
 
   void demonstrateWritingIntoDifferentStore() {
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
 
     final MyJavadslReadJournal readJournal =
         PersistenceQuery.get(system)
@@ -355,7 +350,7 @@ public class PersistenceQueryDocTest {
         .eventsByPersistenceId("user-1337", 0L, Long.MAX_VALUE)
         .map(envelope -> envelope.event())
         .grouped(20) // batch inserts into groups of 20
-        .runWith(Sink.fromSubscriber(dbBatchWriter), mat); // write batches to read-side database
+        .runWith(Sink.fromSubscriber(dbBatchWriter), system); // write batches to read-side database
     // #projection-into-different-store-rs
   }
 
@@ -372,7 +367,6 @@ public class PersistenceQueryDocTest {
 
   void demonstrateWritingIntoDifferentStoreWithMapAsync() {
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
 
     final MyJavadslReadJournal readJournal =
         PersistenceQuery.get(system)
@@ -385,7 +379,7 @@ public class PersistenceQueryDocTest {
     readJournal
         .eventsByTag("bid", new Sequence(0L))
         .mapAsync(1, store::save)
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // #projection-into-different-store-simple
   }
 
@@ -415,7 +409,6 @@ public class PersistenceQueryDocTest {
 
   void demonstrateWritingIntoDifferentStoreWithResumableProjections() throws Exception {
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
 
     final MyJavadslReadJournal readJournal =
         PersistenceQuery.get(system)
@@ -442,7 +435,7 @@ public class PersistenceQueryDocTest {
               return f.thenApplyAsync(in -> envelope.offset(), system.dispatcher());
             })
         .mapAsync(1, offset -> bidProjection.saveProgress(offset))
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
   }
 
   // #projection-into-different-store-actor-run

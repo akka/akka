@@ -55,6 +55,11 @@ class DynamicAccessSpec extends WordSpec with Matchers with BeforeAndAfterAll {
       }
     }
 
+    "know if a class exists on the classpath or not" in {
+      dynamicAccess.classIsOnClasspath("i.just.made.it.up.to.hurt.Myself") should ===(false)
+      dynamicAccess.classIsOnClasspath("akka.actor.Actor") should ===(true)
+    }
+
     def instantiateWithDefaultOrStringCtor(fqcn: String): Try[TestSuperclass] =
       // recoverWith doesn't work with scala 2.13.0-M5
       // https://github.com/scala/bug/issues/11242

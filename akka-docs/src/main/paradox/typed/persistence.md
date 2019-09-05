@@ -1,9 +1,13 @@
-# Persistence
+# Event Sourcing
 
 @@@ index
 
-* [Persistence - coding style](persistence-style.md)
-* [Persistence - snapshotting](persistence-snapshot.md)
+* [Persistence coding style](persistence-style.md)
+* [Persistence snapshotting](persistence-snapshot.md)
+* [Persistence schema evolution](../persistence-schema-evolution.md)
+* [Persistence query](../persistence-query.md)
+* [Persistence query LevelDB](../persistence-query-leveldb.md)
+* [Persistence Journals](../persistence-journals.md)
 
 @@@
 
@@ -25,7 +29,7 @@ works and assumes you know what is meant by `Command`, `Event` and `State`.
 
 ## Example
 
-Let's start with a simple example. The minimum required for a `EventSourcedBehavior` is:
+Let's start with a simple example. The minimum required for a @apidoc[EventSourcedBehavior] is:
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #structure }
@@ -128,7 +132,7 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #behavior }
 
-## Cluster Sharding and persistence
+## Cluster Sharding and EventSourcedBehavior
 
 In a use case where the number of persistent actors needed are higher than what would fit in the memory of one node or
 where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
@@ -144,7 +148,7 @@ interpreted correctly on replay. Cluster Sharding ensures that there is only one
 
 ## Accessing the ActorContext
 
-If the persistent behavior needs to use the `ActorContext`, for example to spawn child actors, it can be obtained by 
+If the @apidoc[EventSourcedBehavior] needs to use the @apidoc[typed.*.ActorContext], for example to spawn child actors, it can be obtained by
 wrapping construction with `Behaviors.setup`:
 
 Scala
@@ -324,6 +328,10 @@ actors is also used in Akka Typed, also for persistent actors. When picking seri
 you should also consider that it must be possible read old events when the application has evolved.
 Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
 
+You need to enable @ref:[serialization](../serialization.md) for your commands (messages), events, and state (snapshot).
+@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
+
 ## Recovery
 
 It is strongly discouraged to perform side effects in `applyEvent`,
@@ -357,20 +365,20 @@ to another type that is then passed to the journal.
 Defining an event adapter is done by extending an EventAdapter:
 
 Scala
-:  @@snip [x](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/EventSourcedBehaviorSpec.scala) { #event-wrapper }
+:  @@snip [x](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #event-wrapper }
 
 Java
 :  @@snip [x](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #event-wrapper }
 
-Then install it on a persistent behavior:
+Then install it on a `EventSourcedBehavior`:
 
 Scala
-:  @@snip [x](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/EventSourcedBehaviorSpec.scala) { #install-event-adapter }
+:  @@snip [x](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #install-event-adapter }
 
 Java
 :  @@snip [x](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #install-event-adapter }
 
-## Wrapping Persistent Behaviors
+## Wrapping EventSourcedBehavior
 
 When creating a `EventSourcedBehavior`, it is possible to wrap `EventSourcedBehavior` in
 other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance

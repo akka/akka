@@ -1,4 +1,7 @@
-# Persistence
+# Classic Persistence
+
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref[persistence](typed/persistence.md).
 
 ## Dependency
 
@@ -68,7 +71,6 @@ The persistence extension comes with a "local" snapshot storage plugin, which wr
  * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
 development of event sourced applications (see section [Event sourcing](#event-sourcing)).
 
-<a id="event-sourcing"></a>
 ## Event sourcing
 
 See an [introduction to EventSourcing](https://msdn.microsoft.com/en-us/library/jj591559.aspx), what follows is
@@ -161,7 +163,6 @@ behavior is corrupted.
 
 @@@
 
-<a id="recovery"></a>
 ### Recovery
 
 By default, a persistent actor is automatically recovered on start and on restart by replaying journaled messages.
@@ -247,7 +248,6 @@ unused `persistenceId`.
 If there is a problem with recovering the state of the actor from the journal, `onRecoveryFailure`
 is called (logging the error by default) and the actor will be stopped.
 
-<a id="internal-stash"></a>
 ### Internal stash
 
 The persistent actor has a private @ref:[stash](actors.md#stash) for internally caching incoming messages during
@@ -384,7 +384,6 @@ The callback will not be invoked if the actor is restarted (or stopped) in betwe
 
 @@@
 
-<a id="nested-persist-calls"></a>
 ### Nested persist calls
 
 It is possible to call `persist` and `persistAsync` inside their respective callback blocks and they will properly
@@ -444,7 +443,6 @@ the Actor's receive block (or methods synchronously invoked from there).
 
 @@@
 
-<a id="failures"></a>
 ### Failures
 
 If persistence of an event fails, `onPersistFailure` will be invoked (logging the error by default),
@@ -485,7 +483,6 @@ The recovery of a persistent actor will therefore never be done partially with o
 Some journals may not support atomic writes of several events and they will then reject the `persistAll`
 command, i.e. `onPersistRejected` is called with an exception (typically `UnsupportedOperationException`).
 
-<a id="batch-writes"></a>
 ### Batch writes
 
 In order to optimize throughput when using `persistAsync`, a persistent actor
@@ -597,7 +594,6 @@ Scala
 Java
 :  @@snip [LambdaPersistenceDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistenceDocTest.java) { #safe-shutdown-example-good }
 
-<a id="replay-filter"></a>
 ### Replay Filter
 
 There could be cases where event streams are corrupted and multiple writers (i.e. multiple persistent actor instances)
@@ -629,7 +625,6 @@ akka.persistence.journal.leveldb.replay-filter {
 }
 ```
 
-<a id="snapshots"></a>
 ## Snapshots
 
 As you model your domain using actors, you may notice that some actors may be prone to accumulating extremely long event logs and experiencing long recovery times. Sometimes, the right approach may be to split out into a set of shorter lived actors. However, when this is not an option, you can use snapshots to reduce recovery times drastically.
@@ -731,7 +726,6 @@ around this. For more details see @java[[Managing Data Persistence](https://www.
 @java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 
 @scala[[Persistent Entity](https://www.lagomframework.com/documentation/current/scala/PersistentEntity.html)] in the Lagom documentation.
 
-<a id="at-least-once-delivery"></a>
 ## At-Least-Once Delivery
 
 To send messages with at-least-once delivery semantics to destinations you can @scala[mix-in `AtLeastOnceDelivery` trait to your `PersistentActor`]@java[extend the `AbstractPersistentActorWithAtLeastOnceDelivery` class instead of `AbstractPersistentActor`]
@@ -840,7 +834,6 @@ not accept more messages and it will throw `AtLeastOnceDelivery.MaxUnconfirmedMe
 The default value can be configured with the `akka.persistence.at-least-once-delivery.max-unconfirmed-messages`
 configuration key. The method can be overridden by implementation classes to return non-default values.
 
-<a id="event-adapters"></a>
 ## Event Adapters
 
 In long running projects using event sourcing sometimes the need arises to detach the data model from the domain model
@@ -885,9 +878,6 @@ For more advanced schema evolution techniques refer to the @ref:[Persistence - S
 
 @@@
 
-<a id="persistent-fsm"></a>
-
-<a id="storage-plugins"></a>
 ## Storage plugins
 
 Storage backends for journals and snapshot stores are pluggable in the Akka persistence extension.
@@ -949,10 +939,8 @@ akka {
 }
 ```
 
-<a id="pre-packaged-plugins"></a>
 ## Pre-packaged plugins
 
-<a id="local-leveldb-journal"></a>
 ### Local LevelDB journal
 
 The LevelDB journal plugin config entry is `akka.persistence.journal.leveldb`. It writes messages to a local LevelDB
@@ -982,7 +970,6 @@ this end, LevelDB offers a special journal compaction function that is exposed v
 
 @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #compaction-intervals-config }
 
-<a id="shared-leveldb-journal"></a>
 ### Shared LevelDB journal
 
 A LevelDB instance can also be shared by multiple actor systems (on the same or on different nodes). This, for
@@ -1032,7 +1019,6 @@ Java
 Internal journal commands (sent by persistent actors) are buffered until injection completes. Injection is idempotent
 i.e. only the first injection is used.
 
-<a id="local-snapshot-store"></a>
 ### Local snapshot store
 
 The local snapshot store plugin config entry is `akka.persistence.snapshot-store.local`. It writes snapshot files to
@@ -1048,7 +1034,6 @@ directory. This can be changed by configuration where the specified path can be 
 Note that it is not mandatory to specify a snapshot store plugin. If you don't use snapshots
 you don't have to configure it.
 
-<a id="persistence-plugin-proxy"></a>
 ### Persistence Plugin Proxy
 
 A persistence plugin proxy allows sharing of journals and snapshot stores across multiple actor systems (on the same or
@@ -1086,7 +1071,6 @@ The proxied persistence plugin can (and should) be configured using its original
 
 @@@
 
-<a id="custom-serialization"></a>
 ## Custom serialization
 
 Serialization of snapshots and payloads of `Persistent` messages is configurable with Akka's
@@ -1099,7 +1083,7 @@ it must add
 
 @@snip [PersistenceSerializerDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceSerializerDocSpec.scala) { #custom-serializer-config }
 
-to the application configuration. If not specified, a default serializer is used.
+to the application configuration. If not specified, an exception will be throw when trying to persist events or snapshots.
 
 For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](persistence-schema-evolution.md) documentation.
 

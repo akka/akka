@@ -5,13 +5,15 @@
 package akka.remote.artery
 
 import scala.concurrent.duration._
+
 import akka.actor._
 import akka.actor.ActorIdentity
 import akka.actor.Identify
-import akka.remote.{ QuarantinedEvent, RARP, RemotingMultiNodeSpec }
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 
 object SurviveNetworkPartitionSpec extends MultiNodeConfig {
@@ -24,6 +26,7 @@ object SurviveNetworkPartitionSpec extends MultiNodeConfig {
       akka.loglevel = INFO
       akka.remote.artery.enabled = on
       akka.remote.artery.advanced.give-up-system-message-after = 4s
+      akka.remote.use-unsafe-remote-features-outside-cluster = on
       """))
       .withFallback(RemotingMultiNodeSpec.commonConfig))
 
@@ -33,6 +36,7 @@ object SurviveNetworkPartitionSpec extends MultiNodeConfig {
 class SurviveNetworkPartitionSpecMultiJvmNode1 extends SurviveNetworkPartitionSpec
 class SurviveNetworkPartitionSpecMultiJvmNode2 extends SurviveNetworkPartitionSpec
 
+@silent("deprecated")
 abstract class SurviveNetworkPartitionSpec extends RemotingMultiNodeSpec(SurviveNetworkPartitionSpec) {
 
   import SurviveNetworkPartitionSpec._
@@ -98,7 +102,7 @@ abstract class SurviveNetworkPartitionSpec extends RemotingMultiNodeSpec(Survive
         watch(ref)
         // keep the network partition for a while, longer than give-up-system-message-after
         expectNoMessage(RARP(system).provider.remoteSettings.Artery.Advanced.GiveUpSystemMessageAfter - 1.second)
-        qProbe.expectMsgType[QuarantinedEvent](5.seconds).address should ===(node(second).address)
+        qProbe.expectMsgType[QuarantinedEvent](5.seconds).uniqueAddress.address should ===(node(second).address)
 
         expectTerminated(ref)
       }

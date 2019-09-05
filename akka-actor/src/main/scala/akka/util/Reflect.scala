@@ -42,14 +42,15 @@ private[akka] object Reflect {
    * @param clazz the class which to instantiate an instance of
    * @return a new instance from the default constructor of the given class
    */
-  private[akka] def instantiate[T](clazz: Class[T]): T =
-    try clazz.newInstance
+  private[akka] def instantiate[T](clazz: Class[T]): T = {
+    val ctor = clazz.getDeclaredConstructor()
+    try ctor.newInstance()
     catch {
       case _: IllegalAccessException =>
-        val ctor = clazz.getDeclaredConstructor()
         ctor.setAccessible(true)
         ctor.newInstance()
     }
+  }
 
   /**
    * INTERNAL API

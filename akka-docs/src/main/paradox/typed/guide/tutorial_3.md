@@ -30,7 +30,7 @@ Scala
 :   @@snip [DeviceInProgress.scala](/akka-docs/src/test/scala/typed/tutorial_3/DeviceInProgress.scala) { #read-protocol-1 }
 
 Java
-:   @@snip [DeviceInProgress.java](/akka-docs/src/test/java/jdocs/typed/tutorial_3/inprogress1/DeviceProtocol.java) { #read-protocol-1 }
+:   @@snip [Device.java](/akka-docs/src/test/java/jdocs/typed/tutorial_3/inprogress1/Device.java) { #read-protocol-1 }
 
 Note that the `ReadTemperature` message contains the @scala[`ActorRef[RespondTemperature]`]@java[`ActorRef<RespondTemperature>`] that the device actor will use when replying to the request.
 
@@ -118,7 +118,7 @@ Scala
 :   @@snip [DeviceInProgress.scala](/akka-docs/src/test/scala/typed/tutorial_3/DeviceInProgress.scala) { #read-protocol-2 }
 
 Java
-:   @@snip [DeviceInProgress2.java](/akka-docs/src/test/java/jdocs/typed/tutorial_3/inprogress2/DeviceProtocol.java) { #read-protocol-2 }
+:   @@snip [Device.java](/akka-docs/src/test/java/jdocs/typed/tutorial_3/inprogress2/Device.java) { #read-protocol-2 }
 
 ## Implementing the device actor and its read protocol
 
@@ -132,8 +132,8 @@ Java
 
 Note in the code that:
 
-* The @scala[apply method in the companion object]@java[static method] defines how to construct the `Behavior` for the `Device` actor. The parameters include an ID for the device and the group to which it belongs, which we will use later.
-* The messages we reasoned about previously are defined in @scala[the companion object.]@java[DeviceProtocol class that was shown earlier.]
+* The @scala[`apply` method in the companion object]@java[static `create` method] defines how to construct the `Behavior` for the `Device` actor. The parameters include an ID for the device and the group to which it belongs, which we will use later.
+* The messages we reasoned about previously are defined in @scala[the companion object.]@java[Device class that was shown earlier.]
 * In the `Device` class, the value of `lastTemperatureReading` is initially set to @scala[`None`]@java[`Optional.empty()`], and the actor will report it back if queried.
 
 ## Testing the actor
@@ -159,7 +159,7 @@ Scala
 :   @@snip [DeviceInProgress.scala](/akka-docs/src/test/scala/typed/tutorial_3/DeviceInProgress.scala) { #write-protocol-1 }
 
 Java
-:   @@snip [DeviceInProgress3.java](/akka-docs/src/test/java/jdocs/typed/tutorial_3/inprogress3/DeviceProtocol.java) { #write-protocol-1 }
+:   @@snip [Device.java](/akka-docs/src/test/java/jdocs/typed/tutorial_3/inprogress3/Device.java) { #write-protocol-1 }
 
 However, this approach does not take into account that the sender of the record temperature message can never be sure if the message was processed or not. We have seen that Akka does not guarantee delivery of these messages and leaves it to the application to provide success notifications. In our case, we would like to send an acknowledgment to the sender once we have updated our last temperature recording, e.g. replying with a `TemperatureRecorded` message.
 Just like in the case of temperature queries and responses, it is also a good idea to include an ID field to provide maximum flexibility.
@@ -168,7 +168,7 @@ Scala
 :   @@snip [DeviceInProgress.scala](/akka-docs/src/test/scala/typed/tutorial_3/Device.scala) { #write-protocol }
 
 Java
-:   @@snip [DeviceInProgress3.java](/akka-docs/src/test/java/jdocs/typed/tutorial_3/DeviceProtocol.java) { #write-protocol }
+:   @@snip [Device.java](/akka-docs/src/test/java/jdocs/typed/tutorial_3/Device.java) { #write-protocol }
 
 ## Actor with read and write messages
 

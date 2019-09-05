@@ -14,9 +14,13 @@ import akka.actor.typed.Signal
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
+
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
 import akka.persistence._
+
+import akka.util.unused
 
 /** INTERNAL API */
 @InternalApi
@@ -26,17 +30,24 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   type EventOrTagged = Any // `Any` since can be `E` or `Tagged`
 
-  protected def internalPersist(state: Running.RunningState[S], event: EventOrTagged): Running.RunningState[S] = {
+  protected def internalPersist(
+      ctx: ActorContext[_],
+      cmd: Any,
+      state: Running.RunningState[S],
+      event: EventOrTagged,
+      eventAdapterManifest: String): Running.RunningState[S] = {
 
     val newState = state.nextSequenceNr()
 
-    val senderNotKnownBecauseAkkaTyped = null
     val repr = PersistentRepr(
       event,
       persistenceId = setup.persistenceId.id,
       sequenceNr = newState.seqNr,
+      manifest = eventAdapterManifest,
       writerUuid = setup.writerIdentity.writerUuid,
-      sender = senderNotKnownBecauseAkkaTyped)
+      sender = ActorRef.noSender)
+
+    onWriteInitiated(ctx, cmd, repr)
 
     val write = AtomicWrite(repr) :: Nil
     setup.journal
@@ -45,21 +56,33 @@ private[akka] trait JournalInteractions[C, E, S] {
     newState
   }
 
+  @InternalStableApi
+  private[akka] def onWriteInitiated(
+      @unused ctx: ActorContext[_],
+      @unused cmd: Any,
+      @unused repr: PersistentRepr): Unit = ()
+
   protected def internalPersistAll(
-      events: immutable.Seq[EventOrTagged],
-      state: Running.RunningState[S]): Running.RunningState[S] = {
+      ctx: ActorContext[_],
+      cmd: Any,
+      state: Running.RunningState[S],
+      events: immutable.Seq[(EventOrTagged, String)]): Running.RunningState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
-      val writes = events.map { event =>
-        newState = newState.nextSequenceNr()
-        PersistentRepr(
-          event,
-          persistenceId = setup.persistenceId.id,
-          sequenceNr = newState.seqNr,
-          writerUuid = setup.writerIdentity.writerUuid,
-          sender = ActorRef.noSender)
+      val writes = events.map {
+        case (event, eventAdapterManifest) =>
+          newState = newState.nextSequenceNr()
+          PersistentRepr(
+            event,
+            persistenceId = setup.persistenceId.id,
+            sequenceNr = newState.seqNr,
+            manifest = eventAdapterManifest,
+            writerUuid = setup.writerIdentity.writerUuid,
+            sender = ActorRef.noSender)
       }
+
+      onWritesInitiated(ctx, cmd, writes)
       val write = AtomicWrite(writes)
 
       setup.journal.tell(
@@ -69,6 +92,12 @@ private[akka] trait JournalInteractions[C, E, S] {
       newState
     } else state
   }
+
+  @InternalStableApi
+  private[akka] def onWritesInitiated(
+      @unused ctx: ActorContext[_],
+      @unused cmd: Any,
+      @unused repr: immutable.Seq[PersistentRepr]): Unit = ()
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.log.debug("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
@@ -143,7 +172,9 @@ private[akka] trait SnapshotInteractions[C, E, S] {
       throw new IllegalStateException("A snapshot must not be a null state.")
     else
       setup.snapshotStore.tell(
-        SnapshotProtocol.SaveSnapshot(SnapshotMetadata(setup.persistenceId.id, state.seqNr), state.state),
+        SnapshotProtocol.SaveSnapshot(
+          SnapshotMetadata(setup.persistenceId.id, state.seqNr),
+          setup.snapshotAdapter.toJournal(state.state)),
         setup.selfUntyped)
   }
 

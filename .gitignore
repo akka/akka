@@ -38,7 +38,6 @@
 .tags_sorted_by_file
 .target
 .worksheet
-Makefile
 TAGS
 _akka_cluster/
 _dump
@@ -90,3 +89,6 @@ factorial2.txt
 
 # Default sigar library extract location.
 native/
+
+/dumps/
+/core

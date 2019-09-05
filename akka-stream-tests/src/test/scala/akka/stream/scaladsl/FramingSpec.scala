@@ -9,9 +9,14 @@ import java.util.concurrent.ThreadLocalRandom
 
 import akka.stream._
 import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.stage.{ GraphStage, _ }
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.util.{ unused, ByteString, ByteStringBuilder }
+import akka.stream.stage.GraphStage
+import akka.stream.stage._
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.util.ByteString
+import akka.util.ByteStringBuilder
+import akka.util.unused
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -19,9 +24,6 @@ import scala.concurrent.duration._
 import scala.util.Random
 
 class FramingSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-  implicit val materializer = ActorMaterializer(settings)
 
   class Rechunker extends GraphStage[FlowShape[ByteString, ByteString]] {
 

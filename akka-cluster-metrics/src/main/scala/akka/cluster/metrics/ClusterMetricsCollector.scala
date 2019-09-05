@@ -94,7 +94,7 @@ trait ClusterMetricsEvent
 final case class ClusterMetricsChanged(nodeMetrics: Set[NodeMetrics]) extends ClusterMetricsEvent {
 
   /** Java API */
-  @silent
+  @silent("deprecated")
   def getNodeMetrics: java.lang.Iterable[NodeMetrics] =
     scala.collection.JavaConverters.asJavaIterableConverter(nodeMetrics).asJava
 }

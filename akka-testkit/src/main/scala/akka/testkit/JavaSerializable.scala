@@ -7,6 +7,7 @@ package akka.testkit
 import java.io.Serializable
 
 /**
- * Marker trait for test messages that will use JavaSerializer.
+ * Marker trait for test messages that will use Java serialization via
+ * [[akka.testkit.TestJavaSerializer]]
  */
 trait JavaSerializable extends Serializable

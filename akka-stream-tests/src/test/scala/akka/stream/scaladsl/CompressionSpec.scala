@@ -6,14 +6,12 @@ package akka.stream.scaladsl
 
 import java.nio.charset.StandardCharsets
 
-import akka.stream.impl.io.compression.{ DeflateCompressor, GzipCompressor }
+import akka.stream.impl.io.compression.DeflateCompressor
+import akka.stream.impl.io.compression.GzipCompressor
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.util.ByteString
 
 class CompressionSpec extends StreamSpec {
-  val settings = ActorMaterializerSettings(system)
-  implicit val materializer = ActorMaterializer(settings)
 
   def gzip(s: String): ByteString = new GzipCompressor().compressAndFinish(ByteString(s))
 

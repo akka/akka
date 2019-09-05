@@ -21,7 +21,8 @@ public class PrimitiveStateTest extends JUnitSuite {
 
   private static final Config config =
       ConfigFactory.parseString(
-          "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n");
+          "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n"
+              + "akka.persistence.journal.inmem.test-serialization = on \n");
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 

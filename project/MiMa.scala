@@ -12,7 +12,7 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 23
+  private val latestPatchOf25 = 25
   // No 2.6 has been released yet. Update to '0' after releasing 2.6.0
   private val latestPatchOf26 = -1
 
@@ -28,23 +28,17 @@ object MiMa extends AutoPlugin {
       scalaBinaryVersion: String): Set[sbt.ModuleID] = {
 
     val versions: Seq[String] = {
-      scalaBinaryVersion match {
-        case "2.12" =>
-          val firstPatchOf25 =
-            if (projectName.contains("discovery")) 19
-            else if (projectName.contains("coordination")) 22
-            else 0
-
-          if (!projectName.contains("typed")) {
-            expandVersions(2, 5, firstPatchOf25 to latestPatchOf25)
-          } else {
-            Nil
-          } ++ expandVersions(2, 6, 0 to latestPatchOf26)
-        case v if v.startsWith("2.13") =>
-          // When 2.13.0 is actually out, release 2.5.latestPatchOf25 for that
-          // and add it here. https://github.com/akka/akka/issues/26764
-          expandVersions(2, 6, 0 to latestPatchOf26)
-      }
+      val firstPatchOf25 =
+        if (scalaBinaryVersion.startsWith("2.13")) 25
+        else if (projectName.contains("discovery")) 19
+        else if (projectName.contains("coordination")) 22
+        else 0
+    
+      if (!projectName.contains("typed")) {
+        expandVersions(2, 5, firstPatchOf25 to latestPatchOf25)
+      } else {
+        Nil
+      } ++ expandVersions(2, 6, 0 to latestPatchOf26)
     }
 
     val akka25PromotedArtifacts = Set("akka-distributed-data")

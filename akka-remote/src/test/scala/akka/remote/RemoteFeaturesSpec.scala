@@ -22,6 +22,7 @@ import akka.remote.artery.RemoteDeploymentSpec
 import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -31,7 +32,7 @@ object RemoteFeaturesSpec {
 
   // string config to pass into `ArteryMultiNodeSpec.extraConfig: Option[String]` for `other` system
   def common(useUnsafe: Boolean): String = s"""
-       akka.remote.use-unsafe-remote-features-without-cluster = $useUnsafe
+       akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
        akka.remote.artery.enabled = on
        akka.remote.artery.canonical.port = 0
        akka.remote.artery.advanced.flight-recorder.enabled = off
@@ -56,10 +57,14 @@ abstract class RemoteFeaturesSpec(c: Config) extends ArteryMultiNodeSpec(c) with
 
   protected val remoteSystem1 = newRemoteSystem(name = Some("RS1"), extraConfig = Some(common(useUnsafe)))
 
-  Seq(system, remoteSystem1).foreach(
-    muteDeadLetters(
-      akka.remote.transport.AssociationHandle.Disassociated.getClass,
-      akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
+  @silent("deprecated")
+  private def mute(): Unit = {
+    Seq(system, remoteSystem1).foreach(
+      muteDeadLetters(
+        akka.remote.transport.AssociationHandle.Disassociated.getClass,
+        akka.remote.transport.ActorTransportAdapter.DisassociateUnderlying.getClass)(_))
+  }
+  mute()
 
   import akka.remote.artery.RemoteWatcherSpec.TestRemoteWatcher
   protected val monitor = system.actorOf(Props(new TestRemoteWatcher), "monitor1")
@@ -155,7 +160,7 @@ class RemoteFeaturesDisabledSpec extends RemoteFeaturesSpec(RemoteFeaturesSpec.d
       masterRef.tell(42, senderProbe.ref)
       senderProbe.expectMsg(42)
       EventFilter[Exception]("crash", occurrences = 1).intercept {
-        masterRef ! new Exception("crash")
+        masterRef ! "throwException"
       }(masterSystem)
       senderProbe.expectMsg("preRestart")
       masterRef.tell(43, senderProbe.ref)

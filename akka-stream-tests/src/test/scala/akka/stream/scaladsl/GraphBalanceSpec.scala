@@ -4,19 +4,18 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.concurrent.Future
 import akka.stream._
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl._
 
-class GraphBalanceSpec extends StreamSpec {
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
 
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class GraphBalanceSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   "A balance" must {
     import GraphDSL.Implicits._

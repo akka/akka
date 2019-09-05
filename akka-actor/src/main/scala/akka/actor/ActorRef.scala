@@ -259,6 +259,7 @@ private[akka] abstract class InternalActorRef extends ActorRef with ScalaActorRe
    * INTERNAL API: Returns “true” if the actor is locally known to be terminated, “false” if
    * alive or uncertain.
    */
+  @InternalApi
   private[akka] def isTerminated: Boolean
 }
 
@@ -462,7 +463,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   override def suspend(): Unit = ()
   override def resume(causedByFailure: Throwable): Unit = ()
   override def stop(): Unit = ()
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
+
   override private[akka] def isTerminated = false
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = ()
@@ -474,7 +475,10 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   protected def writeReplace(): AnyRef = SerializedActorRef(this)
 }
 
-/** Subscribe to this class to be notified about all DeadLetters (also the suppressed ones). */
+/**
+ * Subscribe to this class to be notified about all [[DeadLetter]] (also the suppressed ones)
+ * and [[Dropped]].
+ */
 sealed trait AllDeadLetters {
   def message: Any
   def sender: ActorRef
@@ -512,6 +516,23 @@ final case class SuppressedDeadLetter(message: DeadLetterSuppression, sender: Ac
   require(recipient ne null, "DeadLetter recipient may not be null")
 }
 
+/**
+ * Envelope that is published on the eventStream wrapped in [[akka.actor.DeadLetter]] for every message that is
+ * dropped due to overfull queues or routers with no routees.
+ *
+ * When this message was sent without a sender [[ActorRef]], `sender` will be `ActorRef.noSender`, i.e. `null`.
+ */
+final case class Dropped(message: Any, reason: String, sender: ActorRef, recipient: ActorRef) extends AllDeadLetters
+
+object Dropped {
+
+  /**
+   * Convenience for creating `Cropped` without `sender`.
+   */
+  def apply(message: Any, reason: String, recipient: ActorRef): Dropped =
+    Dropped(message, reason, ActorRef.noSender, recipient)
+}
+
 private[akka] object DeadLetterActorRef {
   @SerialVersionUID(1L)
   class SerializedDeadLetterActorRef extends Serializable { //TODO implement as Protobuf for performance?
@@ -534,7 +555,6 @@ private[akka] class EmptyLocalActorRef(
     val eventStream: EventStream)
     extends MinimalActorRef {
 
-  @deprecated("Use context.watch(actor) and receive Terminated(actor)", "2.2")
   override private[akka] def isTerminated = true
 
   override def sendSystemMessage(message: SystemMessage): Unit = {
@@ -755,7 +775,11 @@ private[akka] final class FunctionRef(
   private[this] var watching = ActorCell.emptyActorRefSet
   private[this] var _watchedBy: OptionVal[Set[ActorRef]] = OptionVal.Some(ActorCell.emptyActorRefSet)
 
-  override def isTerminated: Boolean = _watchedBy.isEmpty
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  override private[akka] def isTerminated: Boolean = _watchedBy.isEmpty
 
   //noinspection EmptyCheck
   protected def sendTerminated(): Unit = {

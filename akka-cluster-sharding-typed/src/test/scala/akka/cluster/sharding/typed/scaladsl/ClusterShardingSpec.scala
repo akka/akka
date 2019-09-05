@@ -51,8 +51,6 @@ object ClusterShardingSpec {
 
       akka.actor {
         serialize-messages = off
-        # issue #24465 missing serializer for GetShardRegionStats
-        #allow-java-serialization = off
 
        serializers {
           test = "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$Serializer"
@@ -350,7 +348,7 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       val p = TestProbe[TheReply]()
 
       spawn(Behaviors.setup[TheReply] { ctx =>
-        ctx.ask(aliceRef)(WhoAreYou) {
+        ctx.ask(aliceRef, WhoAreYou) {
           case Success(name) => TheReply(name)
           case Failure(ex)   => TheReply(ex.getMessage)
         }
@@ -397,8 +395,8 @@ class ClusterShardingSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.
       exc.getMessage should include("[10 ms]") // timeout
     }
 
-    "handle untyped StartEntity message" in {
-      // it is normally using envelopes, but the untyped StartEntity message can be sent internally,
+    "handle classic StartEntity message" in {
+      // it is normally using envelopes, but the classic StartEntity message can be sent internally,
       // e.g. for remember entities
 
       val totalCountBefore = totalEntityCount1()

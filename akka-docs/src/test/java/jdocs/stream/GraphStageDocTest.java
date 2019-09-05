@@ -36,19 +36,16 @@ import static org.junit.Assert.assertEquals;
 
 public class GraphStageDocTest extends AbstractJavaTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("GraphStageDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   // #simple-source
@@ -139,11 +136,12 @@ public class GraphStageDocTest extends AbstractJavaTest {
     Source<Integer, NotUsed> mySource = Source.fromGraph(sourceGraph);
 
     // Returns 55
-    CompletionStage<Integer> result1 = mySource.take(10).runFold(0, (sum, next) -> sum + next, mat);
+    CompletionStage<Integer> result1 =
+        mySource.take(10).runFold(0, (sum, next) -> sum + next, system);
 
     // The source is reusable. This returns 5050
     CompletionStage<Integer> result2 =
-        mySource.take(100).runFold(0, (sum, next) -> sum + next, mat);
+        mySource.take(100).runFold(0, (sum, next) -> sum + next, system);
     // #simple-source-usage
 
     assertEquals(result1.toCompletableFuture().get(3, TimeUnit.SECONDS), (Integer) 55);
@@ -156,7 +154,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
 
     Sink<Integer, NotUsed> mySink = Sink.fromGraph(sinkGraph);
 
-    Source.from(Arrays.asList(1, 2, 3)).runWith(mySink, mat);
+    Source.from(Arrays.asList(1, 2, 3)).runWith(mySink, system);
   }
 
   // #one-to-one
@@ -221,7 +219,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
     CompletionStage<Integer> result =
         Source.from(Arrays.asList("one", "two", "three"))
             .via(stringLength)
-            .runFold(0, (sum, n) -> sum + n, mat);
+            .runFold(0, (sum, n) -> sum + n, system);
 
     assertEquals(new Integer(11), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
@@ -286,7 +284,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
     CompletionStage<Integer> result =
         Source.from(Arrays.asList(1, 2, 3, 4, 5, 6))
             .via(evenFilter)
-            .runFold(0, (elem, sum) -> sum + elem, mat);
+            .runFold(0, (elem, sum) -> sum + elem, system);
 
     assertEquals(new Integer(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
@@ -356,7 +354,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
         Flow.fromGraph(new Duplicator<Integer>());
 
     CompletionStage<Integer> result =
-        Source.from(Arrays.asList(1, 2, 3)).via(duplicator).runFold(0, (n, sum) -> n + sum, mat);
+        Source.from(Arrays.asList(1, 2, 3)).via(duplicator).runFold(0, (n, sum) -> n + sum, system);
 
     assertEquals(new Integer(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
@@ -412,7 +410,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
         Flow.fromGraph(new Duplicator2<Integer>());
 
     CompletionStage<Integer> result =
-        Source.from(Arrays.asList(1, 2, 3)).via(duplicator).runFold(0, (n, sum) -> n + sum, mat);
+        Source.from(Arrays.asList(1, 2, 3)).via(duplicator).runFold(0, (n, sum) -> n + sum, system);
 
     assertEquals(new Integer(12), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
@@ -428,7 +426,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
             .via(new Filter<Integer>((n) -> n % 2 == 0))
             .via(new Duplicator<Integer>())
             .via(new Map<Integer, Integer>((n) -> n / 2))
-            .runWith(sink, mat);
+            .runWith(sink, system);
 
     // #graph-operator-chain
 
@@ -509,7 +507,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
     Graph<FlowShape<Integer, Integer>, NotUsed> killSwitch =
         Flow.fromGraph(new KillSwitch<>(switchF));
 
-    Source.fromPublisher(in).via(killSwitch).to(Sink.fromSubscriber(out)).run(mat);
+    Source.fromPublisher(in).via(killSwitch).to(Sink.fromSubscriber(out)).run(system);
 
     out.request(1);
     in.sendNext(1);
@@ -588,7 +586,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
         Source.from(Arrays.asList(1, 2, 3))
             .via(new TimedGate<>(2))
             .takeWithin(java.time.Duration.ofMillis(250))
-            .runFold(0, (n, sum) -> n + sum, mat);
+            .runFold(0, (n, sum) -> n + sum, system);
 
     assertEquals(new Integer(1), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
@@ -659,7 +657,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
             .viaMat(new FirstValue(), Keep.right())
             .to(Sink.ignore());
 
-    CompletionStage<Integer> result = flow.run(mat);
+    CompletionStage<Integer> result = flow.run(system);
 
     assertEquals(new Integer(1), result.toCompletableFuture().get(3, TimeUnit.SECONDS));
   }
@@ -751,7 +749,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
     CompletionStage<Integer> result1 =
         Source.from(Arrays.asList(1, 2, 3))
             .via(new TwoBuffer<>())
-            .runFold(0, (acc, n) -> acc + n, mat);
+            .runFold(0, (acc, n) -> acc + n, system);
 
     assertEquals(new Integer(6), result1.toCompletableFuture().get(3, TimeUnit.SECONDS));
 
@@ -760,7 +758,7 @@ public class GraphStageDocTest extends AbstractJavaTest {
     RunnableGraph<NotUsed> flow2 =
         Source.fromPublisher(publisher).via(new TwoBuffer<>()).to(Sink.fromSubscriber(subscriber));
 
-    flow2.run(mat);
+    flow2.run(system);
 
     Subscription sub = subscriber.expectSubscription();
     // this happens even though the subscriber has not signalled any demand

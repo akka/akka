@@ -170,6 +170,19 @@ Stream refs utilise normal actor messaging for their trainsport, and therefore p
 Bulk stream refs can be used to create simple side-channels to transfer humongous amounts
 of data such as huge log files, messages or even media, with as much ease as if it was a trivial local stream.
 
+## Serialization of SourceRef and SinkRef
+
+StreamRefs require serialization, since the whole point is to send them between nodes of a cluster. A built in serializer
+is provided when `SourceRef` and `SinkRef` are sent directly as messages however the recommended use is to wrap them
+into your own actor message classes. 
+
+When @ref[Akka Jackson](../serialization-jackson.md) is used, serialization of wrapped `SourceRef` and `SinkRef` 
+will work out of the box.
+ 
+If you are using some other form of serialization you will need to use the @apidoc[akka.stream.StreamRefResolver] extension 
+from your serializer to get the `SourceRef` and `SinkRef`. The extension provides the methods `toSerializationFormat(sink or source)`
+to transform from refs to string and `resolve{Sink,Source}Ref(String)` to resolve refs from strings.
+
 ## Configuration
 
 ### Stream reference subscription timeouts
@@ -190,7 +203,7 @@ Scala
 Java
 :   @@snip [FlowStreamRefsDocTest.java](/akka-docs/src/test/java/jdocs/stream/FlowStreamRefsDocTest.java) { #attr-sub-timeout }
 
-## General configuration
+### General configuration
 
 Other settings can be set globally in your `application.conf`, by overriding any of the following values
 in the `akka.stream.materializer.stream-ref.*` keyspace:

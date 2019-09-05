@@ -2,6 +2,8 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
+syntax = "proto2";
+
 option java_package = "akka.remote";
 option optimize_for = SPEED;
 
@@ -60,6 +62,12 @@ message Throwable {
   optional string message = 2;
   optional Payload cause = 3;
   repeated StackTraceElement stackTrace = 4;
+}
+
+message ThrowableNotSerializable {
+  required string message = 1;
+  required string originalMessage = 2;
+  required string originalClassName = 3;
 }
 
 message ActorInitializationException {

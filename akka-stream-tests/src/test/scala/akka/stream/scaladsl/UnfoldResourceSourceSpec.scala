@@ -9,26 +9,26 @@ import java.nio.charset.StandardCharsets
 import java.nio.file.Files
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.ActorSystem
+import akka.stream.ActorAttributes
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
+import akka.stream.SystemMaterializer
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{ StreamSpec, TestSubscriber }
-import akka.stream.{ ActorMaterializer, _ }
 import akka.testkit.EventFilter
 import akka.util.ByteString
-import com.google.common.jimfs.{ Configuration, Jimfs }
+import com.google.common.jimfs.Configuration
+import com.google.common.jimfs.Jimfs
 
 import scala.concurrent.duration._
 
 class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
-
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
 
   private val fs = Jimfs.newFileSystem("UnfoldResourceSourceSpec", Configuration.unix())
 
@@ -148,24 +148,20 @@ class UnfoldResourceSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
-      val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-      val materializer = ActorMaterializer()(sys)
-      try {
-        val p = Source
-          .unfoldResource[String, BufferedReader](
-            () => newBufferedReader(),
-            reader => Option(reader.readLine()),
-            reader => reader.close())
-          .runWith(TestSink.probe)(materializer)
+      val p = Source
+        .unfoldResource[String, BufferedReader](
+          () => newBufferedReader(),
+          reader => Option(reader.readLine()),
+          reader => reader.close())
+        .runWith(TestSink.probe)
 
-        materializer
-          .asInstanceOf[PhasedFusingActorMaterializer]
-          .supervisor
-          .tell(StreamSupervisor.GetChildren, testActor)
-        val ref = expectMsgType[Children].children.find(_.path.toString contains "unfoldResourceSource").get
-        try assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
-        finally p.cancel()
-      } finally shutdown(sys)
+      SystemMaterializer(system).materializer
+        .asInstanceOf[PhasedFusingActorMaterializer]
+        .supervisor
+        .tell(StreamSupervisor.GetChildren, testActor)
+      val ref = expectMsgType[Children].children.find(_.path.toString contains "unfoldResourceSource").get
+      try assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
+      finally p.cancel()
     }
 
     "fail when create throws exception" in assertAllStagesStopped {

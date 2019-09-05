@@ -5,7 +5,7 @@
 package docs.stream
 
 import akka.NotUsed
-import akka.stream.{ ActorMaterializer, KillSwitches }
+import akka.stream.KillSwitches
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 import docs.CompileOnlySpec
@@ -14,7 +14,6 @@ import scala.concurrent.duration._
 import scala.concurrent._
 
 class RestartDocSpec extends AkkaSpec with CompileOnlySpec {
-  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   // Mock akka-http interfaces

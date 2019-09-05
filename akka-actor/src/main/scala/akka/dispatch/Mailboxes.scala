@@ -6,6 +6,8 @@ package akka.dispatch
 
 import java.lang.reflect.ParameterizedType
 import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicReference
+
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
 import akka.dispatch.sysmsg.{
@@ -18,13 +20,15 @@ import akka.event.EventStream
 import akka.event.Logging.Warning
 import akka.util.Reflect
 import com.typesafe.config.{ Config, ConfigFactory }
+
 import scala.util.control.NonFatal
-import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
 
 object Mailboxes {
   final val DefaultMailboxId = "akka.actor.default-mailbox"
   final val NoMailboxRequirement = ""
+  final val BoundedCapacityPrefix = "bounded-capacity:"
 }
 
 private[akka] class Mailboxes(
@@ -171,7 +175,7 @@ private[akka] class Mailboxes(
 
     if (deploy.mailbox != Deploy.NoMailboxGiven) {
       verifyRequirements(lookup(deploy.mailbox))
-    } else if (deploy.dispatcher != Deploy.NoDispatcherGiven && hasMailboxType) {
+    } else if (deploy.dispatcher != Deploy.NoDispatcherGiven && deploy.dispatcher != Deploy.DispatcherSameAsParent && hasMailboxType) {
       verifyRequirements(lookup(dispatcherConfig.getString("id")))
     } else if (hasRequiredType(actorClass)) {
       try verifyRequirements(lookupByQueueType(getRequiredType(actorClass)))
@@ -202,8 +206,14 @@ private[akka] class Mailboxes(
         // It doesn't matter if we create a mailbox type configurator that isn't used due to concurrent lookup.
         val newConfigurator = id match {
           // TODO RK remove these two for Akka 2.3
-          case "unbounded" => UnboundedMailbox()
-          case "bounded"   => new BoundedMailbox(settings, config(id))
+          case "unbounded"                               => UnboundedMailbox()
+          case "bounded"                                 => new BoundedMailbox(settings, config(id))
+          case _ if id.startsWith(BoundedCapacityPrefix) =>
+            // hack to allow programmatic set of capacity through props in akka-typed but still share
+            // mailbox configurators for the same size
+            val capacity = id.split(':')(1).toInt
+            new BoundedMailbox(capacity, Duration.Zero)
+
           case _ =>
             if (!settings.config.hasPath(id)) throw new ConfigurationException(s"Mailbox Type [$id] not configured")
             val conf = config(id)

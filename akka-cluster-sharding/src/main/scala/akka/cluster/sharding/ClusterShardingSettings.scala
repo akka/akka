@@ -4,16 +4,17 @@
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration._
+
 import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
-import com.typesafe.config.Config
 import akka.cluster.Cluster
 import akka.cluster.singleton.ClusterSingletonManagerSettings
 import akka.coordination.lease.LeaseUsageSettings
 import akka.util.JavaDurationConverters._
+import com.typesafe.config.Config
 
 object ClusterShardingSettings {
 
@@ -72,6 +73,7 @@ object ClusterShardingSettings {
       snapshotPluginId = config.getString("snapshot-plugin-id"),
       stateStoreMode = config.getString("state-store-mode"),
       passivateIdleEntityAfter = passivateIdleAfter,
+      shardRegionQueryTimeout = config.getDuration("shard-region-query-timeout", MILLISECONDS).millis,
       tuningParameters,
       coordinatorSingletonSettings,
       lease)
@@ -189,7 +191,6 @@ object ClusterShardingSettings {
         100.milliseconds,
         5)
     }
-
   }
 }
 
@@ -211,6 +212,7 @@ object ClusterShardingSettings {
  *   to the `ActorRef` of the actor or messages that it sends to itself are not counted as activity.
  *   Use 0 to disable automatic passivation. It is always disabled if `rememberEntities` is enabled.
  * @param tuningParameters additional tuning parameters, see descriptions in reference.conf
+ * @param shardRegionQueryTimeout the timeout for querying a shard region, see descriptions in reference.conf
  */
 final class ClusterShardingSettings(
     val role: Option[String],
@@ -219,12 +221,42 @@ final class ClusterShardingSettings(
     val snapshotPluginId: String,
     val stateStoreMode: String,
     val passivateIdleEntityAfter: FiniteDuration,
+    val shardRegionQueryTimeout: FiniteDuration,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
     val coordinatorSingletonSettings: ClusterSingletonManagerSettings,
     val leaseSettings: Option[LeaseUsageSettings])
     extends NoSerializationVerificationNeeded {
 
+  // bin compat for 2.5.23
+  @deprecated(
+    "Use the ClusterShardingSettings factory methods or the constructor including shardRegionQueryTimeout instead",
+    since = "2.6.0")
+  def this(
+      role: Option[String],
+      rememberEntities: Boolean,
+      journalPluginId: String,
+      snapshotPluginId: String,
+      stateStoreMode: String,
+      passivateIdleEntityAfter: FiniteDuration,
+      tuningParameters: ClusterShardingSettings.TuningParameters,
+      coordinatorSingletonSettings: ClusterSingletonManagerSettings,
+      leaseSettings: Option[LeaseUsageSettings]) =
+    this(
+      role,
+      rememberEntities,
+      journalPluginId,
+      snapshotPluginId,
+      stateStoreMode,
+      passivateIdleEntityAfter,
+      3.seconds,
+      tuningParameters,
+      coordinatorSingletonSettings,
+      None)
+
   // bin compat for 2.5.21
+  @deprecated(
+    "Use the ClusterShardingSettings factory methods or the constructor including shardRegionQueryTimeout instead",
+    since = "2.5.21")
   def this(
       role: Option[String],
       rememberEntities: Boolean,
@@ -241,6 +273,7 @@ final class ClusterShardingSettings(
       snapshotPluginId,
       stateStoreMode,
       passivateIdleEntityAfter,
+      3.seconds,
       tuningParameters,
       coordinatorSingletonSettings,
       None)
@@ -248,7 +281,7 @@ final class ClusterShardingSettings(
   // included for binary compatibility reasons
   @deprecated(
     "Use the ClusterShardingSettings factory methods or the constructor including passivateIdleEntityAfter instead",
-    "2.5.18")
+    since = "2.5.18")
   def this(
       role: Option[String],
       rememberEntities: Boolean,
@@ -267,7 +300,8 @@ final class ClusterShardingSettings(
       tuningParameters,
       coordinatorSingletonSettings)
 
-  import ClusterShardingSettings.{ StateStoreModeDData, StateStoreModePersistence }
+  import ClusterShardingSettings.StateStoreModeDData
+  import ClusterShardingSettings.StateStoreModePersistence
   require(
     stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
     s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'")
@@ -302,6 +336,12 @@ final class ClusterShardingSettings(
   def withPassivateIdleAfter(duration: java.time.Duration): ClusterShardingSettings =
     copy(passivateIdleAfter = duration.asScala)
 
+  def withShardRegionQueryTimeout(duration: FiniteDuration): ClusterShardingSettings =
+    copy(shardRegionQueryTimeout = duration)
+
+  def withShardRegionQueryTimeout(duration: java.time.Duration): ClusterShardingSettings =
+    copy(shardRegionQueryTimeout = duration.asScala)
+
   def withLeaseSettings(leaseSettings: LeaseUsageSettings): ClusterShardingSettings =
     copy(leaseSettings = Some(leaseSettings))
 
@@ -320,6 +360,7 @@ final class ClusterShardingSettings(
       snapshotPluginId: String = snapshotPluginId,
       stateStoreMode: String = stateStoreMode,
       passivateIdleAfter: FiniteDuration = passivateIdleEntityAfter,
+      shardRegionQueryTimeout: FiniteDuration = shardRegionQueryTimeout,
       tuningParameters: ClusterShardingSettings.TuningParameters = tuningParameters,
       coordinatorSingletonSettings: ClusterSingletonManagerSettings = coordinatorSingletonSettings,
       leaseSettings: Option[LeaseUsageSettings] = leaseSettings): ClusterShardingSettings =
@@ -330,6 +371,7 @@ final class ClusterShardingSettings(
       snapshotPluginId,
       stateStoreMode,
       passivateIdleAfter,
+      shardRegionQueryTimeout,
       tuningParameters,
       coordinatorSingletonSettings,
       leaseSettings)

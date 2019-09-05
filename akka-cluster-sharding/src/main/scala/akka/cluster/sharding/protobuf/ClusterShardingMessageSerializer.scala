@@ -9,8 +9,11 @@ import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 import scala.annotation.tailrec
+import scala.concurrent.duration._
+
 import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
+
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
 import akka.cluster.sharding.Shard
@@ -19,11 +22,13 @@ import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
-import akka.protobuf.MessageLite
+import akka.protobufv3.internal.MessageLite
 import akka.util.ccompat._
 import java.io.NotSerializableException
 
+import akka.actor.Address
 import akka.cluster.sharding.ShardRegion._
+import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
 
 /**
  * INTERNAL API: Protobuf serializer of ClusterSharding messages.
@@ -70,6 +75,10 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   private val ShardStatsManifest = "DB"
   private val GetShardRegionStatsManifest = "DC"
   private val ShardRegionStatsManifest = "DD"
+  private val GetClusterShardingStatsManifest = "DE"
+  private val ClusterShardingStatsManifest = "DF"
+  private val GetCurrentRegionsManifest = "DG"
+  private val CurrentRegionsManifest = "DH"
 
   private val fromBinaryMap = collection.immutable.HashMap[String, Array[Byte] => AnyRef](
     EntityStateManifest -> entityStateFromBinary,
@@ -138,6 +147,18 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     ShardRegionStatsManifest -> { bytes =>
       shardRegionStatsFromBinary(bytes)
     },
+    GetClusterShardingStatsManifest -> { bytes =>
+      getClusterShardingStatsFromBinary(bytes)
+    },
+    ClusterShardingStatsManifest -> { bytes =>
+      clusterShardingStatsFromBinary(bytes)
+    },
+    GetCurrentRegionsManifest -> { _ =>
+      GetCurrentRegions
+    },
+    CurrentRegionsManifest -> { bytes =>
+      currentRegionsFromBinary(bytes)
+    },
     StartEntityManifest -> { startEntityFromBinary(_) },
     StartEntityAckManifest -> { startEntityAckFromBinary(_) })
 
@@ -170,10 +191,14 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case _: StartEntity    => StartEntityManifest
     case _: StartEntityAck => StartEntityAckManifest
 
-    case GetShardStats       => GetShardStatsManifest
-    case _: ShardStats       => ShardStatsManifest
-    case GetShardRegionStats => GetShardRegionStatsManifest
-    case _: ShardRegionStats => ShardRegionStatsManifest
+    case GetShardStats              => GetShardStatsManifest
+    case _: ShardStats              => ShardStatsManifest
+    case GetShardRegionStats        => GetShardRegionStatsManifest
+    case _: ShardRegionStats        => ShardRegionStatsManifest
+    case _: GetClusterShardingStats => GetClusterShardingStatsManifest
+    case _: ClusterShardingStats    => ClusterShardingStatsManifest
+    case GetCurrentRegions          => GetCurrentRegionsManifest
+    case _: CurrentRegions          => CurrentRegionsManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
   }
@@ -208,10 +233,14 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     case s: StartEntity    => startEntityToByteArray(s)
     case s: StartEntityAck => startEntityAckToByteArray(s)
 
-    case GetShardStats       => Array.emptyByteArray
-    case m: ShardStats       => shardStatsToProto(m).toByteArray
-    case GetShardRegionStats => Array.emptyByteArray
-    case m: ShardRegionStats => shardRegionStatsToProto(m).toByteArray
+    case GetShardStats              => Array.emptyByteArray
+    case m: ShardStats              => shardStatsToProto(m).toByteArray
+    case GetShardRegionStats        => Array.emptyByteArray
+    case m: ShardRegionStats        => shardRegionStatsToProto(m).toByteArray
+    case m: GetClusterShardingStats => getClusterShardingStatsToProto(m).toByteArray
+    case m: ClusterShardingStats    => clusterShardingStatsToProto(m).toByteArray
+    case GetCurrentRegions          => Array.emptyByteArray
+    case m: CurrentRegions          => currentRegionsToProto(m).toByteArray
 
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${obj.getClass} in [${getClass.getName}]")
@@ -336,13 +365,67 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
       case (sid, no) =>
         b.addStats(sm.MapFieldEntry.newBuilder().setKey(sid).setValue(no).build())
     }
+    evt.failed.foreach { sid =>
+      b.addFailed(sid).build()
+    }
     b.build()
   }
 
   private def shardRegionStatsFromBinary(bytes: Array[Byte]): ShardRegionStats = {
     val parsed = sm.ShardRegionStats.parseFrom(bytes)
+    shardRegionStatsFromProto(parsed)
+  }
+
+  private def shardRegionStatsFromProto(parsed: ClusterShardingMessages.ShardRegionStats): ShardRegionStats = {
     val stats: Map[String, Int] = parsed.getStatsList.asScala.iterator.map(e => e.getKey -> e.getValue).toMap
-    ShardRegionStats(stats)
+    val failed: Set[String] = parsed.getFailedList.asScala.toSet
+    ShardRegionStats(stats, failed)
+  }
+
+  private def clusterShardingStatsToProto(evt: ClusterShardingStats): sm.ClusterShardingStats = {
+    val b = sm.ClusterShardingStats.newBuilder()
+    evt.regions.foreach {
+      case (address, shardRegionStats) =>
+        b.addStats(
+          sm.ClusterShardingStatsEntry
+            .newBuilder()
+            .setAddress(serializeAddress(address))
+            .setStats(shardRegionStatsToProto(shardRegionStats))
+            .build())
+    }
+    b.build()
+  }
+
+  private def clusterShardingStatsFromBinary(bytes: Array[Byte]): ClusterShardingStats = {
+    val parsed = sm.ClusterShardingStats.parseFrom(bytes)
+    val stats: Map[Address, ShardRegionStats] =
+      parsed.getStatsList.asScala.iterator
+        .map(e => deserializeAddress(e.getAddress) -> shardRegionStatsFromProto(e.getStats))
+        .toMap
+    ClusterShardingStats(stats)
+  }
+
+  private def getClusterShardingStatsToProto(evt: GetClusterShardingStats): sm.GetClusterShardingStats = {
+    sm.GetClusterShardingStats.newBuilder().setTimeoutNanos(evt.timeout.toNanos).build()
+  }
+
+  private def getClusterShardingStatsFromBinary(bytes: Array[Byte]): GetClusterShardingStats = {
+    val parsed = sm.GetClusterShardingStats.parseFrom(bytes)
+    GetClusterShardingStats(parsed.getTimeoutNanos.nanos)
+  }
+
+  private def currentRegionsToProto(evt: CurrentRegions): sm.CurrentRegions = {
+    val b = sm.CurrentRegions.newBuilder()
+    evt.regions.foreach { address =>
+      b.addRegions(serializeAddress(address))
+    }
+    b.build()
+  }
+
+  private def currentRegionsFromBinary(bytes: Array[Byte]): CurrentRegions = {
+    val parsed = sm.CurrentRegions.parseFrom(bytes)
+    val regions: Set[Address] = parsed.getRegionsList.asScala.iterator.map(deserializeAddress).toSet
+    CurrentRegions(regions)
   }
 
   private def startEntityToByteArray(s: StartEntity): Array[Byte] = {
@@ -367,6 +450,16 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     val sea = sm.StartEntityAck.parseFrom(bytes)
     StartEntityAck(sea.getEntityId, sea.getShardId)
   }
+
+  def serializeAddress(address: Address): sm.Address =
+    address match {
+      case Address(protocol, systemName, Some(host), Some(port)) =>
+        sm.Address.newBuilder().setProtocol(protocol).setSystem(systemName).setHostname(host).setPort(port).build()
+      case _ => throw new IllegalArgumentException(s"Address [$address] could not be serialized: host or port missing.")
+    }
+
+  def deserializeAddress(address: sm.Address): Address =
+    Address(address.getProtocol, address.getSystem, address.getHostname, address.getPort)
 
   private def resolveActorRef(path: String): ActorRef = {
     system.provider.resolveActorRef(path)

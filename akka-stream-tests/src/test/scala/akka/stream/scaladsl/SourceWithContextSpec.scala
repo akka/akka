@@ -4,16 +4,12 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.scaladsl.TestSink
 
 case class Message(data: String, offset: Long)
 
 class SourceWithContextSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-  implicit val materializer = ActorMaterializer(settings)
 
   "A SourceWithContext" must {
 
@@ -106,6 +102,16 @@ class SourceWithContextSpec extends StreamSpec {
         .request(2)
         .expectNext((Seq("a-1", "a-2"), Seq(1L, 1L)), (Seq("a-3", "a-4"), Seq(1L, 1L)))
         .expectComplete()
+    }
+
+    "be able to change meterialized value via mapMaterializedValue" in {
+      val materializedValue = "MatedValue"
+      Source
+        .empty[Message]
+        .asSourceWithContext(_.offset)
+        .mapMaterializedValue(_ => materializedValue)
+        .to(Sink.ignore)
+        .run() shouldBe materializedValue
     }
   }
 }

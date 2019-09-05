@@ -1,4 +1,7 @@
-# Cluster Client
+# Classic Cluster Client
+
+@@include[includes.md](includes.md) { #actor-api }
+Instead of the cluster client we recommend Akka gRPC (FIXME https://github.com/akka/akka/issues/26175)
 
 ## Dependency
 

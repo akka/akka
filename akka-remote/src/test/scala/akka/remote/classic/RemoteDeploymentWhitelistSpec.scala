@@ -9,8 +9,9 @@ import akka.remote.EndpointException
 import akka.remote.transport._
 import akka.testkit._
 import com.typesafe.config._
-
 import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 
 // relies on test transport
 object RemoteDeploymentWhitelistSpec {
@@ -54,9 +55,9 @@ object RemoteDeploymentWhitelistSpec {
   val cfg: Config = ConfigFactory.parseString(s"""
     akka {
       actor.provider = remote
-
+      
       remote {
-        use-unsafe-remote-features-without-cluster = on
+        use-unsafe-remote-features-outside-cluster = on
         classic.enabled-transports = [
           "akka.remote.test",
           "akka.remote.classic.netty.tcp"
@@ -88,6 +89,9 @@ object RemoteDeploymentWhitelistSpec {
         /danger-mouse.remote = "akka.test://remote-sys@localhost:12346"
       }
     }
+    # test is using Java serialization and not priority to rewrite
+    akka.actor.allow-java-serialization = on
+    akka.actor.warn-about-java-serializer-usage = off
   """)
 
   def muteSystem(system: ActorSystem): Unit = {
@@ -99,6 +103,7 @@ object RemoteDeploymentWhitelistSpec {
   }
 }
 
+@silent("deprecated")
 class RemoteDeploymentWhitelistSpec
     extends AkkaSpec(RemoteDeploymentWhitelistSpec.cfg)
     with ImplicitSender

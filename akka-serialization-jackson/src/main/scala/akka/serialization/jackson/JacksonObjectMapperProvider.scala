@@ -4,9 +4,11 @@
 
 package akka.serialization.jackson
 
+import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.collection.immutable
+import scala.compat.java8.OptionConverters._
 import scala.util.Failure
 import scala.util.Success
 
@@ -26,11 +28,14 @@ import com.fasterxml.jackson.annotation.JsonCreator
 import com.fasterxml.jackson.annotation.PropertyAccessor
 import com.fasterxml.jackson.core.JsonFactory
 import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.MapperFeature
 import com.fasterxml.jackson.databind.Module
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.SerializationFeature
 import com.fasterxml.jackson.module.paramnames.ParameterNamesModule
 import com.typesafe.config.Config
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.JsonGenerator
 
 object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): JacksonObjectMapperProvider = super.get(system)
@@ -92,27 +97,50 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       case (feature, value) => mapper.configure(feature, value)
     }
 
+    val configuredMapperFeatures = features(config, "mapper-features").map {
+      case (enumName, value) => MapperFeature.valueOf(enumName) -> value
+    }
+    val mapperFeatures = objectMapperFactory.overrideConfiguredMapperFeatures(bindingName, configuredMapperFeatures)
+    mapperFeatures.foreach {
+      case (feature, value) => mapper.configure(feature, value)
+    }
+
+    val configuredJsonParserFeatures = features(config, "json-parser-features").map {
+      case (enumName, value) => JsonParser.Feature.valueOf(enumName) -> value
+    }
+    val jsonParserFeatures =
+      objectMapperFactory.overrideConfiguredJsonParserFeatures(bindingName, configuredJsonParserFeatures)
+    jsonParserFeatures.foreach {
+      case (feature, value) => mapper.configure(feature, value)
+    }
+
+    val configuredJsonGeneratorFeatures = features(config, "json-generator-features").map {
+      case (enumName, value) => JsonGenerator.Feature.valueOf(enumName) -> value
+    }
+    val jsonGeneratorFeatures =
+      objectMapperFactory.overrideConfiguredJsonGeneratorFeatures(bindingName, configuredJsonGeneratorFeatures)
+    jsonGeneratorFeatures.foreach {
+      case (feature, value) => mapper.configure(feature, value)
+    }
+
     val configuredModules = config.getStringList("jackson-modules").asScala
     val modules1 =
-      if (configuredModules.contains("*"))
-        ObjectMapper.findModules(dynamicAccess.classLoader).asScala
-      else
-        configuredModules.flatMap { fqcn =>
-          if (isModuleEnabled(fqcn, dynamicAccess)) {
-            dynamicAccess.createInstanceFor[Module](fqcn, Nil) match {
-              case Success(m) => Some(m)
-              case Failure(e) =>
-                log.foreach(
-                  _.error(
-                    e,
-                    s"Could not load configured Jackson module [$fqcn], " +
-                    "please verify classpath dependencies or amend the configuration " +
-                    "[akka.serialization.jackson-modules]. Continuing without this module."))
-                None
-            }
-          } else
-            None
-        }
+      configuredModules.flatMap { fqcn =>
+        if (isModuleEnabled(fqcn, dynamicAccess)) {
+          dynamicAccess.createInstanceFor[Module](fqcn, Nil) match {
+            case Success(m) => Some(m)
+            case Failure(e) =>
+              log.foreach(
+                _.error(
+                  e,
+                  s"Could not load configured Jackson module [$fqcn], " +
+                  "please verify classpath dependencies or amend the configuration " +
+                  "[akka.serialization.jackson-modules]. Continuing without this module."))
+              None
+          }
+        } else
+          None
+      }
 
     val modules2 = modules1.map { module =>
       if (module.isInstanceOf[ParameterNamesModule])
@@ -133,18 +161,16 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     mapper
   }
 
-  private def isModuleEnabled(fqcn: String, dynamicAccess: DynamicAccess): Boolean = {
-    // akka-actor-typed dependency is "provided" and may not be included
-    if (fqcn == "akka.serialization.jackson.AkkaTypedJacksonModule") {
-      dynamicAccess.getClassFor("akka.actor.typed.ActorRef") match {
-        case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
-          false // akka-actor-typed not in classpath
-        case _ =>
-          true
-      }
-    } else
-      true
-  }
+  private def isModuleEnabled(fqcn: String, dynamicAccess: DynamicAccess): Boolean =
+    fqcn match {
+      case "akka.serialization.jackson.AkkaTypedJacksonModule" =>
+        // akka-actor-typed dependency is "provided" and may not be included
+        dynamicAccess.classIsOnClasspath("akka.actor.typed.ActorRef")
+      case "akka.serialization.jackson.AkkaStreamJacksonModule" =>
+        // akka-stream dependency is "provided" and may not be included
+        dynamicAccess.classIsOnClasspath("akka.stream.Graph")
+      case _ => true
+    }
 
   private def features(config: Config, section: String): immutable.Seq[(String, Boolean)] = {
     import akka.util.ccompat.JavaConverters._
@@ -153,19 +179,21 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
   }
 }
 
-// FIXME docs
+/**
+ * Registry of shared `ObjectMapper` instances, each with it's unique `bindingName`.
+ */
 final class JacksonObjectMapperProvider(system: ExtendedActorSystem) extends Extension {
   private val objectMappers = new ConcurrentHashMap[String, ObjectMapper]
 
   /**
-   * Returns an existing Jackson `ObjectMapper` that was created previously with this method, or
+   * Scala API: Returns an existing Jackson `ObjectMapper` that was created previously with this method, or
    * creates a new instance.
    *
    * The `ObjectMapper` is created with sensible defaults and modules configured
    * in `akka.serialization.jackson.jackson-modules`. It's using [[JacksonObjectMapperProviderSetup]]
    * if the `ActorSystem` is started with such [[akka.actor.setup.ActorSystemSetup]].
    *
-   * The returned `ObjecctMapper` must not be modified, because it may already be in use and such
+   * The returned `ObjectMapper` must not be modified, because it may already be in use and such
    * modifications are not thread-safe.
    *
    * @param bindingName name of this `ObjectMapper`
@@ -176,10 +204,26 @@ final class JacksonObjectMapperProvider(system: ExtendedActorSystem) extends Ext
     objectMappers.computeIfAbsent(bindingName, _ => create(bindingName, jsonFactory))
   }
 
-  // FIXME Java API, Optional vs Option
+  /**
+   * Java API: Returns an existing Jackson `ObjectMapper` that was created previously with this method, or
+   * creates a new instance.
+   *
+   * The `ObjectMapper` is created with sensible defaults and modules configured
+   * in `akka.serialization.jackson.jackson-modules`. It's using [[JacksonObjectMapperProviderSetup]]
+   * if the `ActorSystem` is started with such [[akka.actor.setup.ActorSystemSetup]].
+   *
+   * The returned `ObjectMapper` must not be modified, because it may already be in use and such
+   * modifications are not thread-safe.
+   *
+   * @param bindingName name of this `ObjectMapper`
+   * @param jsonFactory optional `JsonFactory` such as `CBORFactory`, for plain JSON `None` (defaults)
+   *                    can be used
+   */
+  def getOrCreate(bindingName: String, jsonFactory: Optional[JsonFactory]): ObjectMapper =
+    getOrCreate(bindingName, jsonFactory.asScala)
 
   /**
-   * Creates a new instance of a Jackson `ObjectMapper` with sensible defaults and modules configured
+   * Scala API: Creates a new instance of a Jackson `ObjectMapper` with sensible defaults and modules configured
    * in `akka.serialization.jackson.jackson-modules`. It's using [[JacksonObjectMapperProviderSetup]]
    * if the `ActorSystem` is started with such [[akka.actor.setup.ActorSystemSetup]].
    *
@@ -201,6 +245,19 @@ final class JacksonObjectMapperProvider(system: ExtendedActorSystem) extends Ext
 
     JacksonObjectMapperProvider.createObjectMapper(bindingName, jsonFactory, factory, config, dynamicAccess, Some(log))
   }
+
+  /**
+   * Java API: Creates a new instance of a Jackson `ObjectMapper` with sensible defaults and modules configured
+   * in `akka.serialization.jackson.jackson-modules`. It's using [[JacksonObjectMapperProviderSetup]]
+   * if the `ActorSystem` is started with such [[akka.actor.setup.ActorSystemSetup]].
+   *
+   * @param bindingName name of this `ObjectMapper`
+   * @param jsonFactory optional `JsonFactory` such as `CBORFactory`, for plain JSON `None` (defaults)
+   *                    can be used
+   * @see [[JacksonObjectMapperProvider#getOrCreate]]
+   */
+  def create(bindingName: String, jsonFactory: Optional[JsonFactory]): ObjectMapper =
+    create(bindingName, jsonFactory.asScala)
 
 }
 
@@ -246,12 +303,13 @@ class JacksonObjectMapperFactory {
   def newObjectMapper(@unused bindingName: String, jsonFactory: Option[JsonFactory]): ObjectMapper =
     new ObjectMapper(jsonFactory.orNull)
 
-  // FIXME Java API
-
   /**
    * After construction of the `ObjectMapper` the configured serialization features are applied to
    * the mapper. These features can be amended programatically by overriding this method and
    * return the features that are to be applied to the `ObjectMapper`.
+   *
+   * When implementing a `JacksonObjectMapperFactory` with Java the `immutable.Seq` can be
+   * created with [[akka.japi.Util.immutableSeq]].
    *
    * @param bindingName bindingName name of this `ObjectMapper`
    * @param configuredFeatures the list of `SerializationFeature` that were configured in
@@ -268,6 +326,9 @@ class JacksonObjectMapperFactory {
    * the mapper. These features can be amended programatically by overriding this method and
    * return the features that are to be applied to the `ObjectMapper`.
    *
+   * When implementing a `JacksonObjectMapperFactory` with Java the `immutable.Seq` can be
+   * created with [[akka.japi.Util.immutableSeq]].
+   *
    * @param bindingName bindingName name of this `ObjectMapper`
    * @param configuredFeatures the list of `DeserializationFeature` that were configured in
    *                           `akka.serialization.jackson.deserialization-features`
@@ -283,6 +344,9 @@ class JacksonObjectMapperFactory {
    * the mapper. These modules can be amended programatically by overriding this method and
    * return the modules that are to be applied to the `ObjectMapper`.
    *
+   * When implementing a `JacksonObjectMapperFactory` with Java the `immutable.Seq` can be
+   * created with [[akka.japi.Util.immutableSeq]].
+   *
    * @param bindingName bindingName name of this `ObjectMapper`
    * @param configuredModules the list of `Modules` that were configured in
    *                           `akka.serialization.jackson.deserialization-features`
@@ -292,4 +356,43 @@ class JacksonObjectMapperFactory {
       configuredModules: immutable.Seq[Module]): immutable.Seq[Module] =
     configuredModules
 
+  /**
+   * After construction of the `ObjectMapper` the configured mapper features are applied to
+   * the mapper. These features can be amended programmatically by overriding this method and
+   * return the features that are to be applied to the `ObjectMapper`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `MapperFeatures` that were configured in `akka.serialization.jackson.mapper-features`
+   */
+  def overrideConfiguredMapperFeatures(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(MapperFeature, Boolean)]): immutable.Seq[(MapperFeature, Boolean)] =
+    configuredFeatures
+
+  /**
+   * After construction of the `ObjectMapper` the configured JSON parser features are applied to
+   * the mapper. These features can be amended programmatically by overriding this method and
+   * return the features that are to be applied to the `ObjectMapper`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `JsonParser.Feature` that were configured in `akka.serialization.jackson.json-parser-features`
+   */
+  def overrideConfiguredJsonParserFeatures(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(JsonParser.Feature, Boolean)]): immutable.Seq[(JsonParser.Feature, Boolean)] =
+    configuredFeatures
+
+  /**
+   * After construction of the `ObjectMapper` the configured JSON generator features are applied to
+   * the mapper. These features can be amended programmatically by overriding this method and
+   * return the features that are to be applied to the `ObjectMapper`.
+   *
+   * @param bindingName bindingName name of this `ObjectMapper`
+   * @param configuredFeatures the list of `JsonGenerator.Feature` that were configured in `akka.serialization.jackson.json-generator-features`
+   */
+  def overrideConfiguredJsonGeneratorFeatures(
+      @unused bindingName: String,
+      configuredFeatures: immutable.Seq[(JsonGenerator.Feature, Boolean)])
+      : immutable.Seq[(JsonGenerator.Feature, Boolean)] =
+    configuredFeatures
 }

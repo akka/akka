@@ -4,28 +4,28 @@
 
 package akka.stream.scaladsl
 
-import akka.{ Done, NotUsed }
-import akka.stream._
+import akka.Done
+import akka.NotUsed
 import akka.stream.Supervision.resumingDecider
+import akka.stream._
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import org.reactivestreams.Publisher
 
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class FlowSplitWhenSpec extends StreamSpec {
+class FlowSplitWhenSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+    akka.stream.materializer.subscription-timeout.timeout = 1s
+    akka.stream.materializer.subscription-timeout.mode = cancel
+  """) {
   import FlowSplitAfterSpec._
-
-  val settings = ActorMaterializerSettings(system)
-    .withInputBuffer(initialSize = 2, maxSize = 2)
-    .withSubscriptionTimeoutSettings(
-      StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 1.second))
-
-  implicit val materializer = ActorMaterializer(settings)
 
   case class StreamPuppet(p: Publisher[Int]) {
     val probe = TestSubscriber.manualProbe[Int]()
@@ -263,17 +263,16 @@ class FlowSplitWhenSpec extends StreamSpec {
     }
 
     "fail substream if materialized twice" in assertAllStagesStopped {
-      implicit val mat =
-        ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1))
 
       import system.dispatcher
-      val probe = Source(1 to 5)
+      val stream = Source(1 to 5)
         .splitWhen(_ => true)
         .lift
         .map { src =>
-          src.runWith(Sink.ignore)(mat).flatMap(_ => src.runWith(Sink.ignore)(mat))
+          src.runWith(Sink.ignore).flatMap(_ => src.runWith(Sink.ignore))
         }
-        .runWith(TestSink.probe[Future[Done]])(mat)
+        .toMat(TestSink.probe[Future[Done]])(Keep.right)
+      val probe = stream.withAttributes(Attributes.inputBuffer(1, 1)).run()
       probe.request(1)
       val future = probe.requestNext()
       an[IllegalStateException] mustBe thrownBy {
@@ -283,17 +282,17 @@ class FlowSplitWhenSpec extends StreamSpec {
     }
 
     "fail stream if substream not materialized in time" in assertAllStagesStopped {
-      val tightTimeoutMaterializer =
-        ActorMaterializer(
-          ActorMaterializerSettings(system).withSubscriptionTimeoutSettings(
-            StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 500.millisecond)))
-
       val testSource = Source.single(1).concat(Source.maybe).splitWhen(_ => true)
+      val testStreamWithTightTimeout =
+        testSource.lift
+          .delay(1.second)
+          .flatMapConcat(identity)
+          .toMat(Sink.ignore)(Keep.right)
+          .withAttributes(ActorAttributes
+            .streamSubscriptionTimeout(500.milliseconds, StreamSubscriptionTimeoutTerminationMode.cancel))
 
       a[SubscriptionTimeoutException] mustBe thrownBy {
-        Await.result(
-          testSource.lift.delay(1.second).flatMapConcat(identity).runWith(Sink.ignore)(tightTimeoutMaterializer),
-          3.seconds)
+        Await.result(testStreamWithTightTimeout.run(), 3.seconds)
       }
     }
 

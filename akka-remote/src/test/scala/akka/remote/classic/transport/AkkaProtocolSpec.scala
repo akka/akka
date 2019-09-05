@@ -7,7 +7,7 @@ package akka.remote.classic.transport
 import java.util.concurrent.TimeoutException
 
 import akka.actor.Address
-import akka.protobuf.{ ByteString => PByteString }
+import akka.protobufv3.internal.{ ByteString => PByteString }
 import akka.remote.classic.transport.AkkaProtocolSpec.TestFailureDetector
 import akka.remote.transport.AkkaPduCodec.{ Associate, Disassociate, Heartbeat }
 import akka.remote.transport.AssociationHandle.{
@@ -24,9 +24,10 @@ import akka.remote.{ FailureDetector, WireFormats }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.{ ByteString, OptionVal }
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Promise }
+
+import com.github.ghik.silencer.silent
 
 object AkkaProtocolSpec {
 
@@ -42,6 +43,7 @@ object AkkaProtocolSpec {
 
 }
 
+@silent("deprecated")
 class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) with ImplicitSender {
 
   val conf = ConfigFactory.parseString("""
@@ -66,6 +68,9 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
         }
 
       }
+      # test is using Java serialization and not priority to rewrite
+      akka.actor.allow-java-serialization = on
+      akka.actor.warn-about-java-serializer-usage = off
   """).withFallback(system.settings.config)
 
   val localAddress = Address("test", "testsystem", "testhost", 1234)
@@ -212,7 +217,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
       })
     }
 
-    "in outbound mode delay readiness until hadnshake finished" in {
+    "in outbound mode delay readiness until handshake finished" in {
       val (failureDetector, registry, transport, handle) = collaborators
       transport.associateBehavior.pushConstant(handle)
 
@@ -230,7 +235,7 @@ class AkkaProtocolSpec extends AkkaSpec("""akka.actor.provider = remote """) wit
           refuseUid = None))
 
       awaitCond(lastActivityIsAssociate(registry, 42, None))
-      failureDetector.called should ===(true)
+      awaitCond(failureDetector.called)
 
       // keeps sending heartbeats
       awaitCond(lastActivityIsHeartbeat(registry))

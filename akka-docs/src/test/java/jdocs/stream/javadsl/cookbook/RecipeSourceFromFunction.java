@@ -6,8 +6,6 @@ package jdocs.stream.javadsl.cookbook;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -23,7 +21,6 @@ import java.util.concurrent.TimeUnit;
 
 public class RecipeSourceFromFunction extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
@@ -32,14 +29,12 @@ public class RecipeSourceFromFunction extends RecipeTest {
             "RecipeSourceFromFunction",
             ConfigFactory.parseString(
                 "akka.loglevel=DEBUG\nakka.loggers = [akka.testkit.TestEventListener]"));
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -56,7 +51,11 @@ public class RecipeSourceFromFunction extends RecipeTest {
         // #source-from-function
 
         final List<String> result =
-            source.take(2).runWith(Sink.seq(), mat).toCompletableFuture().get(3, TimeUnit.SECONDS);
+            source
+                .take(2)
+                .runWith(Sink.seq(), system)
+                .toCompletableFuture()
+                .get(3, TimeUnit.SECONDS);
 
         Assert.assertEquals(2, result.size());
       }

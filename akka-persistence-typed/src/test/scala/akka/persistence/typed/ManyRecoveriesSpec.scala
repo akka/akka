@@ -60,7 +60,6 @@ class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
     }
     akka.persistence.max-concurrent-recoveries = 3
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    akka.actor.warn-about-java-serializer-usage = off
     """) with WordSpecLike {
 
   import ManyRecoveriesSpec._

@@ -9,6 +9,8 @@ import akka.stream.scaladsl.{ Flow, GraphDSL, Keep, Merge, Partition, Sink, Sour
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.StreamSpec
 
+import scala.concurrent.Promise
+
 class MaterializerStateSpec extends StreamSpec {
 
   "The MaterializerSnapshotting" must {
@@ -28,6 +30,20 @@ class MaterializerStateSpec extends StreamSpec {
       } finally {
         mat.shutdown()
       }
+    }
+
+    "snapshot a running stream on the default dispatcher" in {
+      val promise = Promise[Int]()
+      Source.fromFuture(promise.future).map(_.toString).zipWithIndex.runWith(Sink.seq)
+
+      awaitAssert({
+        val snapshot = MaterializerState.streamSnapshots(system).futureValue
+
+        snapshot should have size (1)
+        snapshot.head.activeInterpreters should have size (1)
+        snapshot.head.activeInterpreters.head.logics should have size (4) // all 4 operators
+      }, remainingOrDefault)
+      promise.success(1)
     }
 
     "snapshot a stream that has a stopped stage" in {

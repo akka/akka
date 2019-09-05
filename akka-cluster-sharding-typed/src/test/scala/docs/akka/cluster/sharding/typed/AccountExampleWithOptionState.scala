@@ -10,6 +10,8 @@ import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.scaladsl.EventSourcedEntity
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.scaladsl.Effect
+import akka.serialization.jackson.CborSerializable
+import akka.serialization.jackson.CborSerializable
 
 /**
  * Bank account example illustrating:
@@ -23,7 +25,7 @@ object AccountExampleWithOptionState {
   //#account-entity
   object AccountEntity {
     // Command
-    sealed trait AccountCommand[Reply] extends ExpectingReply[Reply]
+    sealed trait AccountCommand[Reply] extends ExpectingReply[Reply] with CborSerializable
     final case class CreateAccount(override val replyTo: ActorRef[OperationResult])
         extends AccountCommand[OperationResult]
     final case class Deposit(amount: BigDecimal, override val replyTo: ActorRef[OperationResult])
@@ -35,14 +37,14 @@ object AccountExampleWithOptionState {
         extends AccountCommand[OperationResult]
 
     // Reply
-    sealed trait AccountCommandReply
+    sealed trait AccountCommandReply extends CborSerializable
     sealed trait OperationResult extends AccountCommandReply
     case object Confirmed extends OperationResult
     final case class Rejected(reason: String) extends OperationResult
     final case class CurrentBalance(balance: BigDecimal) extends AccountCommandReply
 
     // Event
-    sealed trait AccountEvent
+    sealed trait AccountEvent extends CborSerializable
     case object AccountCreated extends AccountEvent
     case class Deposited(amount: BigDecimal) extends AccountEvent
     case class Withdrawn(amount: BigDecimal) extends AccountEvent
@@ -54,7 +56,7 @@ object AccountExampleWithOptionState {
     type ReplyEffect = akka.persistence.typed.scaladsl.ReplyEffect[AccountEvent, Option[Account]]
 
     // State
-    sealed trait Account {
+    sealed trait Account extends CborSerializable {
       def applyCommand(cmd: AccountCommand[_]): ReplyEffect
       def applyEvent(event: AccountEvent): Account
     }

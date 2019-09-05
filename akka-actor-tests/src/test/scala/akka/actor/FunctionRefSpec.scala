@@ -6,7 +6,6 @@ package akka.actor
 
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import scala.concurrent.duration._
 import akka.testkit.EventFilter
 import akka.actor.dungeon.SerializationCheckFailedException
 
@@ -37,7 +36,12 @@ object FunctionRefSpec {
 
 }
 
-class FunctionRefSpec extends AkkaSpec with ImplicitSender {
+class FunctionRefSpec extends AkkaSpec("""
+  # test is using Java serialization and relies on serialize-messages=on
+  akka.actor.allow-java-serialization = on
+  akka.actor.warn-about-java-serializer-usage = off
+  akka.actor.serialize-messages = on
+  """) with ImplicitSender {
   import FunctionRefSpec._
 
   def commonTests(s: ActorRef) = {
@@ -100,7 +104,7 @@ class FunctionRefSpec extends AkkaSpec with ImplicitSender {
           // needs to be something that fails when the deserialized form is not a FunctionRef
           // this relies upon serialize-messages during tests
           testActor ! DropForwarder(ref)
-          expectNoMessage(1.second)
+          expectNoMessage()
         }
       }
     }

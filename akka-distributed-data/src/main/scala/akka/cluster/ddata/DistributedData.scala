@@ -62,7 +62,7 @@ class DistributedData(system: ExtendedActorSystem) extends Extension {
 }
 
 /**
- * Cluster non-specific (typed vs untyped) wrapper for [[akka.cluster.UniqueAddress]].
+ * Cluster non-specific (typed vs classic) wrapper for [[akka.cluster.UniqueAddress]].
  */
 @SerialVersionUID(1L)
 final case class SelfUniqueAddress(uniqueAddress: UniqueAddress)

@@ -4,14 +4,10 @@
 
 package akka.remote.artery
 
-import scala.util.Try
-
 import akka.Done
 import akka.actor.Address
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Keep
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
@@ -19,6 +15,8 @@ import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import akka.util.OptionVal
+
+import scala.util.Try
 
 object InboundControlJunctionSpec {
   trait TestControlMessage extends ControlMessage
@@ -33,12 +31,10 @@ class InboundControlJunctionSpec
                    akka.actor.serialization-bindings {
                      "akka.remote.artery.InboundControlJunctionSpec$TestControlMessage" = java
                    }
+                   akka.stream.materializer.debug.fuzzing-mode = on
                    """)
     with ImplicitSender {
   import InboundControlJunctionSpec._
-
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
 
   val addressA = UniqueAddress(Address("akka", "sysA", "hostA", 1001), 1)
   val addressB = UniqueAddress(Address("akka", "sysB", "hostB", 1002), 2)

@@ -49,7 +49,7 @@ class Member private[cluster] (
   /**
    * Java API
    */
-  @silent
+  @silent("deprecated")
   def getRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(roles).asJava
 
@@ -288,6 +288,9 @@ object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {
   @deprecated("Use Long UID apply instead", since = "2.4.11")
   def apply(address: Address, uid: Int) = new UniqueAddress(address, uid.toLong)
 
+  def apply(remoteUniqueAddress: akka.remote.UniqueAddress): UniqueAddress =
+    new UniqueAddress(remoteUniqueAddress.address, remoteUniqueAddress.uid)
+
 }
 
 /**
@@ -319,7 +322,7 @@ final case class UniqueAddress(address: Address, longUid: Long) extends Ordered[
    * Stops `copy(Address, Long)` copy from being generated, use `apply` instead.
    */
   @deprecated("Use Long UID constructor instead", since = "2.4.11")
-  @silent
+  @silent("deprecated")
   def copy(address: Address = address, uid: Int = uid) = new UniqueAddress(address, uid.toLong)
 
 }

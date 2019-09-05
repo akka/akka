@@ -1,4 +1,7 @@
-# Cluster Singleton
+# Classic Cluster Singleton
+
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref[cluster-singleton](typed/cluster-singleton.md).
 
 ## Dependency
 

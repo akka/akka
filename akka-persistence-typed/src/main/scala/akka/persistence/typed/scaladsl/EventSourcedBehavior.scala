@@ -5,7 +5,6 @@
 package akka.persistence.typed.scaladsl
 
 import scala.annotation.tailrec
-
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
@@ -15,6 +14,7 @@ import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.EventAdapter
+import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotSelectionCriteria
@@ -183,10 +183,16 @@ object EventSourcedBehavior {
   def withTagger(tagger: Event => Set[String]): EventSourcedBehavior[Command, Event, State]
 
   /**
-   * Transform the event in another type before giving to the journal. Can be used to wrap events
+   * Transform the event to another type before giving to the journal. Can be used to wrap events
    * in types Journals understand but is of a different type than `Event`.
    */
   def eventAdapter(adapter: EventAdapter[Event, _]): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Transform the state to another type before giving to the journal. Can be used to transform older
+   * state types into the current state type e.g. when migrating from Persistent FSM to Typed Persistence.
+   */
+  def snapshotAdapter(adapter: SnapshotAdapter[State]): EventSourcedBehavior[Command, Event, State]
 
   /**
    * Back off strategy for persist failures.

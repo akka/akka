@@ -39,9 +39,19 @@ import org.junit.rules.ExternalResource
  *   }
  * }
  * }}}
+ *
+ * By default config is loaded from `application-test.conf` if that exists, otherwise
+ * using default configuration from the reference.conf resources that ship with the Akka libraries.
+ * The application.conf of your project is not used in this case.
+ * A specific configuration can be passed as constructor parameter.
  */
 final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
 
+  /**
+   * Config loaded from `application-test.conf` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   * The application.conf of your project is not used in this case.
+   */
   def this() = this(ActorTestKit.create(TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource])))
 
   /**
@@ -138,6 +148,11 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
    * See corresponding method on [[ActorTestKit]]
    */
   def stop[T](ref: ActorRef[T]): Unit = testKit.stop(ref)
+
+  /**
+   * Additional testing utilities for serialization.
+   */
+  def serializationTestKit: SerializationTestKit = testKit.serializationTestKit
 
   override def after(): Unit = {
     testKit.shutdownTestKit()

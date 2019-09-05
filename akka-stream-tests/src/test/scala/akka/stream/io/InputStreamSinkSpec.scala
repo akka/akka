@@ -30,9 +30,6 @@ import scala.util.control.NoStackTrace
 class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   import system.dispatcher
 
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
-
   val timeout = 300.milliseconds
   def randomByteString(size: Int): ByteString = {
     val a = new Array[Byte](size)

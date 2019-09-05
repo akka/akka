@@ -8,32 +8,84 @@ import java.net._
 import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicInteger
 
-import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
-import akka.actor.{ ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Kill }
+import akka.Done
+import akka.NotUsed
+import akka.actor.Actor
+import akka.actor.ActorIdentity
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.Identify
+import akka.actor.Kill
+import akka.io.Dns
+import akka.io.DnsProvider
+import akka.io.SimpleDnsCache
 import akka.io.Tcp._
 import akka.stream._
-import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
-import akka.stream.scaladsl.{ Flow, _ }
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Tcp.IncomingConnection
+import akka.stream.scaladsl.Tcp.ServerBinding
+import akka.stream.scaladsl._
 import akka.stream.testkit._
-import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.EventFilter
 import akka.testkit.SocketUtil.temporaryServerAddress
+import akka.testkit.TestKit
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
 import akka.util.ByteString
-import akka.{ Done, NotUsed }
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+
+@silent("never used")
+class NonResolvingDnsActor(cache: SimpleDnsCache, config: Config) extends Actor {
+  def receive = {
+    case msg =>
+      throw new RuntimeException(s"Unexpected resolve message $msg")
+  }
+}
+
+@silent("never used")
+class NonResolvingDnsManager(ext: akka.io.DnsExt) extends Actor {
+
+  def receive = {
+    case msg =>
+      throw new RuntimeException(s"Unexpected resolve message $msg")
+  }
+}
+
+class FailingDnsResolver extends DnsProvider {
+  override val cache: Dns = new Dns {
+    override def cached(name: String): Option[Dns.Resolved] = None
+    override def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Dns.Resolved] = {
+      // tricky impl detail this is actually where the resolve response is triggered
+      // we fake that it fails directly from here
+      sender ! Dns.Resolved(name, immutable.Seq.empty, immutable.Seq.empty)
+      None
+    }
+  }
+  override def actorClass = classOf[NonResolvingDnsActor]
+  override def managerClass = classOf[NonResolvingDnsManager]
+}
 
 class TcpSpec extends StreamSpec("""
     akka.loglevel = debug
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.tcp.trace-logging = true
     akka.stream.materializer.subscription-timeout.timeout = 2s
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
   """) with TcpHelper with WithLogCapturing {
 
   "Outgoing TCP stream" must {
@@ -505,17 +557,27 @@ class TcpSpec extends StreamSpec("""
     }
 
     "provide full exceptions when connection attempt fails because name cannot be resolved" in {
-      val unknownHostName = "abcdefghijklmnopkuh"
+      val systemWithBrokenDns = ActorSystem(
+        "TcpSpec-resolution-failure",
+        ConfigFactory.parseString("""
+          akka.io.dns.inet-address.provider-object = akka.stream.io.FailingDnsResolver
+          """).withFallback(system.settings.config))
+      try {
+        val unknownHostName = "abcdefghijklmnopkuh"
 
-      val test =
-        Source.maybe
-          .viaMat(Tcp().outgoingConnection(unknownHostName, 12345))(Keep.right)
-          .to(Sink.ignore)
-          .run()
-          .failed
-          .futureValue
+        val test =
+          Source.maybe
+            .viaMat(Tcp(systemWithBrokenDns).outgoingConnection(unknownHostName, 12345))(Keep.right)
+            .to(Sink.ignore)
+            .run()(SystemMaterializer(systemWithBrokenDns).materializer)
+            .failed
+            .futureValue
 
-      test.getCause shouldBe a[UnknownHostException]
+        test.getCause shouldBe a[UnknownHostException]
+
+      } finally {
+        TestKit.shutdownActorSystem(systemWithBrokenDns)
+      }
     }
   }
 
@@ -611,15 +673,11 @@ class TcpSpec extends StreamSpec("""
       val config = ConfigFactory.parseString("""
         akka.actor.serializer-messages = off
         akka.io.tcp.register-timeout = 42s
+        akka.stream.materializer.subscription-timeout.mode = cancel
+        akka.stream.materializer.subscription-timeout.timeout = 42s
       """)
       val serverSystem = ActorSystem("server", config)
       val clientSystem = ActorSystem("client", config)
-      val serverMaterializer = ActorMaterializer(
-        ActorMaterializerSettings(serverSystem).withSubscriptionTimeoutSettings(
-          StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(serverSystem)
-      val clientMaterializer = ActorMaterializer(
-        ActorMaterializerSettings(clientSystem).withSubscriptionTimeoutSettings(
-          StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(clientSystem)
 
       try {
 
@@ -656,7 +714,7 @@ class TcpSpec extends StreamSpec("""
               }
             }
             .to(Sink.ignore)
-            .run()(serverMaterializer)
+            .run()(SystemMaterializer(serverSystem).materializer)
 
         // make sure server is running first
         futureBinding.futureValue
@@ -664,7 +722,7 @@ class TcpSpec extends StreamSpec("""
         // then connect once, which should lead to the server cancelling
         val total = Source(immutable.Iterable.fill(100)(ByteString(0)))
           .via(Tcp(clientSystem).outgoingConnection(address))
-          .runFold(0)(_ + _.size)(clientMaterializer)
+          .runFold(0)(_ + _.size)(SystemMaterializer(clientSystem).materializer)
 
         serverGotRequest.future.futureValue
         // this can take a bit of time worst case but is often swift
@@ -813,10 +871,11 @@ class TcpSpec extends StreamSpec("""
 
     def initSslMess() = {
       // #setting-up-ssl-context
+      import java.security.KeyStore
+
       import akka.stream.TLSClientAuth
       import akka.stream.TLSProtocol
       import com.typesafe.sslconfig.akka.AkkaSSLConfig
-      import java.security.KeyStore
       import javax.net.ssl._
 
       val sslConfig = AkkaSSLConfig()

@@ -16,16 +16,18 @@ object Dependencies {
 
   val junitVersion = "4.12"
   val slf4jVersion = "1.7.25"
-  val scalaXmlVersion = "1.0.6"
   // check agrona version when updating this
   val aeronVersion = "1.19.1"
   // needs to be inline with the aeron version
   val agronaVersion = "1.0.1"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.9.9"
+  val jacksonDatabindVersion = "2.9.9.3"
 
-  val scala212Version = "2.12.8"
+  val scala212Version = "2.12.9"
   val scala213Version = "2.13.0"
+
+  val reactiveStreamsVersion = "1.0.3"
 
   val sslConfigVersion = "0.3.8"
 
@@ -54,7 +56,6 @@ object Dependencies {
     val config = "com.typesafe" % "config" % "1.3.4" // ApacheV2
     val netty = "io.netty" % "netty" % nettyVersion // ApacheV2
 
-    val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion // Scala License
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion // MIT
@@ -68,7 +69,7 @@ object Dependencies {
     val jctools = "org.jctools" % "jctools-core" % "2.1.2" // ApacheV2
 
     // reactive streams
-    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % "1.0.2" // CC0
+    val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
 
     // ssl-config
     val sslConfigCore = Def.setting { "com.typesafe" %% "ssl-config-core" % sslConfigVersion } // ApacheV2
@@ -87,12 +88,14 @@ object Dependencies {
 
     val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion // ApacheV2
     val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion // ApacheV2
-    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonVersion // ApacheV2
+    val jacksonDatabind = "com.fasterxml.jackson.core" % "jackson-databind" % jacksonDatabindVersion // ApacheV2
     val jacksonJdk8 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jdk8" % jacksonVersion // ApacheV2
     val jacksonJsr310 = "com.fasterxml.jackson.datatype" % "jackson-datatype-jsr310" % jacksonVersion // ApacheV2
     val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
+
+    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0"
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"
@@ -112,7 +115,6 @@ object Dependencies {
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
       val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "1.0.0" % "test" // ApacheV2
       val log4j = "log4j" % "log4j" % "1.2.17" % "test" // ApacheV2
-      val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion % "test"
 
       // in-memory filesystem for file related tests
       val jimfs = "com.google.jimfs" % "jimfs" % "1.1" % "test" // ApacheV2
@@ -132,7 +134,9 @@ object Dependencies {
       val slf4jLog4j = "org.slf4j" % "log4j-over-slf4j" % slf4jVersion % "test" // MIT
 
       // reactive streams tck
-      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % "1.0.2" % "test" // CC0
+      val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % "test" // CC0
+
+      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0" % "test"
     }
 
     object Provided {
@@ -171,7 +175,6 @@ object Dependencies {
         Test.scalatest.value,
         Test.commonsCodec,
         Test.commonsMath,
-        Test.mockito,
         Test.scalacheck.value,
         Test.jimfs,
         Test.dockerClient,
@@ -183,9 +186,9 @@ object Dependencies {
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
 
-  val remote = l ++= Seq(agrona, Test.junit, Test.scalatest.value, Test.jimfs) ++ remoteOptionalDependencies
+  val remote = l ++= Seq(agrona, Test.junit, Test.scalatest.value, Test.jimfs, Test.protobufRuntime) ++ remoteOptionalDependencies
 
-  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml) ++ remoteDependencies
+  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value) ++ remoteDependencies
 
   val multiNodeTestkit = l ++= Seq(netty)
 
@@ -198,7 +201,8 @@ object Dependencies {
         Provided.levelDBNative,
         Test.junit,
         Test.scalatest.value,
-        Test.commonsIo)
+        Test.commonsIo,
+        Test.mockito)
 
   val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
 
@@ -212,8 +216,7 @@ object Dependencies {
         Test.scalatest.value,
         Test.junit,
         Test.commonsIo,
-        Test.commonsCodec,
-        Test.scalaXml)
+        Test.commonsCodec)
 
   val persistenceQuery = l ++= Seq(
         Test.scalatest.value,

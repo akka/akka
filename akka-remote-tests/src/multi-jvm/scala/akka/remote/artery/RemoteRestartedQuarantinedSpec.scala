@@ -7,7 +7,7 @@ package akka.remote.artery
 import akka.actor.{ ActorIdentity, Identify, _ }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec, ThisActorSystemQuarantinedEvent }
+import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 
@@ -20,11 +20,16 @@ object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   val second = role("second")
 
   commonConfig(
-    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.loglevel = WARNING
       akka.remote.log-remote-lifecycle-events = WARNING
       akka.remote.artery.enabled = on
-      """)).withFallback(RemotingMultiNodeSpec.commonConfig))
+      # test is using Java serialization and not priority to rewrite
+      akka.actor.allow-java-serialization = on
+      akka.actor.warn-about-java-serializer-usage = off
+      """))
+      .withFallback(RemotingMultiNodeSpec.commonConfig))
 
   class Subject extends Actor {
     def receive = {

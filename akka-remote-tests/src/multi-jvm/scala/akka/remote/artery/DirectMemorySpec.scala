@@ -5,10 +5,12 @@
 package akka.remote.artery
 
 import scala.concurrent.duration._
+
 import akka.actor.{ Actor, ActorPath, ActorRef, Props }
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.ImplicitSender
+import akka.testkit.JavaSerializable
 import com.typesafe.config.ConfigFactory
 
 object DirectMemorySpec extends MultiNodeConfig {
@@ -31,9 +33,9 @@ object DirectMemorySpec extends MultiNodeConfig {
 
   // buffer pool + large buffer pool = 16M, see DirectMemorySpecMultiJvmNode1.opts
 
-  case class Message()
-  case class Start(rootPath: ActorPath)
-  case class Done(actor: ActorRef)
+  case object Message extends JavaSerializable
+  case class Start(rootPath: ActorPath) extends JavaSerializable
+  case class Done(actor: ActorRef) extends JavaSerializable
   class CountingEcho(reportTo: ActorRef, private var count: Int) extends Actor {
     override def receive: Receive = {
       case Start(rootPath) =>

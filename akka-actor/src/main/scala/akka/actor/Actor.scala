@@ -86,13 +86,6 @@ final case class ActorIdentity(correlationId: Any, ref: Option[ActorRef]) {
 
   /**
    * Java API: `ActorRef` of the actor replying to the request or
-   * null if no actor matched the request.
-   */
-  @deprecated("Use getActorRef instead", "2.5.0")
-  def getRef: ActorRef = ref.orNull
-
-  /**
-   * Java API: `ActorRef` of the actor replying to the request or
    * not defined if no actor matched the request.
    */
   def getActorRef: Optional[ActorRef] = {

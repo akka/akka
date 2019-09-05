@@ -1,4 +1,7 @@
-# Scheduler
+# Classic Scheduler
+
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref:[typed scheduling](typed/interaction-patterns.md#typed-scheduling).
 
 ## Dependency
 

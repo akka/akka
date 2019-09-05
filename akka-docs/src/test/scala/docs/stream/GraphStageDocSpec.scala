@@ -18,8 +18,6 @@ import scala.collection.immutable.Iterable
 
 class GraphStageDocSpec extends AkkaSpec {
 
-  implicit val materializer = ActorMaterializer()
-
   "Demonstrate creation of GraphStage boilerplate" in {
     //#boilerplate-example
     import akka.stream.SourceShape

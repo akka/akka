@@ -70,7 +70,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
       })
 
     val creation = client.createContainer(containerConfig, containerName)
-    creation.warnings() should be(null)
+    creation.warnings() should be(null).or(have(size(0)))
     id = Some(creation.id())
 
     client.startContainer(creation.id())

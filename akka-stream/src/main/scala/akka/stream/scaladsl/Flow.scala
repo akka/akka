@@ -188,7 +188,7 @@ final class Flow[-In, +Out, +Mat](
    * | Resulting Flow            |
    * |                           |
    * | +------+        +------+  |
-   * | |      | ~Out~> |      | ~~> O2
+   * | |      | ~Out~> |      | ~~> O1
    * | | flow |        | bidi |  |
    * | |      | <~In~  |      | <~~ I2
    * | +------+        +------+  |
@@ -198,7 +198,7 @@ final class Flow[-In, +Out, +Mat](
    * value of the current flow (ignoring the [[BidiFlow]]’s value), use
    * [[Flow#joinMat[I2* joinMat]] if a different strategy is needed.
    */
-  def join[I2, O2, Mat2](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2]): Flow[I2, O2, Mat] = joinMat(bidi)(Keep.left)
+  def join[I2, O1, Mat2](bidi: Graph[BidiShape[Out, O1, I2, In], Mat2]): Flow[I2, O1, Mat] = joinMat(bidi)(Keep.left)
 
   /**
    * Join this [[Flow]] to a [[BidiFlow]] to close off the “top” of the protocol stack:
@@ -207,7 +207,7 @@ final class Flow[-In, +Out, +Mat](
    * | Resulting Flow            |
    * |                           |
    * | +------+        +------+  |
-   * | |      | ~Out~> |      | ~~> O2
+   * | |      | ~Out~> |      | ~~> O1
    * | | flow |        | bidi |  |
    * | |      | <~In~  |      | <~~ I2
    * | +------+        +------+  |
@@ -219,8 +219,8 @@ final class Flow[-In, +Out, +Mat](
    * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
-  def joinMat[I2, O2, Mat2, M](bidi: Graph[BidiShape[Out, O2, I2, In], Mat2])(
-      combine: (Mat, Mat2) => M): Flow[I2, O2, M] = {
+  def joinMat[I2, O1, Mat2, M](bidi: Graph[BidiShape[Out, O1, I2, In], Mat2])(
+      combine: (Mat, Mat2) => M): Flow[I2, O1, M] = {
     val newBidiShape = bidi.shape.deepCopy()
     val newFlowShape = shape.deepCopy()
 
@@ -287,6 +287,9 @@ final class Flow[-In, +Out, +Mat](
    * Connect the `Source` to this `Flow` and then connect it to the `Sink` and run it. The returned tuple contains
    * the materialized values of the `Source` and `Sink`, e.g. the `Subscriber` of a of a [[Source#subscriber]] and
    * and `Publisher` of a [[Sink#publisher]].
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
    */
   def runWith[Mat1, Mat2](source: Graph[SourceShape[In], Mat1], sink: Graph[SinkShape[Out], Mat2])(
       implicit materializer: Materializer): (Mat1, Mat2) =
@@ -622,6 +625,9 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
 
   /**
    * Run this flow and return the materialized instance from the flow.
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
    */
   def run()(implicit materializer: Materializer): Mat = materializer.materialize(this)
 
@@ -2404,6 +2410,43 @@ trait FlowOps[+Out, +Mat] {
    */
   def zip[U](that: Graph[SourceShape[U], _]): Repr[(Out, U)] = via(zipGraph(that))
 
+  /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAll[U, A >: Out](that: Graph[SourceShape[U], _], thisElem: A, thatElem: U): Repr[(A, U)] = {
+    via(zipAllFlow(that, thisElem, thatElem))
+  }
+
+  protected def zipAllFlow[U, A >: Out, Mat2](
+      that: Graph[SourceShape[U], Mat2],
+      thisElem: A,
+      thatElem: U): Flow[Out @uncheckedVariance, (A, U), Mat2] = {
+    case object passedEnd
+    val passedEndSrc = Source.repeat(passedEnd)
+    val left: Flow[Out, Any, NotUsed] = Flow[A].concat(passedEndSrc)
+    val right: Source[Any, Mat2] = Source.fromGraph(that).concat(passedEndSrc)
+    val zipFlow: Flow[Out, (A, U), Mat2] = left
+      .zipMat(right)(Keep.right)
+      .takeWhile {
+        case (`passedEnd`, `passedEnd`) => false
+        case _                          => true
+      }
+      .map {
+        case (`passedEnd`, r: U @unchecked) => (thisElem, r)
+        case (l: A @unchecked, `passedEnd`) => (l, thatElem)
+        case t: (A, U) @unchecked           => t
+      }
+    zipFlow
+  }
+
   protected def zipGraph[U, M](that: Graph[SourceShape[U], M]): Graph[FlowShape[Out @uncheckedVariance, (Out, U)], M] =
     GraphDSL.create(that) { implicit b => r =>
       val zip = b.add(Zip[Out, U]())
@@ -2590,6 +2633,80 @@ trait FlowOps[+Out, +Mat] {
       eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
     GraphDSL.create(that) { implicit b => r =>
       val merge = b.add(Merge[U](2, eagerComplete))
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
+    }
+
+  /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * '''Emits when''' an element is available from some input and each input emits at least one element from stream start
+   *
+   * '''Completes when''' all upstreams complete (eagerClose=false) or one upstream completes (eagerClose=true)
+   */
+  def mergeLatest[U >: Out, M](that: Graph[SourceShape[U], M], eagerComplete: Boolean = false): Repr[immutable.Seq[U]] =
+    via(mergeLatestGraph(that, eagerComplete))
+
+  protected def mergeLatestGraph[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, immutable.Seq[U]], M] =
+    GraphDSL.create(that) { implicit b => r =>
+      val merge = b.add(MergeLatest[U](2, eagerComplete))
+      r ~> merge.in(1)
+      FlowShape(merge.in(0), merge.out)
+    }
+
+  /**
+   * Merge two sources. Prefer one source if both sources have elements ready.
+   *
+   * '''emits''' when one of the inputs has an element available. If multiple have elements available, prefer the 'right' one when 'preferred' is 'true', or the 'left' one when 'preferred' is 'false'.
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePreferred[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      priority: Boolean,
+      eagerComplete: Boolean = false): Repr[U] =
+    via(mergePreferredGraph(that, priority, eagerComplete))
+
+  protected def mergePreferredGraph[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      priority: Boolean,
+      eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    GraphDSL.create(that) { implicit b => r =>
+      val merge = b.add(MergePreferred[U](1, eagerComplete))
+      r ~> merge.in(if (priority) 0 else 1)
+      FlowShape(merge.in(if (priority) 1 else 0), merge.out)
+    }
+
+  /**
+   * Merge two sources. Prefer the sources depending on the 'priority' parameters.
+   *
+   * '''emits''' when one of the inputs has an element available, preferring inputs based on the 'priority' parameters if both have elements available
+   *
+   * '''backpressures''' when downstream backpressures
+   *
+   * '''completes''' when both upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
+   */
+  def mergePrioritized[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerComplete: Boolean = false): Repr[U] =
+    via(mergePrioritizedGraph(that, leftPriority, rightPriority, eagerComplete))
+
+  protected def mergePrioritizedGraph[U >: Out, M](
+      that: Graph[SourceShape[U], M],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerComplete: Boolean): Graph[FlowShape[Out @uncheckedVariance, U], M] =
+    GraphDSL.create(that) { implicit b => r =>
+      val merge = b.add(MergePrioritized[U](Seq(leftPriority, rightPriority), eagerComplete))
       r ~> merge.in(1)
       FlowShape(merge.in(0), merge.out)
     }
@@ -2911,6 +3028,24 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
     viaMat(zipGraph(that))(matF)
 
   /**
+   * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
+   *
+   * @see [[#zipAll]]
+   *
+   * '''Emits when''' at first emits when both inputs emit, and then as long as any input emits (coupled to the default value of the completed input).
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' all upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def zipAllMat[U, Mat2, Mat3, A >: Out](that: Graph[SourceShape[U], Mat2], thisElem: A, thatElem: U)(
+      matF: (Mat, Mat2) => Mat3): ReprMat[(A, U), Mat3] = {
+    viaMat(zipAllFlow(that, thisElem, thatElem))(matF)
+  }
+
+  /**
    * Put together the elements of current flow and the given [[Source]]
    * into a stream of combined elements using a combiner function.
    *
@@ -2999,6 +3134,48 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
   def interleaveMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], request: Int, eagerClose: Boolean)(
       matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
     viaMat(interleaveGraph(that, request, eagerClose))(matF)
+
+  /**
+   * MergeLatest joins elements from N input streams into stream of lists of size N.
+   * i-th element in list is the latest emitted element from i-th input stream.
+   * MergeLatest emits list for each element emitted from some input stream,
+   * but only after each input stream emitted at least one element.
+   *
+   * @see [[#mergeLatest]].
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergeLatestMat[U >: Out, Mat2, Mat3](that: Graph[SourceShape[U], Mat2], eagerClose: Boolean)(
+      matF: (Mat, Mat2) => Mat3): ReprMat[immutable.Seq[U], Mat3] =
+    viaMat(mergeLatestGraph(that, eagerClose))(matF)
+
+  /**
+   * Merge two sources. Prefer one source if both sources have elements ready.
+   *
+   * @see [[#mergePreferred]]
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergePreferredMat[U >: Out, Mat2, Mat3](
+      that: Graph[SourceShape[U], Mat2],
+      preferred: Boolean,
+      eagerClose: Boolean)(matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
+    viaMat(mergePreferredGraph(that, preferred, eagerClose))(matF)
+
+  /**
+   * Merge two sources. Prefer the sources depending on the 'priority' parameters.
+   *
+   * It is recommended to use the internally optimized `Keep.left` and `Keep.right` combiners
+   * where appropriate instead of manually writing functions that pass through one of the values.
+   */
+  def mergePrioritizedMat[U >: Out, Mat2, Mat3](
+      that: Graph[SourceShape[U], Mat2],
+      leftPriority: Int,
+      rightPriority: Int,
+      eagerClose: Boolean)(matF: (Mat, Mat2) => Mat3): ReprMat[U, Mat3] =
+    viaMat(mergePrioritizedGraph(that, leftPriority, rightPriority, eagerClose))(matF)
 
   /**
    * Merge the given [[Source]] to this [[Flow]], taking elements as they arrive from input streams,

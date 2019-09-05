@@ -16,6 +16,7 @@ import jdocs.actor.MyActor;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.ExecutionContext;
+import scala.concurrent.ExecutionContextExecutor;
 
 // #imports
 import akka.actor.*;
@@ -88,9 +89,10 @@ public class DispatcherDocTest extends AbstractJavaTest {
   @SuppressWarnings("unused")
   public void compileLookup() {
     // #lookup
-    // this is scala.concurrent.ExecutionContext
-    // for use with Futures, Scheduler, etc.
-    final ExecutionContext ex = system.dispatchers().lookup("my-dispatcher");
+    // this is scala.concurrent.ExecutionContextExecutor, which implements
+    // both scala.concurrent.ExecutionContext (for use with Futures, Scheduler, etc.)
+    // and java.util.concurrent.Executor (for use with CompletableFuture etc.)
+    final ExecutionContextExecutor ex = system.dispatchers().lookup("my-dispatcher");
     // #lookup
   }
 

@@ -12,7 +12,6 @@ import akka.testkit.{ AkkaSpec, EventFilter }
 
 class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
 
-  implicit val materializer = ActorMaterializer()
   implicit val ec = system.dispatcher
 
   //#operator-with-logging

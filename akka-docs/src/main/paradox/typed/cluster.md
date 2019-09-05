@@ -1,4 +1,4 @@
-# Cluster
+# Cluster Membership
 
 ## Dependency
 
@@ -14,6 +14,10 @@ To use Akka Cluster Typed, you must add the following dependency in your project
 
 For an introduction to Akka Cluster concepts see @ref:[Cluster Specification](../common/cluster.md). This documentation shows how to use the typed
 Cluster API.
+
+You need to enable @ref:[serialization](../serialization.md) for your actor messages.
+@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference.
 
 ## Examples
 
@@ -75,7 +79,7 @@ Cluster `subscriptions` can be used to receive messages when cluster state chang
 for all `MemberEvent`s, then using the `manager` to have a node leave the cluster will result in events
 for the node going through the lifecycle described in @ref:[Cluster Specification](../common/cluster.md).
 
-This example subscribes with a `TestProbe` but in a real application it would be an Actor:
+This example subscribes with a @scala[`subscriber: ActorRef[MemberEvent]`]@java[`ActorRef<MemberEvent> subscriber`]:
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-subscribe }

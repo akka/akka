@@ -10,6 +10,7 @@ import akka.actor.{ ActorSystem, _ }
 import akka.persistence._
 import akka.persistence.fsm.PersistentFSM._
 import akka.testkit._
+import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils
 
@@ -17,6 +18,7 @@ import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.reflect.ClassTag
 
+@silent("deprecated")
 abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config) with ImplicitSender {
   import PersistentFSMSpec._
 
@@ -398,6 +400,7 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
   }
 }
 
+@silent("deprecated")
 object PersistentFSMSpec {
   //#customer-states
   sealed trait UserState extends FSMState
@@ -445,6 +448,7 @@ object PersistentFSMSpec {
   case class ItemAdded(item: Item) extends DomainEvent
   case object OrderExecuted extends DomainEvent
   case object OrderDiscarded extends DomainEvent
+  case object CustomerInactive extends DomainEvent
   //#customer-domain-events
 
   //Side effects - report events to be sent to some "Report Actor"
@@ -545,9 +549,10 @@ object PersistentFSMSpec {
     //#customer-apply-event
     override def applyEvent(event: DomainEvent, cartBeforeEvent: ShoppingCart): ShoppingCart = {
       event match {
-        case ItemAdded(item) => cartBeforeEvent.addItem(item)
-        case OrderExecuted   => cartBeforeEvent
-        case OrderDiscarded  => cartBeforeEvent.empty()
+        case ItemAdded(item)  => cartBeforeEvent.addItem(item)
+        case OrderExecuted    => cartBeforeEvent
+        case OrderDiscarded   => cartBeforeEvent.empty()
+        case CustomerInactive => cartBeforeEvent
       }
     }
     //#customer-apply-event

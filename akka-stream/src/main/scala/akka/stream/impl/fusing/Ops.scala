@@ -273,8 +273,8 @@ private[stream] object Collect {
         }
       }
 
-      override def onUpstreamFailure(ex: Throwable): Unit = {
-        pf.applyOrElse(ex, NotApplied) match {
+      override def onUpstreamFailure(ex: Throwable): Unit =
+        try pf.applyOrElse(ex, NotApplied) match {
           case NotApplied => failStage(ex)
           case result: T @unchecked => {
             if (isAvailable(out)) {
@@ -284,8 +284,9 @@ private[stream] object Collect {
               recovered = Some(result)
             }
           }
+        } catch {
+          case NonFatal(ex) => failStage(ex)
         }
-      }
 
       setHandlers(in, out, this)
     }
@@ -906,7 +907,7 @@ private[stream] object Collect {
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
       override protected def logSource: Class[_] = classOf[Buffer[_]]
 
-      private var buffer: BufferImpl[T] = _
+      private val buffer: BufferImpl[T] = BufferImpl(size, inheritedAttributes)
 
       val enqueueAction: T => Unit =
         overflowStrategy match {
@@ -965,7 +966,6 @@ private[stream] object Collect {
         }
 
       override def preStart(): Unit = {
-        buffer = BufferImpl(size, materializer)
         pull(in)
       }
 
@@ -1252,7 +1252,7 @@ private[stream] object Collect {
             }
         })
 
-      override def preStart(): Unit = buffer = BufferImpl(parallelism, materializer)
+      override def preStart(): Unit = buffer = BufferImpl(parallelism, inheritedAttributes)
 
       override def onPull(): Unit = pushNextIfPossible()
 
@@ -1347,7 +1347,7 @@ private[stream] object Collect {
 
       private[this] def todo = inFlight + buffer.used
 
-      override def preStart(): Unit = buffer = BufferImpl(parallelism, materializer)
+      override def preStart(): Unit = buffer = BufferImpl(parallelism, inheritedAttributes)
 
       def futureCompleted(result: Try[Out]): Unit = {
         inFlight -= 1
@@ -1505,11 +1505,16 @@ private[stream] object Collect {
         super.onUpstreamFinish()
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         if (isEnabled(logLevels.onFinish))
-          log.log(logLevels.onFinish, "[{}] Downstream finished.", name)
+          log.log(
+            logLevels.onFinish,
+            "[{}] Downstream finished, cause: {}: {}",
+            name,
+            Logging.simpleName(cause.getClass),
+            cause.getMessage)
 
-        super.onDownstreamFinish()
+        super.onDownstreamFinish(cause: Throwable)
       }
 
       private def isEnabled(l: LogLevel): Boolean = l.asInt != OffInt
@@ -1721,7 +1726,7 @@ private[stream] object Collect {
 
       var buffer: BufferImpl[(Long, T)] = _ // buffer has pairs timestamp with upstream element
 
-      override def preStart(): Unit = buffer = BufferImpl(size, materializer)
+      override def preStart(): Unit = buffer = BufferImpl(size, inheritedAttributes)
 
       val onPushWhenBufferFull: () => Unit = strategy match {
         case EmitEarly =>
@@ -1747,7 +1752,7 @@ private[stream] object Collect {
         case _: DropNew =>
           () => {
             grab(in)
-            if (!isTimerActive(timerName)) scheduleOnce(timerName, d)
+            pull(in)
           }
         case _: DropBuffer =>
           () => {
@@ -1770,15 +1775,27 @@ private[stream] object Collect {
         else {
           grabAndPull()
           if (!isTimerActive(timerName)) {
-            scheduleOnce(timerName, d)
+            // schedule a timer for the full-delay `d` only if the buffer is empty, because otherwise a
+            // full-length timer will starve subsequent `onPull` callbacks, preventing overdue elements
+            // to be discharged.
+            if (buffer.isEmpty)
+              scheduleOnce(timerName, d)
+            else
+              scheduleOnce(timerName, Math.max(DelayPrecisionMS, nextElementWaitTime()).millis)
           }
         }
       }
 
-      def pullCondition: Boolean =
-        !strategy.isBackpressure || buffer.used < size
+      def pullCondition: Boolean = strategy match {
+        case EmitEarly =>
+          // when buffer is full we can only emit early if out is available
+          buffer.used < size || isAvailable(out)
+        case _ =>
+          !strategy.isBackpressure || buffer.used < size
+      }
 
       def grabAndPull(): Unit = {
+        if (buffer.used == size) throw new IllegalStateException("Trying to enqueue but buffer is full")
         buffer.enqueue((System.nanoTime(), grab(in)))
         if (pullCondition) pull(in)
       }
@@ -2138,9 +2155,9 @@ private[stream] object Collect {
         super.onUpstreamFailure(ex)
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         matPromise.success(None)
-        super.onDownstreamFinish()
+        super.onDownstreamFinish(cause)
       }
 
       override def onPull(): Unit = {

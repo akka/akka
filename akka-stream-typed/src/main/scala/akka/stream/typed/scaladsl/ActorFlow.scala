@@ -110,7 +110,7 @@ object ActorFlow {
         val res = akka.pattern.extended.ask(untypedRef, (replyTo: akka.actor.ActorRef) => makeMessage(el, replyTo))
         // we need to cast manually (yet safely, by construction!) since otherwise we need a ClassTag,
         // which in Scala is fine, but then we would force JavaDSL to create one, which is a hassle in the Akka Typed DSL,
-        // since one may say "but I already specified the type!", and that we have to go via the untyped ask is an implementation detail
+        // since one may say "but I already specified the type!", and that we have to go via the classic ask is an implementation detail
         res.asInstanceOf[Future[A]]
       }
       .mapError {

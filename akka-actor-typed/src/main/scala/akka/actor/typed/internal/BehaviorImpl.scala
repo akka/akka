@@ -5,6 +5,8 @@
 package akka.actor.typed
 package internal
 
+import scala.reflect.ClassTag
+
 import akka.util.LineNumbers
 import akka.annotation.InternalApi
 import akka.actor.typed.{ TypedActorContext => AC }
@@ -40,8 +42,8 @@ private[akka] object BehaviorTags {
     def as[U]: AC[U] = ctx.asInstanceOf[AC[U]]
   }
 
-  def widened[O, I](behavior: Behavior[I], matcher: PartialFunction[O, I]): Behavior[O] =
-    intercept(() => WidenedInterceptor(matcher))(behavior)
+  def transformMessages[O: ClassTag, I](behavior: Behavior[I], matcher: PartialFunction[O, I]): Behavior[O] =
+    intercept(() => TransformMessagesInterceptor(matcher))(behavior)
 
   def same[T]: Behavior[T] = SameBehavior.unsafeCast[T]
 
@@ -164,32 +166,5 @@ private[akka] object BehaviorTags {
    */
   def intercept[O, I](interceptor: () => BehaviorInterceptor[O, I])(behavior: Behavior[I]): Behavior[O] =
     InterceptorImpl(interceptor, behavior)
-
-  class OrElseBehavior[T](first: Behavior[T], second: Behavior[T]) extends ExtensibleBehavior[T] {
-
-    override def receive(ctx: AC[T], msg: T): Behavior[T] = {
-      Behavior.interpretMessage(first, ctx, msg) match {
-        case _: UnhandledBehavior.type => Behavior.interpretMessage(second, ctx, msg)
-        case handled                   => handled
-      }
-    }
-
-    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = {
-      val result: Behavior[T] = try {
-        Behavior.interpretSignal(first, ctx, msg)
-      } catch {
-        case _: DeathPactException =>
-          // since we don't know what kind of concrete Behavior `first` is, if it is intercepted etc.
-          // the only way we can fallback to second behavior if Terminated wasn't handled is to
-          // catch the DeathPact here and pretend like it was just `unhandled`
-          BehaviorImpl.unhandled
-      }
-
-      result match {
-        case _: UnhandledBehavior.type => Behavior.interpretSignal(second, ctx, msg)
-        case handled                   => handled
-      }
-    }
-  }
 
 }

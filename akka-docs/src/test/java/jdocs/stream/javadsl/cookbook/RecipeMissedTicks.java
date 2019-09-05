@@ -7,8 +7,6 @@ package jdocs.stream.javadsl.cookbook;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.japi.Pair;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Sink;
@@ -28,19 +26,16 @@ import java.util.concurrent.TimeUnit;
 
 public class RecipeMissedTicks extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeMissedTicks");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -70,7 +65,7 @@ public class RecipeMissedTicks extends RecipeTest {
                     });
 
         Pair<TestPublisher.Probe<Tick>, TestSubscriber.Probe<Integer>> pubSub =
-            tickStream.via(realMissedTicks).toMat(sink, Keep.both()).run(mat);
+            tickStream.via(realMissedTicks).toMat(sink, Keep.both()).run(system);
         TestPublisher.Probe<Tick> pub = pubSub.first();
         TestSubscriber.Probe<Integer> sub = pubSub.second();
 

@@ -5,16 +5,15 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
-
-import scala.concurrent.Await
-import akka.stream.{ ActorAttributes, ActorMaterializer, Supervision }
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class FlowReduceSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
 
   "A Reduce" must {
     val input = 1 to 100

@@ -5,10 +5,13 @@
 package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.DeadLetter
+import akka.actor.Dropped
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.internal.routing.GroupRouterImpl
+import akka.actor.typed.internal.routing.RoutingLogics
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
@@ -145,18 +148,21 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       testKit.stop(group)
     }
 
-    "pass messages to dead letters when there are no routees available" in {
+    "publish Dropped messages when there are no routees available" in {
       val serviceKey = ServiceKey[String]("group-routing-2")
       val group = spawn(Routers.group(serviceKey), "group-router-2")
-      val probe = TestProbe[DeadLetter]()
-      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      val probe = TestProbe[Dropped]()
+      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[Dropped])
 
       (0 to 3).foreach { n =>
         val msg = s"message-$n"
-        /* FIXME cant watch log events until #26432 is fixed
-         EventFilter.info(start = "Message [java.lang.String] ... was not delivered.", occurrences = 1).intercept { */
-        group ! msg
-        probe.expectMessageType[DeadLetter]
+//         EventFilter.info(start = "Message [java.lang.String] ... was not delivered.", occurrences = 1).intercept { */
+        EventFilter.warning(start = "dropped message", occurrences = 1).intercept {
+          EventFilter.info(pattern = ".*was dropped. No routees in group router", occurrences = 1).intercept {
+            group ! msg
+            probe.expectMessageType[Dropped]
+          }
+        }
       /* } */
       }
 
@@ -209,6 +215,37 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
     }
 
+    "not route to unreachable when there are reachable" in {
+      val serviceKey = ServiceKey[String]("group-routing-4")
+      val router = spawn(Behaviors.setup[String](context =>
+        new GroupRouterImpl(context, serviceKey, new RoutingLogics.RoundRobinLogic[String], true)))
+
+      val reachableProbe = createTestProbe[String]
+      val unreachableProbe = createTestProbe[String]
+      router
+        .unsafeUpcast[Any] ! Receptionist.Listing(serviceKey, Set(reachableProbe.ref), Set(unreachableProbe.ref), false)
+      router ! "one"
+      router ! "two"
+      reachableProbe.expectMessage("one")
+      reachableProbe.expectMessage("two")
+    }
+
+    "route to unreachable when there are no reachable" in {
+      val serviceKey = ServiceKey[String]("group-routing-4")
+      val router = spawn(Behaviors.setup[String](context =>
+        new GroupRouterImpl(context, serviceKey, new RoutingLogics.RoundRobinLogic[String], true)))
+
+      val unreachableProbe = createTestProbe[String]
+      router.unsafeUpcast[Any] ! Receptionist.Listing(
+        serviceKey,
+        Set.empty[ActorRef[String]],
+        Set(unreachableProbe.ref),
+        true)
+      router ! "one"
+      router ! "two"
+      unreachableProbe.expectMessage("one")
+      unreachableProbe.expectMessage("two")
+    }
   }
 
 }

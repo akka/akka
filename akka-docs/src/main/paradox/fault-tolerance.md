@@ -1,4 +1,7 @@
-# Fault Tolerance
+# Classic Fault Tolerance
+
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref:[fault tolerance](typed/fault-tolerance.md).
 
 ## Dependency
 

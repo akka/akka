@@ -4,23 +4,27 @@
 
 package akka.stream.scaladsl
 
-import akka.{ Done, NotUsed }
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestProbe
-import org.reactivestreams.{ Publisher, Subscriber, Subscription }
+import akka.Done
+import akka.NotUsed
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 import org.scalatest.Assertion
 
 import scala.concurrent.Future
-import scala.util.{ Failure, Success, Try }
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
 import scala.xml.Node
 
-class CoupledTerminationFlowSpec extends StreamSpec with ScriptedTest {
+class CoupledTerminationFlowSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) with ScriptedTest {
 
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
   import system.dispatcher
 
   /**
