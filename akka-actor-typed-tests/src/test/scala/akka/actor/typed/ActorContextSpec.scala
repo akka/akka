@@ -85,6 +85,8 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
     }
 
     "canonicalize behaviors" in {
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
       val probe = TestProbe[Event]()
 
       lazy val behavior: Behavior[Command] = Behaviors
@@ -109,13 +111,9 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       actor ! Ping
       probe.expectMessage(Pong)
 
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
-
       actor ! Miss
       probe.expectMessage(Missed)
-      // FIXME #26537 why no UnhandledMessage?
-      //unhandledProbe.receiveMessage()
+      unhandledProbe.receiveMessage()
 
       actor ! Renew(probe.ref)
       probe.expectMessage(Renewed)

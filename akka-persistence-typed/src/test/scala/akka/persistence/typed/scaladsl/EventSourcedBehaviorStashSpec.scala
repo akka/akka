@@ -274,6 +274,8 @@ class EventSourcedBehaviorStashSpec
       val ackProbe = TestProbe[Ack]
       val stateProbe = TestProbe[State]
       val notUsedProbe = TestProbe[NotUsed]
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
 
       (1 to 100).foreach { n =>
         c ! Increment(s"inc-1-$n", ackProbe.ref)
@@ -288,9 +290,6 @@ class EventSourcedBehaviorStashSpec
           c ! Unhandled(notUsedProbe.ref)
         c ! Increment(s"inc-3-$n", ackProbe.ref)
       }
-
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
 
       c ! GetValue(stateProbe.ref)
 
@@ -621,6 +620,8 @@ class EventSourcedBehaviorStashSpec
     "stop from PoisonPill after unstashing completed" in {
       val c = spawn(counter(nextPid()))
       val ackProbe = TestProbe[Ack]
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
 
       c ! Increment("1", ackProbe.ref)
       ackProbe.expectMessage(Ack("1"))
@@ -631,9 +632,6 @@ class EventSourcedBehaviorStashSpec
       // stash 3 and 4
       c ! Increment("3", ackProbe.ref)
       c ! Increment("4", ackProbe.ref)
-
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
 
       // start unstashing
       c ! Activate("5", ackProbe.ref)

@@ -74,15 +74,14 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     }
 
     "fail the future if the actor doesn't reply in time" in {
-      val actor = spawn(Behaviors.empty[Foo])
-      implicit val timeout: Timeout = 10.millis
-
       val unhandledProbe = createTestProbe[UnhandledMessage]()
       system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
 
+      val actor = spawn(Behaviors.empty[Foo])
+      implicit val timeout: Timeout = 10.millis
+
       val answer: Future[String] = actor.ask(Foo("bar", _))
-      // FIXME #26537 why no UnhandledMessage?
-      //unhandledProbe.receiveMessage()
+      unhandledProbe.receiveMessage()
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should startWith("Ask timed out on")

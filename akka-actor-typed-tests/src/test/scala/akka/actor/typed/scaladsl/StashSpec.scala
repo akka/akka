@@ -590,6 +590,9 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
     "deal with unhandled the same way as normal unhandled" in {
       val probe = TestProbe[String]()
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+
       val ref = spawn(Behaviors.withStash[String](10) { stash =>
         stash.stash("unhandled")
         stash.stash("handled")
@@ -611,8 +614,6 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         }
       })
 
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
       ref ! "unstash"
 
       unhandledProbe.receiveMessage()
@@ -643,6 +644,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "deal with stop" in {
       val probe = TestProbe[Any]
       system.eventStream ! EventStream.Subscribe(probe.ref.narrow[DeadLetter])
+
       val ref = spawn(Behaviors.withStash[String](10) { stash =>
         stash.stash("one")
         stash.stash("two")

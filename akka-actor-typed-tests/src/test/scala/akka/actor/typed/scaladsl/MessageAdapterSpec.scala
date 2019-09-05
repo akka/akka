@@ -137,6 +137,8 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
           Behaviors.same
       })
 
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
       val probe = TestProbe[Wrapped]()
 
       val snitch = Behaviors.setup[Wrapped] { context =>
@@ -153,8 +155,6 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
         }
       }
 
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
       spawn(snitch)
       unhandledProbe.receiveMessage()
 

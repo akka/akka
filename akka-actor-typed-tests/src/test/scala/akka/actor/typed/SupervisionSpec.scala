@@ -767,6 +767,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
     "publish dropped messages while backing off and stash is full" in {
       import akka.actor.typed.scaladsl.adapter._
+      val droppedMessagesProbe = TestProbe[Dropped]()
+      system.eventStream ! EventStream.Subscribe(droppedMessagesProbe.ref)
       val probe = TestProbe[Event]("evt")
       val startedProbe = TestProbe[Event]("started")
       val minBackoff = 1.seconds
@@ -778,8 +780,6 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         })
         .onFailure[Exception](strategy)
 
-      val droppedMessagesProbe = TestProbe[Dropped]()
-      system.eventStream ! EventStream.Subscribe(droppedMessagesProbe.ref)
       val ref = spawn(behv)
       LoggingEventFilter.error[Exc1].intercept {
         startedProbe.expectMessage(Started)
@@ -799,6 +799,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
     "restart after exponential backoff" in {
       import akka.actor.typed.scaladsl.adapter._
+      val droppedMessagesProbe = TestProbe[Dropped]()
+      system.eventStream ! EventStream.Subscribe(droppedMessagesProbe.ref)
       val probe = TestProbe[Event]("evt")
       val startedProbe = TestProbe[Event]("started")
       val minBackoff = 1.seconds
@@ -813,9 +815,6 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         })
         .onFailure[Exception](strategy)
       val ref = spawn(behv)
-
-      val droppedMessagesProbe = TestProbe[Dropped]()
-      system.eventStream ! EventStream.Subscribe(droppedMessagesProbe.ref)
 
       LoggingEventFilter.error[Exc1].intercept {
         startedProbe.expectMessage(Started)
@@ -882,6 +881,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
     "reset exponential backoff count after reset timeout" in {
       import akka.actor.typed.scaladsl.adapter._
+      val droppedMessagesProbe = TestProbe[Dropped]()
+      system.eventStream ! EventStream.Subscribe(droppedMessagesProbe.ref)
       val probe = TestProbe[Event]("evt")
       val minBackoff = 1.seconds
       val strategy = SupervisorStrategy
@@ -890,9 +891,6 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         .withStashCapacity(0)
       val behv = supervise(targetBehavior(probe.ref)).onFailure[Exc1](strategy)
       val ref = spawn(behv)
-
-      val droppedMessagesProbe = TestProbe[Dropped]()
-      system.eventStream ! EventStream.Subscribe(droppedMessagesProbe.ref)
 
       LoggingEventFilter.error[Exc1].intercept {
         ref ! IncrementState
