@@ -212,7 +212,7 @@ object Materializer {
    *
    * You can pass either a classic actor context or a typed actor context.
    */
-  def create(contextProvider: ClassicActorContextProvider): Materializer = apply(contextProvider)
+  def createMaterializer(contextProvider: ClassicActorContextProvider): Materializer = apply(contextProvider)
 
   /**
    * Scala API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
@@ -235,7 +235,7 @@ object Materializer {
    * lifecycle of the materializer to an actor, use the factory that takes an [[ActorContext]] instead.
    */
   @silent("deprecated")
-  def create(systemProvider: ClassicActorSystemProvider): Materializer =
+  def createMaterializer(systemProvider: ClassicActorSystemProvider): Materializer =
     apply(systemProvider)
 
 }
