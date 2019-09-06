@@ -137,8 +137,6 @@ package object adapter {
 
     def actorOf(props: akka.actor.Props, name: String): akka.actor.ActorRef =
       ActorContextAdapter.toClassic(ctx).actorOf(props, name)
-
-
     @deprecated("Use 'toClassic' instead", "2.5.26")
     def toUntyped: akka.actor.ActorContext = toClassic
     def toClassic: akka.actor.ActorContext = ActorContextAdapter.toClassic(ctx)
