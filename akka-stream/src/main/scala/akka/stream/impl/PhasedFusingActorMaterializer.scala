@@ -387,20 +387,19 @@ private final case class SavedIslandData(
 
 /**
  * INTERNAL API
+ *
+ * `defaultAttributes` for the materializer, based on the [[ActorMaterializerSettings]] and
+ * are always seen as least specific, so any attribute specified in the graph "wins" over these.
+ * In addition to that this also guarantees that the attributes `InputBuffer`, `SupervisionStrategy`,
+ * and `Dispatcher` is _always_ present in the attributes and can be accessed through `Attributes.mandatoryAttribute`
+ *
+ * When these attributes are needed later in the materialization process it is important that
+ * they are gotten through the attributes and not through the [[ActorMaterializerSettings]]
  */
 @InternalApi private[akka] case class PhasedFusingActorMaterializer(
     system: ActorSystem,
     override val settings: ActorMaterializerSettings,
-    /**
-     * Default attributes for the materializer, based on the [[ActorMaterializerSettings]] and
-     * are always seen as least specific, so any attribute specified in the graph "wins" over these.
-     * In addition to that this also guarantees that the attributes `InputBuffer`, `SupervisionStrategy`,
-     * and `Dispatcher` is _always_ present in the attributes and can be accessed through `Attributes.mandatoryAttribute`
-     *
-     * When these attributes are needed later in the materialization process it is important that
-     * they are gotten through the attributes and not through the [[ActorMaterializerSettings]]
-     */
-    defaultAttributes: Attributes,
+    defaultAttributes: Attributes, // see description above
     dispatchers: Dispatchers,
     supervisor: ActorRef,
     haveShutDown: AtomicBoolean,
