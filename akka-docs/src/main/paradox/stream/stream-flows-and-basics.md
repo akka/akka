@@ -381,10 +381,7 @@ and emitting the "materialized value". An `ActorSystem` wide `Materializer` is p
 `SystemMaterializer` by @scala[having an implicit `ActorSystem` in scope]@java[passing the `ActorSystem` to the 
 various `run` methods] this way there is no need to worry about the `Materializer` unless there are special requirements.
 
-The use cases that may require a custom instance of `Materializer` are:
-
- * When wanting to change some specific default settings for a set of streams (FIXME we should phase this out)
- * When all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes 
+The use case that may require a custom instance of `Materializer` is when all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes 
 
 An important aspect of working with streams and actors is understanding a `Materializer`'s life-cycle.
 The materializer is bound to the lifecycle of the `ActorRefFactory` it is created from, which in practice will
