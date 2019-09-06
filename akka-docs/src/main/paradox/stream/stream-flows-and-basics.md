@@ -383,7 +383,6 @@ various `run` methods] this way there is no need to worry about the `Materialize
 
 The use cases that may require a custom instance of `Materializer` are:
 
- * When wanting to change some specific default settings for a set of streams (FIXME we should phase this out)
  * When all streams materialized in an actor should be tied to the Actor lifecycle and stop if the Actor stops or crashes 
 
 An important aspect of working with streams and actors is understanding a `Materializer`'s life-cycle.
