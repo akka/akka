@@ -18,8 +18,8 @@ object Log {
       .addAttributes(
         Attributes.logLevels(
           onElement = Attributes.LogLevels.Off,
-          onFailure = Attributes.LogLevels.Error,
-          onFinish = Attributes.LogLevels.Info))
+          onFinish = Attributes.LogLevels.Info,
+          onFailure = Attributes.LogLevels.Error))
     //#log
   }
 }
