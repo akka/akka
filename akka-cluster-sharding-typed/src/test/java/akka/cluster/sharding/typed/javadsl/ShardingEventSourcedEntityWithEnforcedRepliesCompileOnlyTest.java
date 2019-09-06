@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding.typed.javadsl;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.ActorRef;
 import akka.cluster.typed.Cluster;
@@ -11,10 +12,13 @@ import akka.cluster.typed.Join;
 import akka.persistence.typed.ExpectingReply;
 import akka.persistence.typed.javadsl.*;
 import org.junit.ClassRule;
+import org.junit.Rule;
 
 public class ShardingEventSourcedEntityWithEnforcedRepliesCompileOnlyTest {
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   interface Command extends ExpectingReply<String> {}
 

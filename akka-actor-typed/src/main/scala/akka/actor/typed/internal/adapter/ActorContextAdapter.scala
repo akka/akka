@@ -6,10 +6,7 @@ package akka.actor.typed
 package internal
 package adapter
 
-import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
-import akka.event.LoggingFilterWithMarker
-import akka.util.OptionVal
 
 import akka.{ actor => classic }
 import scala.concurrent.ExecutionContextExecutor
@@ -57,9 +54,6 @@ private[akka] object ActorContextAdapter {
   import ActorRefAdapter.toClassic
 
   private[akka] override def currentBehavior: Behavior[T] = adapter.currentBehavior
-
-  // lazily initialized
-  private var actorLogger: OptionVal[Logger] = OptionVal.None
 
   final override val self = ActorRefAdapter(classicContext.self)
   final override val system = ActorSystemAdapter(classicContext.system)
@@ -119,28 +113,6 @@ private[akka] object ActorContextAdapter {
     // apply the function inside the actor by wrapping the msg and f, handled by ActorAdapter
     val ref = cell.addFunctionRef((_, msg) => classicContext.self ! AdaptMessage[U, T](msg.asInstanceOf[U], f), _name)
     ActorRefAdapter[U](ref)
-  }
-
-  private def initLoggerWithClass(logClass: Class[_]): LoggerAdapterImpl = {
-    val logSource = self.path.toString
-    val system = classicContext.system.asInstanceOf[ExtendedActorSystem]
-    val logger =
-      new LoggerAdapterImpl(system.eventStream, logClass, logSource, LoggingFilterWithMarker.wrap(system.logFilter))
-    actorLogger = OptionVal.Some(logger)
-    logger
-  }
-
-  override def log: Logger = {
-    actorLogger match {
-      case OptionVal.Some(logger) => logger
-      case OptionVal.None =>
-        val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
-        initLoggerWithClass(logClass)
-    }
-  }
-
-  override def setLoggerClass(clazz: Class[_]): Unit = {
-    initLoggerWithClass(clazz)
   }
 
   /**

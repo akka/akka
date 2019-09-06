@@ -11,7 +11,7 @@ import akka.actor.testkit.typed.scaladsl.BehaviorTestKit
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
-import akka.event.Logging
+import org.slf4j.event.Level
 //#imports
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
@@ -115,8 +115,7 @@ class SyncTestingExampleSpec extends WordSpec with Matchers {
       val testKit = BehaviorTestKit(myBehavior)
       val inbox = TestInbox[String]("Inboxer")
       testKit.run(LogAndSayHello(inbox.ref))
-
-      testKit.logEntries() shouldBe Seq(CapturedLogEvent(Logging.InfoLevel, "Saying hello to Inboxer"))
+      testKit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, "Saying hello to Inboxer"))
       //#test-check-logging
     }
   }

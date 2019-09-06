@@ -10,7 +10,7 @@ import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
 import akka.actor.typed.internal.PoisonPill
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
@@ -79,7 +79,7 @@ private[akka] object Running {
   }
 
   def apply[C, E, S](setup: BehaviorSetup[C, E, S], state: RunningState[S]): Behavior[InternalProtocol] = {
-    val running = new Running(setup.setMdc(MDC.RunningCmds))
+    val running = new Running(setup.setMdcPhase(PersistenceMdc.RunningCmds))
     new running.HandlingCommands(state)
   }
 }
@@ -94,10 +94,6 @@ private[akka] object Running {
   import InternalProtocol._
   import Running.RunningState
   import BehaviorSetup._
-
-  private val runningCmdsMdc = MDC.create(setup.persistenceId, MDC.RunningCmds)
-  private val persistingEventsMdc = MDC.create(setup.persistenceId, MDC.PersistingEvents)
-  private val storingSnapshotMdc = MDC.create(setup.persistenceId, MDC.StoringSnapshot)
 
   final class HandlingCommands(state: RunningState[S])
       extends AbstractBehavior[InternalProtocol]
@@ -130,7 +126,7 @@ private[akka] object Running {
         effect: Effect[E, S],
         sideEffects: immutable.Seq[SideEffect[S]] = Nil): Behavior[InternalProtocol] = {
       if (setup.log.isDebugEnabled && !effect.isInstanceOf[CompositeEffect[_, _]])
-        setup.log.debug(
+        setup.log.debugN(
           s"Handled command [{}], resulting effect: [{}], side effects: [{}]",
           msg.getClass.getName,
           effect,
@@ -205,7 +201,7 @@ private[akka] object Running {
         Tagged(adaptedEvent, tags)
     }
 
-    setup.setMdc(runningCmdsMdc)
+    setup.setMdcPhase(PersistenceMdc.RunningCmds)
 
     override def currentSequenceNumber: Long = state.seqNr
   }
@@ -218,7 +214,7 @@ private[akka] object Running {
       numberOfEvents: Int,
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
       sideEffects: immutable.Seq[SideEffect[S]]): Behavior[InternalProtocol] = {
-    setup.setMdc(persistingEventsMdc)
+    setup.setMdcPhase(PersistenceMdc.PersistingEvents)
     new PersistingEvents(state, visibleState, numberOfEvents, shouldSnapshotAfterPersist, sideEffects)
   }
 
@@ -258,7 +254,10 @@ private[akka] object Running {
 
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
       if (setup.log.isDebugEnabled) {
-        setup.log.debug("Received Journal response: {} after: {} nanos", response, System.nanoTime() - persistStartTime)
+        setup.log.debug2(
+          "Received Journal response: {} after: {} nanos",
+          response,
+          System.nanoTime() - persistStartTime)
       }
 
       def onWriteResponse(p: PersistentRepr): Behavior[InternalProtocol] = {
@@ -336,7 +335,7 @@ private[akka] object Running {
       state: RunningState[S],
       sideEffects: immutable.Seq[SideEffect[S]],
       snapshotReason: SnapshotAfterPersist): Behavior[InternalProtocol] = {
-    setup.setMdc(storingSnapshotMdc)
+    setup.setMdcPhase(PersistenceMdc.StoringSnapshot)
 
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
       if (state.receivedPoisonPill) {
@@ -371,14 +370,14 @@ private[akka] object Running {
           Some(SnapshotCompleted(SnapshotMetadata.fromClassic(meta)))
 
         case SaveSnapshotFailure(meta, error) =>
-          setup.log.warning("Failed to save snapshot given metadata [{}] due to [{}]", meta, error.getMessage)
+          setup.log.warn2("Failed to save snapshot given metadata [{}] due to: {}", meta, error.getMessage)
           Some(SnapshotFailed(SnapshotMetadata.fromClassic(meta), error))
 
         case _ =>
           None
       }
 
-      setup.log.debug("Received snapshot response [{}], emitting signal [{}].", response, signal)
+      setup.log.debug2("Received snapshot response [{}], emitting signal [{}].", response, signal)
       signal.foreach(setup.onSignal(state.state, _, catchAndLog = false))
     }
 

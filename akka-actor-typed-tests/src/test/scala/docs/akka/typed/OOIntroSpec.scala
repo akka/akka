@@ -6,8 +6,9 @@ package docs.akka.typed
 
 //#imports
 import akka.Done
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 //#imports
 
 import akka.NotUsed
@@ -104,7 +105,7 @@ object OOIntroSpec {
             handle ! PostMessage("Hello World!")
             Behaviors.same
           case MessagePosted(screenName, message) =>
-            context.log.info("message has been posted by '{}': {}", screenName, message)
+            context.log.info2("message has been posted by '{}': {}", screenName, message)
             Behaviors.stopped
         }
       }
@@ -135,7 +136,7 @@ object OOIntroSpec {
 
 }
 
-class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import OOIntroSpec._
 

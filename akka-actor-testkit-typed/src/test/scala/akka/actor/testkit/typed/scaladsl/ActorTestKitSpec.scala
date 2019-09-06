@@ -14,7 +14,7 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import org.scalatest.WordSpecLike
 
-class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   "the Scala testkit" should {
 
@@ -91,7 +91,7 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 }
 
 // derivative classes should also work fine (esp the naming part
-abstract class MyBaseSpec extends ScalaTestWithActorTestKit with Matchers with WordSpecLike
+abstract class MyBaseSpec extends ScalaTestWithActorTestKit with Matchers with WordSpecLike with LogCapturing
 
 class MyConcreteDerivateSpec extends MyBaseSpec {
   "A derivative test" should {
@@ -116,7 +116,7 @@ class MyConcreteDerivateSpec extends MyBaseSpec {
 
 }
 
-class CompositionSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class CompositionSpec extends WordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
   val testKit = ActorTestKit()
 
   override def afterAll(): Unit = {

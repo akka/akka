@@ -5,14 +5,14 @@
 package akka.actor.typed.internal
 
 import scala.reflect.ClassTag
-
 import akka.actor.typed
-
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.LogOptions
 import akka.actor.typed._
 import akka.annotation.InternalApi
 import akka.util.LineNumbers
+import org.slf4j.LoggerFactory
+import org.slf4j.event.Level
 
 /**
  * Provides the impl of any behavior that could nest another behavior
@@ -142,6 +142,9 @@ private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRe
   def apply[T](opts: LogOptions): BehaviorInterceptor[T, T] = {
     new LogMessagesInterceptor(opts).asInstanceOf[BehaviorInterceptor[T, T]]
   }
+
+  private val LogMessageTemplate = "actor [{}] received message: {}"
+  private val LogSignalTemplate = "actor [{}] received signal: {}"
 }
 
 /**
@@ -153,17 +156,32 @@ private[akka] final case class MonitorInterceptor[T: ClassTag](actorRef: ActorRe
 private[akka] final class LogMessagesInterceptor(val opts: LogOptions) extends BehaviorInterceptor[Any, Any] {
 
   import BehaviorInterceptor._
+  import LogMessagesInterceptor._
+
+  private val logger = opts.getLogger.orElse(LoggerFactory.getLogger(getClass))
 
   override def aroundReceive(ctx: TypedActorContext[Any], msg: Any, target: ReceiveTarget[Any]): Behavior[Any] = {
-    if (opts.enabled)
-      opts.logger.getOrElse(ctx.asScala.log).log(opts.level, "received message {}", msg)
+    log(LogMessageTemplate, msg, ctx)
     target(ctx, msg)
   }
 
   override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[Any]): Behavior[Any] = {
-    if (opts.enabled)
-      opts.logger.getOrElse(ctx.asScala.log).log(opts.level, "received signal {}", signal)
+    log(LogSignalTemplate, signal, ctx)
     target(ctx, signal)
+  }
+
+  private def log(template: String, messageOrSignal: Any, context: TypedActorContext[Any]): Unit = {
+    if (opts.enabled) {
+      val selfPath = context.asScala.self.path
+      opts.level match {
+        case Level.ERROR => logger.error(template, selfPath, messageOrSignal)
+        case Level.WARN  => logger.warn(template, selfPath, messageOrSignal)
+        case Level.INFO  => logger.info(template, selfPath, messageOrSignal)
+        case Level.DEBUG => logger.debug(template, selfPath, messageOrSignal)
+        case Level.TRACE => logger.trace(template, selfPath, messageOrSignal)
+        case other       => throw new IllegalArgumentException(s"Unknown log level [$other].")
+      }
+    }
   }
 
   // only once in the same behavior stack

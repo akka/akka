@@ -6,6 +6,7 @@ package docs.akka.typed
 
 // #pool
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.receptionist.Receptionist
@@ -39,7 +40,7 @@ object RouterSpec {
   val serviceKey = ServiceKey[Worker.Command]("log-worker")
 }
 
-class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with WordSpecLike {
+class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with WordSpecLike with LogCapturing {
   import RouterSpec._
 
   "The routing sample" must {

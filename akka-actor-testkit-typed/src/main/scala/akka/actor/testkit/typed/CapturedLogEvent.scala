@@ -6,69 +6,63 @@ package akka.actor.testkit.typed
 
 import java.util.Optional
 
-import akka.actor.typed.LogMarker
 import akka.annotation.InternalApi
-import akka.event.Logging.LogLevel
 import akka.util.OptionVal
-
-import akka.util.ccompat.JavaConverters._
 import scala.compat.java8.OptionConverters._
+
+import org.slf4j.Marker
+import org.slf4j.event.Level
 
 /**
  * Representation of a Log Event issued by a [[akka.actor.typed.Behavior]]
+ * when testing with [[akka.actor.testkit.typed.scaladsl.BehaviorTestKit`]]
+ * or [[akka.actor.testkit.typed.javadsl.BehaviorTestKit`]].
  */
-final case class CapturedLogEvent(
-    logLevel: LogLevel,
-    message: String,
-    cause: Option[Throwable],
-    marker: Option[LogMarker],
-    mdc: Map[String, Any]) {
+final case class CapturedLogEvent(level: Level, message: String, cause: Option[Throwable], marker: Option[Marker]) {
 
   /**
    * Constructor for Java API
    */
   def this(
-      logLevel: LogLevel,
+      level: Level,
       message: String,
       errorCause: Optional[Throwable],
-      marker: Optional[LogMarker],
+      marker: Optional[Marker],
       mdc: java.util.Map[String, Any]) {
-    this(logLevel, message, errorCause.asScala, marker.asScala, mdc.asScala.toMap)
+    this(level, message, errorCause.asScala, marker.asScala)
   }
 
   /**
    * Constructor for Java API
    */
-  def this(logLevel: LogLevel, message: String) {
-    this(logLevel, message, Option.empty, Option.empty, Map.empty[String, Any])
+  def this(level: Level, message: String) {
+    this(level, message, Option.empty, Option.empty)
   }
 
   /**
    * Constructor for Java API
    */
-  def this(logLevel: LogLevel, message: String, errorCause: Throwable) {
-    this(logLevel, message, Some(errorCause), Option.empty[LogMarker], Map.empty[String, Any])
+  def this(level: Level, message: String, errorCause: Throwable) {
+    this(level, message, Some(errorCause), Option.empty[Marker])
   }
 
   /**
    * Constructor for Java API
    */
-  def this(logLevel: LogLevel, message: String, marker: LogMarker) {
-    this(logLevel, message, Option.empty[Throwable], Some(marker), Map.empty[String, Any])
+  def this(level: Level, message: String, marker: Marker) {
+    this(level, message, Option.empty[Throwable], Some(marker))
   }
 
   /**
    * Constructor for Java API
    */
-  def this(logLevel: LogLevel, message: String, errorCause: Throwable, marker: LogMarker) {
-    this(logLevel, message, Some(errorCause), Some(marker), Map.empty[String, Any])
+  def this(level: Level, message: String, errorCause: Throwable, marker: Marker) {
+    this(level, message, Some(errorCause), Some(marker))
   }
-
-  def getMdc: java.util.Map[String, Any] = mdc.asJava
 
   def getErrorCause: Optional[Throwable] = cause.asJava
 
-  def getLogMarker: Optional[LogMarker] = marker.asJava
+  def getMarker: Optional[Marker] = marker.asJava
 }
 
 object CapturedLogEvent {
@@ -81,8 +75,8 @@ object CapturedLogEvent {
     case _                 => None
   }
 
-  def apply(logLevel: LogLevel, message: String): CapturedLogEvent = {
-    CapturedLogEvent(logLevel, message, None, None, Map.empty[String, Any])
+  def apply(level: Level, message: String): CapturedLogEvent = {
+    CapturedLogEvent(level, message, None, None)
   }
 
   /**
@@ -91,11 +85,10 @@ object CapturedLogEvent {
    */
   @InternalApi
   private[akka] def apply(
-      logLevel: LogLevel,
+      level: Level,
       message: String,
       errorCause: OptionVal[Throwable],
-      logMarker: OptionVal[LogMarker],
-      mdc: Map[String, Any]): CapturedLogEvent = {
-    new CapturedLogEvent(logLevel, message, toOption(errorCause), toOption(logMarker), mdc)
+      logMarker: OptionVal[Marker]): CapturedLogEvent = {
+    new CapturedLogEvent(level, message, toOption(errorCause), toOption(logMarker))
   }
 }

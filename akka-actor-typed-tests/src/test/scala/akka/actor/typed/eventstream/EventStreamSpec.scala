@@ -6,10 +6,11 @@ package akka.actor.typed.eventstream
 
 import scala.concurrent.duration._
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import org.scalatest.WordSpecLike
 
-class EventStreamSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class EventStreamSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import EventStreamSpec._
   import EventStream._

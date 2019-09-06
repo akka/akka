@@ -4,23 +4,22 @@
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.internal.adapter.AbstractLogger
 import akka.actor.typed.{ Behavior, BehaviorInterceptor, Signal, TypedActorContext }
 import akka.annotation.InternalApi
-import scala.collection.immutable.HashMap
+import org.slf4j.MDC
+
 import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] object WithMdcBehaviorInterceptor {
-  val noMdcPerMessage = (_: Any) => Map.empty[String, Any]
+  val noMdcPerMessage = (_: Any) => Map.empty[String, String]
 
   def apply[T: ClassTag](
-      staticMdc: Map[String, Any],
-      mdcForMessage: T => Map[String, Any],
+      staticMdc: Map[String, String],
+      mdcForMessage: T => Map[String, String],
       behavior: Behavior[T]): Behavior[T] = {
-
     BehaviorImpl.intercept(() => new WithMdcBehaviorInterceptor[T](staticMdc, mdcForMessage))(behavior)
   }
 
@@ -32,8 +31,8 @@ import scala.reflect.ClassTag
  * INTERNAL API
  */
 @InternalApi private[akka] final class WithMdcBehaviorInterceptor[T: ClassTag] private (
-    staticMdc: Map[String, Any],
-    mdcForMessage: T => Map[String, Any])
+    staticMdc: Map[String, String],
+    mdcForMessage: T => Map[String, String])
     extends BehaviorInterceptor[T, T] {
 
   import BehaviorInterceptor._
@@ -73,34 +72,30 @@ import scala.reflect.ClassTag
   }
 
   override def aroundReceive(ctx: TypedActorContext[T], msg: T, target: ReceiveTarget[T]): Behavior[T] = {
-    val mdc = merge(staticMdc, mdcForMessage(msg))
-    ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = mdc
-    val next =
-      try {
-        target(ctx, msg)
-      } finally {
-        ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = Map.empty
-      }
-    next
-  }
-
-  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
-    ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = staticMdc
     try {
-      target(ctx, signal)
+      setMdcValues(mdcForMessage(msg))
+      target(ctx, msg)
     } finally {
-      ctx.asScala.log.asInstanceOf[AbstractLogger].mdc = Map.empty
+      MDC.clear()
     }
   }
 
-  private def merge(staticMdc: Map[String, Any], mdcForMessage: Map[String, Any]): Map[String, Any] = {
-    if (staticMdc.isEmpty) mdcForMessage
-    else if (mdcForMessage.isEmpty) staticMdc
-    else if (staticMdc.isInstanceOf[HashMap[String, Any]] && mdcForMessage.isInstanceOf[HashMap[String, Any]]) {
-      // merged is more efficient than ++
-      mdcForMessage.asInstanceOf[HashMap[String, Any]].merged(staticMdc.asInstanceOf[HashMap[String, Any]])(null)
-    } else {
-      staticMdc ++ mdcForMessage
+  override def aroundSignal(ctx: TypedActorContext[T], signal: Signal, target: SignalTarget[T]): Behavior[T] = {
+    try {
+      setMdcValues(Map.empty)
+      target(ctx, signal)
+    } finally {
+      MDC.clear()
+    }
+  }
+
+  private def setMdcValues(dynamicMdc: Map[String, String]): Unit = {
+    val mdcAdapter = MDC.getMDCAdapter
+    if (staticMdc.nonEmpty) staticMdc.foreach {
+      case (key, value) => mdcAdapter.put(key, value)
+    }
+    if (dynamicMdc.nonEmpty) dynamicMdc.foreach {
+      case (key, value) => mdcAdapter.put(key, value)
     }
   }
 

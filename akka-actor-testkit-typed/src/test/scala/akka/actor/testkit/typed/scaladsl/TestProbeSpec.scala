@@ -10,7 +10,7 @@ import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 import org.scalatest.WordSpecLike
 
-class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import TestProbeSpec._
 
@@ -181,7 +181,10 @@ object TestProbeSpec {
     for (n <- 1 to expected) yield EventT(n)
 }
 
-class TestProbeTimeoutSpec extends ScalaTestWithActorTestKit(TestProbeSpec.timeoutConfig) with WordSpecLike {
+class TestProbeTimeoutSpec
+    extends ScalaTestWithActorTestKit(TestProbeSpec.timeoutConfig)
+    with WordSpecLike
+    with LogCapturing {
 
   import TestProbeSpec._
 

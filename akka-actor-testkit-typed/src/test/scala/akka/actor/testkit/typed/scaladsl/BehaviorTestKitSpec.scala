@@ -11,10 +11,10 @@ import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
-import akka.event.Logging
 import org.scalatest.{ Matchers, WordSpec }
-
 import scala.reflect.ClassTag
+
+import org.slf4j.event.Level
 
 object BehaviorTestKitSpec {
   object Father {
@@ -121,7 +121,7 @@ object BehaviorTestKitSpec {
 
 }
 
-class BehaviorTestKitSpec extends WordSpec with Matchers {
+class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
   private val props = Props.empty.withDispatcherFromConfig("cat")
 
@@ -183,14 +183,14 @@ class BehaviorTestKitSpec extends WordSpec with Matchers {
       val what = "Hello!"
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(Log(what))
-      testkit.logEntries() shouldBe Seq(CapturedLogEvent(Logging.InfoLevel, what))
+      testkit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, what))
     }
 
     "allow clearing log messages issued by behavior" in {
-      val what = "Hello!"
+      val what = "Hi!"
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(Log(what))
-      testkit.logEntries() shouldBe Seq(CapturedLogEvent(Logging.InfoLevel, what))
+      testkit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, what))
       testkit.clearLog()
       testkit.logEntries() shouldBe Seq.empty
     }

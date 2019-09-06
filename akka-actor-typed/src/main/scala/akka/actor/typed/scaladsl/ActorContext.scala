@@ -14,6 +14,7 @@ import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
 import akka.annotation.InternalApi
+import org.slf4j.Logger
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in
@@ -67,10 +68,9 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
   /**
    * An actor specific logger.
    *
-   * The logger will have the actor path as `logSource` and will an estimated source class for the actor
-   * which is calculated when the logger is first used (the logger is lazily created upon first use). If this
-   * yields the wrong class or another class is preferred this can be achieved through `Logger.withLoggerClass`
-   * or `setLoggerClass`.
+   * The logger name will be an estimated source class for the actor which is calculated when the
+   * logger is first used (the logger is lazily created upon first use). If this yields the wrong
+   * class or another class is preferred this can be changed with `setLoggerName`.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
@@ -79,12 +79,21 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
 
   /**
    * Replace the current logger (or initialize a new logger if the logger was not touched before) with one that
-   * has ghe given class as logging class. Logger source will be actor path.
+   * has ghe given name as logger name. Logger source MDC entry "akkaSource" will be the actor path.
+   *
+   * *Warning*: This method is not thread-safe and must not be accessed from threads other
+   * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
+   */
+  def setLoggerName(name: String): Unit
+
+  /**
+   * Replace the current logger (or initialize a new logger if the logger was not touched before) with one that
+   * has ghe given class name as logger name. Logger source MDC entry "akkaSource" will be the actor path.
    *
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[scala.concurrent.Future]] callbacks.
    */
-  def setLoggerClass(clazz: Class[_]): Unit
+  def setLoggerName(clazz: Class[_]): Unit
 
   /**
    * The list of child Actors created by this Actor during its lifetime that
@@ -322,5 +331,11 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
    */
   @InternalApi
   private[akka] def cancelAllTimers(): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def clearMdc(): Unit
 
 }

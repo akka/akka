@@ -4,11 +4,14 @@
 
 package akka.actor.typed.internal.receptionist
 
-import akka.actor.typed.{ ActorRef, Behavior, Terminated }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.typed.Terminated
 import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
-import akka.actor.typed.scaladsl.Behaviors.{ receive, same }
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.util.TypedMultiMap
 
@@ -45,7 +48,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
       extends InternalCommand
 
   override def behavior: Behavior[Command] = Behaviors.setup { ctx =>
-    ctx.setLoggerClass(classOf[LocalReceptionist])
+    ctx.setLoggerName(classOf[LocalReceptionist])
     behavior(TypedMultiMap.empty[AbstractServiceKey, KV], TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV])
       .narrow[Command]
   }
@@ -98,7 +101,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
     def onCommand(ctx: ActorContext[Any], cmd: Command): Behavior[Any] = cmd match {
       case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>
-        ctx.log.debug("Actor was registered: {} {}", key, serviceInstance)
+        ctx.log.debug2("Actor was registered: {} {}", key, serviceInstance)
         watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
         maybeReplyTo match {
           case Some(replyTo) => replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
@@ -108,7 +111,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
       case ReceptionistMessages.Find(key, replyTo) =>
         replyWithListing(key, replyTo)
-        same
+        Behaviors.same
 
       case ReceptionistMessages.Subscribe(key, subscriber) =>
         watchWith(ctx, subscriber, SubscriberTerminated(key, subscriber))
@@ -121,14 +124,14 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
     def onInternal(ctx: ActorContext[Any], cmd: InternalCommand): Behavior[Any] = cmd match {
       case RegisteredActorTerminated(key, serviceInstance) =>
-        ctx.log.debug("Registered actor terminated: {} {}", key, serviceInstance)
+        ctx.log.debug2("Registered actor terminated: {} {}", key, serviceInstance)
         updateRegistry(Set(key), _.removed(key)(serviceInstance))
 
       case SubscriberTerminated(key, subscriber) =>
         next(newSubscriptions = subscriptions.removed(key)(subscriber))
     }
 
-    receive[Any] { (ctx, msg) =>
+    Behaviors.receive[Any] { (ctx, msg) =>
       msg match {
         case cmd: Command         => onCommand(ctx, cmd)
         case cmd: InternalCommand => onInternal(ctx, cmd)

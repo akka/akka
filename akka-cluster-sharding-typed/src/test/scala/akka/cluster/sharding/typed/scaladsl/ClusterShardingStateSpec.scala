@@ -4,6 +4,7 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorRef
 import akka.cluster.sharding.ShardRegion.{ CurrentShardRegionState, ShardState }
@@ -12,7 +13,10 @@ import akka.cluster.sharding.typed.{ GetShardRegionState, ShardingMessageExtract
 import akka.cluster.typed.{ Cluster, Join }
 import org.scalatest.WordSpecLike
 
-class ClusterShardingStateSpec extends ScalaTestWithActorTestKit(ClusterShardingSpec.config) with WordSpecLike {
+class ClusterShardingStateSpec
+    extends ScalaTestWithActorTestKit(ClusterShardingSpec.config)
+    with WordSpecLike
+    with LogCapturing {
 
   val sharding = ClusterSharding(system)
 

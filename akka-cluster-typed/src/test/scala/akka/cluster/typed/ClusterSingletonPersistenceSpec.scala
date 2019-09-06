@@ -8,6 +8,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -52,7 +53,8 @@ object ClusterSingletonPersistenceSpec {
 
 class ClusterSingletonPersistenceSpec
     extends ScalaTestWithActorTestKit(ClusterSingletonPersistenceSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
   import ClusterSingletonPersistenceSpec._
   import akka.actor.typed.scaladsl.adapter._
 

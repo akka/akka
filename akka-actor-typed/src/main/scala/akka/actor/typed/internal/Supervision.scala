@@ -25,6 +25,7 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.util.OptionVal
 import akka.util.unused
+import org.slf4j.event.Level
 
 /**
  * INTERNAL API
@@ -79,12 +80,15 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
   def log(ctx: TypedActorContext[_], t: Throwable): Unit = {
     if (strategy.loggingEnabled) {
       val unwrapped = UnstashException.unwrap(t)
+      val logMessage = s"Supervisor $this saw failure: ${unwrapped.getMessage}"
+      val logger = ctx.asScala.log
       strategy.logLevel match {
-        case Logging.ErrorLevel =>
-          ctx.asScala.log.error(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
-        case Logging.WarningLevel =>
-          ctx.asScala.log.warning(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
-        case level => ctx.asScala.log.log(level, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+        case Level.ERROR => logger.error(logMessage, unwrapped)
+        case Level.WARN  => logger.warn(logMessage, unwrapped)
+        case Level.INFO  => logger.info(logMessage, unwrapped)
+        case Level.DEBUG => logger.debug(logMessage, unwrapped)
+        case Level.TRACE => logger.trace(logMessage, unwrapped)
+        case other       => throw new IllegalArgumentException(s"Unknown log level [$other].")
       }
     }
   }
@@ -311,7 +315,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       } else {
         try signalRestart(t)
         catch {
-          case NonFatal(ex) => ctx.asScala.log.error(ex, "failure during PreRestart")
+          case NonFatal(ex) => ctx.asScala.log.error("failure during PreRestart", ex)
         }
 
         prepareRestart(ctx, t)

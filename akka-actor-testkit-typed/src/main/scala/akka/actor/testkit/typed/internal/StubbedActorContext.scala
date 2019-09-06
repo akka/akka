@@ -6,13 +6,11 @@ package akka.actor.testkit.typed.internal
 
 import akka.actor.typed._
 import akka.actor.typed.internal._
-import akka.actor.typed.internal.adapter.AbstractLogger
 import akka.actor.testkit.typed.CapturedLogEvent
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.{ ActorPath, InvalidMessageException }
 import akka.annotation.InternalApi
-import akka.event.Logging
-import akka.util.{ Helpers, OptionVal }
+import akka.util.Helpers
 import akka.{ actor => classic }
 import java.util.concurrent.ThreadLocalRandom.{ current => rnd }
 
@@ -21,6 +19,9 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.ActorRefProvider
+import org.slf4j.Logger
+import org.slf4j.helpers.MessageFormatter
+import org.slf4j.helpers.SubstituteLoggerFactory
 
 /**
  * INTERNAL API
@@ -57,108 +58,6 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 /**
  * INTERNAL API
  *
- * Captures log events for test inspection
- */
-@InternalApi private[akka] final class StubbedLogger extends AbstractLogger {
-
-  private var logBuffer: List[CapturedLogEvent] = Nil
-
-  override def isErrorEnabled: Boolean = true
-  override def isWarningEnabled: Boolean = true
-  override def isInfoEnabled: Boolean = true
-  override def isDebugEnabled: Boolean = true
-
-  override def isErrorEnabled(marker: LogMarker): Boolean = true
-  override def isWarningEnabled(marker: LogMarker): Boolean = true
-  override def isInfoEnabled(marker: LogMarker): Boolean = true
-  override def isDebugEnabled(marker: LogMarker): Boolean = true
-
-  override private[akka] def notifyError(
-      message: String,
-      cause: OptionVal[Throwable],
-      marker: OptionVal[LogMarker]): Unit =
-    logBuffer = CapturedLogEvent(Logging.ErrorLevel, message, cause, marker, mdc) :: logBuffer
-  override private[akka] def notifyWarning(
-      message: String,
-      cause: OptionVal[Throwable],
-      marker: OptionVal[LogMarker]): Unit =
-    logBuffer = CapturedLogEvent(Logging.WarningLevel, message, OptionVal.None, marker, mdc) :: logBuffer
-
-  override private[akka] def notifyInfo(message: String, marker: OptionVal[LogMarker]): Unit =
-    logBuffer = CapturedLogEvent(Logging.InfoLevel, message, OptionVal.None, marker, mdc) :: logBuffer
-
-  override private[akka] def notifyDebug(message: String, marker: OptionVal[LogMarker]): Unit =
-    logBuffer = CapturedLogEvent(Logging.DebugLevel, message, OptionVal.None, marker, mdc) :: logBuffer
-
-  def logEntries: List[CapturedLogEvent] = logBuffer.reverse
-  def clearLog(): Unit = logBuffer = Nil
-
-  override def withMdc(mdc: Map[String, Any]): Logger = {
-    // we need to decorate to get log entries ending up the same logBuffer
-    val withMdc = new StubbedLoggerWithMdc(this)
-    withMdc.mdc = mdc
-    withMdc
-  }
-
-  // we don't care about log class and source here as we only track message, level and marker
-  def withLoggerClass(clazz: Class[_]): Logger = this
-  def withLogSource(logSource: String): Logger = this
-}
-
-@InternalApi private[akka] final class StubbedLoggerWithMdc(actual: StubbedLogger) extends AbstractLogger {
-  override def isErrorEnabled: Boolean = actual.isErrorEnabled
-  override def isWarningEnabled: Boolean = actual.isWarningEnabled
-  override def isInfoEnabled: Boolean = actual.isInfoEnabled
-  override def isDebugEnabled: Boolean = actual.isDebugEnabled
-  override def withMdc(mdc: Map[String, Any]): Logger = actual.withMdc(mdc)
-
-  override def isErrorEnabled(marker: LogMarker): Boolean = actual.isErrorEnabled(marker)
-  override def isWarningEnabled(marker: LogMarker): Boolean = actual.isWarningEnabled(marker)
-  override def isInfoEnabled(marker: LogMarker): Boolean = actual.isInfoEnabled(marker)
-  override def isDebugEnabled(marker: LogMarker): Boolean = actual.isDebugEnabled(marker)
-
-  override private[akka] def notifyError(
-      message: String,
-      cause: OptionVal[Throwable],
-      marker: OptionVal[LogMarker]): Unit = {
-    val original = actual.mdc
-    actual.mdc = mdc
-    actual.notifyError(message, cause, marker)
-    actual.mdc = original
-  }
-
-  override private[akka] def notifyWarning(
-      message: String,
-      cause: OptionVal[Throwable],
-      marker: OptionVal[LogMarker]): Unit = {
-    val original = actual.mdc
-    actual.mdc = mdc
-    actual.notifyWarning(message, cause, marker)
-    actual.mdc = original
-  }
-
-  override private[akka] def notifyInfo(message: String, marker: OptionVal[LogMarker]): Unit = {
-    val original = actual.mdc
-    actual.mdc = mdc
-    actual.notifyInfo(message, marker)
-    actual.mdc = original
-  }
-
-  override private[akka] def notifyDebug(message: String, marker: OptionVal[LogMarker]): Unit = {
-    val original = actual.mdc
-    actual.mdc = mdc
-    actual.notifyDebug(message, marker)
-    actual.mdc = original
-  }
-
-  // we don't care about log class and source here as we only track message, level and marker
-  def withLoggerClass(clazz: Class[_]): Logger = this
-  def withLogSource(logSource: String): Logger = this
-}
-
-/**
- * INTERNAL API
- *
  * A [[TypedActorContext]] for synchronous execution of a [[Behavior]] that
  * provides only stubs for the effects an Actor can perform and replaces
  * created child Actors by a synchronous Inbox (see `Inbox.sync`).
@@ -179,7 +78,8 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
   override val system = new ActorSystemStub("StubbedActorContext")
   private var _children = TreeMap.empty[String, BehaviorTestKitImpl[_]]
   private val childName = Iterator.from(0).map(Helpers.base64(_))
-  private val loggingAdapter = new StubbedLogger
+  private val substituteLoggerFactory = new SubstituteLoggerFactory
+  private val logger: Logger = substituteLoggerFactory.getLogger("StubbedLogger")
   private var unhandled: List[T] = Nil
 
   private[akka] def classicActorContext =
@@ -285,20 +185,36 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 
   override def toString: String = s"Inbox($self)"
 
-  override def log: Logger = loggingAdapter
+  override def log: Logger = logger
 
-  override def setLoggerClass(clazz: Class[_]): Unit = () // nop as we dont track logger class
+  override def setLoggerName(name: String): Unit = () // nop as we don't track logger
+
+  override def setLoggerName(clazz: Class[_]): Unit = () // nop as we don't track logger
 
   /**
    * The log entries logged through context.log.{debug, info, warn, error} are captured and can be inspected through
    * this method.
    */
-  def logEntries: List[CapturedLogEvent] = loggingAdapter.logEntries
+  def logEntries: List[CapturedLogEvent] = {
+    import akka.util.ccompat.JavaConverters._
+    substituteLoggerFactory.getEventQueue
+      .iterator()
+      .asScala
+      .map { evt =>
+        CapturedLogEvent(
+          level = evt.getLevel,
+          message = MessageFormatter.arrayFormat(evt.getMessage, evt.getArgumentArray).getMessage,
+          cause = Option(evt.getThrowable),
+          marker = Option(evt.getMarker))
+      }
+      .toList
+  }
 
   /**
    * Clear the log entries.
    */
-  def clearLog(): Unit = loggingAdapter.clearLog()
+  def clearLog(): Unit =
+    substituteLoggerFactory.getEventQueue.clear()
 
   override private[akka] def onUnhandled(msg: T): Unit =
     unhandled = msg :: unhandled

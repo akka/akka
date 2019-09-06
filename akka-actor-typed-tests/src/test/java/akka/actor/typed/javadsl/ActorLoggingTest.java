@@ -4,6 +4,7 @@
 
 package akka.actor.typed.javadsl;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
@@ -12,6 +13,7 @@ import akka.japi.pf.PFBuilder;
 import akka.testkit.CustomEventFilter;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 import scala.concurrent.duration.FiniteDuration;
@@ -44,6 +46,8 @@ public class ActorLoggingTest extends JUnitSuite {
     }
   }
 
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
+
   @Test
   public void loggingProvidesClassWhereLogWasCalled() {
     CustomEventFilter eventFilter =
@@ -72,9 +76,9 @@ public class ActorLoggingTest extends JUnitSuite {
         Behaviors.setup(
             context ->
                 Behaviors.withMdc(
-                    null,
+                    Protocol.class,
                     (message) -> {
-                      Map<String, Object> mdc = new HashMap<>();
+                      Map<String, String> mdc = new HashMap<>();
                       mdc.put("txId", message.getTransactionId());
                       return mdc;
                     },

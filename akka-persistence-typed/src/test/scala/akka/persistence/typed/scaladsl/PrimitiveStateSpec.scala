@@ -9,24 +9,21 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object PrimitiveStateSpec {
 
   private val conf = ConfigFactory.parseString(s"""
-      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.journal.inmem.test-serialization = on
     """)
 }
 
-class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.conf) with WordSpecLike {
-
-  import akka.actor.typed.scaladsl.adapter._
-  system.toClassic.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+class PrimitiveStateSpec
+    extends ScalaTestWithActorTestKit(PrimitiveStateSpec.conf)
+    with WordSpecLike
+    with LogCapturing {
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[Int] =
     EventSourcedBehavior[Int, Int, Int](

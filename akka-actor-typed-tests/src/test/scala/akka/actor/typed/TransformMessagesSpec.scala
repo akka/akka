@@ -11,9 +11,11 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 import scala.concurrent.duration._
+
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 object TransformMessagesSpec {
 
@@ -31,9 +33,7 @@ object TransformMessagesSpec {
       }
 }
 
-class TransformMessagesSpec extends ScalaTestWithActorTestKit("""
-    akka.loggers = [akka.testkit.TestEventListener]
-    """) with WordSpecLike {
+class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   implicit val classicSystem = system.toClassic
 
@@ -62,14 +62,11 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[String]()
       val ref = spawn(intToString(probe.ref))
 
-      // TestEventListener logs unhandled as warnings, silence that
-      EventFilter.warning(occurrences = 1).intercept {
-        ref ! 42
-        ref ! 13
-        ref ! 43
-        probe.expectMessage("42")
-        probe.expectMessage("43")
-      }
+      ref ! 42
+      ref ! 13
+      ref ! 43
+      probe.expectMessage("42")
+      probe.expectMessage("43")
     }
 
     "not build up when the same transformMessages is used many times (initially)" in {
@@ -137,7 +134,7 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit("""
           case s => s.toLowerCase
         }
 
-      EventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingEventFilter.error[ActorInitializationException].intercept {
         val ref = spawn(transform(transform(Behaviors.receiveMessage[String] { _ =>
           Behaviors.same
         })))

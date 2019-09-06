@@ -9,15 +9,19 @@ import static jdocs.akka.actor.testkit.typed.javadsl.AsyncTestingExampleTest.Pon
 import static jdocs.akka.actor.testkit.typed.javadsl.AsyncTestingExampleTest.echoActor;
 
 // #junit-integration
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class JunitIntegrationExampleTest {
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   @Test
   public void testSomething() {

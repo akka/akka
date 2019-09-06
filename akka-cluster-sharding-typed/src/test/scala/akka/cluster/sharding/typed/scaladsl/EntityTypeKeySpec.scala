@@ -4,11 +4,12 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence.typed.PersistenceId
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 
-class EntityTypeKeySpec extends WordSpec with Matchers {
+class EntityTypeKeySpec extends WordSpec with Matchers with LogCapturing {
 
   "EntityTypeKey" must {
     "use | as default entityIdSeparator for compatibility with Lagom's scaladsl" in {

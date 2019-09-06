@@ -5,6 +5,7 @@
 package akka.persistence.typed.javadsl;
 
 import akka.actor.testkit.typed.TestException;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
@@ -13,11 +14,10 @@ import akka.actor.typed.SupervisorStrategy;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.RecoveryCompleted;
 import akka.persistence.typed.RecoveryFailed;
-import akka.testkit.EventFilter;
-import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -86,6 +86,8 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
+
   public static Behavior<String> fail(
       PersistenceId pid, ActorRef<String> probe, ActorRef<Throwable> recoveryFailureProbe) {
     return new FailingEventSourcedActor(pid, probe, recoveryFailureProbe);
@@ -93,24 +95,6 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
 
   public static Behavior<String> fail(PersistenceId pid, ActorRef<String> probe) {
     return fail(pid, probe, testKit.<Throwable>createTestProbe().ref());
-  }
-
-  public EventSourcedActorFailureTest() {
-    // FIXME ##24348 silence logging in a proper way
-    akka.actor.typed.javadsl.Adapter.toClassic(testKit.system())
-        .eventStream()
-        .publish(
-            new TestEvent.Mute(
-                akka.japi.Util.immutableSeq(
-                    new EventFilter[] {
-                      EventFilter.warning(null, null, "No default snapshot store", null, 1)
-                    })));
-    akka.actor.typed.javadsl.Adapter.toClassic(testKit.system())
-        .eventStream()
-        .publish(
-            new TestEvent.Mute(
-                akka.japi.Util.immutableSeq(
-                    new EventFilter[] {EventFilter.error(null, null, "", ".*saw failure.*", 1)})));
   }
 
   @Test

@@ -11,10 +11,10 @@ import akka.actor.testkit.typed.javadsl.Effects;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
-import akka.event.Logging;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Optional;
+import org.slf4j.event.Level;
 // #imports
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
@@ -172,7 +172,7 @@ public class SyncTestingExampleTest extends JUnitSuite {
     assertEquals(1, allLogEntries.size());
     CapturedLogEvent expectedLogEvent =
         new CapturedLogEvent(
-            Logging.InfoLevel(),
+            Level.INFO,
             "Saying hello to Inboxer",
             Optional.empty(),
             Optional.empty(),

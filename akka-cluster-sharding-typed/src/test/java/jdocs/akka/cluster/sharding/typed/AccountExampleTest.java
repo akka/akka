@@ -4,6 +4,7 @@
 
 package jdocs.akka.cluster.sharding.typed;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
@@ -15,6 +16,7 @@ import akka.cluster.typed.Join;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -39,6 +41,8 @@ public class AccountExampleTest extends JUnitSuite {
               + "akka.persistence.journal.inmem.test-serialization = on \n");
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   private ClusterSharding _sharding = null;
 

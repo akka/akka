@@ -4,20 +4,18 @@
 
 package akka.persistence.typed.scaladsl
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object EventSourcedSequenceNumberSpec {
 
   private val conf = ConfigFactory.parseString(s"""
-      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.journal.inmem.test-serialization = on
     """)
@@ -26,10 +24,8 @@ object EventSourcedSequenceNumberSpec {
 
 class EventSourcedSequenceNumberSpec
     extends ScalaTestWithActorTestKit(EventSourcedSequenceNumberSpec.conf)
-    with WordSpecLike {
-
-  import akka.actor.typed.scaladsl.adapter._
-  system.toClassic.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+    with WordSpecLike
+    with LogCapturing {
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     Behaviors.setup(ctx =>

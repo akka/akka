@@ -8,17 +8,21 @@ import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
-import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
-
 import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, TimeoutException }
 import scala.util.Success
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
-
 import scala.concurrent.Future
+
+import akka.actor.DeadLetter
+import akka.actor.UnhandledMessage
+import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.typed.eventstream.EventStream
 
 object AskSpec {
   sealed trait Msg
@@ -26,17 +30,9 @@ object AskSpec {
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec extends ScalaTestWithActorTestKit("""
-  akka.loglevel=warning
-  akka.loggers = [ akka.testkit.TestEventListener ]
-  """) with WordSpecLike {
+class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
-  // FIXME #24348: eventfilter support in typed testkit
   import AskSpec._
-
-  // FIXME #24348: eventfilter support in typed testkit
-  import scaladsl.adapter._
-  implicit val classicSystem = system.toClassic
 
   implicit def executor: ExecutionContext =
     system.executionContext
@@ -58,10 +54,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
 
       val probe = createTestProbe()
       probe.expectTerminated(ref, probe.remainingOrDefault)
-      val answer: Future[String] =
-        EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 1).intercept {
-          ref.ask(Foo("bar", _))
-        }
+      val answer: Future[String] = ref.ask(Foo("bar", _))
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should include("had already been terminated.")
@@ -80,17 +73,19 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     }
 
     "fail the future if the actor doesn't reply in time" in {
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+
       val actor = spawn(Behaviors.empty[Foo])
       implicit val timeout: Timeout = 10.millis
-      EventFilter.warning(pattern = ".*unhandled message.*", occurrences = 1).intercept {
-        val answer: Future[String] = actor.ask(Foo("bar", _))
-        val result = answer.failed.futureValue
-        result shouldBe a[TimeoutException]
-        result.getMessage should startWith("Ask timed out on")
-      }
+
+      val answer: Future[String] = actor.ask(Foo("bar", _))
+      unhandledProbe.receiveMessage()
+      val result = answer.failed.futureValue
+      result shouldBe a[TimeoutException]
+      result.getMessage should startWith("Ask timed out on")
     }
 
-    /** See issue #19947 (MatchError with adapted ActorRef) */
     "fail the future if the actor doesn't exist" in {
       val noSuchActor: ActorRef[Msg] = system match {
         case adaptedSys: ActorSystemAdapter[_] =>
@@ -100,13 +95,19 @@ class AskSpec extends ScalaTestWithActorTestKit("""
           fail("this test must only run in an adapted actor system")
       }
 
-      val answer: Future[String] =
-        EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 1).intercept {
-          noSuchActor.ask(Foo("bar", _))
-        }
+      val deadLetterProbe = createTestProbe[DeadLetter]()
+      system.eventStream ! EventStream.Subscribe(deadLetterProbe.ref)
+
+      val answer: Future[String] = noSuchActor.ask(Foo("bar", _))
       val result = answer.failed.futureValue
       result shouldBe a[TimeoutException]
       result.getMessage should include("had already been terminated")
+
+      val deadLetter = deadLetterProbe.receiveMessage()
+      deadLetter.message match {
+        case Foo(s, _) => s should ===("bar")
+        case _         => fail(s"unexpected DeadLetter: $deadLetter")
+      }
     }
 
     "transform a replied akka.actor.Status.Failure to a failed future" in {
@@ -127,6 +128,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
         val legacyActor = classicSystem.actorOf(akka.actor.Props(new LegacyActor))
 
         import scaladsl.AskPattern._
+        import akka.actor.typed.scaladsl.adapter._
         implicit val timeout: Timeout = 3.seconds
         implicit val scheduler = classicSystem.toTyped.scheduler
         val typedLegacy: ActorRef[AnyRef] = legacyActor
@@ -172,10 +174,11 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       ref ! "start-ask"
       val Question(replyRef2) = probe.expectMessageType[Question]
 
-      EventFilter[RuntimeException](message = "Exception thrown out of adapter. Stopping myself.", occurrences = 1)
+      LoggingEventFilter
+        .error("Exception thrown out of adapter. Stopping myself.")
         .intercept {
           replyRef2 ! 42L
-        }(system.toClassic)
+        }(system)
 
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }

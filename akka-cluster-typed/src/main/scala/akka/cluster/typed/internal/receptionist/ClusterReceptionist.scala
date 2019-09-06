@@ -8,7 +8,7 @@ import akka.actor.typed.internal.receptionist.{ AbstractServiceKey, Receptionist
 import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, LoggerOps }
 import akka.actor.typed.{ ActorRef, Behavior, Terminated }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberRemoved
@@ -92,7 +92,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   override def behavior: Behavior[Command] =
     Behaviors.setup { ctx =>
-      ctx.setLoggerClass(classOf[ClusterReceptionist])
+      ctx.setLoggerName(classOf[ClusterReceptionist])
       Behaviors.withTimers { timers =>
         val setup = new Setup(ctx)
         // include selfUniqueAddress so that it can be used locally before joining cluster
@@ -194,7 +194,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
           if (removals.nonEmpty) {
             if (ctx.log.isDebugEnabled)
-              ctx.log.debug(
+              ctx.log.debugN(
                 "ClusterReceptionist [{}] - Node(s) removed [{}], updating registry removing entries: [{}]",
                 cluster.selfAddress,
                 addresses.mkString(","),
@@ -237,7 +237,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>
           if (serviceInstance.path.address.hasLocalScope) {
             val entry = Entry(serviceInstance, setup.selfSystemUid)
-            ctx.log.debug("ClusterReceptionist [{}] - Actor was registered: [{}] [{}]", cluster.selfAddress, key, entry)
+            ctx.log
+              .debugN("ClusterReceptionist [{}] - Actor was registered: [{}] [{}]", cluster.selfAddress, key, entry)
             watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
             maybeReplyTo match {
               case Some(replyTo) => replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
@@ -248,7 +249,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               ServiceRegistry(registry).addBinding(key, entry).toORMultiMap
             }
           } else {
-            ctx.log.error(s"ClusterReceptionist [{}] - Register of non-local [{}] is not supported", serviceInstance)
+            ctx.log.error("ClusterReceptionist [{}] - Register of non-local [{}] is not supported", serviceInstance)
           }
           Behaviors.same
 
@@ -277,7 +278,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
         case RegisteredActorTerminated(key, serviceInstance) =>
           val entry = Entry(serviceInstance, setup.selfSystemUid)
-          ctx.log.debug(
+          ctx.log.debugN(
             "ClusterReceptionist [{}] - Registered actor terminated: [{}] [{}]",
             cluster.selfAddress,
             key.asServiceKey.id,
@@ -297,7 +298,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           val newRegistry = registry.withServiceRegistry(ddataKey, newState)
           if (changedKeys.nonEmpty) {
             if (ctx.log.isDebugEnabled) {
-              ctx.log.debug(
+              ctx.log.debugN(
                 "ClusterReceptionist [{}] - Change from replicator: [{}], changes: [{}], tombstones [{}]",
                 cluster.selfAddress,
                 newState.entries.entries,
@@ -323,7 +324,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               val tombstonedButReAdded = newRegistry.actorRefsFor(serviceKey).filter(newRegistry.hasTombstone)
               if (tombstonedButReAdded.nonEmpty) {
                 if (ctx.log.isDebugEnabled)
-                  ctx.log.debug(
+                  ctx.log.debug2(
                     "ClusterReceptionist [{}] - Saw ActorRefs that were tomstoned [{}], re-removing.",
                     cluster.selfAddress,
                     tombstonedButReAdded.mkString(", "))
@@ -355,7 +356,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           } else {
             // Ok to update from several nodes but more efficient to try to do it from one node.
             if (isLeader) {
-              ctx.log.debug(
+              ctx.log.debug2(
                 "ClusterReceptionist [{}] - Leader node observed removed node [{}]",
                 cluster.selfAddress,
                 uniqueAddress)
@@ -369,7 +370,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           val keysForNode = registry.keysFor(uniqueAddress)
           val newRegistry = registry.addUnreachable(uniqueAddress)
           if (keysForNode.nonEmpty) {
-            ctx.log.debug(
+            ctx.log.debug2(
               "ClusterReceptionist [{}] - Node with registered services unreachable [{}]",
               cluster.selfAddress,
               uniqueAddress)
@@ -381,7 +382,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           val keysForNode = registry.keysFor(uniqueAddress)
           val newRegistry = registry.removeUnreachable(uniqueAddress)
           if (keysForNode.nonEmpty) {
-            ctx.log.debug(
+            ctx.log.debug2(
               "ClusterReceptionist [{}] - Node with registered services reachable again [{}]",
               cluster.selfAddress,
               uniqueAddress)
@@ -398,7 +399,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             if (notInCluster.isEmpty) Behaviors.same
             else {
               if (ctx.log.isDebugEnabled)
-                ctx.log.debug(
+                ctx.log.debug2(
                   "ClusterReceptionist [{}] - Leader node cleanup tick, removed nodes: [{}]",
                   cluster.selfAddress,
                   notInCluster.mkString(","))

@@ -14,8 +14,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 object ManyRecoveriesSpec {
@@ -50,7 +49,6 @@ object ManyRecoveriesSpec {
 }
 
 class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
-    akka.loggers = [akka.testkit.TestEventListener]
     akka.actor.default-dispatcher {
       type = Dispatcher
       executor = "thread-pool-executor"
@@ -60,12 +58,9 @@ class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
     }
     akka.persistence.max-concurrent-recoveries = 3
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """) with WordSpecLike {
+    """) with WordSpecLike with LogCapturing {
 
   import ManyRecoveriesSpec._
-
-  import akka.actor.typed.scaladsl.adapter._
-  system.toClassic.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   "Many persistent actors" must {
     "be able to recover without overloading" in {

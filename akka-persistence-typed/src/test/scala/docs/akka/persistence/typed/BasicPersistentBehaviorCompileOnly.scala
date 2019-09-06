@@ -9,6 +9,7 @@ import scala.concurrent.duration._
 import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.persistence.typed.DeleteEventsFailed
 import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.EventAdapter
@@ -123,7 +124,7 @@ object BasicPersistentBehaviorCompileOnly {
 
   val debugAlwaysSnapshot: Behavior[Command] = Behaviors.setup { context =>
     samplePersistentBehavior.snapshotWhen((state, _, _) => {
-      context.log.info("Snapshot actor {} => state: {}", context.self.path.name, state)
+      context.log.info2("Snapshot actor {} => state: {}", context.self.path.name, state)
       true
     })
   }
