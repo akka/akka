@@ -550,6 +550,7 @@ The following operators have a slight change in behavior because of this:
 * `FileIO.fromPath`, `FileIO.fromFile` and `StreamConverters.fromInputStream`  will fail the materialized future with 
   an `IOOperationIncompleteException` when downstream fails
 * `.watchTermination` will fail the materialized `Future` or `CompletionStage` rather than completing it when downstream fails
+* `StreamRef` - `SourceRef` will cancel with a failure when the receiving node is downed 
 
 This also means that custom `GraphStage` implementations should be changed to pass on the
 cancellation cause when downstream cancels by implementing the `OutHandler.onDownstreamFinish` signature 
