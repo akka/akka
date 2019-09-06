@@ -81,7 +81,7 @@ object ActorSource {
       failureMatcher: PartialFunction[T, Throwable]): Source[T, ActorRef[T]] =
     Source
       .actorRefWithAck[T](
-        Some(ackTo.toUntyped),
+        Some(ackTo.toClassic),
         ackMessage,
         completionMatcher.asInstanceOf[PartialFunction[Any, CompletionStrategy]],
         failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]])

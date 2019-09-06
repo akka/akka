@@ -45,7 +45,7 @@ import akka.dispatch.sysmsg
 private[akka] object ActorRefAdapter {
   def apply[T](ref: untyped.ActorRef): ActorRef[T] = new ActorRefAdapter(ref.asInstanceOf[untyped.InternalActorRef])
 
-  def toUntyped[U](ref: ActorRef[U]): akka.actor.InternalActorRef =
+  def toClassic[U](ref: ActorRef[U]): akka.actor.InternalActorRef =
     ref match {
       case adapter: ActorRefAdapter[_]   => adapter.untypedRef
       case system: ActorSystemAdapter[_] => system.untypedSystem.guardian
@@ -60,11 +60,11 @@ private[akka] object ActorRefAdapter {
       case internal.Create()    => throw new IllegalStateException("WAT? No, seriously.")
       case internal.Terminate() => untypedRef.stop()
       case internal.Watch(watchee, watcher) =>
-        untypedRef.sendSystemMessage(sysmsg.Watch(toUntyped(watchee), toUntyped(watcher)))
+        untypedRef.sendSystemMessage(sysmsg.Watch(toClassic(watchee), toClassic(watcher)))
       case internal.Unwatch(watchee, watcher) =>
-        untypedRef.sendSystemMessage(sysmsg.Unwatch(toUntyped(watchee), toUntyped(watcher)))
+        untypedRef.sendSystemMessage(sysmsg.Unwatch(toClassic(watchee), toClassic(watcher)))
       case internal.DeathWatchNotification(ref, _) =>
-        untypedRef.sendSystemMessage(sysmsg.DeathWatchNotification(toUntyped(ref), true, false))
+        untypedRef.sendSystemMessage(sysmsg.DeathWatchNotification(toClassic(ref), true, false))
       case internal.NoMessage => // just to suppress the warning
     }
 }

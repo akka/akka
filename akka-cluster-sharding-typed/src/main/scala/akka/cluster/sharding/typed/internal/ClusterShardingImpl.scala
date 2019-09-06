@@ -131,7 +131,7 @@ import akka.util.Timeout
     "only adapted untyped actor systems can be used for cluster features")
 
   private val cluster = Cluster(system)
-  private val untypedSystem: ExtendedActorSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
+  private val untypedSystem: ExtendedActorSystem = system.toClassic.asInstanceOf[ExtendedActorSystem]
   private val untypedSharding = akka.cluster.sharding.ClusterSharding(untypedSystem)
   private val log: LoggingAdapter = Logging(untypedSystem, classOf[scaladsl.ClusterSharding])
 
@@ -212,7 +212,7 @@ import akka.util.Timeout
             new java.util.function.Function[String, ActorRef[scaladsl.ClusterSharding.ShardCommand]] {
               override def apply(t: String): ActorRef[scaladsl.ClusterSharding.ShardCommand] = {
                 // using untyped.systemActorOf to avoid the Future[ActorRef]
-                system.toUntyped
+                system.toClassic
                   .asInstanceOf[ExtendedActorSystem]
                   .systemActorOf(
                     PropsAdapter(ShardCommandActor.behavior(stopMessage.getOrElse(PoisonPill))),
@@ -234,7 +234,7 @@ import akka.util.Timeout
         untypedSharding.internalStart(
           typeKey.name,
           untypedEntityPropsFactory,
-          ClusterShardingSettings.toUntypedSettings(settings),
+          ClusterShardingSettings.toClassicSettings(settings),
           extractEntityId,
           extractShardId,
           allocationStrategy.getOrElse(defaultShardAllocationStrategy(settings)),
@@ -379,8 +379,8 @@ import akka.util.Timeout
 
   def behavior(stopMessage: Any): Behavior[scaladsl.ClusterSharding.ShardCommand] = {
     def sendUntypedPassivate(entity: ActorRef[_], ctx: TypedActorContext[_]): Unit = {
-      val pathToShard = entity.toUntyped.path.elements.take(4).mkString("/")
-      ctx.asScala.system.toUntyped.actorSelection(pathToShard).tell(UntypedPassivate(stopMessage), entity.toUntyped)
+      val pathToShard = entity.toClassic.path.elements.take(4).mkString("/")
+      ctx.asScala.system.toClassic.actorSelection(pathToShard).tell(UntypedPassivate(stopMessage), entity.toClassic)
     }
 
     Behaviors.receive { (ctx, msg) =>

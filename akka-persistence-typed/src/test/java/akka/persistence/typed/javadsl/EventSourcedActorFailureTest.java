@@ -99,7 +99,7 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
 
   public EventSourcedActorFailureTest() {
     // FIXME ##24348 silence logging in a proper way
-    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
+    akka.actor.typed.javadsl.Adapter.toClassic(testKit.system())
         .eventStream()
         .publish(
             new TestEvent.Mute(
@@ -107,7 +107,7 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
                     new EventFilter[] {
                       EventFilter.warning(null, null, "No default snapshot store", null, 1)
                     })));
-    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
+    akka.actor.typed.javadsl.Adapter.toClassic(testKit.system())
         .eventStream()
         .publish(
             new TestEvent.Mute(

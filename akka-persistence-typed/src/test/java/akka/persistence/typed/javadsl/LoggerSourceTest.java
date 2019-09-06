@@ -95,7 +95,7 @@ public class LoggerSourceTest extends JUnitSuite {
 
   public LoggerSourceTest() {
     // FIXME ##24348 silence logging in a proper way
-    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
+    akka.actor.typed.javadsl.Adapter.toClassic(testKit.system())
         .eventStream()
         .publish(
             new TestEvent.Mute(

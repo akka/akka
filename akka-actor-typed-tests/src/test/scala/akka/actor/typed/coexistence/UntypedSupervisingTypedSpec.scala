@@ -59,28 +59,28 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
     "default to stop for supervision" in {
       val probe = TestProbe()
       val underTest = system.spawn(ProbedBehavior.behavior(probe.ref), "a1")
-      watch(underTest.toUntyped)
+      watch(underTest.toClassic)
       underTest ! "throw"
       probe.expectMsg(PostStop)
       probe.expectNoMessage(smallDuration)
-      expectTerminated(underTest.toUntyped)
+      expectTerminated(underTest.toClassic)
     }
 
     "default to stop for supervision for spawn anonymous" in {
       val probe = TestProbe()
       val underTest = system.spawnAnonymous(ProbedBehavior.behavior(probe.ref))
-      watch(underTest.toUntyped)
+      watch(underTest.toClassic)
       underTest ! "throw"
       probe.expectMsg(PostStop)
       probe.expectNoMessage(smallDuration)
-      expectTerminated(underTest.toUntyped)
+      expectTerminated(underTest.toClassic)
     }
 
     "allows overriding the default" in {
       val probe = TestProbe()
       val value = Behaviors.supervise(ProbedBehavior.behavior(probe.ref)).onFailure(SupervisorStrategy.restart)
       val underTest = system.spawn(value, "a2")
-      watch(underTest.toUntyped)
+      watch(underTest.toClassic)
       underTest ! "throw"
       probe.expectMsg(PreRestart)
       probe.expectNoMessage(smallDuration)
@@ -92,11 +92,11 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
       val probe = TestProbe()
       untyped ! SpawnFromUntyped(ProbedBehavior.behavior(probe.ref), "a3")
       val underTest = expectMsgType[TypedSpawnedFromUntypedConext].actorRef
-      watch(underTest.toUntyped)
+      watch(underTest.toClassic)
       underTest ! "throw"
       probe.expectMsg(PostStop)
       probe.expectNoMessage(smallDuration)
-      expectTerminated(underTest.toUntyped)
+      expectTerminated(underTest.toClassic)
     }
 
     "allow overriding the default (from context)" in {
@@ -105,7 +105,7 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
       val behavior = Behaviors.supervise(ProbedBehavior.behavior(probe.ref)).onFailure(SupervisorStrategy.restart)
       untyped ! SpawnFromUntyped(behavior, "a4")
       val underTest = expectMsgType[TypedSpawnedFromUntypedConext].actorRef
-      watch(underTest.toUntyped)
+      watch(underTest.toClassic)
       underTest ! "throw"
       probe.expectMsg(PreRestart)
       probe.expectNoMessage(smallDuration)
@@ -117,11 +117,11 @@ class UntypedSupervisingTypedSpec extends AkkaSpec with ImplicitSender {
       val probe = TestProbe()
       untyped ! SpawnAnonFromUntyped(ProbedBehavior.behavior(probe.ref))
       val underTest = expectMsgType[TypedSpawnedFromUntypedConext].actorRef
-      watch(underTest.toUntyped)
+      watch(underTest.toClassic)
       underTest ! "throw"
       probe.expectMsg(PostStop)
       probe.expectNoMessage(smallDuration)
-      expectTerminated(underTest.toUntyped)
+      expectTerminated(underTest.toClassic)
     }
 
   }

@@ -17,7 +17,7 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = ["akka.testkit.TestEventListener"]
     """) with WordSpecLike {
 
-  implicit val untyped: actor.ActorSystem = system.toUntyped
+  implicit val untyped: actor.ActorSystem = system.toClassic
 
   "The log messages behavior" should {
 

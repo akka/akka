@@ -36,7 +36,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
 
   // FIXME #24348: eventfilter support in typed testkit
   import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
+  implicit val untypedSystem = system.toClassic
 
   implicit def executor: ExecutionContext =
     system.executionContext
@@ -175,7 +175,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       EventFilter[RuntimeException](message = "Exception thrown out of adapter. Stopping myself.", occurrences = 1)
         .intercept {
           replyRef2 ! 42L
-        }(system.toUntyped)
+        }(system.toClassic)
 
       probe.expectTerminated(ref, probe.remainingOrDefault)
     }

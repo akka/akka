@@ -186,8 +186,8 @@ private[akka] object Running {
 
         case _: Unhandled.type =>
           import akka.actor.typed.scaladsl.adapter._
-          setup.context.system.toUntyped.eventStream
-            .publish(UnhandledMessage(msg, setup.context.system.toUntyped.deadLetters, setup.context.self.toUntyped))
+          setup.context.system.toClassic.eventStream
+            .publish(UnhandledMessage(msg, setup.context.system.toClassic.deadLetters, setup.context.self.toClassic))
           tryUnstashOne(applySideEffects(sideEffects, state))
 
         case _: Stash.type =>

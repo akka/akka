@@ -45,7 +45,7 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
             Adapter.watch(context, second);
 
             second.tell(
-                new Typed.Ping(context.getSelf().narrow()), Adapter.toUntyped(context.getSelf()));
+                new Typed.Ping(context.getSelf().narrow()), Adapter.toClassic(context.getSelf()));
 
             return akka.actor.typed.javadsl.Behaviors.receive(Typed.Command.class)
                 .onMessage(
@@ -87,8 +87,8 @@ public class TypedWatchingUntypedTest extends JUnitSuite {
     ActorRef<Typed.Command> typed = Adapter.spawn(as, Typed.behavior(), "Typed");
     // #create
     TestProbe probe = new TestProbe(as);
-    probe.watch(Adapter.toUntyped(typed));
-    probe.expectTerminated(Adapter.toUntyped(typed), Duration.create(1, "second"));
+    probe.watch(Adapter.toClassic(typed));
+    probe.expectTerminated(Adapter.toClassic(typed), Duration.create(1, "second"));
     TestKit.shutdownActorSystem(as);
   }
 }

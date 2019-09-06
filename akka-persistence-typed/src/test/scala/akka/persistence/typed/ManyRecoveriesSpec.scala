@@ -66,7 +66,7 @@ class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
   import ManyRecoveriesSpec._
 
   import akka.actor.typed.scaladsl.adapter._
-  system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+  system.toClassic.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   "Many persistent actors" must {
     "be able to recover without overloading" in {
@@ -78,7 +78,7 @@ class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
       }
 
       // this would starve (block) all threads without max-concurrent-recoveries
-      val latch = TestLatch()(system.toUntyped)
+      val latch = TestLatch()(system.toClassic)
       (1 to 100).foreach { n =>
         spawn(persistentBehavior(s"a$n", probe, Some(latch))) ! Cmd("B")
       }

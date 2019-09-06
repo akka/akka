@@ -42,7 +42,7 @@ object AdapterSpec {
       .receive[String] { (context, message) =>
         message match {
           case "send" =>
-            val replyTo = context.self.toUntyped
+            val replyTo = context.self.toClassic
             ref.tell("ping", replyTo)
             Behaviors.same
           case "pong" =>
@@ -50,7 +50,7 @@ object AdapterSpec {
             Behaviors.same
           case "actorOf" =>
             val child = context.actorOf(untyped1)
-            child.tell("ping", context.self.toUntyped)
+            child.tell("ping", context.self.toClassic)
             Behaviors.same
           case "watch" =>
             context.watch(ref)
@@ -60,7 +60,7 @@ object AdapterSpec {
             val child = context.actorOf(untyped1)
             context.watch(child)
             child ! ThrowIt3
-            child.tell("ping", context.self.toUntyped)
+            child.tell("ping", context.self.toClassic)
             Behaviors.same
           case "stop-child" =>
             val child = context.actorOf(untyped1)
@@ -182,7 +182,7 @@ class AdapterSpec extends AkkaSpec("""
           system = ActorSystem.create(
             Behaviors.setup[NotUsed](_ => Behavior.stopped[NotUsed]),
             "AdapterSpec-stopping-guardian")
-        } finally if (system != null) shutdown(system.toUntyped)
+        } finally if (system != null) shutdown(system.toClassic)
       }
     }
 
@@ -198,7 +198,7 @@ class AdapterSpec extends AkkaSpec("""
 
           }, "AdapterSpec-stopping-guardian-2")
 
-        } finally if (system != null) shutdown(system.toUntyped)
+        } finally if (system != null) shutdown(system.toClassic)
       }
     }
   }

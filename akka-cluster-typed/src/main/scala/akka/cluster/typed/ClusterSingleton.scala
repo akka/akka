@@ -213,7 +213,7 @@ object ClusterSingletonManagerSettings {
    */
   def apply(system: ActorSystem[_]): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
-      .withRemovalMargin(akka.cluster.Cluster(system.toUntyped).downingProvider.downRemovalMargin)
+      .withRemovalMargin(akka.cluster.Cluster(system.toClassic).downingProvider.downRemovalMargin)
 
   /**
    * Create settings from a configuration with the same layout as

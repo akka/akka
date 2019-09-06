@@ -102,7 +102,7 @@ object ActorFlow {
   def ask[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
       implicit timeout: Timeout): Flow[I, A, NotUsed] = {
     import akka.actor.typed.scaladsl.adapter._
-    val untypedRef = ref.toUntyped
+    val untypedRef = ref.toClassic
 
     val askFlow = Flow[I]
       .watch(untypedRef)

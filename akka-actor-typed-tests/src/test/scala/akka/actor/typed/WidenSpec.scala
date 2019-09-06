@@ -20,7 +20,7 @@ class WidenSpec extends ScalaTestWithActorTestKit("""
     akka.loggers = [akka.testkit.TestEventListener]
     """) with WordSpecLike {
 
-  implicit val untypedSystem = system.toUntyped
+  implicit val untypedSystem = system.toClassic
 
   def intToString(probe: ActorRef[String]): Behavior[Int] = {
     Behaviors

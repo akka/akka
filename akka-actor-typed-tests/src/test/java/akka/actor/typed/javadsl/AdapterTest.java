@@ -60,7 +60,7 @@ public class AdapterTest extends JUnitSuite {
 
     Behavior<String> onMessage(ActorContext<String> context, String message) {
       if (message.equals("send")) {
-        akka.actor.ActorRef replyTo = Adapter.toUntyped(context.getSelf());
+        akka.actor.ActorRef replyTo = Adapter.toClassic(context.getSelf());
         ref.tell("ping", replyTo);
         return same();
       } else if (message.equals("pong")) {
@@ -68,7 +68,7 @@ public class AdapterTest extends JUnitSuite {
         return same();
       } else if (message.equals("actorOf")) {
         akka.actor.ActorRef child = Adapter.actorOf(context, untyped1());
-        child.tell("ping", Adapter.toUntyped(context.getSelf()));
+        child.tell("ping", Adapter.toClassic(context.getSelf()));
         return same();
       } else if (message.equals("watch")) {
         Adapter.watch(context, ref);
@@ -77,8 +77,8 @@ public class AdapterTest extends JUnitSuite {
         // restart is the default, otherwise an intermediate is required
         akka.actor.ActorRef child = Adapter.actorOf(context, untyped1());
         Adapter.watch(context, child);
-        child.tell(new ThrowIt3(), Adapter.toUntyped(context.getSelf()));
-        child.tell("ping", Adapter.toUntyped(context.getSelf()));
+        child.tell(new ThrowIt3(), Adapter.toClassic(context.getSelf()));
+        child.tell("ping", Adapter.toClassic(context.getSelf()));
         return same();
       } else if (message.equals("stop-child")) {
         akka.actor.ActorRef child = Adapter.actorOf(context, untyped1());
@@ -246,7 +246,7 @@ public class AdapterTest extends JUnitSuite {
   private final ActorSystem system = actorSystemResource.getSystem();
 
   @Test
-  public void shouldSendMessageFromTypedToUntyped() {
+  public void shouldSendMessageFromTypedtoClassic() {
     TestKit probe = new TestKit(system);
     akka.actor.ActorRef untypedRef = system.actorOf(untyped1());
     ActorRef<String> typedRef =

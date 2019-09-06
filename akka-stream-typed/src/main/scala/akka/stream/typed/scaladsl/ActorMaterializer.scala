@@ -25,7 +25,7 @@ object ActorMaterializer {
    */
   def apply[T](materializerSettings: Option[ActorMaterializerSettings] = None, namePrefix: Option[String] = None)(
       implicit actorSystem: ActorSystem[T]): ActorMaterializer =
-    akka.stream.ActorMaterializer(materializerSettings, namePrefix)(actorSystem.toUntyped)
+    akka.stream.ActorMaterializer(materializerSettings, namePrefix)(actorSystem.toClassic)
 
   /**
    * Creates an `ActorMaterializer` which will execute every step of a transformation
@@ -43,6 +43,6 @@ object ActorMaterializer {
       ctx: ActorContext[T],
       materializerSettings: Option[ActorMaterializerSettings] = None,
       namePrefix: Option[String] = None): ActorMaterializer =
-    akka.stream.ActorMaterializer(materializerSettings, namePrefix)(ctx.toUntyped)
+    akka.stream.ActorMaterializer(materializerSettings, namePrefix)(ctx.toClassic)
 
 }

@@ -90,7 +90,7 @@ class EventSourcedBehaviorFailureSpec
   implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
   // Needed for the untyped event filter
-  implicit val untyped = system.toUntyped
+  implicit val untyped = system.toClassic
 
   untyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
@@ -303,7 +303,7 @@ class EventSourcedBehaviorFailureSpec
         })
         val c = spawn(behav)
         probe.expectMessage("starting")
-        c.toUntyped ! SomeSignal
+        c.toClassic ! SomeSignal
         probe.expectMessage("stopped")
       }
     }

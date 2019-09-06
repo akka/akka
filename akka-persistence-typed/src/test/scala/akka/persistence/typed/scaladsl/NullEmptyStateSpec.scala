@@ -28,7 +28,7 @@ class NullEmptyStateSpec extends ScalaTestWithActorTestKit(NullEmptyStateSpec.co
   implicit val testSettings = TestKitSettings(system)
 
   import akka.actor.typed.scaladsl.adapter._
-  system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+  system.toClassic.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     EventSourcedBehavior[String, String, String](

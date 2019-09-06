@@ -69,7 +69,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit("""
 
   // FIXME #24348: eventfilter support in typed testkit
   import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
+  implicit val untypedSystem = system.toClassic
 
   import ActorSpecMessages._
 

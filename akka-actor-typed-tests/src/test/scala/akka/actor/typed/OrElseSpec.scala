@@ -88,7 +88,7 @@ class OrElseSpec extends ScalaTestWithActorTestKit("""
 
   import OrElseStubbedSpec._
 
-  implicit val untyped: actor.ActorSystem = system.toUntyped
+  implicit val untyped: actor.ActorSystem = system.toClassic
 
   "Behavior.orElse" must {
     "work for deferred behavior on the left" in {

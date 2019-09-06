@@ -55,7 +55,7 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
   import OptionalSnapshotStoreSpec._
 
   // Needed for the untyped event filter
-  implicit val untyped = system.toUntyped
+  implicit val untyped = system.toClassic
 
   "Persistence extension" must {
     "initialize properly even in absence of configured snapshot store" in {

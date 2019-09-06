@@ -70,7 +70,7 @@ import akka.actor.typed.Terminated
               case cmd: SReplicator.Get[_] =>
                 untypedReplicator.tell(
                   dd.Replicator.Get(cmd.key, cmd.consistency, cmd.request),
-                  sender = cmd.replyTo.toUntyped)
+                  sender = cmd.replyTo.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Get[d] =>
@@ -80,7 +80,7 @@ import akka.actor.typed.Terminated
                 })
                 import ctx.executionContext
                 val reply =
-                  (untypedReplicator ? dd.Replicator.Get(cmd.key, cmd.consistency.toUntyped, cmd.request.asScala))
+                  (untypedReplicator ? dd.Replicator.Get(cmd.key, cmd.consistency.toClassic, cmd.request.asScala))
                     .mapTo[dd.Replicator.GetResponse[d]]
                     .map {
                       case rsp: dd.Replicator.GetSuccess[d] =>
@@ -97,7 +97,7 @@ import akka.actor.typed.Terminated
               case cmd: SReplicator.Update[_] =>
                 untypedReplicator.tell(
                   dd.Replicator.Update(cmd.key, cmd.writeConsistency, cmd.request)(cmd.modify),
-                  sender = cmd.replyTo.toUntyped)
+                  sender = cmd.replyTo.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Update[d] =>
@@ -109,7 +109,7 @@ import akka.actor.typed.Terminated
                 val reply =
                   (untypedReplicator ? dd.Replicator.Update(
                     cmd.key,
-                    cmd.writeConsistency.toUntyped,
+                    cmd.writeConsistency.toClassic,
                     cmd.request.asScala)(cmd.modify))
                     .mapTo[dd.Replicator.UpdateResponse[d]]
                     .map {
@@ -128,8 +128,8 @@ import akka.actor.typed.Terminated
               case cmd: SReplicator.Subscribe[_] =>
                 // For the Scala API the Changed messages can be sent directly to the subscriber
                 untypedReplicator.tell(
-                  dd.Replicator.Subscribe(cmd.key, cmd.subscriber.toUntyped),
-                  sender = cmd.subscriber.toUntyped)
+                  dd.Replicator.Subscribe(cmd.key, cmd.subscriber.toClassic),
+                  sender = cmd.subscriber.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Subscribe[ReplicatedData] @unchecked =>
@@ -141,7 +141,7 @@ import akka.actor.typed.Terminated
                 }
 
                 untypedReplicator.tell(
-                  dd.Replicator.Subscribe(cmd.key, adapter.toUntyped),
+                  dd.Replicator.Subscribe(cmd.key, adapter.toClassic),
                   sender = akka.actor.ActorRef.noSender)
 
                 ctx.watch(cmd.subscriber)
@@ -158,7 +158,7 @@ import akka.actor.typed.Terminated
               case cmd: SReplicator.Delete[_] =>
                 untypedReplicator.tell(
                   dd.Replicator.Delete(cmd.key, cmd.consistency, cmd.request),
-                  sender = cmd.replyTo.toUntyped)
+                  sender = cmd.replyTo.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Delete[d] =>
@@ -168,7 +168,7 @@ import akka.actor.typed.Terminated
                 })
                 import ctx.executionContext
                 val reply =
-                  (untypedReplicator ? dd.Replicator.Delete(cmd.key, cmd.consistency.toUntyped, cmd.request.asScala))
+                  (untypedReplicator ? dd.Replicator.Delete(cmd.key, cmd.consistency.toClassic, cmd.request.asScala))
                     .mapTo[dd.Replicator.DeleteResponse[d]]
                     .map {
                       case rsp: dd.Replicator.DeleteSuccess[d] => JReplicator.DeleteSuccess(rsp.key, rsp.request.asJava)
@@ -184,7 +184,7 @@ import akka.actor.typed.Terminated
                 Behaviors.same
 
               case SReplicator.GetReplicaCount(replyTo) =>
-                untypedReplicator.tell(dd.Replicator.GetReplicaCount, sender = replyTo.toUntyped)
+                untypedReplicator.tell(dd.Replicator.GetReplicaCount, sender = replyTo.toClassic)
                 Behaviors.same
 
               case JReplicator.GetReplicaCount(replyTo) =>

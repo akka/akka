@@ -38,7 +38,7 @@ class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) wi
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
-  val untypedSystem1 = system.toUntyped
+  val untypedSystem1 = system.toClassic
 
   "A typed Cluster" must {
 

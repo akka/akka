@@ -24,7 +24,7 @@ import akka.japi.Creator
  * parent actor, and the opposite untyped child from typed parent.
  * `watch` is also supported in both directions.
  *
- * There are also converters (`toTyped`, `toUntyped`) between untyped
+ * There are also converters (`toTyped`, `toClassic`) between untyped
  * [[akka.actor.ActorRef]] and typed [[akka.actor.typed.ActorRef]], and between untyped
  * [[akka.actor.ActorSystem]] and typed [[akka.actor.typed.ActorSystem]].
  */
@@ -97,11 +97,15 @@ object Adapter {
   def toTyped(sys: akka.actor.ActorSystem): ActorSystem[Void] =
     sys.toTyped.asInstanceOf[ActorSystem[Void]]
 
-  def toUntyped(sys: ActorSystem[_]): akka.actor.ActorSystem =
-    sys.toUntyped
+  @deprecated("Use 'toClassic' instead", "2.5.26")
+  def toUntyped(sys: ActorSystem[_]): akka.actor.ActorSystem = toClassic(sys)
 
-  def toUntyped(ctx: ActorContext[_]): actor.ActorContext =
-    ActorContextAdapter.toUntyped(ctx)
+  def toClassic(sys: ActorSystem[_]): akka.actor.ActorSystem = sys.toClassic
+
+  @deprecated("Use 'toClassic' instead", "2.5.26")
+  def toUntyped(ctx: ActorContext[_]): actor.ActorContext = toClassic(ctx)
+
+  def toClassic(ctx: ActorContext[_]): akka.actor.ActorContext = ActorContextAdapter.toClassic(ctx)
 
   def watch[U](ctx: akka.actor.ActorContext, other: ActorRef[U]): Unit =
     ctx.watch(other)
@@ -122,13 +126,15 @@ object Adapter {
     ctx.stop(child)
 
   def actorOf(ctx: ActorContext[_], props: akka.actor.Props): akka.actor.ActorRef =
-    ActorContextAdapter.toUntyped(ctx).actorOf(props)
+    ActorContextAdapter.toClassic(ctx).actorOf(props)
 
   def actorOf(ctx: ActorContext[_], props: akka.actor.Props, name: String): akka.actor.ActorRef =
-    ActorContextAdapter.toUntyped(ctx).actorOf(props, name)
+    ActorContextAdapter.toClassic(ctx).actorOf(props, name)
 
-  def toUntyped(ref: ActorRef[_]): akka.actor.ActorRef =
-    ref.toUntyped
+  @deprecated("Use 'toClassic' instead", "2.5.26")
+  def toUntyped(ref: ActorRef[_]): akka.actor.ActorRef = toClassic(ref)
+
+  def toClassic(ref: ActorRef[_]): akka.actor.ActorRef = ref.toClassic
 
   def toTyped[T](ref: akka.actor.ActorRef): ActorRef[T] =
     ref

@@ -297,12 +297,12 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
   import EventSourcedBehaviorSpec._
   import akka.actor.typed.scaladsl.adapter._
 
-  implicit val materializer = ActorMaterializer()(system.toUntyped)
+  implicit val materializer = ActorMaterializer()(system.toClassic)
   val queries: LeveldbReadJournal =
-    PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+    PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   // needed for the untyped event filter
-  implicit val actorSystem = system.toUntyped
+  implicit val actorSystem = system.toClassic
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
@@ -651,7 +651,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
             val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
             val probe = testkit2.createTestProbe()
             probe.expectTerminated(ref)
-          }(testkit2.system.toUntyped)
+          }(testkit2.system.toClassic)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -671,7 +671,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
           val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withJournalPluginId("missing")))
           val probe = testkit2.createTestProbe()
           probe.expectTerminated(ref)
-        }(testkit2.system.toUntyped)
+        }(testkit2.system.toClassic)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -695,7 +695,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
             // verify that it's not terminated
             ref ! GetValue(probe.ref)
             probe.expectMessage(State(0, Vector.empty))
-          }(testkit2.system.toUntyped)
+          }(testkit2.system.toClassic)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -717,7 +717,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
           val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withSnapshotPluginId("missing")))
           val probe = testkit2.createTestProbe()
           probe.expectTerminated(ref)
-        }(testkit2.system.toUntyped)
+        }(testkit2.system.toClassic)
       } finally {
         testkit2.shutdownTestKit()
       }
