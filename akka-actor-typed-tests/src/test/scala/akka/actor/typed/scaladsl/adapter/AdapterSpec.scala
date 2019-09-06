@@ -126,18 +126,18 @@ object AdapterSpec {
       case classic.Terminated(_) =>
         probe ! "terminated"
       case "supervise-stop" =>
-        testSupervice(ThrowIt1)
+        testSupervise(ThrowIt1)
       case "supervise-resume" =>
-        testSupervice(ThrowIt2)
+        testSupervise(ThrowIt2)
       case "supervise-restart" =>
-        testSupervice(ThrowIt3)
+        testSupervise(ThrowIt3)
       case "stop-child" =>
         val child = context.spawnAnonymous(typed2)
         context.watch(child)
         context.stop(child)
     }
 
-    private def testSupervice(t: ThrowIt): Unit = {
+    private def testSupervise(t: ThrowIt): Unit = {
       val child = context.spawnAnonymous(typed2)
       context.watch(child)
       child ! t
