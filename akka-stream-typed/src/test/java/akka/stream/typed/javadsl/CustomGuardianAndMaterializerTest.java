@@ -5,15 +5,12 @@
 package akka.stream.typed.javadsl;
 
 import akka.Done;
-import akka.actor.AbstractActor;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.TimerSpec;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.stream.AbruptStageTerminationException;
-import akka.stream.AbruptTerminationException;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
@@ -39,7 +36,7 @@ public class CustomGuardianAndMaterializerTest extends JUnitSuite {
 
   @Test
   public void createCustomSystemLevelMaterialiser() throws Exception {
-    Materializer materializer = Materializer.create(testKit.system());
+    Materializer materializer = Materializer.createMaterializer(testKit.system());
 
     CompletionStage<String> result = Source.single("hello").runWith(Sink.head(), materializer);
 
@@ -49,7 +46,7 @@ public class CustomGuardianAndMaterializerTest extends JUnitSuite {
   private static Behavior<String> actorStreamBehavior(ActorRef<Object> probe) {
     return Behaviors.setup(
         (context) -> {
-          Materializer materializer = Materializer.create(context);
+          Materializer materializer = Materializer.createMaterializer(context);
 
           CompletionStage<Done> done = Source.repeat("hello").runWith(Sink.ignore(), materializer);
           done.whenComplete(

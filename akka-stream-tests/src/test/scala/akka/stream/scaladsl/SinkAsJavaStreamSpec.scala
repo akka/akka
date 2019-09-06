@@ -63,7 +63,7 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "work in separate IO dispatcher" in assertAllStagesStopped {
-      val materializer = Materializer.create(system)
+      val materializer = Materializer.createMaterializer(system)
       TestSource.probe[ByteString].runWith(StreamConverters.asJavaStream())(materializer)
       materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
       val ref = expectMsgType[Children].children.find(_.path.toString contains "asJavaStream").get

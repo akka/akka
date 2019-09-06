@@ -295,7 +295,7 @@ public class FlowDocTest extends AbstractJavaTest {
   // #materializer-from-actor-context
   final class RunWithMyself extends AbstractActor {
 
-    Materializer mat = Materializer.create(context());
+    Materializer mat = Materializer.createMaterializer(context());
 
     @Override
     public void preStart() throws Exception {

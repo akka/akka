@@ -62,7 +62,7 @@ public class HubDocTest extends AbstractJavaTest {
   @Test
   public void dynamicBroadcast() {
     // Used to be able to clean up the running stream
-    Materializer materializer = Materializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
 
     // #broadcast-hub
     // A simple producer that publishes a new "message" every second
@@ -134,7 +134,7 @@ public class HubDocTest extends AbstractJavaTest {
   @Test
   public void dynamicPartition() {
     // Used to be able to clean up the running stream
-    Materializer materializer = Materializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
 
     // #partition-hub
     // A simple producer that publishes a new "message-n" every second
@@ -182,7 +182,7 @@ public class HubDocTest extends AbstractJavaTest {
   @Test
   public void dynamicStatefulPartition() {
     // Used to be able to clean up the running stream
-    Materializer materializer = Materializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
 
     // #partition-hub-stateful
     // A simple producer that publishes a new "message-n" every second
@@ -215,7 +215,7 @@ public class HubDocTest extends AbstractJavaTest {
   @Test
   public void dynamicFastestPartition() {
     // Used to be able to clean up the running stream
-    Materializer materializer = Materializer.create(system);
+    Materializer materializer = Materializer.createMaterializer(system);
 
     // #partition-hub-fastest
     Source<Integer, NotUsed> producer = Source.range(0, 100);
