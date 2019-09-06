@@ -50,7 +50,7 @@ class RecipeAdhocSource extends RecipeSpec {
 
       sink.requestNext("a")
       Thread.sleep(200)
-      shutdown.future.futureValue should be(Done)
+      shutdown.future.failed.futureValue shouldBe a[TimeoutException]
     }
 
     "not shut down the source when there are still demands" taggedAs TimingTest in {
@@ -86,7 +86,7 @@ class RecipeAdhocSource extends RecipeSpec {
       sink.requestNext("a")
       startedCount.get() should be(1)
       Thread.sleep(200)
-      shutdown.future.futureValue should be(Done)
+      shutdown.future.failed.futureValue shouldBe a[TimeoutException]
     }
 
     "restart up to specified maxRetries" taggedAs TimingTest in {
