@@ -4,18 +4,18 @@
 
 package docs.akka.stream.typed;
 
-// #actor-sink-ref-with-ack
+// #actor-sink-ref-with-backpressure
 import akka.NotUsed;
 import akka.actor.typed.ActorRef;
 import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.stream.typed.javadsl.ActorSink;
-// #actor-sink-ref-with-ack
+// #actor-sink-ref-with-backpressure
 
 public class ActorSinkWithAckExample {
 
-  // #actor-sink-ref-with-ack
+  // #actor-sink-ref-with-backpressure
 
   class Ack {}
 
@@ -48,20 +48,20 @@ public class ActorSinkWithAckExample {
       this.ex = ex;
     }
   }
-  // #actor-sink-ref-with-ack
+  // #actor-sink-ref-with-backpressure
 
   final ActorMaterializer mat = null;
 
   {
-    // #actor-sink-ref-with-ack
+    // #actor-sink-ref-with-backpressure
 
     final ActorRef<Protocol> actor = null;
 
     final Sink<String, NotUsed> sink =
-        ActorSink.actorRefWithAck(
+        ActorSink.actorRefWithBackpressure(
             actor, Message::new, Init::new, new Ack(), new Complete(), Fail::new);
 
     Source.single("msg1").runWith(sink, mat);
-    // #actor-sink-ref-with-ack
+    // #actor-sink-ref-with-backpressure
   }
 }

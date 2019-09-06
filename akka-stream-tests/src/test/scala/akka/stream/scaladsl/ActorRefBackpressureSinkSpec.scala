@@ -61,7 +61,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
     "send the elements to the ActorRef" in assertAllStagesStopped {
       val fw = createActor(classOf[Fw])
       Source(List(1, 2, 3))
-        .runWith(Sink.actorRefWithAck(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
+        .runWith(Sink.actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
       expectMsg("start")
       expectMsg(1)
       expectMsg(2)
@@ -73,7 +73,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       val fw = createActor(classOf[Fw])
       val probe = TestSource
         .probe[Int]
-        .to(Sink.actorRefWithAck(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
+        .to(Sink.actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
         .run()
       probe.sendNext(1)
       expectMsg("start")
@@ -91,7 +91,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       val publisher =
         TestSource
           .probe[Int]
-          .to(Sink.actorRefWithAck(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
+          .to(Sink.actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
           .run()
           .sendNext(1)
       expectMsg(initMessage)
@@ -104,7 +104,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       val fw = createActor(classOf[Fw2])
       val publisher = TestSource
         .probe[Int]
-        .to(Sink.actorRefWithAck(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
+        .to(Sink.actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage))
         .run()
       expectMsg(initMessage)
 
@@ -129,7 +129,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       val streamElementCount = bufferSize + 4
       val fw = createActor(classOf[Fw2])
       val sink = Sink
-        .actorRefWithAck(fw, initMessage, ackMessage, completeMessage, _ => failMessage)
+        .actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage)
         .withAttributes(inputBuffer(bufferSize, bufferSize))
       val bufferFullProbe = Promise[akka.Done.type]
       Source(1 to streamElementCount)
@@ -153,7 +153,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
           .probe[Int]
           .to(
             Sink
-              .actorRefWithAck(fw, initMessage, ackMessage, completeMessage, _ => failMessage)
+              .actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage)
               .withAttributes(inputBuffer(1, 1)))
           .run()
 
@@ -179,7 +179,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       an[IllegalArgumentException] shouldBe thrownBy {
         val badSink =
           Sink
-            .actorRefWithAck(fw, initMessage, ackMessage, completeMessage, _ => failMessage)
+            .actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage)
             .withAttributes(inputBuffer(0, 0))
         Source.single(()).runWith(badSink)
       }
@@ -190,7 +190,12 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       val probe = TestProbe()
 
       val sink = Sink
-        .actorRefWithAck[String](probe.ref, initMessage, ackMessage, completeMessage, (_: Throwable) => failMessage)
+        .actorRefWithBackpressure[String](
+          probe.ref,
+          initMessage,
+          ackMessage,
+          completeMessage,
+          (_: Throwable) => failMessage)
         .withAttributes(inputBuffer(1, 1))
 
       Source.maybe[String].to(sink).run()(mat)

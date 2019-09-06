@@ -524,12 +524,34 @@ object Sink {
    * When the stream is completed with failure - result of `onFailureMessage(throwable)`
    * function will be sent to the destination actor.
    */
+  def actorRefWithBackpressure[T](
+      ref: ActorRef,
+      onInitMessage: Any,
+      ackMessage: Any,
+      onCompleteMessage: Any,
+      onFailureMessage: Throwable => Any): Sink[T, NotUsed] =
+    actorRefWithAck(ref, _ => identity, _ => onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
+
+  /**
+   * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
+   * First element is always `onInitMessage`, then stream is waiting for acknowledgement message
+   * `ackMessage` from the given actor which means that it is ready to process
+   * elements. It also requires `ackMessage` message after each stream element
+   * to make backpressure work.
+   *
+   * If the target actor terminates the stream will be canceled.
+   * When the stream is completed successfully the given `onCompleteMessage`
+   * will be sent to the destination actor.
+   * When the stream is completed with failure - result of `onFailureMessage(throwable)`
+   * function will be sent to the destination actor.
+   */
+  @deprecated("Use actorRefWithBackpressure accepting completion and failure matchers instead", "2.6.0")
   def actorRefWithAck[T](
       ref: ActorRef,
       onInitMessage: Any,
       ackMessage: Any,
       onCompleteMessage: Any,
-      onFailureMessage: Throwable => Any = Status.Failure): Sink[T, NotUsed] =
+      onFailureMessage: (Throwable) => Any = Status.Failure): Sink[T, NotUsed] =
     actorRefWithAck(ref, _ => identity, _ => onInitMessage, ackMessage, onCompleteMessage, onFailureMessage)
 
   /**

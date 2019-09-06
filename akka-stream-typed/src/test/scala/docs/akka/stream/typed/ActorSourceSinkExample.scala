@@ -69,7 +69,7 @@ object ActorSourceSinkExample {
 
     def targetActor(): ActorRef[Protocol] = ???
 
-    // #actor-sink-ref-with-ack
+    // #actor-sink-ref-with-backpressure
     import akka.actor.typed.ActorRef
     import akka.stream.scaladsl.{ Sink, Source }
     import akka.stream.typed.scaladsl.ActorSink
@@ -85,7 +85,7 @@ object ActorSourceSinkExample {
 
     val actor: ActorRef[Protocol] = targetActor()
 
-    val sink: Sink[String, NotUsed] = ActorSink.actorRefWithAck(
+    val sink: Sink[String, NotUsed] = ActorSink.actorRefWithBackpressure(
       ref = actor,
       onCompleteMessage = Complete,
       onFailureMessage = Fail.apply,
@@ -94,6 +94,6 @@ object ActorSourceSinkExample {
       ackMessage = Ack)
 
     Source.single("msg1").runWith(sink)
-    // #actor-sink-ref-with-ack
+    // #actor-sink-ref-with-backpressure
   }
 }

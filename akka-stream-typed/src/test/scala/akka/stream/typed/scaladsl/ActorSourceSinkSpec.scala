@@ -65,7 +65,7 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val in =
         Source
           .queue[String](10, OverflowStrategy.dropBuffer)
-          .to(ActorSink.actorRefWithAck(pilotRef, Msg.apply, Init.apply, "ACK", Complete, _ => Failed))
+          .to(ActorSink.actorRefWithBackpressure(pilotRef, Msg.apply, Init.apply, "ACK", Complete, _ => Failed))
           .run()
 
       p.expectMessageType[Init]
@@ -110,7 +110,7 @@ class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       val p = TestProbe[String]()
 
       val (in, out) = ActorSource
-        .actorRefWithAck[String, String](
+        .actorRefWithBackpressure[String, String](
           p.ref,
           "ack", { case "complete" => CompletionStrategy.draining },
           PartialFunction.empty)

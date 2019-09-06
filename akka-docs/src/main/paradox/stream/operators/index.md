@@ -8,8 +8,8 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 | |Operator|Description|
 |--|--|--|
 |Source|<a name="actorref"></a>@ref[actorRef](Source/actorRef.md)|Materialize an `ActorRef`; sending messages to it will emit them on the stream.|
-|Source|<a name="actorrefwithack"></a>@ref[actorRefWithAck](Source/actorRefWithAck.md)|Materialize an `ActorRef`; sending messages to it will emit them on the stream. The source acknowledges reception after emitting a message, to provide back pressure from the source.|
-|ActorSource|<a name="actorrefwithack"></a>@ref[actorRefWithAck](ActorSource/actorRefWithAck.md)|Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`]; sending messages to it will emit them on the stream. The source acknowledges reception after emitting a message, to provide back pressure from the source.|
+|Source|<a name="actorrefwithbackpressure"></a>@ref[actorRefWithBackpressure](Source/actorRefWithBackpressure.md)|Materialize an `ActorRef`; sending messages to it will emit them on the stream. The source acknowledges reception after emitting a message, to provide back pressure from the source.|
+|ActorSource|<a name="actorrefwithbackpressure"></a>@ref[actorRefWithBackpressure](ActorSource/actorRefWithBackpressure.md)|Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`]; sending messages to it will emit them on the stream. The source acknowledges reception after emitting a message, to provide back pressure from the source.|
 |Source|<a name="assourcewithcontext"></a>@ref[asSourceWithContext](Source/asSourceWithContext.md)|Turns a Source into a SourceWithContext which can propagate a context per element along a stream.|
 |Source|<a name="assubscriber"></a>@ref[asSubscriber](Source/asSubscriber.md)|Integration with Reactive Streams, materializes into a `org.reactivestreams.Subscriber`.|
 |Source|<a name="combine"></a>@ref[combine](Source/combine.md)|Combine several sources, using a given strategy such as merge or concat, into one source.|
@@ -46,7 +46,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 | |Operator|Description|
 |--|--|--|
 |Sink|<a name="actorref"></a>@ref[actorRef](Sink/actorRef.md)|Send the elements from the stream to an `ActorRef`.|
-|Sink|<a name="actorrefwithack"></a>@ref[actorRefWithAck](Sink/actorRefWithAck.md)|Send the elements from the stream to an `ActorRef` which must then acknowledge reception after completing a message, to provide back pressure onto the sink.|
+|Sink|<a name="actorrefwithbackpressure"></a>@ref[actorRefWithBackpressure](Sink/actorRefWithBackpressure.md)|Send the elements from the stream to an `ActorRef` which must then acknowledge reception after completing a message, to provide back pressure onto the sink.|
 |Sink|<a name="aspublisher"></a>@ref[asPublisher](Sink/asPublisher.md)|Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.|
 |Sink|<a name="cancelled"></a>@ref[cancelled](Sink/cancelled.md)|Immediately cancel the stream|
 |Sink|<a name="combine"></a>@ref[combine](Sink/combine.md)|Combine several sinks into one using a user specified strategy|
@@ -335,7 +335,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [lazilyAsync](Source/lazilyAsync.md)
 * [asSubscriber](Source/asSubscriber.md)
 * [actorRef](Source/actorRef.md)
-* [actorRefWithAck](Source/actorRefWithAck.md)
+* [actorRefWithBackpressure](Source/actorRefWithBackpressure.md)
 * [zipN](Source/zipN.md)
 * [zipWithN](Source/zipWithN.md)
 * [queue](Source/queue.md)
@@ -444,7 +444,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [reduce](Sink/reduce.md)
 * [onComplete](Sink/onComplete.md)
 * [actorRef](Sink/actorRef.md)
-* [actorRefWithAck](Sink/actorRefWithAck.md)
+* [actorRefWithBackpressure](Sink/actorRefWithBackpressure.md)
 * [queue](Sink/queue.md)
 * [lazyInitAsync](Sink/lazyInitAsync.md)
 * [fromInputStream](StreamConverters/fromInputStream.md)
@@ -464,7 +464,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [withBackoff](RestartFlow/withBackoff.md)
 * [onFailuresWithBackoff](RestartFlow/onFailuresWithBackoff.md)
 * [withBackoff](RestartSink/withBackoff.md)
-* [actorRefWithAck](ActorSource/actorRefWithAck.md)
+* [actorRefWithBackpressure](ActorSource/actorRefWithBackpressure.md)
 * [ask](ActorFlow/ask.md)
 * [actorRef](ActorSink/actorRef.md)
 * [Partition](Partition.md)

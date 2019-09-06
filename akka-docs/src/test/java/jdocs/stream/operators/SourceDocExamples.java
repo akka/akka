@@ -23,6 +23,7 @@ import akka.testkit.TestProbe;
 // #actor-ref-imports
 
 import java.util.Arrays;
+import java.util.Optional;
 
 // #imports
 
@@ -86,13 +87,20 @@ public class SourceDocExamples {
     // #actor-ref
   }
 
-  static void actorRefWithAck() {
+  static void actorRefWithBackpressure() {
     final TestProbe probe = null;
 
-    // #actor-ref-with-ack
+    // #actorRefWithBackpressure
     final ActorSystem system = ActorSystem.create();
 
-    Source<Object, ActorRef> source = Source.actorRefWithAck("ack");
+    Source<Object, ActorRef> source =
+        Source.actorRefWithBackpressure(
+            "ack",
+            o -> {
+              if (o == "complete") return Optional.of(CompletionStrategy.draining());
+              else return Optional.empty();
+            },
+            o -> Optional.empty());
 
     ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(system);
     probe.send(actorRef, "hello");
@@ -101,7 +109,7 @@ public class SourceDocExamples {
     probe.expectMsg("ack");
 
     // The stream completes successfully with the following message
-    actorRef.tell(new Success(CompletionStrategy.draining()), ActorRef.noSender());
-    // #actor-ref-with-ack
+    actorRef.tell("complete", ActorRef.noSender());
+    // #actorRefWithBackpressure
   }
 }

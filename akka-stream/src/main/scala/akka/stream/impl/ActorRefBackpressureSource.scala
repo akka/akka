@@ -29,7 +29,7 @@ private object ActorRefBackpressureSource {
   val out: Outlet[T] = Outlet[T]("actorRefSource.out")
 
   override val shape: SourceShape[T] = SourceShape.of(out)
-  override def initialAttributes: Attributes = DefaultAttributes.actorRefWithAckSource
+  override def initialAttributes: Attributes = DefaultAttributes.actorRefWithBackpressureSource
 
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ActorRef) =
     throw new IllegalStateException("Not supported")

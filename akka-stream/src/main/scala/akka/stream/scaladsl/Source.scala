@@ -568,7 +568,7 @@ object Source {
    * @param bufferSize The size of the buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  @deprecated("Use variant accepting completion and failure matchers", "2.6.0")
+  @deprecated("Use variant accepting completion and failure matchers instead", "2.6.0")
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
     actorRef({
       case akka.actor.Status.Success(s: CompletionStrategy) => s
@@ -601,7 +601,7 @@ object Source {
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
    */
-  def actorRefWithAck[T](
+  def actorRefWithBackpressure[T](
       ackMessage: Any,
       completionMatcher: PartialFunction[Any, CompletionStrategy],
       failureMatcher: PartialFunction[Any, Throwable]): Source[T, ActorRef] = {
@@ -627,7 +627,7 @@ object Source {
    * The actor will be stopped when the stream is completed, failed or canceled from downstream,
    * i.e. you can watch it to get notified when that happens.
    */
-  @deprecated("Use variant accepting completion and failure matchers", "2.6.0")
+  @deprecated("Use actorRefWithBackpressure accepting completion and failure matchers instead", "2.6.0")
   def actorRefWithAck[T](ackMessage: Any): Source[T, ActorRef] =
     actorRefWithAck(None, ackMessage, {
       case akka.actor.Status.Success(s: CompletionStrategy) => s

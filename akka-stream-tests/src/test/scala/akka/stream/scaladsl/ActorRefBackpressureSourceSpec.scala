@@ -21,12 +21,12 @@ private object ActorRefBackpressureSourceSpec {
 class ActorRefBackpressureSourceSpec extends StreamSpec {
   import ActorRefBackpressureSourceSpec._
 
-  "An Source.actorRefWithAck" must {
+  "An Source.actorRefWithBackpressure" must {
 
     "emit received messages to the stream and ack" in assertAllStagesStopped {
       val probe = TestProbe()
       val (ref, s) = Source
-        .actorRefWithAck[Int](
+        .actorRefWithBackpressure[Int](
           AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
           PartialFunction.empty)
         .toMat(TestSink.probe[Int])(Keep.both)
@@ -50,7 +50,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
 
     "fail when consumer does not await ack" in assertAllStagesStopped {
       val (ref, s) = Source
-        .actorRefWithAck[Int](AckMsg, PartialFunction.empty, PartialFunction.empty)
+        .actorRefWithBackpressure[Int](AckMsg, PartialFunction.empty, PartialFunction.empty)
         .toMat(TestSink.probe[Int])(Keep.both)
         .run()
 
@@ -75,7 +75,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
     "complete after receiving Status.Success" in assertAllStagesStopped {
       val probe = TestProbe()
       val (ref, s) = Source
-        .actorRefWithAck[Int](
+        .actorRefWithBackpressure[Int](
           AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
           PartialFunction.empty)
         .toMat(TestSink.probe[Int])(Keep.both)
@@ -95,7 +95,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
     "fail after receiving Status.Failure" in assertAllStagesStopped {
       val probe = TestProbe()
       val (ref, s) = Source
-        .actorRefWithAck[Int](
+        .actorRefWithBackpressure[Int](
           AckMsg,
           PartialFunction.empty, { case Status.Failure(f) => f }: PartialFunction[Any, Throwable])
         .toMat(TestSink.probe[Int])(Keep.both)
@@ -115,7 +115,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
     "not buffer elements after receiving Status.Success" in assertAllStagesStopped {
       val probe = TestProbe()
       val (ref, s) = Source
-        .actorRefWithAck[Int](
+        .actorRefWithBackpressure[Int](
           AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
           PartialFunction.empty)
         .toMat(TestSink.probe[Int])(Keep.both)

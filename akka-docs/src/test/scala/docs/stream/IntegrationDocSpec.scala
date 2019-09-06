@@ -187,8 +187,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     probe.expectMsg("akkateam@somewhere.com")
   }
 
-  "actorRefWithAck" in {
-    //#actorRefWithAck
+  "actorRefWithBackpressure" in {
+    //#actorRefWithBackpressure
     val words: Source[String, NotUsed] =
       Source(List("hello", "hi"))
 
@@ -202,7 +202,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
 
     val probe = TestProbe()
     val receiver = system.actorOf(Props(new AckingReceiver(probe.ref, ackWith = AckMessage)))
-    val sink = Sink.actorRefWithAck(
+    val sink = Sink.actorRefWithBackpressure(
       receiver,
       onInitMessage = InitMessage,
       ackMessage = AckMessage,
@@ -215,10 +215,10 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
     probe.expectMsg("hello")
     probe.expectMsg("hi")
     probe.expectMsg("Stream completed!")
-    //#actorRefWithAck
+    //#actorRefWithBackpressure
   }
 
-  //#actorRefWithAck-actor
+  //#actorRefWithBackpressure-actor
   object AckingReceiver {
     case object Ack
 
@@ -248,7 +248,7 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
         log.error(ex, "Stream failed!")
     }
   }
-  //#actorRefWithAck-actor
+  //#actorRefWithBackpressure-actor
 
   "lookup email with mapAsync and supervision" in {
     val addressSystem = new AddressSystem2
