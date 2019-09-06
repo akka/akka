@@ -46,7 +46,7 @@ object WatchSpec {
 
 class WatchSpec extends ScalaTestWithActorTestKit(WatchSpec.config) with WordSpecLike {
 
-  implicit def untypedSystem = system.toUntyped
+  implicit def untypedSystem = system.toClassic
 
   import WatchSpec._
 

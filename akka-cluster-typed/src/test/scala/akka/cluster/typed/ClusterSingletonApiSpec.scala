@@ -91,7 +91,7 @@ class ClusterSingletonApiSpec extends ScalaTestWithActorTestKit(ClusterSingleton
 
   implicit val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
-  val untypedSystem1 = system.toUntyped
+  val untypedSystem1 = system.toClassic
 
   val system2 = akka.actor.ActorSystem(
     system.name,

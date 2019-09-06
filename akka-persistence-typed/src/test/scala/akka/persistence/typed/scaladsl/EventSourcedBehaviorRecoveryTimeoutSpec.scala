@@ -63,7 +63,7 @@ class EventSourcedBehaviorRecoveryTimeoutSpec
 
   import akka.actor.typed.scaladsl.adapter._
   // needed for SteppingInmemJournal.step
-  private implicit val untypedSystem: akka.actor.ActorSystem = system.toUntyped
+  private implicit val untypedSystem: akka.actor.ActorSystem = system.toClassic
 
   untypedSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 

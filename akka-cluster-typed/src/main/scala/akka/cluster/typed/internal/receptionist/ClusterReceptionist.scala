@@ -66,7 +66,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   // captures setup/dependencies so we can avoid doing it over and over again
   final class Setup(ctx: ActorContext[Command]) {
-    val untypedSystem = ctx.system.toUntyped
+    val untypedSystem = ctx.system.toClassic
     val settings = ClusterReceptionistSettings(ctx.system)
     val replicator = dd.DistributedData(untypedSystem).replicator
     val selfSystemUid = AddressUidExtension(untypedSystem).longAddressUid
@@ -98,7 +98,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           }
 
         registry.allDdataKeys.foreach(key =>
-          setup.replicator ! Replicator.Subscribe(key, replicatorMessageAdapter.toUntyped))
+          setup.replicator ! Replicator.Subscribe(key, replicatorMessageAdapter.toClassic))
 
         // keep track of cluster members
         // remove entries when members are removed
@@ -113,7 +113,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               throw new IllegalStateException(s"Unexpected ClusterDomainEvent $other. Please report bug.")
           }
         setup.cluster.subscribe(
-          clusterEventMessageAdapter.toUntyped,
+          clusterEventMessageAdapter.toClassic,
           ClusterEvent.InitialStateAsEvents,
           classOf[MemberJoined],
           classOf[MemberWeaklyUp],

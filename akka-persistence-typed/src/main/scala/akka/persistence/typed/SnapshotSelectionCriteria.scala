@@ -82,7 +82,7 @@ final class SnapshotSelectionCriteria @InternalApi private[akka] (
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def toUntyped: akka.persistence.SnapshotSelectionCriteria =
+  @InternalApi private[akka] def toClassic: akka.persistence.SnapshotSelectionCriteria =
     akka.persistence.SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, minSequenceNr, minTimestamp)
 
   override def equals(other: Any): Boolean = other match {

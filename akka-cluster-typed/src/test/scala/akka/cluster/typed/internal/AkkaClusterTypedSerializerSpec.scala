@@ -15,7 +15,7 @@ import org.scalatest.WordSpecLike
 class AkkaClusterTypedSerializerSpec extends ScalaTestWithActorTestKit with WordSpecLike {
 
   val ref = spawn(Behavior.empty[String])
-  val untypedSystem = system.toUntyped
+  val untypedSystem = system.toClassic
   val serializer = new AkkaClusterTypedSerializer(untypedSystem.asInstanceOf[ExtendedActorSystem])
 
   "AkkaClusterTypedSerializer" must {

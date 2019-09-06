@@ -163,9 +163,9 @@ class ClusterShardingPersistenceSpec
     // FIXME #24466: rewrite this with Typed API when region queries are supported
     import akka.actor.typed.scaladsl.adapter._
     val regionStateProbe = TestProbe[CurrentShardRegionState]()
-    val untypedRegion = UntypedClusterSharding(system.toUntyped)
+    val untypedRegion = UntypedClusterSharding(system.toClassic)
     regionStateProbe.awaitAssert {
-      untypedRegion.shardRegion(typeKey.name).tell(GetShardRegionState, regionStateProbe.ref.toUntyped)
+      untypedRegion.shardRegion(typeKey.name).tell(GetShardRegionState, regionStateProbe.ref.toClassic)
       regionStateProbe.receiveMessage().shards.foreach { shardState =>
         shardState.entityIds should not contain entityId
       }

@@ -56,12 +56,12 @@ private[akka] final class BehaviorSetup[C, E, S](
   import akka.actor.typed.scaladsl.adapter._
   import BehaviorSetup._
 
-  val persistence: Persistence = Persistence(context.system.toUntyped)
+  val persistence: Persistence = Persistence(context.system.toClassic)
 
   val journal: ActorRef = persistence.journalFor(settings.journalPluginId)
   val snapshotStore: ActorRef = persistence.snapshotStoreFor(settings.snapshotPluginId)
 
-  def selfUntyped = context.self.toUntyped
+  def selfUntyped = context.self.toClassic
 
   private var mdc: Map[String, Any] = Map.empty
   private var _log: OptionVal[Logger] = OptionVal.Some(context.log) // changed when mdc is changed
@@ -96,12 +96,12 @@ private[akka] final class BehaviorSetup[C, E, S](
     val timer =
       if (snapshot)
         context.system.scheduler
-          .scheduleOnce(settings.recoveryEventTimeout, context.self.toUntyped, RecoveryTickEvent(snapshot = true))
+          .scheduleOnce(settings.recoveryEventTimeout, context.self.toClassic, RecoveryTickEvent(snapshot = true))
       else
         context.system.scheduler.schedule(
           settings.recoveryEventTimeout,
           settings.recoveryEventTimeout,
-          context.self.toUntyped,
+          context.self.toClassic,
           RecoveryTickEvent(snapshot = false))
     recoveryTimer = OptionVal.Some(timer)
   }

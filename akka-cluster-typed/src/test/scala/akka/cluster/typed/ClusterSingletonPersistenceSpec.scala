@@ -58,7 +58,7 @@ class ClusterSingletonPersistenceSpec
 
   implicit val s = system
 
-  implicit val untypedSystem = system.toUntyped
+  implicit val untypedSystem = system.toClassic
   private val untypedCluster = akka.cluster.Cluster(untypedSystem)
 
   "A typed cluster singleton with persistent actor" must {

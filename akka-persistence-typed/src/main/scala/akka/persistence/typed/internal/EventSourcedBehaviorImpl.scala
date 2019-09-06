@@ -174,7 +174,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def withSnapshotSelectionCriteria(
       selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State] = {
-    copy(recovery = Recovery(selection.toUntyped))
+    copy(recovery = Recovery(selection.toClassic))
   }
 
   override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =

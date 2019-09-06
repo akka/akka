@@ -36,8 +36,8 @@ object TypedWatchingUntypedSpec {
         // context.watch is an implicit extension method
         context.watch(untyped)
 
-        // illustrating how to pass sender, toUntyped is an implicit extension method
-        untyped.tell(Typed.Ping(context.self), context.self.toUntyped)
+        // illustrating how to pass sender, toClassic is an implicit extension method
+        untyped.tell(Typed.Ping(context.self), context.self.toClassic)
 
         Behaviors
           .receivePartial[Command] {
@@ -79,8 +79,8 @@ class TypedWatchingUntypedSpec extends WordSpec {
       val typed = system.spawn(Typed.behavior, "Typed")
       //#create
       val probe = TestProbe()(system)
-      probe.watch(typed.toUntyped)
-      probe.expectTerminated(typed.toUntyped, 200.millis)
+      probe.watch(typed.toClassic)
+      probe.expectTerminated(typed.toClassic, 200.millis)
       TestKit.shutdownActorSystem(system)
     }
   }

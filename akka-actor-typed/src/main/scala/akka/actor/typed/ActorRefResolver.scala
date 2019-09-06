@@ -47,7 +47,7 @@ abstract class ActorRefResolver extends Extension {
 @InternalApi private[akka] class ActorRefResolverImpl(system: ActorSystem[_]) extends ActorRefResolver {
   import akka.actor.typed.scaladsl.adapter._
 
-  private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
+  private val untypedSystem = system.toClassic.asInstanceOf[ExtendedActorSystem]
 
   override def toSerializationFormat[T](ref: ActorRef[T]): String =
     ref.path.toSerializationFormatWithAddress(untypedSystem.provider.getDefaultAddress)

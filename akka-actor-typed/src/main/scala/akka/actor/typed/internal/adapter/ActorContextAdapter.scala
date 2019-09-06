@@ -18,7 +18,7 @@ import scala.concurrent.duration._
 @InternalApi
 private[akka] object ActorContextAdapter {
 
-  private def toUntypedImp[U](context: TypedActorContext[_]): untyped.ActorContext =
+  private def toClassicImp[U](context: TypedActorContext[_]): untyped.ActorContext =
     context match {
       case adapter: ActorContextAdapter[_] => adapter.untypedContext
       case _ =>
@@ -27,18 +27,18 @@ private[akka] object ActorContextAdapter {
           s"($context of class ${context.getClass.getName})")
     }
 
-  def toUntyped[U](context: scaladsl.ActorContext[_]): untyped.ActorContext =
+  def toClassic[U](context: scaladsl.ActorContext[_]): untyped.ActorContext =
     context match {
-      case c: TypedActorContext[_] => toUntypedImp(c)
+      case c: TypedActorContext[_] => toClassicImp(c)
       case _ =>
         throw new UnsupportedOperationException(
           "unknown ActorContext type " +
           s"($context of class ${context.getClass.getName})")
     }
 
-  def toUntyped[U](context: javadsl.ActorContext[_]): untyped.ActorContext =
+  def toClassic[U](context: javadsl.ActorContext[_]): untyped.ActorContext =
     context match {
-      case c: TypedActorContext[_] => toUntypedImp(c)
+      case c: TypedActorContext[_] => toClassicImp(c)
       case _ =>
         throw new UnsupportedOperationException(
           "unknown ActorContext type " +
@@ -54,7 +54,7 @@ private[akka] object ActorContextAdapter {
     adapter: ActorAdapter[T])
     extends ActorContextImpl[T] {
 
-  import ActorRefAdapter.toUntyped
+  import ActorRefAdapter.toClassic
 
   private[akka] override def currentBehavior: Behavior[T] = adapter.currentBehavior
 
@@ -71,7 +71,7 @@ private[akka] object ActorContextAdapter {
     ActorRefFactoryAdapter.spawn(untypedContext, behavior, name, props, rethrowTypedFailure = true)
   override def stop[U](child: ActorRef[U]): Unit =
     if (child.path.parent == self.path) { // only if a direct child
-      toUntyped(child) match {
+      toClassic(child) match {
         case f: akka.actor.FunctionRef =>
           val cell = untypedContext.asInstanceOf[akka.actor.ActorCell]
           cell.removeFunctionRef(f)
@@ -96,9 +96,9 @@ private[akka] object ActorContextAdapter {
         "an explicit stop message that the actor accepts.")
     }
 
-  override def watch[U](other: ActorRef[U]): Unit = { untypedContext.watch(toUntyped(other)) }
-  override def watchWith[U](other: ActorRef[U], msg: T): Unit = { untypedContext.watchWith(toUntyped(other), msg) }
-  override def unwatch[U](other: ActorRef[U]): Unit = { untypedContext.unwatch(toUntyped(other)) }
+  override def watch[U](other: ActorRef[U]): Unit = { untypedContext.watch(toClassic(other)) }
+  override def watchWith[U](other: ActorRef[U], msg: T): Unit = { untypedContext.watchWith(toClassic(other), msg) }
+  override def unwatch[U](other: ActorRef[U]): Unit = { untypedContext.unwatch(toClassic(other)) }
   var receiveTimeoutMsg: T = null.asInstanceOf[T]
   override def setReceiveTimeout(d: FiniteDuration, msg: T): Unit = {
     receiveTimeoutMsg = msg
@@ -111,7 +111,7 @@ private[akka] object ActorContextAdapter {
   override def executionContext: ExecutionContextExecutor = untypedContext.dispatcher
   override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], msg: U): untyped.Cancellable = {
     import untypedContext.dispatcher
-    untypedContext.system.scheduler.scheduleOnce(delay, toUntyped(target), msg)
+    untypedContext.system.scheduler.scheduleOnce(delay, toClassic(target), msg)
   }
   override private[akka] def internalSpawnMessageAdapter[U](f: U => T, _name: String): ActorRef[U] = {
     val cell = untypedContext.asInstanceOf[akka.actor.ActorCell]

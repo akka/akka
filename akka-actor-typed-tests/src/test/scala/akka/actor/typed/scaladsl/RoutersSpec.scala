@@ -22,7 +22,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
   """) with WordSpecLike with Matchers {
 
   // needed for the event filter
-  implicit val untypedSystem = system.toUntyped
+  implicit val untypedSystem = system.toClassic
 
   def compileOnlyApiCoverage(): Unit = {
     Routers.group(ServiceKey[String]("key")).withRandomRouting().withRoundRobinRouting()
@@ -151,7 +151,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val serviceKey = ServiceKey[String]("group-routing-2")
       val group = spawn(Routers.group(serviceKey), "group-router-2")
       val probe = TestProbe[DeadLetter]()
-      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[DeadLetter])
+      system.toClassic.eventStream.subscribe(probe.ref.toClassic, classOf[DeadLetter])
 
       (0 to 3).foreach { n =>
         val msg = s"message-$n"

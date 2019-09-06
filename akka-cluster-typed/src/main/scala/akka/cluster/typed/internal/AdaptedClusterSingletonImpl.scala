@@ -31,7 +31,7 @@ private[akka] final class AdaptedClusterSingletonImpl(system: ActorSystem[_]) ex
   import akka.actor.typed.scaladsl.adapter._
 
   private lazy val cluster = Cluster(system)
-  private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
+  private val untypedSystem = system.toClassic.asInstanceOf[ExtendedActorSystem]
 
   private val proxies = new ConcurrentHashMap[(String, Option[DataCenter]), ActorRef[_]]()
 

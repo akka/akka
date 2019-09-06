@@ -34,7 +34,7 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
 
   private val settings: ReplicatorSettings = ReplicatorSettings(system)
 
-  private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
+  private val untypedSystem = system.toClassic.asInstanceOf[ExtendedActorSystem]
 
   implicit val selfUniqueAddress: SelfUniqueAddress = dd.DistributedData(untypedSystem).selfUniqueAddress
 
@@ -56,6 +56,6 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
   /**
    * Returns true if this member is not tagged with the role configured for the replicas.
    */
-  private def isTerminated: Boolean = dd.DistributedData(system.toUntyped).isTerminated
+  private def isTerminated: Boolean = dd.DistributedData(system.toClassic).isTerminated
 
 }

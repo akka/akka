@@ -31,7 +31,7 @@ private[akka] object AdapterClusterImpl {
       var upSubscribers: List[ActorRef[SelfUp]] = Nil
       var removedSubscribers: List[ActorRef[SelfRemoved]] = Nil
 
-      adaptedCluster.subscribe(ctx.self.toUntyped, ClusterEvent.initialStateAsEvents, classOf[MemberEvent])
+      adaptedCluster.subscribe(ctx.self.toClassic, ClusterEvent.initialStateAsEvents, classOf[MemberEvent])
 
       // important to not eagerly refer to it or we get a cycle here
       lazy val cluster = Cluster(ctx.system)
@@ -77,15 +77,15 @@ private[akka] object AdapterClusterImpl {
 
             case Subscribe(subscriber, eventClass) =>
               adaptedCluster
-                .subscribe(subscriber.toUntyped, initialStateMode = ClusterEvent.initialStateAsEvents, eventClass)
+                .subscribe(subscriber.toClassic, initialStateMode = ClusterEvent.initialStateAsEvents, eventClass)
               Behaviors.same
 
             case Unsubscribe(subscriber) =>
-              adaptedCluster.unsubscribe(subscriber.toUntyped)
+              adaptedCluster.unsubscribe(subscriber.toClassic)
               Behaviors.same
 
             case GetCurrentState(sender) =>
-              adaptedCluster.sendCurrentClusterState(sender.toUntyped)
+              adaptedCluster.sendCurrentClusterState(sender.toClassic)
               Behaviors.same
 
             case evt: MemberEvent if evt.member.uniqueAddress == cluster.selfMember.uniqueAddress =>
@@ -139,7 +139,7 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
   import AdapterClusterImpl._
 
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for cluster features")
-  private val untypedCluster = akka.cluster.Cluster(system.toUntyped)
+  private val untypedCluster = akka.cluster.Cluster(system.toClassic)
 
   override def selfMember: Member = untypedCluster.selfMember
   override def isTerminated: Boolean = untypedCluster.isTerminated

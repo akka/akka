@@ -25,7 +25,7 @@ object PrimitiveStateSpec {
 class PrimitiveStateSpec extends ScalaTestWithActorTestKit(PrimitiveStateSpec.conf) with WordSpecLike {
 
   import akka.actor.typed.scaladsl.adapter._
-  system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+  system.toClassic.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[Int] =
     EventSourcedBehavior[Int, Int, Int](

@@ -258,7 +258,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
   // FIXME #24348: eventfilter support in typed testkit
   import akka.actor.typed.scaladsl.adapter._
 
-  implicit val untypedSystem = system.toUntyped
+  implicit val untypedSystem = system.toClassic
 
   class FailingConstructorTestSetup(failCount: Int) {
     val failCounter = new AtomicInteger(0)
@@ -779,7 +779,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
         .onFailure[Exception](strategy)
 
       val droppedMessagesProbe = TestProbe[Dropped]()
-      system.toUntyped.eventStream.subscribe(droppedMessagesProbe.ref.toUntyped, classOf[Dropped])
+      system.toClassic.eventStream.subscribe(droppedMessagesProbe.ref.toClassic, classOf[Dropped])
       val ref = spawn(behv)
       EventFilter[Exc1](occurrences = 1).intercept {
         startedProbe.expectMessage(Started)

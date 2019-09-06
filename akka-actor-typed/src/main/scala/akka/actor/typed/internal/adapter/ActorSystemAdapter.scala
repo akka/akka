@@ -138,7 +138,7 @@ private[akka] object ActorSystemAdapter {
       new LoadTypedExtensions(system)
   }
 
-  def toUntyped[U](sys: ActorSystem[_]): untyped.ActorSystem =
+  def toClassic[U](sys: ActorSystem[_]): untyped.ActorSystem =
     sys match {
       case adapter: ActorSystemAdapter[_] => adapter.untypedSystem
       case _ =>

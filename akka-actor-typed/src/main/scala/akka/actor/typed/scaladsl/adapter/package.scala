@@ -25,7 +25,7 @@ import akka.annotation.InternalApi
  * There is an implicit conversion from untyped [[akka.actor.ActorRef]] to
  * typed [[akka.actor.typed.ActorRef]].
  *
- * There are also converters (`toTyped`, `toUntyped`) from typed
+ * There are also converters (`toTyped`, `toClassic`) from typed
  * [[akka.actor.typed.ActorRef]] to untyped [[akka.actor.ActorRef]], and between untyped
  * [[akka.actor.ActorSystem]] and typed [[akka.actor.typed.ActorSystem]].
  */
@@ -74,7 +74,9 @@ package object adapter {
    * Extension methods added to [[akka.actor.typed.ActorSystem]].
    */
   implicit class TypedActorSystemOps(val sys: ActorSystem[_]) extends AnyVal {
-    def toUntyped: akka.actor.ActorSystem = ActorSystemAdapter.toUntyped(sys)
+    @deprecated("Use 'toClassic' instead", "2.5.26")
+    def toUntyped: akka.actor.ActorSystem = toClassic
+    def toClassic: akka.actor.ActorSystem = ActorSystemAdapter.toClassic(sys)
 
     /**
      * INTERNAL API
@@ -83,7 +85,7 @@ package object adapter {
         behavior: Behavior[U],
         name: String,
         props: Props): ActorRef[U] = {
-      toUntyped.asInstanceOf[ExtendedActorSystem].systemActorOf(PropsAdapter(behavior, props), name)
+      toClassic.asInstanceOf[ExtendedActorSystem].systemActorOf(PropsAdapter(behavior, props), name)
     }
   }
 
@@ -119,11 +121,11 @@ package object adapter {
         props,
         rethrowTypedFailure = false)
 
-    def watch[U](other: ActorRef[U]): Unit = ctx.watch(ActorRefAdapter.toUntyped(other))
-    def unwatch[U](other: ActorRef[U]): Unit = ctx.unwatch(ActorRefAdapter.toUntyped(other))
+    def watch[U](other: ActorRef[U]): Unit = ctx.watch(ActorRefAdapter.toClassic(other))
+    def unwatch[U](other: ActorRef[U]): Unit = ctx.unwatch(ActorRefAdapter.toClassic(other))
 
     def stop(child: ActorRef[_]): Unit =
-      ctx.stop(ActorRefAdapter.toUntyped(child))
+      ctx.stop(ActorRefAdapter.toClassic(child))
   }
 
   /**
@@ -131,12 +133,15 @@ package object adapter {
    */
   implicit class TypedActorContextOps(val ctx: scaladsl.ActorContext[_]) extends AnyVal {
     def actorOf(props: akka.actor.Props): akka.actor.ActorRef =
-      ActorContextAdapter.toUntyped(ctx).actorOf(props)
+      ActorContextAdapter.toClassic(ctx).actorOf(props)
 
     def actorOf(props: akka.actor.Props, name: String): akka.actor.ActorRef =
-      ActorContextAdapter.toUntyped(ctx).actorOf(props, name)
+      ActorContextAdapter.toClassic(ctx).actorOf(props, name)
 
-    def toUntyped: akka.actor.ActorContext = ActorContextAdapter.toUntyped(ctx)
+
+    @deprecated("Use 'toClassic' instead", "2.5.26")
+    def toUntyped: akka.actor.ActorContext = toClassic
+    def toClassic: akka.actor.ActorContext = ActorContextAdapter.toClassic(ctx)
 
     // watch, unwatch and stop not needed here because of the implicit ActorRef conversion
   }
@@ -145,7 +150,9 @@ package object adapter {
    * Extension methods added to [[akka.actor.typed.ActorRef]].
    */
   implicit class TypedActorRefOps(val ref: ActorRef[_]) extends AnyVal {
-    def toUntyped: akka.actor.ActorRef = ActorRefAdapter.toUntyped(ref)
+    @deprecated("Use 'toClassic' instead", "2.5.26")
+    def toUntyped: akka.actor.ActorRef = toClassic
+    def toClassic: akka.actor.ActorRef = ActorRefAdapter.toClassic(ref)
   }
 
   /**

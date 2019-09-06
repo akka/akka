@@ -54,7 +54,7 @@ object ClusterShardingSettings {
   }
 
   /** INTERNAL API: Indended only for internal use, it is not recommended to keep converting between the setting types */
-  private[akka] def toUntypedSettings(settings: ClusterShardingSettings): UntypedShardingSettings = {
+  private[akka] def toClassicSettings(settings: ClusterShardingSettings): UntypedShardingSettings = {
     new UntypedShardingSettings(
       role = settings.role,
       rememberEntities = settings.rememberEntities,

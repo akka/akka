@@ -88,7 +88,7 @@ private abstract class AbstractSupervisor[O, I, Thr <: Throwable](strategy: Supe
 
   def dropped(ctx: TypedActorContext[_], signalOrMessage: Any): Unit = {
     import akka.actor.typed.scaladsl.adapter._
-    ctx.asScala.system.toUntyped.eventStream.publish(Dropped(signalOrMessage, ctx.asScala.self))
+    ctx.asScala.system.toClassic.eventStream.publish(Dropped(signalOrMessage, ctx.asScala.self))
   }
 
   protected def handleExceptionOnStart(ctx: TypedActorContext[O], target: PreStartTarget[I]): Catcher[Behavior[I]]

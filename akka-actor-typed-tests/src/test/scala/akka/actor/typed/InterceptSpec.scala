@@ -48,7 +48,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
 
   // FIXME #24348: eventfilter support in typed testkit
   import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
+  implicit val untypedSystem = system.toClassic
 
   private def snitchingInterceptor(probe: ActorRef[String]) = new BehaviorInterceptor[String, String] {
     override def aroundReceive(
