@@ -35,7 +35,7 @@ import java.util.Arrays;
 
 // #log
 import akka.stream.Attributes;
-import akka.stream.javadsl.Source;
+
 // #log
 
 import java.time.Duration;
@@ -52,8 +52,8 @@ class SourceOrFlow {
         .addAttributes(
             Attributes.createLogLevels(
                 Attributes.logLevelOff(), // onElement
-                Attributes.logLevelError(), // onFailure
-                Attributes.logLevelInfo())) // onFinish
+                Attributes.logLevelInfo(), // onFinish
+                Attributes.logLevelError())) // onFailure
     // #log
     ;
   }
