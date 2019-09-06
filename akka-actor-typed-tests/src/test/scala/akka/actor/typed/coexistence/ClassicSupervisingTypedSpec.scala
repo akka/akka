@@ -5,17 +5,14 @@
 package akka.actor.typed.coexistence
 import akka.actor.Actor
 import akka.actor.testkit.typed.TestException
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed._
-import akka.actor.typed.coexistence.ClassicSupervisingTypedSpec.{
-  ClassicToTyped,
-  SpawnAnonFromClassic,
-  SpawnFromClassic,
-  TypedSpawnedFromClassicContext
-}
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
+import akka.testkit.TestProbe
 import akka.{ actor => u }
+import com.typesafe.config.ConfigFactory
+import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
 
 object ProbedBehavior {
   def behavior(probe: u.ActorRef): Behavior[String] = {
@@ -48,16 +45,23 @@ object ClassicSupervisingTypedSpec {
   }
 }
 
-class ClassicSupervisingTypedSpec
-    extends AkkaSpec("akka.actor.testkit.typed.expect-no-message-default = 50 ms")
-    with ImplicitSender {
+class ClassicSupervisingTypedSpec extends WordSpecLike with LogCapturing with BeforeAndAfterAll {
 
-  implicit val typedActorSystem: ActorSystem[Nothing] = system.toTyped
+  import ClassicSupervisingTypedSpec._
+
+  val classicSystem = akka.actor.ActorSystem(
+    "ClassicSupervisingTypedSpec",
+    ConfigFactory.parseString("""
+      akka.actor.testkit.typed.expect-no-message-default = 50 ms
+      """))
+  val classicTestKit = new akka.testkit.TestKit(classicSystem)
+  implicit val classicSender = classicTestKit.testActor
+  import classicTestKit._
 
   "A classic actor system that spawns typed actors" should {
     "default to stop for supervision" in {
       val probe = TestProbe()
-      val underTest = system.spawn(ProbedBehavior.behavior(probe.ref), "a1")
+      val underTest = classicSystem.spawn(ProbedBehavior.behavior(probe.ref), "a1")
       watch(underTest.toClassic)
       underTest ! "throw"
       probe.expectMsg(PostStop)
@@ -67,7 +71,7 @@ class ClassicSupervisingTypedSpec
 
     "default to stop for supervision for spawn anonymous" in {
       val probe = TestProbe()
-      val underTest = system.spawnAnonymous(ProbedBehavior.behavior(probe.ref))
+      val underTest = classicSystem.spawnAnonymous(ProbedBehavior.behavior(probe.ref))
       watch(underTest.toClassic)
       underTest ! "throw"
       probe.expectMsg(PostStop)
@@ -78,7 +82,7 @@ class ClassicSupervisingTypedSpec
     "allows overriding the default" in {
       val probe = TestProbe()
       val value = Behaviors.supervise(ProbedBehavior.behavior(probe.ref)).onFailure(SupervisorStrategy.restart)
-      val underTest = system.spawn(value, "a2")
+      val underTest = classicSystem.spawn(value, "a2")
       watch(underTest.toClassic)
       underTest ! "throw"
       probe.expectMsg(PreRestart)
@@ -87,7 +91,7 @@ class ClassicSupervisingTypedSpec
     }
 
     "default to stop supervision (from context)" in {
-      val classic = system.actorOf(u.Props(new ClassicToTyped()))
+      val classic = classicSystem.actorOf(u.Props(new ClassicToTyped()))
       val probe = TestProbe()
       classic ! SpawnFromClassic(ProbedBehavior.behavior(probe.ref), "a3")
       val underTest = expectMsgType[TypedSpawnedFromClassicContext].actorRef
@@ -99,7 +103,7 @@ class ClassicSupervisingTypedSpec
     }
 
     "allow overriding the default (from context)" in {
-      val classic = system.actorOf(u.Props(new ClassicToTyped()))
+      val classic = classicSystem.actorOf(u.Props(new ClassicToTyped()))
       val probe = TestProbe()
       val behavior = Behaviors.supervise(ProbedBehavior.behavior(probe.ref)).onFailure(SupervisorStrategy.restart)
       classic ! SpawnFromClassic(behavior, "a4")
@@ -112,7 +116,7 @@ class ClassicSupervisingTypedSpec
     }
 
     "default to stop supervision for spawn anonymous (from context)" in {
-      val classic = system.actorOf(u.Props(new ClassicToTyped()))
+      val classic = classicSystem.actorOf(u.Props(new ClassicToTyped()))
       val probe = TestProbe()
       classic ! SpawnAnonFromClassic(ProbedBehavior.behavior(probe.ref))
       val underTest = expectMsgType[TypedSpawnedFromClassicContext].actorRef
@@ -122,6 +126,11 @@ class ClassicSupervisingTypedSpec
       probe.expectNoMessage()
       expectTerminated(underTest.toClassic)
     }
-
   }
+
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    classicTestKit.shutdown(classicSystem)
+  }
+
 }
