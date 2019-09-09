@@ -17,7 +17,7 @@ addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.4.2")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.23")
 addSbtPlugin("com.lightbend.paradox" % "sbt-paradox-apidoc" % "0.2")
-addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.6.4")
+addSbtPlugin("com.lightbend.paradox" % "sbt-paradox" % "0.6.5")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.16")
 addSbtPlugin("com.typesafe.sbt" % "sbt-git" % "1.0.0")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.2.0") // for maintenance of copyright file header
