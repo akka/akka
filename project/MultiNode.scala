@@ -76,6 +76,7 @@ object MultiNode extends AutoPlugin {
       logLevel in multiJvmCreateLogger := Level.Debug, //  to see ssh establishment
       assemblyMergeStrategy in assembly in MultiJvm := {
         case n if n.endsWith("logback-test.xml") ⇒ MergeStrategy.first
+        case n if n.toLowerCase.matches("meta-inf.*\\.default") => MergeStrategy.first
         case n => (assemblyMergeStrategy in assembly in MultiJvm).value.apply(n)
       },
       multiJvmCreateLogger in MultiJvm := { // to use normal sbt logging infra instead of custom sbt-multijvm-one
