@@ -54,7 +54,7 @@ abstract class JoinConfigCompatCheckerClusterShardingSpec
       val seedNode = ClassicCluster(system.toClassic)
       seedNode.join(seedNode.selfAddress)
       val probe = createTestProbe()
-      probe.awaitAssert(seedNode.readView.isSingletonCluster, clusterWaitDuration)
+      probe.awaitAssert(seedNode.readView.isSingletonCluster should ===(true), clusterWaitDuration)
       seedNode
     } else {
       val joiningNode = ClassicCluster(sys.toClassic)

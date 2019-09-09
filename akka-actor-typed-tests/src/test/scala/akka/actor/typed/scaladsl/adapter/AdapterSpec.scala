@@ -15,6 +15,7 @@ import akka.actor.typed.Terminated
 import akka.testkit._
 import akka.Done
 import akka.NotUsed
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
 import akka.{ actor => classic }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
@@ -162,7 +163,7 @@ object AdapterSpec {
 
 }
 
-class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with WithLogCapturing {
+class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
   import AdapterSpec._
 
   implicit val system = akka.actor.ActorSystem("AdapterSpec")
