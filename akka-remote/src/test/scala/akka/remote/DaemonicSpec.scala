@@ -24,14 +24,13 @@ class DaemonicSpec extends AkkaSpec {
       // create a separate actor system that we can check the threads for
       val daemonicSystem = ActorSystem(
         "daemonic",
-        ConfigFactory.parseString(
-          """
+        ConfigFactory.parseString("""
         akka.daemonic = on
         akka.actor.provider = remote
-        akka.remote.classic.netty.tcp.transport-class = "akka.remote.transport.netty.NettyTransport"
         akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         akka.log-dead-letters-during-shutdown = off
+        #akka.remote.artery.advanced.aeron.idle-cpu = 5
       """))
 
       try {
