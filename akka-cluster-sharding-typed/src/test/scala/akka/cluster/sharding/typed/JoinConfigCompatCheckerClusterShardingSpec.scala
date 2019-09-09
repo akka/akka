@@ -10,7 +10,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.{ Cluster => ClassicCluster }
-import akka.testkit.{ AkkaSpec, LongRunningTest }
+import akka.testkit.LongRunningTest
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.{ Matchers, WordSpecLike }
 
@@ -26,7 +26,6 @@ object JoinConfig {
 
   val baseConfig: Config =
     ConfigFactory.parseString("""
-      akka.loggers = ["akka.event.slf4j.Slf4jLogger"]
       akka.actor.provider = "cluster"
       akka.cluster.sharding.state-store-mode = "persistence"
       akka.cluster.configuration-compatibility-check.enforce-on-join = on
@@ -34,7 +33,7 @@ object JoinConfig {
       akka.coordinated-shutdown.terminate-actor-system = on
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
-    """).withFallback(AkkaSpec.testConf)
+    """)
 
   def joinConfig(configured: Int): Config =
     ConfigFactory.parseString(s"$Key = $configured").withFallback(baseConfig)
