@@ -7,6 +7,7 @@ package akka.stream.impl
 import akka.annotation.InternalApi
 import akka.pattern.BackoffSupervisor
 import akka.stream.impl.RetryFlowCoordinator.InternalState
+import akka.stream.impl.RetryFlowCoordinator.RetryTimer
 import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic }
 
@@ -18,10 +19,7 @@ import scala.util.Try
  * INTERNAL API
  */
 @InternalApi private[akka] object RetryFlowCoordinator {
-  class InternalState(val numberOfRestarts: Int, val retryDeadline: Long)
-  case object InternalState {
-    def apply(): InternalState = new InternalState(0, System.currentTimeMillis())
-  }
+  final class InternalState(val numberOfRestarts: Int, val retryDeadline: Long)
   case object RetryTimer
 }
 
@@ -48,6 +46,7 @@ import scala.util.Try
     BidiShape(externalIn, externalOut, internalIn, internalOut)
 
   override def createLogic(attributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
+    private final val NonoTime = System.nanoTime()
     private var numElementsInCycle = 0
     private var queueRetries =
       scala.collection.immutable.SortedSet.empty[(In, State, InternalState)](Ordering.fromLessThan { (e1, e2) =>
@@ -56,15 +55,13 @@ import scala.util.Try
       })
     private val queueOut = scala.collection.mutable.Queue.empty[(Try[Out], State)]
 
-    private final val RetryTimer = "retry_timer"
-
     setHandler(
       externalIn,
       new InHandler {
         override def onPush(): Unit = {
           val is = {
             val in = grab(externalIn)
-            (in._1, in._2, InternalState())
+            (in._1, in._2, new InternalState(numberOfRestarts = 0, System.nanoTime() - NonoTime))
           }
           if (isAvailable(internalOut)) {
             push(internalOut, is)
@@ -102,12 +99,12 @@ import scala.util.Try
                 .applyOrElse[(Try[Out], State), Option[immutable.Iterable[(In, State)]]]((out, s), _ => None)
                 .fold(pushAndCompleteIfLast((out, s))) {
                   xs =>
-                    val current = System.currentTimeMillis()
+                    val current = System.nanoTime() - NonoTime
                     xs.foreach {
                       case (in, state) =>
                         val numRestarts = internalState.numberOfRestarts + 1
                         val delay = BackoffSupervisor.calculateDelay(numRestarts, minBackoff, maxBackoff, randomFactor)
-                        queueRetries += ((in, state, new InternalState(numRestarts, current + delay.toMillis)))
+                        queueRetries += ((in, state, new InternalState(numRestarts, current + delay.toNanos)))
                     }
 
                     out.foreach { _ =>
@@ -127,7 +124,7 @@ import scala.util.Try
       })
 
     override def onTimer(timerKey: Any): Unit = timerKey match {
-      case `RetryTimer` =>
+      case RetryTimer =>
         if (isAvailable(internalOut)) {
           val elem = queueRetries.head
           queueRetries = queueRetries.tail
@@ -170,7 +167,7 @@ import scala.util.Try
       })
 
     private def smallestRetryDelay(): FiniteDuration =
-      (queueRetries.head._3.retryDeadline - System.currentTimeMillis()).millis
+      (queueRetries.head._3.retryDeadline - (System.nanoTime() - NonoTime)).nanos
 
     private def scheduleRetryTimer() =
       scheduleOnce(RetryTimer, smallestRetryDelay())
