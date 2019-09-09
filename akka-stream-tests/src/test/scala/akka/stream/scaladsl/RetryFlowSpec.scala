@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.{ ActorMaterializer, KillSwitches }
+import akka.stream.KillSwitches
 import akka.stream.testkit.{ StreamSpec, Utils }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import org.scalatest.matchers.{ MatchResult, Matcher }
@@ -14,8 +14,6 @@ import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 
 class RetryFlowSpec extends StreamSpec() with CustomMatchers {
-
-  implicit val mat: ActorMaterializer = ActorMaterializer()
 
   val failedElem: Try[Int] = Failure(new Exception("cooked failure"))
   def flow[T]: Flow[(Int, T), (Try[Int], T), NotUsed] = Flow.fromFunction {

@@ -8,6 +8,7 @@ import java.util
 import java.util.Optional
 import java.util.function.BiFunction
 
+import akka.annotation.ApiMayChange
 import akka.japi.Pair
 import akka.stream.scaladsl
 import akka.util.ccompat.JavaConverters._
@@ -19,6 +20,8 @@ import scala.util.{ Failure, Success, Try }
 object RetryFlow {
 
   /**
+   * API may change!
+   *
    * Allows retrying individual elements in the stream with an exponential backoff.
    *
    * The retry condition is controlled by the `retryWith` bi-function. On a successful response, this function is
@@ -41,6 +44,7 @@ object RetryFlow {
    * @param flow a flow to retry elements from
    * @param retryWith retry condition decision function
    */
+  @ApiMayChange
   def withBackoff[In, Out, State, Mat](
       parallelism: Int,
       minBackoff: java.time.Duration,
@@ -54,6 +58,8 @@ object RetryFlow {
   }
 
   /**
+   * API may change!
+   *
    * Allows retrying individual elements in the stream with an exponential backoff.
    *
    * The retry condition is controlled by the `retryWith` bi-function. On a successful response, this function is
@@ -76,6 +82,7 @@ object RetryFlow {
    * @param flow a flow to retry elements from
    * @param retryWith retry condition decision function
    */
+  @ApiMayChange
   def withBackoffAndContext[In, Out, State, Mat](
       parallelism: Int,
       minBackoff: java.time.Duration,
