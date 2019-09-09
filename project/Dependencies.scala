@@ -15,14 +15,15 @@ object Dependencies {
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
   val junitVersion = "4.12"
-  val slf4jVersion = "1.7.27"
+  val slf4jVersion = "1.7.28"
   // check agrona version when updating this
-  val aeronVersion = "1.19.1"
+  val aeronVersion = "1.21.2"
   // needs to be inline with the aeron version
-  val agronaVersion = "1.0.1"
+  val agronaVersion = "1.0.7"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.9.9"
   val jacksonDatabindVersion = "2.9.9.3"
+  val protobufJavaVersion = "3.9.1"
 
   val scala212Version = "2.12.9"
   val scala213Version = "2.13.0"
@@ -60,9 +61,9 @@ object Dependencies {
 
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion // MIT
 
-    // mirrored in OSGi sample https://github.com/akka/akka-samples/tree/master/akka-sample-osgi-dining-hakkers
-    val osgiCore = "org.osgi" % "org.osgi.core" % "4.3.1" // ApacheV2
-    val osgiCompendium = "org.osgi" % "org.osgi.compendium" % "4.3.1" // ApacheV2
+    // mirrored in OSGi sample https://github.com/akka/akka-samples/tree/2.6/akka-sample-osgi-dining-hakkers
+    val osgiCore = "org.osgi" % "org.osgi.core" % "6.0.0" // ApacheV2
+    val osgiCompendium = "org.osgi" % "org.osgi.compendium" % "5.0.0" // ApacheV2
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
@@ -74,7 +75,7 @@ object Dependencies {
     // ssl-config
     val sslConfigCore = Def.setting { "com.typesafe" %% "ssl-config-core" % sslConfigVersion } // ApacheV2
 
-    val lmdb = "org.lmdbjava" % "lmdbjava" % "0.6.1" // ApacheV2, OpenLDAP Public License
+    val lmdb = "org.lmdbjava" % "lmdbjava" % "0.7.0" // ApacheV2, OpenLDAP Public License
 
     val junit = "junit" % "junit" % junitVersion // Common Public License 1.0
 
@@ -95,7 +96,7 @@ object Dependencies {
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
 
-    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0"
+    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion
 
     val logback = "ch.qos.logback" % "logback-classic" % "1.2.3" // EPL 1.0
 
@@ -107,28 +108,28 @@ object Dependencies {
     object Test {
       val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % "test" // ApacheV2
       val commonsIo = "commons-io" % "commons-io" % "2.6" % "test" // ApacheV2
-      val commonsCodec = "commons-codec" % "commons-codec" % "1.11" % "test" // ApacheV2
+      val commonsCodec = "commons-codec" % "commons-codec" % "1.13" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
-      val mockito = "org.mockito" % "mockito-core" % "2.19.1" % "test" // MIT
+      val mockito = "org.mockito" % "mockito-core" % "3.0.0" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
       val scalacheck = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value % "test" } // New BSD
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
-      val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "1.0.0" % "test" // ApacheV2
+      val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "3.0.0" % "test" // ApacheV2
       val log4j = "log4j" % "log4j" % "1.2.17" % "test" // ApacheV2
 
       // in-memory filesystem for file related tests
       val jimfs = "com.google.jimfs" % "jimfs" % "1.1" % "test" // ApacheV2
 
       // docker utils
-      val dockerClient = "com.spotify" % "docker-client" % "8.13.1" % "test" // ApacheV2
+      val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "3.2.5" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "3.2.5" % "test" // ApacheV2
-      val latencyUtils = "org.latencyutils" % "LatencyUtils" % "1.0.5" % "test" // Free BSD
-      val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.10" % "test" // CC0
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.0" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.0" % "test" // ApacheV2
+      val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
+      val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.11" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // sigar logging
@@ -138,18 +139,17 @@ object Dependencies {
       // reactive streams tck
       val reactiveStreamsTck = "org.reactivestreams" % "reactive-streams-tck" % reactiveStreamsVersion % "test" // CC0
 
-      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % "3.9.0" % "test"
+      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "test"
     }
 
     object Provided {
       // TODO remove from "test" config
-      // If changed, update akka-docs/build.sbt as well
       val sigarLoader = "io.kamon" % "sigar-loader" % "1.6.6-rev002" % "optional;provided;test" // ApacheV2
 
       val activation = "com.sun.activation" % "javax.activation" % "1.2.0" % "provided;test"
 
-      val levelDB = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided" // ApacheV2
-      val levelDBmultiJVM = "org.iq80.leveldb" % "leveldb" % "0.10" % "optional;provided;multi-jvm" // ApacheV2
+      val levelDB = "org.iq80.leveldb" % "leveldb" % "0.12" % "optional;provided" // ApacheV2
+      val levelDBmultiJVM = "org.iq80.leveldb" % "leveldb" % "0.12" % "optional;provided;multi-jvm;test" // ApacheV2
       val levelDBNative = "org.fusesource.leveldbjni" % "leveldbjni-all" % "1.8" % "optional;provided" // New BSD
 
       val junit = Compile.junit % "optional;provided;test"

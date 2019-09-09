@@ -22,10 +22,10 @@ object JavaFormatter extends AutoPlugin {
 
   override def projectSettings: Seq[Def.Setting[_]] = Seq(
     //below is for sbt java formatter
-    (excludeFilter in format) := {
+    (excludeFilter in javafmt) := {
       val ignoreSupport = new ProjectFileIgnoreSupport((baseDirectory in ThisBuild).value / ignoreConfigFileName, descriptor)
       val simpleFileFilter = new SimpleFileFilter(file => ignoreSupport.isIgnoredByFileOrPackages(file))
-      simpleFileFilter || (excludeFilter in format).value
+      simpleFileFilter || (excludeFilter in javafmt).value
     }
   )
 }
