@@ -7,14 +7,11 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.DeleteEventsCompleted
@@ -26,7 +23,6 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
-import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.serialization.jackson.CborSerializable
 import akka.util.unused
@@ -66,7 +62,7 @@ object EventSourcedBehaviorRetentionSpec extends Matchers {
       probe: Option[ActorRef[(State, Event)]] = None,
       snapshotSignalProbe: Option[ActorRef[WrappedSignal]] = None,
       eventSignalProbe: Option[ActorRef[Try[EventSourcedSignal]]] = None)
-      : EventSourcedBehavior[Command, Event, State] = {
+    : EventSourcedBehavior[Command, Event, State] = {
     EventSourcedBehavior[Command, Event, State](
       persistenceId,
       emptyState = State(0, Vector.empty),
@@ -85,13 +81,13 @@ object EventSourcedBehaviorRetentionSpec extends Matchers {
           case StopIt =>
             Effect.none.thenStop()
 
-        },
+      },
       eventHandler = (state, evt) =>
         evt match {
           case Incremented(delta) =>
             probe.foreach(_ ! ((state, evt)))
             State(state.value + delta, state.history :+ state.value)
-        }).receiveSignal {
+      }).receiveSignal {
       case (_, RecoveryCompleted) => ()
       case (_, sc: SnapshotCompleted) =>
         snapshotSignalProbe.foreach(_ ! WrappedSignal(sc))
@@ -245,7 +241,7 @@ class EventSourcedBehaviorRetentionSpec
       val snapshotAtTwo = Behaviors.setup[Command](ctx =>
         counter(ctx, pid, snapshotSignalProbe = Some(snapshotSignalProbe.ref)).snapshotWhen { (s, _, _) =>
           s.value == 2
-        })
+      })
       val c: ActorRef[Command] = spawn(snapshotAtTwo)
 
       val replyProbe = TestProbe[State]()
