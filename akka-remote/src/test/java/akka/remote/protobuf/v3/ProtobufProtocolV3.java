@@ -123,9 +123,10 @@ public final class ProtobufProtocolV3 {
     protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
         internalGetFieldAccessorTable() {
       return akka.remote.protobuf.v3.ProtobufProtocolV3
-          .internal_static_MyMessageV3_fieldAccessorTable.ensureFieldAccessorsInitialized(
-          akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3.class,
-          akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3.Builder.class);
+          .internal_static_MyMessageV3_fieldAccessorTable
+          .ensureFieldAccessorsInitialized(
+              akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3.class,
+              akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3.Builder.class);
     }
 
     public static final int QUERY_FIELD_NUMBER = 1;
@@ -364,9 +365,10 @@ public final class ProtobufProtocolV3 {
       protected akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable
           internalGetFieldAccessorTable() {
         return akka.remote.protobuf.v3.ProtobufProtocolV3
-            .internal_static_MyMessageV3_fieldAccessorTable.ensureFieldAccessorsInitialized(
-            akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3.class,
-            akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3.Builder.class);
+            .internal_static_MyMessageV3_fieldAccessorTable
+            .ensureFieldAccessorsInitialized(
+                akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3.class,
+                akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3.Builder.class);
       }
 
       // Construct using akka.remote.protobuf.v3.ProtobufProtocolV3.MyMessageV3.newBuilder()
