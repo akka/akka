@@ -10,3 +10,4 @@ ProblemFilters.exclude[MissingClassProblem]("akka.testkit.TestMessageSerializer"
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.testkit.javadsl.TestKit.expectMsgAnyOf")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.testkit.javadsl.TestKit.expectMsgAllOf")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.testkit.javadsl.TestKit.expectMsgAnyOf")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.testkit.javadsl.TestKit.expectMsgAllOf")

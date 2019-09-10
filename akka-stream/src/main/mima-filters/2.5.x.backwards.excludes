@@ -230,3 +230,9 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.stage.GraphStag
 
 # Internal class made final #27472
 ProblemFilters.exclude[FinalClassProblem]("akka.stream.scaladsl.CoupledTerminationBidi")
+
+# Rename type parameter for join and joinMat #26828
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.javadsl.Flow.join")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.javadsl.Flow.joinMat")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.Flow.join")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.Flow.joinMat")
