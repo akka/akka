@@ -72,7 +72,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     "alsoToGraph",
     "orElseGraph",
     "divertToGraph",
-    "zipWithGraph"
+    "zipWithGraph",
+    "actorRefWithAck" // deprecated
   )
 
   // FIXME document these methods as well
@@ -104,13 +105,16 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "fromGraph",
       "actorSubscriber",
       "foldAsync",
-      "newOnCompleteStage"
+      "newOnCompleteStage",
+      "actorRefWithAck" // deprecated
     ),
     "ActorSink" -> Seq(
-      "actorRefWithAck"
+      "actorRefWithBackpressure",
+      "actorRefWithAck" // deprecated
     ),
     "ActorSource" -> Seq(
-      "actorRef"
+      "actorRef",
+      "actorRefWithAck" // deprecated
     )
   )
 
@@ -119,7 +123,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     Set("productArity", "canEqual", "productPrefix", "copy", "productIterator", "productElement") ++
     Set("create", "apply", "ops", "appendJava", "andThen", "andThenMat", "isIdentity", "withAttributes", "transformMaterializing") ++
     Set("asScala", "asJava", "deprecatedAndThen", "deprecatedAndThenMat") ++
-    Set("++", "onPush", "onPull")
+    Set("++", "onPush", "onPull", "actorRefWithAck")
 
   def isPending(element: String, opName: String) =
     pendingTestCases.get(element).exists(_.contains(opName))

@@ -5,31 +5,18 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.actor.Actor
-import akka.actor.ActorIdentity
-import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ActorSystemImpl
-import akka.actor.Identify
-import akka.actor.Props
-import akka.actor.Status.Failure
+import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, ActorSystemImpl, Identify, Props }
 import akka.pattern._
 import akka.stream._
-import akka.stream.impl.streamref.SinkRefImpl
-import akka.stream.impl.streamref.SourceRefImpl
+import akka.stream.impl.streamref.{ SinkRefImpl, SourceRefImpl }
 import akka.stream.testkit.TestPublisher
 import akka.stream.testkit.scaladsl._
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import akka.testkit.TestKit
-import akka.testkit.TestProbe
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit, TestProbe }
 import akka.util.ByteString
 import com.typesafe.config._
 
 import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.Future
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
@@ -96,7 +83,7 @@ object StreamRefsSpec {
          * For them it's a Sink; for us it's a Source.
          */
         val sink =
-          StreamRefs.sinkRef[String]().to(Sink.actorRef(probe, "<COMPLETE>")).run()
+          StreamRefs.sinkRef[String]().to(Sink.actorRef(probe, "<COMPLETE>", f => "<FAILED>: " + f.getMessage)).run()
         sender() ! sink
 
       case "receive-ignore" =>
@@ -108,7 +95,7 @@ object StreamRefsSpec {
         val sink = StreamRefs
           .sinkRef[String]()
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
-          .to(Sink.actorRef(probe, "<COMPLETE>"))
+          .to(Sink.actorRef(probe, "<COMPLETE>", f => "<FAILED>: " + f.getMessage))
           .run()
         sender() ! sink
 
@@ -209,7 +196,7 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
       remoteActor ! "give"
       val sourceRef = expectMsgType[SourceRef[String]]
 
-      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>"))
+      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>", _ => "<FAILED>"))
 
       p.expectMsg("hello")
       p.expectMsg("world")
@@ -220,12 +207,12 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
       remoteActor ! "give-fail"
       val sourceRef = expectMsgType[SourceRef[String]]
 
-      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>"))
+      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>", t => "<FAILED>: " + t.getMessage))
 
-      val f = p.expectMsgType[Failure]
-      f.cause.getMessage should include("Remote stream (")
+      val f = p.expectMsgType[String]
+      f should include("Remote stream (")
       // actor name here, for easier identification
-      f.cause.getMessage should include("failed, reason: Booooom!")
+      f should include("failed, reason: Booooom!")
     }
 
     "complete properly when remote source is empty" in {
@@ -234,7 +221,7 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
       remoteActor ! "give-complete-asap"
       val sourceRef = expectMsgType[SourceRef[String]]
 
-      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>"))
+      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>", _ => "<FAILED>"))
 
       p.expectMsg("<COMPLETE>")
     }
@@ -332,10 +319,10 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
       val remoteFailureMessage = "Booom!"
       Source.failed(new Exception(remoteFailureMessage)).to(remoteSink).run()
 
-      val f = p.expectMsgType[akka.actor.Status.Failure]
-      f.cause.getMessage should include(s"Remote stream (")
+      val f = p.expectMsgType[String]
+      f should include(s"Remote stream (")
       // actor name ere, for easier identification
-      f.cause.getMessage should include(s"failed, reason: $remoteFailureMessage")
+      f should include(s"failed, reason: $remoteFailureMessage")
     }
 
     "receive hundreds of elements via remoting" in {
@@ -359,8 +346,8 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
 
       val probe = TestSource.probe[String](system).to(remoteSink).run()
 
-      val failure = p.expectMsgType[Failure]
-      failure.cause.getMessage should include("Remote side did not subscribe (materialize) handed out Sink reference")
+      val failure = p.expectMsgType[String]
+      failure should include("Remote side did not subscribe (materialize) handed out Sink reference")
 
       // the local "remote sink" should cancel, since it should notice the origin target actor is dead
       probe.expectCancellation()

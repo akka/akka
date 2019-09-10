@@ -315,7 +315,11 @@ class FlowThrottleSpec extends StreamSpec("""
       val expectedMinRate = new AtomicInteger
       val expectedMaxRate = new AtomicInteger
       val (ref, done) = Source
-        .actorRef[Int](bufferSize = 100000, OverflowStrategy.fail)
+        .actorRef[Int](
+          { case "done" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
+          PartialFunction.empty,
+          bufferSize = 100000,
+          OverflowStrategy.fail)
         .throttle(300, 1000.millis)
         .toMat(Sink.foreach { elem =>
           val now = System.nanoTime()
@@ -366,7 +370,7 @@ class FlowThrottleSpec extends StreamSpec("""
           }
         }
       }
-      ref ! akka.actor.Status.Success("done")
+      ref ! "done"
 
       Await.result(done, 20.seconds) should ===(Done)
     }

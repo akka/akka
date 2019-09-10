@@ -81,7 +81,7 @@ class SendQueueBenchmark {
     val N = 100000
     val burstSize = 1000
 
-    val source = Source.actorRef(1024, OverflowStrategy.dropBuffer)
+    val source = Source.actorRef(PartialFunction.empty, PartialFunction.empty, 1024, OverflowStrategy.dropBuffer)
 
     val (ref, killSwitch) = source
       .viaMat(KillSwitches.single)(Keep.both)

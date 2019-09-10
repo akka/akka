@@ -50,8 +50,8 @@ object SourceOperators {
     //#actorRef
   }
 
-  def actorRefWithAck(): Unit = {
-    //#actorRefWithAck
+  def actorRefWithBackpressure(): Unit = {
+    //#actorRefWithBackpressure
 
     import akka.actor.Status.Success
     import akka.actor.ActorRef
@@ -61,7 +61,9 @@ object SourceOperators {
     implicit val system: ActorSystem = ActorSystem()
     val probe = TestProbe()
 
-    val source: Source[Any, ActorRef] = Source.actorRefWithAck[Any]("ack")
+    val source: Source[Any, ActorRef] = Source.actorRefWithBackpressure[Any]("ack", {
+      case _: Success => CompletionStrategy.immediately
+    }, PartialFunction.empty)
     val actorRef: ActorRef = source.to(Sink.foreach(println)).run()
 
     probe.send(actorRef, "hello")
@@ -70,7 +72,7 @@ object SourceOperators {
     probe.expectMsg("ack")
 
     // The stream completes successfully with the following message
-    actorRef ! Success(CompletionStrategy.immediately)
-    //#actorRefWithAck
+    actorRef ! Success(())
+    //#actorRefWithBackpressure
   }
 }
