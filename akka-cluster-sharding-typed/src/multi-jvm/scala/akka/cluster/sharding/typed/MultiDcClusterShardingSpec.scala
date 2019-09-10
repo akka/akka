@@ -69,7 +69,7 @@ abstract class MultiDcClusterShardingSpec
       val shardRegion: ActorRef[ShardingEnvelope[PingProtocol]] = sharding.init(Entity(typeKey, _ => multiDcPinger))
       val probe = TestProbe[Pong]
       shardRegion ! ShardingEnvelope(entityId, Ping(probe.ref))
-      probe.expectMessage(max = 10.seconds, Pong(cluster.selfMember.dataCenter))
+      probe.expectMessage(max = 15.seconds, Pong(cluster.selfMember.dataCenter))
       enterBarrier("sharding-initialized")
     }
 
