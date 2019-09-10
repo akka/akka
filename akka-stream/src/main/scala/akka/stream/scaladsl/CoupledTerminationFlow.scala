@@ -8,7 +8,7 @@ import akka.stream._
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
 
 /**
- * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow them them.
+ * Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow from them.
  * Similar to `Flow.fromSinkAndSource` however that API does not connect the completion signals of the wrapped operators.
  */
 object CoupledTerminationFlow {
