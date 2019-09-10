@@ -66,38 +66,4 @@ object ActorSink {
         onFailureMessage.apply)
       .asJava
 
-  /**
-   * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
-   * First element is always `onInitMessage`, then stream is waiting for acknowledgement message
-   * `ackMessage` from the given actor which means that it is ready to process
-   * elements. It also requires `ackMessage` message after each stream element
-   * to make backpressure work.
-   *
-   * If the target actor terminates the stream will be canceled.
-   * When the stream is completed successfully the given `onCompleteMessage`
-   * will be sent to the destination actor.
-   * When the stream is completed with failure - result of `onFailureMessage(throwable)`
-   * function will be sent to the destination actor.
-   *
-   * @deprecated Use actorRefWithBackpressure instead
-   */
-  @Deprecated
-  @deprecated("Use actorRefWithBackpressure instead", "2.6.0")
-  def actorRefWithAck[T, M, A](
-      ref: ActorRef[M],
-      messageAdapter: akka.japi.function.Function2[ActorRef[A], T, M],
-      onInitMessage: akka.japi.function.Function[ActorRef[A], M],
-      ackMessage: A,
-      onCompleteMessage: M,
-      onFailureMessage: akka.japi.function.Function[Throwable, M]): Sink[T, NotUsed] =
-    typed.scaladsl.ActorSink
-      .actorRefWithBackpressure(
-        ref,
-        messageAdapter.apply,
-        onInitMessage.apply,
-        ackMessage,
-        onCompleteMessage,
-        onFailureMessage.apply)
-      .asJava
-
 }
