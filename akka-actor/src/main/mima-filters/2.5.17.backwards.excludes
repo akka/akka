@@ -14,3 +14,15 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.CNameRecord.writ
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.AAAARecord.write")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.ResourceRecord.write")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.dns.SRVRecord.write")
+
+# #27411 changes not caught by previous mima versions
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.CoordinatedShutdown.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.TypedActor.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.event.AddressTerminatedTopic.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.Tcp.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.UdpConnected.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.Dns.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.Udp.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.CircuitBreaker.convertJavaFailureFnToScala")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.serialization.SerializationExtension.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.util.ManifestInfo.get")

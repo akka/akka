@@ -35,7 +35,11 @@ object MiMa extends AutoPlugin {
         else 0
     
       if (!projectName.contains("typed")) {
-        expandVersions(2, 5, firstPatchOf25 to latestPatchOf25)
+        // 2.5.18 is the only release built with Scala 2.12.7, which due to
+        // https://github.com/scala/bug/issues/11207 produced many more
+        // static methods than expected. These are hard to filter out, so
+        // we exclude it here and rely on the checks for 2.5.17 and 2.5.19.
+        expandVersions(2, 5, ((firstPatchOf25 to latestPatchOf25).toSet - 18).toList)
       } else {
         Nil
       } ++ expandVersions(2, 6, 0 to latestPatchOf26)

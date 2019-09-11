@@ -33,3 +33,9 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.discovery.ServiceDiscovery$Res
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.discovery.ServiceDiscovery#ResolvedTarget.unapply")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.discovery.Lookup.unapply")
 ProblemFilters.exclude[MissingTypesProblem]("akka.discovery.ServiceDiscovery$Resolved$")
+
+ProblemFilters.exclude[VirtualStaticMemberProblem]("akka.discovery.Lookup.productPrefix")
+ProblemFilters.exclude[VirtualStaticMemberProblem]("akka.discovery.Lookup.productArity")
+ProblemFilters.exclude[VirtualStaticMemberProblem]("akka.discovery.Lookup.productElement")
+ProblemFilters.exclude[VirtualStaticMemberProblem]("akka.discovery.Lookup.productIterator")
+ProblemFilters.exclude[VirtualStaticMemberProblem]("akka.discovery.Lookup.canEqual")

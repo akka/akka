@@ -36,6 +36,7 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.Th
 # Upgrade to protobuf 3
 ProblemFilters.exclude[Problem]("akka.remote.serialization.ArteryMessageSerializer*")
 ProblemFilters.exclude[Problem]("akka.remote.*Formats*")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.EventSink.alert")
 
 # Remove AFR #27581
 ProblemFilters.exclude[MissingClassProblem]("akka.remote.artery.FlightRecorderReader$*")
