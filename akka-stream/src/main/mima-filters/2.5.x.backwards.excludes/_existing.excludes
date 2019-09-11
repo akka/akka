@@ -1,3 +1,4 @@
+# This file contains all excludes added before changing to the subdirectory style
 # Java9 RS APIs and more that was missed in a few earlier versions
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.javadsl.JavaFlowSupport$Source")
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.javadsl.JavaFlowSupport")

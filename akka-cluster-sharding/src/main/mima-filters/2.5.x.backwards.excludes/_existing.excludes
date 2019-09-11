@@ -1,3 +1,4 @@
+# This file contains all excludes added before changing to the subdirectory style
 # #26877 Performance improvements of DDataShard
 ProblemFilters.exclude[Problem]("akka.cluster.sharding.Shard.*")
 

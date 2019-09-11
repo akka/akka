@@ -1,3 +1,4 @@
+# This file contains all excludes added before changing to the subdirectory style
 # Protobuf 3
 ProblemFilters.exclude[Problem]("akka.cluster.client.protobuf.msg.*")
 ProblemFilters.exclude[Problem]("akka.cluster.pubsub.protobuf.msg.*")
