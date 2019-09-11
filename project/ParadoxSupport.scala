@@ -31,13 +31,13 @@ object ParadoxSupport {
       val allClasses = scanner.getAllClasses.getNames.asScala.toVector
       Def.task { Seq(
         { context: Writer.Context =>
-                    new SignatureDirective(context.location.tree.label, context.properties, msg => log.warn(msg))
+                    new SignatureDirective(context.location.tree.label, context.properties, context)
         },
       )}
     }.value
   )
 
-  class SignatureDirective(page: Page, variables: Map[String, String], logWarn: String => Unit) extends LeafBlockDirective("signature") {
+  class SignatureDirective(page: Page, variables: Map[String, String], ctx: Writer.Context) extends LeafBlockDirective("signature") {
     def render(node: DirectiveNode, visitor: Visitor, printer: Printer): Unit =
       try {
         val labels = node.attributes.values("identifier").asScala.map(_.toLowerCase())
@@ -72,7 +72,7 @@ object ParadoxSupport {
         }
       } catch {
         case e: FileNotFoundException =>
-          throw new SnipDirective.LinkException(s"Unknown snippet [${e.getMessage}] referenced from [${page.path}]")
+          ctx.error(s"Unknown snippet [${e.getMessage}]", node)
       }
   }
 
