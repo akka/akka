@@ -25,9 +25,9 @@ import akka.actor.typed.Terminated
   import akka.cluster.ddata.typed.javadsl.{ Replicator => JReplicator }
   import akka.cluster.ddata.typed.scaladsl.{ Replicator => SReplicator }
 
-  private case class InternalChanged[A <: ReplicatedData](
-      chg: dd.Replicator.Changed[A],
-      subscriber: ActorRef[JReplicator.Changed[A]])
+  private case class InternalSubscribeResponse[A <: ReplicatedData](
+      chg: dd.Replicator.SubscribeResponse[A],
+      subscriber: ActorRef[JReplicator.SubscribeResponse[A]])
       extends JReplicator.Command
 
   val localAskTimeout = 60.seconds // ReadLocal, WriteLocal shouldn't timeout
@@ -82,8 +82,9 @@ import akka.actor.typed.Terminated
                     .map {
                       case rsp: dd.Replicator.GetSuccess[d] =>
                         JReplicator.GetSuccess(rsp.key)(rsp.dataValue)
-                      case rsp: dd.Replicator.NotFound[d]   => JReplicator.NotFound(rsp.key)
-                      case rsp: dd.Replicator.GetFailure[d] => JReplicator.GetFailure(rsp.key)
+                      case rsp: dd.Replicator.NotFound[d]       => JReplicator.NotFound(rsp.key)
+                      case rsp: dd.Replicator.GetFailure[d]     => JReplicator.GetFailure(rsp.key)
+                      case rsp: dd.Replicator.GetDataDeleted[d] => JReplicator.GetDataDeleted(rsp.key)
                     }
                     .recover {
                       case _ => JReplicator.GetFailure(cmd.key)
@@ -111,7 +112,8 @@ import akka.actor.typed.Terminated
                       case rsp: dd.Replicator.UpdateTimeout[d] => JReplicator.UpdateTimeout(rsp.key)
                       case rsp: dd.Replicator.ModifyFailure[d] =>
                         JReplicator.ModifyFailure(rsp.key, rsp.errorMessage, rsp.cause)
-                      case rsp: dd.Replicator.StoreFailure[d] => JReplicator.StoreFailure(rsp.key)
+                      case rsp: dd.Replicator.StoreFailure[d]      => JReplicator.StoreFailure(rsp.key)
+                      case rsp: dd.Replicator.UpdateDataDeleted[d] => JReplicator.UpdateDataDeleted(rsp.key)
                     }
                     .recover {
                       case _ => JReplicator.UpdateTimeout(cmd.key)
@@ -130,8 +132,9 @@ import akka.actor.typed.Terminated
                 // For the Java API the Changed messages must be mapped to the JReplicator.Changed class.
                 // That is done with an adapter, and we have to keep track of the lifecycle of the original
                 // subscriber and stop the adapter when the original subscriber is stopped.
-                val adapter: ActorRef[dd.Replicator.Changed[ReplicatedData]] = ctx.spawnMessageAdapter { chg =>
-                  InternalChanged(chg, cmd.subscriber)
+                val adapter: ActorRef[dd.Replicator.SubscribeResponse[ReplicatedData]] = ctx.spawnMessageAdapter {
+                  rsp =>
+                    InternalSubscribeResponse(rsp, cmd.subscriber)
                 }
 
                 classicReplicator.tell(
@@ -142,8 +145,11 @@ import akka.actor.typed.Terminated
 
                 withState(subscribeAdapters.updated(cmd.subscriber, adapter))
 
-              case InternalChanged(chg, subscriber) =>
-                subscriber ! JReplicator.Changed(chg.key)(chg.dataValue)
+              case InternalSubscribeResponse(rsp, subscriber) =>
+                rsp match {
+                  case chg: dd.Replicator.Changed[_] => subscriber ! JReplicator.Changed(chg.key)(chg.dataValue)
+                  case del: dd.Replicator.Deleted[_] => subscriber ! JReplicator.Deleted(del.key)
+                }
                 Behaviors.same
 
               case cmd: JReplicator.Unsubscribe[ReplicatedData] @unchecked =>
@@ -165,12 +171,12 @@ import akka.actor.typed.Terminated
                     .map {
                       case rsp: dd.Replicator.DeleteSuccess[d] => JReplicator.DeleteSuccess(rsp.key)
                       case rsp: dd.Replicator.ReplicationDeleteFailure[d] =>
-                        JReplicator.ReplicationDeleteFailure(rsp.key)
+                        JReplicator.DeleteFailure(rsp.key)
                       case rsp: dd.Replicator.DataDeleted[d]  => JReplicator.DataDeleted(rsp.key)
                       case rsp: dd.Replicator.StoreFailure[d] => JReplicator.StoreFailure(rsp.key)
                     }
                     .recover {
-                      case _ => JReplicator.ReplicationDeleteFailure(cmd.key)
+                      case _ => JReplicator.DeleteFailure(cmd.key)
                     }
                 reply.foreach { cmd.replyTo ! _ }
                 Behaviors.same

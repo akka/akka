@@ -7,8 +7,6 @@ package akka.cluster.ddata.typed.javadsl
 import java.time.Duration
 import java.util.function.{ Function => JFunction }
 
-import scala.util.control.NoStackTrace
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.DeadLetterSuppression
@@ -152,6 +150,11 @@ object Replicator {
    */
   final case class GetFailure[A <: ReplicatedData](key: Key[A]) extends GetResponse[A]
 
+  /**
+   * The [[Get]] request couldn't be performed because the entry has been deleted.
+   */
+  final case class GetDataDeleted[A <: ReplicatedData](key: Key[A]) extends GetResponse[A]
+
   object Update {
 
     private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A => A): Option[A] => A = {
@@ -216,6 +219,11 @@ object Replicator {
   final case class UpdateTimeout[A <: ReplicatedData](key: Key[A]) extends UpdateFailure[A]
 
   /**
+   * The [[Update]] couldn't be performed because the entry has been deleted.
+   */
+  final case class UpdateDataDeleted[A <: ReplicatedData](key: Key[A]) extends UpdateResponse[A]
+
+  /**
    * If the `modify` function of the [[Update]] throws an exception the reply message
    * will be this `ModifyFailure` message. The original exception is included as `cause`.
    */
@@ -250,21 +258,30 @@ object Replicator {
    * If the key is deleted the subscriber is notified with a [[Deleted]]
    * message.
    */
-  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
+  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[SubscribeResponse[A]])
+      extends Command
 
   /**
    * Unregister a subscriber.
    *
    * @see [[Replicator.Subscribe]]
    */
-  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
+  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[SubscribeResponse[A]])
+      extends Command
+
+  /**
+   * @see [[Replicator.Subscribe]]
+   */
+  sealed trait SubscribeResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+    def key: Key[A]
+  }
 
   /**
    * The data value is retrieved with [[#get]] using the typed key.
    *
    * @see [[Replicator.Subscribe]]
    */
-  final case class Changed[A <: ReplicatedData](key: Key[A])(data: A) {
+  final case class Changed[A <: ReplicatedData](key: Key[A])(data: A) extends SubscribeResponse[A] {
 
     /**
      * The data value, with correct type.
@@ -282,6 +299,11 @@ object Replicator {
   }
 
   /**
+   * @see [[Replicator.Subscribe]]
+   */
+  final case class Deleted[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
+
+  /**
    * Send this message to the local `Replicator` to delete a data value for the
    * given `key`. The `Replicator` will reply with one of the [[DeleteResponse]] messages.
    */
@@ -296,13 +318,8 @@ object Replicator {
     def key: Key[A]
   }
   final case class DeleteSuccess[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
-  final case class ReplicationDeleteFailure[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
-  final case class DataDeleted[A <: ReplicatedData](key: Key[A])
-      extends RuntimeException
-      with NoStackTrace
-      with DeleteResponse[A] {
-    override def toString: String = s"DataDeleted [$key]"
-  }
+  final case class DeleteFailure[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
+  final case class DataDeleted[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
 
   /**
    * Get current number of replicas, including the local replica.

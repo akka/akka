@@ -42,7 +42,7 @@ object ReplicatorSpec {
   private case class InternalUpdateResponse(rsp: Replicator.UpdateResponse[GCounter]) extends InternalMsg
   private case class InternalGetResponse(rsp: Replicator.GetResponse[GCounter], replyTo: ActorRef[Int])
       extends InternalMsg
-  private case class InternalChanged(chg: Replicator.Changed[GCounter]) extends InternalMsg
+  private case class InternalSubscribeResponse(chg: Replicator.SubscribeResponse[GCounter]) extends InternalMsg
 
   def client(key: GCounterKey): Behavior[ClientCommand] =
     Behaviors.setup[ClientCommand] { ctx =>
@@ -50,7 +50,7 @@ object ReplicatorSpec {
 
       // adapter that turns the response messages from the replicator into our own protocol
       DistributedData.withReplicatorMessageAdapter[ClientCommand, GCounter] { replicatorAdapter =>
-        replicatorAdapter.subscribe(key, InternalChanged.apply)
+        replicatorAdapter.subscribe(key, InternalSubscribeResponse.apply)
 
         def behavior(cachedValue: Int): Behavior[ClientCommand] = {
           Behaviors.receiveMessage[ClientCommand] {
@@ -84,9 +84,12 @@ object ReplicatorSpec {
                 case InternalGetResponse(_, _) =>
                   Behaviors.unhandled // not dealing with failures
 
-                case InternalChanged(chg @ Replicator.Changed(`key`)) =>
+                case InternalSubscribeResponse(chg @ Replicator.Changed(`key`)) =>
                   val value = chg.get(key).value.intValue
                   behavior(value)
+
+                case InternalSubscribeResponse(Replicator.Deleted(_)) =>
+                  Behaviors.unhandled // no deletes
               }
           }
         }
@@ -155,9 +158,10 @@ object ReplicatorSpec {
       val key = GCounterKey("counter")
 
       getResponse match {
-        case GetSuccess(`key`) =>
-        case GetFailure(`key`) =>
-        case NotFound(`key`)   =>
+        case GetSuccess(`key`)     =>
+        case GetFailure(`key`)     =>
+        case NotFound(`key`)       =>
+        case GetDataDeleted(`key`) =>
       }
 
       val updateResponse: UpdateResponse[GCounter] = ???
@@ -167,13 +171,20 @@ object ReplicatorSpec {
         case UpdateTimeout(`key`)       =>
         case StoreFailure(`key`)        =>
         case UpdateFailure(`key`)       =>
+        case UpdateDataDeleted(`key`)   =>
       }
 
       val deleteResponse: DeleteResponse[GCounter] = ???
       deleteResponse match {
-        case DeleteSuccess(`key`)            =>
-        case ReplicationDeleteFailure(`key`) =>
-        case DataDeleted(`key`)              =>
+        case DeleteSuccess(`key`) =>
+        case DeleteFailure(`key`) =>
+        case DataDeleted(`key`)   =>
+      }
+
+      val subscribeResponse: SubscribeResponse[GCounter] = ???
+      subscribeResponse match {
+        case Changed(`key`) =>
+        case Deleted(`key`) =>
       }
 
       val replicaCount: ReplicaCount = ???

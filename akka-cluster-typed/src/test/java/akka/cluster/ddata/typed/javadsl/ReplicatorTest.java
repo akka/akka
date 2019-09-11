@@ -74,11 +74,11 @@ public class ReplicatorTest extends JUnitSuite {
     }
   }
 
-  private static final class InternalChanged implements InternalMsg {
-    final Replicator.Changed<GCounter> chg;
+  private static final class InternalSubscribeResponse implements InternalMsg {
+    final Replicator.SubscribeResponse<GCounter> rsp;
 
-    InternalChanged(Replicator.Changed<GCounter> chg) {
-      this.chg = chg;
+    InternalSubscribeResponse(Replicator.SubscribeResponse<GCounter> rsp) {
+      this.rsp = rsp;
     }
   }
 
@@ -102,7 +102,7 @@ public class ReplicatorTest extends JUnitSuite {
 
       node = DistributedData.get(ctx.getSystem()).selfUniqueAddress();
 
-      this.replicatorAdapter.subscribe(this.key, InternalChanged::new);
+      this.replicatorAdapter.subscribe(this.key, InternalSubscribeResponse::new);
     }
 
     public static Behavior<ClientCommand> create(Key<GCounter> key) {
@@ -121,7 +121,7 @@ public class ReplicatorTest extends JUnitSuite {
           .onMessage(GetValue.class, this::onGetValue)
           .onMessage(GetCachedValue.class, this::onGetCachedValue)
           .onMessage(InternalGetResponse.class, this::onInternalGetResponse)
-          .onMessage(InternalChanged.class, this::onInternalChanged)
+          .onMessage(InternalSubscribeResponse.class, this::onInternalSubscribeResponse)
           .build();
     }
 
@@ -136,7 +136,7 @@ public class ReplicatorTest extends JUnitSuite {
                   curr -> curr.increment(node, 1)),
           InternalUpdateResponse::new);
 
-      return Behaviors.same();
+      return this;
     }
 
     private Behavior<ClientCommand> onGetValue(GetValue cmd) {
@@ -144,29 +144,34 @@ public class ReplicatorTest extends JUnitSuite {
           askReplyTo -> new Replicator.Get<>(key, Replicator.readLocal(), askReplyTo),
           rsp -> new InternalGetResponse(rsp, cmd.replyTo));
 
-      return Behaviors.same();
+      return this;
     }
 
     private Behavior<ClientCommand> onGetCachedValue(GetCachedValue cmd) {
       cmd.replyTo.tell(cachedValue);
-      return Behaviors.same();
+      return this;
     }
 
     private Behavior<ClientCommand> onInternalGetResponse(InternalGetResponse msg) {
       if (msg.rsp instanceof Replicator.GetSuccess) {
         int value = ((Replicator.GetSuccess<?>) msg.rsp).get(key).getValue().intValue();
         msg.replyTo.tell(value);
-        return Behaviors.same();
+        return this;
       } else {
         // not dealing with failures
         return Behaviors.unhandled();
       }
     }
 
-    private Behavior<ClientCommand> onInternalChanged(InternalChanged msg) {
-      GCounter counter = msg.chg.get(key);
-      cachedValue = counter.getValue().intValue();
-      return this;
+    private Behavior<ClientCommand> onInternalSubscribeResponse(InternalSubscribeResponse msg) {
+      if (msg.rsp instanceof Replicator.Changed) {
+        GCounter counter = ((Replicator.Changed<?>) msg.rsp).get(key);
+        cachedValue = counter.getValue().intValue();
+        return this;
+      } else {
+        // no deletes
+        return Behaviors.unhandled();
+      }
     }
   }
 
