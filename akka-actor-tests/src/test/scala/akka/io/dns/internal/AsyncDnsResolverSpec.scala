@@ -144,15 +144,15 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       val configWithSmallTtl = defaultConfig.withValue("negative-ttl", ConfigValueFactory.fromAnyRef("5s"))
       override val r = resolver(List(dnsClient1.ref), configWithSmallTtl)
 
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       dnsClient1.expectMsg(Question4(1, "cats.com"))
       dnsClient1.reply(Answer(1, im.Seq.empty))
 
-      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       senderProbe.expectMsg(Resolved("cats.com", im.Seq()))
 
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       dnsClient1.expectNoMessage(50.millis)
 
-      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       senderProbe.expectMsg(Resolved("cats.com", im.Seq()))
     }
 
@@ -160,15 +160,15 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       val recordTtl = Ttl.fromPositive(100.seconds)
       val ipv4Record = ARecord("cats.com", recordTtl, InetAddress.getByName("127.0.0.1"))
 
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       dnsClient1.expectMsg(Question4(1, "cats.com"))
       dnsClient1.reply(Answer(1, im.Seq(ipv4Record)))
 
-      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
 
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       dnsClient1.expectNoMessage(50.millis)
 
-      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
     }
 
@@ -178,16 +178,17 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       val recordTtl = Ttl.fromPositive(100.seconds)
 
       val ipv4Record = ARecord("cats.com", recordTtl, InetAddress.getByName("127.0.0.1"))
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       dnsClient1.expectMsg(Question4(1, "cats.com"))
       dnsClient1.reply(Answer(1, im.Seq(ipv4Record)))
 
-      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
 
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       dnsClient1.expectMsg(Question4(2, "cats.com"))
       dnsClient1.reply(Answer(2, im.Seq(ipv4Record)))
 
-      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
     }
 
@@ -197,22 +198,22 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       val recordTtl = Ttl.fromPositive(100.seconds)
 
       val ipv4Record = ARecord("cats.com", recordTtl, InetAddress.getByName("127.0.0.1"))
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       dnsClient1.expectMsg(Question4(1, "cats.com"))
       dnsClient1.reply(Answer(1, im.Seq(ipv4Record)))
-
-      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
 
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       dnsClient1.expectNoMessage(50.millis)
 
-      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
-
-      dnsClient1.expectMsg(Question4(2, "cats.com"))
-      dnsClient1.reply(Answer(2, im.Seq(ipv4Record)))
 
       Thread.sleep(5000)
       r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      dnsClient1.expectMsg(Question4(2, "cats.com"))
+      dnsClient1.reply(Answer(2, im.Seq(ipv4Record)))
+
       senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
     }
   }
