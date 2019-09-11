@@ -8,14 +8,13 @@ import java.net.{ Inet6Address, InetAddress }
 
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
+import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol._
 import akka.io.dns.internal.AsyncDnsResolver.ResolveFailedException
-import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.internal.DnsClient.{ Answer, Question4, Question6, SrvQuestion }
 import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
-import akka.testkit.{ AkkaSpec, TestProbe }
-import com.typesafe.config.ConfigFactory
-import akka.testkit.WithLogCapturing
+import akka.testkit.{ AkkaSpec, TestProbe, WithLogCapturing }
+import com.typesafe.config.{ Config, ConfigFactory, ConfigValueFactory }
 
 import scala.collection.{ immutable => im }
 import scala.concurrent.duration._
@@ -25,10 +24,19 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
   """) with WithLogCapturing {
 
+  val defaultConfig = ConfigFactory.parseString("""
+          nameservers = ["one","two"]
+          resolve-timeout = 300ms
+          search-domains = []
+          ndots = 1
+          positive-ttl = forever
+          negative-ttl = never
+        """)
+
   trait Setup {
     val dnsClient1 = TestProbe()
     val dnsClient2 = TestProbe()
-    val r = resolver(List(dnsClient1.ref, dnsClient2.ref))
+    val r = resolver(List(dnsClient1.ref, dnsClient2.ref), defaultConfig)
     val senderProbe = TestProbe()
     implicit val sender = senderProbe.ref
   }
@@ -131,19 +139,86 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
       r ! Resolve("cats.com", Srv)
       senderProbe.expectMsg(Resolved("cats.com", srvRecs, aRecs))
     }
+
+    "don't use resolver in failure case if negative-ttl != never" in new Setup {
+      val configWithSmallTtl = defaultConfig.withValue("negative-ttl", ConfigValueFactory.fromAnyRef("5s"))
+      override val r = resolver(List(dnsClient1.ref), configWithSmallTtl)
+
+      dnsClient1.expectMsg(Question4(1, "cats.com"))
+      dnsClient1.reply(Answer(1, im.Seq.empty))
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      senderProbe.expectMsg(Resolved("cats.com", im.Seq()))
+
+      dnsClient1.expectNoMessage(50.millis)
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      senderProbe.expectMsg(Resolved("cats.com", im.Seq()))
+    }
+
+    "don't use resolver until record in cache will expired" in new Setup {
+      val recordTtl = Ttl.fromPositive(100.seconds)
+      val ipv4Record = ARecord("cats.com", recordTtl, InetAddress.getByName("127.0.0.1"))
+
+      dnsClient1.expectMsg(Question4(1, "cats.com"))
+      dnsClient1.reply(Answer(1, im.Seq(ipv4Record)))
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
+
+      dnsClient1.expectNoMessage(50.millis)
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
+    }
+
+    "always use resolver if positive-ttl = never" in new Setup {
+      val configWithSmallTtl = defaultConfig.withValue("positive-ttl", ConfigValueFactory.fromAnyRef("never"))
+      override val r = resolver(List(dnsClient1.ref), configWithSmallTtl)
+      val recordTtl = Ttl.fromPositive(100.seconds)
+
+      val ipv4Record = ARecord("cats.com", recordTtl, InetAddress.getByName("127.0.0.1"))
+      dnsClient1.expectMsg(Question4(1, "cats.com"))
+      dnsClient1.reply(Answer(1, im.Seq(ipv4Record)))
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
+
+      dnsClient1.expectMsg(Question4(2, "cats.com"))
+      dnsClient1.reply(Answer(2, im.Seq(ipv4Record)))
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
+    }
+
+    "don't use resolver util cache record will be expired" in new Setup {
+      val configWithSmallTtl = defaultConfig.withValue("positive-ttl", ConfigValueFactory.fromAnyRef("5 seconds"))
+      override val r = resolver(List(dnsClient1.ref), configWithSmallTtl)
+      val recordTtl = Ttl.fromPositive(100.seconds)
+
+      val ipv4Record = ARecord("cats.com", recordTtl, InetAddress.getByName("127.0.0.1"))
+      dnsClient1.expectMsg(Question4(1, "cats.com"))
+      dnsClient1.reply(Answer(1, im.Seq(ipv4Record)))
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
+
+      dnsClient1.expectNoMessage(50.millis)
+
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
+
+      dnsClient1.expectMsg(Question4(2, "cats.com"))
+      dnsClient1.reply(Answer(2, im.Seq(ipv4Record)))
+
+      Thread.sleep(5000)
+      r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
+      senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
+    }
   }
 
-  def resolver(clients: List[ActorRef]): ActorRef = {
-    val settings = new DnsSettings(
-      system.asInstanceOf[ExtendedActorSystem],
-      ConfigFactory.parseString("""
-          nameservers = ["one","two"]
-          resolve-timeout = 300ms
-          search-domains = []
-          ndots = 1
-          positive-ttl = forever
-          negative-ttl = never
-        """))
+  def resolver(clients: List[ActorRef], config: Config): ActorRef = {
+    val settings = new DnsSettings(system.asInstanceOf[ExtendedActorSystem], config)
     system.actorOf(Props(new AsyncDnsResolver(settings, new AsyncDnsCache(), (_, _) => {
       clients
     })))
