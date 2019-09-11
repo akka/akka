@@ -2,3 +2,6 @@
 ProblemFilters.exclude[Problem]("akka.cluster.singleton.ClusterSingletonManager#Internal#OldestChangedBuffer*")
 ProblemFilters.exclude[Problem]("akka.cluster.singleton.ClusterSingletonManager#Internal#YoungerData.*")
 ProblemFilters.exclude[Problem]("akka.cluster.singleton.ClusterSingletonManager#Internal#BecomingOldestData.*")
+
+# #27411 changes not caught by previous mima versions
+ProblemFilters.exclude[IncompatibleSignatureProblem]("*")

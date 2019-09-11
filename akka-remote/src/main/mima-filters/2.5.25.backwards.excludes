@@ -5,3 +5,11 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.*.runInbo
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.remote.artery.ArteryTransport.bindInboundStreams")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArteryTransport.autoSelectPort")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.artery.tcp.TcpFraming.this")
+
+# #27411 changes not caught by previous mima versions
+## ActorRef became an OptionVal
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.remote.transport.AkkaPduCodec#Message.unapply")
+## StopSignal became OptionVal[StopSignal]
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.remote.artery.Association#OutboundStreamMatValues.unapply")
+## ActorRef became OptionVal[ActorRef]
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.remote.EndpointManager#Send.unapply")

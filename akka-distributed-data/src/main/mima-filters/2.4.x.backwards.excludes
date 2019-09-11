@@ -1,6 +1,7 @@
 # #22269 GSet as delta-CRDT
 # constructor supplied by companion object
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GSet.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GSet.apply")
 
 # #21875 delta-CRDT
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.GCounter.this")

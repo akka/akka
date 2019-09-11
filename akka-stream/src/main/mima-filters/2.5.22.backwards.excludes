@@ -3,8 +3,12 @@
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.TransformerLike")
 # internal
 ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.RequestMore$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.RequestMore.tupled")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.RequestMore.curried")
 ProblemFilters.exclude[MissingFieldProblem]("akka.stream.impl.ReactiveStreamsCompliance#SpecViolation.serialVersionUID")
 ProblemFilters.exclude[MissingTypesProblem]("akka.stream.impl.Cancel$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.Cancel.compose")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.Cancel.andThen")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.streamref.StreamRefsMaster.this")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.OutgoingConnectionStage.<init>$default$4")
 ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.impl.io.ConnectionSourceStage.options")
