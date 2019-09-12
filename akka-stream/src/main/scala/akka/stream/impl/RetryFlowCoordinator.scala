@@ -6,12 +6,12 @@ package akka.stream.impl
 
 import akka.annotation.InternalApi
 import akka.pattern.BackoffSupervisor
-import akka.stream.impl.RetryFlowCoordinator.InternalState
-import akka.stream.impl.RetryFlowCoordinator.RetryTimer
+import akka.stream.impl.RetryFlowCoordinator.{ RetryElement, RetryResult, RetryState, RetryTimer }
 import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic }
 
 import scala.collection.immutable
+import scala.collection.immutable.{ Queue, SortedSet }
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -19,146 +19,100 @@ import scala.util.Try
  * INTERNAL API
  */
 @InternalApi private[akka] object RetryFlowCoordinator {
-  final class InternalState(val numberOfRestarts: Int, val retryDeadline: Long)
+  final class RetryState(val numberOfRestarts: Int = 0, val retryDeadline: Long) {
+    override def toString: String = s"RetryState(numberOfRestarts=$numberOfRestarts,retryDeadline=$retryDeadline)"
+  }
+  final class RetryElement[In, State](val in: In, val userState: State, val internalState: RetryState) {
+    override def toString: String = s"RetryElement($internalState)"
+  }
+  final class RetryResult[In, Out, UserState](
+      val tried: RetryElement[In, UserState],
+      val out: Try[Out],
+      val state: UserState) {
+    override def toString: String = s"RetryResult(${out.getClass.getSimpleName})"
+  }
   case object RetryTimer
 }
 
 /**
- * INTERNAL API
+ * INTERNAL API.
+ *
+ * external in -- ----> internal out ... origFlow ... internalIn (retryWith)
+ * (InData, UserCtx) |                                               None -> externalOut
+ *                  ------------------------------------------- Some(s)
+ *
+ *
  */
-@InternalApi private[akka] class RetryFlowCoordinator[In, State, Out](
-    parallelism: Long,
-    retryWith: PartialFunction[(Try[Out], State), Option[immutable.Iterable[(In, State)]]],
+@InternalApi private[akka] class RetryFlowCoordinator[InData, UserCtx, OutData](
+    outBufferSize: Int,
+    retryWith: (InData, Try[OutData], UserCtx) => Option[immutable.Iterable[(InData, UserCtx)]],
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
     randomFactor: Double)
-    extends GraphStage[
-      BidiShape[(In, State), (Try[Out], State), (Try[Out], State, InternalState), (In, State, InternalState)]] {
+    extends GraphStage[BidiShape[
+      (InData, UserCtx),
+      RetryElement[InData, UserCtx],
+      RetryResult[InData, OutData, UserCtx],
+      (Try[OutData], UserCtx)]] {
 
-  private val externalIn = Inlet[(In, State)]("RetryFlow.externalIn")
-  private val externalOut = Outlet[(Try[Out], State)]("RetryFlow.externalOut")
+  private type In = (InData, UserCtx)
+  private type Out = (Try[OutData], UserCtx)
 
-  private val internalIn = Inlet[(Try[Out], State, InternalState)]("RetryFlow.internalIn")
-  private val internalOut = Outlet[(In, State, InternalState)]("RetryFlow.internalOut")
+  private val externalIn = Inlet[(InData, UserCtx)]("RetryFlow.externalIn")
+  private val externalOut = Outlet[(Try[OutData], UserCtx)]("RetryFlow.externalOut")
 
-  override val shape
-      : BidiShape[(In, State), (Try[Out], State), (Try[Out], State, InternalState), (In, State, InternalState)] =
-    BidiShape(externalIn, externalOut, internalIn, internalOut)
+  private val internalOut = Outlet[RetryElement[InData, UserCtx]]("RetryFlow.internalOut")
+  private val internalIn = Inlet[RetryResult[InData, OutData, UserCtx]]("RetryFlow.internalIn")
+
+  override val shape: BidiShape[In, RetryElement[InData, UserCtx], RetryResult[InData, OutData, UserCtx], Out] =
+    BidiShape(externalIn, internalOut, internalIn, externalOut)
 
   override def createLogic(attributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
-    private final val NonoTime = System.nanoTime()
+    private final val nanoTimeOffset = System.nanoTime()
     private var numElementsInCycle = 0
-    private var queueRetries =
-      scala.collection.immutable.SortedSet.empty[(In, State, InternalState)](Ordering.fromLessThan { (e1, e2) =>
-        if (e1._3.retryDeadline != e2._3.retryDeadline) e1._3.retryDeadline < e2._3.retryDeadline
-        else e1.hashCode < e2.hashCode
-      })
-    private val queueOut = scala.collection.mutable.Queue.empty[(Try[Out], State)]
+    private var queueRetries: Queue[RetryElement[InData, UserCtx]] = Queue.empty
+//      scala.collection.immutable.SortedSet.empty[RetryElement[InData, UserCtx]](Ordering.fromLessThan { (e1, e2) =>
+//        if (e1.internalState.retryDeadline != e2.internalState.retryDeadline)
+//          e1.internalState.retryDeadline < e2.internalState.retryDeadline
+//        else e1.hashCode < e2.hashCode
+//      })
+    private val queueOut = scala.collection.mutable.Queue.empty[(Try[OutData], UserCtx)]
 
     setHandler(
       externalIn,
       new InHandler {
         override def onPush(): Unit = {
-          val is = {
-            val in = grab(externalIn)
-            (in._1, in._2, new InternalState(numberOfRestarts = 0, System.nanoTime() - NonoTime))
+          val element: RetryElement[InData, UserCtx] = {
+            val (in, userState) = grab(externalIn)
+            new RetryElement(in, userState, new RetryState(retryDeadline = System.nanoTime() - nanoTimeOffset))
           }
-          if (isAvailable(internalOut)) {
-            push(internalOut, is)
-            numElementsInCycle += 1
-          } else {
-            queueRetries += is
-          }
+//          if (isAvailable(internalOut)) { // TODO Could we get push without internal demand? Yes, while retrying.
+          push(internalOut, element)
+          numElementsInCycle += 1
+//          } else {
+//            queueRetries += element
+//          }
         }
 
         override def onUpstreamFinish(): Unit =
-          if (numElementsInCycle == 0 && queueRetries.isEmpty) {
-            if (queueOut.isEmpty) completeStage()
-            else emitMultiple(externalOut, queueOut.iterator, () => completeStage())
+          if (numElementsInCycle == 0 && !retriesRequired) { // TODO what happens with the upstream finish?
+            emitMultiple(externalOut, queueOut.iterator, () => completeStage())
           }
       })
-
-    setHandler(
-      externalOut,
-      new OutHandler {
-        override def onPull(): Unit =
-          // prioritize pushing queued element if available
-          if (queueOut.isEmpty) {
-            if (!hasBeenPulled(internalIn)) pull(internalIn)
-          } else push(externalOut, queueOut.dequeue())
-      })
-
-    setHandler(
-      internalIn,
-      new InHandler {
-        override def onPush(): Unit = {
-          numElementsInCycle -= 1
-          grab(internalIn) match {
-            case (out, s, internalState) =>
-              retryWith
-                .applyOrElse[(Try[Out], State), Option[immutable.Iterable[(In, State)]]]((out, s), _ => None)
-                .fold(pushAndCompleteIfLast((out, s))) {
-                  xs =>
-                    val current = System.nanoTime() - NonoTime
-                    xs.foreach {
-                      case (in, state) =>
-                        val numRestarts = internalState.numberOfRestarts + 1
-                        val delay = BackoffSupervisor.calculateDelay(numRestarts, minBackoff, maxBackoff, randomFactor)
-                        queueRetries += ((in, state, new InternalState(numRestarts, current + delay.toNanos)))
-                    }
-
-                    out.foreach { _ =>
-                      pushAndCompleteIfLast((out, s))
-                    }
-
-                    if (queueRetries.isEmpty) {
-                      if (isClosed(externalIn) && queueOut.isEmpty) completeStage()
-                      else pull(internalIn)
-                    } else {
-                      pull(internalIn)
-                      scheduleRetryTimer()
-                    }
-                }
-          }
-        }
-      })
-
-    override def onTimer(timerKey: Any): Unit = timerKey match {
-      case RetryTimer =>
-        if (isAvailable(internalOut)) {
-          val elem = queueRetries.head
-          queueRetries = queueRetries.tail
-
-          push(internalOut, elem)
-          numElementsInCycle += 1
-        }
-    }
-
-    private def pushAndCompleteIfLast(elem: (Try[Out], State)): Unit = {
-      if (isAvailable(externalOut) && queueOut.isEmpty) {
-        push(externalOut, elem)
-      } else if (queueOut.size + 1 > parallelism) {
-        failStage(new IllegalStateException(s"Buffer limit of $parallelism has been exceeded"))
-      } else {
-        queueOut.enqueue(elem)
-      }
-
-      if (isClosed(externalIn) && queueRetries.isEmpty && numElementsInCycle == 0 && queueOut.isEmpty) {
-        completeStage()
-      }
-    }
 
     setHandler(
       internalOut,
       new OutHandler {
-        override def onPull(): Unit =
-          if (queueRetries.isEmpty) {
+        override def onPull(): Unit = {
+          // internal demand
+          if (retriesRequired) {
+            scheduleRetryTimer()
+          } else {
             if (!hasBeenPulled(externalIn) && !isClosed(externalIn)) {
               pull(externalIn)
             }
-          } else {
-            scheduleRetryTimer()
           }
+        }
 
         override def onDownstreamFinish(cause: Throwable): Unit = {
           // waiting for the failure from the upstream
@@ -166,10 +120,89 @@ import scala.util.Try
         }
       })
 
-    private def smallestRetryDelay(): FiniteDuration =
-      (queueRetries.head._3.retryDeadline - (System.nanoTime() - NonoTime)).nanos
+    setHandler(
+      internalIn,
+      new InHandler {
+        override def onPush(): Unit = {
+          numElementsInCycle -= 1
+          val result = grab(internalIn)
+          println(s"internalIn: result $result")
+          val shouldRetryWith =
+            retryWith.apply(result.tried.in, result.out, result.state)
+          println(s"internalIn: shouldRetryWith $shouldRetryWith")
+          shouldRetryWith match {
+            case None => pushAndCompleteIfLast((result.out, result.state))
+            case Some(xs) =>
+              val current = System.nanoTime() - nanoTimeOffset
+              queueRetries ++= xs.map {
+                case (in, state) =>
+                  val numRestarts = result.tried.internalState.numberOfRestarts + 1
+                  val delay = BackoffSupervisor.calculateDelay(numRestarts, minBackoff, maxBackoff, randomFactor)
+                  new RetryElement(in, state, new RetryState(numRestarts, current + delay.toNanos))
+              }
 
-    private def scheduleRetryTimer() =
-      scheduleOnce(RetryTimer, smallestRetryDelay())
+              // TODO why? This emit elements if Try is Success, but still retries with the elements in `xs`
+              result.out.foreach { _ =>
+                pushAndCompleteIfLast((result.out, result.state))
+              }
+
+              if (retriesRequired) {
+                pull(internalIn)
+                scheduleRetryTimer()
+              } else {
+                if (isClosed(externalIn) && queueOut.isEmpty) completeStage()
+                else pull(internalIn)
+              }
+          }
+        }
+      })
+
+    setHandler(
+      externalOut,
+      new OutHandler {
+        override def onPull(): Unit =
+          // external demand
+          if (queueOut.nonEmpty) {
+            push(externalOut, queueOut.dequeue())
+          } else {
+            if (!hasBeenPulled(internalIn)) pull(internalIn)
+          }
+      })
+
+    override def onTimer(timerKey: Any): Unit = timerKey match {
+      case RetryTimer =>
+        if (isAvailable(internalOut)) { // TODO always true?
+          val (elem, queueRetries2) = queueRetries.dequeue
+          queueRetries = queueRetries2
+          push(internalOut, elem)
+          numElementsInCycle += 1
+        }
+    }
+
+    private def pushAndCompleteIfLast(elem: (Try[OutData], UserCtx)): Unit = {
+      println(s"pushAndCompleteIfLast $elem")
+      if (isAvailable(externalOut) && queueOut.isEmpty) {
+        push(externalOut, elem)
+      } else if (queueOut.size + 1 > outBufferSize) {
+        failStage(new IllegalStateException(s"Buffer limit of $outBufferSize has been exceeded"))
+      } else {
+        queueOut.enqueue(elem)
+      }
+
+      if (isClosed(externalIn) && !retriesRequired && numElementsInCycle == 0 && queueOut.isEmpty) {
+        completeStage()
+      }
+    }
+
+    private def retriesRequired: Boolean = {
+      println(s"retriesRequired: $queueRetries")
+      queueRetries.nonEmpty
+    }
+
+    private def smallestRetryDelay: Long =
+      queueRetries.head.internalState.retryDeadline - (System.nanoTime - nanoTimeOffset) // TODO can this become negative?
+
+    private def scheduleRetryTimer(): Unit =
+      scheduleOnce(RetryTimer, smallestRetryDelay.nanos)
   }
 }

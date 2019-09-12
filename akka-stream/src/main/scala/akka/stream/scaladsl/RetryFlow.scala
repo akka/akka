@@ -5,9 +5,9 @@
 package akka.stream.scaladsl
 
 import akka.annotation.ApiMayChange
-import akka.stream.FlowShape
+import akka.stream.{ BidiShape, FanInShape2, FlowShape }
 import akka.stream.impl.RetryFlowCoordinator
-import akka.stream.impl.RetryFlowCoordinator.InternalState
+import akka.stream.impl.RetryFlowCoordinator.{ RetryElement, RetryResult, RetryState }
 
 import scala.collection.immutable
 import scala.concurrent.duration._
@@ -33,7 +33,7 @@ object RetryFlow {
    *
    * A successful or failed response will be propagated downstream if it is not matched by the `retryFlow` function.
    *
-   * If a successful response is matched and issued a retry, the response is still propagated downstream.
+   * If a successful response is matched and issued a retry, the response is still propagated downstream.???
    *
    * The implementation of the RetryFlow assumes that `flow` follows one-in-one-out element semantics.
    *
@@ -56,7 +56,7 @@ object RetryFlow {
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       flow: Flow[(In, State), (Try[Out], State), Mat])(
-      retryWith: PartialFunction[(Try[Out], State), Option[immutable.Iterable[(In, State)]]])
+      retryWith: (In, Try[Out], State) => Option[immutable.Iterable[(In, State)]])
       : Flow[(In, State), (Try[Out], State), Mat] =
     withBackoffAndContext(parallelism, minBackoff, maxBackoff, randomFactor, FlowWithContext.fromTuples(flow))(
       retryWith).asFlow
@@ -83,7 +83,7 @@ object RetryFlow {
    *
    * The implementation of the RetryFlow assumes that `flow` follows one-in-one-out element semantics.
    *
-   * The wrapped `flow` and `retryWith` takes an additional `State` parameter which can be used to correlate a request
+   * The wrapped `flow` and `retryWith` takes an additional `UserState` parameter which can be used to correlate a request
    * with a response.
    *
    * Backoff state is tracked separately per-element coming into the wrapped `flow`.
@@ -96,35 +96,59 @@ object RetryFlow {
    * @param retryWith retry condition decision partial function
    */
   @ApiMayChange
-  def withBackoffAndContext[In, Out, State, Mat](
+  def withBackoffAndContext[InData, OutData, UserState, Mat](
       parallelism: Int,
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
       randomFactor: Double,
-      flow: FlowWithContext[In, State, Try[Out], State, Mat])(
-      retryWith: PartialFunction[(Try[Out], State), Option[immutable.Iterable[(In, State)]]])
-      : FlowWithContext[In, State, Try[Out], State, Mat] =
+      flow: FlowWithContext[InData, UserState, Try[OutData], UserState, Mat])(
+      retryWith: (InData, Try[OutData], UserState) => Option[immutable.Iterable[(InData, UserState)]])
+      : FlowWithContext[InData, UserState, Try[OutData], UserState, Mat] =
     FlowWithContext.fromTuples {
       Flow.fromGraph {
         GraphDSL.create(flow) { implicit b => origFlow =>
           import GraphDSL.Implicits._
 
-          val retry =
+          val retry: BidiShape[
+            (InData, UserState),
+            RetryElement[InData, UserState],
+            RetryResult[InData, OutData, UserState],
+            (Try[OutData], UserState)] =
             b.add(
-              new RetryFlowCoordinator[In, State, Out](parallelism, retryWith, minBackoff, maxBackoff, randomFactor))
-          val broadcast = b.add(new Broadcast[(In, State, InternalState)](outputPorts = 2, eagerCancel = true))
-          val zip =
-            b.add(new ZipWith2[(Try[Out], State), InternalState, (Try[Out], State, InternalState)]((el, state) =>
-              (el._1, el._2, state)))
+              new RetryFlowCoordinator[InData, UserState, OutData](
+                parallelism,
+                retryWith,
+                minBackoff,
+                maxBackoff,
+                randomFactor))
+          val externalIn = retry.in1
+          val externalOut = retry.out2
+          val internalOut = retry.out1
+          val internalIn = retry.in2
 
-          retry.out2 ~> broadcast.in
+          val broadcast = b.add(new Broadcast[RetryElement[InData, UserState]](outputPorts = 2, eagerCancel = true))
+          val zip: FanInShape2[
+            (Try[OutData], UserState),
+            RetryElement[InData, UserState],
+            RetryResult[InData, OutData, UserState]] =
+            b.add(
+              new ZipWith2[
+                (Try[OutData], UserState),
+                RetryElement[InData, UserState],
+                RetryResult[InData, OutData, UserState]]({
+                case ((result, userState), re) => {
+                  new RetryResult(re, result, userState)
+                }
+              }))
 
-          broadcast.out(0).map(msg => (msg._1, msg._2)) ~> origFlow ~> zip.in0
-          broadcast.out(1).map(msg => msg._3) ~> zip.in1
+          // format: off
+          internalOut ~> broadcast.in
+                         broadcast.out(0).map(msg => (msg.in, msg.userState)) ~> origFlow ~> zip.in0
+                         broadcast.out(1)                    ~>                              zip.in1
+                                                                                             zip.out ~> internalIn
+          // format: on
 
-          zip.out ~> retry.in2
-
-          FlowShape(retry.in1, retry.out1)
+          FlowShape(externalIn, externalOut)
         }
       }
     }

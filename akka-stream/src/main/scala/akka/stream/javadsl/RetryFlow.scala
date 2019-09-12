@@ -98,12 +98,12 @@ object RetryFlow {
         Duration.fromNanos(maxBackoff.toNanos),
         randomFactor,
         flow.asScala) {
-        case result =>
-          val retryAttempt = result match {
-            case (Success(value), s)     => retryWith(Pair.create(value, s), null)
-            case (Failure(exception), s) => retryWith(null, Pair.create(exception, s))
-          }
-          retryAttempt.asScala.map(coll => coll.asScala.toIndexedSeq.map(pair => (pair.first, pair.second)))
+        case result => ???
+//          val retryAttempt = result match {
+//            case (Success(value), s)     => retryWith(Pair.create(value, s), null)
+//            case (Failure(exception), s) => retryWith(null, Pair.create(exception, s))
+//          }
+//          retryAttempt.asScala.map(coll => coll.asScala.toIndexedSeq.map(pair => (pair.first, pair.second)))
       }
       .asJava[In, State, Try[Out], State, Mat]
 
