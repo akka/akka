@@ -95,46 +95,40 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(val mode: String, val r
 
 }
 
-object PersistentClusterShardingRememberEntitiesEnabledSpecConfig
-    extends ClusterShardingRememberEntitiesSpecConfig(ClusterShardingSettings.StateStoreModePersistence, true)
-object PersistentClusterShardingRememberEntitiesDefaultSpecConfig
-    extends ClusterShardingRememberEntitiesSpecConfig(ClusterShardingSettings.StateStoreModePersistence, false)
-object DDataClusterShardingRememberEntitiesEnabledSpecConfig
-    extends ClusterShardingRememberEntitiesSpecConfig(ClusterShardingSettings.StateStoreModeDData, true)
-object DDataClusterShardingRememberEntitiesDefaultSpecConfig
-    extends ClusterShardingRememberEntitiesSpecConfig(ClusterShardingSettings.StateStoreModeDData, false)
+class PersistentClusterShardingRememberEntitiesSpecConfig(rememberEntities: Boolean)
+    extends ClusterShardingRememberEntitiesSpecConfig(
+      ClusterShardingSettings.StateStoreModePersistence,
+      rememberEntities)
+class DDataClusterShardingRememberEntitiesSpecConfig(rememberEntities: Boolean)
+    extends ClusterShardingRememberEntitiesSpecConfig(ClusterShardingSettings.StateStoreModeDData, rememberEntities)
 
-class PersistentClusterShardingRememberEntitiesEnabledSpec
-    extends ClusterShardingRememberEntitiesSpec(PersistentClusterShardingRememberEntitiesEnabledSpecConfig)
-class PersistentClusterShardingRememberEntitiesDefaultSpec
-    extends ClusterShardingRememberEntitiesSpec(PersistentClusterShardingRememberEntitiesDefaultSpecConfig)
+abstract class PersistentClusterShardingRememberEntitiesSpec(val rememberEntities: Boolean)
+    extends ClusterShardingRememberEntitiesSpec(
+      new PersistentClusterShardingRememberEntitiesSpecConfig(rememberEntities))
+abstract class DDataClusterShardingRememberEntitiesSpec(val rememberEntities: Boolean)
+    extends ClusterShardingRememberEntitiesSpec(new DDataClusterShardingRememberEntitiesSpecConfig(rememberEntities))
 
 class PersistentClusterShardingRememberEntitiesEnabledMultiJvmNode1
-    extends PersistentClusterShardingRememberEntitiesEnabledSpec
+    extends PersistentClusterShardingRememberEntitiesSpec(true)
 class PersistentClusterShardingRememberEntitiesEnabledMultiJvmNode2
-    extends PersistentClusterShardingRememberEntitiesEnabledSpec
+    extends PersistentClusterShardingRememberEntitiesSpec(true)
 class PersistentClusterShardingRememberEntitiesEnabledMultiJvmNode3
-    extends PersistentClusterShardingRememberEntitiesEnabledSpec
+    extends PersistentClusterShardingRememberEntitiesSpec(true)
 
 class PersistentClusterShardingRememberEntitiesDefaultMultiJvmNode1
-    extends PersistentClusterShardingRememberEntitiesDefaultSpec
+    extends PersistentClusterShardingRememberEntitiesSpec(false)
 class PersistentClusterShardingRememberEntitiesDefaultMultiJvmNode2
-    extends PersistentClusterShardingRememberEntitiesDefaultSpec
+    extends PersistentClusterShardingRememberEntitiesSpec(false)
 class PersistentClusterShardingRememberEntitiesDefaultMultiJvmNode3
-    extends PersistentClusterShardingRememberEntitiesDefaultSpec
+    extends PersistentClusterShardingRememberEntitiesSpec(false)
 
-class DDataClusterShardingRememberEntitiesEnabledSpec
-    extends ClusterShardingRememberEntitiesSpec(DDataClusterShardingRememberEntitiesEnabledSpecConfig)
-class DDataClusterShardingRememberEntitiesDefaultSpec
-    extends ClusterShardingRememberEntitiesSpec(DDataClusterShardingRememberEntitiesEnabledSpecConfig)
+class DDataClusterShardingRememberEntitiesEnabledMultiJvmNode1 extends DDataClusterShardingRememberEntitiesSpec(true)
+class DDataClusterShardingRememberEntitiesEnabledMultiJvmNode2 extends DDataClusterShardingRememberEntitiesSpec(true)
+class DDataClusterShardingRememberEntitiesEnabledMultiJvmNode3 extends DDataClusterShardingRememberEntitiesSpec(true)
 
-class DDataClusterShardingRememberEntitiesEnabledMultiJvmNode1 extends DDataClusterShardingRememberEntitiesEnabledSpec
-class DDataClusterShardingRememberEntitiesEnabledMultiJvmNode2 extends DDataClusterShardingRememberEntitiesEnabledSpec
-class DDataClusterShardingRememberEntitiesEnabledMultiJvmNode3 extends DDataClusterShardingRememberEntitiesEnabledSpec
-
-class DDataClusterShardingRememberEntitiesDisabledMultiJvmNode1 extends DDataClusterShardingRememberEntitiesEnabledSpec
-class DDataClusterShardingRememberEntitiesDisabledMultiJvmNode2 extends DDataClusterShardingRememberEntitiesEnabledSpec
-class DDataClusterShardingRememberEntitiesDisabledMultiJvmNode3 extends DDataClusterShardingRememberEntitiesEnabledSpec
+class DDataClusterShardingRememberEntitiesDefaultMultiJvmNode1 extends DDataClusterShardingRememberEntitiesSpec(false)
+class DDataClusterShardingRememberEntitiesDefaultMultiJvmNode2 extends DDataClusterShardingRememberEntitiesSpec(false)
+class DDataClusterShardingRememberEntitiesDefaultMultiJvmNode3 extends DDataClusterShardingRememberEntitiesSpec(false)
 
 abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememberEntitiesSpecConfig)
     extends MultiNodeSpec(config)
@@ -184,6 +178,14 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
 
   def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
+  def expectEntityRestarted(sys: ActorSystem, event: Int, probe: TestProbe, entityProbe: TestProbe): Started =
+    if (!rememberEntities) {
+      probe.send(ClusterSharding(sys).shardRegion(dataType), event)
+      probe.expectMsg(1)
+      entityProbe.expectMsgType[Started](20.seconds) // passes
+    } else
+      entityProbe.expectMsgType[Started](20.seconds) // FIXME fails if enabled and persistence
+
   def setStoreIfNotDdata(sys: ActorSystem): Unit =
     if (!isDdataMode) {
       val probe = TestProbe()(sys)
@@ -212,17 +214,20 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
     }
 
     "start remembered entities when coordinator fail over" in within(30.seconds) {
+      val entityProbe = TestProbe()
+      val probe = TestProbe()
       join(second, second)
       runOn(second) {
-        startSharding(system, testActor)
-        region ! 1
-        expectMsgType[Started]
+        startSharding(system, entityProbe.ref)
+        probe.send(region, 1)
+        probe.expectMsg(1)
+        entityProbe.expectMsgType[Started]
       }
       enterBarrier("second-started")
 
       join(third, second)
       runOn(third) {
-        startSharding(system, testActor)
+        startSharding(system, entityProbe.ref)
       }
       runOn(second, third) {
         within(remaining) {
@@ -246,21 +251,7 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
       enterBarrier("crash-second")
 
       runOn(third) {
-        if (!rememberEntities) {
-          ClusterSharding(system).shardRegion(dataType) ! 1
-        }
-        // FIXME This is where we fail if remember=true, mode=persistence.
-        // What is curious is after node 'second' stops
-        // the ShardCoordinator does correctly restart on node 'third',
-        // however the entity does not get re-created automatically as it should, even though:
-        // the ShardRegion
-        // - does get registered: [Actor[akka://ClusterShardingRememberEntitiesSpec/system/sharding/Entity#380407716]]
-        // - is in the ShardCoordinator's 'aliveRegion'
-        // - does receive the RegisterAck
-        expectMsgType[Started](20.seconds)
-        if (!rememberEntities) {
-          expectMsg(1)
-        }
+        expectEntityRestarted(system, 1, probe, entityProbe)
       }
 
       enterBarrier("after-2")
@@ -277,20 +268,16 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
         // no nodes left of the original cluster, start a new cluster
 
         val sys2 = ActorSystem(system.name, system.settings.config)
+        val entityProbe2 = TestProbe()(sys2)
         val probe2 = TestProbe()(sys2)
 
         setStoreIfNotDdata(sys2)
 
         Cluster(sys2).join(Cluster(sys2).selfAddress)
-        startSharding(sys2, probe2.ref)
 
-        if (!rememberEntities) {
-          probe2.send(ClusterSharding(sys2).shardRegion(dataType), 1)
-        }
-        probe2.expectMsgType[Started](20.seconds)
-        if (!rememberEntities) {
-          probe2.expectMsg(1)
-        }
+        startSharding(sys2, entityProbe2.ref)
+
+        expectEntityRestarted(sys2, 1, probe2, entityProbe2)
 
         shutdown(sys2)
       }
