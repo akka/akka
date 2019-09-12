@@ -63,7 +63,6 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(val mode: String, val r
       akka.persistence.journal.leveldb-shared.store.dir = "$targetDir/journal"
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "$targetDir/snapshots"
-      akka.cluster.sharding.journal-plugin-id = "akka.persistence.journal.inmem"
       """)
 
   commonConfig(
@@ -78,10 +77,8 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(val mode: String, val r
         dir = $targetDir/sharding-ddata
         map-size = 10 MiB
       }
-      # FIXME temporary while sanity-checking persistence enabled
-      # waiting for `Started` from restarted entity
       akka.testconductor.barrier-timeout = 60 s
-      akka.test.single-expect-default = 60 s # defaults to 3s
+      akka.test.single-expect-default = 60 s
       """))
       .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
       .withFallback(MultiNodeClusterSpec.clusterConfig))
@@ -178,13 +175,14 @@ abstract class ClusterShardingRememberEntitiesSpec(config: ClusterShardingRememb
 
   def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
-  def expectEntityRestarted(sys: ActorSystem, event: Int, probe: TestProbe, entityProbe: TestProbe): Started =
+  def expectEntityRestarted(sys: ActorSystem, event: Int, probe: TestProbe, entityProbe: TestProbe): Started = {
     if (!rememberEntities) {
       probe.send(ClusterSharding(sys).shardRegion(dataType), event)
       probe.expectMsg(1)
-      entityProbe.expectMsgType[Started](20.seconds) // passes
-    } else
-      entityProbe.expectMsgType[Started](20.seconds) // FIXME fails if enabled and persistence
+    }
+
+    entityProbe.expectMsgType[Started](30.seconds)
+  }
 
   def setStoreIfNotDdata(sys: ActorSystem): Unit =
     if (!isDdataMode) {
