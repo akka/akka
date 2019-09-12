@@ -99,7 +99,8 @@ object LoggingDocExamples {
     val staticMdc = Map("startTime" -> system.startTime.toString)
     Behaviors.withMdc[BackendManager.Command](
       staticMdc,
-      mdcForMessage = msg => Map("identifier" -> msg.identifier, "upTime" -> system.uptime.toString)) {
+      mdcForMessage =
+        (msg: BackendManager.Command) => Map("identifier" -> msg.identifier, "upTime" -> system.uptime.toString)) {
       BackendManager()
     }
     //#withMdc

@@ -91,7 +91,8 @@ Scala
 :  @@snip [LoggingDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/LoggingDocExamples.scala) { #info2 }
 
 When using the methods for 3 or more argument placeholders, the compiler will not be able to convert
-the method parameters to the vararg array when they contain primitive values such as `Int`.
+the method parameters to the vararg array when they contain primitive values such as `Int`,
+and report compiler error "overloaded method value info with alternatives".
 To work around this problem you can use the `traceN`, ``debugN`, `infoN`, `warnN` or `errorN` extension
 methods that are added by the same `LoggerOps` import.
 
