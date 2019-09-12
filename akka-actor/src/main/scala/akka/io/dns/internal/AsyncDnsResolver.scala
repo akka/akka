@@ -8,7 +8,7 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
 import akka.annotation.InternalApi
-import akka.io.dns.CachePolicy.Ttl
+import akka.io.dns.CachePolicy.{ Never, Ttl }
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.dns.internal.DnsClient._
 import akka.io.dns._
@@ -17,7 +17,6 @@ import akka.util.{ Helpers, Timeout }
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.concurrent.duration.Duration
 import scala.util.Try
 import scala.util.control.NonFatal
 
@@ -41,6 +40,8 @@ private[io] final class AsyncDnsResolver(
 
   val nameServers = settings.NameServers
 
+  val positiveCachePolicy = settings.PositiveCachePolicy
+  val negativeCachePolicy = settings.NegativeCachePolicy
   log.debug(
     "Using name servers [{}] and search domains [{}] with ndots={}",
     nameServers,
@@ -48,6 +49,7 @@ private[io] final class AsyncDnsResolver(
     settings.NDots)
 
   private var requestId: Short = 0
+
   private def nextId(): Short = {
     requestId = (requestId + 1).toShort
     requestId
@@ -65,9 +67,10 @@ private[io] final class AsyncDnsResolver(
           resolveWithResolvers(name, mode, resolvers)
             .map { resolved =>
               if (resolved.records.nonEmpty) {
-                val minTtl = resolved.records.minBy[Duration](_.ttl.value).ttl
+                val minTtl = (positiveCachePolicy +: resolved.records.map(_.ttl)).min
                 cache.put((name, mode), resolved, minTtl)
-              }
+              } else if (negativeCachePolicy != Never) cache.put((name, mode), resolved, negativeCachePolicy)
+              log.debug(s"{} resolved {}", mode, resolved)
               resolved
             }
             .pipeTo(sender())
