@@ -193,7 +193,7 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
     }
 
     "don't use resolver until cache record will be expired" in new Setup {
-      val configWithSmallTtl = defaultConfig.withValue("positive-ttl", ConfigValueFactory.fromAnyRef("5 seconds"))
+      val configWithSmallTtl = defaultConfig.withValue("positive-ttl", ConfigValueFactory.fromAnyRef("200 millis"))
       override val r = resolver(List(dnsClient1.ref), configWithSmallTtl)
       val recordTtl = Ttl.fromPositive(100.seconds)
 
@@ -209,7 +209,7 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
 
       senderProbe.expectMsg(Resolved("cats.com", im.Seq(ipv4Record)))
 
-      Thread.sleep(5000)
+      Thread.sleep(200)
       r ! Resolve("cats.com", Ip(ipv4 = true, ipv6 = false))
       dnsClient1.expectMsg(Question4(2, "cats.com"))
       dnsClient1.reply(Answer(2, im.Seq(ipv4Record)))
