@@ -1,4 +1,9 @@
-# Logging
+# Classic Logging
+
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref[Logging](typed/logging.md).
+
+FIXME cleanup this, e.g. include same logback configuration
 
 ## Dependency
 
@@ -336,7 +341,7 @@ It has a single dependency: the slf4j-api jar. In your runtime, you also need a 
   version="$akka.version$"
   group2="ch.qos.logback"
   artifact2="logback-classic"
-  version2="1.2.3"
+  version2="$logback_version$"
 }
 
 You need to enable the Slf4jLogger in the `loggers` element in
@@ -458,7 +463,7 @@ If you want to more accurately output the timestamp, use the MDC attribute `akka
 ```
 <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
   <encoder>
-    <pattern>%X{akkaTimestamp} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
+    <pattern>%X{akkaTimestamp} %-5level %logger{36} %X{akkaTimestamp} - %msg%n</pattern>
   </encoder>
 </appender>
 ```
