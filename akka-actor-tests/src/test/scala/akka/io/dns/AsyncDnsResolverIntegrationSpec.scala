@@ -31,7 +31,6 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
     akka.io.dns.async-dns.nameservers = ["localhost:${AsyncDnsResolverIntegrationSpec.dockerDnsServerPort}"]
     akka.io.dns.async-dns.search-domains = ["foo.test", "test"]
     akka.io.dns.async-dns.ndots = 2
-//    akka.io.dns.async-dns.nameservers = default
   """) with DockerBindDnsService with WithLogCapturing {
   val duration = 10.seconds
   implicit val timeout = Timeout(duration)
