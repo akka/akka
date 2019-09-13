@@ -70,12 +70,7 @@ import scala.util.Try
   override def createLogic(attributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
     private final val nanoTimeOffset = System.nanoTime()
     private var numElementsInCycle = 0
-    private var queueRetries: Queue[RetryElement[InData, UserCtx]] = Queue.empty
-//      scala.collection.immutable.SortedSet.empty[RetryElement[InData, UserCtx]](Ordering.fromLessThan { (e1, e2) =>
-//        if (e1.internalState.retryDeadline != e2.internalState.retryDeadline)
-//          e1.internalState.retryDeadline < e2.internalState.retryDeadline
-//        else e1.hashCode < e2.hashCode
-//      })
+    private var queueRetries: Option[RetryElement[InData, UserCtx]] = None
     private val queueOut = scala.collection.mutable.Queue.empty[(Try[OutData], UserCtx)]
 
     setHandler(
@@ -134,7 +129,7 @@ import scala.util.Try
             case None => pushAndCompleteIfLast((result.out, result.state))
             case Some(xs) =>
               val current = System.nanoTime() - nanoTimeOffset
-              queueRetries ++= Seq {
+              queueRetries = Some {
                 val numRestarts = result.tried.internalState.numberOfRestarts + 1
                 val delay = BackoffSupervisor.calculateDelay(numRestarts, minBackoff, maxBackoff, randomFactor)
                 new RetryElement(xs._1, xs._2, new RetryState(numRestarts, current + delay.toNanos))
@@ -171,9 +166,8 @@ import scala.util.Try
     override def onTimer(timerKey: Any): Unit = timerKey match {
       case RetryTimer =>
         if (isAvailable(internalOut)) { // TODO always true?
-          val (elem, queueRetries2) = queueRetries.dequeue
-          queueRetries = queueRetries2
-          push(internalOut, elem)
+          push(internalOut, queueRetries.get)
+          queueRetries = None
           numElementsInCycle += 1
         }
     }
