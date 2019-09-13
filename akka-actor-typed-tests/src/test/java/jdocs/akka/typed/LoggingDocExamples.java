@@ -8,6 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractBehavior;
@@ -22,6 +23,11 @@ import akka.actor.typed.LogOptions;
 import org.slf4j.event.Level;
 
 // #logMessages
+
+// #test-logging
+import akka.actor.testkit.typed.javadsl.LoggingEventFilter;
+
+// #test-logging
 
 public interface LoggingDocExamples {
 
@@ -140,5 +146,46 @@ public interface LoggingDocExamples {
         },
         BackendManager2.create());
     // #withMdc
+  }
+
+  static class Message {
+    final String s;
+
+    public Message(String s) {
+      this.s = s;
+    }
+  }
+
+  static void logging() {
+    ActorSystem<Void> system = ActorSystem.create(Behaviors.empty(), "notUsed");
+    ActorRef<Message> ref = null;
+
+    // #test-logging
+    LoggingEventFilter.info("Received message")
+        .intercept(
+            system,
+            () -> {
+              ref.tell(new Message("hello"));
+              return null;
+            });
+    // #test-logging
+
+    // #test-logging-criteria
+    LoggingEventFilter.error(IllegalArgumentException.class)
+        .withMessageRegex(".*was rejected.*expecting ascii input.*")
+        .withCustom(
+            event ->
+                event.getMarker().isPresent()
+                    && event.getMarker().get().getName().equals("validation"))
+        .withOccurrences(2)
+        .intercept(
+            system,
+            () -> {
+              ref.tell(new Message("hellö"));
+              ref.tell(new Message("hejdå"));
+              return null;
+            });
+    // #test-logging-criteria
+
   }
 }

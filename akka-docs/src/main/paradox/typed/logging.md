@@ -400,4 +400,4 @@ With Logback the timestamp is available with `%X{akkaTimestamp}` specifier withi
 
 ## Logging in tests
 
-FIXME link to testing.md section
+Testing utilities are described in @ref:[Testing](testing.md#test-of-logging).

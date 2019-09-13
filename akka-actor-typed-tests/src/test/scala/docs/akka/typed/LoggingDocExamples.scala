@@ -9,6 +9,7 @@ import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
@@ -104,6 +105,40 @@ object LoggingDocExamples {
       BackendManager()
     }
     //#withMdc
+  }
+
+  def logging(): Unit = {
+    implicit val system: ActorSystem[_] = ???
+    final case class Message(s: String)
+    val ref: ActorRef[Message] = ???
+
+    //#test-logging
+    import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+
+    // implicit ActorSystem is needed, but that is given by ScalaTestWithActorTestKit
+    //implicit val system: ActorSystem[_]
+
+    LoggingEventFilter.info("Received message").intercept {
+      ref ! Message("hello")
+    }
+    //#test-logging
+
+    //#test-logging-criteria
+    LoggingEventFilter
+      .error[IllegalArgumentException]
+      .withMessageRegex(".*was rejected.*expecting ascii input.*")
+      .withCustom { event =>
+        event.marker match {
+          case Some(m) => m.getName == "validation"
+          case None    => false
+        }
+      }
+      .withOccurrences(2)
+      .intercept {
+        ref ! Message("hellö")
+        ref ! Message("hejdå")
+      }
+    //#test-logging-criteria
   }
 
 }
