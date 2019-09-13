@@ -171,7 +171,7 @@ Logback has flexible configuration options and details can be found in the
 One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender).
 It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging load is high.
 
-A starting point for configuration of `logback.xml` for **production**:
+A starting point for configuration of `logback.xml` for production:
 
 @@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-prod.xml)
 

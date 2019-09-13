@@ -3,8 +3,6 @@
 @@include[includes.md](includes.md) { #actor-api }
 For the new API see @ref[Logging](typed/logging.md).
 
-FIXME cleanup this, e.g. include same logback configuration
-
 ## Dependency
 
 To use Logging, you must at least use the Akka actors dependency in your project, and will most likely want to configure logging via the SLF4J module (@ref:[see below](#slf4j)), or use `java.util.logging` (@ref:[see below](#java-util-logging)).
@@ -357,6 +355,9 @@ If you set the `loglevel` to a higher level than "DEBUG", any DEBUG events will 
 out already at the source and will never reach the logging backend, regardless of how the backend
 is configured.
 
+You can enable `DEBUG` level for `akka.loglevel` and control the actual level in the SLF4j backend
+without any significant overhead, also for production.
+
 @@@
 
 ```ruby
@@ -404,6 +405,26 @@ This can be avoided by configuring the logging implementation to use
 a non-blocking appender. Logback provides [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender)
 that does this. It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging
 load is high.
+
+### Logback configuration
+
+Logback has flexible configuration options and details can be found in the
+[Logback manual](https://logback.qos.ch/manual/configuration.html) and other external resources.
+
+One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender).
+It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging load is high.
+
+A starting point for configuration of `logback.xml` for production:
+
+@@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-prod.xml)
+
+For development you might want to log to standard out, but also have all debug level logging to file, like
+in this example:
+
+@@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-dev.xml)
+
+Place the `logback.xml` file in `src/main/resources/logback.xml`. For tests you can define different
+logging configuration in `src/test/resources/logback-test.xml`.
 
 ### Logging Thread, Akka Source and Actor System in MDC
 
