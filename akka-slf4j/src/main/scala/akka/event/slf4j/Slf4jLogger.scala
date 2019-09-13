@@ -62,7 +62,6 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
   def receive = {
 
     case event @ Error(cause, logSource, logClass, message) =>
-      println(s"# Slf4jLogger error: $event") // FIXME
       withMdc(logSource, event) {
         cause match {
           case Error.NoCause | null =>
@@ -76,7 +75,6 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
       }
 
     case event @ Warning(logSource, logClass, message) =>
-      println(s"# Slf4jLogger warning: $event") // FIXME
       withMdc(logSource, event) {
         event match {
           case e: LogEventWithCause =>
@@ -90,13 +88,11 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
       }
 
     case event @ Info(logSource, logClass, message) =>
-      println(s"# Slf4jLogger info: $event") // FIXME
       withMdc(logSource, event) {
         Logger(logClass, logSource).info(markerIfPresent(event), "{}", message: Any)
       }
 
     case event @ Debug(logSource, logClass, message) =>
-      println(s"# Slf4jLogger debug: $event") // FIXME
       withMdc(logSource, event) {
         Logger(logClass, logSource).debug(markerIfPresent(event), "{}", message: Any)
       }
