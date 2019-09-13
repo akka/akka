@@ -56,8 +56,7 @@ object RetryFlow {
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       flow: Flow[(In, State), (Try[Out], State), Mat])(
-      retryWith: (In, Try[Out], State) => Option[immutable.Iterable[(In, State)]])
-      : Flow[(In, State), (Try[Out], State), Mat] =
+      retryWith: (In, Try[Out], State) => Option[(In, State)]): Flow[(In, State), (Try[Out], State), Mat] =
     withBackoffAndContext(parallelism, minBackoff, maxBackoff, randomFactor, FlowWithContext.fromTuples(flow))(
       retryWith).asFlow
 
@@ -102,7 +101,7 @@ object RetryFlow {
       maxBackoff: FiniteDuration,
       randomFactor: Double,
       flow: FlowWithContext[InData, UserState, Try[OutData], UserState, Mat])(
-      retryWith: (InData, Try[OutData], UserState) => Option[immutable.Iterable[(InData, UserState)]])
+      retryWith: (InData, Try[OutData], UserState) => Option[(InData, UserState)])
       : FlowWithContext[InData, UserState, Try[OutData], UserState, Mat] =
     FlowWithContext.fromTuples {
       Flow.fromGraph {
@@ -117,7 +116,7 @@ object RetryFlow {
             b.add(
               new RetryFlowCoordinator[InData, UserState, OutData](
                 parallelism,
-                (a, b, c) => retryWith.apply(a, b, c).map(_.head),
+                (a, b, c) => retryWith.apply(a, b, c),
                 minBackoff,
                 maxBackoff,
                 randomFactor))
