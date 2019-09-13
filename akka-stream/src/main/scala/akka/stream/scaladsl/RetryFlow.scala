@@ -7,9 +7,6 @@ package akka.stream.scaladsl
 import akka.annotation.ApiMayChange
 import akka.stream.{ BidiShape, FanInShape2, FlowShape }
 import akka.stream.impl.RetryFlowCoordinator
-import akka.stream.impl.RetryFlowCoordinator.{ RetryElement, RetryResult, RetryState }
-
-import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -42,7 +39,6 @@ object RetryFlow {
    *
    * Backoff state is tracked separately per-element coming into the wrapped `flow`.
    *
-   * @param parallelism controls the number of in-flight requests in the wrapped flow
    * @param minBackoff minimum duration to backoff between issuing retries
    * @param maxBackoff maximum duration to backoff between issuing retries
    * @param randomFactor adds jitter to the retry delay. Use 0 for no jitter
@@ -51,14 +47,13 @@ object RetryFlow {
    */
   @ApiMayChange
   def withBackoff[In, Out, State, Mat](
-      parallelism: Int,
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
       randomFactor: Double,
+      maxRetries: Int,
       flow: Flow[(In, State), (Try[Out], State), Mat])(
       retryWith: (In, Try[Out], State) => Option[(In, State)]): Flow[(In, State), (Try[Out], State), Mat] =
-    withBackoffAndContext(parallelism, minBackoff, maxBackoff, randomFactor, FlowWithContext.fromTuples(flow))(
-      retryWith).asFlow
+    withBackoffAndContext(minBackoff, maxBackoff, randomFactor, maxRetries, FlowWithContext.fromTuples(flow))(retryWith).asFlow
 
   /**
    * API may change!
@@ -87,7 +82,6 @@ object RetryFlow {
    *
    * Backoff state is tracked separately per-element coming into the wrapped `flow`.
    *
-   * @param parallelism controls the number of in-flight requests in the wrapped flow
    * @param minBackoff minimum duration to backoff between issuing retries
    * @param maxBackoff maximum duration to backoff between issuing retries
    * @param randomFactor adds jitter to the retry delay. Use 0 for no jitter
@@ -96,10 +90,10 @@ object RetryFlow {
    */
   @ApiMayChange
   def withBackoffAndContext[InData, OutData, UserState, Mat](
-      parallelism: Int,
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
       randomFactor: Double,
+      maxRetries: Int,
       flow: FlowWithContext[InData, UserState, Try[OutData], UserState, Mat])(
       retryWith: (InData, Try[OutData], UserState) => Option[(InData, UserState)])
       : FlowWithContext[InData, UserState, Try[OutData], UserState, Mat] =
@@ -110,42 +104,22 @@ object RetryFlow {
 
           val retry: BidiShape[
             (InData, UserState),
-            RetryElement[InData, UserState],
-            RetryResult[InData, OutData, UserState],
+            (InData, UserState),
+            (Try[OutData], UserState),
             (Try[OutData], UserState)] =
             b.add(
               new RetryFlowCoordinator[InData, UserState, OutData](
-                parallelism,
                 (a, b, c) => retryWith.apply(a, b, c),
                 minBackoff,
                 maxBackoff,
-                randomFactor))
+                randomFactor,
+                maxRetries))
           val externalIn = retry.in1
           val externalOut = retry.out2
           val internalOut = retry.out1
           val internalIn = retry.in2
 
-          val broadcast = b.add(new Broadcast[RetryElement[InData, UserState]](outputPorts = 2, eagerCancel = true))
-          val zip: FanInShape2[
-            (Try[OutData], UserState),
-            RetryElement[InData, UserState],
-            RetryResult[InData, OutData, UserState]] =
-            b.add(
-              new ZipWith2[
-                (Try[OutData], UserState),
-                RetryElement[InData, UserState],
-                RetryResult[InData, OutData, UserState]]({
-                case ((result, userState), re) => {
-                  new RetryResult(re, result, userState)
-                }
-              }))
-
-          // format: off
-          internalOut ~> broadcast.in
-                         broadcast.out(0).map(msg => (msg.in, msg.userState)) ~> origFlow ~> zip.in0
-                         broadcast.out(1)                    ~>                              zip.in1
-                                                                                             zip.out ~> internalIn
-          // format: on
+          internalOut ~> origFlow ~> internalIn
 
           FlowShape(externalIn, externalOut)
         }

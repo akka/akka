@@ -6,85 +6,51 @@ package akka.stream.impl
 
 import akka.annotation.InternalApi
 import akka.pattern.BackoffSupervisor
-import akka.stream.impl.RetryFlowCoordinator.{ RetryElement, RetryResult, RetryState, RetryTimer }
 import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
 import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler, TimerGraphStageLogic }
 
-import scala.collection.immutable
-import scala.collection.immutable.{ Queue, SortedSet }
 import scala.concurrent.duration._
 import scala.util.Try
 
 /**
- * INTERNAL API
- */
-@InternalApi private[akka] object RetryFlowCoordinator {
-  final class RetryState(val numberOfRestarts: Int = 0) {
-    override def toString: String = s"RetryState(numberOfRestarts=$numberOfRestarts)"
-  }
-  final class RetryElement[In, State](val in: In, val userState: State, val internalState: RetryState) {
-    override def toString: String = s"RetryElement($internalState)"
-  }
-  final class RetryResult[In, Out, UserState](
-      val tried: RetryElement[In, UserState],
-      val out: Try[Out],
-      val userCtx: UserState) {
-    override def toString: String = s"RetryResult(${out.getClass.getSimpleName})"
-  }
-  case object RetryTimer
-}
-
-/**
  * INTERNAL API.
- *
- * external in -- ----> internal out ... origFlow ... internalIn (retryWith)
- * (InData, UserCtx) |                                               None -> externalOut
- *                  ------------------------------------------- Some(s)
- *
- *
  */
 @InternalApi private[akka] class RetryFlowCoordinator[InData, UserCtx, OutData](
-    outBufferSize: Int,
     retryWith: (InData, Try[OutData], UserCtx) => Option[(InData, UserCtx)],
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
-    randomFactor: Double)
-    extends GraphStage[BidiShape[
-      (InData, UserCtx),
-      RetryElement[InData, UserCtx],
-      RetryResult[InData, OutData, UserCtx],
-      (Try[OutData], UserCtx)]] {
-
-  private type In = (InData, UserCtx)
-  private type Out = (Try[OutData], UserCtx)
+    randomFactor: Double,
+    maxRetries: Int)
+    extends GraphStage[
+      BidiShape[(InData, UserCtx), (InData, UserCtx), (Try[OutData], UserCtx), (Try[OutData], UserCtx)]] {
 
   private val externalIn = Inlet[(InData, UserCtx)]("RetryFlow.externalIn")
   private val externalOut = Outlet[(Try[OutData], UserCtx)]("RetryFlow.externalOut")
 
-  private val internalOut = Outlet[RetryElement[InData, UserCtx]]("RetryFlow.internalOut")
-  private val internalIn = Inlet[RetryResult[InData, OutData, UserCtx]]("RetryFlow.internalIn")
+  private val internalOut = Outlet[(InData, UserCtx)]("RetryFlow.internalOut")
+  private val internalIn = Inlet[(Try[OutData], UserCtx)]("RetryFlow.internalIn")
 
-  override val shape: BidiShape[In, RetryElement[InData, UserCtx], RetryResult[InData, OutData, UserCtx], Out] =
+  override val shape
+      : BidiShape[(InData, UserCtx), (InData, UserCtx), (Try[OutData], UserCtx), (Try[OutData], UserCtx)] =
     BidiShape(externalIn, internalOut, internalIn, externalOut)
 
   override def createLogic(attributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
 
-    private var elementInProgress = false
+    private var elementInProgress: Option[(InData, UserCtx)] = None
+    private var retryNo = 0
 
     setHandler(
       externalIn,
       new InHandler {
         override def onPush(): Unit = {
-          val (in, userState) = grab(externalIn)
-          val element: RetryElement[InData, UserCtx] = {
-            new RetryElement(in, userState, new RetryState())
-          }
-          elementInProgress = true
+          val element = grab(externalIn)
+          elementInProgress = Some(element)
+          retryNo = 0
           push(internalOut, element)
         }
 
         override def onUpstreamFinish(): Unit =
-          if (!elementInProgress) {
+          if (elementInProgress.isEmpty) {
             completeStage()
           }
       })
@@ -93,7 +59,7 @@ import scala.util.Try
       internalOut,
       new OutHandler {
         override def onPull(): Unit = {
-          if (!elementInProgress) {
+          if (elementInProgress.isEmpty) {
             if (!hasBeenPulled(externalIn) && !isClosed(externalIn)) {
               pull(externalIn)
             }
@@ -105,27 +71,16 @@ import scala.util.Try
         }
       })
 
-    setHandler(
-      internalIn,
-      new InHandler {
-        override def onPush(): Unit = {
-          val result = grab(internalIn)
-          retryWith(result.tried.in, result.out, result.userCtx) match {
-            case None =>
-              elementInProgress = false
-              push(externalOut, (result.out, result.userCtx))
-              if (isClosed(externalIn)) {
-                completeStage()
-              }
-            case Some((inData, userCtx)) =>
-              val numRestarts = result.tried.internalState.numberOfRestarts + 1
-              val element = new RetryElement(inData, userCtx, new RetryState(numRestarts))
-              val delay = BackoffSupervisor.calculateDelay(numRestarts, minBackoff, maxBackoff, randomFactor)
-              scheduleOnce(element, delay)
-
-          }
+    setHandler(internalIn, new InHandler {
+      override def onPush(): Unit = {
+        val result = grab(internalIn)
+        retryWith(elementInProgress.get._1, result._1, result._2) match {
+          case None                             => pushExternal(result)
+          case Some(_) if retryNo == maxRetries => pushExternal(result)
+          case Some(element)                    => planRetry(element)
         }
-      })
+      }
+    })
 
     setHandler(externalOut, new OutHandler {
       override def onPull(): Unit =
@@ -133,9 +88,24 @@ import scala.util.Try
         if (!hasBeenPulled(internalIn)) pull(internalIn)
     })
 
+    private def pushExternal(result: (Try[OutData], UserCtx)): Unit = {
+      elementInProgress = None
+      push(externalOut, result)
+      if (isClosed(externalIn)) {
+        completeStage()
+      }
+    }
+
+    private def planRetry(element: (InData, UserCtx)): Unit = {
+      val delay = BackoffSupervisor.calculateDelay(retryNo, minBackoff, maxBackoff, randomFactor)
+      elementInProgress = Some(element)
+      retryNo += 1
+      pull(internalIn)
+      scheduleOnce(element, delay)
+    }
+
     override def onTimer(timerKey: Any): Unit = timerKey match {
-      case element: RetryElement[InData, UserCtx] =>
-        pull(internalIn)
+      case element: (InData, UserCtx) =>
         push(internalOut, element)
     }
 
