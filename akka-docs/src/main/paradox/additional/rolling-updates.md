@@ -149,5 +149,5 @@ see @ref:[the migration guide](../project/migration-guide-2.5.x-2.6.x.md#migrati
 
 ### Migrating from Classic Sharding to Typed Sharding
 
-If you have been using classic sharding it is possible to do a rolling upgrade to typed sharding using a 3 step procedure:
+If you have been using classic sharding it is possible to do a rolling upgrade to typed sharding using a 3 step procedure.
 The steps along with example commits are detailed in [this sample PR](https://github.com/akka/akka-samples/pull/110) 
