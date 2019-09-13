@@ -33,3 +33,6 @@ RedirectMatch 301 ^(.*)/howto\.html$ https://doc.akka.io/docs/akka/2.5/howto.htm
 RedirectMatch 301 ^(.*)/common/duration\.html$ https://doc.akka.io/docs/akka/2.5/common/duration.html
 RedirectMatch 301 ^(.*)/futures\.html$ https://doc.akka.io/docs/akka/2.5/futures.html
 RedirectMatch 301 ^(.*)/java8-compat\.html$ https://doc.akka.io/docs/akka/2.5/java8-compat.html
+
+RedirectMatch 301 ^(.*)/common/cluster\.html$ $1/typed/cluster-specification.html
+RedirectMatch 301 ^(.*)/additional/observability\.html$ $1/additional/operations.html

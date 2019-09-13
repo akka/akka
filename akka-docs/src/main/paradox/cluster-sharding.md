@@ -41,7 +41,7 @@ the sender to know the location of the destination actor. This is achieved by se
 the messages via a `ShardRegion` actor provided by this extension, which knows how
 to route the message with the entity id to the final destination.
 
-Cluster sharding will not be active on members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up)
+Cluster sharding will not be active on members with status @ref:[WeaklyUp](typed/cluster-membership.md#weaklyup-members)
 if that feature is enabled.
 
 @@@ warning
@@ -49,7 +49,7 @@ if that feature is enabled.
 **Don't use Cluster Sharding together with Automatic Downing**,
 since it allows the cluster to split up into two separate clusters, which in turn will result
 in *multiple shards and entities* being started, one in each separate cluster!
-See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
+See @ref:[Downing](typed/cluster.md#automatic-vs-manual-downing).
 
 @@@
 
@@ -492,7 +492,7 @@ and there was a network partition.
 **Don't use Cluster Sharding together with Automatic Downing**,
 since it allows the cluster to split up into two separate clusters, which in turn will result
 in *multiple shards and entities* being started, one in each separate cluster!
-See @ref:[Downing](cluster-usage.md#automatic-vs-manual-downing).
+See @ref:[Downing](typed/cluster.md#automatic-vs-manual-downing).
 
 @@@
 
