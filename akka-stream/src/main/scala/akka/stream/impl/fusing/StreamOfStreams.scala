@@ -12,7 +12,7 @@ import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
-import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.impl.TraversalBuilder

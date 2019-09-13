@@ -7,8 +7,6 @@ package akka.stream.impl
 import java.util.function.BinaryOperator
 
 import akka.NotUsed
-import akka.actor.ActorRef
-import akka.actor.Props
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
@@ -163,28 +161,6 @@ import scala.util.control.NonFatal
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] =
     new CancelSink(attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[Any, NotUsed] = new CancelSink(attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
- * Creates and wraps an actor into [[org.reactivestreams.Subscriber]] from the given `props`,
- * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorSubscriber]].
- */
-@InternalApi private[akka] final class ActorSubscriberSink[In](
-    props: Props,
-    val attributes: Attributes,
-    shape: SinkShape[In])
-    extends SinkModule[In, ActorRef](shape) {
-
-  override def create(context: MaterializationContext) = {
-    val subscriberRef = context.materializer.actorOf(context, props)
-    (akka.stream.actor.ActorSubscriber[In](subscriberRef), subscriberRef)
-  }
-
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, ActorRef] =
-    new ActorSubscriberSink[In](props, attributes, shape)
-  override def withAttributes(attr: Attributes): SinkModule[In, ActorRef] =
-    new ActorSubscriberSink[In](props, attr, amendShape(attr))
 }
 
 /**
