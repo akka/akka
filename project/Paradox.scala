@@ -68,6 +68,7 @@ object Paradox {
     groupsSettings ++
     Seq(
       name in (Compile, paradox) := "Akka",
+      resolvers += Resolver.jcenterRepo,
       ApidocPlugin.autoImport.apidocRootPackage := "akka",
       DeployRsync.autoImport.deployRsyncArtifact := List(
           (Compile / paradox).value -> s"www/docs/akka/${version.value}"))
