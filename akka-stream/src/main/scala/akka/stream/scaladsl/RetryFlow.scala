@@ -117,7 +117,7 @@ object RetryFlow {
             b.add(
               new RetryFlowCoordinator[InData, UserState, OutData](
                 parallelism,
-                retryWith,
+                (a, b, c) => retryWith.apply(a, b, c).map(_.head),
                 minBackoff,
                 maxBackoff,
                 randomFactor))

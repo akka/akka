@@ -25,7 +25,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
   }
 
   "RetryFlow.withBackoff" should {
-    "skip elements that are retried with an empty collection" in {
+    "skip elements that are retried with an empty collection" ignore {
       val (source, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
@@ -282,7 +282,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       sink.expectError(failedElem.failed.get)
     }
 
-    "finish only after processing all elements in stream" in {
+    "finish only after processing all elements in stream" ignore {
       val (source, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
@@ -405,7 +405,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
   "Coordinator" should {
 
     class ConstructBench[InData, UserState, OutData](
-        retryWith: (InData, Try[OutData], UserState) => Option[immutable.Iterable[(InData, UserState)]]) {
+        retryWith: (InData, Try[OutData], UserState) => Option[(InData, UserState)]) {
 
       def setup() = {
         val retry: RetryFlowCoordinator[InData, UserState, OutData] =
@@ -458,7 +458,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     type OutData = String
 
     "send successful elements accross" in new ConstructBench[InData, UserCtx, OutData]({
-      val retryWith: (InData, Try[OutData], UserCtx) => Option[immutable.Iterable[(InData, UserCtx)]] = {
+      val retryWith: (InData, Try[OutData], UserCtx) => Option[(InData, UserCtx)] = {
         case (_, Success(t), state) => None
         case (_, Failure(e), state) => ???
       }
@@ -479,9 +479,9 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     }
 
     "retry for a failure" in new ConstructBench({
-      val retryWith: (InData, Try[OutData], UserCtx) => Option[immutable.Iterable[(InData, UserCtx)]] = {
+      val retryWith: (InData, Try[OutData], UserCtx) => Option[(InData, UserCtx)] = {
         case (_, Success(t), state) => None
-        case (_, Failure(e), state) => Some(List(("A'", 2)))
+        case (_, Failure(e), state) => Some(("A'", 2))
 
       }
       retryWith
@@ -509,48 +509,48 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       externalOut.requestNext() shouldBe (Success("Ares"), 1)
     }
 
-    "retry two elements for a failure" in new ConstructBench({
-      val retryWith: (InData, Try[OutData], UserCtx) => Option[immutable.Iterable[(InData, UserCtx)]] = {
-        case (_, Success(t), state) => None
-        case (_, Failure(e), state) => Some(List(("A'", 2), ("A''", 3)))
-      }
-      retryWith
-    }) {
-
-      // demand on stream end
-      externalOut.request(1)
-
-      // push element
-      val element1 = ("A", 1)
-      externalIn.sendNext(element1)
-
-      // let element go via retryable flow
-      val try1 = internalOut.requestNext()
-      try1.in shouldBe element1._1
-      try1.userState shouldBe element1._2
-      internalIn.sendNext(new RetryResult(try1, Failure(new RuntimeException("boom")), 1))
-
-      // let element go via retryable flow
-      val try2 = internalOut.requestNext(3.seconds)
-      try2.in shouldBe "A'"
-      try2.userState shouldBe 2
-      internalIn.sendNext(new RetryResult(try2, Success("Ares"), 1))
-
-      // let element go via retryable flow
-      val try3 = internalOut.requestNext(3.seconds)
-      try3.in shouldBe "A''"
-      try3.userState shouldBe 3
-      internalIn.sendNext(new RetryResult(try3, Success("Ares'"), 1))
-
-      // expect result
-      externalOut.requestNext() shouldBe (Success("Ares"), 1)
-      externalOut.requestNext() shouldBe (Success("Ares'"), 1)
-    }
+//    "retry two elements for a failure" in new ConstructBench({
+//      val retryWith: (InData, Try[OutData], UserCtx) => Option[immutable.Iterable[(InData, UserCtx)]] = {
+//        case (_, Success(t), state) => None
+//        case (_, Failure(e), state) => Some(List(("A'", 2), ("A''", 3)))
+//      }
+//      retryWith
+//    }) {
+//
+//      // demand on stream end
+//      externalOut.request(1)
+//
+//      // push element
+//      val element1 = ("A", 1)
+//      externalIn.sendNext(element1)
+//
+//      // let element go via retryable flow
+//      val try1 = internalOut.requestNext()
+//      try1.in shouldBe element1._1
+//      try1.userState shouldBe element1._2
+//      internalIn.sendNext(new RetryResult(try1, Failure(new RuntimeException("boom")), 1))
+//
+//      // let element go via retryable flow
+//      val try2 = internalOut.requestNext(3.seconds)
+//      try2.in shouldBe "A'"
+//      try2.userState shouldBe 2
+//      internalIn.sendNext(new RetryResult(try2, Success("Ares"), 1))
+//
+//      // let element go via retryable flow
+//      val try3 = internalOut.requestNext(3.seconds)
+//      try3.in shouldBe "A''"
+//      try3.userState shouldBe 3
+//      internalIn.sendNext(new RetryResult(try3, Success("Ares'"), 1))
+//
+//      // expect result
+//      externalOut.requestNext() shouldBe (Success("Ares"), 1)
+//      externalOut.requestNext() shouldBe (Success("Ares'"), 1)
+//    }
 
     "allow to send two elements" in new ConstructBench({
-      val retryWith: (InData, Try[OutData], UserCtx) => Option[immutable.Iterable[(InData, UserCtx)]] = {
+      val retryWith: (InData, Try[OutData], UserCtx) => Option[(InData, UserCtx)] = {
         case (_, Success(t), state) => None
-        case (_, Failure(e), state) => Some(List(("A'", 2)))
+        case (_, Failure(e), state) => Some(("A'", 2))
       }
       retryWith
     }) {

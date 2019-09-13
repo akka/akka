@@ -45,7 +45,7 @@ import scala.util.Try
  */
 @InternalApi private[akka] class RetryFlowCoordinator[InData, UserCtx, OutData](
     outBufferSize: Int,
-    retryWith: (InData, Try[OutData], UserCtx) => Option[immutable.Iterable[(InData, UserCtx)]],
+    retryWith: (InData, Try[OutData], UserCtx) => Option[(InData, UserCtx)],
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
     randomFactor: Double)
@@ -134,11 +134,10 @@ import scala.util.Try
             case None => pushAndCompleteIfLast((result.out, result.state))
             case Some(xs) =>
               val current = System.nanoTime() - nanoTimeOffset
-              queueRetries ++= xs.map {
-                case (in, state) =>
-                  val numRestarts = result.tried.internalState.numberOfRestarts + 1
-                  val delay = BackoffSupervisor.calculateDelay(numRestarts, minBackoff, maxBackoff, randomFactor)
-                  new RetryElement(in, state, new RetryState(numRestarts, current + delay.toNanos))
+              queueRetries ++= Seq {
+                val numRestarts = result.tried.internalState.numberOfRestarts + 1
+                val delay = BackoffSupervisor.calculateDelay(numRestarts, minBackoff, maxBackoff, randomFactor)
+                new RetryElement(xs._1, xs._2, new RetryState(numRestarts, current + delay.toNanos))
               }
 
               // TODO why? This emit elements if Try is Success, but still retries with the elements in `xs`
