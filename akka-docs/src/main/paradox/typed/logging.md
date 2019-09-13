@@ -2,7 +2,7 @@
 
 ## Dependency
 
-To use Logging, you must at least use the Akka actors dependency in your project, and will configure logging
+To use Logging, you must at least use the Akka actors dependency in your project, and configure logging
 via the SLF4J backend, such as Logback configuration.
 
 @@dependency[sbt,Maven,Gradle] {
@@ -84,7 +84,7 @@ don't allocate the vararg array.
 
 When using the methods for 2 argument placeholders the compiler will often not be able to select the
 right method and report compiler error "ambiguous reference to overloaded definition". To work around this
-problem you can use the `trace2`, ``debug2`, `info2`, `warn2` or `error2` extension methods that are added
+problem you can use the `trace2`, `debug2`, `info2`, `warn2` or `error2` extension methods that are added
 by `import akka.actor.typed.scaladsl.LoggerOps` or `import akka.actor.typed.scaladsl._`.
 
 Scala
@@ -93,7 +93,7 @@ Scala
 When using the methods for 3 or more argument placeholders, the compiler will not be able to convert
 the method parameters to the vararg array when they contain primitive values such as `Int`,
 and report compiler error "overloaded method value info with alternatives".
-To work around this problem you can use the `traceN`, ``debugN`, `infoN`, `warnN` or `errorN` extension
+To work around this problem you can use the `traceN`, `debugN`, `infoN`, `warnN` or `errorN` extension
 methods that are added by the same `LoggerOps` import.
 
 Scala
@@ -289,19 +289,6 @@ akka {
   # Log the complete configuration at INFO level when the actor system is started.
   # This is useful when you are uncertain of what configuration is used.
   log-config-on-start = on
-}
-```
-
-If you want very detailed logging of all lifecycle changes of Actors (restarts, deaths etc):
-
-```
-akka {
-  actor {
-    debug {
-      # enable DEBUG logging of actor lifecycle changes
-      lifecycle = on
-    }
-  }
 }
 ```
 
