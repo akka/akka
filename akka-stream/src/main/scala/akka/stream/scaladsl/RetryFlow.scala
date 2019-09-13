@@ -4,9 +4,11 @@
 
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.annotation.ApiMayChange
 import akka.stream.{ BidiShape, FanInShape2, FlowShape }
 import akka.stream.impl.RetryFlowCoordinator
+
 import scala.concurrent.duration._
 import scala.util.Try
 
@@ -99,30 +101,15 @@ object RetryFlow {
       : FlowWithContext[InData, UserState, Try[OutData], UserState, Mat] =
     FlowWithContext.fromTuples {
       Flow.fromGraph {
-        GraphDSL.create(flow) { implicit b => origFlow =>
-          import GraphDSL.Implicits._
+        val retryCoordination = BidiFlow.fromGraph(
+          new RetryFlowCoordinator[InData, UserState, OutData](
+            retryWith,
+            minBackoff,
+            maxBackoff,
+            randomFactor,
+            maxRetries))
 
-          val retry: BidiShape[
-            (InData, UserState),
-            (InData, UserState),
-            (Try[OutData], UserState),
-            (Try[OutData], UserState)] =
-            b.add(
-              new RetryFlowCoordinator[InData, UserState, OutData](
-                (a, b, c) => retryWith.apply(a, b, c),
-                minBackoff,
-                maxBackoff,
-                randomFactor,
-                maxRetries))
-          val externalIn = retry.in1
-          val externalOut = retry.out2
-          val internalOut = retry.out1
-          val internalIn = retry.in2
-
-          internalOut ~> origFlow ~> internalIn
-
-          FlowShape(externalIn, externalOut)
-        }
+        retryCoordination.joinMat(flow)(Keep.right)
       }
     }
 }
