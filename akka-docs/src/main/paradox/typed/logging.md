@@ -99,6 +99,12 @@ methods that are added by the same `LoggerOps` import.
 Scala
 :  @@snip [LoggingDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/LoggingDocExamples.scala) { #infoN }
 
+If you find it tedious to add the import of `LoggerOps` at many places you can make those additional methods
+available with a single implicit conversion placed in a root package object of your code:
+
+Scala
+:  @@snip [package.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/myapp/package.scala) { #loggerops-package-implicit }
+
 @@@
 
 ### Behaviors.logMessages
