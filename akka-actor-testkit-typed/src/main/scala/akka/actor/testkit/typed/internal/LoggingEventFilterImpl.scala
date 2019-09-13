@@ -75,17 +75,29 @@ import org.slf4j.event.Level
     todo == Int.MaxValue || todo == 0
   }
 
+  private def awaitNoExcess(max: Duration): Boolean = {
+    if (todo == 0)
+      !TestKit.awaitCond(todo < 0, max, noThrow = true)
+    else
+      todo > 0
+  }
+
   override def intercept[T](code: => T)(implicit system: ActorSystem[_]): T = {
     val effectiveLoggerName = loggerName.getOrElse("")
     checkLogback(system)
     TestAppender.setupTestAppender(effectiveLoggerName)
     TestAppender.addFilter(effectiveLoggerName, this)
-    val leeway = TestKitSettings(system).FilterLeeway
+    val settings = TestKitSettings(system)
     try {
       val result = code
-      if (!awaitDone(leeway))
+
+      // wait some more when occurrences=0 to find asynchronous exceess messages
+      if (occurrences == 0)
+        awaitNoExcess(settings.ExpectNoMessageDefaultTimeout)
+
+      if (!awaitDone(settings.FilterLeeway))
         if (todo > 0)
-          throw new AssertionError(s"Timeout ($leeway) waiting for $todo messages on $this.")
+          throw new AssertionError(s"Timeout (${settings.FilterLeeway}) waiting for $todo messages on $this.")
         else
           throw new AssertionError(s"Received ${-todo} excess messages on $this.")
       result

@@ -26,6 +26,13 @@ import org.slf4j.event.Level
 
   /**
    * Number of events the filter is supposed to match. By default 1.
+   *
+   * When occurrences > 0 it will not look for excess messages that are logged asynchronously
+   * outside (after) the `intercept` thunk and it has already found expected number.
+   *
+   * When occurrences is 0 it will look for unexpected matching events, and then it will
+   * also look for excess messages during the configured `akka.actor.testkit.typed.expect-no-message-default`
+   * duration.
    */
   def withOccurrences(newOccurrences: Int): LoggingEventFilter
 
