@@ -62,31 +62,25 @@ object RetryFlow {
    *
    * Allows retrying individual elements in the stream with an exponential backoff.
    *
-   * The retry condition is controlled by the `retryWith` partial function. It takes an output element of the wrapped
-   * flow and should return one or more requests to be retried. For example:
+   * The retry condition is controlled by the `retryWith` function. It takes the original emitted element,
+   * the response emitted by `flow`, and should return a request to be retried. For example:
    *
-   * `case Failure(_) => Some(List(..., ..., ...))` - for every failed response will issue three requests to retry
+   * `case (_, Failure(_), _) => Some(...)` - the request will be tried again
    *
-   * `case Failure(_) => Some(Nil)` - every failed response will be ignored
+   * `case (_, Failure(_), _) => None` - the failed response will be propagated downstream
    *
-   * `case Failure(_) => None` - every failed response will be propagated downstream
+   * `case (_, Success(_), _) => Some(...)` - after the successful response the request will be tried again
    *
-   * `case Success(_) => Some(List(...))` - for every successful response a single retry will be issued
+   * The implementation of the `RetryFlow` assumes that `flow` follows one-in-one-out element semantics.
    *
-   * A successful or failed response will be propagated downstream if it is not matched by the `retryFlow` function.
-   *
-   * If a successful response is matched and issued a retry, the response is still propagated downstream.
-   *
-   * The implementation of the RetryFlow assumes that `flow` follows one-in-one-out element semantics.
-   *
-   * The wrapped `flow` and `retryWith` takes an additional `UserState` parameter which can be used to correlate a request
-   * with a response.
-   *
-   * Backoff state is tracked separately per-element coming into the wrapped `flow`.
+   * The wrapped `flow` and `retryWith` take an additional `UserContext` parameter which can be just
+   * a pass-through or used control retrying with other information.
    *
    * @param minBackoff minimum duration to backoff between issuing retries
    * @param maxBackoff maximum duration to backoff between issuing retries
    * @param randomFactor adds jitter to the retry delay. Use 0 for no jitter
+   * @param maxRetries total number of allowed restarts, when reached the last result will be emitted
+   *                   even if unsuccessful
    * @param flow a flow with context to retry elements from
    * @param retryWith retry condition decision partial function
    */

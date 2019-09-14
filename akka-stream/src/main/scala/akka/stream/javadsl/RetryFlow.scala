@@ -4,14 +4,12 @@
 
 package akka.stream.javadsl
 
-import java.util
 import java.util.Optional
 import java.util.function.BiFunction
 
 import akka.annotation.ApiMayChange
 import akka.japi.Pair
 import akka.stream.scaladsl
-import akka.util.ccompat.JavaConverters._
 
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
@@ -37,7 +35,6 @@ object RetryFlow {
    *
    * Backoff state is tracked separately per-element coming into the wrapped `flow`.
    *
-   * @param parallelism controls the number of in-flight requests in the wrapped flow
    * @param minBackoff minimum duration to backoff between issuing retries
    * @param maxBackoff maximum duration to backoff between issuing retries
    * @param randomFactor adds jitter to the retry delay. Use 0 for no jitter
@@ -46,14 +43,16 @@ object RetryFlow {
    */
   @ApiMayChange
   def withBackoff[In, Out, State, Mat](
-      parallelism: Int,
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
       randomFactor: Double,
+      maxRetries: Int,
       flow: Flow[Pair[In, State], Pair[Try[Out], State], Mat],
-      retryWith: BiFunction[Pair[Out, State], Pair[Throwable, State], Optional[util.Collection[Pair[In, State]]]])
-      : Flow[Pair[In, State], Pair[Try[Out], State], Mat] = {
-    withBackoffAndContext(parallelism, minBackoff, maxBackoff, randomFactor, FlowWithContext.fromPairs(flow), retryWith)
+      retryWith: BiFunction[
+        akka.japi.tuple.Tuple3[In, Out, State],
+        akka.japi.tuple.Tuple3[In, Throwable, State],
+        Optional[Pair[In, State]]]): Flow[Pair[In, State], Pair[Try[Out], State], Mat] = {
+    withBackoffAndContext(minBackoff, maxBackoff, randomFactor, maxRetries, FlowWithContext.fromPairs(flow), retryWith)
       .asFlow()
   }
 
@@ -70,12 +69,11 @@ object RetryFlow {
    *
    * The implementation of the RetryFlow assumes that `flow` follows one-in-one-out element semantics.
    *
-   * The `flow` and `retryWith` take an additional `State` parameter which can be used to correlate a request
+   * The `flow` and `retryWith` take an additional `UserCtx` parameter which can be used to correlate a request
    * with a response.
    *
    * Backoff state is tracked separately per-element coming into the wrapped `flow`.
    *
-   * @param parallelism controls the number of in-flight requests in the wrapped flow
    * @param minBackoff minimum duration to backoff between issuing retries
    * @param maxBackoff maximum duration to backoff between issuing retries
    * @param randomFactor adds jitter to the retry delay. Use 0 for no jitter
@@ -83,28 +81,31 @@ object RetryFlow {
    * @param retryWith retry condition decision function
    */
   @ApiMayChange
-  def withBackoffAndContext[In, Out, State, Mat](
-      parallelism: Int,
+  def withBackoffAndContext[In, Out, UserCtx, Mat](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
       randomFactor: Double,
-      flow: FlowWithContext[In, State, Try[Out], State, Mat],
-      retryWith: BiFunction[Pair[Out, State], Pair[Throwable, State], Optional[util.Collection[Pair[In, State]]]])
-      : FlowWithContext[In, State, Try[Out], State, Mat] =
+      maxRetries: Int,
+      flow: FlowWithContext[In, UserCtx, Try[Out], UserCtx, Mat],
+      retryWith: BiFunction[
+        akka.japi.tuple.Tuple3[In, Out, UserCtx],
+        akka.japi.tuple.Tuple3[In, Throwable, UserCtx],
+        Optional[Pair[In, UserCtx]]]): FlowWithContext[In, UserCtx, Try[Out], UserCtx, Mat] =
     scaladsl.RetryFlow
-      .withBackoffAndContext(
+      .withBackoffAndContext[In, Out, UserCtx, Mat](
         Duration.fromNanos(minBackoff.toNanos),
         Duration.fromNanos(maxBackoff.toNanos),
         randomFactor,
-        42, // TODO
-        flow.asScala) {
-        case result => ???
-//          val retryAttempt = result match {
-//            case (Success(value), s)     => retryWith(Pair.create(value, s), null)
-//            case (Failure(exception), s) => retryWith(null, Pair.create(exception, s))
-//          }
-//          retryAttempt.asScala.map(coll => coll.asScala.toIndexedSeq.map(pair => (pair.first, pair.second)))
-      }
-      .asJava[In, State, Try[Out], State, Mat]
+        maxRetries,
+        flow.asScala)({ (in, out, ctx) =>
+        {
+          val retryAttempt = out match {
+            case Success(value)     => retryWith(akka.japi.tuple.Tuple3.create(in, value, ctx), null)
+            case Failure(exception) => retryWith(null, akka.japi.tuple.Tuple3.create(in, exception, ctx))
+          }
+          retryAttempt.asScala.map(_.toScala)
+        }
+      })
+      .asJava[In, UserCtx, Try[Out], UserCtx, Mat]
 
 }

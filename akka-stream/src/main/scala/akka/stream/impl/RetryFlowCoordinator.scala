@@ -36,7 +36,7 @@ import scala.util.Try
 
   override def createLogic(attributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
 
-    private var elementInProgress: Option[(InData, UserCtx)] = None
+    private var elementInProgress: Option[InData] = None
     private var retryNo = 0
 
     setHandler(
@@ -44,7 +44,7 @@ import scala.util.Try
       new InHandler {
         override def onPush(): Unit = {
           val element = grab(externalIn)
-          elementInProgress = Some(element)
+          elementInProgress = Some(element._1)
           retryNo = 0
           push(internalOut, element)
         }
@@ -74,7 +74,7 @@ import scala.util.Try
     setHandler(internalIn, new InHandler {
       override def onPush(): Unit = {
         val result = grab(internalIn)
-        retryWith(elementInProgress.get._1, result._1, result._2) match {
+        retryWith(elementInProgress.get, result._1, result._2) match {
           case None                             => pushExternal(result)
           case Some(_) if retryNo == maxRetries => pushExternal(result)
           case Some(element)                    => planRetry(element)
@@ -98,7 +98,7 @@ import scala.util.Try
 
     private def planRetry(element: (InData, UserCtx)): Unit = {
       val delay = BackoffSupervisor.calculateDelay(retryNo, minBackoff, maxBackoff, randomFactor)
-      elementInProgress = Some(element)
+      elementInProgress = Some(element._1)
       retryNo += 1
       pull(internalIn)
       scheduleOnce(element, delay)

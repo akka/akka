@@ -37,10 +37,10 @@ public class RetryFlowTest extends StreamTest {
 
   @Test
   public void retrySuccessfulResponses() {
-    final Integer parallelism = 8;
     final Duration minBackoff = Duration.ofMillis(10);
     final Duration maxBackoff = Duration.ofSeconds(5);
-    final Integer randomFactor = 0;
+    final double randomFactor = 0d;
+    final int maxRetries = 3;
     final Flow<Pair<Integer, NotUsed>, Pair<Try<Integer>, NotUsed>, NotUsed> flow =
         Flow.fromFunction(
             in -> {
@@ -51,16 +51,16 @@ public class RetryFlowTest extends StreamTest {
     // #retry-success
     final Flow<Pair<Integer, NotUsed>, Pair<Try<Integer>, NotUsed>, NotUsed> retryFlow =
         RetryFlow.withBackoff(
-            parallelism,
             minBackoff,
             maxBackoff,
             randomFactor,
+            maxRetries,
             flow,
             (success, failure) -> {
               if (success != null) {
-                final Integer result = success.first();
+                final Integer result = success.t1();
                 if (result > 0) {
-                  return Optional.of(Collections.singleton(Pair.create(result, notUsed())));
+                  return Optional.of(Pair.create(result, notUsed()));
                 }
               }
               return Optional.empty();
@@ -92,10 +92,10 @@ public class RetryFlowTest extends StreamTest {
 
   @Test
   public void retryFailedResponses() {
-    final Integer parallelism = 8;
     final Duration minBackoff = Duration.ofMillis(10);
     final Duration maxBackoff = Duration.ofSeconds(5);
-    final Integer randomFactor = 0;
+    final double randomFactor = 0d;
+    final int maxRetries = 3;
     final Flow<Pair<Integer, Integer>, Pair<Try<Integer>, Integer>, NotUsed> flow =
         Flow.fromFunction(
             in -> {
@@ -108,16 +108,16 @@ public class RetryFlowTest extends StreamTest {
     // #retry-failure
     final Flow<Pair<Integer, Integer>, Pair<Try<Integer>, Integer>, NotUsed> retryFlow =
         RetryFlow.withBackoff(
-            parallelism,
             minBackoff,
             maxBackoff,
             randomFactor,
+            maxRetries,
             flow,
             (success, failure) -> {
               if (failure != null) {
-                final Integer state = failure.second();
+                final Integer state = failure.t3();
                 if (state > 0) {
-                  return Optional.of(Collections.singleton(Pair.create(state / 2, state / 2)));
+                  return Optional.of(Pair.create(state / 2, state / 2));
                 }
               }
               return Optional.empty();
@@ -148,10 +148,10 @@ public class RetryFlowTest extends StreamTest {
 
   @Test
   public void supportFlowWithContext() {
-    final Integer parallelism = 8;
     final Duration minBackoff = Duration.ofMillis(10);
     final Duration maxBackoff = Duration.ofSeconds(5);
-    final Integer randomFactor = 0;
+    final double randomFactor = 0d;
+    final int maxRetries = 3;
     final FlowWithContext<Integer, Integer, Try<Integer>, Integer, NotUsed> flow =
         Flow.<Integer>create()
             .<Integer, Integer, Integer>asFlowWithContext((el, ctx) -> el, ctx -> ctx)
@@ -167,17 +167,16 @@ public class RetryFlowTest extends StreamTest {
                 .asSourceWithContext(ctx -> ctx)
                 .via(
                     RetryFlow.withBackoffAndContext(
-                        parallelism,
                         minBackoff,
                         maxBackoff,
                         randomFactor,
+                        maxRetries,
                         flow,
                         (success, failure) -> {
                           if (failure != null) {
-                            final Integer state = failure.second();
+                            final Integer state = failure.t3();
                             if (state > 0) {
-                              return Optional.of(
-                                  Collections.singleton(Pair.create(state / 2, state / 2)));
+                              return Optional.of(Pair.create(state / 2, state / 2));
                             }
                           }
                           return Optional.empty();
