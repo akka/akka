@@ -553,7 +553,7 @@ class FlowGroupBySpec extends StreamSpec("""
     }
 
     "work with random demand" in assertAllStagesStopped {
-      val probes = IndexedSeq.tabulate(100)(_ => Promise[TestSubscriber.Probe[ByteString]]())
+      val probes = IndexedSeq.fill(100)(Promise[TestSubscriber.Probe[ByteString]]())
 
       final class ProbeSink(val attributes: Attributes, shape: SinkShape[ByteString])(implicit system: ActorSystem)
           extends SinkModule[ByteString, TestSubscriber.Probe[ByteString]](shape) {
