@@ -24,7 +24,6 @@ import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.Await
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 
@@ -75,14 +74,6 @@ import scala.concurrent.Future
     supervisor match {
       case ref: LocalActorRef =>
         ref.underlying.attachChild(props, name, systemService = false)
-      case ref: RepointableActorRef =>
-        if (ref.isStarted)
-          ref.underlying.asInstanceOf[ActorCell].attachChild(props, name, systemService = false)
-        else {
-          implicit val timeout = ref.system.settings.CreationTimeout
-          val f = (supervisor ? StreamSupervisor.Materialize(props, name)).mapTo[ActorRef]
-          Await.result(f, timeout.duration)
-        }
       case unknown =>
         throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
     }
@@ -213,14 +204,6 @@ private[akka] class SubFusingActorMaterializerImpl(
       extends DeadLetterSuppression
       with NoSerializationVerificationNeeded
 
-  final case class AddFunctionRef(f: (ActorRef, Any) => Unit, name: String)
-      extends DeadLetterSuppression
-      with NoSerializationVerificationNeeded
-
-  final case class RemoveFunctionRef(ref: FunctionRef)
-      extends DeadLetterSuppression
-      with NoSerializationVerificationNeeded
-
   case object GetChildrenSnapshots
   final case class ChildrenSnapshots(seq: immutable.Seq[StreamSnapshot])
       extends DeadLetterSuppression
@@ -251,11 +234,6 @@ private[akka] class SubFusingActorMaterializerImpl(
     case Materialize(props, name) =>
       val impl = context.actorOf(props, name)
       sender() ! impl
-    case AddFunctionRef(f, name) =>
-      val ref = context.asInstanceOf[ActorCell].addFunctionRef(f, name)
-      sender() ! ref
-    case RemoveFunctionRef(ref) =>
-      context.asInstanceOf[ActorCell].removeFunctionRef(ref)
     case GetChildren =>
       sender() ! Children(context.children.toSet)
     case GetChildrenSnapshots =>
