@@ -28,10 +28,10 @@ public class TailChopping<Reply> extends AbstractBehavior<TailChopping.Command> 
     INSTANCE
   }
 
-  private static class WrappedReply<R> implements Command {
-    final R reply;
+  private class WrappedReply implements Command {
+    final Reply reply;
 
-    private WrappedReply(R reply) {
+    private WrappedReply(Reply reply) {
       this.reply = reply;
     }
   }
@@ -85,18 +85,20 @@ public class TailChopping<Reply> extends AbstractBehavior<TailChopping.Command> 
     this.timeoutReply = timeoutReply;
 
     replyAdapter = context.messageAdapter(replyClass, WrappedReply::new);
+
+    sendNextRequest();
   }
 
   @Override
   public Receive<Command> createReceive() {
     return newReceiveBuilder()
         .onMessage(WrappedReply.class, this::onReply)
-        .onMessage(RequestTimeout.class, __ -> onRequestTimeout())
-        .onMessage(FinalTimeout.class, __ -> onFinalTimeout())
+        .onMessage(RequestTimeout.class, notUsed -> onRequestTimeout())
+        .onMessage(FinalTimeout.class, notUsed -> onFinalTimeout())
         .build();
   }
 
-  private Behavior<Command> onReply(WrappedReply<Reply> wrappedReply) {
+  private Behavior<Command> onReply(WrappedReply wrappedReply) {
     Reply reply = wrappedReply.reply;
     replyTo.tell(reply);
     return Behaviors.stopped();

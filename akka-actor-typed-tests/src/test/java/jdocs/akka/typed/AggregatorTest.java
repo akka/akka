@@ -4,6 +4,7 @@
 
 package jdocs.akka.typed;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
@@ -13,6 +14,7 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -31,9 +33,9 @@ import static jdocs.akka.typed.AggregatorTest.IllustrateUsage.Hotel2;
 import static org.junit.Assert.assertEquals;
 
 public class AggregatorTest extends JUnitSuite {
-  @ClassRule
-  public static final TestKitJunitResource testKit =
-      new TestKitJunitResource("akka.loglevel = WARNING");
+  @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   @Test
   public void testCollectReplies() {
@@ -181,6 +183,8 @@ public class AggregatorTest extends JUnitSuite {
             replies.stream()
                 .map(
                     r -> {
+                      // The hotels have different protocols with different replies,
+                      // convert them to `HotelCustomer.Quote` that this actor understands.
                       if (r instanceof Hotel1.Quote) {
                         Hotel1.Quote q = (Hotel1.Quote) r;
                         return new Quote(q.hotel, q.price);

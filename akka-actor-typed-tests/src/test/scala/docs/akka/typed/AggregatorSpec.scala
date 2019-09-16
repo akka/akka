@@ -6,6 +6,7 @@ package docs.akka.typed
 
 import scala.concurrent.duration._
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
@@ -44,6 +45,8 @@ object AggregatorSpec {
               expectedReplies = 2,
               context.self,
               aggregateReplies = replies =>
+                // The hotels have different protocols with different replies,
+                // convert them to `HotelCustomer.Quote` that this actor understands.
                 AggregatedQuotes(
                   replies
                     .map {
@@ -66,7 +69,7 @@ object AggregatorSpec {
   }
 }
 
-class AggregatorSpec extends ScalaTestWithActorTestKit("akka.loglevel = WARNING") with WordSpecLike {
+class AggregatorSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   "Aggregator" must {
 

@@ -26,10 +26,10 @@ public class Aggregator<Reply, Aggregate> extends AbstractBehavior<Aggregator.Co
     INSTANCE
   }
 
-  private static class WrappedReply<R> implements Command {
-    final R reply;
+  private class WrappedReply implements Command {
+    final Reply reply;
 
-    private WrappedReply(R reply) {
+    private WrappedReply(Reply reply) {
       this.reply = reply;
     }
   }
@@ -80,11 +80,11 @@ public class Aggregator<Reply, Aggregate> extends AbstractBehavior<Aggregator.Co
   public Receive<Command> createReceive() {
     return newReceiveBuilder()
         .onMessage(WrappedReply.class, this::onReply)
-        .onMessage(ReceiveTimeout.class, __ -> onReceiveTimeout())
+        .onMessage(ReceiveTimeout.class, notUsed -> onReceiveTimeout())
         .build();
   }
 
-  private Behavior<Command> onReply(WrappedReply<Reply> wrappedReply) {
+  private Behavior<Command> onReply(WrappedReply wrappedReply) {
     Reply reply = wrappedReply.reply;
     replies.add(reply);
     if (replies.size() == expectedReplies) {
