@@ -22,3 +22,7 @@ ProblemFilters.exclude[MissingTypesProblem]("akka.cluster.protobuf.msg.ClusterMe
 # Upgrade to protobuf 3
 ProblemFilters.exclude[Problem]("akka.cluster.protobuf.msg.ClusterMessages*")
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.protobuf.ClusterMessageSerializer.compress")
+
+# #24955 publish of UnreachableDataCenter and ReachableDataCenter
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ClusterEvent.isReachable")
+
