@@ -63,7 +63,7 @@ public class AccountExampleTest extends JUnitSuite {
 
   @Test
   public void handleDeposit() {
-    EntityRef<AccountCommand> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "1");
+    EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "1");
     TestProbe<OperationResult> probe = testKit.createTestProbe(OperationResult.class);
     ref.tell(new CreateAccount(probe.getRef()));
     probe.expectMessage(Confirmed.INSTANCE);
@@ -75,7 +75,7 @@ public class AccountExampleTest extends JUnitSuite {
 
   @Test
   public void handleWithdraw() {
-    EntityRef<AccountCommand> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "2");
+    EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "2");
     TestProbe<OperationResult> probe = testKit.createTestProbe(OperationResult.class);
     ref.tell(new CreateAccount(probe.getRef()));
     probe.expectMessage(Confirmed.INSTANCE);
@@ -87,7 +87,7 @@ public class AccountExampleTest extends JUnitSuite {
 
   @Test
   public void rejectWithdrawOverdraft() {
-    EntityRef<AccountCommand> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "3");
+    EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "3");
     TestProbe<OperationResult> probe = testKit.createTestProbe(OperationResult.class);
     ref.tell(new CreateAccount(probe.getRef()));
     probe.expectMessage(Confirmed.INSTANCE);
@@ -99,7 +99,7 @@ public class AccountExampleTest extends JUnitSuite {
 
   @Test
   public void handleGetBalance() {
-    EntityRef<AccountCommand> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "4");
+    EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "4");
     TestProbe<OperationResult> opProbe = testKit.createTestProbe(OperationResult.class);
     ref.tell(new CreateAccount(opProbe.getRef()));
     opProbe.expectMessage(Confirmed.INSTANCE);
@@ -115,7 +115,7 @@ public class AccountExampleTest extends JUnitSuite {
   @Test
   public void beUsableWithAsk() throws Exception {
     Duration timeout = Duration.ofSeconds(3);
-    EntityRef<AccountCommand> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "5");
+    EntityRef<Command> ref = sharding().entityRefFor(AccountEntity.ENTITY_TYPE_KEY, "5");
     CompletionStage<OperationResult> createResult = ref.ask(CreateAccount::new, timeout);
     assertEquals(Confirmed.INSTANCE, createResult.toCompletableFuture().get(3, TimeUnit.SECONDS));
 

@@ -23,8 +23,7 @@ import akka.cluster.sharding.typed.javadsl.Entity;
 
 // #import
 
-import jdocs.akka.persistence.typed.BlogPostExample.BlogCommand;
-import jdocs.akka.persistence.typed.BlogPostExample.BlogBehavior;
+import jdocs.akka.persistence.typed.BlogPostEntity;
 
 interface ShardingCompileOnlyTest {
 
@@ -202,9 +201,10 @@ interface ShardingCompileOnlyTest {
     ClusterSharding sharding = ClusterSharding.get(system);
 
     // #persistence
-    EntityTypeKey<BlogCommand> blogTypeKey = EntityTypeKey.create(BlogCommand.class, "BlogPost");
+    EntityTypeKey<BlogPostEntity.Command> blogTypeKey =
+        EntityTypeKey.create(BlogPostEntity.Command.class, "BlogPost");
 
-    sharding.init(Entity.of(blogTypeKey, ctx -> BlogBehavior.behavior(ctx.getEntityId())));
+    sharding.init(Entity.of(blogTypeKey, ctx -> BlogPostEntity.create(ctx.getEntityId())));
     // #persistence
   }
 }

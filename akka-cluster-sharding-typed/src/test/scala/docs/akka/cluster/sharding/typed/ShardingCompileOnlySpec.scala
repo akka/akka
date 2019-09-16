@@ -9,8 +9,8 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.Entity
 import com.github.ghik.silencer.silent
-import docs.akka.persistence.typed.BlogPostExample
-import docs.akka.persistence.typed.BlogPostExample.BlogCommand
+import docs.akka.persistence.typed.BlogPostEntity
+import docs.akka.persistence.typed.BlogPostEntity.Command
 
 @silent
 object ShardingCompileOnlySpec {
@@ -67,12 +67,10 @@ object ShardingCompileOnlySpec {
     shardRegion ! ShardingEnvelope("counter-1", Counter.Increment)
     //#send
 
-    import BlogPostExample.behavior
-
     //#persistence
-    val BlogTypeKey = EntityTypeKey[BlogCommand]("BlogPost")
+    val BlogTypeKey = EntityTypeKey[Command]("BlogPost")
 
-    ClusterSharding(system).init(Entity(typeKey = BlogTypeKey, createBehavior = ctx => behavior(ctx.entityId)))
+    ClusterSharding(system).init(Entity(typeKey = BlogTypeKey, createBehavior = ctx => BlogPostEntity(ctx.entityId)))
     //#persistence
 
   }

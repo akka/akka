@@ -11,48 +11,52 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 
-object BlogPostExample {
+//#behavior
+object BlogPostEntity {
+  // commands, events, state defined here
+
+  //#behavior
 
   //#event
-  sealed trait BlogEvent
-  final case class PostAdded(postId: String, content: PostContent) extends BlogEvent
+  sealed trait Event
+  final case class PostAdded(postId: String, content: PostContent) extends Event
 
-  final case class BodyChanged(postId: String, newBody: String) extends BlogEvent
-  final case class Published(postId: String) extends BlogEvent
+  final case class BodyChanged(postId: String, newBody: String) extends Event
+  final case class Published(postId: String) extends Event
   //#event
 
   //#state
-  sealed trait BlogState
+  sealed trait State
 
-  case object BlankState extends BlogState
+  case object BlankState extends State
 
-  final case class DraftState(content: PostContent) extends BlogState {
+  final case class DraftState(content: PostContent) extends State {
     def withBody(newBody: String): DraftState =
       copy(content = content.copy(body = newBody))
 
     def postId: String = content.postId
   }
 
-  final case class PublishedState(content: PostContent) extends BlogState {
+  final case class PublishedState(content: PostContent) extends State {
     def postId: String = content.postId
   }
   //#state
 
   //#commands
-  sealed trait BlogCommand
+  sealed trait Command
   //#reply-command
-  final case class AddPost(content: PostContent, replyTo: ActorRef[AddPostDone]) extends BlogCommand
+  final case class AddPost(content: PostContent, replyTo: ActorRef[AddPostDone]) extends Command
   final case class AddPostDone(postId: String)
   //#reply-command
-  final case class GetPost(replyTo: ActorRef[PostContent]) extends BlogCommand
-  final case class ChangeBody(newBody: String, replyTo: ActorRef[Done]) extends BlogCommand
-  final case class Publish(replyTo: ActorRef[Done]) extends BlogCommand
+  final case class GetPost(replyTo: ActorRef[PostContent]) extends Command
+  final case class ChangeBody(newBody: String, replyTo: ActorRef[Done]) extends Command
+  final case class Publish(replyTo: ActorRef[Done]) extends Command
   final case class PostContent(postId: String, title: String, body: String)
   //#commands
 
   //#behavior
-  def behavior(entityId: String): Behavior[BlogCommand] =
-    EventSourcedBehavior[BlogCommand, BlogEvent, BlogState](
+  def apply(entityId: String): Behavior[Command] =
+    EventSourcedBehavior[Command, Event, State](
       persistenceId = PersistenceId(s"Blog-$entityId"),
       emptyState = BlankState,
       commandHandler,
@@ -60,7 +64,7 @@ object BlogPostExample {
   //#behavior
 
   //#command-handler
-  private val commandHandler: (BlogState, BlogCommand) => Effect[BlogEvent, BlogState] = { (state, command) =>
+  private val commandHandler: (State, Command) => Effect[Event, State] = { (state, command) =>
     state match {
 
       case BlankState =>
@@ -85,7 +89,7 @@ object BlogPostExample {
     }
   }
 
-  private def addPost(cmd: AddPost): Effect[BlogEvent, BlogState] = {
+  private def addPost(cmd: AddPost): Effect[Event, State] = {
     //#reply
     val evt = PostAdded(cmd.content.postId, cmd.content)
     Effect.persist(evt).thenRun { _ =>
@@ -95,33 +99,33 @@ object BlogPostExample {
     //#reply
   }
 
-  private def changeBody(state: DraftState, cmd: ChangeBody): Effect[BlogEvent, BlogState] = {
+  private def changeBody(state: DraftState, cmd: ChangeBody): Effect[Event, State] = {
     val evt = BodyChanged(state.postId, cmd.newBody)
     Effect.persist(evt).thenRun { _ =>
       cmd.replyTo ! Done
     }
   }
 
-  private def publish(state: DraftState, replyTo: ActorRef[Done]): Effect[BlogEvent, BlogState] = {
+  private def publish(state: DraftState, replyTo: ActorRef[Done]): Effect[Event, State] = {
     Effect.persist(Published(state.postId)).thenRun { _ =>
       println(s"Blog post ${state.postId} was published")
       replyTo ! Done
     }
   }
 
-  private def getPost(state: DraftState, replyTo: ActorRef[PostContent]): Effect[BlogEvent, BlogState] = {
+  private def getPost(state: DraftState, replyTo: ActorRef[PostContent]): Effect[Event, State] = {
     replyTo ! state.content
     Effect.none
   }
 
-  private def getPost(state: PublishedState, replyTo: ActorRef[PostContent]): Effect[BlogEvent, BlogState] = {
+  private def getPost(state: PublishedState, replyTo: ActorRef[PostContent]): Effect[Event, State] = {
     replyTo ! state.content
     Effect.none
   }
   //#command-handler
 
   //#event-handler
-  private val eventHandler: (BlogState, BlogEvent) => BlogState = { (state, event) =>
+  private val eventHandler: (State, Event) => State = { (state, event) =>
     state match {
 
       case BlankState =>
@@ -150,4 +154,8 @@ object BlogPostExample {
   }
   //#event-handler
 
+  //#behavior
+
+  // commandHandler and eventHandler defined here
 }
+//#behavior

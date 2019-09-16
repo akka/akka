@@ -62,7 +62,7 @@ class AccountExampleSpec
     "handle Withdraw" in {
       // OperationResult is the expected reply type for these commands, but it should also be
       // possible to use the super type AccountCommandReply
-      val probe = createTestProbe[AccountCommandReply]()
+      val probe = createTestProbe[CommandReply]()
       val ref = ClusterSharding(system).entityRefFor(AccountEntity.TypeKey, "2")
       ref ! CreateAccount(probe.ref)
       probe.expectMessage(Confirmed)
@@ -80,7 +80,7 @@ class AccountExampleSpec
       // AccountCommand[_] is the command type, but it should also be possible to narrow it to
       // AccountCommand[OperationResult]
       val probe = createTestProbe[OperationResult]()
-      val ref = ClusterSharding(system).entityRefFor[AccountCommand[OperationResult]](AccountEntity.TypeKey, "3")
+      val ref = ClusterSharding(system).entityRefFor[Command[OperationResult]](AccountEntity.TypeKey, "3")
       ref ! CreateAccount(probe.ref)
       probe.expectMessage(Confirmed)
       ref ! Deposit(100, probe.ref)
