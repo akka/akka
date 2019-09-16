@@ -178,8 +178,7 @@ public class AggregatorTest extends JUnitSuite {
 
       private AggregatedQuotes aggregateReplies(List<Object> replies) {
         List<Quote> quotes =
-            replies
-                .stream()
+            replies.stream()
                 .map(
                     r -> {
                       if (r instanceof Hotel1.Quote) {
