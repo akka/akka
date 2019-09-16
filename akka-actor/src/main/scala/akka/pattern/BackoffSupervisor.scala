@@ -8,6 +8,7 @@ import java.util.Optional
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.{ ActorRef, DeadLetterSuppression, OneForOneStrategy, Props, SupervisorStrategy }
+import akka.annotation.InternalApi
 import akka.pattern.internal.BackoffOnStopSupervisor
 import akka.util.JavaDurationConverters._
 
@@ -291,10 +292,16 @@ object BackoffSupervisor {
 
   final case class RestartCount(count: Int)
 
-  // not final for binary compatibility with 2.4.1
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] case object StartChild extends DeadLetterSuppression
 
-  // not final for binary compatibility with 2.4.1
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] case class ResetRestartCount(current: Int) extends DeadLetterSuppression
 
   /**
