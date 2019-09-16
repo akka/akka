@@ -132,6 +132,8 @@ This influences how rolling upgrades should be performed. Don't stop all of the 
 at the same time. Stop one or a few at a time so that new nodes can take over the responsibility.
 It's best to leave the oldest nodes until last.
 
+See the @ref:[failure detector](typed/cluster.md#failure-detector) for more details.
+
 ## Cluster Singleton
 
 The @ref[Cluster Singleton](cluster-singleton.md) is a singleton per data center. If you start the 

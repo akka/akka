@@ -312,58 +312,26 @@ Watching a remote actor is not different than watching a local actor, as describ
 
 ### Failure Detector
 
-Under the hood remote death watch uses heartbeat messages and a failure detector to generate `Terminated`
-message from network failures and JVM crashes, in addition to graceful termination of watched
-actor.
+Please see:
 
-The heartbeat arrival times is interpreted by an implementation of
-[The Phi Accrual Failure Detector](http://www.jaist.ac.jp/~defago/files/pdf/IS_RR_2004_010.pdf).
+* @ref:[Phi Accrual Failure Detector](typed/failure-detector.md) implementation for details
+* [Using the Failure Detector](#using-the-failure-detector) below for usage 
 
-The suspicion level of failure is given by a value called *phi*.
-The basic idea of the phi failure detector is to express the value of *phi* on a scale that
-is dynamically adjusted to reflect current network conditions.
-
-The value of *phi* is calculated as:
+### Using the Failure Detector
+ 
+Remoting uses the `akka.remote.PhiAccrualFailureDetector` failure detector by default, or you can provide your by
+implementing the `akka.remote.FailureDetector` and configuring it:
 
 ```
-phi = -log10(1 - F(timeSinceLastHeartbeat))
-```
+akka.remote.watch-failure-detector.implementation-class = "com.example.CustomFailureDetector"
+``` 
+ 
+In the [Remote Configuration](#remote-configuration) you may want to adjust these
+depending on you environment:
 
-where F is the cumulative distribution function of a normal distribution with mean
-and standard deviation estimated from historical heartbeat inter-arrival times.
-
-In the [Remote Configuration](#remote-configuration) you can adjust the `akka.remote.watch-failure-detector.threshold`
-to define when a *phi* value is considered to be a failure.
-
-A low `threshold` is prone to generate many false positives but ensures
-a quick detection in the event of a real crash. Conversely, a high `threshold`
-generates fewer mistakes but needs more time to detect actual crashes. The
-default `threshold` is 10 and is appropriate for most situations. However in
-cloud environments, such as Amazon EC2, the value could be increased to 12 in
-order to account for network issues that sometimes occur on such platforms.
-
-The following chart illustrates how *phi* increase with increasing time since the
-previous heartbeat.
-
-![phi1.png](./images/phi1.png)
-
-Phi is calculated from the mean and standard deviation of historical
-inter arrival times. The previous chart is an example for standard deviation
-of 200 ms. If the heartbeats arrive with less deviation the curve becomes steeper,
-i.e. it is possible to determine failure more quickly. The curve looks like this for
-a standard deviation of 100 ms.
-
-![phi2.png](./images/phi2.png)
-
-To be able to survive sudden abnormalities, such as garbage collection pauses and
-transient network failures the failure detector is configured with a margin,
-`akka.remote.watch-failure-detector.acceptable-heartbeat-pause`. You may want to
-adjust the [Remote Configuration](#remote-configuration) of this depending on you environment.
-This is how the curve looks like for `acceptable-heartbeat-pause` configured to
-3 seconds.
-
-![phi3.png](./images/phi3.png)
-
+* When a *phi* value is considered to be a failure `akka.remote.watch-failure-detector.threshold`
+* Margin of error for sudden abnormalities `akka.remote.watch-failure-detector.acceptable-heartbeat-pause`  
+ 
 ## Serialization
 
 You need to enable @ref:[serialization](serialization.md) for your actor messages.

@@ -66,10 +66,10 @@ nodes have been downed.
 #### Failure Detector
 
 The failure detector in Akka Cluster is responsible for trying to detect if a node is
-`unreachable` from the rest of the cluster. For this we are using an
-implementation of the @ref:[Phi Accrual Failure Detector](../typed/cluster.md#phi-accrual-failure-detector).
+`unreachable` from the rest of the cluster. For this we are using the
+@ref:[Phi Accrual Failure Detector](failure-detector.md) implementation.
 To be able to survive sudden abnormalities, such as garbage collection pauses and
-transient network failures the failure detector is easily @ref:[configurable](../typed/cluster.md#using-the-failure-detector)
+transient network failures the failure detector is easily @ref:[configurable](cluster.md#using-the-failure-detector)
 for tuning to your environments and needs.
 
 In a cluster each node is monitored by a few (default maximum 5) other nodes.
@@ -85,6 +85,7 @@ The failure detector will also detect if the node becomes `reachable` again. Whe
 all nodes that monitored the `unreachable` node detect it as `reachable` again
 the cluster, after gossip dissemination, will consider it as `reachable`.
 
+<a id="quarantined"></a>
 If system messages cannot be delivered to a node it will be quarantined and then it
 cannot come back from `unreachable`. This can happen if the there are too many
 unacknowledged system messages (e.g. watch, Terminated, remote actor deployment,
@@ -92,9 +93,11 @@ failures of actors supervised by remote parent). Then the node needs to be moved
 to the `down` or `removed` states (see @ref:[Cluster Membership Lifecycle](cluster-membership.md#membership-lifecycle))
 and the actor system of the quarantined node must be restarted before it can join the cluster again.
 
-See the @ref:[Phi Accrual Failure Detector](../typed/cluster.md#phi-accrual-failure-detector) for
-more detail on the implementation and usage.
-
+See the following for more details:
+ 
+* @ref:[Phi Accrual Failure Detector](failure-detector.md) implementation
+* @ref:[Using the Failure Detector](cluster.md#using-the-failure-detector)
+ 
 #### Leader
 
 After gossip convergence a `leader` for the cluster can be determined. There is no

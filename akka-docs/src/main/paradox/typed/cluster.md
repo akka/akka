@@ -321,89 +321,31 @@ The roles are part of the membership information in `MemberEvent` that you can s
 
 ## Failure Detector
 
-The failure detector in Akka Cluster is responsible for trying to detect if a node is `unreachable` from the
-rest of the cluster. Please see the @ref:[Failure Detector specification](cluster-specification.md#failure-detector)
-for the overall principles, and below for the @ref:[Phi Accrual Failure Detector](#phi-accrual-failure-detector) implementation.
- 
-### Phi Accrual Failure Detector
-
 The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
-unreachable from the rest of the cluster. Node heartbeat arrival times are interpreted
-by an implementation of
-[The Phi Accrual Failure Detector](https://pdfs.semanticscholar.org/11ae/4c0c0d0c36dc177c1fff5eb84fa49aa3e1a8.pdf) by Hayashibara et al.
+unreachable from the rest of the cluster and has been downed and removed. Please see:
 
-The suspicion level of failure is represented by a value called *phi*.
-The basic idea of the phi failure detector is to express the value of *phi* on a scale that
-is dynamically adjusted to reflect current network conditions.
-
-The value of *phi* is calculated as:
-
-```
-phi = -log10(1 - F(timeSinceLastHeartbeat))
-```
-
-where F is the cumulative distribution function of a normal distribution with mean
-and standard deviation estimated from historical heartbeat inter-arrival times.
-
-An accrual failure detector decouples monitoring and interpretation. That makes
-them applicable to a wider area of scenarios and more adequate to build generic
-failure detection services. The idea is that it is keeping a history of failure
-statistics, calculated from heartbeats received from other nodes, and is
-trying to do educated guesses by taking multiple factors, and how they
-accumulate over time, into account in order to come up with a better guess if a
-specific node is up or down. Rather than only answering "yes" or "no" to the
-question "is the node down?" it returns a `phi` value representing the
-likelihood that the node is down.
-
-The `threshold` that is the basis for the calculation is configurable by the
-user. A low `threshold` is prone to generate many wrong suspicions but ensures
-a quick detection in the event of a real crash. Conversely, a high `threshold`
-generates fewer mistakes but needs more time to detect actual crashes. The
-default `threshold` is 8 and is appropriate for most situations. However in
-cloud environments, such as Amazon EC2, the value could be increased to 12 in
-order to account for network issues that sometimes occur on such platforms.
+* @ref:[Failure Detector specification](cluster-specification.md#failure-detector)
+* @ref:[Phi Accrual Failure Detector](failure-detector.md) implementation
+* [Using the Failure Detector](#using-the-failure-detector) 
  
-The following chart illustrates how *phi* increase with increasing time since the
-previous heartbeat.
-
-![phi1.png](../images/phi1.png)
-
-Phi is calculated from the mean and standard deviation of historical
-inter arrival times. The previous chart is an example for standard deviation
-of 200 ms. If the heartbeats arrive with less deviation the curve becomes steeper,
-i.e. it is possible to determine failure more quickly. The curve looks like this for
-a standard deviation of 100 ms.
-
-![phi2.png](../images/phi2.png)
-
 ### Using the Failure Detector
-
-Akka Cluster uses the `akka.remote.PhiAccrualFailureDetector` failure detector by default, or you can provide your by
+ 
+Cluster uses the `akka.remote.PhiAccrualFailureDetector` failure detector by default, or you can provide your by
 implementing the `akka.remote.FailureDetector` and configuring it:
 
 ```
-akka.cluster.implementation-class = "akka.remote.PhiAccrualFailureDetector"
+akka.cluster.implementation-class = "com.example.CustomFailureDetector"
 ```
 
-Heartbeats are sent every second by default, or based on the value configured by `akka.cluster.failure-detector.heartbeat-interval`.
-They are performed in a request/reply handshake, and the replies are input to the failure detector.
- 
-The failure detector has a default margin `akka.cluster.failure-detector.acceptable-heartbeat-pause` which you may want to
-adjust depending on your environment. This is what the curve looks like for `acceptable-heartbeat-pause` configured to
-3 seconds.
+In the [Cluster Configuration](#configuration) you may want to adjust these
+depending on you environment:
 
-![phi3.png](../images/phi3.png)
-
-You can adjust the `akka.cluster.failure-detector.threshold` to define when a *phi* value is considered to be a failure.
-
-Death watch uses the cluster failure detector for nodes in the cluster, i.e. it detects
-network failures and JVM crashes, in addition to graceful termination of watched
-actor. Death watch generates the `Terminated` message to the watching actor when the
-unreachable cluster node has been downed and removed.
+* When a *phi* value is considered to be a failure `akka.cluster.failure-detector.threshold`
+* Margin of error for sudden abnormalities `akka.cluster.failure-detector.acceptable-heartbeat-pause`  
 
 If you encounter suspicious false positives when the system is under load you should
 define a separate dispatcher for the cluster actors as described in [Cluster Dispatcher](#cluster-dispatcher).
-
+  
 ## How to Test
 
 Akka comes with and uses several types of testing strategies:
@@ -434,7 +376,7 @@ akka.cluster.log-info-verbose = on
 
 ### Cluster Dispatcher
 
-Under the hood the cluster extension is implemented with actors. To protect them against
+The cluster extension is implemented with actors. To protect them against
 disturbance from user actors they are by default run on the internal dispatcher configured
 under `akka.actor.internal-dispatcher`. The cluster actors can potentially be isolated even
 further onto their own dispatcher using the setting `akka.cluster.use-dispatcher`.
@@ -464,7 +406,7 @@ If you are performing a rolling update on cluster using Akka 2.5.9 or prior (thu
 @@@ 
 
 ## Higher level Cluster tools
- 
+
 @@include[cluster.md](../includes/cluster.md) { #cluster-singleton } 
 See @ref:[Cluster Singleton](cluster-singleton.md).
  
@@ -475,11 +417,8 @@ See @ref:[Cluster Sharding](cluster-sharding.md).
 See @ref:[Distributed Data](distributed-data.md).
 
 @@include[cluster.md](../includes/cluster.md) { #cluster-pubsub } 
-The API is @github[#26338](#26338) and
-currently only in classic @ref:[Distributed Publish Subscribe in Cluster](../distributed-pub-sub.md).
- 
-@@include[cluster.md](../includes/cluster.md) { #cluster-multidc }  
-The API for multi-dc sharding is @github[#27705](#27705),
-this specifically tuned feature is currently only in classic @ref:[Cluster Multi-DC](../cluster-dc.md).
+Classic Pub Sub can be used by leveraging the `.toClassic` adapters.
+See @ref:[Distributed Publish Subscribe in Cluster](../distributed-pub-sub.md). The API is @github[#26338](#26338).
 
-
+@@include[cluster.md](../includes/cluster.md) { #cluster-multidc }
+See @ref:[Cluster Multi-DC](../cluster-dc.md). The API for multi-dc sharding is @github[#27705](#27705).

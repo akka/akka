@@ -66,8 +66,14 @@ of the cluster when the subscription starts and then it receives events for chan
 This section shows the basic usage of the membership API. For the in-depth descriptions on joining, joining to seed nodes, downing and leaving of any node in the cluster please see the full 
 @ref:[Cluster Membership API](typed/cluster.md#cluster-membership-api) documentation.
 
-If not using configuration to specify [seed nodes to join](#joining-to-seed-nodes), joining the cluster can be done programmatically 
-with `Cluster(system).join(address)`. 
+If not using configuration to specify [seed nodes to join](#joining-to-seed-nodes), joining the cluster can be done programmatically: 
+
+Scala
+:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join }
+
+Java
+:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join }
+
 
 Leaving the cluster and downing a node are similar, for example:
  
@@ -290,7 +296,15 @@ and to the registered subscribers on the system event bus.
 
 See @ref:[Cluster Metrics](cluster-metrics.md). 
    
+## Failure Detector
 
+The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
+unreachable from the rest of the cluster and has been downed and removed. Please see:
+
+* @ref:[Failure Detector specification](typed/cluster-specification.md#failure-detector)
+* @ref:[Phi Accrual Failure Detector](typed/failure-detector.md) implementation
+* [Using the Failure Detector](typed/cluster.md#using-the-failure-detector) 
+ 
 ## How to Test
 
 @@@ div { .group-scala }

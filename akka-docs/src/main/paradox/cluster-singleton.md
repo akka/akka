@@ -44,7 +44,7 @@ The oldest member is determined by `akka.cluster.Member#isOlderThan`.
 This can change when removing that member from the cluster. Be aware that there is a short time
 period when there is no active singleton during the hand-over process.
 
-The cluster failure detector will notice when oldest node becomes unreachable due to
+The cluster @ref:[failure detector](typed/cluster.md#failure-detector) will notice when oldest node becomes unreachable due to
 things like JVM crash, hard shut down, or network failure. Then a new oldest node will
 take over and a new singleton actor is created. For these failure scenarios there will
 not be a graceful hand-over, but more than one active singletons is prevented by all
