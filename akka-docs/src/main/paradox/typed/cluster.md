@@ -9,9 +9,7 @@ For specific documentation topics see:
 * @ref:[Rolling Updates](../additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](../additional/operations.md)
 
-## Setup
-
-### Dependency
+## Dependency
 
 To use Akka Cluster add the following dependency in your project:
 
@@ -20,22 +18,6 @@ To use Akka Cluster add the following dependency in your project:
   artifact=akka-cluster-typed_$scala.binary_version$
   version=$akka.version$
 }
-
-### Serialization 
- 
-Enable @ref:[serialization](../serialization.md) to send events between ActorSystems and systems
-external to the Cluster. @ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
-recommendation if you don't have other preferences or constraints.
- 
-Actor references are typically included in the messages, since there is no `sender`. 
-To serialize actor references to/from string representation you would use the `ActorRefResolver`.
-For example here's how a serializer could look for `Ping` and `Pong` messages:
-
-Scala
-:  @@snip [PingSerializer.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/PingSerializer.scala) { #serializer }
-
-Java
-:  @@snip [PingSerializerExampleTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/PingSerializerExampleTest.java) { #serializer }
 
 ## Cluster API Extension
 
@@ -305,6 +287,27 @@ process will also trigger the graceful leaving if it's not already in progress.
 Normally this is handled automatically, but in case of network failures during this process it might still
 be necessary to set the node’s status to `Down` in order to complete the removal.
 
+## Serialization 
+ 
+Enable @ref:[serialization](../serialization.md) to send events between ActorSystems and systems
+external to the Cluster. @ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
+recommendation if you don't have other preferences or constraints.
+ 
+Actor references are typically included in the messages, since there is no `sender`. 
+To serialize actor references to/from string representation you would use the `ActorRefResolver`.
+For example here's how a serializer could look for `Ping` and `Pong` messages:
+
+Scala
+:  @@snip [PingSerializer.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/PingSerializer.scala) { #serializer }
+
+Java
+:  @@snip [PingSerializerExampleTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/PingSerializerExampleTest.java) { #serializer }
+
+You can look at the
+@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
+@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)]
+to see what this looks like in practice.
+
 ## Node Roles
 
 Not all nodes of a cluster need to perform the same function: there might be one sub-set which runs the web front-end,
@@ -470,9 +473,6 @@ See @ref:[Cluster Sharding](cluster-sharding.md).
  
 @@include[cluster.md](../includes/cluster.md) { #cluster-ddata } 
 See @ref:[Distributed Data](distributed-data.md).
-
-@@include[cluster.md](../includes/cluster.md) { #cluster-routers } 
-The group routers work as is in cluster. See @ref:[Routers](routers.md).
 
 @@include[cluster.md](../includes/cluster.md) { #cluster-pubsub } 
 The API is @github[#26338](#26338) and

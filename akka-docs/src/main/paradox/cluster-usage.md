@@ -1,4 +1,4 @@
-# Cluster Usage
+# Classic Cluster Usage
  
 This document describes how to use Akka Cluster and the Cluster APIs using code samples.
 For specific documentation topics see:  
@@ -10,9 +10,11 @@ For specific documentation topics see:
 * @ref:[Rolling Updates](additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](additional/operations.md)
 
-## Setup
+Enable @ref:[serialization](serialization.md) to send events between ActorSystems and systems
+external to the Cluster. @ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases, and our
+recommendation if you don't have other preferences or constraints.
 
-### Dependency
+## Dependency
 
 To use Akka Cluster add the following dependency in your project:
 
@@ -21,12 +23,6 @@ To use Akka Cluster add the following dependency in your project:
   artifact="akka-cluster_$scala.binary_version$"
   version="$akka.version$"
 }
-
-### Serialization 
- 
-Enable @ref:[serialization](serialization.md) to send events between ActorSystems and systems
-external to the Cluster. @ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases, and our
-recommendation if you don't have other preferences or constraints.
 
 ## Cluster samples
 
@@ -40,6 +36,10 @@ and using Cluster aware routers.
 The easiest way to run this example yourself is to try the
 @scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
 It contains instructions on how to run the `SimpleClusterApp`.
+
+## When and where to use Akka Cluster
+ 
+See [Choosing Akka Cluster](typed/choosing-cluster.md#when-and-where-to-use-akka-cluster).
 
 ## Cluster API Extension
 
@@ -262,7 +262,14 @@ See @ref:[Distributed Data](distributed-data.md).
 @@include[cluster.md](includes/cluster.md) { #cluster-pubsub }
 See @ref:[Cluster Distributed Publish Subscribe](distributed-pub-sub.md).
 
-@@include[cluster.md](includes/cluster.md) { #cluster-routers } 
+### Cluster Aware Routers
+
+All routers can be made aware of member nodes in the cluster, i.e.
+deploying new routees or looking up routees on nodes in the cluster.
+When a node becomes unreachable or leaves the cluster the routees of that node are
+automatically unregistered from the router. When new nodes join the cluster, additional
+routees are added to the router, according to the configuration.
+ 
 See @ref:[Cluster Aware Routers](cluster-routing.md) and @ref:[Routers](routing.md).
  
 @@include[cluster.md](includes/cluster.md) { #cluster-multidc } 

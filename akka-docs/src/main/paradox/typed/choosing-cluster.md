@@ -1,3 +1,4 @@
+<a id="when-and-where-to-use-akka-cluster"></a>
 # Choosing Akka Cluster
 
 An architectural choice you have to make is if you are going to use a microservices architecture or

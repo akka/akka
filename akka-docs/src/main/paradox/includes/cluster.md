@@ -24,18 +24,7 @@ their physical location in the cluster.
 Akka Cluster. The data is accessed with an actor providing a key-value store like API.
 
 <!--- #cluster-ddata --->
-
-<!--- #cluster-routers --->
-### Cluster Aware Routers
-
-All routers can be made aware of member nodes in the cluster, i.e.
-deploying new routees or looking up routees on nodes in the cluster.
-When a node becomes unreachable or leaves the cluster the routees of that node are
-automatically unregistered from the router. When new nodes join the cluster, additional
-routees are added to the router, according to the configuration.
-
-<!--- #cluster-routers --->
-
+ 
 <!--- #cluster-pubsub --->
 ### Distributed Publish Subscribe
 
