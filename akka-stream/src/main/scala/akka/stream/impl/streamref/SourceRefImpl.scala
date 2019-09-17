@@ -106,7 +106,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       private val receiveBuffer = FixedSizeBuffer[Out](bufferCapacity)
 
-      private var requestStrategy: RequestStrategy = _ // initialized in preStart since depends on receiveBuffer's size
+      private val requestStrategy: RequestStrategy = WatermarkRequestStrategy(highWatermark = receiveBuffer.capacity)
       // end of demand management ---
 
       // initialized with the originRef if present, that means we're the "remote" for an already active Source on the other side (the "origin")
@@ -115,15 +115,13 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       private def getPartnerRef = partnerRef.get
 
       override def preStart(): Unit = {
-        requestStrategy = WatermarkRequestStrategy(highWatermark = receiveBuffer.capacity)
-
         log.debug("[{}] Allocated receiver: {}", stageActorName, self.ref)
         if (initialPartnerRef.isDefined) // this will set the partnerRef
           observeAndValidateSender(
             initialPartnerRef.get,
             "Illegal initialPartnerRef! This would be a bug in the SourceRef usage or impl.")
 
-        //this timer will be cancelled if we receive the handshake from the remote SinkRef
+        // This timer will be cancelled if we receive the handshake from the remote SinkRef
         // either created in this method and provided as self.ref as initialPartnerRef
         // or as the response to first CumulativeDemand request sent to remote SinkRef
         scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
