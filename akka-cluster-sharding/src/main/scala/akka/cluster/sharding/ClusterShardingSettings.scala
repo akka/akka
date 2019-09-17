@@ -311,6 +311,11 @@ final class ClusterShardingSettings(
   private[akka] def shouldHostShard(cluster: Cluster): Boolean =
     role.forall(cluster.selfMember.roles.contains)
 
+  /** If true, idle entities should be passivated if they have not received any message by this interval, otherwise it is not enabled. */
+  @InternalApi
+  private[akka] def shouldPassivateIdleEntities: Boolean =
+    passivateIdleEntityAfter > Duration.Zero && !rememberEntities
+
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.roleOption(role))
 
   def withRole(role: Option[String]): ClusterShardingSettings = copy(role = role)

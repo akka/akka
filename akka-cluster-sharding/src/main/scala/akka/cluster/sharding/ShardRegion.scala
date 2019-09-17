@@ -535,7 +535,7 @@ private[akka] class ShardRegion(
     cluster.subscribe(self, classOf[MemberEvent])
     timers.startTimerWithFixedDelay(Retry, Retry, retryInterval)
     startRegistration()
-    if (settings.passivateIdleEntityAfter > Duration.Zero && !settings.rememberEntities)
+    if (settings.shouldPassivateIdleEntities)
       log.info(
         "{}: Idle entities will be passivated after [{}]",
         typeName,
