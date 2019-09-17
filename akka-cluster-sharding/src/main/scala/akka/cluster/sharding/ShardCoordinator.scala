@@ -442,10 +442,17 @@ object ShardCoordinator {
       case BeginHandOffAck(`shard`) =>
         log.debug("BeginHandOffAck for shard [{}] received from {}.", shard, sender())
         acked(sender())
+      case Terminated(shardRegion) if shardRegion == from =>
+        regionOfRebalancedShardTerminated()
       case Terminated(shardRegion) =>
         log.debug("ShardRegion {} terminated while waiting for BeginHandOffAck for shard [{}].", shardRegion, shard)
         acked(shardRegion)
       case ReceiveTimeout => done(ok = false)
+    }
+
+    private def regionOfRebalancedShardTerminated() : Unit = {
+      log.debug("ShardRegion {} terminated while handing off shard {} .", from, shard)
+      done(false)
     }
 
     private def acked(shardRegion: ActorRef) = {
@@ -461,6 +468,8 @@ object ShardCoordinator {
     def stoppingShard: Receive = {
       case ShardStopped(`shard`) => done(ok = true)
       case ReceiveTimeout        => done(ok = false)
+      case Terminated(shardRegion) if shardRegion == from =>
+        regionOfRebalancedShardTerminated()
     }
 
     def done(ok: Boolean): Unit = {
