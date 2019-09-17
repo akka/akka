@@ -11,6 +11,7 @@ import akka.testkit.{ filterException, AkkaSpec, ImplicitSender, TestProbe }
 
 import scala.concurrent.duration._
 import akka.actor._
+import akka.testkit.WithLogCapturing
 import com.github.ghik.silencer.silent
 
 import scala.language.postfixOps
@@ -52,7 +53,10 @@ class TestParentActor(probe: ActorRef, supervisorProps: Props) extends Actor {
   }
 }
 
-class BackoffOnRestartSupervisorSpec extends AkkaSpec("akka.loglevel=debug") with ImplicitSender {
+class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    """) with WithLogCapturing with ImplicitSender {
 
   @silent
   def supervisorProps(probeRef: ActorRef) = {
