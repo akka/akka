@@ -310,7 +310,7 @@ final class ClusterShardingSettings(
   def withStateStoreMode(stateStoreMode: ClusterShardingSettings.StateStoreMode): ClusterShardingSettings =
     copy(stateStoreMode = stateStoreMode)
 
-  def withPassivateIdleEntitiesAfter(duration: FiniteDuration): ClusterShardingSettings =
+  def withPassivateIdleEntityAfter(duration: FiniteDuration): ClusterShardingSettings =
     copy(passivateIdleEntityAfter = duration)
 
   def withPassivateIdleEntityAfter(duration: java.time.Duration): ClusterShardingSettings =

@@ -24,6 +24,7 @@ object Dependencies {
   val jacksonVersion = "2.9.9"
   val jacksonDatabindVersion = "2.9.9.3"
   val protobufJavaVersion = "3.9.1"
+  val logbackVersion = "1.2.3"
 
   val scala212Version = "2.12.9"
   val scala213Version = "2.13.0"
@@ -98,7 +99,7 @@ object Dependencies {
 
     val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion
 
-    val logback = "ch.qos.logback" % "logback-classic" % "1.2.3" // EPL 1.0
+    val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"

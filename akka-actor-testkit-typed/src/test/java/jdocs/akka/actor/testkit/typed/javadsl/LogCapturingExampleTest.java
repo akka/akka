@@ -4,28 +4,22 @@
 
 package jdocs.akka.actor.testkit.typed.javadsl;
 
-import static jdocs.akka.actor.testkit.typed.javadsl.AsyncTestingExampleTest.Ping;
-import static jdocs.akka.actor.testkit.typed.javadsl.AsyncTestingExampleTest.Pong;
-import static jdocs.akka.actor.testkit.typed.javadsl.AsyncTestingExampleTest.echoActor;
+import static jdocs.akka.actor.testkit.typed.javadsl.AsyncTestingExampleTest.*;
 
+// #log-capturing
 import akka.actor.testkit.typed.javadsl.LogCapturing;
-import org.junit.Rule;
-
-// #junit-integration
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
-public class JunitIntegrationExampleTest {
+public class LogCapturingExampleTest {
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
-  // #junit-integration
-  // this is shown in LogCapturingExampleTest
   @Rule public final LogCapturing logCapturing = new LogCapturing();
-  // #junit-integration
 
   @Test
   public void testSomething() {
@@ -35,4 +29,4 @@ public class JunitIntegrationExampleTest {
     probe.expectMessage(new Pong("hello"));
   }
 }
-// #junit-integration
+// #log-capturing

@@ -1186,7 +1186,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         invokeWithPromise(event, promise)
         promise.future
       } else
-        Future.failed(streamDetatchedException)
+        Future.failed(streamDetachedException)
     }
 
     //external call
@@ -1301,7 +1301,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     // and fail current outstanding invokeWithFeedback promises
     val inProgress = asyncCallbacksInProgress.getAndSet(null)
     if (inProgress.nonEmpty) {
-      val exception = streamDetatchedException
+      val exception = streamDetachedException
       inProgress.foreach(_.tryFailure(exception))
     }
   }
@@ -1330,7 +1330,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     }
   }
 
-  private def streamDetatchedException =
+  private def streamDetachedException =
     new StreamDetachedException(s"Stage with GraphStageLogic ${this} stopped before async invocation was processed")
 
   /**

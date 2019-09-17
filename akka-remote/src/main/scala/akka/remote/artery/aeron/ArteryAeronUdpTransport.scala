@@ -105,19 +105,28 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
           .conductorIdleStrategy(new BackoffIdleStrategy(1, 1, 1, 1))
           .receiverIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
           .senderIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
+          .conductorThreadFactory(system.threadFactory)
+          .receiverThreadFactory(system.threadFactory)
+          .senderThreadFactory(system.threadFactory)
       } else if (idleCpuLevel == 1) {
         driverContext
           .threadingMode(ThreadingMode.SHARED)
           .sharedIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
+          .sharedThreadFactory(system.threadFactory)
       } else if (idleCpuLevel <= 7) {
         driverContext
           .threadingMode(ThreadingMode.SHARED_NETWORK)
           .sharedNetworkIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
+          .sharedNetworkThreadFactory(system.threadFactory)
+          .conductorThreadFactory(system.threadFactory)
       } else {
         driverContext
           .threadingMode(ThreadingMode.DEDICATED)
           .receiverIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
           .senderIdleStrategy(TaskRunner.createIdleStrategy(idleCpuLevel))
+          .receiverThreadFactory(system.threadFactory)
+          .senderThreadFactory(system.threadFactory)
+          .conductorThreadFactory(system.threadFactory)
       }
 
       val driver = MediaDriver.launchEmbedded(driverContext)
@@ -166,6 +175,7 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
     val ctx = new Aeron.Context
 
     ctx.driverTimeoutMs(settings.Advanced.Aeron.DriverTimeout.toMillis)
+    ctx.threadFactory(system.threadFactory)
 
     ctx.availableImageHandler(new AvailableImageHandler {
       override def onAvailableImage(img: Image): Unit = {

@@ -11,6 +11,7 @@ import akka.testkit.{ filterException, AkkaSpec, ImplicitSender, TestProbe }
 
 import scala.concurrent.duration._
 import akka.actor._
+import akka.testkit.WithLogCapturing
 import com.github.ghik.silencer.silent
 
 import scala.language.postfixOps
@@ -52,7 +53,10 @@ class TestParentActor(probe: ActorRef, supervisorProps: Props) extends Actor {
   }
 }
 
-class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
+class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    """) with WithLogCapturing with ImplicitSender {
 
   @silent
   def supervisorProps(probeRef: ActorRef) = {
@@ -219,7 +223,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
       // that is acceptable.
       @silent
       val options = Backoff
-        .onFailure(TestActor.props(probe.ref), "someChildName", 300 millis, 10 seconds, 0.0, maxNrOfRetries = -1)
+        .onFailure(TestActor.props(probe.ref), "someChildName", 300.millis, 10.seconds, 0.0, maxNrOfRetries = -1)
         .withSupervisorStrategy(OneForOneStrategy(withinTimeRange = 1 seconds, maxNrOfRetries = 3) {
           case _: TestActor.StoppingException => SupervisorStrategy.Stop
         })
@@ -245,6 +249,40 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec with ImplicitSender {
         supervisor ! "THROW"
         probe.expectTerminated(supervisor)
       }
+    }
+
+    "keep restarting when failures happen outside of withinTimeRange" in {
+      val probe = TestProbe()
+
+      val backoffProps = BackoffSupervisor.props(
+        BackoffOpts
+          .onFailure(
+            TestActor.props(probe.ref),
+            "child",
+            minBackoff = 100.millis,
+            maxBackoff = 800.millis,
+            randomFactor = 0.0)
+          // really short withinTimeRange should reset pretty much after every restart
+          .withSupervisorStrategy(OneForOneStrategy(3, withinTimeRange = 10.millis)(SupervisorStrategy.defaultDecider)))
+      val supervisor = system.actorOf(backoffProps, "supervisor")
+      probe.watch(supervisor)
+
+      // since the backoff is 100.millis we know the
+      // 10 millis pass between _every_ restart
+      probe.expectMsg("STARTED")
+      supervisor ! "THROW"
+      probe.expectMsg("STARTED")
+      supervisor ! "THROW"
+      probe.expectMsg("STARTED")
+      supervisor ! "THROW"
+      probe.expectMsg("STARTED")
+      supervisor ! "THROW"
+
+      // note that the message could be lost (dead letters) because ended up with previous crashed child
+      probe.awaitAssert({
+        supervisor ! "PING"
+        probe.expectMsg("PING")
+      }, 1.second)
     }
   }
 }

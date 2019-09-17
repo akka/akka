@@ -225,6 +225,65 @@ Java
 :   @@snip [ManualTimerExampleTest.scala](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/ManualTimerExampleTest.java) { #manual-scheduling-simple }
 
 
+### Test of logging
+
+To verify that certain @ref:[logging](logging.md) events are emitted there is a utility called `LoggingEventFilter`.
+You define a criteria of the expected logging events and it will assert that the given number of occurrences
+of matching logging events are emitted within a block of code.
+
+@@@ note
+
+The `LoggingEventFilter` implementation @ref:[requires Logback dependency](logging.md#logback).
+
+@@@
+
+For example, a criteria that verifies that an `INFO` level event with a message containing "Received message" is logged:
+
+Scala
+:  @@snip [LoggingDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/LoggingDocExamples.scala) { #test-logging }
+
+Java
+:  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #test-logging }
+
+More advanced criteria can be built by chaining conditions that all must be satisfied for a matching event.
+
+Scala
+:  @@snip [LoggingDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/LoggingDocExamples.scala) { #test-logging-criteria }
+
+Java
+:  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #test-logging-criteria }
+
+See @apidoc[typed.*.LoggingEventFilter] for more details.
+
+### Silence logging output from tests
+
+When running tests, it's typically preferred to have the output to standard out, together with the output from the
+testing framework (@scala[ScalaTest]@java[JUnit]). On one hand you want the output to be clean without logging noise,
+but on the other hand you want as much information as possible if there is a test failure (for example in CI builds).
+
+The Akka TestKit provides a `LogCapturing` utility to support this with ScalaTest or JUnit. It will buffer log events instead
+of emitting them to the `ConsoleAppender` immediately (or whatever Logback appender that is configured). When
+there is a test failure the buffered events are flushed to the target appenders, typically a `ConsoleAppender`.
+
+@@@ note
+
+The `LogCapturing` utility @ref:[requires Logback dependency](logging.md#logback).
+
+@@@
+
+@scala[Mix `LogCapturing` trait into the ScalaTest]@java[Add a `LogCapturing` `@Rule` in the JUnit test] like this:
+
+Scala
+:  @@snip [ScalaTestIntegrationExampleSpec.scala](/akka-actor-testkit-typed/src/test/scala/docs/akka/actor/testkit/typed/scaladsl/ScalaTestIntegrationExampleSpec.scala) { #log-capturing }
+
+Java
+:  @@snip [LogCapturingExampleTest.java](/akka-actor-testkit-typed/src/test/java/jdocs/akka/actor/testkit/typed/javadsl/LogCapturingExampleTest.java) { #log-capturing }
+
+Then you also need to configure the `CapturingAppender` and `CapturingAppenderDelegate` in
+`src/test/resources/logback-test.xml`:
+
+@@snip [logback-test.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-test.xml)
+
 ## Synchronous behavior testing
 
 The `BehaviorTestKit` provides a very nice way of unit testing a `Behavior` in a deterministic way, but it has
