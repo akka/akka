@@ -267,7 +267,7 @@ there is a test failure the buffered events are flushed to the target appenders,
 
 @@@ note
 
-The `LogCapturing` @ref:[requires Logback dependency](logging.md#logback).
+The `LogCapturing` utility @ref:[requires Logback dependency](logging.md#logback).
 
 @@@
 

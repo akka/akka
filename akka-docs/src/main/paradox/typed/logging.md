@@ -168,8 +168,11 @@ We recommend [Logback](http://logback.qos.ch/):
 Logback has flexible configuration options and details can be found in the
 [Logback manual](https://logback.qos.ch/manual/configuration.html) and other external resources.
 
-One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender).
-It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging load is high.
+One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender),
+because it offloads rendering of logging events to a background thread, increasing performance. It doesn't block
+the threads of the `ActorSystem` while the underlying infrastructure writes the log messages to disk or other configured
+destination. It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging
+load is high.
 
 A starting point for configuration of `logback.xml` for production:
 
