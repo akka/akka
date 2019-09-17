@@ -9,7 +9,6 @@ import scala.concurrent.duration._
 import akka.actor._
 import akka.cluster.MemberStatus
 import akka.testkit._
-import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
 
 abstract class MultiNodeClusterShardingSpecConfig(mode: String, rememberEntities: Boolean)
@@ -17,7 +16,6 @@ abstract class MultiNodeClusterShardingSpecConfig(mode: String, rememberEntities
       mode,
       rememberEntities,
       ConfigFactory.parseString("""
-         akka.cluster.failure-detector.acceptable-heartbeat-pause = 500 ms
          akka.cluster.gossip-interval = 600 ms
          """)) {
 
@@ -76,7 +74,7 @@ abstract class MultiNodeClusterShardingSpecSpec(multiNodeConfig: MultiNodeCluste
 
   s"Cluster sharding [rememberEntities=$rememberEntities, mode=$mode]" must {
 
-    "restart and rebalance entities during rolling restarts" in within(30.seconds) {
+    "restart and rebalance entities on coordinator node down" in within(30.seconds) {
       startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second, third))
 
       val entityProbe = TestProbe()
@@ -104,7 +102,7 @@ abstract class MultiNodeClusterShardingSpecSpec(multiNodeConfig: MultiNodeCluste
         within(remaining) {
           awaitAssert {
             cluster.state.members.size shouldEqual 3
-            cluster.state.members.unsorted.map(_.status) shouldEqual Set(MemberStatus.Up)
+            cluster.state.members.forall(_.status == MemberStatus.Up) shouldEqual true
           }
         }
       }
