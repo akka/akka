@@ -1,4 +1,7 @@
-# Logging
+# Classic Logging
+
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see @ref[Logging](typed/logging.md).
 
 ## Dependency
 
@@ -336,7 +339,7 @@ It has a single dependency: the slf4j-api jar. In your runtime, you also need a 
   version="$akka.version$"
   group2="ch.qos.logback"
   artifact2="logback-classic"
-  version2="1.2.3"
+  version2="$logback_version$"
 }
 
 You need to enable the Slf4jLogger in the `loggers` element in
@@ -351,6 +354,9 @@ configuration (e.g. logback.xml) before they are published to the event bus.
 If you set the `loglevel` to a higher level than "DEBUG", any DEBUG events will be filtered
 out already at the source and will never reach the logging backend, regardless of how the backend
 is configured.
+
+You can enable `DEBUG` level for `akka.loglevel` and control the actual level in the SLF4J backend
+without any significant overhead, also for production.
 
 @@@
 
@@ -397,8 +403,30 @@ while the underlying infrastructure writes the log statements.
 
 This can be avoided by configuring the logging implementation to use
 a non-blocking appender. Logback provides [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender)
-that does this. It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging
+that does this.
+
+### Logback configuration
+
+Logback has flexible configuration options and details can be found in the
+[Logback manual](https://logback.qos.ch/manual/configuration.html) and other external resources.
+
+One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender),
+because it offloads rendering of logging events to a background thread, increasing performance. It doesn't block
+the threads of the `ActorSystem` while the underlying infrastructure writes the log messages to disk or other configured
+destination. It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging
 load is high.
+
+A starting point for configuration of `logback.xml` for production:
+
+@@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-prod.xml)
+
+For development you might want to log to standard out, but also have all debug level logging to file, like
+in this example:
+
+@@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-dev.xml)
+
+Place the `logback.xml` file in `src/main/resources/logback.xml`. For tests you can define different
+logging configuration in `src/test/resources/logback-test.xml`.
 
 ### Logging Thread, Akka Source and Actor System in MDC
 
@@ -458,7 +486,7 @@ If you want to more accurately output the timestamp, use the MDC attribute `akka
 ```
 <appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
   <encoder>
-    <pattern>%X{akkaTimestamp} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
+    <pattern>%X{akkaTimestamp} %-5level %logger{36} %X{akkaTimestamp} - %msg%n</pattern>
   </encoder>
 </appender>
 ```

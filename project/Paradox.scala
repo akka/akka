@@ -39,7 +39,8 @@ object Paradox {
         "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
         "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
         "aeron_version" -> Dependencies.aeronVersion,
-        "netty_version" -> Dependencies.nettyVersion))
+        "netty_version" -> Dependencies.nettyVersion,
+        "logback_version" -> Dependencies.logbackVersion))
 
   val rootsSettings = Seq(
     paradoxRoots := List(

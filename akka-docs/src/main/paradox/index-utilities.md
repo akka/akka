@@ -4,7 +4,7 @@
 
 @@@ index
 
-* [logging](logging.md)
+* [logging](typed/logging.md)
 * [common/circuitbreaker](common/circuitbreaker.md)
 
 @@@
