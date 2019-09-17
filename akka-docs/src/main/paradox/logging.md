@@ -355,7 +355,7 @@ If you set the `loglevel` to a higher level than "DEBUG", any DEBUG events will 
 out already at the source and will never reach the logging backend, regardless of how the backend
 is configured.
 
-You can enable `DEBUG` level for `akka.loglevel` and control the actual level in the SLF4j backend
+You can enable `DEBUG` level for `akka.loglevel` and control the actual level in the SLF4J backend
 without any significant overhead, also for production.
 
 @@@
@@ -411,7 +411,7 @@ load is high.
 Logback has flexible configuration options and details can be found in the
 [Logback manual](https://logback.qos.ch/manual/configuration.html) and other external resources.
 
-One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender).
+One part that is important to highlight is the importance of configuring an [AsyncAppender](http://logback.qos.ch/manual/appenders.html#AsyncAppender), because it offloads rendering of logging events to a background thread, increasing performance.  It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging load is high.
 It also contains a feature which will drop `INFO` and `DEBUG` messages if the logging load is high.
 
 A starting point for configuration of `logback.xml` for production:

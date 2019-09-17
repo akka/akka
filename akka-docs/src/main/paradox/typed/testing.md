@@ -233,7 +233,7 @@ of matching logging events are emitted within a block of code.
 
 @@@ note
 
-The `LoggingEventFilter` @ref:[requires Logback dependency](logging.md#logback).
+The `LoggingEventFilter` implementation @ref:[requires Logback dependency](logging.md#logback).
 
 @@@
 
@@ -257,11 +257,11 @@ See @apidoc[typed.*.LoggingEventFilter] for more details.
 
 ### Silence logging output from tests
 
-When running tests it's typically preferred to have the output to standard out, together with the output from the
+When running tests, it's typically preferred to have the output to standard out, together with the output from the
 testing framework (@scala[ScalaTest]@java[JUnit]). On one hand you want the output to be clean without logging noise,
 but on the other hand you want as much information as possible if there is a test failure (for example in CI builds).
 
-The Akka TestKit provides a utility to support this with ScalaTest or Junit. It will buffer log events instead
+The Akka TestKit provides a `LogCapturing` utility to support this with ScalaTest or JUnit. It will buffer log events instead
 of emitting them to the `ConsoleAppender` immediately (or whatever Logback appender that is configured). When
 there is a test failure the buffered events are flushed to the target appenders, typically a `ConsoleAppender`.
 
