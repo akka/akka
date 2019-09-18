@@ -4,8 +4,6 @@
 
 package akka.stream.scaladsl
 
-import java.util.concurrent.TimeoutException
-
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.pattern.BackoffSupervisor
 import akka.stream.stage._
