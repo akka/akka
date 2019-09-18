@@ -89,10 +89,10 @@ Java
 When using sharding entities can be moved to different nodes in the cluster. Persistence can be used to recover the state of
 an actor after it has moved.
 
-Akka Persistence is based on the single-writer principle, for a particular `persitenceId` only one persistent actor
+Akka Persistence is based on the single-writer principle, for a particular `PersistenceId` only one persistent actor
 instance should be active. If multiple instances were to persist events at the same time, the events would be
-interleaved and might not be interpreted correctly on replay. Cluster sharding is typically used together with
-persistence to ensure that there is only one active entity for each `persistenceId` (`entityId`).
+interleaved and might not be interpreted correctly on replay. Cluster Sharding is typically used together with
+persistence to ensure that there is only one active entity for each `PersistenceId` (`entityId`).
 
 Here is an example of a persistent actor that is used as a sharded entity:
 
@@ -102,11 +102,6 @@ Scala
 Java
 :  @@snip [HelloWorldPersistentEntityExample.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/HelloWorldPersistentEntityExample.java) { #persistent-entity-import #persistent-entity }
 
-Note that `EventSourcedEntity` is used in this example. Any `Behavior` can be used as a sharded entity actor,
-but the combination of sharding and persistent actors is very common and therefore the `EventSourcedEntity`
-@scala[factory]@java[class] is provided as convenience. It selects the `persistenceId` automatically from
-the `EntityTypeKey` and `entityId` @java[constructor] parameters by using `EntityTypeKey.persistenceIdFrom`.
-
 To initialize and use the entity:
 
 Scala
@@ -114,6 +109,11 @@ Scala
 
 Java
 :  @@snip [HelloWorldPersistentEntityExample.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/HelloWorldPersistentEntityExample.java) { #persistent-entity-usage-import #persistent-entity-usage }
+
+Note how an unique @apidoc[akka.persistence.typed.PersistenceId] can be constructed from the `EntityTypeKey` and the `entityId`
+provided by the @apidoc[typed.*.EntityContext] in the factory function for the `Behavior`. This is a typical way
+of defining the `PersistenceId` but formats are possible, as described in the
+@ref:[PersistenceId section](persistence.md#persistenceid).
 
 Sending messages to persistent entities is the same as if the entity wasn't persistent. The only difference is
 when an entity is moved the state will be restored. In the above example @ref:[ask](interaction-patterns.md#outside-ask)

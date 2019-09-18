@@ -427,7 +427,6 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
 lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .dependsOn(
     clusterTyped % "compile->compile;test->test;multi-jvm->multi-jvm",
-    persistenceTyped,
     clusterSharding,
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",

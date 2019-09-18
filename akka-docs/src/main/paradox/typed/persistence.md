@@ -58,6 +58,36 @@ based on the events.
 
 Next we'll discuss each of these in detail.
 
+### PersistenceId
+
+The @apidoc[akka.persistence.typed.PersistenceId] is the stable unique identifier for the persistent actor in the backend
+event journal and snapshot store.
+
+@ref:[Cluster Sharding](cluster-sharding.md) is typically used together with `EventSourcedBehavior` to ensure
+that there is only one active entity for each `PersistenceId` (`entityId`).
+
+The `entityId` in Cluster Sharding is the business domain identifier of the entity. The `entityId` might not
+be unique enough to be used as the `PersistenceId` by itself. For example two different types of
+entities may have the same `entityId`. To create a unique `PersistenceId` the `entityId` is can be prefixed
+with a stable name of the entity type, which typically is the same as the `EntityTypeKey.name` that
+is used in Cluster Sharding. There are @scala[`PersistenceId.apply`]@java[`PersistenceId.of`] factory methods
+to help with constructing such `PersistenceId` from a `entityTypeHint` and `entityId`.
+
+The default separator when concatenating the `entityTypeHint` and `entityId` is `|`, but a custom separator
+is supported.
+
+@@@ note
+
+The `|` separator is also used in Lagom's `scaladsl.PersistentEntity` but no separator is used
+in Lagom's `javadsl.PersistentEntity`. For compatibility with Lagom's `javadsl.PersistentEntity`
+you should use `""` as the separator.
+
+@@@
+
+The @ref:[Persistence example in the Cluster Sharding documentation](cluster-sharding.md#persistence-example)
+illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the
+`EntityContext`.
+
 ### Command handler
 
 The command handler is a function with 2 parameters, the current `State` and the incoming `Command`.

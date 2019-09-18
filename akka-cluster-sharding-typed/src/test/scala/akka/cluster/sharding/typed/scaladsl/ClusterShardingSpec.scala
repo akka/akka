@@ -199,13 +199,13 @@ class ClusterShardingSpec
   }
 
   private val shardingRefSystem1WithEnvelope: ActorRef[ShardingEnvelope[TestProtocol]] =
-    sharding.init(Entity(typeKeyWithEnvelopes, ctx => behavior(ctx.shard)).withStopMessage(StopPlz()))
+    sharding.init(Entity(typeKeyWithEnvelopes)(ctx => behavior(ctx.shard)).withStopMessage(StopPlz()))
 
   private val shardingRefSystem2WithEnvelope: ActorRef[ShardingEnvelope[TestProtocol]] =
-    sharding2.init(Entity(typeKeyWithEnvelopes, ctx => behavior(ctx.shard)).withStopMessage(StopPlz()))
+    sharding2.init(Entity(typeKeyWithEnvelopes)(ctx => behavior(ctx.shard)).withStopMessage(StopPlz()))
 
   private val shardingRefSystem1WithoutEnvelope: ActorRef[IdTestProtocol] = sharding.init(
-    Entity(typeKeyWithoutEnvelopes, _ => behaviorWithId())
+    Entity(typeKeyWithoutEnvelopes)(_ => behaviorWithId())
       .withMessageExtractor(ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
         case IdReplyPlz(id, _)  => id
         case IdWhoAreYou(id, _) => id
@@ -214,7 +214,7 @@ class ClusterShardingSpec
       .withStopMessage(IdStopPlz()))
 
   private val shardingRefSystem2WithoutEnvelope: ActorRef[IdTestProtocol] = sharding2.init(
-    Entity(typeKeyWithoutEnvelopes, _ => behaviorWithId())
+    Entity(typeKeyWithoutEnvelopes)(_ => behaviorWithId())
       .withMessageExtractor(idTestProtocolMessageExtractor)
       .withStopMessage(IdStopPlz()))
 
@@ -277,7 +277,7 @@ class ClusterShardingSpec
       val typeKey3 = EntityTypeKey[TestProtocol]("passivate-test")
 
       val shardingRef3: ActorRef[ShardingEnvelope[TestProtocol]] =
-        sharding.init(Entity(typeKey3, ctx => behavior(ctx.shard, Some(stopProbe.ref))).withStopMessage(StopPlz()))
+        sharding.init(Entity(typeKey3)(ctx => behavior(ctx.shard, Some(stopProbe.ref))).withStopMessage(StopPlz()))
 
       shardingRef3 ! ShardingEnvelope(s"test1", ReplyPlz(p.ref))
       p.expectMessage("Hello!")
@@ -296,7 +296,7 @@ class ClusterShardingSpec
       val typeKey4 = EntityTypeKey[TestProtocol]("passivate-test-poison")
 
       val shardingRef4: ActorRef[ShardingEnvelope[TestProtocol]] =
-        sharding.init(Entity(typeKey4, ctx => behavior(ctx.shard, Some(stopProbe.ref))))
+        sharding.init(Entity(typeKey4)(ctx => behavior(ctx.shard, Some(stopProbe.ref))))
       // no StopPlz stopMessage
 
       shardingRef4 ! ShardingEnvelope(s"test4", ReplyPlz(p.ref))
@@ -314,7 +314,7 @@ class ClusterShardingSpec
       // sharding has been already initialized with EntityTypeKey[TestProtocol]("envelope-shard")
       val ex = intercept[Exception] {
         sharding.init(
-          Entity(EntityTypeKey[IdTestProtocol]("envelope-shard"), _ => behaviorWithId()).withStopMessage(IdStopPlz()))
+          Entity(EntityTypeKey[IdTestProtocol]("envelope-shard"))(_ => behaviorWithId()).withStopMessage(IdStopPlz()))
       }
 
       ex.getMessage should include("already initialized")
@@ -385,7 +385,7 @@ class ClusterShardingSpec
     "EntityRef - AskTimeoutException" in {
       val ignorantKey = EntityTypeKey[TestProtocol]("ignorant")
 
-      sharding.init(Entity(ignorantKey, _ => Behaviors.ignore[TestProtocol]).withStopMessage(StopPlz()))
+      sharding.init(Entity(ignorantKey)(_ => Behaviors.ignore[TestProtocol]).withStopMessage(StopPlz()))
 
       val ref = sharding.entityRefFor(ignorantKey, "sloppy")
 

@@ -11,10 +11,11 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.cluster.typed.Cluster;
 import akka.cluster.typed.Join;
+import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
-import akka.util.Timeout;
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
@@ -67,13 +68,15 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
   }
 
-  static class TestPersistentEntity extends EventSourcedEntity<Command, String, String> {
+  static class TestPersistentEntity extends EventSourcedBehavior<Command, String, String> {
 
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
         EntityTypeKey.create(Command.class, "HelloWorld");
+    private final String entityId;
 
-    public TestPersistentEntity(String entityId) {
-      super(ENTITY_TYPE_KEY, entityId);
+    public TestPersistentEntity(String entityId, PersistenceId persistenceId) {
+      super(persistenceId);
+      this.entityId = entityId;
     }
 
     @Override
@@ -100,7 +103,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
 
     private Effect<String, String> getState(String state, Get cmd) {
-      cmd.replyTo.tell(entityId() + ":" + state);
+      cmd.replyTo.tell(entityId + ":" + state);
       return Effect().none();
     }
 
@@ -126,9 +129,13 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
 
       sharding.init(
-          Entity.ofEventSourcedEntity(
+          Entity.of(
               TestPersistentEntity.ENTITY_TYPE_KEY,
-              entityContext -> new TestPersistentEntity(entityContext.getEntityId())));
+              entityContext ->
+                  new TestPersistentEntity(
+                      entityContext.getEntityId(),
+                      PersistenceId.of(
+                          entityContext.getEntityTypeKey().name(), entityContext.getEntityId()))));
 
       _sharding = sharding;
     }
