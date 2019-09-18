@@ -15,7 +15,7 @@ Apply a partial function to each incoming element, if the partial function is de
 ## Description
 
 Apply a partial function to each incoming element, if the partial function is defined for a value the returned
-value is passed downstream. Can often replace `filter` followed by `map` to achieve the same in one single operator.
+value is passed downstream. This can often replace `filter` followed by `map` to achieve the same in one single operator.
 
 @java[`collect` is supposed to be used with @apidoc[akka.japi.pf.PFBuilder] to construct the partial function.
 There is also a @ref:[collectType](collectType.md) that often can be easier to use than the `PFBuilder` and
