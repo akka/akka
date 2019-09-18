@@ -4,9 +4,7 @@
 
 package jdocs.akka.typed.supervision;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.SupervisorStrategy;
+import akka.actor.typed.*;
 import akka.actor.typed.javadsl.Behaviors;
 import scala.concurrent.duration.FiniteDuration;
 
@@ -135,4 +133,33 @@ public class SupervisionCompileOnlyTest {
   }
   // #restart-keep-children
 
+  interface Resource {
+    void close();
+    void process(String[] parts);
+  }
+  public static Resource claimResource() {
+    return null;
+  }
+
+  static void prerestartBehavior() {
+    //#restart-PreRestart-signal
+    Behaviors.supervise(
+      Behaviors.<String>setup(ctx -> {
+        final Resource resource = claimResource();
+
+        return Behaviors.receive((notUsed, msg) -> {
+          // there might be bugs here...
+          String[] parts = msg.split(" ");
+          resource.process(parts);
+          return Behaviors.same();
+        }, (notUsed, signal) -> {
+          if (signal == PreRestart.instance() || signal == PostStop.instance()) {
+            resource.close();
+          }
+          return Behaviors.same();
+        });
+      })
+    );
+    //#restart-PreRestart-signal
+  }
 }

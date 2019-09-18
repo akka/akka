@@ -5,8 +5,11 @@
 package docs.akka.typed.supervision
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.PostStop
+import akka.actor.typed.PreRestart
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
+
 import scala.concurrent.duration._
 
 object SupervisionCompileOnly {
@@ -101,4 +104,30 @@ object SupervisionCompileOnly {
     }
   }
   //#restart-keep-children
+
+  trait Resource {
+    def close()
+    def process(parts: Array[String])
+  }
+  def claimResource(): Resource = ???
+  //#restart-PreRestart-signal
+  Behaviors.supervise {
+    Behaviors.setup { ctx =>
+      val resource = claimResource()
+
+      Behaviors
+        .receiveMessage[String] { msg =>
+          // there might be bugs here...
+          val parts = msg.split(" ")
+          resource.process(parts)
+          Behaviors.same
+        }
+        .receiveSignal {
+          case (_, signal) if signal == PreRestart || signal == PostStop =>
+            resource.close()
+            Behaviors.same
+        }
+    }
+  }
+  //#restart-PreRestart-signal
 }
