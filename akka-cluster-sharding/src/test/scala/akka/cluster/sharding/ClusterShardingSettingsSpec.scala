@@ -8,23 +8,13 @@ import scala.concurrent.duration._
 
 import akka.testkit.AkkaSpec
 
-object ClusterShardingSettingsSpec {
-  val queryTimeout = 10.seconds
-}
-
-class ClusterShardingSettingsSpec
-    extends AkkaSpec(s"""
-                                                     akka.actor.provider = cluster
-                                                     akka.remote.classic.netty.tcp.port = 0
-                                                     akka.remote.artery.canonical.port = 0
-                                                     akka.cluster.sharding.shard-region-query-timeout = ${ClusterShardingSettingsSpec.queryTimeout}
-                                                     """) {
+class ClusterShardingSettingsSpec extends AkkaSpec(s"""
+       akka.actor.provider = cluster
+       akka.remote.classic.netty.tcp.port = 0
+       akka.remote.artery.canonical.port = 0
+       """) {
 
   "ClusterShardingSettings" must {
-
-    "have a configurable shard region query timeout" in {
-      ClusterShardingSettings(system).shardRegionQueryTimeout shouldEqual ClusterShardingSettingsSpec.queryTimeout
-    }
 
     "passivate idle entities if `remember-entities` and `passivate-idle-entity-after` are the defaults" in {
       ClusterShardingSettings(system).shouldPassivateIdleEntities shouldEqual true

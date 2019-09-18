@@ -313,7 +313,7 @@ final class ClusterShardingSettings(
 
   /** If true, idle entities should be passivated if they have not received any message by this interval, otherwise it is not enabled. */
   @InternalApi
-  private[akka] def shouldPassivateIdleEntities: Boolean =
+  private[akka] val shouldPassivateIdleEntities: Boolean =
     passivateIdleEntityAfter > Duration.Zero && !rememberEntities
 
   def withRole(role: String): ClusterShardingSettings = copy(role = ClusterShardingSettings.roleOption(role))

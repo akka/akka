@@ -535,17 +535,24 @@ private[akka] class ShardRegion(
     cluster.subscribe(self, classOf[MemberEvent])
     timers.startTimerWithFixedDelay(Retry, Retry, retryInterval)
     startRegistration()
-    if (settings.shouldPassivateIdleEntities)
-      log.info(
-        "{}: Idle entities will be passivated after [{}]",
-        typeName,
-        PrettyDuration.format(settings.passivateIdleEntityAfter))
+    logPassivateIdleEntities()
   }
 
   override def postStop(): Unit = {
     super.postStop()
     cluster.unsubscribe(self)
     gracefulShutdownProgress.trySuccess(Done)
+  }
+
+  private def logPassivateIdleEntities(): Unit = {
+    if (settings.shouldPassivateIdleEntities)
+      log.info(
+        "{}: Idle entities will be passivated after [{}]",
+        typeName,
+        PrettyDuration.format(settings.passivateIdleEntityAfter))
+
+    if (settings.rememberEntities)
+      log.warning("Idle entities will not be passivated because 'rememberEntities' is enabled.")
   }
 
   // when using proxy the data center can be different from the own data center
