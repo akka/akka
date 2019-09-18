@@ -1520,11 +1520,25 @@ trait LoggingFilterWithMarker extends LoggingFilter {
     isDebugEnabled(logClass, logSource)
 }
 
+trait LoggingFilterWithMarkerAndMdc extends LoggingFilterWithMarker{
+  def isErrorEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker] = None, mdc: MDC): Boolean
+  def isWarningEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: MDC): Boolean
+  def isInfoEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: MDC): Boolean
+  def isDebugEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: MDC): Boolean
+}
+
 object LoggingFilterWithMarker {
   def wrap(loggingFilter: LoggingFilter): LoggingFilterWithMarker =
     loggingFilter match {
       case lfwm: LoggingFilterWithMarker => lfwm
       case _                             => new LoggingFilterWithMarkerWrapper(loggingFilter)
+    }
+}
+object LoggingFilterWithMarkerAndMdc {
+  def wrap(loggingFilter: LoggingFilter): LoggingFilterWithMarkerAndMdc =
+    loggingFilter match {
+      case l: LoggingFilterWithMarkerAndMdc => l
+      case _                             => new LoggingFilterWithMarkerAndMdcWrapper(loggingFilter)
     }
 }
 
@@ -1536,6 +1550,17 @@ class LoggingFilterWithMarkerWrapper(loggingFilter: LoggingFilter) extends Loggi
   override def isInfoEnabled(logClass: Class[_], logSource: String): Boolean =
     loggingFilter.isInfoEnabled(logClass, logSource)
   override def isDebugEnabled(logClass: Class[_], logSource: String): Boolean =
+    loggingFilter.isDebugEnabled(logClass, logSource)
+}
+
+class LoggingFilterWithMarkerAndMdcWrapper(loggingFilter: LoggingFilter) extends LoggingFilterWithMarkerWrapper(loggingFilter) with LoggingFilterWithMarkerAndMdc {
+  override def isErrorEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: MDC): Boolean =
+    loggingFilter.isErrorEnabled(logClass, logSource)
+  override def isWarningEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: MDC): Boolean =
+    loggingFilter.isWarningEnabled(logClass, logSource)
+  override def isInfoEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: MDC): Boolean =
+    loggingFilter.isInfoEnabled(logClass, logSource)
+  override def isDebugEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: MDC): Boolean =
     loggingFilter.isDebugEnabled(logClass, logSource)
 }
 
@@ -1662,12 +1687,12 @@ class MarkerLoggingAdapter(
   def this(bus: LoggingBus, logSource: String, logClass: Class[_]) =
     this(bus, logSource, logClass, new DefaultLoggingFilter(() => bus.logLevel))
 
-  val loggingFilterWithMarker: LoggingFilterWithMarker = LoggingFilterWithMarker.wrap(loggingFilter)
+  //val loggingFilterWithMarkerAndMdc: LoggingFilterWithMarkerAndMdc = LoggingFilterWithMarkerAndMdc.wrap(loggingFilter)
 
-  def isErrorEnabled(marker: LogMarker) = loggingFilterWithMarker.isErrorEnabled(logClass, logSource, marker)
-  def isWarningEnabled(marker: LogMarker) = loggingFilterWithMarker.isWarningEnabled(logClass, logSource, marker)
-  def isInfoEnabled(marker: LogMarker) = loggingFilterWithMarker.isInfoEnabled(logClass, logSource, marker)
-  def isDebugEnabled(marker: LogMarker) = loggingFilterWithMarker.isDebugEnabled(logClass, logSource, marker)
+  def isErrorEnabled(marker: LogMarker) = loggingFilterWithMarkerAndMdc.isErrorEnabled(logClass, logSource, Some(marker), mdc)
+  def isWarningEnabled(marker: LogMarker) = loggingFilterWithMarkerAndMdc.isWarningEnabled(logClass, logSource, Some(marker), mdc)
+  def isInfoEnabled(marker: LogMarker) = loggingFilterWithMarkerAndMdc.isInfoEnabled(logClass, logSource, Some(marker), mdc)
+  def isDebugEnabled(marker: LogMarker) = loggingFilterWithMarkerAndMdc.isDebugEnabled(logClass, logSource, Some(marker), mdc)
 
   /**
    * Log message at error level, including the exception that caused the error.
@@ -1921,10 +1946,12 @@ class BusLogging(val bus: LoggingBus, val logSource: String, val logClass: Class
 
   import Logging._
 
-  def isErrorEnabled = loggingFilter.isErrorEnabled(logClass, logSource)
-  def isWarningEnabled = loggingFilter.isWarningEnabled(logClass, logSource)
-  def isInfoEnabled = loggingFilter.isInfoEnabled(logClass, logSource)
-  def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource)
+  val loggingFilterWithMarkerAndMdc: LoggingFilterWithMarkerAndMdc = LoggingFilterWithMarkerAndMdc.wrap(loggingFilter)
+
+  def isErrorEnabled = loggingFilterWithMarkerAndMdc.isErrorEnabled(logClass, logSource,None,mdc)
+  def isWarningEnabled = loggingFilterWithMarkerAndMdc.isWarningEnabled(logClass, logSource,None,mdc)
+  def isInfoEnabled = loggingFilterWithMarkerAndMdc.isInfoEnabled(logClass, logSource,None,mdc)
+  def isDebugEnabled = loggingFilterWithMarkerAndMdc.isDebugEnabled(logClass, logSource,None,mdc)
 
   protected def notifyError(message: String): Unit =
     bus.publish(Error(logSource, logClass, message, mdc))

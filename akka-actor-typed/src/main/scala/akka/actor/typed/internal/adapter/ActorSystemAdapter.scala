@@ -22,7 +22,7 @@ import akka.annotation.InternalApi
 
 import scala.compat.java8.FutureConverters
 import akka.actor.ActorRefProvider
-import akka.event.LoggingFilterWithMarker
+import akka.event.LoggingFilterWithMarkerAndMdc
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting an untyped ActorSystem to a Behavior (via the context).
@@ -80,7 +80,7 @@ import akka.event.LoggingFilterWithMarker
     untypedSystem.eventStream,
     getClass,
     name,
-    LoggingFilterWithMarker.wrap(untypedSystem.logFilter))
+    LoggingFilterWithMarkerAndMdc.wrap(untypedSystem.logFilter))
   override def logConfiguration(): Unit = untypedSystem.logConfiguration()
   override def name: String = untypedSystem.name
   override def scheduler: akka.actor.Scheduler = untypedSystem.scheduler

@@ -4,12 +4,11 @@
 
 package akka.actor.typed.internal.adapter
 
-import akka.actor.typed.{ LogMarker, Logger }
+import akka.actor.typed.{LogMarker, Logger}
 import akka.annotation.InternalApi
 import akka.event.Logging._
-import akka.event.{ LoggingBus, LoggingFilterWithMarker, LogMarker => UntypedLM }
+import akka.event.{LoggingBus, LoggingFilterWithMarkerAndMdc, LogMarker => UntypedLM}
 import akka.util.OptionVal
-
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -388,22 +387,22 @@ private[akka] final class LoggerAdapterImpl(
     bus: LoggingBus,
     logClass: Class[_],
     logSource: String,
-    loggingFilter: LoggingFilterWithMarker)
+    loggingFilter: LoggingFilterWithMarkerAndMdc)
     extends AbstractLogger {
 
-  override def isErrorEnabled = loggingFilter.isErrorEnabled(logClass, logSource)
-  override def isWarningEnabled = loggingFilter.isWarningEnabled(logClass, logSource)
-  override def isInfoEnabled = loggingFilter.isInfoEnabled(logClass, logSource)
-  override def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource)
+  override def isErrorEnabled = loggingFilter.isErrorEnabled(logClass, logSource,None,mdc)
+  override def isWarningEnabled = loggingFilter.isWarningEnabled(logClass, logSource,None,mdc)
+  override def isInfoEnabled = loggingFilter.isInfoEnabled(logClass, logSource,None,mdc)
+  override def isDebugEnabled = loggingFilter.isDebugEnabled(logClass, logSource,None,mdc)
 
   override def isErrorEnabled(marker: LogMarker): Boolean =
-    loggingFilter.isErrorEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+    loggingFilter.isErrorEnabled(logClass, logSource, Some(marker.asInstanceOf[UntypedLM]),mdc)
   override def isWarningEnabled(marker: LogMarker): Boolean =
-    loggingFilter.isWarningEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+    loggingFilter.isWarningEnabled(logClass, logSource, Some(marker.asInstanceOf[UntypedLM]),mdc)
   override def isInfoEnabled(marker: LogMarker): Boolean =
-    loggingFilter.isInfoEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+    loggingFilter.isInfoEnabled(logClass, logSource, Some(marker.asInstanceOf[UntypedLM]),mdc)
   override def isDebugEnabled(marker: LogMarker): Boolean =
-    loggingFilter.isDebugEnabled(logClass, logSource, marker.asInstanceOf[UntypedLM])
+    loggingFilter.isDebugEnabled(logClass, logSource, Some(marker.asInstanceOf[UntypedLM]),mdc)
 
   override def withMdc(mdc: Map[String, Any]): Logger = {
     val mdcAdapter = new LoggerAdapterImpl(bus, logClass, logSource, loggingFilter)

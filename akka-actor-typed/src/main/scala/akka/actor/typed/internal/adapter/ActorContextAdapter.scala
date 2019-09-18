@@ -8,10 +8,10 @@ package adapter
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
-import akka.event.LoggingFilterWithMarker
+import akka.event.LoggingFilterWithMarkerAndMdc
 import akka.util.OptionVal
+import akka.{actor => untyped}
 
-import akka.{ actor => untyped }
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
 
@@ -124,7 +124,7 @@ private[akka] object ActorContextAdapter {
     val logSource = self.path.toString
     val system = untypedContext.system.asInstanceOf[ExtendedActorSystem]
     val logger =
-      new LoggerAdapterImpl(system.eventStream, logClass, logSource, LoggingFilterWithMarker.wrap(system.logFilter))
+      new LoggerAdapterImpl(system.eventStream, logClass, logSource, LoggingFilterWithMarkerAndMdc.wrap(system.logFilter))
     actorLogger = OptionVal.Some(logger)
     logger
   }

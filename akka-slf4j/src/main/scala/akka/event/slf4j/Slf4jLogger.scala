@@ -59,7 +59,7 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
   val mdcAkkaSourceAttributeName = "akkaSource"
   val mdcAkkaTimestamp = "akkaTimestamp"
 
-  def receive = {
+  def receive: Receive = {
 
     case event @ Error(cause, logSource, logClass, message) =>
       withMdc(logSource, event) {
@@ -147,14 +147,14 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
  * the log events to the `eventStream`.
  */
 class Slf4jLoggingFilter(@unused settings: ActorSystem.Settings, eventStream: EventStream)
-    extends LoggingFilterWithMarker {
-  def isErrorEnabled(logClass: Class[_], logSource: String) =
+    extends LoggingFilterWithMarkerAndMdc {
+  def isErrorEnabled(logClass: Class[_], logSource: String): Boolean =
     (eventStream.logLevel >= ErrorLevel) && Logger(logClass, logSource).isErrorEnabled
-  def isWarningEnabled(logClass: Class[_], logSource: String) =
+  def isWarningEnabled(logClass: Class[_], logSource: String): Boolean =
     (eventStream.logLevel >= WarningLevel) && Logger(logClass, logSource).isWarnEnabled
-  def isInfoEnabled(logClass: Class[_], logSource: String) =
+  def isInfoEnabled(logClass: Class[_], logSource: String): Boolean =
     (eventStream.logLevel >= InfoLevel) && Logger(logClass, logSource).isInfoEnabled
-  def isDebugEnabled(logClass: Class[_], logSource: String) =
+  def isDebugEnabled(logClass: Class[_], logSource: String): Boolean =
     (eventStream.logLevel >= DebugLevel) && Logger(logClass, logSource).isDebugEnabled
 
   private def slf4jMarker(marker: LogMarker) = marker match {
@@ -172,6 +172,39 @@ class Slf4jLoggingFilter(@unused settings: ActorSystem.Settings, eventStream: Ev
   override def isDebugEnabled(logClass: Class[_], logSource: String, marker: LogMarker): Boolean =
     (eventStream.logLevel >= DebugLevel) && Logger(logClass, logSource).isDebugEnabled(slf4jMarker(marker))
 
+  override def isErrorEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: Logging.MDC): Boolean = {
+    withMdc(mdc){
+      isErrorEnabled(logClass,logSource,marker.orNull)
+    }
+  }
+
+  override def isWarningEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: Logging.MDC): Boolean = {
+    withMdc(mdc){
+      isWarningEnabled(logClass,logSource,marker.orNull)
+    }
+  }
+
+  override def isInfoEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: Logging.MDC): Boolean = {
+    withMdc(mdc){
+      isInfoEnabled(logClass,logSource,marker.orNull)
+    }
+  }
+
+  override def isDebugEnabled(logClass: Class[_], logSource: String, marker: Option[LogMarker], mdc: Logging.MDC): Boolean = {
+    withMdc(mdc){
+      isDebugEnabled(logClass,logSource,marker.orNull)
+    }
+  }
+
+
+  @inline
+  final def withMdc[T](mdc: Logging.MDC)(logStatement: => T): T = {
+    mdc.foreach { case (k, v) => MDC.put(k, String.valueOf(v)) }
+    try logStatement
+    finally {
+      mdc.keys.foreach(k => MDC.remove(k))
+    }
+  }
 }
 
 /** Wraps [[org.slf4j.Marker]] */
