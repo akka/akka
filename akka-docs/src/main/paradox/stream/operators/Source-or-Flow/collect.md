@@ -24,7 +24,7 @@ then combine with ordinary `filter` and `map` operators.]
 ## Example
 
 Given stream element classes `Message`, `Ping`, and `Pong`, where `Ping` extends `Message` and `Pong` is an
-unrelated class. Ping and Pong have an int id field.
+unrelated class.
 
 Scala
 :   @@snip [Collect.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Collect.scala) { #collect-elements }
