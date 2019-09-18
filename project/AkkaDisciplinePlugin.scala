@@ -40,7 +40,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     silencerSettings ++
     scoverageSettings ++ Seq(
       Compile / scalacOptions ++= (
-          if (false && !nonFatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
+          if (!nonFatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
           else Seq.empty
         ),
       Test / scalacOptions --= testUndicipline,
