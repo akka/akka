@@ -20,7 +20,6 @@ import scala.util.Success;
 import scala.util.Try;
 
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Optional;
 
 import static akka.NotUsed.notUsed;
@@ -41,24 +40,25 @@ public class RetryFlowTest extends StreamTest {
     final Duration maxBackoff = Duration.ofSeconds(5);
     final double randomFactor = 0d;
     final int maxRetries = 3;
-    final Flow<Pair<Integer, NotUsed>, Pair<Try<Integer>, NotUsed>, NotUsed> flow =
-        Flow.fromFunction(
-            in -> {
-              final Integer request = in.first();
-              return Pair.create(Success.apply(request / 2), notUsed());
-            });
+    final FlowWithContext<Integer, NotUsed, Try<Integer>, NotUsed, NotUsed> flow =
+        FlowWithContext.fromPairs(
+            Flow.fromFunction(
+                in -> {
+                  final Integer request = in.first();
+                  return Pair.create(Success.apply(request / 2), notUsed());
+                }));
 
     // #retry-success
-    final Flow<Pair<Integer, NotUsed>, Pair<Try<Integer>, NotUsed>, NotUsed> retryFlow =
-        RetryFlow.withBackoff(
+    final FlowWithContext<Integer, NotUsed, Try<Integer>, NotUsed, NotUsed> retryFlow =
+        RetryFlow.withBackoffAndContext(
             minBackoff,
             maxBackoff,
             randomFactor,
             maxRetries,
             flow,
-            (success, failure) -> {
-              if (success != null) {
-                final Integer result = success.t1();
+            (in, out) -> {
+              if (out.first().isSuccess()) {
+                final Integer result = out.first().get();
                 if (result > 0) {
                   return Optional.of(Pair.create(result, notUsed()));
                 }
@@ -96,29 +96,27 @@ public class RetryFlowTest extends StreamTest {
     final Duration maxBackoff = Duration.ofSeconds(5);
     final double randomFactor = 0d;
     final int maxRetries = 3;
-    final Flow<Pair<Integer, Integer>, Pair<Try<Integer>, Integer>, NotUsed> flow =
-        Flow.fromFunction(
-            in -> {
-              final Integer request = in.first();
-              if (request > 0)
-                return Pair.create(Failure.apply(new Error("Failed response")), request);
-              else return Pair.create(Success.apply(request), request);
-            });
+    final FlowWithContext<Integer, Integer, Try<Integer>, Integer, NotUsed> failEvenValuesFlow =
+        FlowWithContext.fromPairs(
+            Flow.fromFunction(
+                in -> {
+                  final Integer request = in.first();
+                  if (request % 2 == 0)
+                    return Pair.create(Failure.apply(new Error("Failed response")), in.second());
+                  else return Pair.create(Success.apply(request), in.second());
+                }));
 
     // #retry-failure
-    final Flow<Pair<Integer, Integer>, Pair<Try<Integer>, Integer>, NotUsed> retryFlow =
-        RetryFlow.withBackoff(
+    final FlowWithContext<Integer, Integer, Try<Integer>, Integer, NotUsed> retryFlow =
+        RetryFlow.withBackoffAndContext(
             minBackoff,
             maxBackoff,
             randomFactor,
             maxRetries,
-            flow,
-            (success, failure) -> {
-              if (failure != null) {
-                final Integer state = failure.t3();
-                if (state > 0) {
-                  return Optional.of(Pair.create(state / 2, state / 2));
-                }
+            failEvenValuesFlow,
+            (in, out) -> {
+              if (out.first().isFailure()) {
+                return Optional.of(Pair.create(in.first() + 1, out.second()));
               }
               return Optional.empty();
             });
@@ -139,8 +137,8 @@ public class RetryFlowTest extends StreamTest {
     source.sendNext(8);
 
     Pair<Try<Integer>, Integer> response = sink.expectNext();
-    assertEquals(0, response.first().get().intValue());
-    assertEquals(0, response.second().intValue());
+    assertEquals(9, response.first().get().intValue());
+    assertEquals(8, response.second().intValue());
 
     source.sendComplete();
     sink.expectComplete();
@@ -172,11 +170,10 @@ public class RetryFlowTest extends StreamTest {
                         randomFactor,
                         maxRetries,
                         flow,
-                        (success, failure) -> {
-                          if (failure != null) {
-                            final Integer state = failure.t3();
-                            if (state > 0) {
-                              return Optional.of(Pair.create(state / 2, state / 2));
+                        (in, out) -> {
+                          if (out.first().isFailure()) {
+                            if (out.second() > 0) {
+                              return Optional.of(Pair.create(out.second() / 2, out.second() / 2));
                             }
                           }
                           return Optional.empty();

@@ -5,13 +5,11 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.impl.RetryFlowCoordinator
-import akka.stream.{ BidiShape, FlowShape, Graph, KillSwitches }
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber, Utils }
+import akka.stream.KillSwitches
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber, Utils }
 import org.scalatest.matchers.{ MatchResult, Matcher }
 
-import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 
@@ -19,31 +17,34 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
   final val FailedElem: Try[Int] = Failure(new Exception("cooked failure"))
 
-  def failEvenValuesAndIncFlow[T]: Flow[(Int, T), (Try[Int], T), NotUsed] = Flow.fromFunction {
-    case (i, j) if i % 2 == 0 => (FailedElem, j)
-    case (i, j)               => (Success(i + 1), j)
-  }
+  def failEvenValuesAndIncFlow[T]: FlowWithContext[Int, T, Try[Int], T, NotUsed] =
+    FlowWithContext.fromTuples(Flow.fromFunction {
+      case (i, j) if i % 2 == 0 => (FailedElem, j)
+      case (i, j)               => (Success(i + 1), j)
+    })
 
-  def failEvenValuesFlow[T]: Flow[(Int, T), (Try[Int], T), NotUsed] = Flow.fromFunction {
-    case (i, j) if i % 2 == 0 => (FailedElem, j)
-    case (i, j)               => (Success(i), j)
-  }
+  def failEvenValuesFlow[Ctx]: FlowWithContext[Int, Ctx, Try[Int], Ctx, NotUsed] =
+    FlowWithContext.fromTuples(Flow.fromFunction {
+      case (i, ctx) if i % 2 == 0 => (FailedElem, ctx)
+      case (i, ctx)               => (Success(i), ctx)
+    })
 
-  def failAllValuesFlow[T]: Flow[(Int, T), (Try[Int], T), NotUsed] = Flow.fromFunction {
-    case (i, j) => (FailedElem, j)
-  }
+  def failAllValuesFlow[Ctx]: FlowWithContext[Int, Ctx, Try[Int], Ctx, NotUsed] =
+    FlowWithContext.fromTuples(Flow.fromFunction {
+      case (i, j) => (FailedElem, j)
+    })
 
   /** increments the context with every failure */
-  def retryFailedValues[InData, OutData](in: InData, t: Try[OutData], ctx: Int): Option[(InData, Int)] =
-    (in, t, ctx) match {
-      case (in, Failure(_), ctx) => Some((in, ctx + 1))
-      case _                     => None
+  def retryFailedValues[InData](in: (InData, Int), out: (Try[InData], Int)): Option[(InData, Int)] =
+    out._1 match {
+      case Failure(_) => Some((in._1, out._2 + 1))
+      case _          => None
     }
 
-  def incrementFailedValues[OutData](in: Int, t: Try[OutData], ctx: Int): Option[(Int, Int)] =
-    (in, t, ctx) match {
-      case (in, Failure(_), ctx) => Some((in + 1, ctx + 1))
-      case _                     => None
+  def incrementFailedValues[OutData](in: (Int, Int), out: (Try[OutData], Int)): Option[(Int, Int)] =
+    out._1 match {
+      case Failure(_) => Some((in._1 + 1, out._2 + 1))
+      case _          => None
     }
 
   "RetryFlow.withBackoff" should {
@@ -51,8 +52,8 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     "send elements through" in {
       val sink =
         Source(List(13, 17, 19, 23, 27).map(_ -> 0))
-          .via(
-            RetryFlow.withBackoff(10.millis, 5.second, 0d, maxRetries = 3, failEvenValuesFlow[Int])(retryFailedValues))
+          .via(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0d, maxRetries = 3, failEvenValuesFlow[Int])(
+            retryFailedValues))
           .runWith(Sink.seq)
       sink.futureValue should contain inOrderElementsOf List(
         Success(13) -> 0,
@@ -66,7 +67,8 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       val maxRetries = 2
       val sink =
         Source(List(13, 17).map(_ -> 0))
-          .via(RetryFlow.withBackoff(1.millis, 5.millis, 0d, maxRetries, failAllValuesFlow[Int])(retryFailedValues))
+          .via(RetryFlow.withBackoffAndContext(1.millis, 5.millis, 0d, maxRetries, failAllValuesFlow[Int])(
+            retryFailedValues))
           .runWith(Sink.seq)
       sink.futureValue should contain inOrderElementsOf List(FailedElem -> maxRetries, FailedElem -> maxRetries)
     }
@@ -74,21 +76,21 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     "send elements through (with retrying)" in {
       val sink =
         Source(List(12, 13, 14).map(_ -> 0))
-          .via(RetryFlow.withBackoff(1.millis, 5.millis, 0d, maxRetries = 3, failEvenValuesFlow[Int])(
+          .via(RetryFlow.withBackoffAndContext(1.millis, 5.millis, 0d, maxRetries = 3, failEvenValuesFlow[Int])(
             incrementFailedValues))
           .runWith(Sink.seq)
       sink.futureValue should contain inOrderElementsOf List(Success(13) -> 1, Success(13) -> 0, Success(15) -> 1)
     }
 
     "allow retrying a successful element" in {
-      val flow = Flow.fromFunction[(Int, Int), (Try[Int], Int)] {
+      val flow = FlowWithContext.fromTuples(Flow.fromFunction[(Int, Int), (Try[Int], Int)] {
         case (i, ctx) => Success(i) -> ctx
-      }
+      })
 
       //#retry-success
-      val retryFlow = RetryFlow.withBackoff(10.millis, 5.second, 0, 3, flow) {
-        case (_, Success(i), ctx) if i < 5 => Some((i + 1) -> (ctx + 1))
-        case _                             => None
+      val retryFlow = RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 3, flow) {
+        case ((_, _), (Success(i), ctx)) if i < 5 => Some((i + 1) -> (ctx + 1))
+        case _                                    => None
       }
       //#retry-success
 
@@ -106,30 +108,6 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       sink.expectComplete()
     }
 
-    "support flow with context" in {
-      val flow = Flow[Int].asFlowWithContext((i: Int, _: Int) => i)(identity).map {
-        case i if i > 0 => Failure(new Error("i is larger than 0"))
-        case i          => Success(i)
-      }
-
-      val (source, sink) = TestSource
-        .probe[Int]
-        .asSourceWithContext(identity)
-        .via(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 10, flow) {
-          case (_, Failure(_), ctx) if ctx > 0 => Some((ctx / 2, ctx / 2))
-          case _                               => None
-        })
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
-
-      sink.request(1)
-
-      source.sendNext(8)
-      sink.expectNext((Success(0), 0))
-
-      source.sendComplete()
-      sink.expectComplete()
-    }
   }
 
   "Backing off" should {
@@ -138,7 +116,8 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       val (source, sink) = TestSource
         .probe[Int]
         .map(_ -> 0)
-        .via(RetryFlow.withBackoff(minBackoff, 5.second, 0d, 3, failEvenValuesFlow[Int])(incrementFailedValues))
+        .via(
+          RetryFlow.withBackoffAndContext(minBackoff, 5.second, 0d, 3, failEvenValuesFlow[Int])(incrementFailedValues))
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
@@ -158,7 +137,8 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       val (source, sink) = TestSource
         .probe[Int]
         .map(_ -> 0)
-        .via(RetryFlow.withBackoff(minBackoff, 5.second, 0d, maxRetries, failAllValuesFlow[Int])(retryFailedValues))
+        .via(RetryFlow.withBackoffAndContext(minBackoff, 5.second, 0d, maxRetries, failAllValuesFlow[Int])(
+          retryFailedValues))
         .toMat(TestSink.probe)(Keep.both)
         .run()
 
@@ -175,18 +155,18 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       val nanoTimeOffset = System.nanoTime()
       case class State(counter: Int, retriedAt: List[Long])
 
-      val flow = Flow.fromFunction[(Int, State), (Try[Int], State)] {
+      val flow = FlowWithContext.fromTuples(Flow.fromFunction[(Int, State), (Try[Int], State)] {
         case (i, j) if i % NumRetries == 0 => (Success(i), j)
         case (_, State(counter, retriedAt)) =>
           (FailedElem, State(counter + 1, System.nanoTime - nanoTimeOffset :: retriedAt))
-      }
+      })
 
       val (source, sink) = TestSource
         .probe[Int]
         .map(i => (i, State(i, Nil)))
-        .via(RetryFlow.withBackoff(10.millis, 5.second, 0, 50, flow) {
-          case (_, Failure(_), s @ State(counter, _)) => Some(counter -> s)
-          case _                                      => None
+        .via(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 50, flow) {
+          case (_, (Failure(_), s @ State(counter, _))) => Some(counter -> s)
+          case _                                        => None
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
@@ -215,10 +195,16 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
   "Aborting" should {
     "tolerate killswitch abort after start" in {
       //#retry-failure
-      val retryFlow = RetryFlow.withBackoff(10.millis, 5.second, 0, 3, failEvenValuesAndIncFlow[Int]) {
-        case (_, Failure(_), x) => Some((x + 1, x))
-        case _                  => None
-      }
+      val retryFlow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] =
+        RetryFlow.withBackoffAndContext(
+          minBackoff = 10.millis,
+          maxBackoff = 5.second,
+          randomFactor = 0d,
+          maxRetries = 3,
+          flow = failEvenValuesFlow[Int]) {
+          case ((in, _), (Failure(_), ctx)) => Some((in + 1, ctx))
+          case _                            => None
+        }
       //#retry-failure
 
       val ((source, killSwitch), sink) = TestSource
@@ -233,10 +219,10 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       sink.request(99)
 
       source.sendNext(1)
-      sink.expectNext((Success(2), 1))
+      sink.expectNext((Success(1), 1))
 
       source.sendNext(2)
-      sink.expectNext((Success(4), 2))
+      sink.expectNext((Success(3), 2))
 
       killSwitch.abort(FailedElem.failed.get)
       sink.expectError(FailedElem.failed.get)
@@ -248,9 +234,9 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
         .via(Utils.delayCancellation(10.seconds))
         .viaMat(KillSwitches.single[Int])(Keep.right)
         .map(i => (i, i))
-        .via(RetryFlow.withBackoff(10.millis, 5.second, 0, 3, failEvenValuesAndIncFlow[Int]) {
-          case (_, Failure(_), x) => Some((x + 1, x))
-          case _                  => None
+        .via(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 3, failEvenValuesAndIncFlow[Int]) {
+          case ((_, _), (Failure(_), x)) => Some((x + 1, x))
+          case _                         => None
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
@@ -267,9 +253,9 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
         .via(Utils.delayCancellation(10.seconds))
         .viaMat(KillSwitches.single[Int])(Keep.right)
         .map(i => (i, i))
-        .via(RetryFlow.withBackoff(10.millis, 5.second, 0, 3, failEvenValuesAndIncFlow[Int]) {
-          case (_, Failure(_), x) => Some((x + 1, x))
-          case _                  => None
+        .via(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 3, failEvenValuesAndIncFlow[Int]) {
+          case ((_, _), (Failure(_), x)) => Some((x + 1, x))
+          case _                         => None
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
@@ -288,9 +274,9 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       val ((source, killSwitch), sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
-        .viaMat(RetryFlow.withBackoff(10.millis, 5.second, 0, 3, innerFlow) {
-          case (_, Failure(_), x) => Some((x + 1, x))
-          case _                  => None
+        .viaMat(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 3, innerFlow) {
+          case ((_, _), (Failure(_), x)) => Some((x + 1, x))
+          case _                         => None
         })(Keep.both)
         .toMat(TestSink.probe)(Keep.both)
         .run()
@@ -315,9 +301,9 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       val (killSwitch, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
-        .viaMat(RetryFlow.withBackoff(10.millis, 5.second, 0, 3, innerFlow) {
-          case (_, Failure(_), x) => Some((x + 1, x))
-          case _                  => None
+        .viaMat(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 3, innerFlow) {
+          case ((_, _), (Failure(_), x)) => Some((x + 1, x))
+          case _                         => None
         })(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
         .run()
@@ -336,9 +322,9 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       val (killSwitch, sink) = TestSource
         .probe[Int]
         .map(i => (i, i))
-        .viaMat(RetryFlow.withBackoff(10.millis, 5.second, 0, 3, innerFlow) {
-          case (_, Failure(_), x) => Some((x + 1, x))
-          case _                  => None
+        .viaMat(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 3, innerFlow) {
+          case ((_, _), (Failure(_), x)) => Some((x + 1, x))
+          case _                         => None
         })(Keep.right)
         .toMat(TestSink.probe)(Keep.both)
         .run()
@@ -349,17 +335,17 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       sink.expectError(FailedElem.failed.get)
     }
 
-    val alwaysFailingFlow = Flow.fromFunction[(Int, Int), (Try[Int], Int)] {
+    val alwaysFailingFlow = FlowWithContext.fromTuples(Flow.fromFunction[(Int, Int), (Try[Int], Int)] {
       case (_, j) => (FailedElem, j)
-    }
+    })
 
-    val alwaysRecoveringFunc: (Int, Try[Int], Int) => Option[(Int, Int)] = {
-      case (_, Failure(_), i) => Some(i -> i)
-      case _                  => None
+    val alwaysRecoveringFunc: ((Int, Int), (Try[Int], Int)) => Option[(Int, Int)] = {
+      case (_, (Failure(_), i)) => Some(i -> i)
+      case _                    => None
     }
 
     val stuckForeverRetrying =
-      RetryFlow.withBackoff(10.millis, 5.second, 0, 3, alwaysFailingFlow)(alwaysRecoveringFunc)
+      RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 3, alwaysFailingFlow)(alwaysRecoveringFunc)
 
     "tolerate killswitch abort before the RetryFlow while on retry spin" in {
       val ((source, killSwitch), sink) = TestSource
@@ -385,7 +371,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
         .probe[Int]
         .map(i => (i, i))
         .viaMat(
-          RetryFlow.withBackoff(
+          RetryFlow.withBackoffAndContext(
             10.millis,
             5.second,
             0,
@@ -426,9 +412,9 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       val (source, sink) = TestSource
         .probe[Int]
         .map(i => (i, 0))
-        .via(RetryFlow.withBackoff(10.millis, 5.second, 0, 3, failEvenValuesFlow[Int]) {
-          case (_, Failure(_), x) => Some(1 -> (x + 1))
-          case _                  => None
+        .via(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 3, failEvenValuesFlow[Int]) {
+          case (_, (Failure(_), x)) => Some(1 -> (x + 1))
+          case _                    => None
         })
         .toMat(TestSink.probe)(Keep.both)
         .run()
@@ -448,43 +434,36 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
   "Coordinator" should {
 
-    class ConstructBench[InData, UserState, OutData](
-        retryWith: (InData, Try[OutData], UserState) => Option[(InData, UserState)]) {
+    class ConstructBench[InData, Ctx, OutData](retryWith: ((InData, Ctx), (OutData, Ctx)) => Option[(InData, Ctx)]) {
 
       def setup() = {
-        val retry: RetryFlowCoordinator[InData, UserState, OutData] =
-          new RetryFlowCoordinator[InData, UserState, OutData](
+        val retry: RetryFlowCoordinator[InData, Ctx, OutData, Ctx] =
+          new RetryFlowCoordinator[InData, Ctx, OutData, Ctx](
             retryWith,
             minBackoff = 10.millis,
             maxBackoff = 1.second,
             0,
             3)
 
-        val bidiFlow: BidiFlow[
-          (InData, UserState),
-          (InData, UserState),
-          (Try[OutData], UserState),
-          (Try[OutData], UserState),
-          NotUsed] =
+        val bidiFlow: BidiFlow[(InData, Ctx), (InData, Ctx), (OutData, Ctx), (OutData, Ctx), NotUsed] =
           BidiFlow.fromGraph(retry)
 
         val throughDangerousFlow: Flow[
-          (InData, UserState),
-          (Try[OutData], UserState),
-          (TestSubscriber.Probe[(InData, UserState)], TestPublisher.Probe[(Try[OutData], UserState)])] =
-          Flow.fromSinkAndSourceMat(TestSink.probe[(InData, UserState)], TestSource.probe[(Try[OutData], UserState)])(
-            Keep.both)
+          (InData, Ctx),
+          (OutData, Ctx),
+          (TestSubscriber.Probe[(InData, Ctx)], TestPublisher.Probe[(OutData, Ctx)])] =
+          Flow.fromSinkAndSourceMat(TestSink.probe[(InData, Ctx)], TestSource.probe[(OutData, Ctx)])(Keep.both)
 
         val inOutFlow: Flow[
-          (InData, UserState),
-          (Try[OutData], UserState),
-          (TestSubscriber.Probe[(InData, UserState)], TestPublisher.Probe[(Try[OutData], UserState)])] =
+          (InData, Ctx),
+          (OutData, Ctx),
+          (TestSubscriber.Probe[(InData, Ctx)], TestPublisher.Probe[(OutData, Ctx)])] =
           bidiFlow.joinMat(throughDangerousFlow)(Keep.right)
 
         val ((externalIn, (internalOut, internalIn)), externalOut) = TestSource
-          .probe[(InData, UserState)]
+          .probe[(InData, Ctx)]
           .viaMat(inOutFlow)(Keep.both)
-          .toMat(TestSink.probe[(Try[OutData], UserState)])(Keep.both)
+          .toMat(TestSink.probe[(OutData, Ctx)])(Keep.both)
           .run()
 
         (externalIn, externalOut, internalIn, internalOut)
@@ -494,12 +473,12 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
     type InData = String
     type UserCtx = Int
-    type OutData = String
+    type OutData = Try[String]
 
     "send successful elements accross" in new ConstructBench[InData, UserCtx, OutData]({
-      val retryWith: (InData, Try[OutData], UserCtx) => Option[(InData, UserCtx)] = {
-        case (_, Success(t), state) => None
-        case (_, Failure(e), state) => ???
+      val retryWith: ((InData, UserCtx), (OutData, UserCtx)) => Option[(InData, UserCtx)] = {
+        case (_, (Success(t), state)) => None
+        case (_, (Failure(e), state)) => ???
       }
       retryWith
     }) {
@@ -517,10 +496,10 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       externalOut.requestNext() shouldBe (Success("result A"), 123)
     }
 
-    "retry for a failure" in new ConstructBench({
-      val retryWith: (InData, Try[OutData], UserCtx) => Option[(InData, UserCtx)] = {
-        case (_, Success(t), state) => None
-        case (_, Failure(e), state) => Some(("A'", 2))
+    "retry for a failure" in new ConstructBench[InData, UserCtx, OutData]({
+      val retryWith: ((InData, UserCtx), (OutData, UserCtx)) => Option[(InData, UserCtx)] = {
+        case (_, (Success(t), state)) => None
+        case (_, (Failure(e), state)) => Some(("A'", 2))
 
       }
       retryWith
@@ -548,10 +527,10 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       externalOut.requestNext() shouldBe (Success("Ares"), 1)
     }
 
-    "allow to send two elements" in new ConstructBench({
-      val retryWith: (InData, Try[OutData], UserCtx) => Option[(InData, UserCtx)] = {
-        case (_, Success(t), state) => None
-        case (_, Failure(e), state) => Some(("A'", 2))
+    "allow to send two elements" in new ConstructBench[InData, UserCtx, OutData]({
+      val retryWith: ((InData, UserCtx), (OutData, UserCtx)) => Option[(InData, UserCtx)] = {
+        case (_, (Success(t), state)) => None
+        case (_, (Failure(e), state)) => Some(("A'", 2))
       }
       retryWith
     }) {

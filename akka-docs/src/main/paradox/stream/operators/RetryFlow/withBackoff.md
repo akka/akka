@@ -14,11 +14,10 @@ Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will retry individual ele
 
 ## Description
 
-When an element is emitted by the wrapped `flow` it is passed to the `retryWith` function, which decides whether
-one or more retries should be issued. The retry backoff is controlled by the `minBackoff`, `maxBackoff`
-and `randomFactor` parameters.
+When an element is emitted by the wrapped `flow` it is passed to the `decideRetry` function, which decides whether
+a retry should be issued as long as `maxRetries` in not reached. The retry backoff is controlled by the `minBackoff`, `maxBackoff` and `randomFactor` parameters.
 
-Failures can be retried by returning one or more requests from `retryWith`:
+Elements can be retried by returning a request from `decideRetry`:
 
 Scala
 :   @@snip [RetryFlowSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/RetryFlowSpec.scala) { #retry-failure }
@@ -26,18 +25,15 @@ Scala
 Java
 :   @@snip [RetryFlowTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/RetryFlowTest.java) { #retry-failure }
 
-The second element of the @scala[Tuple]@java[Pair] that is passed into the `retryWith` function is a pass-through value,
+The `decideRetry` is passed the original element, the element emitted by `flow` and the pass-through value,
 which can be used for different purposes, like:
 
 * to correlate a request with a response
-* to track the number of retries
 * to store request to be issued in the case of retry
 
-When `retryWith` returns @scala[`Option.none`]@java[`Optional.none`]@scala[ or does not match a response],
-no retries will be issued, and the failed or successful response will be emitted downstream.
+When `decideRetry` returns @scala[`Option.none`]@java[`Optional.empty`],
+no retries will be issued, and the response will be emitted downstream.
 
-It is also possible to retry successful responses. In that case the successful response is emitted downstream as well as
-retry being scheduled:
 
 Scala
 :   @@snip [RetryFlowSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/RetryFlowSpec.scala) { #retry-success }
