@@ -12,7 +12,7 @@ import akka.actor.typed.javadsl.*;
 
 // #separate-dispatcher
 class SeparateDispatcherFutureActor extends AbstractBehavior<Integer> {
-  final Executor ec;
+  private final Executor ec;
 
   public static Behavior<Integer> create() {
     return Behaviors.setup(SeparateDispatcherFutureActor::new);
@@ -38,7 +38,7 @@ class SeparateDispatcherFutureActor extends AbstractBehavior<Integer> {
         .build();
   }
 
-  private static final void triggerFutureBlockingOperation(Integer i, Executor ec) {
+  private static void triggerFutureBlockingOperation(Integer i, Executor ec) {
     System.out.println("Calling blocking Future on separate dispatcher: " + i);
     CompletableFuture<Integer> f =
         CompletableFuture.supplyAsync(
