@@ -38,7 +38,8 @@ recovery like this:
 Scala
 :  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #snapshotSelection }
 
-TODO #26273 include corresponding example in Java
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #snapshotSelection }
 
 To disable snapshot-based recovery, applications can use @scala[`SnapshotSelectionCriteria.None`]@java[`SnapshotSelectionCriteria.none()`].
 A recovery where no saved snapshot matches the specified `SnapshotSelectionCriteria` will replay all journaled
@@ -46,7 +47,7 @@ events. This can be useful if snapshot serialization format has changed in an in
 not be used when events have been deleted.
 
 In order to use snapshots, a default snapshot-store (`akka.persistence.snapshot-store.plugin`) must be configured,
-or you can pick a snapshot store for for a specific `EventSourcedBehavior by
+or you can pick a snapshot store for for a specific `EventSourcedBehavior` by
 @scala[defining it with `withSnapshotPluginId` of the `EventSourcedBehavior`]@java[overriding `snapshotPluginId` in
 the `EventSourcedBehavior`].
 

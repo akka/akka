@@ -5,12 +5,9 @@
 package jdocs.akka.cluster.sharding.typed;
 
 import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.Behaviors;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
 import akka.cluster.sharding.typed.javadsl.EventSourcedEntityWithEnforcedReplies;
 import akka.persistence.typed.ExpectingReply;
-import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandlerWithReply;
 import akka.persistence.typed.javadsl.CommandHandlerWithReplyBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -32,15 +29,15 @@ public interface AccountExampleWithMutableState {
   // #account-entity
   public class AccountEntity
       extends EventSourcedEntityWithEnforcedReplies<
-          AccountEntity.AccountCommand, AccountEntity.AccountEvent, AccountEntity.Account> {
+          AccountEntity.Command, AccountEntity.Event, AccountEntity.Account> {
 
-    public static final EntityTypeKey<AccountCommand> ENTITY_TYPE_KEY =
-        EntityTypeKey.create(AccountCommand.class, "Account");
+    public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
+        EntityTypeKey.create(Command.class, "Account");
 
     // Command
-    interface AccountCommand<Reply> extends ExpectingReply<Reply>, CborSerializable {}
+    interface Command<Reply> extends ExpectingReply<Reply>, CborSerializable {}
 
-    public static class CreateAccount implements AccountCommand<OperationResult> {
+    public static class CreateAccount implements Command<OperationResult> {
       private final ActorRef<OperationResult> replyTo;
 
       @JsonCreator
@@ -54,7 +51,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class Deposit implements AccountCommand<OperationResult> {
+    public static class Deposit implements Command<OperationResult> {
       public final BigDecimal amount;
       private final ActorRef<OperationResult> replyTo;
 
@@ -69,7 +66,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class Withdraw implements AccountCommand<OperationResult> {
+    public static class Withdraw implements Command<OperationResult> {
       public final BigDecimal amount;
       private final ActorRef<OperationResult> replyTo;
 
@@ -84,7 +81,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class GetBalance implements AccountCommand<CurrentBalance> {
+    public static class GetBalance implements Command<CurrentBalance> {
       private final ActorRef<CurrentBalance> replyTo;
 
       @JsonCreator
@@ -98,7 +95,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class CloseAccount implements AccountCommand<OperationResult> {
+    public static class CloseAccount implements Command<OperationResult> {
       private final ActorRef<OperationResult> replyTo;
 
       @JsonCreator
@@ -113,9 +110,9 @@ public interface AccountExampleWithMutableState {
     }
 
     // Reply
-    interface AccountCommandReply extends CborSerializable {}
+    interface CommandReply extends CborSerializable {}
 
-    interface OperationResult extends AccountCommandReply {}
+    interface OperationResult extends CommandReply {}
 
     enum Confirmed implements OperationResult {
       INSTANCE
@@ -130,7 +127,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class CurrentBalance implements AccountCommandReply {
+    public static class CurrentBalance implements CommandReply {
       public final BigDecimal balance;
 
       @JsonCreator
@@ -140,11 +137,11 @@ public interface AccountExampleWithMutableState {
     }
 
     // Event
-    interface AccountEvent extends CborSerializable {}
+    interface Event extends CborSerializable {}
 
-    public static class AccountCreated implements AccountEvent {}
+    public static class AccountCreated implements Event {}
 
-    public static class Deposited implements AccountEvent {
+    public static class Deposited implements Event {
       public final BigDecimal amount;
 
       @JsonCreator
@@ -153,7 +150,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class Withdrawn implements AccountEvent {
+    public static class Withdrawn implements Event {
       public final BigDecimal amount;
 
       @JsonCreator
@@ -162,7 +159,7 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    public static class AccountClosed implements AccountEvent {}
+    public static class AccountClosed implements Event {}
 
     // State
     interface Account extends CborSerializable {}
@@ -205,7 +202,7 @@ public interface AccountExampleWithMutableState {
       return new AccountEntity(accountNumber);
     }
 
-    public AccountEntity(String accountNumber) {
+    private AccountEntity(String accountNumber) {
       super(ENTITY_TYPE_KEY, accountNumber);
     }
 
@@ -215,8 +212,8 @@ public interface AccountExampleWithMutableState {
     }
 
     @Override
-    public CommandHandlerWithReply<AccountCommand, AccountEvent, Account> commandHandler() {
-      CommandHandlerWithReplyBuilder<AccountCommand, AccountEvent, Account> builder =
+    public CommandHandlerWithReply<Command, Event, Account> commandHandler() {
+      CommandHandlerWithReplyBuilder<Command, Event, Account> builder =
           newCommandHandlerWithReplyBuilder();
 
       builder.forStateType(EmptyAccount.class).onCommand(CreateAccount.class, this::createAccount);
@@ -235,20 +232,19 @@ public interface AccountExampleWithMutableState {
       return builder.build();
     }
 
-    private ReplyEffect<AccountEvent, Account> createAccount(
-        EmptyAccount account, CreateAccount command) {
+    private ReplyEffect<Event, Account> createAccount(EmptyAccount account, CreateAccount command) {
       return Effect()
           .persist(new AccountCreated())
           .thenReply(command, account2 -> Confirmed.INSTANCE);
     }
 
-    private ReplyEffect<AccountEvent, Account> deposit(OpenedAccount account, Deposit command) {
+    private ReplyEffect<Event, Account> deposit(OpenedAccount account, Deposit command) {
       return Effect()
           .persist(new Deposited(command.amount))
           .thenReply(command, account2 -> Confirmed.INSTANCE);
     }
 
-    private ReplyEffect<AccountEvent, Account> withdraw(OpenedAccount account, Withdraw command) {
+    private ReplyEffect<Event, Account> withdraw(OpenedAccount account, Withdraw command) {
       if (!account.canWithdraw(command.amount)) {
         return Effect()
             .reply(command, new Rejected("not enough funds to withdraw " + command.amount));
@@ -259,13 +255,11 @@ public interface AccountExampleWithMutableState {
       }
     }
 
-    private ReplyEffect<AccountEvent, Account> getBalance(
-        OpenedAccount account, GetBalance command) {
+    private ReplyEffect<Event, Account> getBalance(OpenedAccount account, GetBalance command) {
       return Effect().reply(command, new CurrentBalance(account.balance));
     }
 
-    private ReplyEffect<AccountEvent, Account> closeAccount(
-        OpenedAccount account, CloseAccount command) {
+    private ReplyEffect<Event, Account> closeAccount(OpenedAccount account, CloseAccount command) {
       if (account.getBalance().equals(BigDecimal.ZERO)) {
         return Effect()
             .persist(new AccountClosed())
@@ -276,8 +270,8 @@ public interface AccountExampleWithMutableState {
     }
 
     @Override
-    public EventHandler<Account, AccountEvent> eventHandler() {
-      EventHandlerBuilder<Account, AccountEvent> builder = newEventHandlerBuilder();
+    public EventHandler<Account, Event> eventHandler() {
+      EventHandlerBuilder<Account, Event> builder = newEventHandlerBuilder();
 
       builder
           .forStateType(EmptyAccount.class)

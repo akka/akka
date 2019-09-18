@@ -182,18 +182,18 @@ Once it is started then it we can look it up with `GetPost`, modify it with `Cha
 The state is captured by:
 
 Scala
-:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #state }
+:  @@snip [BlogPostEntity.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntity.scala) { #state }
 
 Java
-:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #state }
+:  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #state }
 
 The commands, of which only a subset are valid depending on the state:
 
 Scala
-:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #commands }
+:  @@snip [BlogPostEntity.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntity.scala) { #commands }
 
 Java
-:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #commands }
+:  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #commands }
 
 @java[The commandler handler to process each command is decided by the state class (or state predicate) that is
 given to the `forStateType` of the `CommandHandlerBuilder` and the match cases in the builders.]
@@ -202,27 +202,27 @@ It typically becomes two levels of pattern matching, first on the state and then
 Delegating to methods is a good practice because the one-line cases give a nice overview of the message dispatch.
 
 Scala
-:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #command-handler }
+:  @@snip [BlogPostEntity.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntity.scala) { #command-handler }
 
 Java
-:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #command-handler }
+:  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #command-handler }
 
 
 The event handler:
 
 Scala
-:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #event-handler }
+:  @@snip [BlogPostEntity.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntity.scala) { #event-handler }
 
 Java
-:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #event-handler }
+:  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #event-handler }
 
 And finally the behavior is created @scala[from the `EventSourcedBehavior.apply`]:
 
 Scala
-:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #behavior }
+:  @@snip [BlogPostEntity.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntity.scala) { #behavior }
 
 Java
-:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #behavior }
+:  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #behavior }
 
 This can be taken one or two steps further by defining the event and command handlers in the state class as
 illustrated in @ref:[event handlers in the state](persistence-style.md#event-handlers-in-the-state) and
@@ -241,7 +241,7 @@ Each command has a single `Effect` which can be:
 
 Note that there is only one of these. It is not possible to both persist and say none/unhandled.
 These are created using @java[a factory that is returned via the `Effect()` method]
-@scala[the `Effect` factory] and once created additional `SideEffects` can be added.
+@scala[the `Effect` factory] and once created additional side effects can be added.
 
 Most of them time this will be done with the `thenRun` method on the `Effect` above. You can factor out
 common side effects into functions and reuse for several commands. For example:
@@ -254,8 +254,8 @@ Java
 
 ### Side effects ordering and guarantees
 
-Any `SideEffect`s are executed on an at-once basis and will not be executed if the persist fails.
-The `SideEffect`s are executed sequentially, it is not possible to execute `SideEffect`s in parallel.
+Any side effects are executed on an at-once basis and will not be executed if the persist fails.
+The side effects are executed sequentially, it is not possible to execute side effects in parallel.
 
 ## Replies
 
@@ -268,17 +268,17 @@ commands. After validation errors or after persisting events, using a `thenRun` 
 be sent to the `ActorRef`.
 
 Scala
-:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #reply-command }
+:  @@snip [BlogPostEntity.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntity.scala) { #reply-command }
 
 Java
-:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #reply-command }
+:  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #reply-command }
 
 
 Scala
-:  @@snip [BlogPostExample.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostExample.scala) { #reply }
+:  @@snip [BlogPostEntity.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BlogPostEntity.scala) { #reply }
 
 Java
-:  @@snip [BlogPostExample.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostExample.java) { #reply }
+:  @@snip [BlogPostEntity.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BlogPostEntity.java) { #reply }
 
 
 Since this is such a common pattern there is a reply effect for this purpose. It has the nice property that
@@ -306,7 +306,8 @@ Java
 The `ReplyEffect` is created with @scala[`Effect.reply`]@java[`Effects().reply`], @scala[`Effect.noReply`]@java[`Effects().noReply`],
 @scala[`Effect.thenReply`]@java[`Effects().thenReply`], or @scala[`Effect.thenNoReply`]@java[`Effects().thenNoReply`].
 
-@java[Note that command handlers are defined with `newCommandHandlerWithReplyBuilder` when using `EventSourcedBehaviorWithEnforcedReplies`, as opposed to newCommandHandlerBuilder when using `EventSourcedBehavior`.]
+@java[Note that command handlers are defined with `newCommandHandlerWithReplyBuilder` when using
+`EventSourcedBehaviorWithEnforcedReplies`, as opposed to newCommandHandlerBuilder when using `EventSourcedBehavior`.]
 
 Scala
 :  @@snip [AccountExampleWithEventHandlersInState.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleWithEventHandlersInState.scala) { #reply }
@@ -411,7 +412,7 @@ This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` and
 
 ## Stash
 
-When persisting events with `persist` or `persistAll` it is guaranteed that the persistent actor will not receive
+When persisting events with `persist` or `persistAll` it is guaranteed that the `EventSourcedBehavior` will not receive
 further commands until after the events have been confirmed to be persisted and additional side effects have been run.
 Incoming messages are stashed automatically until the `persist` is completed.
 

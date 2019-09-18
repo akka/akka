@@ -181,11 +181,11 @@ public class PersistentActorCompileOnlyTest {
 
     public static class Cmd implements MyCommand {
       private final String data;
-      private final ActorRef<Ack> sender;
+      private final ActorRef<Ack> replyTo;
 
-      public Cmd(String data, ActorRef<Ack> sender) {
+      public Cmd(String data, ActorRef<Ack> replyTo) {
         this.data = data;
-        this.sender = sender;
+        this.replyTo = replyTo;
       }
     }
 
@@ -218,10 +218,9 @@ public class PersistentActorCompileOnlyTest {
             return new ExampleState();
           }
 
+          // #commonChainedEffects
           @Override
           public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
-
-            // #commonChainedEffects
             return newCommandHandlerBuilder()
                 .forStateType(ExampleState.class)
                 .onCommand(
@@ -229,11 +228,11 @@ public class PersistentActorCompileOnlyTest {
                     (state, cmd) ->
                         Effect()
                             .persist(new Evt(cmd.data))
-                            .thenRun(() -> cmd.sender.tell(new Ack()))
+                            .thenRun(() -> cmd.replyTo.tell(new Ack()))
                             .thenRun(commonChainedEffect))
                 .build();
-            // #commonChainedEffects
           }
+          // #commonChainedEffects
 
           @Override
           public EventHandler<ExampleState, MyEvent> eventHandler() {
