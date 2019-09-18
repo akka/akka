@@ -394,7 +394,7 @@ The Test Kits for asynchronous testing are rather similar.
 Links to reference documentation:
 
 * @ref:[Classic](../testing.md#async-integration-testing)
-* @ref:[Typed](testing.md#asynchronous-testing)
+* @ref:[Typed](testing-async.md#asynchronous-testing)
 
 ## Synchronous Testing
 
@@ -409,4 +409,4 @@ some limitations to be aware of. Similar limitations exists for synchronous test
 Links to reference documentation:
 
 * @ref:[Classic](../testing.md#sync-testing)
-* @ref:[Typed](testing.md#synchronous-behavior-testing)
+* @ref:[Typed](testing-sync.md#synchronous-behavior-testing)
