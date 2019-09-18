@@ -472,6 +472,8 @@ object Actor {
  */
 trait Actor {
 
+  type LOL = String
+
   // to make type Receive known in subclasses without import
   type Receive = Actor.Receive
 
