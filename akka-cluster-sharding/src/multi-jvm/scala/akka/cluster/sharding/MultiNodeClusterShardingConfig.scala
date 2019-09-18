@@ -51,8 +51,6 @@ abstract class MultiNodeClusterShardingConfig(
         dir = $targetDir/sharding-ddata
         map-size = 10 MiB
       }
-      akka.testconductor.barrier-timeout = 60 s
-      akka.test.single-expect-default = 60 s
       """))
       .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
       .withFallback(MultiNodeClusterSpec.clusterConfig))
