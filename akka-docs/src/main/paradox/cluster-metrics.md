@@ -27,7 +27,7 @@ Cluster metrics information is primarily used for load-balancing routers,
 and can also be used to implement advanced metrics-based node life cycles,
 such as "Node Let-it-crash" when CPU steal time becomes excessive.
 
-Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up), if that feature is enabled,
+Cluster members with status @ref:[WeaklyUp](typed/cluster-membership.md#weaklyup-members), if that feature is enabled,
 will participate in Cluster Metrics collection and dissemination.
 
 ## Metrics Collector

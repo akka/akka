@@ -44,7 +44,7 @@ The oldest member is determined by `akka.cluster.Member#isOlderThan`.
 This can change when removing that member from the cluster. Be aware that there is a short time
 period when there is no active singleton during the hand-over process.
 
-The cluster failure detector will notice when oldest node becomes unreachable due to
+The cluster @ref:[failure detector](typed/cluster.md#failure-detector) will notice when oldest node becomes unreachable due to
 things like JVM crash, hard shut down, or network failure. Then a new oldest node will
 take over and a new singleton actor is created. For these failure scenarios there will
 not be a graceful hand-over, but more than one active singletons is prevented by all
@@ -65,7 +65,7 @@ It's worth noting that messages can always be lost because of the distributed na
 As always, additional logic should be implemented in the singleton (acknowledgement) and in the
 client (retry) actors to ensure at-least-once message delivery.
 
-The singleton instance will not run on members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up).
+The singleton instance will not run on members with status @ref:[WeaklyUp](typed/cluster-membership.md#weaklyup-members).
 
 ## Potential problems to be aware of
 
@@ -75,7 +75,7 @@ This pattern may seem to be very tempting to use at first, but it has several dr
  * you can not rely on the cluster singleton to be *non-stop* available — e.g. when the node on which the singleton has
 been running dies, it will take a few seconds for this to be noticed and the singleton be migrated to another node,
  * in the case of a *network partition* appearing in a Cluster that is using Automatic Downing  (see docs for
-@ref:[Auto Downing](cluster-usage.md#automatic-vs-manual-downing)),
+@ref:[Auto Downing](typed/cluster.md#automatic-vs-manual-downing)),
 it may happen that the isolated clusters each decide to spin up their own singleton, meaning that there might be multiple
 singletons running in the system, yet the Clusters have no way of finding out about them (because of the partition).
 

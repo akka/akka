@@ -63,7 +63,7 @@ Environments such as Kubernetes send a SIGTERM, however if the JVM is wrapped wi
 ### Ungraceful shutdown 
 
 In case of network failures it may still be necessary to set the node's status to Down in order to complete the removal. 
-@ref:[Cluster Downing](../cluster-usage.md#downing) details downing nodes and downing providers. 
+@ref:[Cluster Downing](../typed/cluster.md#downing) details downing nodes and downing providers. 
 [Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html) can be used to ensure 
 the cluster continues to function during network partitions and node failures. For example
 if there is an unreachability problem Split Brain Resolver would make a decision based on the configured downing strategy. 
@@ -79,7 +79,7 @@ and ensure all nodes are in this state
 * Deploy again and with the new nodes set to `akka.cluster.configuration-compatibility-check.enforce-on-join = on`. 
   
 Full documentation about enforcing these checks on joining nodes and optionally adding custom checks can be found in  
-@ref:[Akka Cluster configuration compatibility checks](../cluster-usage.md#configuration-compatibility-check).
+@ref:[Akka Cluster configuration compatibility checks](../typed/cluster.md#configuration-compatibility-check).
 
 ## Rolling Updates and Migrating Akka
 

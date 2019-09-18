@@ -4,8 +4,9 @@
 
 @@@ index
 
-* [cluster-specification](../common/cluster.md)
 * [cluster](cluster.md)
+* [cluster-specification](cluster-specification.md)
+* [cluster-membership](cluster-membership.md)
 * [distributed-data](distributed-data.md)
 * [cluster-singleton](cluster-singleton.md)
 * [cluster-sharding](cluster-sharding.md)
@@ -17,5 +18,6 @@
 * [remoting-artery](../remoting-artery.md)
 * [remoting](../remoting.md)
 * [coordination](../coordination.md)
+* [choosing-cluster](choosing-cluster.md)
 
 @@@

@@ -76,8 +76,8 @@ up a large cluster into smaller groups of nodes for better scalability.
 
 ## Membership
 
-Some @ref[membership transitions](common/cluster.md#membership-lifecycle) are managed by 
-one node called the @ref[leader](common/cluster.md#leader). There is one leader per data center
+Some @ref[membership transitions](typed/cluster-membership.md#membership-lifecycle) are managed by 
+one node called the @ref[leader](typed/cluster-specification.md#leader). There is one leader per data center
 and it is responsible for these transitions for the members within the same data center. Members of
 other data centers are managed independently by the leader of the respective data center. These actions
 cannot be performed while there are any unreachability observations among the nodes in the data center, 
@@ -91,7 +91,7 @@ User actions like joining, leaving, and downing can be sent to any node in the c
 not only to the nodes in the data center of the node. Seed nodes are also global.
 
 The data center membership is implemented by adding the data center name prefixed with `"dc-"` to the 
-@ref[roles](cluster-usage.md#node-roles) of the member and thereby this information is known
+@ref[roles](typed/cluster.md#node-roles) of the member and thereby this information is known
 by all other members in the cluster. This is an implementation detail, but it can be good to know
 if you see this in log messages.
 
@@ -105,7 +105,7 @@ Java
 
 ## Failure Detection
 
-@ref[Failure detection](cluster-usage.md#failure-detector) is performed by sending heartbeat messages
+@ref[Failure detection](typed/cluster-specification.md#failure-detector) is performed by sending heartbeat messages
 to detect if a node is unreachable. This is done more frequently and with more certainty among
 the nodes in the same data center than across data centers. The failure detection across different data centers should
 be interpreted as an indication of problem with the network link between the data centers.
@@ -131,6 +131,8 @@ information across data centers. Within a data center all nodes are involved in 
 This influences how rolling upgrades should be performed. Don't stop all of the oldest that are used for gossip
 at the same time. Stop one or a few at a time so that new nodes can take over the responsibility.
 It's best to leave the oldest nodes until last.
+
+See the @ref:[failure detector](typed/cluster.md#failure-detector) for more details.
 
 ## Cluster Singleton
 

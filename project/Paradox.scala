@@ -47,6 +47,8 @@ object Paradox {
         "index.html",
         // Page that recommends Alpakka:
         "camel.html",
+        // Page linked to from many others, but not in a TOC
+        "typed/failure-detector.html",
         // TODO page not linked to
         "fault-tolerance-sample.html"))
 

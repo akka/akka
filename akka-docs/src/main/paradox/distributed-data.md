@@ -51,12 +51,12 @@ with a specific role. It communicates with other `Replicator` instances with the
 actor using the `Replicator.props`. If it is started as an ordinary actor it is important
 that it is given the same name, started on same path, on all nodes.
 
-Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up),
+Cluster members with status @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up),
 will participate in Distributed Data. This means that the data will be replicated to the
-@ref:[WeaklyUp](cluster-usage.md#weakly-up) nodes with the background gossip protocol. Note that it
+@ref:[WeaklyUp](typed/cluster-membership.md#weakly-up) nodes with the background gossip protocol. Note that it
 will not participate in any actions where the consistency mode is to read/write from all
-nodes or the majority of nodes. The @ref:[WeaklyUp](cluster-usage.md#weakly-up) node is not counted
-as part of the cluster. So 3 nodes + 5 @ref:[WeaklyUp](cluster-usage.md#weakly-up) is essentially a
+nodes or the majority of nodes. The @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up) node is not counted
+as part of the cluster. So 3 nodes + 5 @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up) is essentially a
 3 node cluster as far as consistent actions are concerned.
 
 Below is an example of an actor that schedules tick messages to itself and for each tick
