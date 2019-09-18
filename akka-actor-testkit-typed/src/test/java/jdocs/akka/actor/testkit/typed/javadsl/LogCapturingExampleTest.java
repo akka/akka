@@ -23,10 +23,10 @@ public class LogCapturingExampleTest {
 
   @Test
   public void testSomething() {
-    ActorRef<Ping> pinger = testKit.spawn(echoActor(), "ping");
-    TestProbe<Pong> probe = testKit.createTestProbe();
-    pinger.tell(new Ping("hello", probe.ref()));
-    probe.expectMessage(new Pong("hello"));
+    ActorRef<Echo.Ping> pinger = testKit.spawn(Echo.create(), "ping");
+    TestProbe<Echo.Pong> probe = testKit.createTestProbe();
+    pinger.tell(new Echo.Ping("hello", probe.ref()));
+    probe.expectMessage(new Echo.Pong("hello"));
   }
 }
 // #log-capturing

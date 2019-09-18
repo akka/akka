@@ -41,8 +41,8 @@ public class ManualTimerExampleTest extends JUnitSuite {
         Behaviors.withTimers(
             timer -> {
               timer.startSingleTimer("T", new Tick(), Duration.ofMillis(10));
-              return Behaviors.receive(
-                  (context, tick) -> {
+              return Behaviors.receiveMessage(
+                  tick -> {
                     probe.ref().tell(new Tock());
                     return Behaviors.same();
                   });
