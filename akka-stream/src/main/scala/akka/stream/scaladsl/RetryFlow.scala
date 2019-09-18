@@ -22,10 +22,10 @@ object RetryFlow {
    * element with its context, and the response emitted by `flow`, and may return a request to be retried.
    *
    * The implementation of the `RetryFlow` assumes that `flow` follows one-in-one-out element semantics,
-   * which is expressed by the [[akka.stream.scaladsl.FlowWithContext]] type.
+   * which is expressed by the [[akka.stream.scaladsl.FlowWithContext FlowWithContext]] type.
    *
-   * The wrapped `flow` and `decideRetry` take the additional context parameter which can be a context,
-   * or used control retrying with other information.
+   * The wrapped `flow` and `decideRetry` take the additional context parameters which can be a context,
+   * or used to control retrying with other information.
    *
    * @param minBackoff minimum duration to backoff between issuing retries
    * @param maxBackoff maximum duration to backoff between issuing retries
@@ -45,7 +45,7 @@ object RetryFlow {
       decideRetry: ((In, CtxIn), (Out, CtxOut)) => Option[(In, CtxIn)]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     FlowWithContext.fromTuples {
       val retryCoordination = BidiFlow.fromGraph(
-        new RetryFlowCoordinator[In, CtxIn, Out, CtxOut](decideRetry, minBackoff, maxBackoff, randomFactor, maxRetries))
+        new RetryFlowCoordinator[In, CtxIn, Out, CtxOut](minBackoff, maxBackoff, randomFactor, maxRetries, decideRetry))
 
       retryCoordination.joinMat(flow)(Keep.right)
     }
@@ -55,11 +55,11 @@ object RetryFlow {
  * INTERNAL API.
  */
 @InternalApi private[akka] class RetryFlowCoordinator[In, CtxIn, Out, CtxOut](
-    decideRetry: ((In, CtxIn), (Out, CtxOut)) => Option[(In, CtxIn)],
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
     randomFactor: Double,
-    maxRetries: Int)
+    maxRetries: Int,
+    decideRetry: ((In, CtxIn), (Out, CtxOut)) => Option[(In, CtxIn)])
     extends GraphStage[BidiShape[(In, CtxIn), (In, CtxIn), (Out, CtxOut), (Out, CtxOut)]] {
 
   private val externalIn = Inlet[(In, CtxIn)]("RetryFlow.externalIn")
