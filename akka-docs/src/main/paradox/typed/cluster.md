@@ -28,8 +28,8 @@ which are exposed as event APIs.
 
 It does this through these references are on the `Cluster` extension:
 
-* manager: An @scala[`ActorRef[ClusterCommand]`]@java[`ActorRef<ClusterCommand>`] where a `ClusterCommand` is a command such as: `Join`, `Leave` and `Down`
-* subscriptions: An `ActorRef[ClusterStateSubscription]` where a `ClusterStateSubscription` is one of `GetCurrentState` or `Subscribe` and `Unsubscribe` to cluster events like `MemberRemoved`
+* manager: An @scala[`ActorRef[akka.cluster.typed.ClusterCommand]`]@java[`ActorRef<akka.cluster.typed.ClusterCommand>`] where a `ClusterCommand` is a command such as: `Join`, `Leave` and `Down`
+* subscriptions: An @scala[`ActorRef[akka.cluster.typed.ClusterStateSubscription]`]@java[`ActorRef<akka.cluster.typed.ClusterStateSubscription>`] where a `ClusterStateSubscription` is one of `GetCurrentState` or `Subscribe` and `Unsubscribe` to cluster events like `MemberRemoved`
 * state: The current `CurrentClusterState`
 
 All of the examples below assume the following imports:
@@ -326,7 +326,7 @@ The roles are part of the membership information in `MemberEvent` that you can s
 ## Failure Detector
 
 The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
-unreachable from the rest of the cluster and has been downed and removed. Please see:
+unreachable from the rest of the cluster. Please see:
 
 * @ref:[Failure Detector specification](cluster-specification.md#failure-detector)
 * @ref:[Phi Accrual Failure Detector](failure-detector.md) implementation
@@ -347,9 +347,6 @@ depending on you environment:
 * When a *phi* value is considered to be a failure `akka.cluster.failure-detector.threshold`
 * Margin of error for sudden abnormalities `akka.cluster.failure-detector.acceptable-heartbeat-pause`  
 
-If you encounter suspicious false positives when the system is under load you should
-define a separate dispatcher for the cluster actors as described in [Cluster Dispatcher](#cluster-dispatcher).
-  
 ## How to test
 
 Akka comes with and uses several types of testing strategies:

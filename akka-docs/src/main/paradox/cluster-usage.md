@@ -302,7 +302,7 @@ See @ref:[Cluster Metrics](cluster-metrics.md).
 ## Failure Detector
 
 The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
-unreachable from the rest of the cluster and has been downed and removed. Please see:
+unreachable from the rest of the cluster. Please see:
 
 * @ref:[Failure Detector specification](typed/cluster-specification.md#failure-detector)
 * @ref:[Phi Accrual Failure Detector](typed/failure-detector.md) implementation
