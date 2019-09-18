@@ -8,7 +8,7 @@ import java.io.File
 
 import akka.actor._
 import akka.persistence.serialization.Snapshot
-import akka.serialization.{Serialization, SerializationExtension}
+import akka.serialization.{ Serialization, SerializationExtension }
 import akka.testkit._
 import org.apache.commons.io.FileUtils
 
@@ -38,7 +38,7 @@ object SnapshotRecoveryWithEmptyJournalSpec {
   }
 
   class LoadSnapshotTestPersistentActor(name: String, _recovery: Recovery, probe: ActorRef)
-    extends NamedPersistentActor(name) {
+      extends NamedPersistentActor(name) {
     override def recovery: Recovery = _recovery
 
     override def receiveRecover: Receive = {
