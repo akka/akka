@@ -6,6 +6,7 @@ For specific documentation topics see:
 * @ref:[Cluster Specification](cluster-specification.md)
 * @ref:[Cluster Membership Service](cluster-membership.md)
 * @ref:[When and where to use Akka Cluster](choosing-cluster.md)
+* @ref:[Higher level Cluster tools](#higher-level-cluster-tools)
 * @ref:[Rolling Updates](../additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](../additional/operations.md)
 
@@ -58,7 +59,7 @@ Java
 
 @@@
 
-### Joining and Leaving A Cluster 
+### Joining and Leaving a Cluster 
 
 If not using configuration to specify [seed nodes to join](#joining-to-seed-nodes), joining the cluster can be done programmatically via the `manager`.
 
@@ -164,7 +165,7 @@ Please refer to its documentation for more details.
 
 @@include[cluster.md](../includes/cluster.md) { #join-seeds-programmatic }
            
-### Tuning Joins
+### Tuning joins
 
 Unsuccessful attempts to contact seed nodes are automatically retried after the time period defined in
 configuration property `seed-node-timeout`. Unsuccessful attempt to join a specific seed node is
@@ -273,11 +274,12 @@ Because of these issues, auto-downing should **never** be used in a production e
 
 There are two ways to remove a member from the cluster.
 
-1. You can stop the actor system (or the JVM process, for example a SIGTERM sent from the environment). It will be detected
+1. The recommended way to leave a cluster is a graceful exit, informing the cluster that a node shall leave. 
+This can be performed using @ref:[JMX](../additional/operations.md#jmx) or @ref:[HTTP](../additional/operations.md#http). 
+This method will offer faster hand off to peer nodes during node shutdown.
+1. When a graceful exit is not possible, you can stop the actor system (or the JVM process, for example a SIGTERM sent from the environment). It will be detected
 as unreachable and removed after the automatic or manual downing.
-1. A more graceful exit can be performed if you tell the cluster that a node shall leave. 
-This can be performed using @ref:[JMX](../additional/operations.md#jmx) or @ref:[HTTP](../additional/operations.md#http).
- 
+
 The @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will automatically run when the cluster node sees itself as
 `Exiting`, i.e. leaving from another node will trigger the shutdown process on the leaving node.
 Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and
@@ -285,12 +287,14 @@ Cluster Sharding are added automatically when Akka Cluster is used, i.e. running
 process will also trigger the graceful leaving if it's not already in progress.
 
 Normally this is handled automatically, but in case of network failures during this process it might still
-be necessary to set the node’s status to `Down` in order to complete the removal.
+be necessary to set the node’s status to `Down` in order to complete the removal. For handling network failures
+see [Split Brain Resolver](http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html),
+part of the [Lightbend Reactive Platform](http://www.lightbend.com/platform).
 
 ## Serialization 
  
-Enable @ref:[serialization](../serialization.md) to send events between ActorSystems and systems
-external to the Cluster. @ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
+Enable @ref:[serialization](../serialization.md) to send events between ActorSystems.
+@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
 recommendation if you don't have other preferences or constraints.
  
 Actor references are typically included in the messages, since there is no `sender`. 
@@ -311,8 +315,8 @@ to see what this looks like in practice.
 ## Node Roles
 
 Not all nodes of a cluster need to perform the same function: there might be one sub-set which runs the web front-end,
-one which runs the data access layer and one for the number-crunching. Deployment of actors—for example by cluster-aware
-routers—can take node roles into account to achieve this distribution of responsibilities.
+one which runs the data access layer and one for the number-crunching. Deployment of actors, for example by cluster-aware
+routers, can take node roles into account to achieve this distribution of responsibilities.
 
 The node roles are defined in the configuration property named `akka.cluster.roles`
 and typically defined in the start script as a system property or environment variable.
@@ -346,7 +350,7 @@ depending on you environment:
 If you encounter suspicious false positives when the system is under load you should
 define a separate dispatcher for the cluster actors as described in [Cluster Dispatcher](#cluster-dispatcher).
   
-## How to Test
+## How to test
 
 Akka comes with and uses several types of testing strategies:
 
@@ -379,7 +383,8 @@ akka.cluster.log-info-verbose = on
 The cluster extension is implemented with actors. To protect them against
 disturbance from user actors they are by default run on the internal dispatcher configured
 under `akka.actor.internal-dispatcher`. The cluster actors can potentially be isolated even
-further onto their own dispatcher using the setting `akka.cluster.use-dispatcher`.
+further, onto their own dispatcher using the setting `akka.cluster.use-dispatcher`
+or made run on the same dispatcher to keep the number of threads down.
 
 ### Configuration Compatibility Check
 

@@ -1,17 +1,19 @@
 # Phi Accrual Failure Detector
 
-Remote Death Watch uses heartbeat messages and the failure detector to 
+## Introduction
 
-* Detect network failures and JVM crashes
-* Generate the `Terminated` message to the watching actor on failure 
-* Graceful termination of watched actors  
+Remote DeathWatch uses heartbeat messages and the failure detector to 
+
+* detect network failures and JVM crashes
+* generate the `Terminated` message to the watching actor on failure 
+* gracefully terminate watched actors  
 
 The heartbeat arrival times are interpreted by an implementation of
 [The Phi Accrual Failure Detector](https://pdfs.semanticscholar.org/11ae/4c0c0d0c36dc177c1fff5eb84fa49aa3e1a8.pdf) by Hayashibara et al.
 
-Heartbeats are sent every second by default, which is configurable. They are performed in a request/reply handshake, and the replies are input to the failure detector.
- 
 ## Failure Detector Heartbeats
+
+Heartbeats are sent every second by default, which is configurable. They are performed in a request/reply handshake, and the replies are input to the failure detector.
 
 The suspicion level of failure is represented by a value called *phi*.
 The basic idea of the phi failure detector is to express the value of *phi* on a scale that

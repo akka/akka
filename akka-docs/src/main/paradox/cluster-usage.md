@@ -4,12 +4,12 @@ This document describes how to use Akka Cluster and the Cluster APIs using code 
 For specific documentation topics see:  
 
 * @ref:[Cluster Specification](typed/cluster-specification.md)
-* @ref:[User Guide](typed/cluster.md)
 * @ref:[Cluster Membership Service](typed/cluster-membership.md)
 * @ref:[When and where to use Akka Cluster](typed/choosing-cluster.md)
+* @ref:[Higher level Cluster tools](#higher-level-cluster-tools)
 * @ref:[Rolling Updates](additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](additional/operations.md)
-
+ 
 Enable @ref:[serialization](serialization.md) to send events between ActorSystems and systems
 external to the Cluster. @ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases, and our
 recommendation if you don't have other preferences or constraints.
@@ -86,8 +86,8 @@ Java
   
 ### Joining to Seed Nodes
 
-Joining to initial cluster contact points `akka.cluster.seed-nodes` can be done manually, with [configuration](typed/cluster.md#joining-configured-seed-nodes) or 
-[programatically], or [automatically with Cluster Bootstrap](typed/cluster.md#joining-automatically-to-seed-nodes-with-cluster-bootstrap).
+Joining to initial cluster contact points `akka.cluster.seed-nodes` can be done manually, with @ref:[configuration](typed/cluster.md#joining-configured-seed-nodes), 
+[programatically](#programatically-joining-to-seed-nodes-with-joinseednodes), or @ref:[automatically with Cluster Bootstrap](typed/cluster.md#joining-automatically-to-seed-nodes-with-cluster-bootstrap).
   
 #### Programatically joining to seed nodes with `joinSeedNodes`
 
@@ -202,8 +202,11 @@ The easiest way to run **Worker Dial-in Example** example yourself is to try the
 @scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
 It contains instructions on how to run the **Worker Dial-in Example** sample.
 
-<a id="min-members"></a>
+## Node Roles
 
+See @ref:[Cluster Node Roles](typed/cluster.md#node-roles)
+
+<a id="min-members"></a>
 ## How To Startup when Cluster Size Reached
 
 A common use case is to start actors after the cluster has been initialized,
@@ -295,7 +298,7 @@ The member nodes of the cluster can collect system health metrics and publish th
 and to the registered subscribers on the system event bus.
 
 See @ref:[Cluster Metrics](cluster-metrics.md). 
-   
+    
 ## Failure Detector
 
 The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
@@ -315,7 +318,7 @@ Set up your project according to the instructions in @ref:[Multi Node Testing](m
 add the `sbt-multi-jvm` plugin and the dependency to `akka-multi-node-testkit`.
 
 First, as described in @ref:[Multi Node Testing](multi-node-testing.md), we need some scaffolding to configure the `MultiNodeSpec`.
-Define the participating roles and their [configuration](#cluster-configuration) in an object extending `MultiNodeConfig`:
+Define the participating @ref:[roles](typed/cluster.md#node-roles) and their [configuration](#configuration) in an object extending `MultiNodeConfig`:
 
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #MultiNodeConfig }
 
@@ -420,6 +423,5 @@ Make sure you understand the security implications of enabling remote monitoring
 
 ## Configuration
 
-There are several [configuration](typed/cluster.md#configuration) properties for the cluster,
+There are several @ref:[configuration](typed/cluster.md#configuration) properties for the cluster,
 and the full @ref:[reference configuration](general/configuration.md#config-akka-cluster) for complete information. 
-

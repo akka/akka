@@ -1,4 +1,4 @@
-# Operating A Cluster
+# Operating a Cluster
 
 This documentation discusses how to operate a cluster. For related, more specific guides
 see [Packaging](packaging.md), [Deploying](deploying.md) and [Rolling Updates](rolling-updates.md).
