@@ -25,7 +25,7 @@ object SnapshotRecoveryWithEmptyJournalSpec {
       case SnapshotOffer(_, snapshot: List[_]) => state = snapshot.asInstanceOf[List[String]]
     }
 
-    override def receiveCommand = {
+    override def receiveCommand: PartialFunction[Any, Unit] = {
       case payload: String =>
         persist(payload) { _ =>
           state = s"${payload}-${lastSequenceNr}" :: state
@@ -47,7 +47,7 @@ object SnapshotRecoveryWithEmptyJournalSpec {
       case other                => probe ! other
     }
 
-    override def receiveCommand = {
+    override def receiveCommand: PartialFunction[Any, Unit] = {
       case "done" => probe ! "done"
       case payload: String =>
         persist(payload) { _ =>
