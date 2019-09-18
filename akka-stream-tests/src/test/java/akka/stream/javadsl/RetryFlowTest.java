@@ -40,7 +40,9 @@ public class RetryFlowTest extends StreamTest {
     final Duration maxBackoff = Duration.ofSeconds(5);
     final double randomFactor = 0d;
     final int maxRetries = 3;
+    // #retry-success
     final FlowWithContext<Integer, NotUsed, Try<Integer>, NotUsed, NotUsed> flow =
+        // #retry-success
         FlowWithContext.fromPairs(
             Flow.fromFunction(
                 in -> {

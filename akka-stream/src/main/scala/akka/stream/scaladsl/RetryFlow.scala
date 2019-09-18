@@ -4,6 +4,8 @@
 
 package akka.stream.scaladsl
 
+import java.util.concurrent.TimeoutException
+
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.pattern.BackoffSupervisor
 import akka.stream.stage._
@@ -108,16 +110,23 @@ object RetryFlow {
         }
       })
 
-    setHandler(internalIn, new InHandler {
-      override def onPush(): Unit = {
-        val result = grab(internalIn)
-        decideRetry(elementInProgress.get, result) match {
-          case None                             => pushExternal(result)
-          case Some(_) if retryNo == maxRetries => pushExternal(result)
-          case Some(element)                    => planRetry(element)
+    setHandler(
+      internalIn,
+      new InHandler {
+        override def onPush(): Unit = {
+          val result = grab(internalIn)
+          elementInProgress match {
+            case None =>
+              fail(externalOut, new IllegalStateException(s"inner flow emitted unexpected element $result"))
+            case Some(in) =>
+              decideRetry(in, result) match {
+                case None                             => pushExternal(result)
+                case Some(_) if retryNo == maxRetries => pushExternal(result)
+                case Some(element)                    => planRetry(element)
+              }
+          }
         }
-      }
-    })
+      })
 
     setHandler(externalOut, new OutHandler {
       override def onPull(): Unit =
