@@ -552,7 +552,7 @@ private[akka] class ShardRegion(
         PrettyDuration.format(settings.passivateIdleEntityAfter))
 
     if (settings.rememberEntities)
-      log.warning("Idle entities will not be passivated because 'rememberEntities' is enabled.")
+      log.debug("Idle entities will not be passivated because 'rememberEntities' is enabled.")
   }
 
   // when using proxy the data center can be different from the own data center
