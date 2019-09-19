@@ -4,6 +4,7 @@
 
 package jdocs.stream.operators;
 
+import akka.japi.pf.PFBuilder;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 
@@ -209,5 +210,46 @@ class SourceOrFlow {
         .conflateWithSeed(Summed::new, (Summed acc, Integer el) -> acc.sum(new Summed(el)))
         .throttle(1, Duration.ofSeconds(1)); // slow downstream
     // #conflateWithSeed
+  }
+
+  // #collect-elements
+  static interface Message {}
+
+  static class Ping implements Message {
+    final int id;
+
+    Ping(int id) {
+      this.id = id;
+    }
+  }
+
+  static class Pong {
+    final int id;
+
+    Pong(int id) {
+      this.id = id;
+    }
+  }
+  // #collect-elements
+
+  void collectExample() {
+    // #collect
+    Flow<Message, Pong, NotUsed> flow =
+        Flow.of(Message.class)
+            .collect(
+                new PFBuilder<Message, Pong>()
+                    .match(Ping.class, p -> p.id != 0, p -> new Pong(p.id))
+                    .build());
+    // #collect
+  }
+
+  void collectTypeExample() {
+    // #collectType
+    Flow<Message, Pong, NotUsed> flow =
+        Flow.of(Message.class)
+            .collectType(Ping.class)
+            .filter(p -> p.id != 0)
+            .map(p -> new Pong(p.id));
+    // #collectType
   }
 }
