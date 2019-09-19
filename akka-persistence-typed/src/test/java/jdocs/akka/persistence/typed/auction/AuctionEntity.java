@@ -102,21 +102,21 @@ public class AuctionEntity
       AuctionState state, StartAuction cmd) {
     return Effect()
         .persist(new AuctionStarted(entityUUID, cmd.getAuction()))
-        .thenReply(cmd, __ -> Done.getInstance());
+        .thenReply(cmd, notUsed -> Done.getInstance());
   }
 
   private ReplyEffect<AuctionEvent, AuctionState> finishBidding(
       AuctionState state, FinishBidding cmd) {
     return Effect()
         .persist(new BiddingFinished(entityUUID))
-        .thenReply(cmd, __ -> Done.getInstance());
+        .thenReply(cmd, notUsed -> Done.getInstance());
   }
 
   private ReplyEffect<AuctionEvent, AuctionState> cancelAuction(
       AuctionState state, CancelAuction cmd) {
     return Effect()
         .persist(new AuctionCancelled(entityUUID))
-        .thenReply(cmd, __ -> Done.getInstance());
+        .thenReply(cmd, notUsed -> Done.getInstance());
   }
 
   /** The main logic for handling of bids. */
