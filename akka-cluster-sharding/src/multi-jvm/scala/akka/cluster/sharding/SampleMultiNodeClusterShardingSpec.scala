@@ -11,7 +11,7 @@ import akka.cluster.MemberStatus
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 
-abstract class MultiNodeClusterShardingSpecConfig(mode: String, rememberEntities: Boolean)
+abstract class SampleMultiNodeClusterShardingConfig(mode: String, rememberEntities: Boolean)
     extends MultiNodeClusterShardingConfig(mode, rememberEntities) {
 
   val first = role("first")
@@ -25,31 +25,31 @@ abstract class MultiNodeClusterShardingSpecConfig(mode: String, rememberEntities
 
 }
 
-object PersistentClusterShardingRememberEntitiesEnabledConfig
-    extends MultiNodeClusterShardingSpecConfig(ClusterShardingSettings.StateStoreModePersistence, true)
+object SamplePersistentClusterShardingRememberEntitiesEnabledConfig
+    extends SampleMultiNodeClusterShardingConfig(ClusterShardingSettings.StateStoreModePersistence, true)
 
-class PersistentClusterShardingMultiNodeSpecMultiJvmNode1
-    extends MultiNodeClusterShardingSpecSpec(PersistentClusterShardingRememberEntitiesEnabledConfig)
-class PersistentClusterShardingMultiNodeSpecMultiJvmNode2
-    extends MultiNodeClusterShardingSpecSpec(PersistentClusterShardingRememberEntitiesEnabledConfig)
-class PersistentClusterShardingMultiNodeSpecMultiJvmNode3
-    extends MultiNodeClusterShardingSpecSpec(PersistentClusterShardingRememberEntitiesEnabledConfig)
-class PersistentClusterShardingMultiNodeSpecMultiJvmNode4
-    extends MultiNodeClusterShardingSpecSpec(PersistentClusterShardingRememberEntitiesEnabledConfig)
+class SamplePersistentClusterShardingSpecMultiJvmNode1
+    extends SampleMultiNodeClusterShardingSpec(SamplePersistentClusterShardingRememberEntitiesEnabledConfig)
+class SamplePersistentClusterShardingSpecMultiJvmNode2
+    extends SampleMultiNodeClusterShardingSpec(SamplePersistentClusterShardingRememberEntitiesEnabledConfig)
+class SamplePersistentClusterShardingSpecMultiJvmNode3
+    extends SampleMultiNodeClusterShardingSpec(SamplePersistentClusterShardingRememberEntitiesEnabledConfig)
+class SamplePersistentClusterShardingSpecMultiJvmNode4
+    extends SampleMultiNodeClusterShardingSpec(SamplePersistentClusterShardingRememberEntitiesEnabledConfig)
 
 object DDataClusterShardingRememberEntitiesEnabledConfig
-    extends MultiNodeClusterShardingSpecConfig(ClusterShardingSettings.StateStoreModeDData, true)
+    extends SampleMultiNodeClusterShardingConfig(ClusterShardingSettings.StateStoreModeDData, true)
 
-class DDataClusterShardingMultiNodeSpecMultiJvmNode1
-    extends MultiNodeClusterShardingSpecSpec(DDataClusterShardingRememberEntitiesEnabledConfig)
-class DDataClusterShardingMultiNodeSpecMultiJvmNode2
-    extends MultiNodeClusterShardingSpecSpec(DDataClusterShardingRememberEntitiesEnabledConfig)
-class DDataClusterShardingMultiNodeSpecMultiJvmNode3
-    extends MultiNodeClusterShardingSpecSpec(DDataClusterShardingRememberEntitiesEnabledConfig)
-class DDataClusterShardingMultiNodeSpecMultiJvmNode4
-    extends MultiNodeClusterShardingSpecSpec(DDataClusterShardingRememberEntitiesEnabledConfig)
+class SampleDDataClusterShardingSpecMultiJvmNode1
+    extends SampleMultiNodeClusterShardingSpec(DDataClusterShardingRememberEntitiesEnabledConfig)
+class SampleDDataClusterShardingSpecMultiJvmNode2
+    extends SampleMultiNodeClusterShardingSpec(DDataClusterShardingRememberEntitiesEnabledConfig)
+class SampleDDataClusterShardingSpecMultiJvmNode3
+    extends SampleMultiNodeClusterShardingSpec(DDataClusterShardingRememberEntitiesEnabledConfig)
+class SampleDDataClusterShardingSpecMultiJvmNode4
+    extends SampleMultiNodeClusterShardingSpec(DDataClusterShardingRememberEntitiesEnabledConfig)
 
-abstract class MultiNodeClusterShardingSpecSpec(multiNodeConfig: MultiNodeClusterShardingSpecConfig)
+abstract class SampleMultiNodeClusterShardingSpec(multiNodeConfig: SampleMultiNodeClusterShardingConfig)
     extends MultiNodeClusterShardingSpec(multiNodeConfig) {
   import MultiNodeClusterShardingSpec._, multiNodeConfig._
 
