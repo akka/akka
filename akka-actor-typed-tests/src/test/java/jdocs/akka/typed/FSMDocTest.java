@@ -24,14 +24,10 @@ interface FSMDocTest {
     public interface Event {}
 
     public static final class SetTarget implements Event {
-      private final ActorRef<Batch> ref;
+      public final ActorRef<Batch> ref;
 
       public SetTarget(ActorRef<Batch> ref) {
         this.ref = ref;
-      }
-
-      public ActorRef<Batch> getRef() {
-        return ref;
       }
     }
 
@@ -44,14 +40,10 @@ interface FSMDocTest {
     }
 
     public static final class Queue implements Event {
-      private final Object obj;
+      public final Object obj;
 
       public Queue(Object obj) {
         this.obj = obj;
-      }
-
-      public Object getObj() {
-        return obj;
       }
     }
     // #simple-events
@@ -60,21 +52,14 @@ interface FSMDocTest {
     interface Data {}
 
     public static final class Todo implements Data {
-      private final ActorRef<Batch> target;
-      private final List<Object> queue;
+      public final ActorRef<Batch> target;
+      public final List<Object> queue;
 
       public Todo(ActorRef<Batch> target, List<Object> queue) {
         this.target = target;
         this.queue = queue;
       }
 
-      public ActorRef<Batch> getTarget() {
-        return target;
-      }
-
-      public List<Object> getQueue() {
-        return queue;
-      }
       // #storing-state
 
       @Override
@@ -99,15 +84,12 @@ interface FSMDocTest {
     }
 
     public static final class Batch {
-      private final List<Object> list;
+      public final List<Object> list;
 
       public Batch(List<Object> list) {
         this.list = list;
       }
 
-      public List<Object> getList() {
-        return list;
-      }
       // #storing-state
 
       @Override
@@ -154,7 +136,7 @@ interface FSMDocTest {
     private static Behavior<Event> uninitialized() {
       return Behaviors.receive(Event.class)
           .onMessage(
-              SetTarget.class, message -> idle(new Todo(message.getRef(), Collections.emptyList())))
+              SetTarget.class, message -> idle(new Todo(message.ref, Collections.emptyList())))
           .build();
     }
 
@@ -178,7 +160,7 @@ interface FSMDocTest {
     }
 
     private static Behavior<Event> activeOnFlushOrTimeout(Todo data) {
-      data.getTarget().tell(new Batch(data.queue));
+      data.target.tell(new Batch(data.queue));
       return idle(data.copy(new ArrayList<>()));
     }
 
