@@ -16,6 +16,18 @@ import scala.compat.java8.OptionConverters._
 object RetryFlow {
 
   /**
+   * API may change!
+   *
+   * Allows retrying individual elements in the stream with an exponential backoff.
+   *
+   * The retry condition is controlled by the `decideRetry` function. It takes the originally emitted
+   * element with its context, and the response emitted by `flow`, and may return a request to be retried.
+   *
+   * The implementation of the `RetryFlow` assumes that `flow` follows one-in-one-out element semantics,
+   * which is expressed by the [[akka.stream.javadsl.FlowWithContext FlowWithContext]] type.
+   *
+   * The wrapped `flow` and `decideRetry` take the additional context parameters which can be a context,
+   * or used to control retrying with other information.
    *
    * @param minBackoff minimum duration to backoff between issuing retries
    * @param maxBackoff maximum duration to backoff between issuing retries

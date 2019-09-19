@@ -403,30 +403,23 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
     class ConstructBench[In, Ctx, Out](retryWith: ((In, Ctx), (Out, Ctx)) => Option[(In, Ctx)]) {
 
-      def setup() = {
-        val bidiFlow: BidiFlow[(In, Ctx), (In, Ctx), (Out, Ctx), (Out, Ctx), NotUsed] =
-          BidiFlow.fromGraph(
-            new RetryFlowCoordinator[In, Ctx, Out, Ctx](
+      val throughDangerousFlow
+          : FlowWithContext[In, Ctx, Out, Ctx, (TestSubscriber.Probe[(In, Ctx)], TestPublisher.Probe[(Out, Ctx)])] =
+        FlowWithContext.fromTuples(
+          Flow.fromSinkAndSourceMat(TestSink.probe[(In, Ctx)], TestSource.probe[(Out, Ctx)])(Keep.both))
+
+      val ((externalIn, (internalOut, internalIn)), externalOut) =
+        TestSource
+          .probe[(In, Ctx)]
+          .viaMat(
+            RetryFlow.withBackoffAndContext(
               minBackoff = 10.millis,
               maxBackoff = 1.second,
-              0d,
-              3,
-              retryWith))
-
-        val throughDangerousFlow
-            : FlowWithContext[In, Ctx, Out, Ctx, (TestSubscriber.Probe[(In, Ctx)], TestPublisher.Probe[(Out, Ctx)])] =
-          FlowWithContext.fromTuples(
-            Flow.fromSinkAndSourceMat(TestSink.probe[(In, Ctx)], TestSource.probe[(Out, Ctx)])(Keep.both))
-
-        val inOutFlow: Flow[(In, Ctx), (Out, Ctx), (TestSubscriber.Probe[(In, Ctx)], TestPublisher.Probe[(Out, Ctx)])] =
-          bidiFlow.joinMat(throughDangerousFlow)(Keep.right)
-
-        val ((externalIn, (internalOut, internalIn)), externalOut) =
-          TestSource.probe[(In, Ctx)].viaMat(inOutFlow)(Keep.both).toMat(TestSink.probe[(Out, Ctx)])(Keep.both).run()
-
-        (externalIn, externalOut, internalIn, internalOut)
-      }
-      val (externalIn, externalOut, internalIn, internalOut) = setup()
+              randomFactor = 0d,
+              maxRetries = 3,
+              flow = throughDangerousFlow)(retryWith))(Keep.both)
+          .toMat(TestSink.probe[(Out, Ctx)])(Keep.both)
+          .run()
     }
 
     type InData = String
@@ -530,6 +523,31 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       // expect result
       externalOut.requestNext() shouldBe Success("result A") -> 123
       externalOut.expectError() shouldBe an[IllegalStateException]
+    }
+
+    // TODO
+    // need to capture inner buffering
+    "work if inner flow pulls multiple" ignore new ConstructBench[InData, Ctx2, OutData]((_, _) => None) {
+      externalOut.request(5)
+      // simulate a buffer in the inner flow
+      internalOut.request(10)
+
+      // push element
+      val elA = "A" -> 123
+      externalIn.sendNext(elA)
+
+      // let element go via retryable flow
+      val elA2 = internalOut.expectNext()
+      internalIn.sendNext(Success("result A") -> 123)
+
+      // push second element
+      val elB = "B" -> 567
+      externalIn.sendNext(elB)
+
+      // let element go via retryable flow
+      val elB2 = internalOut.expectNext()
+      elB2._1 shouldBe elB._1
+      elB2._2 shouldBe elB._2
     }
 
     // TODO
