@@ -107,8 +107,8 @@ object SupervisionCompileOnly {
   //#restart-keep-children
 
   trait Resource {
-    def close()
-    def process(parts: Array[String])
+    def close(): Unit
+    def process(parts: Array[String]): Unit
   }
   def claimResource(): Resource = ???
 
