@@ -146,3 +146,8 @@ If you've migrated from classic remoting to Artery
 which has a completely different protocol, a rolling update is not supported.
 For more details on this migration
 see @ref:[the migration guide](../project/migration-guide-2.5.x-2.6.x.md#migrating-from-classic-remoting-to-artery).
+
+### Migrating from Classic Sharding to Typed Sharding
+
+If you have been using classic sharding it is possible to do a rolling upgrade to typed sharding using a 3 step procedure.
+The steps along with example commits are detailed in [this sample PR](https://github.com/akka/akka-samples/pull/110) 
