@@ -5,7 +5,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.4.4")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.0.5")
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.6")
+addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.7-1")
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.5")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.6.0")
 addSbtPlugin("com.jsuereth" % "sbt-pgp" % "1.1.2")
