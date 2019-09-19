@@ -198,7 +198,7 @@ private[akka] class Shard(
   private var handOffStopper: Option[ActorRef] = None
 
   import context.dispatcher
-  val passivateIdleTask = if (settings.passivateIdleEntityAfter > Duration.Zero && !settings.rememberEntities) {
+  val passivateIdleTask = if (settings.shouldPassivateIdleEntities) {
     val idleInterval = settings.passivateIdleEntityAfter / 2
     Some(context.system.scheduler.scheduleWithFixedDelay(idleInterval, idleInterval, self, PassivateIdleTick))
   } else {

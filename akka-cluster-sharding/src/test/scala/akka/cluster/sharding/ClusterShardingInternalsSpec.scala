@@ -32,16 +32,13 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
     |akka.actor.provider = cluster
     |akka.remote.classic.netty.tcp.port = 0
     |akka.remote.artery.canonical.port = 0
-    |akka.cluster.sharding.shard-region-query-timeout = 10 s
     |""".stripMargin) with MockitoSugar {
   import ClusterShardingInternalsSpec._
 
   val clusterSharding = spy(new ClusterSharding(system.asInstanceOf[ExtendedActorSystem]))
 
   "ClusterSharding" must {
-    "have a configurable shard region query timeout" in {
-      ClusterShardingSettings(system).shardRegionQueryTimeout shouldEqual 10.seconds
-    }
+
     "start a region in proxy mode in case of node role mismatch" in {
 
       val settingsWithRole = ClusterShardingSettings(system).withRole("nonExistingRole")
@@ -66,7 +63,7 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
         ArgumentMatchers.eq(extractShardId))
     }
 
-    "HandOffStopper must stop the entity even if the entity doesn't handle handOffStopMessage" in {
+    "stop entities from HandOffStopper even if the entity doesn't handle handOffStopMessage" in {
       val probe = TestProbe()
       val shardName = "test"
       val emptyHandlerActor = system.actorOf(Props(new EmptyHandlerActor))
@@ -77,6 +74,7 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
       expectTerminated(emptyHandlerActor, 1.seconds)
 
       probe.expectMsg(1.seconds, ShardStopped(shardName))
+      probe.lastSender shouldEqual handOffStopper
 
       watch(handOffStopper)
       expectTerminated(handOffStopper, 1.seconds)
