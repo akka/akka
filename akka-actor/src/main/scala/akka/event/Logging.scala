@@ -1687,7 +1687,7 @@ class MarkerLoggingAdapter(
   def this(bus: LoggingBus, logSource: String, logClass: Class[_]) =
     this(bus, logSource, logClass, new DefaultLoggingFilter(() => bus.logLevel))
 
-  //val loggingFilterWithMarkerAndMdc: LoggingFilterWithMarkerAndMdc = LoggingFilterWithMarkerAndMdc.wrap(loggingFilter)
+  val loggingFilterWithMarker: LoggingFilterWithMarker = loggingFilterWithMarkerAndMdc // needed for Binary compatibility
 
   def isErrorEnabled(marker: LogMarker) = loggingFilterWithMarkerAndMdc.isErrorEnabled(logClass, logSource, Some(marker), mdc)
   def isWarningEnabled(marker: LogMarker) = loggingFilterWithMarkerAndMdc.isWarningEnabled(logClass, logSource, Some(marker), mdc)
