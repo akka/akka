@@ -124,8 +124,8 @@ restarted.
 
 ## The PreRestart signal
 
-Before a supervised actor is restart it is sent the @apidoc[akka.actor.typed.PreRestart] signal giving it a chance to clean up resources
-that are created when it is restarted, much like the @apidoc[akka.actor.typed.PostStop] signal when the actor stops. 
+Before a supervised actor is restarted it is sent the @apidoc[akka.actor.typed.PreRestart] signal giving it a chance to clean up resources
+it has created, much like the @apidoc[akka.actor.typed.PostStop] signal when the actor stops. 
 The returned behavior from the `PreRestart` signal is ignored.
 
 Scala

@@ -150,19 +150,28 @@ public class SupervisionCompileOnlyTest {
                 ctx -> {
                   final Resource resource = claimResource();
 
-                  return Behaviors.receive(
-                      (notUsed, msg) -> {
-                        // message handling that might throw an exception
-                        String[] parts = msg.split(" ");
-                        resource.process(parts);
-                        return Behaviors.same();
-                      },
-                      (notUsed, signal) -> {
-                        if (signal == PreRestart.instance() || signal == PostStop.instance()) {
-                          resource.close();
-                        }
-                        return Behaviors.same();
-                      });
+                  return Behaviors.receive(String.class)
+                      .onMessage(
+                          String.class,
+                          msg -> {
+                            // message handling that might throw an exception
+                            String[] parts = msg.split(" ");
+                            resource.process(parts);
+                            return Behaviors.same();
+                          })
+                      .onSignal(
+                          PreRestart.class,
+                          signal -> {
+                            resource.close();
+                            return Behaviors.same();
+                          })
+                      .onSignal(
+                          PostStop.class,
+                          signal -> {
+                            resource.close();
+                            return Behaviors.same();
+                          })
+                      .build();
                 }))
         .onFailure(Exception.class, SupervisorStrategy.restart());
     // #restart-PreRestart-signal
