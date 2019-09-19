@@ -9,10 +9,14 @@ For specific documentation topics see:
 * @ref:[Higher level Cluster tools](#higher-level-cluster-tools)
 * @ref:[Rolling Updates](additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](additional/operations.md)
- 
-Enable @ref:[serialization](serialization.md) to send events between ActorSystems and systems
-external to the Cluster. @ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases, and our
+
+@@@ note
+
+You have to enable @ref:[serialization](serialization.md) to send messages between ActorSystems in the Cluster.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases, and our
 recommendation if you don't have other preferences or constraints.
+
+@@@
 
 ## Dependency
 

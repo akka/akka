@@ -10,6 +10,14 @@ For specific documentation topics see:
 * @ref:[Rolling Updates](../additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](../additional/operations.md)
 
+@@@ note
+
+You have to enable @ref:[serialization](../serialization.md)  to send messages between ActorSystems in the Cluster.
+@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
+recommendation if you don't have other preferences or constraints.
+
+@@@
+
 ## Dependency
 
 To use Akka Cluster add the following dependency in your project:
@@ -19,6 +27,19 @@ To use Akka Cluster add the following dependency in your project:
   artifact=akka-cluster-typed_$scala.binary_version$
   version=$akka.version$
 }
+
+## Cluster samples
+
+To see what using Akka Cluster looks like in practice, see the
+@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
+@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)].
+This project contains samples illustrating different features, such as
+subscribing to cluster membership events, sending messages to actors running on nodes in the cluster,
+and using Cluster aware routers.
+
+The easiest way to run this example yourself is to try the
+@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
+It contains instructions on how to run the `SimpleClusterApp`.
 
 ## Cluster API Extension
 
@@ -290,27 +311,6 @@ Normally this is handled automatically, but in case of network failures during t
 be necessary to set the node’s status to `Down` in order to complete the removal. For handling network failures
 see [Split Brain Resolver](http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html),
 part of the [Lightbend Reactive Platform](http://www.lightbend.com/platform).
-
-## Serialization 
- 
-Enable @ref:[serialization](../serialization.md) to send events between ActorSystems.
-@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
-recommendation if you don't have other preferences or constraints.
- 
-Actor references are typically included in the messages, since there is no `sender`. 
-To serialize actor references to/from string representation you would use the `ActorRefResolver`.
-For example here's how a serializer could look for `Ping` and `Pong` messages:
-
-Scala
-:  @@snip [PingSerializer.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/PingSerializer.scala) { #serializer }
-
-Java
-:  @@snip [PingSerializerExampleTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/PingSerializerExampleTest.java) { #serializer }
-
-You can look at the
-@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
-@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)]
-to see what this looks like in practice.
 
 ## Node Roles
 
