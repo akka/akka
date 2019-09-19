@@ -6,6 +6,8 @@ package jdocs.serialization;
 
 import java.io.UnsupportedEncodingException;
 
+import akka.actor.typed.javadsl.Adapter;
+import akka.actor.typed.javadsl.Behaviors;
 import akka.cluster.Cluster;
 import akka.testkit.javadsl.TestKit;
 import org.junit.Test;
@@ -163,12 +165,42 @@ public class SerializationDocTest {
   }
 
   @Test
+  public void demonstrateTheProgrammaticAPITypedActorSystem() {
+    // #programmatic
+    akka.actor.typed.ActorSystem<?> system =
+        akka.actor.typed.ActorSystem.create(Behaviors.empty(), "example");
+
+    // Get the Serialization Extension
+    Serialization serialization = SerializationExtension.get(system);
+
+    // Have something to serialize
+    String original = "woohoo";
+
+    // Turn it into bytes, and retrieve the serializerId and manifest, which are needed for
+    // deserialization
+    byte[] bytes = serialization.serialize(original).get();
+    int serializerId = serialization.findSerializerFor(original).identifier();
+    String manifest = Serializers.manifestFor(serialization.findSerializerFor(original), original);
+
+    // Turn it back into an object
+    String back = (String) serialization.deserialize(bytes, serializerId, manifest).get();
+    // #programmatic
+
+    // Voilá!
+    assertEquals(original, back);
+
+    TestKit.shutdownActorSystem(Adapter.toClassic(system));
+  }
+
+  @Test
   public void demonstrateTheProgrammaticAPI() {
     // #programmatic
     ActorSystem system = ActorSystem.create("example");
 
+    akka.actor.typed.ActorSystem<?> sys = null;
+
     // Get the Serialization Extension
-    Serialization serialization = SerializationExtension.get(system);
+    Serialization serialization = SerializationExtension.get(sys);
 
     // Have something to serialize
     String original = "woohoo";

@@ -6,6 +6,7 @@ package docs.serialization {
 
   //#imports
   import akka.actor._
+  import akka.actor.typed.scaladsl.Behaviors
   import akka.cluster.Cluster
   import akka.serialization._
 
@@ -185,7 +186,32 @@ package docs.serialization {
       shutdown(a)
     }
 
-    "demonstrate the programmatic API" in {
+    "demonstrate the programmatic API with Typed ActorSystem" in {
+      //#programmatic
+      val system = akka.actor.typed.ActorSystem[Nothing](Behaviors.empty, "example")
+
+      // Get the Serialization Extension
+      val serialization = SerializationExtension(system)
+
+      // Have something to serialize
+      val original = "woohoo"
+
+      // Turn it into bytes, and retrieve the serializerId and manifest, which are needed for deserialization
+      val bytes = serialization.serialize(original).get
+      val serializerId = serialization.findSerializerFor(original).identifier
+      val manifest = Serializers.manifestFor(serialization.findSerializerFor(original), original)
+
+      // Turn it back into an object
+      val back = serialization.deserialize(bytes, serializerId, manifest).get
+      //#programmatic
+
+      // Voilá!
+      back should be(original)
+
+      shutdown(system)
+    }
+
+    "demonstrate the programmatic API with Classic ActorSystem" in {
       //#programmatic
       val system = ActorSystem("example")
 
