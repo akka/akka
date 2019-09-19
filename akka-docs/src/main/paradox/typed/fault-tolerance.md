@@ -122,6 +122,18 @@ Java
 That means that the `setup` block will only be run when the parent actor is first started, and not when it is
 restarted.
 
+## The PreRestart signal
+
+Before a supervised actor is restarted it is sent the @apidoc[akka.actor.typed.PreRestart] signal giving it a chance to clean up resources
+it has created, much like the @apidoc[akka.actor.typed.PostStop] signal when the actor stops. 
+The returned behavior from the `PreRestart` signal is ignored.
+
+Scala
+:  @@snip [SupervisionCompileOnly.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/supervision/SupervisionCompileOnly.scala) { #restart-PreRestart-signal }
+
+Java
+:  @@snip [SupervisionCompileOnlyTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/supervision/SupervisionCompileOnlyTest.java) { #restart-PreRestart-signal }
+
 ## Bubble failures up through the hierarchy
 
 In some scenarios it may be useful to push the decision about what to do on a failure upwards in the Actor hierarchy
