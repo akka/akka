@@ -115,12 +115,12 @@ object RetryFlow {
           val result = grab(internalIn)
           elementInProgress match {
             case None =>
-              fail(externalOut, new IllegalStateException(s"inner flow emitted unexpected element $result"))
+              failStage(new IllegalStateException(s"inner flow emitted unexpected element $result"))
+            case Some(_) if retryNo == maxRetries => pushExternal(result)
             case Some(in) =>
               decideRetry(in, result) match {
-                case None                             => pushExternal(result)
-                case Some(_) if retryNo == maxRetries => pushExternal(result)
-                case Some(element)                    => planRetry(element)
+                case None          => pushExternal(result)
+                case Some(element) => planRetry(element)
               }
           }
         }
