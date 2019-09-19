@@ -6,6 +6,7 @@ package jdocs.akka.actor.testkit.typed.javadsl;
 
 // #imports
 import akka.actor.testkit.typed.CapturedLogEvent;
+import akka.actor.testkit.typed.Effect;
 import akka.actor.testkit.typed.javadsl.BehaviorTestKit;
 import akka.actor.testkit.typed.javadsl.Effects;
 import akka.actor.testkit.typed.javadsl.TestInbox;
@@ -137,7 +138,7 @@ public class SyncTestingExampleTest extends JUnitSuite {
     // #test-child
     BehaviorTestKit<Hello.Command> test = BehaviorTestKit.create(Hello.create());
     test.run(new Hello.CreateAChild("child"));
-    test.expectEffect(Effects.spawned(Child.create(), "child", Props.empty()));
+    assertEquals("child", test.expectEffectClass(Effect.Spawned.class).childName());
     // #test-child
   }
 
@@ -146,7 +147,7 @@ public class SyncTestingExampleTest extends JUnitSuite {
     // #test-anonymous-child
     BehaviorTestKit<Hello.Command> test = BehaviorTestKit.create(Hello.create());
     test.run(Hello.CreateAnAnonymousChild.INSTANCE);
-    test.expectEffect(Effects.spawnedAnonymous(Child.create(), Props.empty()));
+    test.expectEffectClass(Effect.SpawnedAnonymous.class);
     // #test-anonymous-child
   }
 
