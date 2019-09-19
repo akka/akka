@@ -71,7 +71,7 @@ object SupervisionCompileOnly {
           val child2 = ctx.spawn(child(0), "child2")
 
           Behaviors.receiveMessage[String] { msg =>
-            // there might be bugs here...
+            // message handling that might throw an exception
             val parts = msg.split(" ")
             child1 ! parts(0)
             child2 ! parts(1)
@@ -93,7 +93,7 @@ object SupervisionCompileOnly {
       Behaviors
         .supervise {
           Behaviors.receiveMessage[String] { msg =>
-            // there might be bugs here...
+            // message handling that might throw an exception
             val parts = msg.split(" ")
             child1 ! parts(0)
             child2 ! parts(1)
@@ -117,7 +117,7 @@ object SupervisionCompileOnly {
 
       Behaviors
         .receiveMessage[String] { msg =>
-          // there might be bugs here...
+          // message handling that might throw an exception
           val parts = msg.split(" ")
           resource.process(parts)
           Behaviors.same

@@ -100,7 +100,7 @@ public class SupervisionCompileOnlyTest {
 
                   return Behaviors.receiveMessage(
                       msg -> {
-                        // there might be bugs here...
+                        // message handling that might throw an exception
                         String[] parts = msg.split(" ");
                         child1.tell(parts[0]);
                         child2.tell(parts[1]);
@@ -122,7 +122,7 @@ public class SupervisionCompileOnlyTest {
           return Behaviors.<String>supervise(
                   Behaviors.receiveMessage(
                       msg -> {
-                        // there might be bugs here...
+                        // message handling that might throw an exception
                         String[] parts = msg.split(" ");
                         child1.tell(parts[0]);
                         child2.tell(parts[1]);
@@ -148,7 +148,7 @@ public class SupervisionCompileOnlyTest {
         final Resource resource = claimResource();
 
         return Behaviors.receive((notUsed, msg) -> {
-          // there might be bugs here...
+          // message handling that might throw an exception
           String[] parts = msg.split(" ");
           resource.process(parts);
           return Behaviors.same();
