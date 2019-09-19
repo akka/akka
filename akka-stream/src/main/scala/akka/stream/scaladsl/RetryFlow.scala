@@ -8,6 +8,7 @@ import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.pattern.BackoffSupervisor
 import akka.stream.stage._
 import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
+import akka.util.OptionVal
 
 import scala.concurrent.duration._
 
@@ -54,7 +55,7 @@ object RetryFlow {
 /**
  * INTERNAL API.
  */
-@InternalApi private[akka] class RetryFlowCoordinator[In, CtxIn, Out, CtxOut](
+@InternalApi private[akka] final class RetryFlowCoordinator[In, CtxIn, Out, CtxOut](
     minBackoff: FiniteDuration,
     maxBackoff: FiniteDuration,
     randomFactor: Double,
@@ -73,7 +74,7 @@ object RetryFlow {
 
   override def createLogic(attributes: Attributes): GraphStageLogic = new TimerGraphStageLogic(shape) {
 
-    private var elementInProgress: Option[(In, CtxIn)] = None
+    private var elementInProgress: OptionVal[(In, CtxIn)] = OptionVal.None
     private var retryNo = 0
 
     setHandler(
@@ -81,7 +82,7 @@ object RetryFlow {
       new InHandler {
         override def onPush(): Unit = {
           val element = grab(externalIn)
-          elementInProgress = Some(element)
+          elementInProgress = OptionVal.Some(element)
           retryNo = 0
           push(internalOut, element)
         }
@@ -114,10 +115,12 @@ object RetryFlow {
         override def onPush(): Unit = {
           val result = grab(internalIn)
           elementInProgress match {
-            case None =>
-              failStage(new IllegalStateException(s"inner flow emitted unexpected element $result"))
-            case Some(_) if retryNo == maxRetries => pushExternal(result)
-            case Some(in) =>
+            case OptionVal.None =>
+              failStage(
+                new IllegalStateException(
+                  s"inner flow emitted unexpected element $result; the flow must be one-in one-out"))
+            case OptionVal.Some((_, _)) if retryNo == maxRetries => pushExternal(result)
+            case OptionVal.Some(in @ (_, _)) =>
               decideRetry(in, result) match {
                 case None          => pushExternal(result)
                 case Some(element) => planRetry(element)
@@ -133,7 +136,7 @@ object RetryFlow {
     })
 
     private def pushExternal(result: (Out, CtxOut)): Unit = {
-      elementInProgress = None
+      elementInProgress = OptionVal.None
       push(externalOut, result)
       if (isClosed(externalIn)) {
         completeStage()
@@ -142,7 +145,7 @@ object RetryFlow {
 
     private def planRetry(element: (In, CtxIn)): Unit = {
       val delay = BackoffSupervisor.calculateDelay(retryNo, minBackoff, maxBackoff, randomFactor)
-      elementInProgress = Some(element)
+      elementInProgress = OptionVal.Some(element)
       retryNo += 1
       pull(internalIn)
       scheduleOnce(element, delay)

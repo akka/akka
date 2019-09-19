@@ -5,9 +5,9 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.KillSwitches
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber, Utils }
+import akka.stream.{ KillSwitches, OverflowStrategy }
 import org.scalatest.matchers.{ MatchResult, Matcher }
 
 import scala.concurrent.TimeoutException
@@ -110,6 +110,25 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
       source.sendComplete()
       sink.expectComplete()
+    }
+
+    // TODO
+    // make coordinator work with this behaviour
+    "work with a buffer in the inner flow" ignore {
+      val flow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] =
+        FlowWithContext.fromTuples(Flow[(Int, Int)].buffer(10, OverflowStrategy.backpressure).via(failEvenValuesFlow))
+      val (source, sink) = TestSource
+        .probe[(Int, Int)]
+        .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, 3, flow)((_, _) => None))
+        .toMat(TestSink.probe)(Keep.both)
+        .run()
+
+      sink.request(99)
+
+      source.sendNext(1 -> 0)
+      source.sendNext(3 -> 0)
+      sink.expectNext(Success(1) -> 0)
+      sink.expectNext(Success(3) -> 0)
     }
 
   }
@@ -485,8 +504,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
       // let element go via retryable flow
       val try1 = internalOut.requestNext()
-      try1._1 shouldBe element1._1
-      try1._2 shouldBe element1._2
+      try1 shouldBe element1
       internalIn.sendNext(Failure(new RuntimeException("boom")) -> 1)
 
       // let element go via retryable flow
@@ -497,8 +515,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
       // let element2 go via retryable flow
       val try2_1 = internalOut.requestNext()
-      try2_1._1 shouldBe element2._1
-      try2_1._2 shouldBe element2._2
+      try2_1 shouldBe element2
       internalIn.sendNext(Success("Bres") -> 1)
 
       // expect result
@@ -515,8 +532,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
       // let element go via retryable flow
       val elA2 = internalOut.requestNext()
-      elA2._1 shouldBe elA._1
-      elA2._2 shouldBe elA._2
+      elA2 shouldBe elA
       internalIn.sendNext(Success("result A") -> 123)
       internalIn.sendNext(Success("result B") -> 222)
 
@@ -538,6 +554,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
       // let element go via retryable flow
       val elA2 = internalOut.expectNext()
+      elA2 shouldBe elA
       internalIn.sendNext(Success("result A") -> 123)
 
       // push second element
@@ -546,8 +563,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
       // let element go via retryable flow
       val elB2 = internalOut.expectNext()
-      elB2._1 shouldBe elB._1
-      elB2._2 shouldBe elB._2
+      elB2 shouldBe elB
     }
 
     // TODO
@@ -561,8 +577,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
       // let element go via retryable flow
       val elA2 = internalOut.requestNext()
-      elA2._1 shouldBe elA._1
-      elA2._2 shouldBe elA._2
+      elA2 shouldBe elA
 
       // expect result
       externalOut.expectError() shouldBe a[TimeoutException]
