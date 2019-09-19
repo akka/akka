@@ -10,6 +10,7 @@
 * [distributed-data](distributed-data.md)
 * [cluster-singleton](cluster-singleton.md)
 * [cluster-sharding](cluster-sharding.md)
+* [cluster-sharding-specification](cluster-sharding-specification.md)
 * [serialization](../serialization.md)
 * [serialization-jackson](../serialization-jackson.md)
 * [multi-jvm-testing](../multi-jvm-testing.md)

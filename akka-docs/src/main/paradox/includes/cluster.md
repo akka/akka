@@ -48,3 +48,37 @@ at startup by using some external tool or API. When joining to seed nodes you sh
 the node itself except for the node that is supposed to be the first seed node, which should be
 placed first in the parameter to the programmatic join.
 <!--- #join-seeds-programmatic --->
+
+<!--- #sharding-passivation-p1 --->
+If the state of the entities are persistent you may stop entities that are not used to
+reduce memory consumption. This is done by the application specific implementation of
+the entity actors for example by defining receive timeout (`context.setReceiveTimeout`).
+If a message is already enqueued to the entity when it stops itself the enqueued message
+in the mailbox will be dropped.
+<!--- #sharding-passivation-p1 --->
+
+<!--- #sharding-passivation-p3 --->
+will be sent back to the entity, which is then supposed to stop itself, otherwise it will
+be stopped automatically. Incoming messages will be buffered by the `Shard` between reception
+of `Passivate` and termination of the entity. Such buffered messages are thereafter delivered
+to a new incarnation of the entity.
+<!--- #sharding-passivation-p3 --->
+
+<!--- #sharding-persistence-mode-deprecated --->
+@@@ warning
+
+Persistence for state store mode is deprecated. 
+
+@@@
+<!--- #sharding-persistence-mode-deprecated --->
+
+<!--- #links-from-cluster-to-classic --->
+@@@ note
+For the Akka Classic documentation referenced in this guide see:
+
+@ref:[Classic Cluster Sharding](../cluster-sharding.md) |
+@ref:[Classic Distributed Data](../distributed-data.md) |
+@ref:[Classic Cluster Singleton](../cluster-singleton.md) |
+@ref:[Classic Persistence](../persistence.md)
+@@@
+<!--- #links-from-cluster-to-classic --->
