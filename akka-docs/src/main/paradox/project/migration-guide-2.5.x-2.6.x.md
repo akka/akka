@@ -423,6 +423,47 @@ akka.cluster.monitored-by-nr-of-members = 9
 `expectNoMessage()` without timeout parameter is now using a new configuration property
 `akka.test.expect-no-message-default` (short timeout) instead of `remainingOrDefault` (long timeout).
 
+### Config library resolution change
+
+The [Lightbend Config Library](https://github.com/lightbend/config) has been updated to load both `reference.conf`
+and user config files such as `application.conf` before substitution of variables used in the `reference.conf`. 
+This makes it possible to override such variables in `reference.conf` with user configuration.
+
+For example, the default config for Cluster Sharding, refers to the default config for Distributed Data, in 
+`reference.conf` like this:
+
+```ruby
+akka.cluster.sharding.distributed-data = ${akka.cluster.distributed-data}
+``` 
+
+In Akka 2.5 this meant that to override default gossip interval for both direct use of Distributed Data and Cluster Sharding
+in the same application you would have to change two settings:
+
+```ruby
+akka.cluster.distributed-data.gossip-interval = 3s
+akka.cluster.sharding.distributed-data = 3s
+```
+
+In Akka 2.6.0 and forward, changing the default in the `akka.cluster.distributed-data` config block will be done before
+the variable in `reference.conf` is resolved, so that the same change only needs to be done once:
+
+```ruby
+akka.cluster.distributed-data.gossip-interval = 3s
+```
+
+The following default settings in Akka are using such substitution and may be affected if you are changing the right
+hand config path in your `application.conf`:
+
+```ruby
+akka.cluster.sharding.coordinator-singleton = ${akka.cluster.singleton}
+akka.cluster.sharding.distributed-data = ${akka.cluster.distributed-data}
+akka.cluster.singleton-proxy.singleton-name = ${akka.cluster.singleton.singleton-name}
+akka.cluster.typed.receptionist.distributed-data = ${akka.cluster.distributed-data}
+akka.remote.classic.netty.ssl = ${akka.remote.classic.netty.tcp}
+akka.remote.artery.advanced.materializer = ${akka.stream.materializer}
+``` 
+
+
 ## Source incompatibilities
 
 ### StreamRefs
