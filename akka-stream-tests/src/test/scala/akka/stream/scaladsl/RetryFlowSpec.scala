@@ -16,7 +16,8 @@ import scala.util.{ Failure, Success, Try }
 
 class RetryFlowSpec extends StreamSpec() with CustomMatchers {
 
-  final val FailedElem: Try[Int] = Failure(new Exception("prepared failure"))
+  final val Failed = new Exception("prepared failure")
+  final val FailedElem: Try[Int] = Failure(Failed)
 
   val failEvenValuesFlow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] =
     FlowWithContext.fromTuples(Flow.fromFunction {
@@ -244,141 +245,74 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       sink.expectError(FailedElem.failed.get)
     }
 
-    "tolerate killswitch abort on start" in {
-      val (killSwitch, sink) = TestSource
-        .probe[(Int, Int)]
-        .via(Utils.delayCancellation(10.seconds))
-        .viaMat(KillSwitches.single[(Int, Int)])(Keep.right)
-        .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, 3, failEvenValuesFlow)(incrementFailedValues))
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
-
-      sink.request(99)
-
-      killSwitch.abort(FailedElem.failed.get)
-      sink.expectError(FailedElem.failed.get)
+    "tolerate error on start" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+      externalOut.request(99)
+      externalIn.sendError(Failed)
+      externalOut.expectError(Failed)
     }
 
-    "tolerate killswitch abort before start" in {
-      val (killSwitch, sink) = TestSource
-        .probe[(Int, Int)]
-        .via(Utils.delayCancellation(10.seconds))
-        .viaMat(KillSwitches.single[(Int, Int)])(Keep.right)
-        .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, 3, failEvenValuesFlow)(incrementFailedValues))
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
-
-      killSwitch.abort(FailedElem.failed.get)
-
-      sink.request(1)
-      sink.expectError(FailedElem.failed.get)
+    "tolerate error before start" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+      externalIn.sendError(Failed)
+      externalOut.request(1)
+      externalOut.expectError(Failed)
     }
 
-    "tolerate killswitch abort on the inner flow after start" in {
-      val innerFlow =
-        failEvenValuesFlow
-          .via(Utils.delayCancellation(10.seconds))
-          .viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
-      val ((source, killSwitch), sink) = TestSource
-        .probe[(Int, Int)]
-        .viaMat(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, 3, innerFlow)(incrementFailedValues))(
-          Keep.both)
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
+    "tolerate error on the inner flow after start" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+      externalOut.request(99)
 
-      sink.request(99)
+      // send one element through
+      externalIn.sendNext(1 -> 0)
+      internalOut.requestNext() shouldBe 1 -> 0
+      internalIn.sendNext(1 -> 0)
+      externalOut.expectNext(1 -> 0)
 
-      source.sendNext(1 -> 0)
-      sink.expectNext((Success(1), 0))
-
-      source.sendNext(2 -> 0)
-      sink.expectNext((Success(3), 1))
-
-      killSwitch.abort(FailedElem.failed.get)
-      sink.expectError(FailedElem.failed.get)
+      // fail inner flow
+      internalIn.sendError(Failed)
+      externalOut.expectError(Failed)
     }
 
-    "tolerate killswitch abort on the inner flow on start" in {
-      val innerFlow =
-        failEvenValuesFlow
-          .via(Utils.delayCancellation(10.seconds))
-          .viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
-      val (killSwitch, sink) = TestSource
-        .probe[(Int, Int)]
-        .viaMat(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, 3, innerFlow)(incrementFailedValues))(
-          Keep.right)
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
-
-      sink.request(99)
-
-      killSwitch.abort(FailedElem.failed.get)
-      sink.expectError(FailedElem.failed.get)
+    "tolerate error on the inner flow on start" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+      externalOut.request(29)
+      internalIn.sendError(Failed)
+      externalOut.expectError(Failed)
     }
 
-    "tolerate killswitch abort on the inner flow before start" in {
-      val innerFlow =
-        failEvenValuesFlow
-          .via(Utils.delayCancellation(10.seconds))
-          .viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right)
-      val (killSwitch, sink) = TestSource
-        .probe[(Int, Int)]
-        .viaMat(RetryFlow.withBackoffAndContext(10.millis, 5.second, 0, 3, innerFlow)(incrementFailedValues))(
-          Keep.right)
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
-
-      killSwitch.abort(FailedElem.failed.get)
-
-      sink.request(1)
-      sink.expectError(FailedElem.failed.get)
+    "tolerate killswitch abort on the inner flow before start" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+      internalIn.sendError(Failed)
+      externalOut.request(13)
+      externalOut.expectError(Failed)
     }
 
     val stuckForeverRetrying =
       RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, 3, failAllValuesFlow)(alwaysRecoveringFunc)
 
-    "tolerate killswitch abort before the RetryFlow while on retry spin" in {
-      val ((source, killSwitch), sink) = TestSource
-        .probe[Int]
-        .via(Utils.delayCancellation(10.seconds))
-        .viaMat(KillSwitches.single[Int])(Keep.both)
-        .map(i => (i, i))
-        .via(stuckForeverRetrying)
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
+    "tolerate error before the RetryFlow while on retry spin" in new ConstructBench[Int, Int, Int]((v, _) => Some(v)) {
+      externalOut.request(92)
+      // spinning message
+      externalIn.sendNext(1 -> 0)
+      internalOut.requestNext() shouldBe 1 -> 0
+      internalIn.sendNext(1 -> 0)
+      internalOut.requestNext() shouldBe 1 -> 0
 
-      sink.request(99)
-
-      source.sendNext(1)
-      sink.expectNoMessage()
-
-      killSwitch.abort(FailedElem.failed.get)
-      sink.expectError(FailedElem.failed.get)
+      externalOut.expectNoMessage()
+      externalIn.sendError(Failed)
+      externalOut.expectError(Failed)
     }
 
-    "tolerate killswitch abort on the inner flow while on retry spin" in {
-      val ((source, killSwitch), sink) = TestSource
-        .probe[Int]
-        .map(i => (i, i))
-        .viaMat(
-          RetryFlow.withBackoffAndContext(
-            10.millis,
-            5.seconds,
-            0d,
-            3,
-            failAllValuesFlow
-              .via(Utils.delayCancellation(10.seconds))
-              .viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.right))(alwaysRecoveringFunc))(Keep.both)
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
+    "tolerate error on the inner flow while on retry spin" in new ConstructBench[Int, Int, Int]((v, _) => Some(v)) {
+      externalOut.request(35)
+      // spinning message
+      externalIn.sendNext(1 -> 0)
+      internalOut.requestNext() shouldBe 1 -> 0
+      internalIn.sendNext(1 -> 0)
+      internalOut.requestNext() shouldBe 1 -> 0
 
-      sink.request(99)
-      source.sendNext(1)
-      sink.expectNoMessage()
-      killSwitch.abort(FailedElem.failed.get)
-      sink.expectError(FailedElem.failed.get)
+      externalOut.expectNoMessage()
+      internalIn.sendError(Failed)
+      externalOut.expectError(Failed)
     }
 
+    // TODO does this make sense? how to express it with signalling?
     "tolerate killswitch abort after the RetryFlow while on retry spin" in {
       val ((source, killSwitch), sink) = TestSource
         .probe[Int]
@@ -398,48 +332,22 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       sink.expectError(FailedElem.failed.get)
     }
 
-    "finish only after processing all elements in stream" in {
-      val (source, sink) = TestSource
-        .probe[(Int, Int)]
-        .via(RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, 3, failEvenValuesFlow)(incrementFailedValues))
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
+    "finish only after processing all elements in stream" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+      externalOut.request(32)
 
-      sink.request(99)
+      // send one element and complete
+      externalIn.sendNext(1 -> 0)
+      externalIn.sendComplete()
 
-      source.sendNext(1 -> 0)
-      source.sendNext(3 -> 0)
-      source.sendNext(2 -> 0)
-      source.sendComplete()
-      sink.expectNext(Success(1) -> 0)
-      sink.expectNext(Success(3) -> 0)
-      sink.expectNext(Success(3) -> 1)
-      sink.expectComplete()
+      internalOut.requestNext() shouldBe 1 -> 0
+      internalIn.sendNext(1 -> 0)
+      externalOut.expectNext(1 -> 0)
+
+      externalOut.expectComplete()
     }
   }
 
   "Coordinator" should {
-
-    class ConstructBench[In, Ctx, Out](retryWith: ((In, Ctx), (Out, Ctx)) => Option[(In, Ctx)]) {
-
-      val throughDangerousFlow
-          : FlowWithContext[In, Ctx, Out, Ctx, (TestSubscriber.Probe[(In, Ctx)], TestPublisher.Probe[(Out, Ctx)])] =
-        FlowWithContext.fromTuples(
-          Flow.fromSinkAndSourceMat(TestSink.probe[(In, Ctx)], TestSource.probe[(Out, Ctx)])(Keep.both))
-
-      val ((externalIn, (internalOut, internalIn)), externalOut) =
-        TestSource
-          .probe[(In, Ctx)]
-          .viaMat(
-            RetryFlow.withBackoffAndContext(
-              minBackoff = 10.millis,
-              maxBackoff = 1.second,
-              randomFactor = 0d,
-              maxRetries = 3,
-              flow = throughDangerousFlow)(retryWith))(Keep.both)
-          .toMat(TestSink.probe[(Out, Ctx)])(Keep.both)
-          .run()
-    }
 
     type InData = String
     type Ctx2 = Int
@@ -583,6 +491,27 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       externalOut.expectError() shouldBe a[TimeoutException]
     }
 
+  }
+
+  class ConstructBench[In, Ctx, Out](retryWith: ((In, Ctx), (Out, Ctx)) => Option[(In, Ctx)]) {
+
+    val throughDangerousFlow
+        : FlowWithContext[In, Ctx, Out, Ctx, (TestSubscriber.Probe[(In, Ctx)], TestPublisher.Probe[(Out, Ctx)])] =
+      FlowWithContext.fromTuples(
+        Flow.fromSinkAndSourceMat(TestSink.probe[(In, Ctx)], TestSource.probe[(Out, Ctx)])(Keep.both))
+
+    val ((externalIn, (internalOut, internalIn)), externalOut) =
+      TestSource
+        .probe[(In, Ctx)]
+        .viaMat(
+          RetryFlow.withBackoffAndContext(
+            minBackoff = 10.millis,
+            maxBackoff = 1.second,
+            randomFactor = 0d,
+            maxRetries = 3,
+            throughDangerousFlow)(retryWith))(Keep.both)
+        .toMat(TestSink.probe[(Out, Ctx)])(Keep.both)
+        .run()
   }
 
 }
