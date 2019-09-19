@@ -36,48 +36,50 @@ public class AsyncTestingExampleTest
   // #test-header
 
   // #under-test
-  public static class Ping {
-    private String message;
-    private ActorRef<Pong> replyTo;
+  public static class Echo {
+    public static class Ping {
+      public final String message;
+      public final ActorRef<Pong> replyTo;
 
-    public Ping(String message, ActorRef<Pong> replyTo) {
-      this.message = message;
-      this.replyTo = replyTo;
+      public Ping(String message, ActorRef<Pong> replyTo) {
+        this.message = message;
+        this.replyTo = replyTo;
+      }
+    }
+
+    public static class Pong {
+      public final String message;
+
+      public Pong(String message) {
+        this.message = message;
+      }
+
+      @Override
+      public boolean equals(Object o) {
+        if (this == o) return true;
+        if (!(o instanceof Pong)) return false;
+        Pong pong = (Pong) o;
+        return message.equals(pong.message);
+      }
+
+      @Override
+      public int hashCode() {
+        return Objects.hash(message);
+      }
+    }
+
+    public static Behavior<Ping> create() {
+      return Behaviors.receive(Ping.class)
+          .onMessage(
+              Ping.class,
+              ping -> {
+                ping.replyTo.tell(new Pong(ping.message));
+                return Behaviors.same();
+              })
+          .build();
     }
   }
-
-  public static class Pong {
-    private String message;
-
-    public Pong(String message) {
-      this.message = message;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-      if (this == o) return true;
-      if (!(o instanceof Pong)) return false;
-      Pong pong = (Pong) o;
-      return message.equals(pong.message);
-    }
-
-    @Override
-    public int hashCode() {
-      return Objects.hash(message);
-    }
-  }
-
-  Behavior<Ping> echoActor =
-      Behaviors.receive(
-          (context, ping) -> {
-            ping.replyTo.tell(new Pong(ping.message));
-            return Behaviors.same();
-          });
   // #under-test
-
-  static Behavior<Ping> echoActor() {
-    return echoActor();
-  }
 
   // #under-test-2
 
@@ -125,36 +127,36 @@ public class AsyncTestingExampleTest
   @Test
   public void testVerifyingAResponse() {
     // #test-spawn
-    ActorRef<Ping> pinger = testKit.spawn(echoActor, "ping");
-    TestProbe<Pong> probe = testKit.createTestProbe();
-    pinger.tell(new Ping("hello", probe.ref()));
-    probe.expectMessage(new Pong("hello"));
+    ActorRef<Echo.Ping> pinger = testKit.spawn(Echo.create(), "ping");
+    TestProbe<Echo.Pong> probe = testKit.createTestProbe();
+    pinger.tell(new Echo.Ping("hello", probe.ref()));
+    probe.expectMessage(new Echo.Pong("hello"));
     // #test-spawn
   }
 
   @Test
   public void testVerifyingAResponseAnonymous() {
     // #test-spawn-anonymous
-    ActorRef<Ping> pinger = testKit.spawn(echoActor);
+    ActorRef<Echo.Ping> pinger = testKit.spawn(Echo.create());
     // #test-spawn-anonymous
-    TestProbe<Pong> probe = testKit.createTestProbe();
-    pinger.tell(new Ping("hello", probe.ref()));
-    probe.expectMessage(new Pong("hello"));
+    TestProbe<Echo.Pong> probe = testKit.createTestProbe();
+    pinger.tell(new Echo.Ping("hello", probe.ref()));
+    probe.expectMessage(new Echo.Pong("hello"));
   }
 
   @Test
   public void testStoppingActors() {
-    TestProbe<Pong> probe = testKit.createTestProbe();
+    TestProbe<Echo.Pong> probe = testKit.createTestProbe();
     // #test-stop-actors
-    ActorRef<Ping> pinger1 = testKit.spawn(echoActor, "pinger");
-    pinger1.tell(new Ping("hello", probe.ref()));
-    probe.expectMessage(new Pong("hello"));
+    ActorRef<Echo.Ping> pinger1 = testKit.spawn(Echo.create(), "pinger");
+    pinger1.tell(new Echo.Ping("hello", probe.ref()));
+    probe.expectMessage(new Echo.Pong("hello"));
     testKit.stop(pinger1);
 
     // Immediately creating an actor with the same name
-    ActorRef<Ping> pinger2 = testKit.spawn(echoActor, "pinger");
-    pinger2.tell(new Ping("hello", probe.ref()));
-    probe.expectMessage(new Pong("hello"));
+    ActorRef<Echo.Ping> pinger2 = testKit.spawn(Echo.create(), "pinger");
+    pinger2.tell(new Echo.Ping("hello", probe.ref()));
+    probe.expectMessage(new Echo.Pong("hello"));
     testKit.stop(pinger2, Duration.ofSeconds(10));
     // #test-stop-actors
   }

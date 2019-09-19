@@ -5,7 +5,7 @@
 package docs.akka.actor.testkit.typed.scaladsl
 
 import com.github.ghik.silencer.silent
-import docs.akka.actor.testkit.typed.scaladsl.AsyncTestingExampleSpec.{ echoActor, Ping, Pong }
+import docs.akka.actor.testkit.typed.scaladsl.AsyncTestingExampleSpec.Echo
 
 //#log-capturing
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -22,10 +22,10 @@ class ScalaTestIntegrationExampleSpec extends ScalaTestWithActorTestKit with Wor
 
   "Something" must {
     "behave correctly" in {
-      val pinger = testKit.spawn(echoActor, "ping")
-      val probe = testKit.createTestProbe[Pong]()
-      pinger ! Ping("hello", probe.ref)
-      probe.expectMessage(Pong("hello"))
+      val pinger = testKit.spawn(Echo(), "ping")
+      val probe = testKit.createTestProbe[Echo.Pong]()
+      pinger ! Echo.Ping("hello", probe.ref)
+      probe.expectMessage(Echo.Pong("hello"))
     }
   }
 }
@@ -36,10 +36,10 @@ class LogCapturingExampleSpec extends ScalaTestWithActorTestKit with WordSpecLik
 
   "Something" must {
     "behave correctly" in {
-      val pinger = testKit.spawn(echoActor, "ping")
-      val probe = testKit.createTestProbe[Pong]()
-      pinger ! Ping("hello", probe.ref)
-      probe.expectMessage(Pong("hello"))
+      val pinger = testKit.spawn(Echo(), "ping")
+      val probe = testKit.createTestProbe[Echo.Pong]()
+      pinger ! Echo.Ping("hello", probe.ref)
+      probe.expectMessage(Echo.Pong("hello"))
     }
   }
 }
