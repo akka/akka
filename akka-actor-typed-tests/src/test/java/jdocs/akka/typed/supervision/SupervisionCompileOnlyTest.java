@@ -135,31 +135,36 @@ public class SupervisionCompileOnlyTest {
 
   interface Resource {
     void close();
+
     void process(String[] parts);
   }
+
   public static Resource claimResource() {
     return null;
   }
 
   static void prerestartBehavior() {
-    //#restart-PreRestart-signal
+    // #restart-PreRestart-signal
     Behaviors.supervise(
-      Behaviors.<String>setup(ctx -> {
-        final Resource resource = claimResource();
+            Behaviors.<String>setup(
+                ctx -> {
+                  final Resource resource = claimResource();
 
-        return Behaviors.receive((notUsed, msg) -> {
-          // message handling that might throw an exception
-          String[] parts = msg.split(" ");
-          resource.process(parts);
-          return Behaviors.same();
-        }, (notUsed, signal) -> {
-          if (signal == PreRestart.instance() || signal == PostStop.instance()) {
-            resource.close();
-          }
-          return Behaviors.same();
-        });
-      })
-    );
-    //#restart-PreRestart-signal
+                  return Behaviors.receive(
+                      (notUsed, msg) -> {
+                        // message handling that might throw an exception
+                        String[] parts = msg.split(" ");
+                        resource.process(parts);
+                        return Behaviors.same();
+                      },
+                      (notUsed, signal) -> {
+                        if (signal == PreRestart.instance() || signal == PostStop.instance()) {
+                          resource.close();
+                        }
+                        return Behaviors.same();
+                      });
+                }))
+        .onFailure(Exception.class, SupervisorStrategy.restart());
+    // #restart-PreRestart-signal
   }
 }

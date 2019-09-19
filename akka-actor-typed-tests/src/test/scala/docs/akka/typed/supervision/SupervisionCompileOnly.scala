@@ -9,6 +9,7 @@ import akka.actor.typed.PostStop
 import akka.actor.typed.PreRestart
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
+import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration._
 
@@ -110,24 +111,32 @@ object SupervisionCompileOnly {
     def process(parts: Array[String])
   }
   def claimResource(): Resource = ???
-  //#restart-PreRestart-signal
-  Behaviors.supervise {
-    Behaviors.setup { ctx =>
-      val resource = claimResource()
 
-      Behaviors
-        .receiveMessage[String] { msg =>
-          // message handling that might throw an exception
-          val parts = msg.split(" ")
-          resource.process(parts)
-          Behaviors.same
+  @silent("never used")
+  //#restart-PreRestart-signal
+  def withPreRestart: Behavior[String] = {
+    Behaviors
+      .supervise[String] {
+        Behaviors.setup { ctx =>
+          val resource = claimResource()
+
+          Behaviors
+            .receiveMessage[String] { msg =>
+              // message handling that might throw an exception
+
+              val parts = msg.split(" ")
+              resource.process(parts)
+              Behaviors.same
+            }
+            .receiveSignal {
+              case (_, signal) if signal == PreRestart || signal == PostStop =>
+                resource.close()
+                Behaviors.same
+            }
         }
-        .receiveSignal {
-          case (_, signal) if signal == PreRestart || signal == PostStop =>
-            resource.close()
-            Behaviors.same
-        }
-    }
+      }
+      .onFailure[Exception](SupervisorStrategy.restart)
   }
+
   //#restart-PreRestart-signal
 }
