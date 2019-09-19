@@ -39,7 +39,6 @@ Java
 
 The first important thing to notice is the `Behavior` of a persistent actor is typed to the type of the `Command`
 because this is the type of message a persistent actor should receive. In Akka Typed this is now enforced by the type system.
-The event and state are only used internally.
 
 The components that make up a EventSourcedBehavior are:
 
@@ -47,6 +46,15 @@ The components that make up a EventSourcedBehavior are:
 * `emptyState` defines the `State` when the entity is first created e.g. a Counter would start with 0 as state.
 * `commandHandler` defines how to handle command by producing Effects e.g. persisting events, stopping the persistent actor.
 * `eventHandler` returns the new state given the current state when an event has been persisted.
+
+@@@ div { .group-java }
+
+Note that the concrete class does not contain any fields with state like a regular POJO. All state of the 
+`EventSourcedBehavior` must be represented in the `State` or else they will not be persisted and therefore be
+lost when the actor is stopped or restarted. Updates to the State are always performed in the eventHandler 
+based on the events.
+
+@@@
 
 Next we'll discuss each of these in detail.
 
