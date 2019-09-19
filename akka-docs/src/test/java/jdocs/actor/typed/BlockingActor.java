@@ -4,6 +4,7 @@
 
 package jdocs.actor.typed;
 
+// #blocking-in-actor
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
 
@@ -31,3 +32,4 @@ public class BlockingActor extends AbstractBehavior<Integer> {
         .build();
   }
 }
+// #blocking-in-actor

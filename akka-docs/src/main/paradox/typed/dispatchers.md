@@ -144,7 +144,7 @@ Scala
 :   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingActor.scala) { #blocking-in-actor }
 
 Java
-:   @@snip [BlockingActor.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingActor.java)
+:   @@snip [BlockingActor.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingActor.java) { #blocking-in-actor }
 
 Without any further configuration the default dispatcher runs this actor along
 with all other actors. This is very efficient when all actor message processing is

@@ -14,7 +14,7 @@ object DispatcherDocSpec {
     //#defining-dispatcher-in-code
     import akka.actor.typed.DispatcherSelector
     val myActor =
-      context.spawn(PrintActor.behavior, "PrintActor", DispatcherSelector.fromConfig("PrintActor"))
+      context.spawn(PrintActor(), "PrintActor", DispatcherSelector.fromConfig("PrintActor"))
     //#defining-dispatcher-in-code
   }
 
@@ -22,7 +22,7 @@ object DispatcherDocSpec {
     //#defining-fixed-pool-size-dispatcher
     import akka.actor.typed.DispatcherSelector
     val myActor =
-      context.spawn(PrintActor.behavior, "PrintActor", DispatcherSelector.fromConfig("blocking-io-dispatcher"))
+      context.spawn(PrintActor(), "PrintActor", DispatcherSelector.fromConfig("blocking-io-dispatcher"))
     //#defining-fixed-pool-size-dispatcher
   }
 
