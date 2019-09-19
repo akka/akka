@@ -544,6 +544,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * Factories for creating a materializer from an `akka.actor.typed.ActorSystem` have been removed.
   A stream can be run with an `akka.actor.typed.ActorSystem` @scala[in implicit scope]@java[parameter]
   and therefore the need for creating a materializer has been reduced.
+* `actorRefWithAck` has been renamed to `actorRefWithBackpressure`
 
 ## Akka Stream changes
 
