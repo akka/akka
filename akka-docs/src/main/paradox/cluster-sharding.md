@@ -1,7 +1,7 @@
 # Classic Cluster Sharding
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see @ref:[cluster-sharding](typed/cluster-sharding.md).
+For the new API see @ref:[Cluster Sharding](typed/cluster-sharding.md).
 
 ## Dependency
 
@@ -22,8 +22,7 @@ to see what this looks like in practice.
 
 ## Introduction
 
-For an introduction to Sharding concepts see @ref:[Cluster Sharding](typed/cluster-sharding.md). This documentation shows how to use the typed
-Cluster Sharding API.
+For an introduction to Sharding concepts see @ref:[Cluster Sharding](typed/cluster-sharding.md).
 
 ## Basic example
 
@@ -118,10 +117,12 @@ See @ref:[Cluster Sharding concepts](typed/cluster-sharding-concepts.md) in the 
 ## Sharding State Store Mode
 
 There are two cluster sharding states managed:
+
 1. @ref:[ShardCoordinator State](typed/cluster-sharding-concepts.md#shardcoordinator-state) - the `Shard` locations
 1. @ref:[Remembering Entities](#remembering-entities) - the entities in each `Shard`, which is optional, and disabled by default
  
 For these, there are currently two modes which define how these states are stored:
+
 * @ref:[Distributed Data Mode](#distributed-data-mode) - uses Akka @ref:[Distributed Data](distributed-data.md) (CRDTs) (the default)
 * @ref:[Persistence Mode](#persistence-mode) - (deprecated) uses Akka @ref:[Persistence](persistence.md) (Event Sourcing)
 

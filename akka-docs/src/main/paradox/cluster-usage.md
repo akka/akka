@@ -213,6 +213,26 @@ See @ref:[How to startup when a minimum number of members in the cluster is reac
 
 ## How To Startup when Member is Up
 
+A common use case is to start actors after the cluster has been initialized,
+members have joined, and the cluster has reached a certain size.
+
+With a configuration option you can define required number of members
+before the leader changes member status of 'Joining' members to 'Up'.:
+
+```
+akka.cluster.min-nr-of-members = 3
+```
+
+In a similar way you can define required number of members of a certain role
+before the leader changes member status of 'Joining' members to 'Up'.:
+
+```
+akka.cluster.role {
+  frontend.min-nr-of-members = 1
+  backend.min-nr-of-members = 2
+}
+```
+
 You can start actors or trigger any functions using the `registerOnMemberUp` callback, which will
 be invoked when the current member status is changed to 'Up'. This can additionally be used with 
 `akka.cluster.min-nr-of-members` optional configuration to defer an action until the cluster has reached a certain size.
