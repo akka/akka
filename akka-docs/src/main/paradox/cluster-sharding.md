@@ -112,13 +112,13 @@ A more comprehensive sample is available in the
 
 ## How it works
 
-See @ref:[Cluster Sharding specification](typed/cluster-sharding-specification.md)
+See @ref:[Cluster Sharding concepts](typed/cluster-sharding-concepts.md) in the documentation of the new APIs.
 
 <a id="cluster-sharding-mode"></a>
 ## Sharding State Store Mode
 
 There are two cluster sharding states managed:
-1. @ref:[ShardCoordinator State](typed/cluster-sharding-specification.md#shardcoordinator-state) - the `Shard` locations
+1. @ref:[ShardCoordinator State](typed/cluster-sharding-concepts.md#shardcoordinator-state) - the `Shard` locations
 1. @ref:[Remembering Entities](#remembering-entities) - the entities in each `Shard`, which is optional, and disabled by default
  
 For these, there are currently two modes which define how these states are stored:
@@ -135,11 +135,11 @@ The state of the `ShardCoordinator` is replicated across the cluster but is not 
 The `ShardCoordinator` state replication is handled by @ref:[Distributed Data](distributed-data.md) with `WriteMajority`/`ReadMajority` consistency.
 When all nodes in the cluster have been stopped, the state is no longer needed and dropped.
 
-See @ref:[Distributed Data mode](typed/cluster-sharding.md#distributed-data-mode).
+See @ref:[Distributed Data mode](typed/cluster-sharding.md#distributed-data-mode) in the documentation of the new APIs.
 
 ### Persistence Mode
 
-See @ref:[Persistence Mode](typed/cluster-sharding.md#persistence-mode).
+See @ref:[Persistence Mode](typed/cluster-sharding.md#persistence-mode) in the documentation of the new APIs.
 
 ## Proxy Only Mode
 
@@ -152,19 +152,23 @@ passed to the `ClusterSharding.start` method.
 
 ## Passivation
 
-@@include[cluster.md](includes/cluster.md) { #sharding-passivation-p1 }
-
-To support graceful passivation without losing such
+If the state of the entities are persistent you may stop entities that are not used to
+reduce memory consumption. This is done by the application specific implementation of
+the entity actors for example by defining receive timeout (`context.setReceiveTimeout`).
+If a message is already enqueued to the entity when it stops itself the enqueued message
+in the mailbox will be dropped. To support graceful passivation without losing such
 messages the entity actor can send `ShardRegion.Passivate` to its parent `Shard`.
-The specified wrapped message in `Passivate`
-@@include[cluster.md](includes/cluster.md) { #sharding-passivation-p3 }
+The specified wrapped message in `Passivate` will be sent back to the entity, which is
+then supposed to stop itself. Incoming messages will be buffered by the `Shard`
+between reception of `Passivate` and termination of the entity. Such buffered messages
+are thereafter delivered to a new incarnation of the entity.
 
-See @ref:[Automatic Passivation](typed/cluster-sharding.md#automatic-passivation).
+See @ref:[Automatic Passivation](typed/cluster-sharding.md#automatic-passivation) in the documentation of the new APIs.
  
 <a id="cluster-sharding-remembering"></a>
 ## Remembering Entities
 
-See @ref:[Remembering Entities](typed/cluster-sharding.md#remembering-entities) for the full description, 
+See @ref:[Remembering Entities](typed/cluster-sharding.md#remembering-entities) in the documentation of the new APIs, 
 including behavior when enabled and disabled.
  
 Note that the state of the entities themselves will not be restored unless they have been made persistent,
@@ -220,7 +224,7 @@ graceful leaving process of a cluster member.
 <a id="removeinternalclustershardingdata"></a>
 ## Removal of Internal Cluster Sharding Data
 
-See @ref:[removal of Internal Cluster Sharding Data](typed/cluster-sharding.md#removal-of-internal-cluster-sharding-data).
+See @ref:[removal of Internal Cluster Sharding Data](typed/cluster-sharding.md#removal-of-internal-cluster-sharding-data) in the documentation of the new APIs.
 
 ## Configuration
 

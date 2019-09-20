@@ -3,7 +3,7 @@
 This document describes how to use Akka Cluster and the Cluster APIs. 
 For specific documentation topics see: 
 
-* @ref:[Cluster Specification](cluster-specification.md)
+* @ref:[Cluster Specification](cluster-concepts.md)
 * @ref:[Cluster Membership Service](cluster-membership.md)
 * @ref:[When and where to use Akka Cluster](choosing-cluster.md)
 * @ref:[Higher level Cluster tools](#higher-level-cluster-tools)
@@ -328,7 +328,7 @@ The roles are part of the membership information in `MemberEvent` that you can s
 The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
 unreachable from the rest of the cluster. Please see:
 
-* @ref:[Failure Detector specification](cluster-specification.md#failure-detector)
+* @ref:[Failure Detector specification](cluster-concepts.md#failure-detector)
 * @ref:[Phi Accrual Failure Detector](failure-detector.md) implementation
 * [Using the Failure Detector](#using-the-failure-detector) 
  

@@ -658,7 +658,7 @@ Java
 <a id="ddata-durable"></a>
 ### Durable Storage
 
-See @ref:[Durable Storage](typed/distributed-data.md#durable-storage).
+See @ref:[Durable Storage](typed/distributed-data.md#durable-storage) in the documentation of the new APIs.
 
 ### CRDT Garbage
 

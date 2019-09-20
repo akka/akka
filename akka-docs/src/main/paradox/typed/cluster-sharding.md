@@ -1,6 +1,10 @@
 # Cluster Sharding
 
-@@include[cluster.md](../includes/cluster.md) { #links-from-cluster-to-classic }
+@@@ note
+
+For the Akka Classic API see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
+
+@@@
 
 ## Dependency
 
@@ -128,13 +132,19 @@ or explicitly using the `withAllocationStrategy` function.
 See the API documentation of @scala[`akka.cluster.sharding.ShardAllocationStrategy`]@java[`akka.cluster.sharding.AbstractShardAllocationStrategy`] for details
 of how to implement a custom `ShardAllocationStrategy`.
 
+## How it works
+
+See @ref:[Cluster Sharding concepts](cluster-sharding-concepts.md).
+
 ## Sharding State Store Mode
 
 There are two cluster sharding states managed:
-1. @ref:[ShardCoordinator State](cluster-sharding-specification.md#shardcoordinator-state) - the `Shard` locations
+
+1. @ref:[ShardCoordinator State](cluster-sharding-concepts.md#shardcoordinator-state) - the `Shard` locations
 1. @ref:[Remembering Entities](#remembering-entities) - the entities in each `Shard`, which is optional, and disabled by default
  
 For these, there are currently two modes which define how these states are stored:
+
 * @ref:[Distributed Data Mode](#distributed-data-mode) - uses Akka @ref:[Distributed Data](distributed-data.md) (CRDTs) (the default)
 * @ref:[Persistence Mode](#persistence-mode) - (deprecated) uses Akka @ref:[Persistence](persistence.md) (Event Sourcing)
 
@@ -189,13 +199,18 @@ New sharding applications should no longer choose persistence mode. Existing use
 
 ## Passivation
 
-@@include[cluster.md](../includes/cluster.md) { #sharding-passivation-p1 }
-
-To support graceful passivation without losing such
+If the state of the entities are persistent you may stop entities that are not used to
+reduce memory consumption. This is done by the application specific implementation of
+the entity actors for example by defining receive timeout (`context.setReceiveTimeout`).
+If a message is already enqueued to the entity when it stops itself the enqueued message
+in the mailbox will be dropped. To support graceful passivation without losing such
 messages the entity actor can send `ClusterSharding.Passivate` to the
 @scala[`ActorRef[ShardCommand]`]@java[`ActorRef<ShardCommand>`] that was passed in to
 the factory method when creating the entity. The optional `stopMessage` message
-@@include[cluster.md](../includes/cluster.md) { #sharding-passivation-p3 }
+will be sent back to the entity, which is then supposed to stop itself, otherwise it will
+be stopped automatically. Incoming messages will be buffered by the `Shard` between reception
+of `Passivate` and termination of the entity. Such buffered messages are thereafter delivered
+to a new incarnation of the entity.
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #counter-passivate }
@@ -290,6 +305,7 @@ for more information about `min-nr-of-members`.
 
 ## Removal of internal Cluster Sharding data
 
+Removal of internal Cluster Sharding data is only relevant for "Persistent Mode".
 The Cluster Sharding `ShardCoordinator` stores locations of the shards.
 This data is safely be removed when restarting the whole Akka Cluster.
 Note that this does not include application data.

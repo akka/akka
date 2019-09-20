@@ -86,7 +86,7 @@ in an application composed of multiple JARs to reside under a single package nam
 might scan all classes from `com.example.plugins` for specific service implementations with that package existing in
 several contributed JARs.
    While it is possible to support overlapping packages with complex manifest headers, it's much better to use non-overlapping
-package spaces and facilities such as @ref:[Akka Cluster](../typed/cluster-specification.md)
+package spaces and facilities such as @ref:[Akka Cluster](../typed/cluster-concepts.md)
 for service discovery. Stylistically, many organizations opt to use the root package path as the name of the bundle
 distribution file.
 

@@ -3,7 +3,7 @@
 This document describes how to use Akka Cluster and the Cluster APIs using code samples.
 For specific documentation topics see:  
 
-* @ref:[Cluster Specification](typed/cluster-specification.md)
+* @ref:[Cluster Specification](typed/cluster-concepts.md)
 * @ref:[Cluster Membership Service](typed/cluster-membership.md)
 * @ref:[When and where to use Akka Cluster](typed/choosing-cluster.md)
 * @ref:[Higher level Cluster tools](#higher-level-cluster-tools)
@@ -39,7 +39,7 @@ It contains instructions on how to run the `SimpleClusterApp`.
 
 ## When and where to use Akka Cluster
  
-See [Choosing Akka Cluster](typed/choosing-cluster.md#when-and-where-to-use-akka-cluster).
+See [Choosing Akka Cluster](typed/choosing-cluster.md#when-and-where-to-use-akka-cluster) in the documentation of the new APIs.
 
 ## Cluster API Extension
 
@@ -204,12 +204,12 @@ It contains instructions on how to run the **Worker Dial-in Example** sample.
 
 ## Node Roles
 
-See @ref:[Cluster Node Roles](typed/cluster.md#node-roles)
+See @ref:[Cluster Node Roles](typed/cluster.md#node-roles) in the documentation of the new APIs.
 
 <a id="min-members"></a>
 ## How To Startup when Cluster Size Reached
 
-See @ref:[fu](typed/cluster.md#how-to-startup-when-a-cluster-size-is-reached)
+See @ref:[How to startup when a minimum number of members in the cluster is reached](typed/cluster.md#how-to-startup-when-a-cluster-size-is-reached) in the documentation of the new APIs.
 
 ## How To Startup when Member is Up
 
@@ -286,7 +286,7 @@ See @ref:[Cluster Metrics](cluster-metrics.md).
 The nodes in the cluster monitor each other by sending heartbeats to detect if a node is
 unreachable from the rest of the cluster. Please see:
 
-* @ref:[Failure Detector specification](typed/cluster-specification.md#failure-detector)
+* @ref:[Failure Detector specification](typed/cluster-concepts.md#failure-detector)
 * @ref:[Phi Accrual Failure Detector](typed/failure-detector.md) implementation
 * [Using the Failure Detector](typed/cluster.md#using-the-failure-detector) 
  

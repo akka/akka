@@ -1,4 +1,4 @@
-# Cluster Sharding specification
+# Cluster Sharding concepts
 
 The `ShardRegion` actor is started on each node in the cluster, or group of nodes
 tagged with a specific role. The `ShardRegion` is created with two application specific
@@ -113,8 +113,13 @@ are buffered until the new `ShardCoordinator` becomes available.
 As long as a sender uses the same `ShardRegion` actor to deliver messages to an entity
 actor the order of the messages is preserved. As long as the buffer limit is not reached
 messages are delivered on a best effort basis, with at-most once delivery semantics,
-in the same way as ordinary message sending. Reliable end-to-end messaging, with
-at-least-once semantics can be added by using `AtLeastOnceDelivery` in @ref:[Persistence](persistence.md) (or see @ref:[Classic Persistence](../persistence.md)).
+in the same way as ordinary message sending.
+
+#### AtLeastOnceDelivery
+
+Reliable end-to-end messaging, with at-least-once semantics can be added by using 
+`AtLeastOnceDelivery` with @ref:[Classic Persistence](../persistence.md#at-least-once-delivery),
+and see @github[#20984](#20984) AtLeastOnceDelivery, including redelivery with a backoff.
 
 ### Overhead
 
