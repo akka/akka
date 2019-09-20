@@ -71,7 +71,7 @@ Scala
 : @@snip [SharedMutableStateDocSpec.scala](/akka-docs/src/test/scala/docs/actor/typed/SharedMutableStateDocSpec.scala) { #mutable-state }
 
 Java
-: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/actor/typed/SharedMutableStateDocSpec.java) { #mutable-state }
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/actor/typed/SharedMutableStateDocTest.java) { #mutable-state }
 
 
  * Messages **should** be immutable, this is to avoid the shared mutable state trap.

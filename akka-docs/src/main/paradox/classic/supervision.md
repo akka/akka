@@ -1,7 +1,7 @@
 # Classic Supervision
 
 This chapter outlines the concept behind the supervision in Akka Classic, for the
-corresponding overview of typed, see @ref:[supervision](../general/supervision.md)
+corresponding overview of the new APIs see @ref:[supervision](../general/supervision.md)
 
 ## Sample project
 

@@ -4,33 +4,63 @@
 
 package docs.config
 
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.WordSpec
 import org.scalatest.Matchers
-import akka.testkit.TestKit
 
 //#imports
-import akka.actor.ActorSystem
+import akka.actor.typed.ActorSystem
 import com.typesafe.config.ConfigFactory
 //#imports
 
 class ConfigDocSpec extends WordSpec with Matchers {
+  val rootBehavior = Behaviors.empty[String]
 
   "programmatically configure ActorSystem" in {
+
     //#custom-config
     val customConf = ConfigFactory.parseString("""
-      akka.actor.deployment {
-        /my-service {
-          router = round-robin-pool
-          nr-of-instances = 3
-        }
-      }
-      """)
+      akka.log-config-on-start = on
+    """)
     // ConfigFactory.load sandwiches customConfig between default reference
     // config and default overrides, and then resolves it.
-    val system = ActorSystem("MySystem", ConfigFactory.load(customConf))
+    val system = ActorSystem(rootBehavior, "MySystem", ConfigFactory.load(customConf))
     //#custom-config
 
-    TestKit.shutdownActorSystem(system)
+    ActorTestKit.shutdown(system)
+  }
+
+  def compileOnlyPrintConfig(): Unit = {
+    // #dump-config
+    val system = ActorSystem(rootBehavior, "MySystem")
+    system.logConfiguration()
+    // #dump-config
+  }
+
+  def compileOnlySeparateApps(): Unit = {
+    // #separate-apps
+    val config = ConfigFactory.load()
+    val app1 = ActorSystem(rootBehavior, "MyApp1", config.getConfig("myapp1").withFallback(config))
+    val app2 = ActorSystem(rootBehavior, "MyApp2", config.getConfig("myapp2").withOnlyPath("akka").withFallback(config))
+    // #separate-apps
+  }
+
+  def moreCustomConfig(): Unit = {
+    // #custom-config-2
+    // make a Config with just your special setting
+    val myConfig = ConfigFactory.parseString("something=somethingElse");
+    // load the normal config stack (system props,
+    // then application.conf, then reference.conf)
+    val regularConfig = ConfigFactory.load();
+    // override regular stack with myConfig
+    val combined = myConfig.withFallback(regularConfig);
+    // put the result in between the overrides
+    // (system props) and defaults again
+    val complete = ConfigFactory.load(combined);
+    // create ActorSystem
+    val system = ActorSystem(rootBehavior, "myname", complete);
+    // #custom-config-2
   }
 
   "deployment section" in {
@@ -76,7 +106,7 @@ class ConfigDocSpec extends WordSpec with Matchers {
   }
   #//#deployment-section
   """)
-    val system = ActorSystem("MySystem", conf)
-    TestKit.shutdownActorSystem(system)
+    val system = ActorSystem(rootBehavior, "MySystem", conf)
+    ActorTestKit.shutdown(system)
   }
 }
