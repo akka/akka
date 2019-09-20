@@ -198,7 +198,7 @@ a resizer.
 Sometimes, rather than having the router actor create its routees, it is desirable to create routees
 separately and provide them to the router for its use. You can do this by passing in
 paths of the routees to the router's configuration. Messages will be sent with `ActorSelection` 
-to these paths, wildcards can be and will result in the same @ref:[semantics as explicitly using `ActorSelection`](general/addressing.md#querying-the-logical-actor-hierarchy).
+to these paths, wildcards can be and will result in the same semantics as explicitly using `ActorSelection`.
 
 The example below shows how to create a router by providing it with the path strings of three
 routee actors. 

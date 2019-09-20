@@ -49,6 +49,8 @@ guidelines which might be helpful:
  * If one actor depends on another actor for carrying out its duty, it should
    watch that other actor’s liveness and act upon receiving a termination
    notice.
+ * If one actor has multiple responsibilities each responsibility can often be pushed
+   into a separate child to make the logic and state more simple.
 
 ## Configuration Container
 

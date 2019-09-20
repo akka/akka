@@ -275,9 +275,12 @@ acknowledgement
  * a way for the receiver to detect and discard duplicates
 
 The third becomes necessary by virtue of the acknowledgements not being guaranteed
-to arrive either. An ACK-RETRY protocol with business-level acknowledgements is
-supported by @ref:[At-Least-Once Delivery](../persistence.md#at-least-once-delivery) of the Akka Persistence module. Duplicates can be
-detected by tracking the identifiers of messages sent via @ref:[At-Least-Once Delivery](../persistence.md#at-least-once-delivery).
+to arrive either. 
+
+An ACK-RETRY protocol with business-level acknowledgements and de-duplication using identifiers is
+supported by the @ref:[At-Least-Once Delivery](../persistence.md#at-least-once-delivery) of the Classic Akka Persistence module. 
+Corresponding functionality for typed has not yet been implemented (see [issue #20984](https://github.com/akka/akka/issues/20984)).
+
 Another way of implementing the third part would be to make processing the messages
 idempotent on the level of the business logic.
 
@@ -350,8 +353,8 @@ local system (if no network connection can be established) or the remote one
 Every time an actor does not terminate by its own decision, there is a chance
 that some messages which it sends to itself are lost. There is one which
 happens quite easily in complex shutdown scenarios that is usually benign:
-seeing a `akka.dispatch.Terminate` message dropped means that two
-termination requests were given, but only one can succeed. In the
+seeing instances of a graceful stop command for an actor being dropped means that two
+stop requests were given, but only one can succeed. In the
 same vein, you might see `akka.actor.Terminated` messages from children
 while stopping a hierarchy of actors turning up in dead letters if the parent
 is still watching the child when the parent terminates.

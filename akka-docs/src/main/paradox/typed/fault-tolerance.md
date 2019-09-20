@@ -140,6 +140,7 @@ Scala
 Java
 :  @@snip [SupervisionCompileOnlyTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/supervision/SupervisionCompileOnlyTest.java) { #restart-PreRestart-signal }
 
+<a id="bubble"/>
 ## Bubble failures up through the hierarchy
 
 In some scenarios it may be useful to push the decision about what to do on a failure upwards in the Actor hierarchy
