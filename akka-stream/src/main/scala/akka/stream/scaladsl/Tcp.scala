@@ -277,15 +277,17 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       connectTimeout: Duration = Duration.Inf,
       idleTimeout: Duration = Duration.Inf): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
+    // FIXME #21753 more methods taking SSLContext should also be deprecated and replaced by SSLEngine
+
     val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
+    @silent("deprecated")
     val tls = TLS(sslContext, negotiateNewSession, TLSRole.client)
     connection.join(tlsWrapping.atop(tls).reversed)
   }
 
-  /**
-   * INTERNAL API: for raw SSLEngine
-   */
-  @InternalApi private[akka] def outgoingTlsConnectionWithSSLEngine(
+  // FIXME #21753 make SSLEngine variant public, document and make sure parameters are right,
+  //       verifySession should be optional
+  def outgoingTlsConnectionWithSSLEngine(
       remoteAddress: InetSocketAddress,
       createSSLEngine: () => SSLEngine,
       localAddress: Option[InetSocketAddress] = None,
@@ -320,6 +322,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
+    @silent("deprecated")
     val tls = tlsWrapping.atop(TLS(sslContext, negotiateNewSession, TLSRole.server)).reversed
 
     bind(interface, port, backlog, options, halfClose = false, idleTimeout).map { incomingConnection =>
@@ -327,10 +330,8 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     }
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi private[akka] def bindTlsWithSSLEngine(
+  // FIXME #21753 make SSLEngine variant public, document and make sure parameters are right, verifySession should be optional
+  def bindTlsWithSSLEngine(
       interface: String,
       port: Int,
       createSSLEngine: () => SSLEngine,
@@ -348,6 +349,27 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
     }
   }
 
+  // FIXME #21753 make SSLEngine variant public, document and make sure parameters are right, verifySession should be optional
+  def bindAndHandleTlsWithSSLEngine(
+      handler: Flow[ByteString, ByteString, _],
+      interface: String,
+      port: Int,
+      createSSLEngine: () => SSLEngine,
+      backlog: Int = 100,
+      @silent // Traversable deprecated in 2.13
+      options: immutable.Traversable[SocketOption] = Nil,
+      idleTimeout: Duration = Duration.Inf,
+      verifySession: SSLSession => Try[Unit],
+      closing: TLSClosing = IgnoreComplete)(implicit m: Materializer): Future[ServerBinding] = {
+
+    bindTlsWithSSLEngine(interface, port, createSSLEngine, backlog, options, idleTimeout, verifySession, closing)
+      .to(Sink.foreach { conn: IncomingConnection =>
+        conn.handleWith(handler)
+      })
+      .run()
+
+  }
+
   /**
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
    * handling the incoming connections through TLS and then run using the provided Flow.
@@ -358,6 +380,10 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
+  @deprecated(
+    "Use bindAndHandleTlsWithSSLEngine that takes a SSLEngine factory instead. " +
+    "Setup the SSLEngine with needed parameters.",
+    "2.6.0")
   def bindAndHandleTls(
       handler: Flow[ByteString, ByteString, _],
       interface: String,

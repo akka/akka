@@ -6,36 +6,35 @@ package akka.stream.io
 
 import java.security.KeyStore
 import java.security.SecureRandom
-import java.security.cert.CertificateException
 import java.util.concurrent.TimeoutException
 
-import akka.NotUsed
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
+import akka.NotUsed
 import akka.pattern.{ after => later }
-import akka.stream._
 import akka.stream.TLSProtocol._
+import akka.stream._
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.util.{ ByteString, JavaVersion }
-import javax.net.ssl._
-import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.testkit.WithLogCapturing
+import akka.util.ByteString
+import akka.util.JavaVersion
+import com.github.ghik.silencer.silent
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
+import javax.net.ssl._
 
-object TlsSpec {
+object DeprecatedTlsSpec {
 
   val rnd = new Random
 
-  val SSLEnabledAlgorithms: Set[String] = Set("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_128_CBC_SHA")
-  val SSLProtocol: String = "TLSv1.2"
-
-  def initWithTrust(trustPath: String): SSLContext = {
+  def initWithTrust(trustPath: String) = {
     val password = "changeme"
 
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
@@ -50,7 +49,7 @@ object TlsSpec {
     val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
     trustManagerFactory.init(trustStore)
 
-    val context = SSLContext.getInstance(SSLProtocol)
+    val context = SSLContext.getInstance("TLS")
     context.init(keyManagerFactory.getKeyManagers, trustManagerFactory.getTrustManagers, new SecureRandom)
     context
   }
@@ -95,14 +94,15 @@ object TlsSpec {
     """
 }
 
-class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing {
-  import TlsSpec._
-
+@silent("deprecated")
+class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) with WithLogCapturing {
+  import GraphDSL.Implicits._
+  import DeprecatedTlsSpec._
   import system.dispatcher
 
-  import GraphDSL.Implicits._
+  val sslConfig: Option[AkkaSSLConfig] = None // no special settings to be applied here
 
-  "SslTls" must {
+  "SslTls with deprecated SSLContext setup" must {
 
     val sslContext = initSslContext()
 
@@ -114,39 +114,11 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       x
     }
 
-    def createSSLEngine(context: SSLContext, role: TLSRole): SSLEngine =
-      createSSLEngine2(context, role, hostnameVerification = false, hostInfo = None)
-
-    def createSSLEngine2(
-        context: SSLContext,
-        role: TLSRole,
-        hostnameVerification: Boolean,
-        hostInfo: Option[(String, Int)]): SSLEngine = {
-
-      val engine = hostInfo match {
-        case None                   => context.createSSLEngine()
-        case Some((hostname, port)) => context.createSSLEngine(hostname, port)
-      }
-
-      if (hostnameVerification && role == akka.stream.Client) {
-        val sslParams = sslContext.getDefaultSSLParameters
-        sslParams.setEndpointIdentificationAlgorithm("HTTPS")
-        engine.setSSLParameters(sslParams)
-      }
-
-      engine.setUseClientMode(role == akka.stream.Client)
-      engine.setEnabledCipherSuites(SSLEnabledAlgorithms.toArray)
-      engine.setEnabledProtocols(Array(SSLProtocol))
-
-      engine
-    }
-
-    def clientTls(closing: TLSClosing) =
-      TLS(() => createSSLEngine(sslContext, Client), closing)
-    def badClientTls(closing: TLSClosing) =
-      TLS(() => createSSLEngine(initWithTrust("/badtruststore"), Client), closing)
-    def serverTls(closing: TLSClosing) =
-      TLS(() => createSSLEngine(sslContext, Server), closing)
+    val cipherSuites =
+      NegotiateNewSession.withCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_128_CBC_SHA")
+    def clientTls(closing: TLSClosing) = TLS(sslContext, None, cipherSuites, Client, closing)
+    def badClientTls(closing: TLSClosing) = TLS(initWithTrust("/badtruststore"), None, cipherSuites, Client, closing)
+    def serverTls(closing: TLSClosing) = TLS(sslContext, None, cipherSuites, Server, closing)
 
     trait Named {
       def name: String =
@@ -536,10 +508,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
           case SessionTruncated   => SendBytes(ByteString.empty)
           case SessionBytes(_, b) => SendBytes(b)
         }
-        val clientTls = TLS(
-          () => createSSLEngine2(sslContext, Client, hostnameVerification = true, hostInfo = Some((hostName, 80))),
-          EagerClose)
-
+        val clientTls = TLS(sslContext, None, cipherSuites, Client, EagerClose, Some((hostName, 80)))
         val flow = clientTls.atop(serverTls(EagerClose).reversed).join(rhs)
 
         Source.single(SendBytes(ByteString.empty)).via(flow).runWith(Sink.ignore)
@@ -548,14 +517,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       val cause = intercept[Exception] {
         Await.result(run("unknown.example.org"), 3.seconds)
       }
-
-      // FIXME #21753 is this hostname verification ok? AkkaSSLConfig is verifying in different way?
-      cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
-      val cause2 = cause.getCause
-      cause2.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
-      val cause3 = cause2.getCause
-      cause3.getClass should ===(classOf[CertificateException])
-      cause3.getMessage should ===("No name matching unknown.example.org found")
+      cause.getMessage should ===("Hostname verification failed! Expected session to be for unknown.example.org")
     }
 
   }
