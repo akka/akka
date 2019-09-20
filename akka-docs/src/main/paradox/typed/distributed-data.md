@@ -111,3 +111,87 @@ actor ref. All such `Replicator`s must run on the same path in the classic actor
 A standalone `ReplicatorMessageAdapter` can also be created for a given `Replicator` instead of creating
 one via the `DistributedData` extension.
 
+## Durable Storage
+
+By default the data is only kept in memory. It is redundant since it is replicated to other nodes
+in the cluster, but if you stop all nodes the data is lost, unless you have saved it
+elsewhere.
+
+Entries can be configured to be durable, i.e. stored on local disk on each node. The stored data will be loaded
+next time the replicator is started, i.e. when actor system is restarted. This means data will survive as
+long as at least one node from the old cluster takes part in a new cluster. The keys of the durable entries
+are configured with:
+
+```
+akka.cluster.distributed-data.durable.keys = ["a", "b", "durable*"]
+```
+
+Prefix matching is supported by using `*` at the end of a key.
+
+All entries can be made durable by specifying:
+
+```
+akka.cluster.distributed-data.durable.keys = ["*"]
+```
+
+@scala[[LMDB](https://symas.com/products/lightning-memory-mapped-database/)]@java[[LMDB](https://github.com/lmdbjava/lmdbjava/)] is the default storage implementation. It is
+possible to replace that with another implementation by implementing the actor protocol described in
+`akka.cluster.ddata.DurableStore` and defining the `akka.cluster.distributed-data.durable.store-actor-class`
+property for the new implementation.
+
+The location of the files for the data is configured with:
+
+Scala
+:   ```
+# Directory of LMDB file. There are two options:
+# 1. A relative or absolute path to a directory that ends with 'ddata'
+#    the full name of the directory will contain name of the ActorSystem
+#    and its remote port.
+# 2. Otherwise the path is used as is, as a relative or absolute path to
+#    a directory.
+akka.cluster.distributed-data.durable.lmdb.dir = "ddata"
+```
+
+Java
+:   ```
+# Directory of LMDB file. There are two options:
+# 1. A relative or absolute path to a directory that ends with 'ddata'
+#    the full name of the directory will contain name of the ActorSystem
+#    and its remote port.
+# 2. Otherwise the path is used as is, as a relative or absolute path to
+#    a directory.
+akka.cluster.distributed-data.durable.lmdb.dir = "ddata"
+```
+
+
+When running in production you may want to configure the directory to a specific
+path (alt 2), since the default directory contains the remote port of the
+actor system to make the name unique. If using a dynamically assigned
+port (0) it will be different each time and the previously stored data
+will not be loaded.
+
+Making the data durable has a performance cost. By default, each update is flushed
+to disk before the `UpdateSuccess` reply is sent. For better performance, but with the risk of losing
+the last writes if the JVM crashes, you can enable write behind mode. Changes are then accumulated during
+a time period before it is written to LMDB and flushed to disk. Enabling write behind is especially
+efficient when performing many writes to the same key, because it is only the last value for each key
+that will be serialized and stored. The risk of losing writes if the JVM crashes is small since the
+data is typically replicated to other nodes immediately according to the given `WriteConsistency`.
+
+```
+akka.cluster.distributed-data.durable.lmdb.write-behind-interval = 200 ms
+```
+
+Note that you should be prepared to receive `WriteFailure` as reply to an `Update` of a
+durable entry if the data could not be stored for some reason. When enabling `write-behind-interval`
+such errors will only be logged and `UpdateSuccess` will still be the reply to the `Update`.
+
+There is one important caveat when it comes pruning of [CRDT Garbage](#crdt-garbage) for durable data.
+If an old data entry that was never pruned is injected and merged with existing data after
+that the pruning markers have been removed the value will not be correct. The time-to-live
+of the markers is defined by configuration
+`akka.cluster.distributed-data.durable.remove-pruning-marker-after` and is in the magnitude of days.
+This would be possible if a node with durable data didn't participate in the pruning
+(e.g. it was shutdown) and later started after this time. A node with durable data should not
+be stopped for longer time than this duration and if it is joining again after this
+duration its data should first be manually removed (from the lmdb directory).

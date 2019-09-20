@@ -5,11 +5,12 @@
 @@@ index
 
 * [cluster](cluster.md)
-* [cluster-specification](cluster-specification.md)
+* [cluster-specification](cluster-concepts.md)
 * [cluster-membership](cluster-membership.md)
 * [distributed-data](distributed-data.md)
 * [cluster-singleton](cluster-singleton.md)
 * [cluster-sharding](cluster-sharding.md)
+* [cluster-sharding-specification](cluster-sharding-concepts.md)
 * [serialization](../serialization.md)
 * [serialization-jackson](../serialization-jackson.md)
 * [multi-jvm-testing](../multi-jvm-testing.md)

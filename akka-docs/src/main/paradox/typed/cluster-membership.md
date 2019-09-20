@@ -1,8 +1,8 @@
 # Cluster Membership Service
 
 The core of Akka Cluster is the cluster membership, to keep track of what nodes are part of the cluster and
-their health. Cluster membership is communicated using @ref:[gossip](cluster-specification.md#gossip) and
-@ref:[failure detection](cluster-specification.md#failure-detector).
+their health. Cluster membership is communicated using @ref:[gossip](cluster-concepts.md#gossip) and
+@ref:[failure detection](cluster-concepts.md#failure-detector).
 
 There are several @ref:[Higher level Cluster tools](../typed/cluster.md#higher-level-cluster-tools) that are built
 on top of the cluster membership service.

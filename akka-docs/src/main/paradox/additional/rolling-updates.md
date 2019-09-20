@@ -36,7 +36,7 @@ Additionally you can find advice on @ref:[Persistence - Schema Evolution](../per
 
 ## Cluster Sharding
 
-During a rolling upgrade, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../cluster-sharding.md#shard-rebalancing), 
+During a rolling upgrade, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../typed/cluster-sharding-concepts.md#shard-rebalancing), 
 to an old or new node in the cluster, based on the pluggable allocation strategy and settings.
 When an old node is stopped the shards that were running on it are moved to one of the
 other old nodes remaining in the cluster. The `ShardCoordinator` is itself a cluster singleton. 

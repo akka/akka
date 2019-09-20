@@ -48,3 +48,11 @@ at startup by using some external tool or API. When joining to seed nodes you sh
 the node itself except for the node that is supposed to be the first seed node, which should be
 placed first in the parameter to the programmatic join.
 <!--- #join-seeds-programmatic --->
+
+<!--- #sharding-persistence-mode-deprecated --->
+@@@ warning
+
+Persistence for state store mode is deprecated. 
+
+@@@
+<!--- #sharding-persistence-mode-deprecated --->

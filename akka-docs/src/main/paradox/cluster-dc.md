@@ -77,7 +77,7 @@ up a large cluster into smaller groups of nodes for better scalability.
 ## Membership
 
 Some @ref[membership transitions](typed/cluster-membership.md#membership-lifecycle) are managed by 
-one node called the @ref[leader](typed/cluster-specification.md#leader). There is one leader per data center
+one node called the @ref[leader](typed/cluster-concepts.md#leader). There is one leader per data center
 and it is responsible for these transitions for the members within the same data center. Members of
 other data centers are managed independently by the leader of the respective data center. These actions
 cannot be performed while there are any unreachability observations among the nodes in the data center, 
@@ -105,7 +105,7 @@ Java
 
 ## Failure Detection
 
-@ref[Failure detection](typed/cluster-specification.md#failure-detector) is performed by sending heartbeat messages
+@ref[Failure detection](typed/cluster-concepts.md#failure-detector) is performed by sending heartbeat messages
 to detect if a node is unreachable. This is done more frequently and with more certainty among
 the nodes in the same data center than across data centers. The failure detection across different data centers should
 be interpreted as an indication of problem with the network link between the data centers.
