@@ -46,7 +46,6 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.util.Success
 
 import com.github.ghik.silencer.silent
 
@@ -845,16 +844,12 @@ class TcpSpec extends StreamSpec("""
           Flow[ByteString].mapConcat(_.utf8String.toList).takeWhile(_ != '\n').map(c => ByteString(c)),
           address.getHostName,
           address.getPort,
-          () => createSSLEngine(TLSRole.server),
-          verifySession = _ => Success(()))
+          () => createSSLEngine(TLSRole.server))
         .futureValue
       system.log.info(s"Server bound to ${address.getHostString}:${address.getPort}")
 
       val connectionFlow =
-        Tcp().outgoingConnectionWithTls(
-          address,
-          () => createSSLEngine(TLSRole.client),
-          verifySession = _ => Success(()))
+        Tcp().outgoingConnectionWithTls(address, () => createSSLEngine(TLSRole.client))
 
       val chars = "hello\n".toList.map(_.toString)
       val (connectionF, result) =
@@ -955,6 +950,7 @@ class TcpSpec extends StreamSpec("""
       result.futureValue(PatienceConfiguration.Timeout(10.seconds)) should ===("hello")
     }
 
+    @silent("deprecated")
     def initSslMess() = {
       // #setting-up-ssl-context
       import java.security.KeyStore

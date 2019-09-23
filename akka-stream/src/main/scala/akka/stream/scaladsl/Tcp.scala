@@ -92,6 +92,11 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
       case sb: TLSProtocol.SessionBytes => sb.bytes
       // ignore other kinds of inbounds (currently only Truncated)
     })
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] val defaultBacklog = 100
 }
 
 final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
@@ -125,7 +130,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   def bind(
       interface: String,
       port: Int,
-      backlog: Int = 100,
+      backlog: Int = defaultBacklog,
       @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       halfClose: Boolean = false,
@@ -167,7 +172,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       handler: Flow[ByteString, ByteString, _],
       interface: String,
       port: Int,
-      backlog: Int = 100,
+      backlog: Int = defaultBacklog,
       @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       halfClose: Boolean = false,
@@ -303,13 +308,36 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    */
   def outgoingConnectionWithTls(
       remoteAddress: InetSocketAddress,
+      createSSLEngine: () => SSLEngine): Flow[ByteString, ByteString, Future[OutgoingConnection]] =
+    outgoingConnectionWithTls(
+      remoteAddress,
+      createSSLEngine,
+      localAddress = None,
+      options = Nil,
+      connectTimeout = Duration.Inf,
+      idleTimeout = Duration.Inf,
+      verifySession = _ => Success(()),
+      closing = IgnoreComplete)
+
+  /**
+   * Creates an [[Tcp.OutgoingConnection]] with TLS.
+   * The returned flow represents a TCP client connection to the given endpoint where all bytes in and
+   * out go through TLS.
+   *
+   * You specify a factory to create an SSLEngine that must already be configured for
+   * client mode and with all the parameters for the first session.
+   *
+   * @see [[Tcp.outgoingConnection()]]
+   */
+  def outgoingConnectionWithTls(
+      remoteAddress: InetSocketAddress,
       createSSLEngine: () => SSLEngine,
-      localAddress: Option[InetSocketAddress] = None,
-      options: immutable.Seq[SocketOption] = Nil,
-      connectTimeout: Duration = Duration.Inf,
-      idleTimeout: Duration = Duration.Inf,
-      verifySession: SSLSession => Try[Unit] = _ => Success(()),
-      closing: TLSClosing = IgnoreComplete): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
+      localAddress: Option[InetSocketAddress],
+      options: immutable.Seq[SocketOption],
+      connectTimeout: Duration,
+      idleTimeout: Duration,
+      verifySession: SSLSession => Try[Unit],
+      closing: TLSClosing): Flow[ByteString, ByteString, Future[OutgoingConnection]] = {
 
     val connection = outgoingConnection(remoteAddress, localAddress, options, true, connectTimeout, idleTimeout)
     val tls = TLS(createSSLEngine, verifySession, closing)
@@ -335,7 +363,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       port: Int,
       sslContext: SSLContext,
       negotiateNewSession: NegotiateNewSession,
-      backlog: Int = 100,
+      backlog: Int = defaultBacklog,
       @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       idleTimeout: Duration = Duration.Inf): Source[IncomingConnection, Future[ServerBinding]] = {
@@ -359,16 +387,41 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   def bindWithTls(
       interface: String,
       port: Int,
+      createSSLEngine: () => SSLEngine): Source[IncomingConnection, Future[ServerBinding]] =
+    bindWithTls(
+      interface,
+      port,
+      createSSLEngine,
+      backlog = defaultBacklog,
+      options = Nil,
+      idleTimeout = Duration.Inf,
+      verifySession = _ => Success(()),
+      closing = IgnoreComplete)
+
+  /**
+   * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
+   * where all incoming and outgoing bytes are passed through TLS.
+   *
+   * You specify a factory to create an SSLEngine that must already be configured for
+   * client mode and with all the parameters for the first session.
+   *
+   * @see [[Tcp.bind]]
+   */
+  def bindWithTls(
+      interface: String,
+      port: Int,
       createSSLEngine: () => SSLEngine,
-      backlog: Int = 100,
-      options: immutable.Seq[SocketOption] = Nil,
-      idleTimeout: Duration = Duration.Inf,
-      verifySession: SSLSession => Try[Unit] = _ => Success(()),
-      closing: TLSClosing = IgnoreComplete): Source[IncomingConnection, Future[ServerBinding]] = {
+      backlog: Int,
+      options: immutable.Seq[SocketOption],
+      idleTimeout: Duration,
+      verifySession: SSLSession => Try[Unit],
+      closing: TLSClosing): Source[IncomingConnection, Future[ServerBinding]] = {
 
     val tls = tlsWrapping.atop(TLS(createSSLEngine, verifySession, closing)).reversed
 
-    bind(interface, port, backlog, options, true, idleTimeout).map { incomingConnection =>
+    // FIXME halfClose true in scaladsl but parameter was not in javadsl #26689
+
+    bind(interface, port, backlog, options, halfClose = true, idleTimeout).map { incomingConnection =>
       incomingConnection.copy(flow = incomingConnection.flow.join(tls))
     }
   }
@@ -387,19 +440,43 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       handler: Flow[ByteString, ByteString, _],
       interface: String,
       port: Int,
-      createSSLEngine: () => SSLEngine,
-      backlog: Int = 100,
-      options: immutable.Seq[SocketOption] = Nil,
-      idleTimeout: Duration = Duration.Inf,
-      verifySession: SSLSession => Try[Unit],
-      closing: TLSClosing = IgnoreComplete)(implicit m: Materializer): Future[ServerBinding] = {
+      createSSLEngine: () => SSLEngine)(implicit m: Materializer): Future[ServerBinding] =
+    bindAndHandleWithTls(
+      handler,
+      interface,
+      port,
+      createSSLEngine,
+      backlog = defaultBacklog,
+      options = Nil,
+      idleTimeout = Duration.Inf,
+      verifySession = _ => Success(()),
+      closing = IgnoreComplete)
 
+  /**
+   * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
+   * all incoming and outgoing bytes are passed through TLS and handling the incoming connections using the
+   * provided Flow.
+   *
+   * You specify a factory to create an SSLEngine that must already be configured for
+   * client server and with all the parameters for the first session.
+   *
+   * @see [[Tcp.bindAndHandle]]
+   */
+  def bindAndHandleWithTls(
+      handler: Flow[ByteString, ByteString, _],
+      interface: String,
+      port: Int,
+      createSSLEngine: () => SSLEngine,
+      backlog: Int,
+      options: immutable.Seq[SocketOption],
+      idleTimeout: Duration,
+      verifySession: SSLSession => Try[Unit],
+      closing: TLSClosing)(implicit m: Materializer): Future[ServerBinding] = {
     bindWithTls(interface, port, createSSLEngine, backlog, options, idleTimeout, verifySession, closing)
       .to(Sink.foreach { conn: IncomingConnection =>
         conn.handleWith(handler)
       })
       .run()
-
   }
 
   /**
@@ -422,7 +499,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       port: Int,
       sslContext: SSLContext,
       negotiateNewSession: NegotiateNewSession,
-      backlog: Int = 100,
+      backlog: Int = defaultBacklog,
       @silent // Traversable deprecated in 2.13
       options: immutable.Traversable[SocketOption] = Nil,
       idleTimeout: Duration = Duration.Inf)(implicit m: Materializer): Future[ServerBinding] = {

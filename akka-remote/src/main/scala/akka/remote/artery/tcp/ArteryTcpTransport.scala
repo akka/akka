@@ -13,6 +13,7 @@ import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration.Duration
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
@@ -30,6 +31,7 @@ import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.compress._
 import akka.stream.Attributes
 import akka.stream.Attributes.LogLevels
+import akka.stream.IgnoreComplete
 import akka.stream.KillSwitches
 import akka.stream.Materializer
 import akka.stream.SharedKillSwitch
@@ -127,8 +129,12 @@ private[remote] class ArteryTcpTransport(
         Tcp().outgoingConnectionWithTls(
           remoteAddress,
           createSSLEngine = () => sslProvider.createClientSSLEngine(host, port),
+          localAddress = None,
+          options = Nil,
           connectTimeout = settings.Advanced.Tcp.ConnectionTimeout,
-          verifySession = session => optionToTry(sslProvider.verifyClientSession(host, session)))
+          idleTimeout = Duration.Inf,
+          verifySession = session => optionToTry(sslProvider.verifyClientSession(host, session)),
+          closing = IgnoreComplete)
       } else {
         Tcp().outgoingConnection(
           remoteAddress,
@@ -217,7 +223,11 @@ private[remote] class ArteryTcpTransport(
           interface = bindHost,
           port = bindPort,
           createSSLEngine = () => sslProvider.createServerSSLEngine(bindHost, bindPort),
-          verifySession = session => optionToTry(sslProvider.verifyServerSession(bindHost, session)))
+          backlog = Tcp.defaultBacklog,
+          options = Nil,
+          idleTimeout = Duration.Inf,
+          verifySession = session => optionToTry(sslProvider.verifyServerSession(bindHost, session)),
+          closing = IgnoreComplete)
       } else {
         Tcp().bind(interface = bindHost, port = bindPort, halfClose = false)
       }
