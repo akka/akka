@@ -8,9 +8,9 @@ import akka.util.ccompat.JavaConverters._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
+import akka.actor.typed.ActorRef
 
 /**
  * INTERNAL API: see `class EffectFactories`
@@ -79,10 +79,10 @@ import akka.persistence.typed.internal._
     none().thenUnstashAll()
 
   /**
-   * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
-   * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
+   * Send a reply message to the command. The type of the
+   * reply message must conform to the type specified by the passed replyTo `ActorRef`.
    *
-   * This has the same semantics as `cmd.replyTo.tell`.
+   * This has the same semantics as `replyTo.tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
    * when the `EventSourcedBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
@@ -90,10 +90,8 @@ import akka.persistence.typed.internal._
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def reply[ReplyMessage](
-      cmd: ExpectingReply[ReplyMessage],
-      replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
-    none().thenReply[ReplyMessage](cmd, new function.Function[State, ReplyMessage] {
+  def reply[ReplyMessage](replyTo: ActorRef[ReplyMessage], replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
+    none().thenReply[ReplyMessage](replyTo, new function.Function[State, ReplyMessage] {
       override def apply(param: State): ReplyMessage = replyWithMessage
     })
 
@@ -160,10 +158,10 @@ import akka.persistence.typed.internal._
   def thenUnstashAll(): Effect[Event, State]
 
   /**
-   * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
-   * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
+   * Send a reply message to the command. The type of the
+   * reply message must conform to the type specified by the passed replyTo `ActorRef`.
    *
-   * This has the same semantics as `cmd.replyTo().tell`.
+   * This has the same semantics as `replyTo().tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
    * when the `EventSourcedBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
@@ -172,9 +170,9 @@ import akka.persistence.typed.internal._
    * finding mistakes.
    */
   def thenReply[ReplyMessage](
-      cmd: ExpectingReply[ReplyMessage],
+      replyTo: ActorRef[ReplyMessage],
       replyWithMessage: function.Function[State, ReplyMessage]): ReplyEffect[Event, State] =
-    CompositeEffect(this, SideEffect[State](newState => cmd.replyTo ! replyWithMessage(newState)))
+    CompositeEffect(this, SideEffect[State](newState => replyTo ! replyWithMessage(newState)))
 
   /**
    * When [[EventSourcedBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect

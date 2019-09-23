@@ -11,7 +11,6 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.cluster.typed.Cluster;
 import akka.cluster.typed.Join;
-import akka.persistence.typed.ExpectingReply;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -50,7 +49,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
   }
 
-  static class AddWithConfirmation implements Command, ExpectingReply<Done> {
+  static class AddWithConfirmation implements Command {
     final String s;
     private final ActorRef<Done> replyTo;
 
@@ -59,7 +58,6 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
       this.replyTo = replyTo;
     }
 
-    @Override
     public ActorRef<Done> replyTo() {
       return replyTo;
     }
@@ -102,7 +100,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
 
     private Effect<String, String> addWithConfirmation(String state, AddWithConfirmation cmd) {
-      return Effect().persist(cmd.s).thenReply(cmd, newState -> Done.getInstance());
+      return Effect().persist(cmd.s).thenReply(cmd.replyTo(), newState -> Done.getInstance());
     }
 
     private Effect<String, String> getState(String state, Get cmd) {

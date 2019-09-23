@@ -7,7 +7,6 @@ package jdocs.akka.cluster.sharding.typed;
 import akka.actor.typed.ActorRef;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
 import akka.cluster.sharding.typed.javadsl.EventSourcedEntityWithEnforcedReplies;
-import akka.persistence.typed.ExpectingReply;
 import akka.persistence.typed.javadsl.CommandHandlerWithReply;
 import akka.persistence.typed.javadsl.CommandHandlerWithReplyBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -22,7 +21,7 @@ import java.math.BigDecimal;
  * Bank account example illustrating: - different state classes representing the lifecycle of the
  * account - mutable state - event handlers that delegate to methods in the state classes - command
  * handlers that delegate to methods in the EventSourcedBehavior class - replies of various types,
- * using ExpectingReply and EventSourcedEntityWithEnforcedReplies
+ * using EventSourcedEntityWithEnforcedReplies
  */
 public interface AccountExampleWithMutableState {
 
@@ -35,7 +34,7 @@ public interface AccountExampleWithMutableState {
         EntityTypeKey.create(Command.class, "Account");
 
     // Command
-    interface Command<Reply> extends ExpectingReply<Reply>, CborSerializable {}
+    interface Command<Reply> extends CborSerializable {}
 
     public static class CreateAccount implements Command<OperationResult> {
       private final ActorRef<OperationResult> replyTo;
@@ -45,7 +44,6 @@ public interface AccountExampleWithMutableState {
         this.replyTo = replyTo;
       }
 
-      @Override
       public ActorRef<OperationResult> replyTo() {
         return replyTo;
       }
@@ -60,7 +58,6 @@ public interface AccountExampleWithMutableState {
         this.amount = amount;
       }
 
-      @Override
       public ActorRef<OperationResult> replyTo() {
         return replyTo;
       }
@@ -75,7 +72,6 @@ public interface AccountExampleWithMutableState {
         this.replyTo = replyTo;
       }
 
-      @Override
       public ActorRef<OperationResult> replyTo() {
         return replyTo;
       }
@@ -89,7 +85,6 @@ public interface AccountExampleWithMutableState {
         this.replyTo = replyTo;
       }
 
-      @Override
       public ActorRef<CurrentBalance> replyTo() {
         return replyTo;
       }
@@ -103,7 +98,6 @@ public interface AccountExampleWithMutableState {
         this.replyTo = replyTo;
       }
 
-      @Override
       public ActorRef<OperationResult> replyTo() {
         return replyTo;
       }
@@ -235,37 +229,39 @@ public interface AccountExampleWithMutableState {
     private ReplyEffect<Event, Account> createAccount(EmptyAccount account, CreateAccount command) {
       return Effect()
           .persist(new AccountCreated())
-          .thenReply(command, account2 -> Confirmed.INSTANCE);
+          .thenReply(command.replyTo(), account2 -> Confirmed.INSTANCE);
     }
 
     private ReplyEffect<Event, Account> deposit(OpenedAccount account, Deposit command) {
       return Effect()
           .persist(new Deposited(command.amount))
-          .thenReply(command, account2 -> Confirmed.INSTANCE);
+          .thenReply(command.replyTo(), account2 -> Confirmed.INSTANCE);
     }
 
     private ReplyEffect<Event, Account> withdraw(OpenedAccount account, Withdraw command) {
       if (!account.canWithdraw(command.amount)) {
         return Effect()
-            .reply(command, new Rejected("not enough funds to withdraw " + command.amount));
+            .reply(
+                command.replyTo(), new Rejected("not enough funds to withdraw " + command.amount));
       } else {
         return Effect()
             .persist(new Withdrawn(command.amount))
-            .thenReply(command, account2 -> Confirmed.INSTANCE);
+            .thenReply(command.replyTo(), account2 -> Confirmed.INSTANCE);
       }
     }
 
     private ReplyEffect<Event, Account> getBalance(OpenedAccount account, GetBalance command) {
-      return Effect().reply(command, new CurrentBalance(account.balance));
+      return Effect().reply(command.replyTo(), new CurrentBalance(account.balance));
     }
 
     private ReplyEffect<Event, Account> closeAccount(OpenedAccount account, CloseAccount command) {
       if (account.getBalance().equals(BigDecimal.ZERO)) {
         return Effect()
             .persist(new AccountClosed())
-            .thenReply(command, account2 -> Confirmed.INSTANCE);
+            .thenReply(command.replyTo(), account2 -> Confirmed.INSTANCE);
       } else {
-        return Effect().reply(command, new Rejected("balance must be zero for closing account"));
+        return Effect()
+            .reply(command.replyTo(), new Rejected("balance must be zero for closing account"));
       }
     }
 

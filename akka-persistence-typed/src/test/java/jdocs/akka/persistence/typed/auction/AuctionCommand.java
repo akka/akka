@@ -6,7 +6,6 @@ package jdocs.akka.persistence.typed.auction;
 
 import akka.Done;
 import akka.actor.typed.ActorRef;
-import akka.persistence.typed.ExpectingReply;
 
 import java.util.UUID;
 
@@ -14,7 +13,7 @@ import java.util.UUID;
 public interface AuctionCommand {
 
   /** Start the auction. */
-  final class StartAuction implements AuctionCommand, ExpectingReply<Done> {
+  final class StartAuction implements AuctionCommand {
 
     /** The auction to start. */
     private final Auction auction;
@@ -26,7 +25,6 @@ public interface AuctionCommand {
       this.replyTo = replyTo;
     }
 
-    @Override
     public ActorRef<Done> replyTo() {
       return replyTo;
     }
@@ -37,21 +35,20 @@ public interface AuctionCommand {
   }
 
   /** Cancel the auction. */
-  final class CancelAuction implements AuctionCommand, ExpectingReply<Done> {
+  final class CancelAuction implements AuctionCommand {
     private final ActorRef<Done> replyTo;
 
     public CancelAuction(ActorRef<Done> replyTo) {
       this.replyTo = replyTo;
     }
 
-    @Override
     public ActorRef<Done> replyTo() {
       return replyTo;
     }
   }
 
   /** Place a bid on the auction. */
-  final class PlaceBid implements AuctionCommand, ExpectingReply<PlaceBidReply> {
+  final class PlaceBid implements AuctionCommand {
 
     private final int bidPrice;
     private final UUID bidder;
@@ -64,7 +61,6 @@ public interface AuctionCommand {
       this.replyTo = replyTo;
     }
 
-    @Override
     public ActorRef<PlaceBidReply> replyTo() {
       return replyTo;
     }
@@ -167,7 +163,7 @@ public interface AuctionCommand {
   }
 
   /** Finish bidding. */
-  final class FinishBidding implements AuctionCommand, ExpectingReply<Done> {
+  final class FinishBidding implements AuctionCommand {
 
     private final ActorRef<Done> replyTo;
 
@@ -175,21 +171,19 @@ public interface AuctionCommand {
       this.replyTo = replyTo;
     }
 
-    @Override
     public ActorRef<Done> replyTo() {
       return replyTo;
     }
   }
 
   /** Get the auction. */
-  final class GetAuction implements AuctionCommand, ExpectingReply<AuctionState> {
+  final class GetAuction implements AuctionCommand {
     private final ActorRef<AuctionState> replyTo;
 
     public GetAuction(ActorRef<AuctionState> replyTo) {
       this.replyTo = replyTo;
     }
 
-    @Override
     public ActorRef<AuctionState> replyTo() {
       return replyTo;
     }

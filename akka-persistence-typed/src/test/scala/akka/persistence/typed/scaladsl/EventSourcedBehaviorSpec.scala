@@ -32,7 +32,6 @@ import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.Sequence
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
@@ -99,9 +98,7 @@ object EventSourcedBehaviorSpec {
   final case object IncrementLater extends Command
   final case object IncrementAfterReceiveTimeout extends Command
   final case object IncrementTwiceAndThenLog extends Command
-  final case class IncrementWithConfirmation(override val replyTo: ActorRef[Done])
-      extends Command
-      with ExpectingReply[Done]
+  final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command
   final case object DoNothingAndThenLog extends Command
   final case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
@@ -198,8 +195,8 @@ object EventSourcedBehaviorSpec {
           case IncrementWithPersistAll(n) =>
             Effect.persist((0 until n).map(_ => Incremented(1)))
 
-          case cmd: IncrementWithConfirmation =>
-            Effect.persist(Incremented(1)).thenReply(cmd)(_ => Done)
+          case IncrementWithConfirmation(replyTo) =>
+            Effect.persist(Incremented(1)).thenReply(replyTo)(_ => Done)
 
           case GetValue(replyTo) =>
             replyTo ! state
