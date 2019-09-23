@@ -5,12 +5,12 @@
 package akka.stream.javadsl;
 
 import akka.Done;
-import akka.actor.ActorSystem;
 import akka.japi.function.Function2;
 import akka.japi.function.Procedure;
 import akka.stream.BindFailedException;
 import akka.stream.StreamTcpException;
 import akka.stream.StreamTest;
+
 import akka.stream.javadsl.Tcp.IncomingConnection;
 import akka.stream.javadsl.Tcp.ServerBinding;
 import akka.testkit.AkkaJUnitActorSystemResource;
@@ -23,8 +23,14 @@ import static akka.util.ByteString.emptyByteString;
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import java.io.IOException;
 import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
+import java.security.cert.CertificateException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
@@ -34,15 +40,17 @@ import java.util.concurrent.TimeUnit;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-// #setting-up-ssl-context
+// #setting-up-ssl-engine
 // imports
-import akka.stream.TLSClientAuth;
-import akka.stream.TLSProtocol;
-import com.typesafe.sslconfig.akka.AkkaSSLConfig;
 import java.security.KeyStore;
-import javax.net.ssl.*;
 import java.security.SecureRandom;
-// #setting-up-ssl-context
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.TrustManagerFactory;
+import akka.stream.TLSRole;
+
+// #setting-up-ssl-engine
 
 public class TcpTest extends StreamTest {
   public TcpTest() {
@@ -165,52 +173,46 @@ public class TcpTest extends StreamTest {
   }
 
   // compile only sample
-  public void constructSslContext() throws Exception {
-    ActorSystem system = null;
+  // #setting-up-ssl-engine
+  public SSLEngine createSSLEngine(TLSRole role) {
+    try {
+      // Don't hardcode your password in actual code
+      char[] password = "abcdef".toCharArray();
 
-    // FIXME #21753 SSLEngine
+      // trust store and keys in one keystore
+      KeyStore keyStore = KeyStore.getInstance("PKCS12");
+      keyStore.load(getClass().getResourceAsStream("/tcp-spec-keystore.p12"), password);
 
-    // #setting-up-ssl-context
+      TrustManagerFactory trustManagerFactory = TrustManagerFactory.getInstance("SunX509");
+      trustManagerFactory.init(keyStore);
 
-    // -- setup logic ---
+      KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
+      keyManagerFactory.init(keyStore, password);
 
-    AkkaSSLConfig sslConfig = AkkaSSLConfig.get(system);
+      // initial ssl context
+      SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
+      sslContext.init(
+          keyManagerFactory.getKeyManagers(),
+          trustManagerFactory.getTrustManagers(),
+          new SecureRandom());
 
-    // Don't hardcode your password in actual code
-    char[] password = "abcdef".toCharArray();
+      SSLEngine engine = sslContext.createSSLEngine();
 
-    // trust store and keys in one keystore
-    KeyStore keyStore = KeyStore.getInstance("PKCS12");
-    keyStore.load(getClass().getResourceAsStream("/tcp-spec-keystore.p12"), password);
+      engine.setUseClientMode(role.equals(akka.stream.TLSRole.client()));
+      engine.setEnabledCipherSuites(new String[] {"TLS_RSA_WITH_AES_128_CBC_SHA"});
+      engine.setEnabledProtocols(new String[] {"TLSv1.2"});
 
-    TrustManagerFactory tmf = TrustManagerFactory.getInstance("SunX509");
-    tmf.init(keyStore);
+      return engine;
 
-    KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
-    keyManagerFactory.init(keyStore, password);
-
-    // initial ssl context
-    SSLContext sslContext = SSLContext.getInstance("TLS");
-    sslContext.init(keyManagerFactory.getKeyManagers(), tmf.getTrustManagers(), new SecureRandom());
-
-    // protocols
-    SSLParameters defaultParams = sslContext.getDefaultSSLParameters();
-    String[] defaultProtocols = defaultParams.getProtocols();
-    String[] protocols = sslConfig.configureProtocols(defaultProtocols, sslConfig.config());
-    defaultParams.setProtocols(protocols);
-
-    // ciphers
-    String[] defaultCiphers = defaultParams.getCipherSuites();
-    String[] cipherSuites = sslConfig.configureCipherSuites(defaultCiphers, sslConfig.config());
-    defaultParams.setCipherSuites(cipherSuites);
-
-    TLSProtocol.NegotiateNewSession negotiateNewSession =
-        TLSProtocol.negotiateNewSession()
-            .withCipherSuites(cipherSuites)
-            .withProtocols(protocols)
-            .withParameters(defaultParams)
-            .withClientAuth(TLSClientAuth.none());
-
-    // #setting-up-ssl-context
+    } catch (KeyStoreException
+        | IOException
+        | NoSuchAlgorithmException
+        | CertificateException
+        | UnrecoverableKeyException
+        | KeyManagementException e) {
+      throw new RuntimeException(e);
+    }
   }
+  // #setting-up-ssl-engine
+
 }
