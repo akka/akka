@@ -15,7 +15,7 @@ import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl._
 import com.typesafe.sslconfig.util.LoggerFactory
 
-// TODO: remove again in 2.5.x, see https://github.com/akka/akka/issues/21753
+@deprecated("Use Tcp and TLS with SSLEngine parameters instead. Setup the SSLEngine with needed parameters.", "2.6.0")
 object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with ExtensionIdProvider {
 
   //////////////////// EXTENSION SETUP ///////////////////
@@ -36,6 +36,7 @@ object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with ExtensionIdProvider
 
 }
 
+@deprecated("Use Tcp and TLS with SSLEngine parameters instead. Setup the SSLEngine with needed parameters.", "2.6.0")
 final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSettings) extends Extension {
 
   private val mkLogger = new AkkaLoggerFactory(system)

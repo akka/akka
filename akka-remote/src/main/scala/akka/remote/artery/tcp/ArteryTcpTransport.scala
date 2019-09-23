@@ -124,7 +124,7 @@ private[remote] class ArteryTcpTransport(
     def connectionFlow: Flow[ByteString, ByteString, Future[Tcp.OutgoingConnection]] =
       if (tlsEnabled) {
         val sslProvider = sslEngineProvider.get
-        Tcp().outgoingTlsConnectionWithSSLEngine(
+        Tcp().outgoingConnectionWithTls(
           remoteAddress,
           createSSLEngine = () => sslProvider.createClientSSLEngine(host, port),
           connectTimeout = settings.Advanced.Tcp.ConnectionTimeout,
@@ -213,7 +213,7 @@ private[remote] class ArteryTcpTransport(
     val connectionSource: Source[Tcp.IncomingConnection, Future[ServerBinding]] =
       if (tlsEnabled) {
         val sslProvider = sslEngineProvider.get
-        Tcp().bindTlsWithSSLEngine(
+        Tcp().bindWithTls(
           interface = bindHost,
           port = bindPort,
           createSSLEngine = () => sslProvider.createServerSSLEngine(bindHost, bindPort),

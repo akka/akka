@@ -146,7 +146,7 @@ Java
 ### TLS
 
 Similar factories as shown above for raw TCP but where the data is encrypted using TLS are available from `Tcp`
-through `outgoingTlsConnectionWithSSLEngine`, `bindTlsWithSSLEngine` and `bindAndHandleTlsWithSSLEngine`,
+through `outgoingConnectionWithTls`, `bindWithTls` and `bindAndHandleWithTls`,
 see the @scala[@scaladoc[`Tcp Scaladoc`](akka.stream.scaladsl.Tcp)]@java[@javadoc[`Tcp Javadoc`](akka.stream.javadsl.Tcp)]  for details.
 
 Using TLS requires a keystore and a truststore and then a somewhat involved dance of configuring the SSLEngine and the details for how the session should be negotiated:

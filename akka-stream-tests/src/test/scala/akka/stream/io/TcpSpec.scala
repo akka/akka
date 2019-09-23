@@ -839,7 +839,7 @@ class TcpSpec extends StreamSpec("""
       val address = temporaryServerAddress()
 
       Tcp()
-        .bindAndHandleTlsWithSSLEngine(
+        .bindAndHandleWithTls(
           // just echo charactes until we reach '\n', then complete stream
           // also - byte is our framing
           Flow[ByteString].mapConcat(_.utf8String.toList).takeWhile(_ != '\n').map(c => ByteString(c)),
@@ -851,7 +851,7 @@ class TcpSpec extends StreamSpec("""
       system.log.info(s"Server bound to ${address.getHostString}:${address.getPort}")
 
       val connectionFlow =
-        Tcp().outgoingTlsConnectionWithSSLEngine(
+        Tcp().outgoingConnectionWithTls(
           address,
           () => createSSLEngine(TLSRole.client),
           verifySession = _ => Success(()))

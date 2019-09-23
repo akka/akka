@@ -158,7 +158,7 @@ object TLS {
   /**
    * Create a StreamTls [[akka.stream.javadsl.BidiFlow]]. This is a low-level interface.
    *
-   * You can specify a constructor `sslEngineCreator` to create an SSLEngine that must already be configured for
+   * You specify a factory `sslEngineCreator` to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
    * You can specify a verification function `sessionVerifier` that will be called
@@ -176,7 +176,7 @@ object TLS {
   /**
    * Create a StreamTls [[akka.stream.javadsl.BidiFlow]]. This is a low-level interface.
    *
-   * You can specify a constructor `sslEngineCreator` to create an SSLEngine that must already be configured for
+   * You specify a factory `sslEngineCreator` to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
    * For a description of the `closing` parameter please refer to [[TLSClosing]].

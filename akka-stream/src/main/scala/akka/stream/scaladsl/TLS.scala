@@ -168,7 +168,7 @@ object TLS {
   /**
    * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]].
    *
-   * You can specify a constructor to create an SSLEngine that must already be configured for
+   * You specify a factory to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
    * You can specify a verification function that will be called after every successful handshake
@@ -186,7 +186,7 @@ object TLS {
   /**
    * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]].
    *
-   * You can specify a constructor to create an SSLEngine that must already be configured for
+   * You specify a factory to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
    * For a description of the `closing` parameter please refer to [[TLSClosing]].
