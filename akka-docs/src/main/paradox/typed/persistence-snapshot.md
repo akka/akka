@@ -2,7 +2,7 @@
 
 ## Snapshots
 
-As you model your domain using @ref:[EventSourced actors](persistence.md), you may notice that some actors may be
+As you model your domain using @ref:[event sourced actors](persistence.md), you may notice that some actors may be
 prone to accumulating extremely long event logs and experiencing long recovery times. Sometimes, the right approach
 may be to split out into a set of shorter lived actors. However, when this is not an option, you can use snapshots
 to reduce recovery times drastically.

@@ -14,7 +14,7 @@ This will also add dependency on the @ref[Akka Persistence](persistence.md) modu
 
 ## Introduction
 
-Akka persistence query complements @ref:[Persistence](persistence.md) by providing a universal asynchronous stream based
+Akka persistence query complements @ref:[Event Sourcing](typed/persistence.md) by providing a universal asynchronous stream based
 query interface that various journal plugins can implement in order to expose their query capabilities.
 
 The most typical use case of persistence query is implementing the so-called query side (also known as "read side")
@@ -93,7 +93,7 @@ Java
 
 #### EventsByPersistenceIdQuery and CurrentEventsByPersistenceIdQuery
 
-`eventsByPersistenceId` is a query equivalent to replaying a @ref:[PersistentActor](persistence.md#event-sourcing),
+`eventsByPersistenceId` is a query equivalent to replaying an @ref:[event sourced actor](typed/persistence.md#event-sourcing-concepts),
 however, since it is a stream it is possible to keep it alive and watch for additional incoming events persisted by the
 persistent actor identified by the given `persistenceId`.
 
@@ -116,15 +116,16 @@ The goal of this query is to allow querying for all events which are "tagged" wi
 That includes the use case to query all domain events of an Aggregate Root type.
 Please refer to your read journal plugin's documentation to find out if and how it is supported.
 
-Some journals may support tagging of events via an @ref:[Event Adapters](persistence.md#event-adapters) that wraps the events in a
-`akka.persistence.journal.Tagged` with the given `tags`. The journal may support other ways of doing tagging - again,
-how exactly this is implemented depends on the used journal. Here is an example of such a tagging event adapter:
+Some journals may support @ref:[tagging of events](typed/persistence.md#tagging) or
+@ref:[Event Adapters](persistence.md#event-adapters) that wraps the events in a `akka.persistence.journal.Tagged`
+with the given `tags`. The journal may support other ways of doing tagging - again,
+how exactly this is implemented depends on the used journal. Here is an example of such a tagging with an `EventSourcedBehavior`:
 
 Scala
-:  @@snip [LeveldbPersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/LeveldbPersistenceQueryDocSpec.scala) { #tagger }
+:  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #tagging-query }
 
 Java
-:  @@snip [LeveldbPersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/query/LeveldbPersistenceQueryDocTest.java) { #tagger }
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #tagging-query }
 
 @@@ note
 
@@ -137,8 +138,9 @@ on relational databases, yet may be hard to implement efficiently on plain key-v
 
 @@@
 
-In the example below we query all events which have been tagged (we assume this was performed by the write-side using an
-@ref:[EventAdapter](persistence.md#event-adapters), or that the journal is smart enough that it can figure out what we mean by this
+In the example below we query all events which have been tagged (we assume this was performed by the write-side using
+@ref:[tagging of events](typed/persistence.md#tagging) or @ref:[Event Adapters](persistence.md#event-adapters), or
+that the journal is smart enough that it can figure out what we mean by this
 tag - for example if the journal stored the events as json it may try to find those with the field `tag` set to this value etc.).
 
 Scala
@@ -187,7 +189,7 @@ Java
 
 ## Performance and denormalization
 
-When building systems using @ref:[Event sourcing](persistence.md#event-sourcing) and CQRS ([Command & Query Responsibility Segregation](https://msdn.microsoft.com/en-us/library/jj554200.aspx)) techniques
+When building systems using @ref:[Event sourcing](typed/persistence.md#event-sourcing-concepts) and CQRS ([Command & Query Responsibility Segregation](https://msdn.microsoft.com/en-us/library/jj554200.aspx)) techniques
 it is tremendously important to realise that the write-side has completely different needs from the read-side,
 and separating those concerns into datastores that are optimised for either side makes it possible to offer the best
 experience for the write and read sides independently.
@@ -255,14 +257,14 @@ Scala
 :  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-actor-run }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-actor-run }
+:  @@snip [ResumableProjectionExample.java](/akka-docs/src/test/java/jdocs/persistence/ResumableProjectionExample.java) { #projection-into-different-store-actor-run }
 
 
 Scala
 :  @@snip [PersistenceQueryDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/query/PersistenceQueryDocSpec.scala) { #projection-into-different-store-actor }
 
 Java
-:  @@snip [PersistenceQueryDocTest.java](/akka-docs/src/test/java/jdocs/persistence/PersistenceQueryDocTest.java) { #projection-into-different-store-actor }
+:  @@snip [ResumableProjectionExample.java](/akka-docs/src/test/java/jdocs/persistence/ResumableProjectionExample.java) { #projection-into-different-store-actor }
 
 <a id="read-journal-plugin-api"></a>
 ## Query plugins

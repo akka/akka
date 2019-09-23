@@ -850,7 +850,7 @@ instead of using `TestActorRef` whenever possible.
 
 Due to the synchronous nature of `TestActorRef` it will **not** work with some support
 traits that Akka provides as they require asynchronous behaviors to function properly.
-Examples of traits that do not mix well with test actor refs are @ref:[PersistentActor](persistence.md#event-sourcing)
+Examples of traits that do not mix well with test actor refs are @ref:[PersistentActor](persistence.md#example)
 and @ref:[AtLeastOnceDelivery](persistence.md#at-least-once-delivery) provided by @ref:[Akka Persistence](persistence.md).
 
 @@@

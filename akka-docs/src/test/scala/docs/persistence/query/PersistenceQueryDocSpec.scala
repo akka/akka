@@ -12,11 +12,14 @@ import akka.stream.javadsl
 import akka.testkit.AkkaSpec
 import akka.util.Timeout
 import org.reactivestreams.Subscriber
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+
+import akka.Done
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.Config
 
 object PersistenceQueryDocSpec {
@@ -134,7 +137,7 @@ object PersistenceQueryDocSpec {
     def readyToSave = false
   }
   case class Record(any: Any)
-  class DummyStore { def save(record: Record) = Future.successful(42L) }
+  class ExampleStore { def save(record: Record) = Future.successful(42L) }
 
   val JournalId = "akka.persistence.query.my-read-journal"
 
@@ -164,24 +167,31 @@ object PersistenceQueryDocSpec {
     //#projection-into-different-store-rs
   }
 
+  import akka.actor.typed.ActorRef
   //#projection-into-different-store-actor
-  class TheOneWhoWritesToQueryJournal(id: String) extends Actor {
-    val store = new DummyStore()
+  object TheOneWhoWritesToQueryJournal {
 
-    var state: ComplexState = ComplexState()
+    sealed trait Command
+    final case class Update(payload: Any, replyTo: ActorRef[Done]) extends Command
 
-    def receive = {
-      case m =>
-        state = updateState(state, m)
-        if (state.readyToSave) store.save(Record(state))
+    def apply(id: String, store: ExampleStore): Behavior[Command] = {
+      updated(ComplexState(), store)
     }
 
-    def updateState(state: ComplexState, msg: Any): ComplexState = {
+    private def updated(state: ComplexState, store: ExampleStore): Behavior[Command] = {
+      Behaviors.receiveMessage {
+        case command: Update =>
+          val newState = updateState(state, command)
+          if (state.readyToSave) store.save(Record(state))
+          updated(newState, store)
+      }
+    }
+
+    private def updateState(state: ComplexState, command: Command): ComplexState = {
       // some complicated aggregation logic here ...
       state
     }
   }
-
   //#projection-into-different-store-actor
 
 }
@@ -222,21 +232,24 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
     readJournal.currentPersistenceIds()
     //#all-persistence-ids-snap
 
+    trait OrderCompleted
+
     //#events-by-tag
     // assuming journal is able to work with numeric offsets we can:
 
-    val blueThings: Source[EventEnvelope, NotUsed] =
-      readJournal.eventsByTag("blue", Offset.noOffset)
+    val completedOrders: Source[EventEnvelope, NotUsed] =
+      readJournal.eventsByTag("order-completed", Offset.noOffset)
 
-    // find top 10 blue things:
-    val top10BlueThings: Future[Vector[Any]] =
-      blueThings
+    // find first 10 completed orders:
+    val firstCompleted: Future[Vector[OrderCompleted]] =
+      completedOrders
         .map(_.event)
+        .collectType[OrderCompleted]
         .take(10) // cancels the query stream after pulling 10 elements
-        .runFold(Vector.empty[Any])(_ :+ _)
+        .runFold(Vector.empty[OrderCompleted])(_ :+ _)
 
     // start another query, from the known offset
-    val furtherBlueThings = readJournal.eventsByTag("blue", offset = Sequence(10))
+    val furtherOrders = readJournal.eventsByTag("order-completed", offset = Sequence(10))
     //#events-by-tag
 
     //#events-by-persistent-id
@@ -271,29 +284,36 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
   //#projection-into-different-store
 
   class RunWithActor {
-    val readJournal =
-      PersistenceQuery(system).readJournalFor[MyScaladslReadJournal](JournalId)
+    import akka.actor.typed.ActorSystem
+    import akka.actor.typed.ActorRef
+    import akka.actor.typed.scaladsl.adapter._
+    import akka.actor.typed.scaladsl.AskPattern._
 
     //#projection-into-different-store-actor-run
-    import akka.pattern.ask
-    import system.dispatcher
-    implicit val timeout = Timeout(3.seconds)
+    def runQuery(writer: ActorRef[TheOneWhoWritesToQueryJournal.Command])(implicit system: ActorSystem[_]): Unit = {
 
-    val bidProjection = new MyResumableProjection("bid")
+      val readJournal =
+        PersistenceQuery(system.toClassic).readJournalFor[MyScaladslReadJournal](JournalId)
 
-    val writerProps = Props(classOf[TheOneWhoWritesToQueryJournal], "bid")
-    val writer = system.actorOf(writerProps, "bid-projection-writer")
+      import system.executionContext
+      implicit val scheduler = system.scheduler
+      implicit val timeout = Timeout(3.seconds)
 
-    bidProjection.latestOffset.foreach { startFromOffset =>
-      readJournal
-        .eventsByTag("bid", Sequence(startFromOffset))
-        .mapAsync(8) { envelope =>
-          (writer ? envelope.event).map(_ => envelope.offset)
-        }
-        .mapAsync(1) { offset =>
-          bidProjection.saveProgress(offset)
-        }
-        .runWith(Sink.ignore)
+      val bidProjection = new MyResumableProjection("bid")
+
+      bidProjection.latestOffset.foreach { startFromOffset =>
+        readJournal
+          .eventsByTag("bid", Sequence(startFromOffset))
+          .mapAsync(8) { envelope =>
+            writer
+              .ask((replyTo: ActorRef[Done]) => TheOneWhoWritesToQueryJournal.Update(envelope.event, replyTo))
+              .map(_ => envelope.offset)
+          }
+          .mapAsync(1) { offset =>
+            bidProjection.saveProgress(offset)
+          }
+          .runWith(Sink.ignore)
+      }
     }
     //#projection-into-different-store-actor-run
   }

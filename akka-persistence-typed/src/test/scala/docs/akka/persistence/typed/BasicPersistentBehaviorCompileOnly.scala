@@ -121,6 +121,31 @@ object BasicPersistentBehaviorCompileOnly {
     //#tagging
   }
 
+  object TaggingBehavior2 {
+    sealed trait OrderCompleted extends Event
+
+    //#tagging-query
+    val NumberOfEntityGroups = 10
+
+    def tagEvent(entityId: String, event: Event): Set[String] = {
+      val entityGroup = s"group-${math.abs(entityId.hashCode % NumberOfEntityGroups)}"
+      event match {
+        case _: OrderCompleted => Set(entityGroup, "order-completed")
+        case _                 => Set(entityGroup)
+      }
+    }
+
+    def apply(entityId: String): Behavior[Command] = {
+      EventSourcedBehavior[Command, Event, State](
+        persistenceId = PersistenceId("ShoppingCart", entityId),
+        emptyState = State(),
+        commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
+        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
+        .withTagger(event => tagEvent(entityId, event))
+    }
+    //#tagging-query
+  }
+
   object WrapBehavior {
     def apply(): Behavior[Command] =
       //#wrapPersistentBehavior

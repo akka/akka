@@ -294,7 +294,7 @@ components may consume the event stream as a means to replicate the component’
 state on a different continent or to react to changes). If the component’s
 state is lost—due to a machine failure or by being pushed out of a cache—it can
 be reconstructed by replaying the event stream (usually employing
-snapshots to speed up the process). @ref:[Event sourcing](../persistence.md#event-sourcing) is supported by
+snapshots to speed up the process). @ref:[Event sourcing](../typed/persistence.md#event-sourcing-concepts) is supported by
 Akka Persistence.
 
 ### Mailbox with Explicit Acknowledgement
