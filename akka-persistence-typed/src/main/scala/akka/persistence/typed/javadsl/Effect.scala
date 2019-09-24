@@ -161,7 +161,7 @@ import akka.actor.typed.ActorRef
    * Send a reply message to the command. The type of the
    * reply message must conform to the type specified by the passed replyTo `ActorRef`.
    *
-   * This has the same semantics as `replyTo().tell`.
+   * This has the same semantics as `replyTo.tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
    * when the `EventSourcedBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When

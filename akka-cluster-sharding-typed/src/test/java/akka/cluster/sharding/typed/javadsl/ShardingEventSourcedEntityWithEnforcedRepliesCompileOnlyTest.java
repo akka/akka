@@ -23,15 +23,11 @@ public class ShardingEventSourcedEntityWithEnforcedRepliesCompileOnlyTest {
 
   static class Append implements Command {
     public final String s;
-    private final ActorRef<String> replyToRef;
+    public final ActorRef<String> replyTo;
 
     Append(String s, ActorRef<String> replyTo) {
       this.s = s;
-      this.replyToRef = replyTo;
-    }
-
-    public ActorRef<String> replyTo() {
-      return replyToRef;
+      this.replyTo = replyTo;
     }
   }
 
@@ -59,7 +55,7 @@ public class ShardingEventSourcedEntityWithEnforcedRepliesCompileOnlyTest {
     }
 
     private ReplyEffect<String, String> add(String state, Append cmd) {
-      return Effect().persist(cmd.s).thenReply(cmd.replyTo(), s -> "Ok");
+      return Effect().persist(cmd.s).thenReply(cmd.replyTo, s -> "Ok");
     }
 
     @Override

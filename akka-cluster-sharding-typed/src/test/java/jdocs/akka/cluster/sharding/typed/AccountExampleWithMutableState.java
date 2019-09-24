@@ -37,69 +37,49 @@ public interface AccountExampleWithMutableState {
     interface Command<Reply> extends CborSerializable {}
 
     public static class CreateAccount implements Command<OperationResult> {
-      private final ActorRef<OperationResult> replyTo;
+      public final ActorRef<OperationResult> replyTo;
 
       @JsonCreator
       public CreateAccount(ActorRef<OperationResult> replyTo) {
         this.replyTo = replyTo;
       }
-
-      public ActorRef<OperationResult> replyTo() {
-        return replyTo;
-      }
     }
 
     public static class Deposit implements Command<OperationResult> {
       public final BigDecimal amount;
-      private final ActorRef<OperationResult> replyTo;
+      public final ActorRef<OperationResult> replyTo;
 
       public Deposit(BigDecimal amount, ActorRef<OperationResult> replyTo) {
         this.replyTo = replyTo;
         this.amount = amount;
       }
-
-      public ActorRef<OperationResult> replyTo() {
-        return replyTo;
-      }
     }
 
     public static class Withdraw implements Command<OperationResult> {
       public final BigDecimal amount;
-      private final ActorRef<OperationResult> replyTo;
+      public final ActorRef<OperationResult> replyTo;
 
       public Withdraw(BigDecimal amount, ActorRef<OperationResult> replyTo) {
         this.amount = amount;
         this.replyTo = replyTo;
       }
-
-      public ActorRef<OperationResult> replyTo() {
-        return replyTo;
-      }
     }
 
     public static class GetBalance implements Command<CurrentBalance> {
-      private final ActorRef<CurrentBalance> replyTo;
+      public final ActorRef<CurrentBalance> replyTo;
 
       @JsonCreator
       public GetBalance(ActorRef<CurrentBalance> replyTo) {
         this.replyTo = replyTo;
       }
-
-      public ActorRef<CurrentBalance> replyTo() {
-        return replyTo;
-      }
     }
 
     public static class CloseAccount implements Command<OperationResult> {
-      private final ActorRef<OperationResult> replyTo;
+      public final ActorRef<OperationResult> replyTo;
 
       @JsonCreator
       public CloseAccount(ActorRef<OperationResult> replyTo) {
         this.replyTo = replyTo;
-      }
-
-      public ActorRef<OperationResult> replyTo() {
-        return replyTo;
       }
     }
 
@@ -229,39 +209,38 @@ public interface AccountExampleWithMutableState {
     private ReplyEffect<Event, Account> createAccount(EmptyAccount account, CreateAccount command) {
       return Effect()
           .persist(new AccountCreated())
-          .thenReply(command.replyTo(), account2 -> Confirmed.INSTANCE);
+          .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
     }
 
     private ReplyEffect<Event, Account> deposit(OpenedAccount account, Deposit command) {
       return Effect()
           .persist(new Deposited(command.amount))
-          .thenReply(command.replyTo(), account2 -> Confirmed.INSTANCE);
+          .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
     }
 
     private ReplyEffect<Event, Account> withdraw(OpenedAccount account, Withdraw command) {
       if (!account.canWithdraw(command.amount)) {
         return Effect()
-            .reply(
-                command.replyTo(), new Rejected("not enough funds to withdraw " + command.amount));
+            .reply(command.replyTo, new Rejected("not enough funds to withdraw " + command.amount));
       } else {
         return Effect()
             .persist(new Withdrawn(command.amount))
-            .thenReply(command.replyTo(), account2 -> Confirmed.INSTANCE);
+            .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
       }
     }
 
     private ReplyEffect<Event, Account> getBalance(OpenedAccount account, GetBalance command) {
-      return Effect().reply(command.replyTo(), new CurrentBalance(account.balance));
+      return Effect().reply(command.replyTo, new CurrentBalance(account.balance));
     }
 
     private ReplyEffect<Event, Account> closeAccount(OpenedAccount account, CloseAccount command) {
       if (account.getBalance().equals(BigDecimal.ZERO)) {
         return Effect()
             .persist(new AccountClosed())
-            .thenReply(command.replyTo(), account2 -> Confirmed.INSTANCE);
+            .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
       } else {
         return Effect()
-            .reply(command.replyTo(), new Rejected("balance must be zero for closing account"));
+            .reply(command.replyTo, new Rejected("balance must be zero for closing account"));
       }
     }
 

@@ -18,15 +18,11 @@ public interface AuctionCommand {
     /** The auction to start. */
     private final Auction auction;
 
-    private final ActorRef<Done> replyTo;
+    public final ActorRef<Done> replyTo;
 
     public StartAuction(Auction auction, ActorRef<Done> replyTo) {
       this.auction = auction;
       this.replyTo = replyTo;
-    }
-
-    public ActorRef<Done> replyTo() {
-      return replyTo;
     }
 
     public Auction getAuction() {
@@ -36,14 +32,10 @@ public interface AuctionCommand {
 
   /** Cancel the auction. */
   final class CancelAuction implements AuctionCommand {
-    private final ActorRef<Done> replyTo;
+    public final ActorRef<Done> replyTo;
 
     public CancelAuction(ActorRef<Done> replyTo) {
       this.replyTo = replyTo;
-    }
-
-    public ActorRef<Done> replyTo() {
-      return replyTo;
     }
   }
 
@@ -52,17 +44,12 @@ public interface AuctionCommand {
 
     private final int bidPrice;
     private final UUID bidder;
-
-    private final ActorRef<PlaceBidReply> replyTo;
+    public final ActorRef<PlaceBidReply> replyTo;
 
     public PlaceBid(int bidPrice, UUID bidder, ActorRef<PlaceBidReply> replyTo) {
       this.bidPrice = bidPrice;
       this.bidder = bidder;
       this.replyTo = replyTo;
-    }
-
-    public ActorRef<PlaceBidReply> replyTo() {
-      return replyTo;
     }
 
     public int getBidPrice() {
@@ -165,27 +152,19 @@ public interface AuctionCommand {
   /** Finish bidding. */
   final class FinishBidding implements AuctionCommand {
 
-    private final ActorRef<Done> replyTo;
+    public final ActorRef<Done> replyTo;
 
     FinishBidding(ActorRef<Done> replyTo) {
       this.replyTo = replyTo;
-    }
-
-    public ActorRef<Done> replyTo() {
-      return replyTo;
     }
   }
 
   /** Get the auction. */
   final class GetAuction implements AuctionCommand {
-    private final ActorRef<AuctionState> replyTo;
+    public final ActorRef<AuctionState> replyTo;
 
     public GetAuction(ActorRef<AuctionState> replyTo) {
       this.replyTo = replyTo;
-    }
-
-    public ActorRef<AuctionState> replyTo() {
-      return replyTo;
     }
   }
 }

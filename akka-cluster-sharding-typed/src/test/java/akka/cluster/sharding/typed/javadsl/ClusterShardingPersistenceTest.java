@@ -50,16 +50,12 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
   }
 
   static class AddWithConfirmation implements Command {
-    final String s;
-    private final ActorRef<Done> replyTo;
+    public final String s;
+    public final ActorRef<Done> replyTo;
 
     AddWithConfirmation(String s, ActorRef<Done> replyTo) {
       this.s = s;
       this.replyTo = replyTo;
-    }
-
-    public ActorRef<Done> replyTo() {
-      return replyTo;
     }
   }
 
@@ -100,7 +96,7 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
 
     private Effect<String, String> addWithConfirmation(String state, AddWithConfirmation cmd) {
-      return Effect().persist(cmd.s).thenReply(cmd.replyTo(), newState -> Done.getInstance());
+      return Effect().persist(cmd.s).thenReply(cmd.replyTo, newState -> Done.getInstance());
     }
 
     private Effect<String, String> getState(String state, Get cmd) {
