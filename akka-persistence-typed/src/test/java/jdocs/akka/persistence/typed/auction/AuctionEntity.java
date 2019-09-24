@@ -27,8 +27,6 @@ public class AuctionEntity
   private final UUID entityUUID;
 
   public AuctionEntity(String entityId) {
-    // when used with Cluster Sharding this should use EntityTypeKey, or
-    // PersistentEntity
     super(new PersistenceId("Auction|" + entityId));
     this.entityUUID = UUID.fromString(entityId);
   }
