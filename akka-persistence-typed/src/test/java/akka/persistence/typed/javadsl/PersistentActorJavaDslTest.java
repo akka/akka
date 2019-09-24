@@ -231,11 +231,11 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     private ReplyEffect<Event, State> incrementWithConfirmation(
         State state, IncrementWithConfirmation command) {
-      return Effect().persist(new Incremented(1)).thenReply(command.replyTo, newState -> done());
+      return Effect().persist(new Incremented(1)).thenReply(command.replyTo(), newState -> done());
     }
 
     private ReplyEffect<Event, State> getValue(State state, GetValue command) {
-      return Effect().reply(command.replyTo, state);
+      return Effect().reply(command.replyTo(), state);
     }
 
     private Effect<Event, State> incrementLater(State state, IncrementLater command) {
