@@ -9,7 +9,6 @@ import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._
-import akka.stream.actor.{ RequestStrategy, WatermarkRequestStrategy }
 import akka.stream.impl.FixedSizeBuffer
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
@@ -28,6 +27,43 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
  */
 @InternalApi private[stream] object SourceRefStageImpl {
   private sealed trait ActorRefStage { def ref: ActorRef }
+
+  object WatermarkRequestStrategy {
+
+    /**
+     * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
+     * the specified `highWatermark`.
+     */
+    def apply(highWatermark: Int): WatermarkRequestStrategy = new WatermarkRequestStrategy(highWatermark)
+  }
+
+  /**
+   * Requests up to the `highWatermark` when the `remainingRequested` is
+   * below the `lowWatermark`. This a good strategy when the actor performs work itself.
+   */
+  final case class WatermarkRequestStrategy(highWatermark: Int, lowWatermark: Int) {
+    require(lowWatermark >= 0, "lowWatermark must be >= 0")
+    require(highWatermark >= lowWatermark, "highWatermark must be >= lowWatermark")
+
+    /**
+     * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
+     * the specified `highWatermark`.
+     */
+    def this(highWatermark: Int) = this(highWatermark, lowWatermark = math.max(1, highWatermark / 2))
+
+    /**
+     * Invoked after each incoming message to determine how many more elements to request from the stream.
+     *
+     * @param remainingRequested current remaining number of elements that
+     *   have been requested from upstream but not received yet
+     * @return demand of more elements from the stream, returning 0 means that no
+     *   more elements will be requested for now
+     */
+    def requestDemand(remainingRequested: Int): Int =
+      if (remainingRequested < lowWatermark)
+        highWatermark - remainingRequested
+      else 0
+  }
 }
 
 /**
@@ -40,6 +76,7 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
 private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: OptionVal[ActorRef])
     extends GraphStageWithMaterializedValue[SourceShape[Out], SinkRef[Out]] { stage =>
   import SourceRefStageImpl.ActorRefStage
+  import SourceRefStageImpl.WatermarkRequestStrategy
 
   val out: Outlet[Out] = Outlet[Out](s"${Logging.simpleName(getClass)}.out")
   override def shape = SourceShape.of(out)
@@ -106,7 +143,8 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       private val receiveBuffer = FixedSizeBuffer[Out](bufferCapacity)
 
-      private val requestStrategy: RequestStrategy = WatermarkRequestStrategy(highWatermark = receiveBuffer.capacity)
+      private val requestStrategy: WatermarkRequestStrategy = WatermarkRequestStrategy(
+        highWatermark = receiveBuffer.capacity)
       // end of demand management ---
 
       // initialized with the originRef if present, that means we're the "remote" for an already active Source on the other side (the "origin")

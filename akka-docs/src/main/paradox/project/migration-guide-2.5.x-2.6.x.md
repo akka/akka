@@ -34,6 +34,8 @@ After being deprecated since 2.5.0, the following have been removed in Akka 2.6.
     - Use `AbstractPersistentActor` instead.
 * `UntypedPersistentActorWithAtLeastOnceDelivery`
     - Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
+* `akka.stream.actor.ActorSubscriber` and `akka.stream.actor.ActorPublisher`
+    - Use `GraphStage` instead.
 
 After being deprecated since 2.2, the following have been removed in Akka 2.6.
 

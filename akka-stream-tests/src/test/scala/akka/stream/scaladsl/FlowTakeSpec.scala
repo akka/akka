@@ -6,8 +6,8 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom.{ current => random }
 
-import akka.stream.actor.ActorSubscriberMessage.OnComplete
-import akka.stream.actor.ActorSubscriberMessage.OnNext
+import akka.stream.impl.ActorSubscriberMessage.OnComplete
+import akka.stream.impl.ActorSubscriberMessage.OnNext
 import akka.stream.impl.RequestMore
 import akka.stream.testkit._
 

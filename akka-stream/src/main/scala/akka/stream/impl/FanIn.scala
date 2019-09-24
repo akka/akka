@@ -9,7 +9,6 @@ import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream.ActorAttributes
 import akka.stream.Attributes
 import akka.stream.AbruptTerminationException
-import akka.stream.actor.{ ActorSubscriber, ActorSubscriberMessage }
 import akka.util.unused
 import org.reactivestreams.{ Subscriber, Subscription }
 
@@ -236,7 +235,7 @@ import org.reactivestreams.{ Subscriber, Subscription }
     def subreceive: SubReceive =
       new SubReceive({
         case OnSubscribe(id, subscription) =>
-          inputs(id).subreceive(ActorSubscriber.OnSubscribe(subscription))
+          inputs(id).subreceive(ActorSubscriberMessage.OnSubscribe(subscription))
         case OnNext(id, elem) =>
           if (marked(id) && !pending(id)) markedPending += 1
           pending(id, on = true)
