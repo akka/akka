@@ -95,13 +95,9 @@ public class AuctionEntity
           newCommandHandlerBuilder()
               .forStateType(AuctionState.class)
               .onCommand(CancelAuction.class, this::cancelAuction);
-  // Note, an item can go from completed to cancelled, since it is the item
-  // service that controls
-  // whether an auction is cancelled or not. If it cancels before it receives a
-  // bidding finished
-  // event from us, it will ignore the bidding finished event, so we need to
-  // update our state
-  // to reflect that.
+  // Note, an item can go from completed to cancelled, since it is the item service that controls
+  // whether an auction is cancelled or not. If it cancels before it receives a bidding finished
+  // event from us, it will ignore the bidding finished event, so we need to update our state to reflect that.
 
   private ReplyEffect<AuctionEvent, AuctionState> startAuction(
       AuctionState state, StartAuction cmd) {
@@ -211,8 +207,7 @@ public class AuctionEntity
       int currentBidPrice,
       int currentBidMaximum) {
     // Adjust the bid so that the increment for the current maximum makes the
-    // current maximum a
-    // valid bid
+    // current maximum a valid bid
     int adjustedBidPrice = Math.min(bid.getBidPrice(), currentBidMaximum - auction.getIncrement());
     int newBidPrice = adjustedBidPrice + auction.getIncrement();
 
