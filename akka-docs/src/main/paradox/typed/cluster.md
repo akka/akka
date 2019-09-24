@@ -10,6 +10,12 @@ For specific documentation topics see:
 * @ref:[Rolling Updates](../additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](../additional/operations.md)
 
+@@@ note
+
+For the Akka Classic API see @ref:[Classic Cluster](../cluster-usage.md)
+
+@@@
+
 ## Dependency
 
 To use Akka Cluster add the following dependency in your project:

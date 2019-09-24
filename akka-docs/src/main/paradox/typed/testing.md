@@ -1,5 +1,11 @@
 # Testing
 
+@@@ note
+
+For the Akka Classic API see @ref:[Classic Testing](../testing.md)
+
+@@@
+
 ## Dependency
 
 To use Akka TestKit add the module to your project:

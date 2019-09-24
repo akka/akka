@@ -1,5 +1,11 @@
 # Distributed Data
 
+@@@ note
+
+For the Akka Classic API see @ref:[Classic Distributed Data](../distributed-data.md)
+
+@@@
+
 ## Dependency
 
 To use Akka Cluster Distributed Data Typed, you must add the following dependency in your project:

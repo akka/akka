@@ -1,5 +1,11 @@
 # Behaviors as finite state machines
 
+@@@ note
+
+For the Akka Classic API see @ref:[Classic FSM](../fsm.md)
+
+@@@
+
 An actor can be used to model a Finite State Machine (FSM).
 
 To demonstrate this, consider an actor which shall receive and queue messages while they arrive in a burst and
