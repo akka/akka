@@ -16,17 +16,13 @@ public interface AuctionCommand {
   final class StartAuction implements AuctionCommand {
 
     /** The auction to start. */
-    private final Auction auction;
+    public final Auction auction;
 
     public final ActorRef<Done> replyTo;
 
     public StartAuction(Auction auction, ActorRef<Done> replyTo) {
       this.auction = auction;
       this.replyTo = replyTo;
-    }
-
-    public Auction getAuction() {
-      return auction;
     }
   }
 
@@ -42,22 +38,14 @@ public interface AuctionCommand {
   /** Place a bid on the auction. */
   final class PlaceBid implements AuctionCommand {
 
-    private final int bidPrice;
-    private final UUID bidder;
+    public final int bidPrice;
+    public final UUID bidder;
     public final ActorRef<PlaceBidReply> replyTo;
 
     public PlaceBid(int bidPrice, UUID bidder, ActorRef<PlaceBidReply> replyTo) {
       this.bidPrice = bidPrice;
       this.bidder = bidder;
       this.replyTo = replyTo;
-    }
-
-    public int getBidPrice() {
-      return bidPrice;
-    }
-
-    public UUID getBidder() {
-      return bidder;
     }
   }
 

@@ -100,7 +100,7 @@ public class AuctionEntity
   private ReplyEffect<AuctionEvent, AuctionState> startAuction(
       AuctionState state, StartAuction cmd) {
     return Effect()
-        .persist(new AuctionStarted(entityUUID, cmd.getAuction()))
+        .persist(new AuctionStarted(entityUUID, cmd.auction))
         .thenReply(cmd.replyTo, notUsed -> Done.getInstance());
   }
 
@@ -148,13 +148,13 @@ public class AuctionEntity
     }
 
     boolean bidderIsCurrentBidder =
-        currentBid.filter(b -> b.getBidder().equals(bid.getBidder())).isPresent();
+        currentBid.filter(b -> b.getBidder().equals(bid.bidder)).isPresent();
 
-    if (bidderIsCurrentBidder && bid.getBidPrice() >= currentBidPrice) {
+    if (bidderIsCurrentBidder && bid.bidPrice >= currentBidPrice) {
       // Allow the current bidder to update their bid
       if (auction.getReservePrice() > currentBidPrice) {
 
-        int newBidPrice = Math.min(auction.getReservePrice(), bid.getBidPrice());
+        int newBidPrice = Math.min(auction.getReservePrice(), bid.bidPrice);
         PlaceBidStatus placeBidStatus;
 
         if (newBidPrice == auction.getReservePrice()) {
@@ -163,21 +163,17 @@ public class AuctionEntity
           placeBidStatus = PlaceBidStatus.ACCEPTED_BELOW_RESERVE;
         }
         return Effect()
-            .persist(
-                new BidPlaced(
-                    entityUUID, new Bid(bid.getBidder(), now, newBidPrice, bid.getBidPrice())))
+            .persist(new BidPlaced(entityUUID, new Bid(bid.bidder, now, newBidPrice, bid.bidPrice)))
             .thenReply(
                 bid.replyTo,
-                newState -> new PlaceBidResult(placeBidStatus, newBidPrice, bid.getBidder()));
+                newState -> new PlaceBidResult(placeBidStatus, newBidPrice, bid.bidder));
       }
       return Effect()
           .persist(
-              new BidPlaced(
-                  entityUUID, new Bid(bid.getBidder(), now, currentBidPrice, bid.getBidPrice())))
+              new BidPlaced(entityUUID, new Bid(bid.bidder, now, currentBidPrice, bid.bidPrice)))
           .thenReply(
               bid.replyTo,
-              newState ->
-                  new PlaceBidResult(PlaceBidStatus.ACCEPTED, currentBidPrice, bid.getBidder()));
+              newState -> new PlaceBidResult(PlaceBidStatus.ACCEPTED, currentBidPrice, bid.bidder));
     }
 
     if (bid.bidPrice < currentBidPrice + auction.getIncrement()) {
@@ -212,8 +208,7 @@ public class AuctionEntity
     return Effect()
         .persist(
             Arrays.asList(
-                new BidPlaced(
-                    entityUUID, new Bid(bid.getBidder(), now, adjustedBidPrice, bid.getBidPrice())),
+                new BidPlaced(entityUUID, new Bid(bid.bidder, now, adjustedBidPrice, bid.bidPrice)),
                 new BidPlaced(
                     entityUUID,
                     new Bid(currentBid.get().getBidder(), now, newBidPrice, currentBidMaximum))))
@@ -227,17 +222,15 @@ public class AuctionEntity
   /** Handle the situation where a bid will be accepted as the new winning bidder. */
   private ReplyEffect<AuctionEvent, AuctionState> handleNewWinningBidder(
       PlaceBid bid, Auction auction, Instant now, int currentBidMaximum) {
-    int nextIncrement = Math.min(currentBidMaximum + auction.getIncrement(), bid.getBidPrice());
+    int nextIncrement = Math.min(currentBidMaximum + auction.getIncrement(), bid.bidPrice);
     int newBidPrice;
     if (nextIncrement < auction.getReservePrice()) {
-      newBidPrice = Math.min(auction.getReservePrice(), bid.getBidPrice());
+      newBidPrice = Math.min(auction.getReservePrice(), bid.bidPrice);
     } else {
       newBidPrice = nextIncrement;
     }
     return Effect()
-        .persist(
-            new BidPlaced(
-                entityUUID, new Bid(bid.getBidder(), now, newBidPrice, bid.getBidPrice())))
+        .persist(new BidPlaced(entityUUID, new Bid(bid.bidder, now, newBidPrice, bid.bidPrice)))
         .thenReply(
             bid.replyTo,
             newState -> {
