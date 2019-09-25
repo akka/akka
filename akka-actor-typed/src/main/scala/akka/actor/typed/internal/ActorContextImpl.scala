@@ -9,7 +9,6 @@ import java.time.Duration
 import java.util.ArrayList
 import java.util.Optional
 import java.util.concurrent.CompletionStage
-import java.util.function.BiConsumer
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
@@ -145,10 +144,7 @@ import org.slf4j.LoggerFactory
       createRequest: akka.japi.function.Function[ActorRef[Res], Req],
       applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit = {
     import akka.actor.typed.javadsl.AskPattern
-    val message = new akka.japi.function.Function[ActorRef[Res], Req] {
-      def apply(ref: ActorRef[Res]): Req = createRequest(ref)
-    }
-    pipeToSelf(AskPattern.ask(target, message, responseTimeout, system.scheduler), applyToResponse)
+    pipeToSelf(AskPattern.ask(target, (ref) => createRequest(ref), responseTimeout, system.scheduler), applyToResponse)
   }
 
   // Scala API impl
@@ -160,13 +156,11 @@ import org.slf4j.LoggerFactory
   def pipeToSelf[Value](
       future: CompletionStage[Value],
       applyToResult: akka.japi.function.Function2[Value, Throwable, T]): Unit = {
-    future.whenComplete(new BiConsumer[Value, Throwable] {
-      def accept(value: Value, ex: Throwable): Unit = {
-        if (value != null) self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
-        if (ex != null)
-          self.unsafeUpcast ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
-      }
-    })
+    future.whenComplete { (value, ex) =>
+      if (value != null) self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
+      if (ex != null)
+        self.unsafeUpcast ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
+    }
   }
 
   private[akka] override def spawnMessageAdapter[U](f: U => T, name: String): ActorRef[U] =
@@ -193,7 +187,7 @@ import org.slf4j.LoggerFactory
     // replace existing adapter for same class, only one per class is supported to avoid unbounded growth
     // in case "same" adapter is added repeatedly
     _messageAdapters = (messageClass, f.asInstanceOf[Any => T]) ::
-    _messageAdapters.filterNot { case (cls, _) => cls == messageClass }
+      _messageAdapters.filterNot { case (cls, _) => cls == messageClass }
     val ref = messageAdapterRef match {
       case OptionVal.Some(ref) => ref.asInstanceOf[ActorRef[U]]
       case OptionVal.None      =>
