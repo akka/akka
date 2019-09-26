@@ -100,7 +100,9 @@ interface ReplicatorDocSample {
 
       this.node = DistributedData.get(context.getSystem()).selfUniqueAddress();
 
+      // #subscribe
       this.replicatorAdapter.subscribe(this.key, InternalSubscribeResponse::new);
+      // #subscribe
     }
 
     @Override

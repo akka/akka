@@ -49,7 +49,10 @@ object ReplicatorDocSpec {
 
         // adapter that turns the response messages from the replicator into our own protocol
         DistributedData.withReplicatorMessageAdapter[Command, GCounter] { replicatorAdapter =>
+          //#subscribe
+          // Subscribe to changes of the given `key`.
           replicatorAdapter.subscribe(key, InternalSubscribeResponse.apply)
+          //#subscribe
 
           def updated(cachedValue: Int): Behavior[Command] = {
             Behaviors.receiveMessage[Command] {
@@ -82,7 +85,6 @@ object ReplicatorDocSpec {
 
                   case InternalGetResponse(_, _) =>
                     Behaviors.unhandled // not dealing with failures
-
                   case InternalSubscribeResponse(chg @ Replicator.Changed(`key`)) =>
                     val value = chg.get(key).value.intValue
                     updated(value)

@@ -26,7 +26,7 @@ For an introduction to Sharding concepts see @ref:[Cluster Sharding](typed/clust
 
 ## Basic example
 
-This is how an entity actor may look like:
+This is what an entity actor may look like:
 
 Scala
 :  @@snip [ClusterShardingSpec.scala](/akka-cluster-sharding/src/multi-jvm/scala/akka/cluster/sharding/ClusterShardingSpec.scala) { #counter-actor }
