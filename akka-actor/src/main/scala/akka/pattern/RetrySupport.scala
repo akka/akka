@@ -36,7 +36,9 @@ trait RetrySupport {
    * )
    * }}}
    */
-  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] =
+  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration)(
+      implicit ec: ExecutionContext,
+      scheduler: Scheduler): Future[T] =
     retryF(attempt, attempts, delay, 1)((_, _) => ())
 
   /**
@@ -61,7 +63,9 @@ trait RetrySupport {
    * )
    * }}}
    */
-  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration, backoff: Int)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] =
+  def retry[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration, backoff: Int)(
+      implicit ec: ExecutionContext,
+      scheduler: Scheduler): Future[T] =
     retryF(attempt, attempts, delay, backoff)((_, _) => ())
 
   /**
@@ -90,14 +94,16 @@ trait RetrySupport {
    * )
    * }}}
    */
-  def retryF[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration, backoff: Int)(f: (Throwable, Int) => Unit)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
+  def retryF[T](attempt: () => Future[T], attempts: Int, delay: FiniteDuration, backoff: Int)(
+      f: (Throwable, Int) => Unit)(implicit ec: ExecutionContext, scheduler: Scheduler): Future[T] = {
     try {
       if (attempts > 0 && backoff > 0) {
-        attempt() recoverWith {
-          case NonFatal(t) => after(delay, scheduler) {
-            f(t, attempts)
-            retryF(attempt, attempts - 1, delay * backoff, backoff)(f)
-          }
+        attempt().recoverWith {
+          case NonFatal(t) =>
+            after(delay, scheduler) {
+              f(t, attempts)
+              retryF(attempt, attempts - 1, delay * backoff, backoff)(f)
+            }
         }
       } else {
         attempt()
@@ -107,5 +113,5 @@ trait RetrySupport {
     }
   }
 }
- 
+
 object RetrySupport extends RetrySupport

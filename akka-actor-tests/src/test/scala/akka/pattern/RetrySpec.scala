@@ -12,14 +12,12 @@ import scala.collection.mutable.ListBuffer
 import akka.testkit.AkkaSpec
 import org.scalatest.concurrent.Eventually
 import org.scalatest.time.Span
-import scala.concurrent.{ Await, Future, ExecutionContextExecutor }
+import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
 import scala.concurrent.duration._
 
 class RetrySpec extends AkkaSpec with RetrySupport with Eventually {
 
-  override implicit val patience: PatienceConfig = PatienceConfig(
-    1 second,
-    Span(10, org.scalatest.time.Millis))
+  override implicit val patience: PatienceConfig = PatienceConfig(1 second, Span(10, org.scalatest.time.Millis))
 
   implicit val ec: ExecutionContextExecutor = system.dispatcher
   implicit val scheduler: Scheduler = system.scheduler
@@ -99,12 +97,7 @@ class RetrySpec extends AkkaSpec with RetrySupport with Eventually {
         Future.failed(new IllegalStateException(failCount.toString))
       }
 
-      retry(
-        attempt,
-        3,
-        100 milliseconds,
-        2
-      )
+      retry(attempt, 3, 100 milliseconds, 2)
 
       within(100 milliseconds, 3 second) {
         eventually {
@@ -131,19 +124,13 @@ class RetrySpec extends AkkaSpec with RetrySupport with Eventually {
       val delay = 100 milliseconds
       val backoff = 2
 
-      retryF(
-        () ⇒ Future.failed(new Exception("oups")),
-        attempts,
-        delay,
-        backoff
-      ) {
-          case (t, currentRetry) ⇒
-            s.append(s"${t.getMessage}, will retry in ${delay * math.pow(backoff, attempts - currentRetry + 1)}")
-        }
+      retryF(() ⇒ Future.failed(new Exception("oups")), attempts, delay, backoff) {
+        case (t, currentRetry) ⇒
+          s.append(s"${t.getMessage}, will retry in ${delay * math.pow(backoff, attempts - currentRetry + 1)}")
+      }
 
       eventually {
-        s.mkString(System.lineSeparator) should ===(
-          """|oups, will retry in 200 milliseconds
+        s.mkString(System.lineSeparator) should ===("""|oups, will retry in 200 milliseconds
              |oups, will retry in 400 milliseconds
              |oups, will retry in 800 milliseconds""".stripMargin)
       }
