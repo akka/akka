@@ -51,7 +51,7 @@ Many of the methods in `ActorContext` are not thread-safe and
 
 ### The Guardian Actor
 
-The root actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor
+The top level actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor
 system are directed to the root actor. The root actor is defined by the behavior used to create the `ActorSystem`,
 named `HelloWorldMain` in the example below:
 
@@ -61,6 +61,11 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
 
+For very simple applications the guardian may contain the actual application logic and handle messages. As soon as the application
+handles more than one concern the the guardian should instead just bootstrap the application, spawn the various subsystems as 
+children and monitor their lifecycles.
+
+When the guardian actor stops this will stop the `ActorSystem`.  
 
 @@@ Note
 

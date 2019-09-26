@@ -3,7 +3,6 @@
  */
 
 package akka.cluster.sharding.typed.scaladsl
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior, ReplyEffect }
 
 object EventSourcedEntity {
@@ -40,7 +39,7 @@ object EventSourcedEntity {
    * automatically from the [[EntityTypeKey]] and `entityId` constructor parameters by using
    * [[EntityTypeKey.persistenceIdFrom]].
    */
-  def withEnforcedReplies[Command <: ExpectingReply[_], Event, State](
+  def withEnforcedReplies[Command, Event, State](
       entityTypeKey: EntityTypeKey[Command],
       entityId: String,
       emptyState: State,

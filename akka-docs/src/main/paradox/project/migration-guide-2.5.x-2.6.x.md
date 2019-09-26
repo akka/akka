@@ -34,6 +34,8 @@ After being deprecated since 2.5.0, the following have been removed in Akka 2.6.
     - Use `AbstractPersistentActor` instead.
 * `UntypedPersistentActorWithAtLeastOnceDelivery`
     - Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
+* `akka.stream.actor.ActorSubscriber` and `akka.stream.actor.ActorPublisher`
+    - Use `GraphStage` instead.
 
 After being deprecated since 2.2, the following have been removed in Akka 2.6.
 
@@ -537,6 +539,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `GetDataDeleted` and `UpdateDataDeleted` introduced as described in @ref[DataDeleted](#datadeleted).
 * `SubscribeResponse` introduced in `Subscribe` because the responses can be both `Changed` and `Deleted`.
 * `ReplicationDeleteFailure` renamed to `DeleteFailure`.
+* `EventSourcedBehavior.withEnforcedReplies` signature changed. Command is not required to extend `ExpectingReply` anymore. `ExpectingReply` has been removed therefore.  
 
 #### Akka Typed Stream API changes
 

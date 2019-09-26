@@ -5,7 +5,6 @@
 package akka.actor.typed.javadsl
 
 import java.time.Duration
-import java.util.function.{ BiFunction, Function => JFunction }
 
 import akka.annotation.DoNotInherit
 import akka.actor.ClassicActorContextProvider
@@ -267,7 +266,7 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
    * *Warning*: This method is not thread-safe and must not be accessed from threads other
    * than the ordinary actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def messageAdapter[U](messageClass: Class[U], f: JFunction[U, T]): ActorRef[U]
+  def messageAdapter[U](messageClass: Class[U], f: akka.japi.function.Function[U, T]): ActorRef[U]
 
   /**
    * Perform a single request-response message interaction with another actor, and transform the messages back to
@@ -299,8 +298,8 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
       resClass: Class[Res],
       target: RecipientRef[Req],
       responseTimeout: Duration,
-      createRequest: java.util.function.Function[ActorRef[Res], Req],
-      applyToResponse: BiFunction[Res, Throwable, T]): Unit
+      createRequest: akka.japi.function.Function[ActorRef[Res], Req],
+      applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit
 
   /**
    * Sends the result of the given `CompletionStage` to this Actor (“`self`”), after adapted it with
@@ -309,6 +308,8 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
    * This method is thread-safe and can be called from other threads than the ordinary
    * actor message processing thread, such as [[java.util.concurrent.CompletionStage]] callbacks.
    */
-  def pipeToSelf[Value](future: CompletionStage[Value], applyToResult: BiFunction[Value, Throwable, T]): Unit
+  def pipeToSelf[Value](
+      future: CompletionStage[Value],
+      applyToResult: akka.japi.function.Function2[Value, Throwable, T]): Unit
 
 }

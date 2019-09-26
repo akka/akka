@@ -170,4 +170,50 @@ public class ActorCompile {
                     .onFailure(IllegalStateException.class, strategy6))
             .onFailure(RuntimeException.class, strategy1);
   }
+
+  // actor context
+  {
+    final ActorRef<Object> otherActor = null;
+    Behavior<String> behavior =
+        Behaviors.setup(
+            context -> {
+              context.ask(
+                  String.class,
+                  otherActor,
+                  Duration.ofSeconds(10),
+                  (ActorRef<String> respRef) -> new Object(),
+                  (String res, Throwable failure) -> {
+                    // checked exception should be ok
+                    if (failure != null) throw new Exception(failure);
+                    else return "success";
+                  });
+
+              ActorRef<Integer> adapter =
+                  context.messageAdapter(
+                      Integer.class,
+                      (number) -> {
+                        // checked exception should be ok
+                        if (number < 10) throw new Exception("too small number");
+                        else return number.toString();
+                      });
+
+              return Behaviors.empty();
+            });
+  }
+
+  // stash buffer
+  {
+    Behavior<String> behavior =
+        Behaviors.withStash(
+            5,
+            stash -> {
+              stash.forEach(
+                  msg -> {
+                    // checked is ok
+                    throw new Exception("checked");
+                  });
+
+              return Behaviors.empty();
+            });
+  }
 }

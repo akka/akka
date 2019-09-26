@@ -5,7 +5,6 @@
 package akka.actor.testkit.typed.internal
 
 import java.util.concurrent.ConcurrentLinkedQueue
-import java.util.function
 
 import akka.actor.{ ActorPath, Cancellable }
 import akka.actor.typed.{ ActorRef, Behavior, Props }
@@ -15,7 +14,6 @@ import akka.actor.testkit.typed.Effect._
 
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import scala.compat.java8.FunctionConverters._
 
 /**
  * INTERNAL API
@@ -47,9 +45,9 @@ import scala.compat.java8.FunctionConverters._
     effectQueue.offer(MessageAdapter(implicitly[ClassTag[U]].runtimeClass.asInstanceOf[Class[U]], f))
     ref
   }
-  override def messageAdapter[U](messageClass: Class[U], f: function.Function[U, T]): ActorRef[U] = {
+  override def messageAdapter[U](messageClass: Class[U], f: akka.japi.function.Function[U, T]): ActorRef[U] = {
     val ref = super.messageAdapter(messageClass, f)
-    effectQueue.offer(MessageAdapter[U, T](messageClass, f.asScala))
+    effectQueue.offer(MessageAdapter[U, T](messageClass, f.apply))
     ref
   }
   override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {

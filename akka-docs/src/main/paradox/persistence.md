@@ -1,7 +1,7 @@
 # Classic Persistence
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see @ref[persistence](typed/persistence.md).
+For the full documentation of this feature and for new projects see @ref:[persistence](typed/persistence.md).
 
 ## Dependency
 

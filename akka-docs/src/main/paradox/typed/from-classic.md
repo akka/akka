@@ -140,7 +140,8 @@ understand it.
 ## ActorSystem
 
 `akka.actor.ActorSystem` has its correspondence in `akka.actor.typed.ActorSystem`. One difference is that
-when creating an `ActorSystem` in Typed you give it a `Behavior` that will be used as the top level user guardian.
+when creating an `ActorSystem` in Typed you give it a `Behavior` that will be used as the top level actor, also known 
+as the user guardian.
 
 It's from the user guardian you create additional actors for the application and initialize tools like
 Cluster Sharding. In contrast, such initialization are typically performed from the "outside" after

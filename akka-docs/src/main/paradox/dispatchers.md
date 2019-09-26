@@ -1,9 +1,7 @@
 # Classic Dispatchers
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see @ref:[Dispatchers](typed/dispatchers.md).
-
-For more details on advanced dispatcher config and options, see @ref[Dispatchers](typed/dispatchers.md).
+For the full documentation of this feature and for new projects see @ref:[Dispatchers](typed/dispatchers.md).
 
 ## Dependency
 

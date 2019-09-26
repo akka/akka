@@ -1,7 +1,7 @@
 # Classic Routing
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see @ref[routers](typed/routers.md).
+For the full documentation of this feature and for new projects see @ref:[routers](typed/routers.md).
 
 ## Dependency
 

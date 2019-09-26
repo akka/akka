@@ -59,7 +59,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
                 + "}                                      \n"
                 + "akka.actor.default-mailbox.mailbox-type = akka.dispatch.UnboundedMailbox\n");
 
-    system = ActorSystem.create("ActorPublisherDocTest", config);
+    system = ActorSystem.create("IntegrationDocTest", config);
     ref = system.actorOf(Props.create(Translator.class));
   }
 

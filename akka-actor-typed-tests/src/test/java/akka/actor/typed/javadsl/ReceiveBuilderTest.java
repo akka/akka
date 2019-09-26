@@ -8,6 +8,7 @@ import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.PostStop;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -138,5 +139,43 @@ public class ReceiveBuilderTest extends JUnitSuite {
     ActorRef<Object> ref = testKit.spawn(behavior);
     ref.tell("message");
     probe.expectMessage("message");
+  }
+
+  public void compileOnlyHandlerAllowedToThrowCheckedException() {
+    Behavior<Object> behavior =
+        ReceiveBuilder.create()
+            .onMessageEquals(
+                "exactly",
+                () -> {
+                  throw new Exception("checked");
+                })
+            .onMessage(
+                String.class,
+                msg -> {
+                  throw new Exception("checked");
+                })
+            .onMessage(
+                Integer.class,
+                msg -> true,
+                msg -> {
+                  throw new Exception("checked");
+                })
+            .onSignalEquals(
+                PostStop.instance(),
+                () -> {
+                  throw new Exception("checked");
+                })
+            .onSignal(
+                PostStop.class,
+                (signal) -> {
+                  throw new Exception("checked");
+                })
+            .onSignal(
+                PostStop.class,
+                signal -> true,
+                signal -> {
+                  throw new Exception("checked");
+                })
+            .build();
   }
 }

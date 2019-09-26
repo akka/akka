@@ -1,7 +1,7 @@
 # Classic Cluster Sharding
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see @ref:[Cluster Sharding](typed/cluster-sharding.md).
+For the full documentation of this feature and for new projects see @ref:[Cluster Sharding](typed/cluster-sharding.md).
 
 ## Dependency
 

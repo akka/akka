@@ -6,11 +6,20 @@ package akka.actor.testkit.typed.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.Future
+
 import akka.actor.testkit.typed.TestException
 import org.scalatest.WordSpecLike
 import org.slf4j.LoggerFactory
 
-class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class TestAppenderSpec
+    extends ScalaTestWithActorTestKit(
+      """
+  # increase to avoid spurious failures in "find unexpected async events withOccurrences(0)"
+  akka.actor.testkit.typed.expect-no-message-default = 1000 ms
+  """)
+    with WordSpecLike
+    with LogCapturing {
 
   class AnotherLoggerClass
 
@@ -39,6 +48,21 @@ class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       }
     }
 
+    "find excess messages" in {
+      intercept[AssertionError] {
+        LoggingEventFilter.warn("a warning").withOccurrences(2).intercept {
+          log.error("an error")
+          log.warn("a warning")
+          log.warn("a warning")
+          log.error("an error")
+          // since this logging is synchronous it will notice 3 occurrences but expecting 2,
+          // but note that it will not look for asynchronous excess messages when occurrences > 0 and it has
+          // already found expected number
+          log.warn("a warning") // 3rd
+        }
+      }.getMessage should include("Received 1 excess messages")
+    }
+
     "only filter events for given logger name" in {
       val count = new AtomicInteger
       LoggingEventFilter
@@ -57,7 +81,7 @@ class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       count.get should ===(2)
     }
 
-    "find unexpected events withOccurences(0)" in {
+    "find unexpected events withOccurrences(0)" in {
       LoggingEventFilter.warn("a warning").withOccurrences(0).intercept {
         log.error("an error")
         log.warn("another warning")
@@ -77,6 +101,20 @@ class TestAppenderSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
           log.warn("a warning")
         }
       }.getMessage should include("Received 2 excess messages")
+
+    }
+
+    "find unexpected async events withOccurrences(0)" in {
+      // expect-no-message-default = 1000 ms
+      intercept[AssertionError] {
+        LoggingEventFilter.warn("a warning").withOccurrences(0).intercept {
+          Future {
+            Thread.sleep(20)
+            log.warn("a warning")
+            log.warn("a warning")
+          }(system.executionContext)
+        }
+      }
     }
 
   }
