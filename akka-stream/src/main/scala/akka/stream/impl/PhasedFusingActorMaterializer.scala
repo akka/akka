@@ -625,10 +625,6 @@ private final case class SavedIslandData(
     val effectiveProps = props.dispatcher match {
       case Dispatchers.DefaultDispatcherId =>
         props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
-      case ActorAttributes.IODispatcher.dispatcher =>
-        // this one is actually not a dispatcher but a relative config key pointing containing the actual dispatcher name
-        // FIXME go via attributes here,or something
-        props.withDispatcher(settings.blockingIoDispatcher)
       case _ => props
     }
 

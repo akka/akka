@@ -596,7 +596,7 @@ used for individual streams when they are materialized.
 | `streamRefSettings.demandRedeliveryInterval` | `StreamRefAttributes.demandRedeliveryInterval`  | `akka.stream.materializer.stream-ref.demand-redelivery-interval` |
 | `streamRefSettings.subscriptionTimeout`      | `StreamRefAttributes.subscriptionTimeout`       | `akka.stream.materializer.stream-ref.subscription-timeout` |
 | `streamRefSettings.finalTerminationSignalDeadline` | `StreamRefAttributes.finalTerminationSignalDeadline` | `akka.stream.materializer.stream-ref.final-termination-signal-deadline` |
-| `blockingIoDispatcher`                       | `ActorAttributes.blockingIoDispatcher`          | `akka.stream.materializer.blocking-io-dispatcher` |
+| `blockingIoDispatcher`                       | na                                              | `akka.stream.materializer.blocking-io-dispatcher` |
 | `subscriptionTimeoutSettings.mode`           | `ActorAttributes.streamSubscriptionTimeoutMode` | `akka.stream.materializer.subscription-timeout.mode` |
 | `subscriptionTimeoutSettings.timeout`        | `ActorAttributes.streamSubscriptionTimeout`     | `akka.stream.materializer.subscription-timeout.timeout` |
 

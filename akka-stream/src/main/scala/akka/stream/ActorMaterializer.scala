@@ -779,8 +779,7 @@ final class ActorMaterializerSettings @InternalApi private (
       ActorAttributes.OutputBurstLimit(outputBurstLimit) ::
       ActorAttributes.FuzzingMode(fuzzingMode) ::
       ActorAttributes.MaxFixedBufferSize(maxFixedBufferSize) ::
-      ActorAttributes.SyncProcessingLimit(syncProcessingLimit) ::
-      ActorAttributes.BlockingIoDispatcher(blockingIoDispatcher) :: Nil)
+      ActorAttributes.SyncProcessingLimit(syncProcessingLimit) :: Nil)
 
   override def toString: String =
     s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize," +
