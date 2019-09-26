@@ -7,6 +7,7 @@
 * [Persistence schema evolution](../persistence-schema-evolution.md)
 * [Persistence query](../persistence-query.md)
 * [Persistence query LevelDB](../persistence-query-leveldb.md)
+* [Persistence Journals](../persistence-plugins.md)
 * [Persistence Journals](../persistence-journals.md)
 
 @@@
@@ -27,13 +28,49 @@ To use Akka Persistence Typed, add the module to your project:
   version=$akka.version$
 }
 
+You also have to select journal plugin and optionally snapshot store plugin, see 
+@ref:[Persistence Plugins](../persistence-plugins.md).
+
 ## Introduction
 
-Akka Persistence is a library for building event sourced actors. For background about how it works
-see the @ref:[classic Akka Persistence section](../persistence.md). This documentation shows how the typed API for persistence
-works and assumes you know what is meant by `Command`, `Event` and `State`.
+Akka Persistence enables stateful actors to persist their state so that it can be recovered when an actor
+is either restarted, such as after a JVM crash, by a supervisor or a manual stop-start, or migrated within a cluster. The key concept behind Akka
+Persistence is that only the _events_ that are persisted by the actor are stored, not the actual state of the actor
+(though actor state snapshot support is also available). The events are persisted by appending to storage (nothing is ever mutated) which
+allows for very high transaction rates and efficient replication. A stateful actor is recovered by replaying the stored
+events to the actor, allowing it to rebuild its state. This can be either the full history of changes
+or starting from a checkpoint in a snapshot which can dramatically reduce recovery times.
 
-## Example
+@@@ note
+
+The General Data Protection Regulation (GDPR) requires that personal information must be deleted at the request of users.
+Deleting or modifying events that carry personal information would be difficult. Data shredding can be used to forget
+information instead of deleting or modifying it. This is achieved by encrypting the data with a key for a given data
+subject id (person) and deleting the key when that data subject is to be forgotten. Lightbend's
+[GDPR for Akka Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html)
+provides tools to facilitate in building GDPR capable systems.
+
+@@@
+
+### Event sourcing concepts
+
+See an [introduction to EventSourcing](https://msdn.microsoft.com/en-us/library/jj591559.aspx) at MSDN.
+
+Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493)
+by Randy Shoup. It is a short and recommended read if you're starting developing Events based applications.
+ 
+What follows is Akka's implementation via event sourced actors. 
+
+An event sourced actor (also known as a persistent actor) receives a (non-persistent) command
+which is first validated if it can be applied to the current state. Here validation can mean anything, from simple
+inspection of a command message's fields up to a conversation with several external services, for example.
+If validation succeeds, events are generated from the command, representing the effect of the command. These events
+are then persisted and, after successful persistence, used to change the actor's state. When the event sourced actor
+needs to be recovered, only the persisted events are replayed of which we know that they can be successfully applied.
+In other words, events cannot fail when being replayed to a persistent actor, in contrast to commands. Event sourced
+actors may also process commands that do not change application state such as query commands for example.
+
+## Example and core API
 
 Let's start with a simple example. The minimum required for a @apidoc[EventSourcedBehavior] is:
 
@@ -178,7 +215,7 @@ Java
 
 ## Cluster Sharding and EventSourcedBehavior
 
-In a use case where the number of persistent actors needed are higher than what would fit in the memory of one node or
+In a use case where the number of persistent actors needed is higher than what would fit in the memory of one node or
 where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
 cluster and address them by id.
@@ -287,7 +324,7 @@ Note that there is only one of these. It is not possible to both persist and say
 These are created using @java[a factory that is returned via the `Effect()` method]
 @scala[the `Effect` factory] and once created additional side effects can be added.
 
-Most of them time this will be done with the `thenRun` method on the `Effect` above. You can factor out
+Most of the time this will be done with the `thenRun` method on the `Effect` above. You can factor out
 common side effects into functions and reuse for several commands. For example:
 
 Scala
@@ -300,6 +337,18 @@ Java
 
 Any side effects are executed on an at-once basis and will not be executed if the persist fails.
 The side effects are executed sequentially, it is not possible to execute side effects in parallel.
+
+### Atomic writes
+
+It is possible to store several events atomically by using the `persistAll` effect. That means that all events
+passed to that method are stored or none of them are stored if there is an error.
+
+The recovery of a persistent actor will therefore never be done partially with only a subset of events persisted by
+`persistAll`.
+
+Some journals may not support atomic writes of several events and they will then reject the `persistAll`
+command. This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` (typically with a 
+`UnsupportedOperationException`) and can be handled with a @ref[supervisor](fault-tolerance.md).
 
 ## Replies
 
@@ -377,8 +426,22 @@ recommendation if you don't have other preference.
 
 ## Recovery
 
-It is strongly discouraged to perform side effects in `applyEvent`,
-so side effects should be performed once recovery has completed as a reaction to the `RecoveryCompleted` signal @scala[`receiveSignal` handler] @java[by overriding `receiveSignal`]
+An event sourced actor is automatically recovered on start and on restart by replaying journaled events.
+New messages sent to the actor during recovery do not interfere with replayed events.
+They are stashed and received by the `EventSourcedBehavior` after the recovery phase completes.
+
+The number of concurrent recoveries that can be in progress at the same time is limited
+to not overload the system and the backend data store. When exceeding the limit the actors will wait
+until other recoveries have been completed. This is configured by:
+
+```
+akka.persistence.max-concurrent-recoveries = 50
+```
+
+The @ref:[event handler](#event-handler) is used for updating the state when replaying the journaled events.
+
+It is strongly discouraged to perform side effects in the event handler, so side effects should be performed
+once recovery has completed as a reaction to the `RecoveryCompleted` signal @scala[in the `receiveSignal` handler] @java[by overriding `receiveSignal`]
 
 Scala
 :  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery }
@@ -388,7 +451,42 @@ Java
 
 The `RecoveryCompleted` contains the current `State`.
 
+The actor will always receive a `RecoveryCompleted` signal, even if there are no events
+in the journal and the snapshot store is empty, or if it's a new persistent actor with a previously
+unused `PersistenceId`.
+
 @ref[Snapshots](persistence-snapshot.md) can be used for optimizing recovery times.
+
+### Replay filter
+
+There could be cases where event streams are corrupted and multiple writers (i.e. multiple persistent actor instances)
+journaled different messages with the same sequence number.
+In such a case, you can configure how you filter replayed messages from multiple writers, upon recovery.
+
+In your configuration, under the `akka.persistence.journal.xxx.replay-filter` section (where `xxx` is your journal plugin id),
+you can select the replay filter `mode` from one of the following values:
+
+ * repair-by-discard-old
+ * fail
+ * warn
+ * off
+
+For example, if you configure the replay filter for leveldb plugin, it looks like this:
+
+```
+# The replay filter can detect a corrupt event stream by inspecting
+# sequence numbers and writerUuid when replaying events.
+akka.persistence.journal.leveldb.replay-filter {
+  # What the filter should do when detecting invalid events.
+  # Supported values:
+  # `repair-by-discard-old` : discard events from old writers,
+  #                           warning is logged
+  # `fail` : fail the replay, error is logged
+  # `warn` : log warning but emit events untouched
+  # `off` : disable this feature completely
+  mode = repair-by-discard-old
+}
+```
 
 ## Tagging
 
@@ -440,18 +538,22 @@ By default a `EventSourcedBehavior` will stop if an exception is thrown from the
 any `BackoffSupervisorStrategy`. It is not possible to use the normal supervision wrapping for this as it isn't valid to
 `resume` a behavior on a journal failure as it is not known if the event was persisted.
 
-
 Scala
 :  @@snip [BasicPersistentBehaviorSpec.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #supervision }
 
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #supervision }
 
-## Journal rejections
+If there is a problem with recovering the state of the actor from the journal, `RecoveryFailed` signal is
+emitted to the @scala[`receiveSignal` handler] @java[`receiveSignal` method] and the actor will be stopped
+(or restarted with backoff).
+
+### Journal rejections
 
 Journals can reject events. The difference from a failure is that the journal must decide to reject an event before
 trying to persist it e.g. because of a serialization exception. If an event is rejected it definitely won't be in the journal. 
-This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` and can be handled with a @ref[supervisor](fault-tolerance.md). 
+This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` and can be handled with a @ref[supervisor](fault-tolerance.md).
+Not all journal implementations use rejections and treat these kind of problems also as journal failures. 
 
 ## Stash
 
@@ -495,3 +597,25 @@ processed.
 
 It's allowed to stash messages while unstashing. Those newly added commands will not be processed by the
 `unstashAll` effect that was in progress and have to be unstashed by another `unstashAll`.
+
+## Scaling out
+
+In a use case where the number of persistent actors needed is higher than what would fit in the memory of one node or
+where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
+resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a 
+cluster and address them by id.
+
+Akka Persistence is based on the single-writer principle. For a particular `PersistenceId` only one `EventSourcedBehavior`
+instance should be active at one time. If multiple instances were to persist events at the same time, the events would
+be interleaved and might not be interpreted correctly on replay. Cluster Sharding ensures that there is only one
+active entity (`EventSourcedBehavior`) for each id within a data center. Lightbend's
+[Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
+supports active-active persistent entities across data centers.
+
+## Configuration
+
+There are several configuration properties for the persistence module, please refer
+to the @ref:[reference configuration](../general/configuration.md#config-akka-persistence).
+
+The @ref:[journal and snapshot store plugins](../persistence-plugins.md) have specific configuration, see
+reference documentation of the chosen plugin.

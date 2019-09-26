@@ -26,6 +26,7 @@ import akka.persistence.typed.javadsl.SignalHandler;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -307,6 +308,42 @@ public class BasicPersistentBehaviorTest {
       }
     }
     // #wrapPersistentBehavior
+  }
+
+  interface TaggingQuery {
+
+    public abstract class MyPersistentBehavior
+        extends EventSourcedBehavior<
+            MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
+
+      interface Command {}
+
+      interface Event {}
+
+      interface OrderCompleted extends Event {}
+
+      public static class State {}
+
+      MyPersistentBehavior(String entityId) {
+        super(PersistenceId.of("ShoppingCart", entityId));
+        this.entityId = entityId;
+      }
+
+      // #tagging-query
+      private final String entityId;
+
+      public static final int NUMBER_OF_ENTITY_GROUPS = 10;
+
+      @Override
+      public Set<String> tagsFor(Event event) {
+        String entityGroup = "group-" + Math.abs(entityId.hashCode() % NUMBER_OF_ENTITY_GROUPS);
+        Set<String> tags = new HashSet<>();
+        tags.add(entityGroup);
+        if (event instanceof OrderCompleted) tags.add("order-completed");
+        return tags;
+      }
+      // #tagging-query
+    }
   }
 
   interface Snapshotting {

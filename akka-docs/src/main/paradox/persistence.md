@@ -13,16 +13,8 @@ To use Akka Persistence, you must add the following dependency in your project:
   version="$akka.version$"
 }
 
-The Akka Persistence extension comes with few built-in persistence plugins, including
-in-memory heap based journal, local file-system based snapshot-store and LevelDB based journal.
-
-LevelDB-based plugins will require the following additional dependency:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="org.fusesource.leveldbjni"
-  artifact="leveldbjni-all"
-  version="1.8"
-}
+You also have to select journal plugin and optionally snapshot store plugin, see 
+@ref:[Persistence Plugins](persistence-plugins.md).
 
 ## Sample project
 
@@ -33,27 +25,11 @@ to see what this looks like in practice.
 
 ## Introduction
 
-Akka persistence enables stateful actors to persist their state so that it can be recovered when an actor
-is either restarted, such as after a JVM crash, by a supervisor or a manual stop-start, or migrated within a cluster. The key concept behind Akka
-persistence is that only the _events_ received by the actor are persisted, not the actual state of the actor
-(though actor state snapshot support is also available). The events are persisted by appending to storage (nothing is ever mutated) which
-allows for very high transaction rates and efficient replication. A stateful actor is recovered by replaying the stored
-events to the actor, allowing it to rebuild its state. This can be either the full history of changes
-or starting from a checkpoint in a snapshot which can dramatically reduce recovery times. Akka persistence also provides point-to-point
-communication with at-least-once message delivery semantics.
+See introduction in @ref:[Persistence](typed/persistence.md#introduction) 
 
-@@@ note
+Akka Persistence also provides point-to-point communication with at-least-once message delivery semantics.
 
-The General Data Protection Regulation (GDPR) requires that personal information must be deleted at the request of users.
-Deleting or modifying events that carry personal information would be difficult. Data shredding can be used to forget
-information instead of deleting or modifying it. This is achieved by encrypting the data with a key for a given data
-subject id (person) and deleting the key when that data subject is to be forgotten. Lightbend's
-[GDPR for Akka Persistence](https://doc.akka.io/docs/akka-enhancements/current/gdpr/index.html)
-provides tools to facilitate in building GDPR capable systems.
-
-@@@
-
-## Architecture
+### Architecture
 
  * @scala[`PersistentActor`]@java[`AbstractPersistentActor`]: Is a persistent, stateful actor. It is able to persist events to a journal and can react to
 them in a thread-safe manner. It can be used to implement both *command* as well as *event sourced* actors.
@@ -69,24 +45,9 @@ Replicated journals are available as [Community plugins](http://akka.io/communit
 used for optimizing recovery times. The storage backend of a snapshot store is pluggable.
 The persistence extension comes with a "local" snapshot storage plugin, which writes to the local filesystem. Replicated snapshot stores are available as [Community plugins](http://akka.io/community/)
  * *Event sourcing*. Based on the building blocks described above, Akka persistence provides abstractions for the
-development of event sourced applications (see section [Event sourcing](#event-sourcing)).
+development of event sourced applications (see section @ref:[Event sourcing](typed/persistence.md#event-sourcing-concepts)).
 
-## Event sourcing
-
-See an [introduction to EventSourcing](https://msdn.microsoft.com/en-us/library/jj591559.aspx), what follows is
-Akka's implementation via persistent actors. 
-
-A persistent actor receives a (non-persistent) command
-which is first validated if it can be applied to the current state. Here validation can mean anything, from simple
-inspection of a command message's fields up to a conversation with several external services, for example.
-If validation succeeds, events are generated from the command, representing the effect of the command. These events
-are then persisted and, after successful persistence, used to change the actor's state. When the persistent actor
-needs to be recovered, only the persisted events are replayed of which we know that they can be successfully applied.
-In other words, events cannot fail when being replayed to a persistent actor, in contrast to commands. Event sourced
-actors may also process commands that do not change application state such as query commands for example.
-
-Another excellent article about "thinking in Events" is [Events As First-Class Citizens](https://hackernoon.com/events-as-first-class-citizens-8633e8479493) by Randy Shoup. It is a short and recommended read if you're starting
-developing Events based applications.
+## Example
 
 Akka persistence supports event sourcing with the @scala[`PersistentActor` trait]@java[`AbstractPersistentActor` abstract class]. An actor that extends this @scala[trait]@java[class] uses the
 `persist` method to persist and handle events. The behavior of @scala[a `PersistentActor`]@java[an `AbstractPersistentActor`]
@@ -596,34 +557,7 @@ Java
 
 ### Replay Filter
 
-There could be cases where event streams are corrupted and multiple writers (i.e. multiple persistent actor instances)
-journaled different messages with the same sequence number.
-In such a case, you can configure how you filter replayed messages from multiple writers, upon recovery.
-
-In your configuration, under the `akka.persistence.journal.xxx.replay-filter` section (where `xxx` is your journal plugin id),
-you can select the replay filter `mode` from one of the following values:
-
- * repair-by-discard-old
- * fail
- * warn
- * off
-
-For example, if you configure the replay filter for leveldb plugin, it looks like this:
-
-```
-# The replay filter can detect a corrupt event stream by inspecting
-# sequence numbers and writerUuid when replaying events.
-akka.persistence.journal.leveldb.replay-filter {
-  # What the filter should do when detecting invalid events.
-  # Supported values:
-  # `repair-by-discard-old` : discard events from old writers,
-  #                           warning is logged
-  # `fail` : fail the replay, error is logged
-  # `warn` : log warning but emit events untouched
-  # `off` : disable this feature completely
-  mode = repair-by-discard-old
-}
-```
+See @ref:[Replay filter](typed/persistence.md#replay-filter) in the documentation of the new API.
 
 ## Snapshots
 
@@ -708,23 +642,7 @@ an in memory representation of the snapshot, or in the case of failure to attemp
 
 ## Scaling out
 
-In a use case where the number of persistent actors needed are higher than what would fit in the memory of one node or
-where resilience is important so that if a node crashes the persistent actors are quickly started on a new node and can
-resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a 
-cluster and address them by id.
-
-Akka Persistence is based on the single-writer principle. For a particular `persistenceId` only one `PersistentActor`
-instance should be active at one time. If multiple instances were to persist events at the same time, the events would
-be interleaved and might not be interpreted correctly on replay. Cluster Sharding ensures that there is only one
-active entity (`PersistentActor`) for each id within a data center. Lightbend's
-[Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
-supports active-active persistent entities across data centers.
-
-The [Lagom framework](https://www.lagomframework.com), which is built on top of Akka encodes many of the best practices 
-around this. For more details see @java[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/java/ES_CQRS.html)]
-@scala[[Managing Data Persistence](https://www.lagomframework.com/documentation/current/scala/ES_CQRS.html)] and 
-@java[[Persistent Entity](https://www.lagomframework.com/documentation/current/java/PersistentEntity.html)] 
-@scala[[Persistent Entity](https://www.lagomframework.com/documentation/current/scala/PersistentEntity.html)] in the Lagom documentation.
+See @ref:[Scaling out](typed/persistence.md#scaling-out) in the documentation of the new API.
 
 ## At-Least-Once Delivery
 
@@ -878,199 +796,6 @@ For more advanced schema evolution techniques refer to the @ref:[Persistence - S
 
 @@@
 
-## Storage plugins
-
-Storage backends for journals and snapshot stores are pluggable in the Akka persistence extension.
-
-A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](http://akka.io/community/)
-
-Plugins can be selected either by "default" for all persistent actors,
-or "individually", when a persistent actor defines its own set of plugins.
-
-When a persistent actor does NOT override the `journalPluginId` and `snapshotPluginId` methods,
-the persistence extension will use the "default" journal and snapshot-store plugins configured in `reference.conf`:
-
-```
-akka.persistence.journal.plugin = ""
-akka.persistence.snapshot-store.plugin = ""
-```
-
-However, these entries are provided as empty "", and require explicit user configuration via override in the user `application.conf`.
-For an example of a journal plugin which writes messages to LevelDB see [Local LevelDB journal](#local-leveldb-journal).
-For an example of a snapshot store plugin which writes snapshots as individual files to the local filesystem see [Local snapshot store](#local-snapshot-store).
-
-Applications can provide their own plugins by implementing a plugin API and activating them by configuration.
-Plugin development requires the following imports:
-
-Scala
-:  @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #plugin-imports }
-
-Java
-:  @@snip [LambdaPersistencePluginDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #plugin-imports }
-
-### Eager initialization of persistence plugin
-
-By default, persistence plugins are started on-demand, as they are used. In some case, however, it might be beneficial
-to start a certain plugin eagerly. In order to do that, you should first add `akka.persistence.Persistence`
-under the `akka.extensions` key. Then, specify the IDs of plugins you wish to start automatically under
-`akka.persistence.journal.auto-start-journals` and `akka.persistence.snapshot-store.auto-start-snapshot-stores`.
-
-For example, if you want eager initialization for the leveldb journal plugin and the local snapshot store plugin, your configuration should look like this:  
-
-```
-akka {
-
-  extensions = [akka.persistence.Persistence]
-
-  persistence {
-
-    journal {
-      plugin = "akka.persistence.journal.leveldb"
-      auto-start-journals = ["akka.persistence.journal.leveldb"]
-    }
-
-    snapshot-store {
-      plugin = "akka.persistence.snapshot-store.local"
-      auto-start-snapshot-stores = ["akka.persistence.snapshot-store.local"]
-    }
-
-  }
-
-}
-```
-
-## Pre-packaged plugins
-
-### Local LevelDB journal
-
-The LevelDB journal plugin config entry is `akka.persistence.journal.leveldb`. It writes messages to a local LevelDB
-instance. Enable this plugin by defining config property:
-
-@@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #leveldb-plugin-config }
-
-LevelDB based plugins will also require the following additional dependency declaration:
-
-@@dependency[sbt,Maven,Gradle] {
-  group="org.fusesource.leveldbjni"
-  artifact="leveldbjni-all"
-  version="1.8"
-}
-
-The default location of LevelDB files is a directory named `journal` in the current working
-directory. This location can be changed by configuration where the specified path can be relative or absolute:
-
-@@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #journal-config }
-
-With this plugin, each actor system runs its own private LevelDB instance.
-
-One peculiarity of LevelDB is that the deletion operation does not remove messages from the journal, but adds
-a "tombstone" for each deleted message instead. In the case of heavy journal usage, especially one including frequent
-deletes, this may be an issue as users may find themselves dealing with continuously increasing journal sizes. To
-this end, LevelDB offers a special journal compaction function that is exposed via the following configuration:
-
-@@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #compaction-intervals-config }
-
-### Shared LevelDB journal
-
-A LevelDB instance can also be shared by multiple actor systems (on the same or on different nodes). This, for
-example, allows persistent actors to failover to a backup node and continue using the shared journal instance from the
-backup node.
-
-@@@ warning
-
-A shared LevelDB instance is a single point of failure and should therefore only be used for testing
-purposes. Highly-available, replicated journals are available as [Community plugins](http://akka.io/community/).
-
-@@@
-
-@@@ note
-
-This plugin has been supplanted by [Persistence Plugin Proxy](#persistence-plugin-proxy).
-
-@@@
-
-A shared LevelDB instance is started by instantiating the `SharedLeveldbStore` actor.
-
-Scala
-:  @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #shared-store-creation }
-
-Java
-:  @@snip [LambdaPersistencePluginDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #shared-store-creation }
-
-By default, the shared instance writes journaled messages to a local directory named `journal` in the current
-working directory. The storage location can be changed by configuration:
-
-@@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #shared-store-config }
-
-Actor systems that use a shared LevelDB store must activate the `akka.persistence.journal.leveldb-shared`
-plugin.
-
-@@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #shared-journal-config }
-
-This plugin must be initialized by injecting the (remote) `SharedLeveldbStore` actor reference. Injection is
-done by calling the `SharedLeveldbJournal.setStore` method with the actor reference as argument.
-
-Scala
-:  @@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #shared-store-usage }
-
-Java
-:  @@snip [LambdaPersistencePluginDocTest.java](/akka-docs/src/test/java/jdocs/persistence/LambdaPersistencePluginDocTest.java) { #shared-store-usage }
-
-Internal journal commands (sent by persistent actors) are buffered until injection completes. Injection is idempotent
-i.e. only the first injection is used.
-
-### Local snapshot store
-
-The local snapshot store plugin config entry is `akka.persistence.snapshot-store.local`. It writes snapshot files to
-the local filesystem. Enable this plugin by defining config property:
-
-@@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #leveldb-snapshot-plugin-config }
-
-The default storage location is a directory named `snapshots` in the current working
-directory. This can be changed by configuration where the specified path can be relative or absolute:
-
-@@snip [PersistencePluginDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistencePluginDocSpec.scala) { #snapshot-config }
-
-Note that it is not mandatory to specify a snapshot store plugin. If you don't use snapshots
-you don't have to configure it.
-
-### Persistence Plugin Proxy
-
-A persistence plugin proxy allows sharing of journals and snapshot stores across multiple actor systems (on the same or
-on different nodes). This, for example, allows persistent actors to failover to a backup node and continue using the
-shared journal instance from the backup node. The proxy works by forwarding all the journal/snapshot store messages to a
-single, shared, persistence plugin instance, and therefore supports any use case supported by the proxied plugin.
-
-@@@ warning
-
-A shared journal/snapshot store is a single point of failure and should therefore only be used for testing
-purposes. Highly-available, replicated persistence plugins are available as [Community plugins](http://akka.io/community/).
-
-@@@
-
-The journal and snapshot store proxies are controlled via the `akka.persistence.journal.proxy` and
-`akka.persistence.snapshot-store.proxy` configuration entries, respectively. Set the `target-journal-plugin` or
-`target-snapshot-store-plugin` keys to the underlying plugin you wish to use (for example:
-`akka.persistence.journal.leveldb`). The `start-target-journal` and `start-target-snapshot-store` keys should be
-set to `on` in exactly one actor system - this is the system that will instantiate the shared persistence plugin.
-Next, the proxy needs to be told how to find the shared plugin. This can be done by setting the `target-journal-address`
-and `target-snapshot-store-address` configuration keys, or programmatically by calling the
-`PersistencePluginProxy.setTargetLocation` method.
-
-@@@ note
-
-Akka starts extensions lazily when they are required, and this includes the proxy. This means that in order for the
-proxy to work, the persistence plugin on the target node must be instantiated. This can be done by instantiating the
-`PersistencePluginProxyExtension` @ref:[extension](extending-akka.md), or by calling the `PersistencePluginProxy.start` method.
-
-@@@
-
-@@@ note
-
-The proxied persistence plugin can (and should) be configured using its original configuration keys.
-
-@@@
-
 ## Custom serialization
 
 Serialization of snapshots and payloads of `Persistent` messages is configurable with Akka's
@@ -1109,7 +834,7 @@ Also note that for the LevelDB Java port, you will need the following dependenci
 
 @@@ warning
 
-It is not possible to test persistence provided classes (i.e. [PersistentActor](#event-sourcing)
+It is not possible to test persistence provided classes (i.e. `PersistentActor`
 and [AtLeastOnceDelivery](#at-least-once-delivery)) using `TestActorRef` due to its *synchronous* nature.
 These traits need to be able to perform asynchronous tasks in the background in order to handle internal persistence
 related events.
@@ -1122,6 +847,9 @@ When testing Persistence based projects always rely on @ref:[asynchronous messag
 
 There are several configuration properties for the persistence module, please refer
 to the @ref:[reference configuration](general/configuration.md#config-akka-persistence).
+
+The @ref:[journal and snapshot store plugins](persistence-plugins.md) have specific configuration, see
+reference documentation of the chosen plugin.
 
 ## Multiple persistence plugin configurations
 
@@ -1169,4 +897,5 @@ Java
 ## See also
 
 * @ref[Persistent FSM](persistence-fsm.md)
+* @ref[Building a new storage backend](persistence-plugins.md)
 * @ref[Building a new storage backend](persistence-journals.md)
