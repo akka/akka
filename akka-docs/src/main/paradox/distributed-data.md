@@ -1,7 +1,7 @@
 # Classic Distributed Data
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see @ref:[distributed-data](typed/distributed-data.md).
+For the new API see @ref:[Distributed Data](typed/distributed-data.md).
  
 ## Dependency
 
@@ -22,7 +22,7 @@ to see what this looks like in practice.
 
 ## Introduction
 
-See the @ref:[Introduction](typed/distributed-data.md#introduction) in the documentation of the new APIs.
+For the full documentation of this feature and for new projects see @ref:[Distributed Data - Introduction](typed/distributed-data.md#introduction).
 
 ## Using the Replicator
 
@@ -52,26 +52,10 @@ Scala
 Java
 : @@snip [DataBot.java](/akka-docs/src/test/java/jdocs/ddata/DataBot.java) { #data-bot }
 
-### Subscribe
-
-You may also register interest in change notifications by sending `Replicator.Subscribe`
-message to the `Replicator`. It will send `Replicator.Changed` messages to the registered
-subscriber when the data for the subscribed key is updated. Subscribers will be notified
-periodically with the configured `notify-subscribers-interval`, and it is also possible to
-send an explicit `Replicator.FlushChanges` message to the `Replicator` to notify the subscribers
-immediately.
-
-The subscriber is automatically removed if the subscriber is terminated. A subscriber can
-also be deregistered with the `Replicator.Unsubscribe` message.
-
-Scala
-: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #subscribe }
-
-Java
-: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #subscribe }
-
 <a id="replicator-update"></a>
 ### Update
+
+For the full documentation of this feature and for new projects see @ref:[Distributed Data - Update](typed/distributed-data.md#update).
 
 To modify and replicate a data value you send a `Replicator.Update` message to the local
 `Replicator`.
@@ -95,7 +79,7 @@ Java
 
 As reply of the `Update` a `Replicator.UpdateSuccess` is sent to the sender of the
 `Update` if the value was successfully replicated according to the supplied 
-@ref:[consistency level](typed/distributed-data.md#write-consistency) within the supplied timeout. Otherwise a `Replicator.UpdateFailure` subclass is
+@ref:[write consistency level](typed/distributed-data.md#write-consistency) within the supplied timeout. Otherwise a `Replicator.UpdateFailure` subclass is
 sent back. Note that a `Replicator.UpdateTimeout` reply does not mean that the update completely failed
 or was rolled back. It may still have been replicated to some nodes, and will eventually
 be replicated to all nodes with the gossip protocol.
@@ -128,10 +112,10 @@ Scala
 Java
 : @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #update-request-context }
 
-See @ref:[Distributed Data - Update](typed/distributed-data.md#update) in the documentation of the new APIs. 
-
 <a id="replicator-get"></a>
 ### Get
+
+For the full documentation of this feature and for new projects see @ref:[Distributed Data - Get](typed/distributed-data.md#get).
 
 To retrieve the current value of a data you send `Replicator.Get` message to the
 `Replicator`. You supply a consistency level which has the following meaning:
@@ -143,7 +127,7 @@ Java
 : @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #get }
 
 As reply of the `Get` a `Replicator.GetSuccess` is sent to the sender of the
-`Get` if the value was successfully retrieved according to the supplied @ref:[consistency level](typed/distributed-data.md#read-consistency) within the supplied timeout. Otherwise a `Replicator.GetFailure` is sent.
+`Get` if the value was successfully retrieved according to the supplied @ref:[read consistency level](typed/distributed-data.md#read-consistency) within the supplied timeout. Otherwise a `Replicator.GetFailure` is sent.
 If the key does not exist the reply will be `Replicator.NotFound`.
 
 Scala
@@ -169,10 +153,29 @@ Scala
 Java
 : @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #get-request-context }
 
+### Subscribe
 
-See @ref:[Distributed Data - Get](typed/distributed-data.md#get) in the documentation of the new APIs. 
+For the full documentation of this feature and for new projects see @ref:[Distributed Data - Subscribe](typed/distributed-data.md#subscribe).
+
+You may also register interest in change notifications by sending `Replicator.Subscribe`
+message to the `Replicator`. It will send `Replicator.Changed` messages to the registered
+subscriber when the data for the subscribed key is updated. Subscribers will be notified
+periodically with the configured `notify-subscribers-interval`, and it is also possible to
+send an explicit `Replicator.FlushChanges` message to the `Replicator` to notify the subscribers
+immediately.
+
+The subscriber is automatically removed if the subscriber is terminated. A subscriber can
+also be deregistered with the `Replicator.Unsubscribe` message.
+
+Scala
+: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #subscribe }
+
+Java
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #subscribe }
 
 ### Consistency
+
+For the full documentation of this feature and for new projects see @ref:[Distributed Data Consistency](typed/distributed-data.md#consistency).
  
 Here is an example of using `WriteMajority` and `ReadMajority`:
 
@@ -223,11 +226,9 @@ happens to be n4, n5, n6, n7, i.e. the value on n1, n2, n3 is not seen in the re
 
 @@@
 
-See @ref:[Consistency](typed/distributed-data.md#consistency) in the documentation of the new APIs.
-
 ### Delete
 
-See @ref:[Distributed Data - Delete](typed/distributed-data.md#delete) in the documentation of the new APIs.
+For the full documentation of this feature and for new projects see @ref:[Distributed Data - Delete](typed/distributed-data.md#delete).
 
 Scala
 : @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #delete }
@@ -245,21 +246,19 @@ types that support both updates and removals, for example `ORMap` or `ORSet`.
 
 @@@
 
-See @ref:[Distributed Data - Delete](typed/distributed-data.md#delete) in the documentation of the new APIs. 
-
-### delta-CRDT
-
-See @ref:[Distributed Data Delta CRDT](typed/distributed-data.md#delta-crdt) in the documentation of the new APIs.
+### Delta-CRDT
+ 
+For the full documentation of this feature and for new projects see @ref:[Distributed Data Delta CRDT](typed/distributed-data.md#delta-crdt).
 
 ## Replicated data types
 
-Akka contains a set of useful replicated data types and it is fully possible to implement custom replicated data types. 
-For more details, read @ref:[Distributed Data Delta CRDT](typed/distributed-data.md#replicated-data-types) in the documentation of the new APIs.
+Akka contains a set of useful replicated data types and it is fully possible to implement custom replicated data types.
+For the full documentation of this feature and for new projects see @ref:[Distributed Data Replicated data types](typed/distributed-data.md#replicated-data-types).
 
 ### Custom Data Type
 
 You can implement your own data types. 
-See @ref:[Distributed Data custom data type](typed/distributed-data.md#custom-data-type) in the documentation of the new APIs.
+For the full documentation of this feature and for new projects see @ref:[Distributed Data custom data type](typed/distributed-data.md#custom-data-type).
 
 #### Serialization
 
@@ -325,11 +324,11 @@ Java
 <a id="ddata-durable"></a>
 ### Durable Storage
 
-See @ref:[Durable Storage](typed/distributed-data.md#durable-storage) in the documentation of the new APIs.
+For the full documentation of this feature and for new projects see @ref:[Durable Storage](typed/distributed-data.md#durable-storage).
 
 ### CRDT Garbage
 
-See @ref:[Durable Storage](typed/distributed-data.md#crdt-garbage) in the documentation of the new APIs.
+For the full documentation of this feature and for new projects see @ref:[CRDT Garbage](typed/distributed-data.md#crdt-garbage).
 
 ## Samples
 
@@ -344,7 +343,7 @@ tutorial named @scala[@extref[Akka Distributed Data Samples with Scala](ecs:akka
 
 ## Limitations
 
-See @ref:[Limitations](typed/distributed-data.md#limitations) in the documentation of the new APIs.
+For the full documentation of this feature and for new projects see @ref:[Limitations](typed/distributed-data.md#limitations).
 
 ## Learn More about CRDTs
 

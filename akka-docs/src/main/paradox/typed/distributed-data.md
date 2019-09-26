@@ -65,18 +65,6 @@ Although you can interact with the `Replicator` using the @scala[`ActorRef[Repli
 from @scala[`DistributedData(ctx.system).replicator`]@java[`DistributedData(ctx.getSystem()).replicator()`] it's
 often more convenient to use the `ReplicatorMessageAdapter` as in the above example.
 
-### Subscribe
-
-When we start up the actor we subscribe it to changes for our key, meaning whenever the replicator observes a change
-for the counter our actor will receive a @scala[`Replicator.Changed[GCounter]`]@java[`Replicator.Changed<GCounter>`]. Since
-this is not a message in our protocol, we use a message transformation function to wrap it in the internal `InternalChanged`
-message, which is then handled in the regular message handling of the behavior, as shown in the above example.
-Subscribers will be notified of changes, if there are any, based on the 
-configurable `akka.cluster.distributed-data.notify-subscribers-interval`.
-
-The subscriber is automatically unsubscribed if the subscriber is terminated. A subscriber can
-also be de-registered with the `replicatorAdapter.unsubscribe(key)` function.
-
 <a id="replicator-update"></a>
 ### Update
  
@@ -139,6 +127,18 @@ As reply of the `Get` a `Replicator.GetSuccess` is sent to the sender of the
 level within the supplied timeout. Otherwise a `Replicator.GetFailure` is sent.
 If the key does not exist the reply will be `Replicator.NotFound`.
 
+### Subscribe
+
+When we start up the actor we subscribe it to changes for our key, meaning whenever the replicator observes a change
+for the counter our actor will receive a @scala[`Replicator.Changed[GCounter]`]@java[`Replicator.Changed<GCounter>`]. Since
+this is not a message in our protocol, we use a message transformation function to wrap it in the internal `InternalChanged`
+message, which is then handled in the regular message handling of the behavior, as shown in the above example.
+Subscribers will be notified of changes, if there are any, based on the 
+configurable `akka.cluster.distributed-data.notify-subscribers-interval`.
+
+The subscriber is automatically unsubscribed if the subscriber is terminated. A subscriber can
+also be de-registered with the `replicatorAdapter.unsubscribe(key)` function.
+
 ### Delete
 
 A data entry can be deleted by sending a `Replicator.Delete` message to the local
@@ -168,7 +168,7 @@ types that support both updates and removals, for example `ORMap` or `ORSet`.
 
 @@@
 
-### delta-CRDT
+### Delta-CRDT
 
 [Delta State Replicated Data Types](http://arxiv.org/abs/1603.01529)
 are supported. A delta-CRDT is a way to reduce the need for sending the full state
