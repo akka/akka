@@ -4,7 +4,7 @@ This chapter outlines the concept behind supervision, the primitives offered
 and their semantics. For details on how that translates into real code, please
 refer to @ref:[supervision](../typed/fault-tolerance.md).
 
-Supervision has changed since classic, for details on classic supervision see @ref:[Classic Supervision](../classic/supervision.md)
+Supervision has changed since classic, for details on classic supervision see @ref:[Classic Supervision](../supervision-classic.md)
 
 <a id="supervision-directives"></a>
 ## What Supervision Means

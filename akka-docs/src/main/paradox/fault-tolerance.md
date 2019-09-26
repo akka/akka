@@ -128,7 +128,7 @@ by overriding the `logFailure` method.
 ## Supervision of Top-Level Actors
 
 Toplevel actors means those which are created using `system.actorOf()`, and
-they are children of the @ref:[User Guardian](classic/supervision.md#user-guardian). There are no
+they are children of the @ref:[User Guardian](supervision-classic.md#user-guardian). There are no
 special rules applied in this case, the guardian applies the configured
 strategy.
 

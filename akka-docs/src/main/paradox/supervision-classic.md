@@ -1,7 +1,7 @@
 # Classic Supervision
 
 This chapter outlines the concept behind the supervision in Akka Classic, for the
-corresponding overview of the new APIs see @ref:[supervision](../general/supervision.md)
+corresponding overview of the new APIs see @ref:[supervision](general/supervision.md)
 
 ## Sample project
 
@@ -61,18 +61,18 @@ messages that have their own mailboxes separate from user messages. This
 implies that supervision related events are not deterministically
 ordered relative to ordinary messages. In general, the user cannot influence
 the order of normal messages and failure notifications. For details and
-example see the @ref:[Discussion: Message Ordering](../general/message-delivery-reliability.md#message-ordering) section.
+example see the @ref:[Discussion: Message Ordering](general/message-delivery-reliability.md#message-ordering) section.
 
 @@@
 
 <a id="toplevel-supervisors"></a>
 ## The Top-Level Supervisors
 
-![guardians.png](guardians.png)
+![guardians.png](general/guardians.png)
 
 An actor system will during its creation start at least three actors, shown in
 the image above. For more information about the consequences for actor paths
-see @ref:[Top-Level Scopes for Actor Paths](../general/addressing.md#toplevel-paths).
+see @ref:[Top-Level Scopes for Actor Paths](general/addressing.md#toplevel-paths).
 
 <a id="user-guardian"></a>
 ### `/user`: The Guardian Actor
@@ -105,7 +105,7 @@ which will shut down the whole actor system.
 ### `/`: The Root Guardian
 
 The root guardian is the grand-parent of all so-called “top-level” actors and
-supervises all the special actors mentioned in @ref:[Top-Level Scopes for Actor Paths](../general/addressing.md#toplevel-paths) using the
+supervises all the special actors mentioned in @ref:[Top-Level Scopes for Actor Paths](general/addressing.md#toplevel-paths) using the
 `SupervisorStrategy.stoppingStrategy`, whose purpose is to terminate the
 child upon any type of `Exception`. All other throwables will be
 escalated … but to whom? Since every real actor has a supervisor, the
@@ -150,7 +150,7 @@ Please note that creating one-off actors from an all-for-one supervisor entails
 that failures escalated by the temporary actor will affect all the permanent
 ones. If this is not desired, install an intermediate supervisor; this can very
 be done by declaring a router of size 1 for the worker, see
-@ref:[Routing](../routing.md).
+@ref:[Routing](routing.md).
 
 
 ## Delayed restarts for classic actors
@@ -163,7 +163,7 @@ The `akka.pattern.BackoffSupervisor` implements the so-called
 
 This pattern is useful when the started actor fails <a id="^1" href="#1">[1]</a> because some external resource is not available,
 and we need to give it some time to start-up again. One of the prime examples when this is useful is
-when a @ref:[PersistentActor](../persistence.md) fails (by stopping) with a persistence failure - which indicates that
+when a @ref:[PersistentActor](persistence.md) fails (by stopping) with a persistence failure - which indicates that
 the database may be down or overloaded, in such situations it makes most sense to give it a little bit of time
 to recover before the persistent actor is started.
 
