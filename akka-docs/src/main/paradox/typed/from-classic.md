@@ -381,7 +381,7 @@ Links to reference documentation:
 The correspondence of the classic `PersistentActor` is @scala[`akka.persistence.typed.scaladsl.EventSourcedBehavior`]@java[`akka.persistence.typed.javadsl.EventSourcedBehavior`].
 
 The Typed API is much more guided to facilitate event sourcing best practises. It also has tighter integration with
-Cluster Sharding via `EventSourcedEntity`.
+Cluster Sharding.
 
 Links to reference documentation:
 

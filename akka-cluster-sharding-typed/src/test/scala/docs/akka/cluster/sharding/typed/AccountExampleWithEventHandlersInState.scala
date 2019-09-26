@@ -7,8 +7,9 @@ package docs.akka.cluster.sharding.typed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.cluster.sharding.typed.scaladsl.EventSourcedEntity
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.ReplyEffect
 import akka.serialization.jackson.CborSerializable
 
@@ -95,40 +96,41 @@ object AccountExampleWithEventHandlersInState {
     // to generate the stub with types for the command and event handlers.
 
     //#withEnforcedReplies
-    def apply(accountNumber: String): Behavior[Command[_]] = {
-      EventSourcedEntity.withEnforcedReplies(TypeKey, accountNumber, EmptyAccount, commandHandler, eventHandler)
+    def apply(accountNumber: String, persistenceId: PersistenceId): Behavior[Command[_]] = {
+      EventSourcedBehavior.withEnforcedReplies(persistenceId, EmptyAccount, commandHandler(accountNumber), eventHandler)
     }
     //#withEnforcedReplies
 
-    private val commandHandler: (Account, Command[_]) => ReplyEffect[Event, Account] = { (state, cmd) =>
-      state match {
-        case EmptyAccount =>
-          cmd match {
-            case c: CreateAccount => createAccount(c)
-            case _                => Effect.unhandled.thenNoReply() // CreateAccount before handling any other commands
-          }
+    private def commandHandler(accountNumber: String): (Account, Command[_]) => ReplyEffect[Event, Account] = {
+      (state, cmd) =>
+        state match {
+          case EmptyAccount =>
+            cmd match {
+              case c: CreateAccount => createAccount(c)
+              case _                => Effect.unhandled.thenNoReply() // CreateAccount before handling any other commands
+            }
 
-        case acc @ OpenedAccount(_) =>
-          cmd match {
-            case c: Deposit       => deposit(c)
-            case c: Withdraw      => withdraw(acc, c)
-            case c: GetBalance    => getBalance(acc, c)
-            case c: CloseAccount  => closeAccount(acc, c)
-            case c: CreateAccount => Effect.reply(c.replyTo)(Rejected("Account is already created"))
-          }
+          case acc @ OpenedAccount(_) =>
+            cmd match {
+              case c: Deposit       => deposit(c)
+              case c: Withdraw      => withdraw(acc, c)
+              case c: GetBalance    => getBalance(acc, c)
+              case c: CloseAccount  => closeAccount(acc, c)
+              case c: CreateAccount => Effect.reply(c.replyTo)(Rejected(s"Account $accountNumber is already created"))
+            }
 
-        case ClosedAccount =>
-          cmd match {
-            case c @ (_: Deposit | _: Withdraw) =>
-              Effect.reply(c.replyTo)(Rejected("Account is closed"))
-            case GetBalance(replyTo) =>
-              Effect.reply(replyTo)(CurrentBalance(Zero))
-            case CloseAccount(replyTo) =>
-              Effect.reply(replyTo)(Rejected("Account is already closed"))
-            case CreateAccount(replyTo) =>
-              Effect.reply(replyTo)(Rejected("Account is already created"))
-          }
-      }
+          case ClosedAccount =>
+            cmd match {
+              case c @ (_: Deposit | _: Withdraw) =>
+                Effect.reply(c.replyTo)(Rejected(s"Account $accountNumber is closed"))
+              case GetBalance(replyTo) =>
+                Effect.reply(replyTo)(CurrentBalance(Zero))
+              case CloseAccount(replyTo) =>
+                Effect.reply(replyTo)(Rejected(s"Account $accountNumber is already closed"))
+              case CreateAccount(replyTo) =>
+                Effect.reply(replyTo)(Rejected(s"Account $accountNumber is already closed"))
+            }
+        }
     }
 
     private val eventHandler: (Account, Event) => Account = { (state, event) =>

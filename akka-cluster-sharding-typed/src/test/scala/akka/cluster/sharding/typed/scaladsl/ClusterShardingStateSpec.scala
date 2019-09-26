@@ -40,7 +40,7 @@ class ClusterShardingStateSpec
       probe.expectMessage(CurrentShardRegionState(Set()))
 
       val shardingRef: ActorRef[IdTestProtocol] = sharding.init(
-        Entity(typeKey, _ => ClusterShardingSpec.behaviorWithId())
+        Entity(typeKey)(_ => ClusterShardingSpec.behaviorWithId())
           .withStopMessage(IdStopPlz())
           .withMessageExtractor(idTestProtocolMessageExtractor))
 

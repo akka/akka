@@ -6,11 +6,12 @@ package jdocs.akka.cluster.sharding.typed;
 
 import akka.actor.typed.ActorRef;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
-import akka.cluster.sharding.typed.javadsl.EventSourcedEntityWithEnforcedReplies;
+import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandlerWithReply;
 import akka.persistence.typed.javadsl.CommandHandlerWithReplyBuilder;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventHandlerBuilder;
+import akka.persistence.typed.javadsl.EventSourcedBehaviorWithEnforcedReplies;
 import akka.persistence.typed.javadsl.ReplyEffect;
 import akka.serialization.jackson.CborSerializable;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -21,13 +22,13 @@ import java.math.BigDecimal;
  * Bank account example illustrating: - different state classes representing the lifecycle of the
  * account - mutable state - event handlers that delegate to methods in the state classes - command
  * handlers that delegate to methods in the EventSourcedBehavior class - replies of various types,
- * using EventSourcedEntityWithEnforcedReplies
+ * using EventSourcedBehaviorWithEnforcedReplies
  */
 public interface AccountExampleWithMutableState {
 
   // #account-entity
   public class AccountEntity
-      extends EventSourcedEntityWithEnforcedReplies<
+      extends EventSourcedBehaviorWithEnforcedReplies<
           AccountEntity.Command, AccountEntity.Event, AccountEntity.Account> {
 
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
@@ -172,12 +173,15 @@ public interface AccountExampleWithMutableState {
 
     public static class ClosedAccount implements Account {}
 
-    public static AccountEntity create(String accountNumber) {
-      return new AccountEntity(accountNumber);
+    public static AccountEntity create(String accountNumber, PersistenceId persistenceId) {
+      return new AccountEntity(accountNumber, persistenceId);
     }
 
-    private AccountEntity(String accountNumber) {
-      super(ENTITY_TYPE_KEY, accountNumber);
+    private final String accountNumber;
+
+    private AccountEntity(String accountNumber, PersistenceId persistenceId) {
+      super(persistenceId);
+      this.accountNumber = accountNumber;
     }
 
     @Override

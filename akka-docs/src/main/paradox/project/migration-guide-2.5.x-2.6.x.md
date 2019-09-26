@@ -508,9 +508,6 @@ Akka Typed APIs are still marked as [may change](../common/may-change.md) and a 
 made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible changes are:
 
 * `Behaviors.intercept` now takes a factory function for the interceptor.
-* Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
-* New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
-* New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
 * `ActorSystem.scheduler` previously gave access to the classic `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`.
   Additionally `schedule` method has been replaced by `scheduleWithFixedDelay` and `scheduleAtFixedRate`. Actors that needs to schedule tasks should
   prefer `Behaviors.withTimers`.
@@ -539,6 +536,12 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `GetDataDeleted` and `UpdateDataDeleted` introduced as described in @ref[DataDeleted](#datadeleted).
 * `SubscribeResponse` introduced in `Subscribe` because the responses can be both `Changed` and `Deleted`.
 * `ReplicationDeleteFailure` renamed to `DeleteFailure`.
+* `EventSourcedEntity` removed in favor using plain `EventSourcedBehavior` because the alternative way was
+  causing more confusion than adding value. Construction of `PersistentId` for the `EventSourcedBehavior` is
+  facilitated by factory methods in `PersistenceId`.
+* `akka.cluster.sharding.typed.scaladsl.Entity.apply` changed to use two parameter lists because the new
+  `EntityContext.entityTypeKey` required additional type parameter that is inferred better with a secondary
+  parameter list.
 * `EventSourcedBehavior.withEnforcedReplies` signature changed. Command is not required to extend `ExpectingReply` anymore. `ExpectingReply` has been removed therefore.  
 
 #### Akka Typed Stream API changes

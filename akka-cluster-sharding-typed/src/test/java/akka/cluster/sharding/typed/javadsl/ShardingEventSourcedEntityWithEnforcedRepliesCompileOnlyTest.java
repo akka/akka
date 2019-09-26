@@ -7,8 +7,10 @@ package akka.cluster.sharding.typed.javadsl;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.Behavior;
 import akka.cluster.typed.Cluster;
 import akka.cluster.typed.Join;
+import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -32,13 +34,17 @@ public class ShardingEventSourcedEntityWithEnforcedRepliesCompileOnlyTest {
   }
 
   static class TestPersistentEntityWithEnforcedReplies
-      extends EventSourcedEntityWithEnforcedReplies<Command, String, String> {
+      extends EventSourcedBehaviorWithEnforcedReplies<Command, String, String> {
 
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
         EntityTypeKey.create(Command.class, "HelloWorld");
 
-    public TestPersistentEntityWithEnforcedReplies(String entityId) {
-      super(ENTITY_TYPE_KEY, entityId);
+    public static Behavior<Command> create(String entityId, PersistenceId persistenceId) {
+      return new TestPersistentEntityWithEnforcedReplies(entityId, persistenceId);
+    }
+
+    private TestPersistentEntityWithEnforcedReplies(String entityId, PersistenceId persistenceId) {
+      super(persistenceId);
     }
 
     @Override
@@ -78,9 +84,12 @@ public class ShardingEventSourcedEntityWithEnforcedRepliesCompileOnlyTest {
     ClusterSharding sharding = ClusterSharding.get(testKit.system());
 
     sharding.init(
-        Entity.ofEventSourcedEntityWithEnforcedReplies(
+        Entity.of(
             TestPersistentEntityWithEnforcedReplies.ENTITY_TYPE_KEY,
             entityContext ->
-                new TestPersistentEntityWithEnforcedReplies(entityContext.getEntityId())));
+                TestPersistentEntityWithEnforcedReplies.create(
+                    entityContext.getEntityId(),
+                    PersistenceId.of(
+                        entityContext.getEntityTypeKey().name(), entityContext.getEntityId()))));
   }
 }

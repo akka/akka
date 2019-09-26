@@ -95,8 +95,8 @@ object BasicPersistentBehaviorCompileOnly {
   import MyPersistentBehavior._
 
   object RecoveryBehavior {
-    //#recovery
     def apply(): Behavior[Command] =
+      //#recovery
       EventSourcedBehavior[Command, Event, State](
         persistenceId = PersistenceId("abc"),
         emptyState = State(),
@@ -110,8 +110,8 @@ object BasicPersistentBehaviorCompileOnly {
   }
 
   object TaggingBehavior {
-    //#tagging
     def apply(): Behavior[Command] =
+      //#tagging
       EventSourcedBehavior[Command, Event, State](
         persistenceId = PersistenceId("abc"),
         emptyState = State(),

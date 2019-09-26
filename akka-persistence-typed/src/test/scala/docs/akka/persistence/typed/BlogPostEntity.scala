@@ -7,6 +7,7 @@ package docs.akka.persistence.typed
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -55,12 +56,12 @@ object BlogPostEntity {
   //#commands
 
   //#behavior
-  def apply(entityId: String): Behavior[Command] =
-    EventSourcedBehavior[Command, Event, State](
-      persistenceId = PersistenceId(s"Blog-$entityId"),
-      emptyState = BlankState,
-      commandHandler,
-      eventHandler)
+  def apply(entityId: String, persistenceId: PersistenceId): Behavior[Command] = {
+    Behaviors.setup { context =>
+      context.log.info("Starting BlogPostEntity {}", entityId)
+      EventSourcedBehavior[Command, Event, State](persistenceId, emptyState = BlankState, commandHandler, eventHandler)
+    }
+  }
   //#behavior
 
   //#command-handler

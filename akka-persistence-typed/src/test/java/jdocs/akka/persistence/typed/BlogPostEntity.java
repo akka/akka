@@ -160,8 +160,12 @@ public class BlogPostEntity
   // #commands
 
   // #behavior
-  public static Behavior<Command> create(String entityId) {
-    return Behaviors.setup(ctx -> new BlogPostEntity(new PersistenceId("Blog-" + entityId)));
+  public static Behavior<Command> create(String entityId, PersistenceId persistenceId) {
+    return Behaviors.setup(
+        context -> {
+          context.getLog().info("Starting BlogPostEntity {}", entityId);
+          return new BlogPostEntity(persistenceId);
+        });
   }
 
   private BlogPostEntity(PersistenceId persistenceId) {

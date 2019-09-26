@@ -20,6 +20,7 @@ import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.sharding.typed.javadsl.Entity;
+import akka.persistence.typed.PersistenceId;
 
 // #import
 
@@ -204,7 +205,14 @@ interface ShardingCompileOnlyTest {
     EntityTypeKey<BlogPostEntity.Command> blogTypeKey =
         EntityTypeKey.create(BlogPostEntity.Command.class, "BlogPost");
 
-    sharding.init(Entity.of(blogTypeKey, ctx -> BlogPostEntity.create(ctx.getEntityId())));
+    sharding.init(
+        Entity.of(
+            blogTypeKey,
+            entityContext ->
+                BlogPostEntity.create(
+                    entityContext.getEntityId(),
+                    PersistenceId.of(
+                        entityContext.getEntityTypeKey().name(), entityContext.getEntityId()))));
     // #persistence
   }
 }
