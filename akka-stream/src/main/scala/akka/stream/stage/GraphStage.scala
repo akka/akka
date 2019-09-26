@@ -12,7 +12,7 @@ import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
 import akka.pattern.ask
 import akka.stream._
-import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
 import akka.stream.impl.{ ReactiveStreamsCompliance, TraversalBuilder }
 import akka.stream.scaladsl.GenericGraphWithChangedAttributes

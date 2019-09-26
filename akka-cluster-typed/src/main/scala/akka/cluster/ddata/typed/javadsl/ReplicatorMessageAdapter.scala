@@ -64,7 +64,7 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
    * the replicator are transformed to the message protocol of the requesting actor with
    * the given `responseAdapter` function.
    */
-  def subscribe(key: Key[B], responseAdapter: JFunction[Replicator.SubscribeResponse[B], A]): Unit = {
+  def subscribe(key: Key[B], responseAdapter: akka.japi.function.Function[Replicator.SubscribeResponse[B], A]): Unit = {
     // unsubscribe in case it's called more than once per key
     unsubscribe(key)
     changedMessageAdapters.get(key).foreach { subscriber =>

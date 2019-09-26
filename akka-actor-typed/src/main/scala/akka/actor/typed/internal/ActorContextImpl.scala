@@ -6,21 +6,18 @@ package akka.actor.typed
 package internal
 
 import java.time.Duration
-import java.util.function.{ Function => JFunction }
 import java.util.ArrayList
 import java.util.Optional
 import java.util.concurrent.CompletionStage
-import java.util.function.BiConsumer
-import java.util.function.BiFunction
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
-
 import akka.annotation.InternalApi
 import akka.util.OptionVal
 import akka.util.Timeout
 import akka.util.JavaDurationConverters._
+import com.github.ghik.silencer.silent
 import org.slf4j.Logger
 import org.slf4j.LoggerFactory
 
@@ -139,17 +136,15 @@ import org.slf4j.LoggerFactory
   }
 
   // Java API impl
-  def ask[Req, Res](
+  @silent("never used") // resClass is just a pretend param
+  override def ask[Req, Res](
       resClass: Class[Res],
       target: RecipientRef[Req],
       responseTimeout: Duration,
-      createRequest: JFunction[ActorRef[Res], Req],
-      applyToResponse: BiFunction[Res, Throwable, T]): Unit = {
+      createRequest: akka.japi.function.Function[ActorRef[Res], Req],
+      applyToResponse: akka.japi.function.Function2[Res, Throwable, T]): Unit = {
     import akka.actor.typed.javadsl.AskPattern
-    val message = new akka.japi.function.Function[ActorRef[Res], Req] {
-      def apply(ref: ActorRef[Res]): Req = createRequest(ref)
-    }
-    pipeToSelf(AskPattern.ask(target, message, responseTimeout, system.scheduler), applyToResponse)
+    pipeToSelf(AskPattern.ask(target, (ref) => createRequest(ref), responseTimeout, system.scheduler), applyToResponse)
   }
 
   // Scala API impl
@@ -158,14 +153,14 @@ import org.slf4j.LoggerFactory
   }
 
   // Java API impl
-  def pipeToSelf[Value](future: CompletionStage[Value], applyToResult: BiFunction[Value, Throwable, T]): Unit = {
-    future.whenComplete(new BiConsumer[Value, Throwable] {
-      def accept(value: Value, ex: Throwable): Unit = {
-        if (value != null) self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
-        if (ex != null)
-          self.unsafeUpcast ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
-      }
-    })
+  def pipeToSelf[Value](
+      future: CompletionStage[Value],
+      applyToResult: akka.japi.function.Function2[Value, Throwable, T]): Unit = {
+    future.whenComplete { (value, ex) =>
+      if (value != null) self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
+      if (ex != null)
+        self.unsafeUpcast ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
+    }
   }
 
   private[akka] override def spawnMessageAdapter[U](f: U => T, name: String): ActorRef[U] =
@@ -185,7 +180,7 @@ import org.slf4j.LoggerFactory
     internalMessageAdapter(messageClass, f)
   }
 
-  override def messageAdapter[U](messageClass: Class[U], f: JFunction[U, T]): ActorRef[U] =
+  override def messageAdapter[U](messageClass: Class[U], f: akka.japi.function.Function[U, T]): ActorRef[U] =
     internalMessageAdapter(messageClass, f.apply)
 
   private def internalMessageAdapter[U](messageClass: Class[U], f: U => T): ActorRef[U] = {

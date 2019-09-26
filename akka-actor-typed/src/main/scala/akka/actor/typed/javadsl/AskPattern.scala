@@ -37,8 +37,8 @@ object AskPattern {
    */
   def ask[Req, Res](
       actor: RecipientRef[Req],
-      message: JFunction[ActorRef[Res], Req],
+      messageFactory: JFunction[ActorRef[Res], Req],
       timeout: Duration,
       scheduler: Scheduler): CompletionStage[Res] =
-    (actor.ask(message.apply)(timeout.asScala, scheduler)).toJava
+    (actor.ask(messageFactory.apply)(timeout.asScala, scheduler)).toJava
 }

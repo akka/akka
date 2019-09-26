@@ -23,7 +23,7 @@ object Dependencies {
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.9.9"
   val jacksonDatabindVersion = "2.9.9.3"
-  val protobufJavaVersion = "3.9.1"
+  val protobufJavaVersion = "3.9.2"
   val logbackVersion = "1.2.3"
 
   val scala212Version = "2.12.9"

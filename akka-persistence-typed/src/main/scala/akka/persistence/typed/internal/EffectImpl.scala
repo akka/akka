@@ -7,9 +7,9 @@ package akka.persistence.typed.internal
 import scala.collection.immutable
 
 import akka.annotation.InternalApi
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.javadsl
 import akka.persistence.typed.scaladsl
+import akka.actor.typed.ActorRef
 
 /** INTERNAL API */
 @InternalApi
@@ -24,9 +24,9 @@ private[akka] abstract class EffectImpl[+Event, State]
   override def thenRun(chainedEffect: State => Unit): EffectImpl[Event, State] =
     CompositeEffect(this, new Callback[State](chainedEffect))
 
-  override def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage])(
+  override def thenReply[ReplyMessage](replyTo: ActorRef[ReplyMessage])(
       replyWithMessage: State => ReplyMessage): EffectImpl[Event, State] =
-    CompositeEffect(this, new ReplyEffectImpl[ReplyMessage, State](cmd.replyTo, replyWithMessage))
+    CompositeEffect(this, new ReplyEffectImpl[ReplyMessage, State](replyTo, replyWithMessage))
 
   override def thenUnstashAll(): EffectImpl[Event, State] =
     CompositeEffect(this, UnstashAll.asInstanceOf[SideEffect[State]])

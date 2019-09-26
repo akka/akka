@@ -241,8 +241,8 @@ alternatively to `SessionGranted` we may also receive a
 @@@
 
 Now to try things out we must start both a chat room and a gabbler and of
-course we do this inside an Actor system. Since there can be only one guardian
-supervisor we could either start the chat room from the gabbler (which we don’t
+course we do this inside an Actor system. Since there can be only one user guardian
+we could either start the chat room from the gabbler (which we don’t
 want—it complicates its logic) or the gabbler from the chat room (which is
 nonsensical) or we start both of them from a third Actor—our only sensible
 choice:
@@ -385,8 +385,8 @@ Java
 :  @@snip [OOIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OOIntroTest.java) {  #chatroom-gabbler }
 
 Now to try things out we must start both a chat room and a gabbler and of
-course we do this inside an Actor system. Since there can be only one guardian
-supervisor we could either start the chat room from the gabbler (which we don’t
+course we do this inside an Actor system. Since there can be only one user guardian
+we could either start the chat room from the gabbler (which we don’t
 want—it complicates its logic) or the gabbler from the chat room (which is
 nonsensical) or we start both of them from a third Actor—our only sensible
 choice:

@@ -24,7 +24,6 @@ import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.javadsl.StashOverflowException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import com.typesafe.config.Config
@@ -45,22 +44,21 @@ object EventSourcedBehaviorStashSpec {
     }
     """).withFallback(ConfigFactory.defaultReference()).resolve()
 
-  sealed trait Command[ReplyMessage] extends ExpectingReply[ReplyMessage]
+  sealed trait Command[ReplyMessage]
   // Unstash and change to active mode
-  final case class Activate(id: String, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class Activate(id: String, val replyTo: ActorRef[Ack]) extends Command[Ack]
   // Change to active mode, stash incoming Increment
-  final case class Deactivate(id: String, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class Deactivate(id: String, val replyTo: ActorRef[Ack]) extends Command[Ack]
   // Persist Incremented if in active mode, otherwise stashed
-  final case class Increment(id: String, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class Increment(id: String, val replyTo: ActorRef[Ack]) extends Command[Ack]
   // Persist ValueUpdated, independent of active/inactive
-  final case class UpdateValue(id: String, value: Int, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class UpdateValue(id: String, value: Int, val replyTo: ActorRef[Ack]) extends Command[Ack]
   // Retrieve current state, independent of active/inactive
   final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
   final case class Unhandled(replyTo: ActorRef[NotUsed]) extends Command[NotUsed]
-  final case class Throw(id: String, t: Throwable, override val replyTo: ActorRef[Ack]) extends Command[Ack]
-  final case class IncrementThenThrow(id: String, t: Throwable, override val replyTo: ActorRef[Ack])
-      extends Command[Ack]
-  final case class Slow(id: String, latch: CountDownLatch, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class Throw(id: String, t: Throwable, val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class IncrementThenThrow(id: String, t: Throwable) extends Command[Ack]
+  final case class Slow(id: String, latch: CountDownLatch, val replyTo: ActorRef[Ack]) extends Command[Ack]
 
   final case class Ack(id: String)
 
@@ -115,27 +113,27 @@ object EventSourcedBehaviorStashSpec {
 
   private def active(state: State, command: Command[_]): ReplyEffect[Event, State] = {
     command match {
-      case cmd: Increment =>
-        Effect.persist(Incremented(1)).thenReply(cmd)(_ => Ack(cmd.id))
-      case cmd @ UpdateValue(_, value, _) =>
-        Effect.persist(ValueUpdated(value)).thenReply(cmd)(_ => Ack(cmd.id))
-      case query: GetValue =>
-        Effect.reply(query)(state)
-      case cmd: Deactivate =>
-        Effect.persist(Deactivated).thenReply(cmd)(_ => Ack(cmd.id))
-      case cmd: Activate =>
+      case Increment(id, replyTo) =>
+        Effect.persist(Incremented(1)).thenReply(replyTo)(_ => Ack(id))
+      case UpdateValue(id, value, replyTo) =>
+        Effect.persist(ValueUpdated(value)).thenReply(replyTo)(_ => Ack(id))
+      case GetValue(replyTo) =>
+        Effect.reply(replyTo)(state)
+      case Deactivate(id, replyTo) =>
+        Effect.persist(Deactivated).thenReply(replyTo)(_ => Ack(id))
+      case Activate(id, replyTo) =>
         // already active
-        Effect.reply(cmd)(Ack(cmd.id))
+        Effect.reply(replyTo)(Ack(id))
       case _: Unhandled =>
         Effect.unhandled.thenNoReply()
       case Throw(id, t, replyTo) =>
         replyTo ! Ack(id)
         throw t
-      case cmd: IncrementThenThrow =>
-        Effect.persist(Incremented(1)).thenRun((_: State) => throw cmd.t).thenNoReply()
-      case cmd: Slow =>
-        cmd.latch.await(30, TimeUnit.SECONDS)
-        Effect.reply(cmd)(Ack(cmd.id))
+      case IncrementThenThrow(_, throwable) =>
+        Effect.persist(Incremented(1)).thenRun((_: State) => throw throwable).thenNoReply()
+      case Slow(id, latch, replyTo) =>
+        latch.await(30, TimeUnit.SECONDS)
+        Effect.reply(replyTo)(Ack(id))
     }
   }
 
@@ -143,15 +141,15 @@ object EventSourcedBehaviorStashSpec {
     command match {
       case _: Increment =>
         Effect.stash()
-      case cmd @ UpdateValue(_, value, _) =>
-        Effect.persist(ValueUpdated(value)).thenReply(cmd)(_ => Ack(cmd.id))
-      case query: GetValue =>
-        Effect.reply(query)(state)
-      case cmd: Deactivate =>
+      case UpdateValue(id, value, replyTo) =>
+        Effect.persist(ValueUpdated(value)).thenReply(replyTo)(_ => Ack(id))
+      case GetValue(replyTo) =>
+        Effect.reply(replyTo)(state)
+      case Deactivate(id, replyTo) =>
         // already inactive
-        Effect.reply(cmd)(Ack(cmd.id))
-      case cmd: Activate =>
-        Effect.persist(Activated).thenReply(cmd)((_: State) => Ack(cmd.id)).thenUnstashAll()
+        Effect.reply(replyTo)(Ack(id))
+      case Activate(id, replyTo) =>
+        Effect.persist(Activated).thenReply(replyTo)((_: State) => Ack(id)).thenUnstashAll()
       case _: Unhandled =>
         Effect.unhandled.thenNoReply()
       case Throw(id, t, replyTo) =>
@@ -429,7 +427,7 @@ class EventSourcedBehaviorStashSpec
 
       (1 to 10).foreach { n =>
         if (n == 3)
-          c ! IncrementThenThrow(s"inc-$n", new TestException("test"), ackProbe.ref)
+          c ! IncrementThenThrow(s"inc-$n", new TestException("test"))
         else
           c ! Increment(s"inc-$n", ackProbe.ref)
       }

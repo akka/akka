@@ -5,7 +5,6 @@
 package akka.stream.impl
 
 import akka.NotUsed
-import akka.actor._
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
@@ -13,7 +12,6 @@ import org.reactivestreams._
 
 import scala.annotation.unchecked.uncheckedVariance
 import akka.event.Logging
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -86,27 +84,4 @@ import com.github.ghik.silencer.silent
     new PublisherSource[Out](p, attributes, shape)
   override def withAttributes(attr: Attributes): SourceModule[Out, NotUsed] =
     new PublisherSource[Out](p, attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
- * Creates and wraps an actor into [[org.reactivestreams.Publisher]] from the given `props`,
- * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorPublisher]].
- */
-@InternalApi private[akka] final class ActorPublisherSource[Out](
-    props: Props,
-    val attributes: Attributes,
-    shape: SourceShape[Out])
-    extends SourceModule[Out, ActorRef](shape) {
-
-  @silent("deprecated")
-  override def create(context: MaterializationContext) = {
-    val publisherRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
-    (akka.stream.actor.ActorPublisher[Out](publisherRef), publisherRef)
-  }
-
-  override protected def newInstance(shape: SourceShape[Out]): SourceModule[Out, ActorRef] =
-    new ActorPublisherSource[Out](props, attributes, shape)
-  override def withAttributes(attr: Attributes): SourceModule[Out, ActorRef] =
-    new ActorPublisherSource(props, attr, amendShape(attr))
 }
