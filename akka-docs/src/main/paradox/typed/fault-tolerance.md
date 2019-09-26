@@ -32,7 +32,12 @@ with a fresh state that we know is valid.
 
 ## Supervision
 
-In Akka this "somewhere else" is called supervision. Supervision allows you to declaratively describe what should happen when a certain type of exceptions are thrown inside an actor. To use supervision the actual Actor behavior is wrapped using `Behaviors.supervise`, for example to restart on `IllegalStateExceptions`:
+In Akka this "somewhere else" is called supervision. Supervision allows you to declaratively describe what should happen when a certain type of exceptions are thrown inside an actor. 
+
+To use supervision the actual Actor behavior is wrapped using `Behaviors.supervise`. Typically you would wrap the actor
+ with supervision in the parent when spawning it as a child.
+ 
+This example restarts the actor when it fails with an `IllegalStateException`: 
 
 
 Scala
