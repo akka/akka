@@ -330,9 +330,9 @@ command or the reply will be sent later, perhaps after some asynchronous interac
 
 ## Serialization
 
-The same @ref:[serialization](../serialization.md) mechanism as for classic
-actors is also used in Akka Typed, also for persistent actors. When picking serialization solution for the events
-you should also consider that it must be possible read old events when the application has evolved.
+The same @ref:[serialization](../serialization.md) mechanism as for actor messages is also used for persistent actors.
+When picking serialization solution for the events you should also consider that it must be possible read old events
+when the application has evolved.
 Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
 
 You need to enable @ref:[serialization](../serialization.md) for your commands (messages), events, and state (snapshot).
