@@ -9,6 +9,6 @@
 * [index-actors](index-actors.md)
 * [index-cluster](index-cluster.md)
 * [index-network](index-network.md)
-* [index-utilities](classic/index-utilities.md)
+* [index-utilities](index-utilities-classic.md)
 
 @@@
