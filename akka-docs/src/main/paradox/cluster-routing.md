@@ -1,7 +1,7 @@
 # Classic Cluster Aware Routers
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see @ref[routers](typed/routers.md).
+For the full documentation of this feature and for new projects see @ref:[routers](typed/routers.md).
 
 All @ref:[routers](routing.md) can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.

@@ -1,7 +1,7 @@
 # Classic Distributed Data
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see @ref:[distributed-data](typed/distributed-data.md).
+For the full documentation of this feature and for new projects see @ref:[Distributed Data](typed/distributed-data.md).
  
 ## Dependency
 

@@ -1,6 +1,7 @@
 # Classic Cluster Usage
- 
-This document describes how to use Akka Cluster and the Cluster APIs using code samples.
+
+@@include[includes.md](includes.md) { #actor-api } 
+For the full documentation of this feature and for new projects see @ref:[Cluster](typed/cluster.md).
 For specific documentation topics see:  
 
 * @ref:[Cluster Specification](typed/cluster-concepts.md)

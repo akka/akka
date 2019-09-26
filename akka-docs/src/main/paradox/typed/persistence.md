@@ -11,6 +11,12 @@
 
 @@@
 
+@@@ note
+
+For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
+
+@@@
+
 ## Dependency
 
 To use Akka Persistence Typed, add the module to your project:

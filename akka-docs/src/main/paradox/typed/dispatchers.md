@@ -1,5 +1,11 @@
 # Dispatchers
 
+@@@ note
+
+For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers](../dispatchers.md).
+
+@@@
+
 ## Dependency
 
 Dispatchers are part of core Akka, which means that they are part of the akka-actor-typed dependency:
