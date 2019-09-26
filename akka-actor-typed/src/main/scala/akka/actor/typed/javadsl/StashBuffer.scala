@@ -4,12 +4,12 @@
 
 package akka.actor.typed.javadsl
 
-import java.util.function.Consumer
 import java.util.function.{ Function => JFunction }
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl
 import akka.annotation.DoNotInherit
+import akka.japi.function.Procedure
 
 /**
  * A non thread safe mutable message buffer that can be used to buffer messages inside actors
@@ -72,7 +72,7 @@ import akka.annotation.DoNotInherit
    *
    * @param f the function to apply to each element
    */
-  def forEach(f: Consumer[T]): Unit
+  def forEach(f: Procedure[T]): Unit
 
   /**
    * Process all stashed messages with the `behavior` and the returned
