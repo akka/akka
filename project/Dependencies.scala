@@ -31,7 +31,7 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.3"
 
-  val sslConfigVersion = "0.3.8"
+  val sslConfigVersion = "0.4.0"
 
   val Versions = Seq(
     crossScalaVersions := Seq(scala212Version, scala213Version),

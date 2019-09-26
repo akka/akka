@@ -6,6 +6,7 @@ package akka.stream.io
 
 import java.security.KeyStore
 import java.security.SecureRandom
+import java.security.cert.CertificateException
 import java.util.concurrent.TimeoutException
 
 import scala.collection.immutable
@@ -517,7 +518,12 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
       val cause = intercept[Exception] {
         Await.result(run("unknown.example.org"), 3.seconds)
       }
-      cause.getMessage should ===("Hostname verification failed! Expected session to be for unknown.example.org")
+      cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+      val cause2 = cause.getCause
+      cause2.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+      val cause3 = cause2.getCause
+      cause3.getClass should ===(classOf[CertificateException])
+      cause3.getMessage should ===("No name matching unknown.example.org found")
     }
 
   }

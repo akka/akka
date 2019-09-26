@@ -7,9 +7,10 @@ package com.typesafe.sslconfig.akka
 import java.security.KeyStore
 import java.security.cert.CertPathValidatorException
 import java.util.Collections
-import javax.net.ssl._
 
+import javax.net.ssl._
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.event.Logging
 import com.typesafe.sslconfig.akka.util.AkkaLoggerFactory
 import com.typesafe.sslconfig.ssl._
@@ -68,6 +69,15 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
     new AkkaSSLConfig(system, f.apply(config))
 
   val hostnameVerifier = buildHostnameVerifier(config)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi def useJvmHostnameVerification: Boolean =
+    hostnameVerifier match {
+      case _: DefaultHostnameVerifier | _: NoopHostnameVerifier => true
+      case _                                                    => false
+    }
 
   val sslEngineConfigurator = {
     val sslContext = if (config.default) {

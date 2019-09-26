@@ -549,7 +549,6 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         Await.result(run("unknown.example.org"), 3.seconds)
       }
 
-      // FIXME #21753 is this hostname verification ok? AkkaSSLConfig is verifying in different way?
       cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
       val cause2 = cause.getCause
       cause2.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem

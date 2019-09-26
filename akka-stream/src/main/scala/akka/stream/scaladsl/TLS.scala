@@ -5,8 +5,8 @@
 package akka.stream.scaladsl
 
 import java.util.Collections
-import javax.net.ssl.{ SNIHostName, SSLContext, SSLEngine, SSLSession }
 
+import javax.net.ssl.{ SNIHostName, SSLContext, SSLEngine, SSLSession }
 import akka.stream.impl.io.{ TlsModule, TlsUtils }
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -14,8 +14,9 @@ import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.util.ByteString
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-
 import scala.util.{ Failure, Success, Try }
+
+import javax.net.ssl.SSLParameters
 
 /**
  * Stream cipher support based upon JSSE.
@@ -93,7 +94,7 @@ object TLS {
       config.sslEngineConfigurator.configure(engine, sslContext)
       engine.setUseClientMode(role == Client)
 
-      val finalSessionParameters =
+      val paramsWithSni =
         if (firstSession.sslParameters.isDefined && hostInfo.isDefined && !config.config.loose.disableSNI) {
           val newParams = TlsUtils.cloneParameters(firstSession.sslParameters.get)
           // In Java 7, SNI was automatically enabled by enabling "jsse.enableSNIExtension" and using
@@ -101,21 +102,29 @@ object TLS {
           // In Java 8, SNI is only enabled if the server names are added to the parameters.
           // See https://github.com/akka/akka/issues/19287.
           newParams.setServerNames(Collections.singletonList(new SNIHostName(hostInfo.get._1)))
+
           firstSession.copy(sslParameters = Some(newParams))
         } else
           firstSession
 
-      TlsUtils.applySessionParameters(engine, finalSessionParameters)
+      val paramsWithHostnameVerification = if (hostInfo.isDefined && config.useJvmHostnameVerification) {
+        val newParams = paramsWithSni.sslParameters.map(TlsUtils.cloneParameters).getOrElse(new SSLParameters)
+        newParams.setEndpointIdentificationAlgorithm("HTTPS")
+        paramsWithSni.copy(sslParameters = Some(newParams))
+      } else
+        paramsWithSni
+
+      TlsUtils.applySessionParameters(engine, paramsWithHostnameVerification)
       engine
     }
     def verifySession: (ActorSystem, SSLSession) => Try[Unit] =
       hostInfo match {
         case Some((hostname, _)) => { (system, session) =>
-          val hostnameVerifier = theSslConfig(system).hostnameVerifier
-          if (!hostnameVerifier.verify(hostname, session))
-            Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $hostname"))
-          else
+          val config = theSslConfig(system)
+          if (config.useJvmHostnameVerification || config.hostnameVerifier.verify(hostname, session))
             Success(())
+          else
+            Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $hostname"))
         }
         case None => (_, _) => Success(())
       }
