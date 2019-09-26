@@ -22,7 +22,6 @@ object CompressionIntegrationSpec {
        loglevel = INFO
 
        actor {
-         serialize-messages = off
          serializers {
            test-message = "akka.remote.artery.compress.TestMessageSerializer"
          }

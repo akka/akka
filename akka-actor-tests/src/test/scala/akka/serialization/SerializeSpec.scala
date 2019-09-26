@@ -31,7 +31,6 @@ object SerializationTests {
   val serializeConf = s"""
     akka {
       actor {
-        serialize-messages = off
         serializers {
           test = "akka.serialization.NoopSerializer"
           test2 = "akka.serialization.NoopSerializer2"
@@ -105,7 +104,7 @@ object SerializationTests {
 
   class FooActor extends Actor {
     def receive = {
-      case s: String => sender() ! s
+      case msg => sender() ! msg
     }
   }
 
@@ -114,7 +113,7 @@ object SerializationTests {
       receiveBuilder().build()
   }
 
-  class NonSerializableActor(@unused system: ActorSystem) extends Actor {
+  class NonSerializableActor(@unused arg: AnyRef) extends Actor {
     def receive = {
       case s: String => sender() ! s
     }
@@ -292,9 +291,19 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
     system.stop(b)
 
     intercept[IllegalArgumentException] {
-      system.actorOf(Props(new NonSerializableActor(system)))
+      system.actorOf(Props(classOf[NonSerializableActor], new AnyRef))
     }
 
+  }
+
+  "not verify akka creators" in {
+    EventFilter.warning(start = "ok", occurrences = 1).intercept {
+      // ActorSystem is not possible to serialize, but ok since it starts with "akka."
+      val a = system.actorOf(Props(classOf[NonSerializableActor], system))
+      // to verify that nothing is logged
+      system.log.warning("ok")
+      system.stop(a)
+    }
   }
 
   "verify messages" in {
@@ -305,6 +314,18 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
       start = "Failed to serialize and deserialize message of type java.lang.Object",
       occurrences = 1).intercept {
       a ! new AnyRef
+    }
+    system.stop(a)
+  }
+
+  "not verify akka messages" in {
+    val a = system.actorOf(Props[FooActor])
+    EventFilter.warning(start = "ok", occurrences = 1).intercept {
+      // ActorSystem is not possible to serialize, but ok since it starts with "akka."
+      val message = system
+      Await.result(a ? message, timeout.duration) should ===(message)
+      // to verify that nothing is logged
+      system.log.warning("ok")
     }
     system.stop(a)
   }

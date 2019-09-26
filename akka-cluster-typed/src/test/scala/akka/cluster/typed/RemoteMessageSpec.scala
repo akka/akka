@@ -37,7 +37,6 @@ object RemoteMessageSpec {
       loglevel = debug
       actor {
         provider = cluster
-        serialize-creators = off
         serializers {
           test = "akka.cluster.typed.PingSerializer"
         }

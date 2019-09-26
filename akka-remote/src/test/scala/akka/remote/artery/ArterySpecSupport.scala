@@ -12,7 +12,6 @@ object ArterySpecSupport {
     akka {
       actor {
         provider = remote
-        serialize-creators = off
       }
       remote.warn-about-direct-use = off
       remote.artery {

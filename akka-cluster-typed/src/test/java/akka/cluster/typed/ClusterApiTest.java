@@ -26,10 +26,7 @@ public class ClusterApiTest extends JUnitSuite {
                 + "akka.remote.artery.canonical.hostname = 127.0.0.1 \n"
                 + "akka.cluster.jmx.multi-mbeans-in-same-jvm = on \n"
                 + "akka.coordinated-shutdown.terminate-actor-system = off \n"
-                + "akka.coordinated-shutdown.run-by-actor-system-terminate = off \n"
-                + "akka.actor { \n"
-                + "  serialize-messages = off \n"
-                + "}");
+                + "akka.coordinated-shutdown.run-by-actor-system-terminate = off \n");
 
     ActorSystem<?> system1 =
         ActorSystem.wrap(akka.actor.ActorSystem.create("ClusterApiTest", config));

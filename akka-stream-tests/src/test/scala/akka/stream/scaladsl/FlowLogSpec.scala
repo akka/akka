@@ -19,7 +19,6 @@ import scala.util.control.NoStackTrace
 
 class FlowLogSpec extends StreamSpec("""
      akka.loglevel = DEBUG # test verifies logging
-     akka.actor.serialize-messages = off
      """) with ScriptedTest {
 
   val logProbe = {

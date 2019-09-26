@@ -83,7 +83,6 @@ object RemotingSpec {
 
     akka {
       actor.provider = remote
-      actor.serialize-messages = off
       # test is using Java serialization and not priority to rewrite
       actor.allow-java-serialization = on
       actor.warn-about-java-serializer-usage = off
@@ -503,9 +502,6 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val config = ConfigFactory
         .parseString(
           """
-            # Additional internal serialization verification need so be off, otherwise it triggers two error messages
-            # instead of one: one for the internal check, and one for the actual remote send -- tripping off this test
-            akka.actor.serialize-messages = off
             akka.remote.classic.enabled-transports = ["akka.remote.classic.test", "akka.remote.classic.netty.tcp"]
             akka.remote.classic.test.local-address = "test://other-system@localhost:12347"
           """)

@@ -13,7 +13,6 @@ import akka.testkit.SocketUtil.temporaryServerAddresses
 
 class UdpConnectedIntegrationSpec extends AkkaSpec("""
     akka.loglevel = INFO
-    akka.actor.serialize-creators = on
     """) with ImplicitSender {
 
   val addresses = temporaryServerAddresses(5, udp = true)

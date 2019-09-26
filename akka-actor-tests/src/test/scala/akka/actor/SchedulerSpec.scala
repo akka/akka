@@ -28,7 +28,6 @@ object SchedulerSpec {
     ConfigFactory.parseString("""
     akka.scheduler.implementation = akka.actor.LightArrayRevolverScheduler
     akka.scheduler.ticks-per-wheel = 32
-    akka.actor.serialize-messages = off
   """).withFallback(AkkaSpec.testConf)
 
 }

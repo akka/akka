@@ -27,7 +27,6 @@ object SystemMessageDeliveryStressTest {
       #loglevel = DEBUG
       remote.artery.enabled = false
       actor.provider = remote
-      actor.serialize-messages = off
       # test is using Java serialization and not priority to rewrite
       actor.allow-java-serialization = on
       actor.warn-about-java-serializer-usage = off

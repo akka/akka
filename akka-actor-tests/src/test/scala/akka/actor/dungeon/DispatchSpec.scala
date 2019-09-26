@@ -17,7 +17,10 @@ object DispatchSpec {
     }
   }
 }
-class DispatchSpec extends AkkaSpec("akka.actor.serialize-messages = on") with DefaultTimeout {
+class DispatchSpec extends AkkaSpec("""
+  akka.actor.serialize-messages = on
+  akka.actor.no-serialization-verification-needed-class-prefix = []
+  """) with DefaultTimeout {
   import DispatchSpec._
 
   "The dispatcher" should {

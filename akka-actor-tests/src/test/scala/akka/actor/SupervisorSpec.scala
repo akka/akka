@@ -97,11 +97,10 @@ object SupervisorSpec {
   }
 
   val config = ConfigFactory.parseString("""
-akka.actor.serialize-messages = off
-error-mailbox {
-  mailbox-type = "akka.actor.SupervisorSpec$Mailbox"
-}
-""")
+    error-mailbox {
+      mailbox-type = "akka.actor.SupervisorSpec$Mailbox"
+    }
+    """)
 }
 
 class SupervisorSpec

@@ -19,7 +19,6 @@ import akka.io.TcpListenerSpec.RegisterChannel
 
 class TcpListenerSpec extends AkkaSpec("""
     akka.io.tcp.batch-accept-limit = 2
-    akka.actor.serialize-creators = on
     """) {
 
   "A TcpListener" must {

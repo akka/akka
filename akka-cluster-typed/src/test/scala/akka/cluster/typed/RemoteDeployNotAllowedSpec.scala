@@ -21,7 +21,6 @@ object RemoteDeployNotAllowedSpec {
       loglevel = warning
       actor {
         provider = cluster
-        serialize-creators = off
       }
       remote.classic.netty.tcp.port = 0
       remote.artery {

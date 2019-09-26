@@ -149,7 +149,6 @@ object StreamRefsSpec {
 
       actor {
         provider = remote
-        serialize-messages = off
 
         default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
       }
