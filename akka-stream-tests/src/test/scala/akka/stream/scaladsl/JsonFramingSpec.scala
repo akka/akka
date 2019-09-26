@@ -44,6 +44,30 @@ class JsonFramingSpec extends AkkaSpec {
         """{ "name" : "jack" }""")
     }
 
+    "parse multiple arrays" in {
+      val input1 =
+        """
+          |[
+          | { "name" : "john" }
+          |]
+          |""".stripMargin
+
+      val input2 =
+        """
+          |[
+          | { "name" : "jack" }
+          |]
+          |""".stripMargin
+
+      val result = Source(List(ByteString(input1), ByteString(input2)))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq("""{ "name" : "john" }""", """{ "name" : "jack" }""")
+    }
+
     "emit single json element from string" in {
       val input =
         """| { "name": "john" }
