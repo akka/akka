@@ -15,8 +15,8 @@ Add the following dependency in your project:
 Use of Akka relieves you from creating the infrastructure for an actor system and from writing the low-level code necessary to control basic behavior. To appreciate this, let's look at the relationships between actors you create in your code and those that Akka creates and manages for you internally, the actor lifecycle, and failure handling.
 
 ## The Akka actor hierarchy
-``
-An actor in Akka always belongs to a parent. You create an actor by calling  `ActorContext.spawn(). The creator actor becomes the
+
+An actor in Akka always belongs to a parent. You create an actor by calling  `ActorContext.spawn()`. The creator actor becomes the
 _parent_ of the newly created _child_ actor. You might ask then, who is the parent of the _first_ actor you create?
 
 As illustrated below, all actors have a common parent, the user guardian, which is defined and created when you start the `ActorSystem`.
