@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -44,7 +44,7 @@ object DelayStrategy {
    * @param increaseStep step by which delay is increased
    * @param needsIncrease if `true` delay increases, if `false` delay resets to `initialDelay`
    */
-  def linearIncreasingDelay[T](increaseStep: java.time.Duration, needsIncrease: T ⇒ Boolean): DelayStrategy[T] =
+  def linearIncreasingDelay[T](increaseStep: java.time.Duration, needsIncrease: T => Boolean): DelayStrategy[T] =
     linearIncreasingDelay(increaseStep, needsIncrease, java.time.Duration.ZERO)
 
   /**
@@ -58,7 +58,7 @@ object DelayStrategy {
    */
   def linearIncreasingDelay[T](
       increaseStep: java.time.Duration,
-      needsIncrease: T ⇒ Boolean,
+      needsIncrease: T => Boolean,
       initialDelay: java.time.Duration): DelayStrategy[T] =
     linearIncreasingDelay(increaseStep, needsIncrease, initialDelay, java.time.Duration.ofNanos(Long.MaxValue))
 
@@ -74,7 +74,7 @@ object DelayStrategy {
    */
   def linearIncreasingDelay[T](
       increaseStep: java.time.Duration,
-      needsIncrease: T ⇒ Boolean,
+      needsIncrease: T => Boolean,
       initialDelay: java.time.Duration,
       maxDelay: java.time.Duration): DelayStrategy[T] = {
     require(increaseStep.compareTo(java.time.Duration.ZERO) > 0, "Increase step must be positive")

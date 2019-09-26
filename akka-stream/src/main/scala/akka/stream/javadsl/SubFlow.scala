@@ -826,7 +826,7 @@ class SubFlow[In, Out, Mat](
   def delayWith(
       delayStrategySupplier: Supplier[DelayStrategy[Out]],
       overFlowStrategy: DelayOverflowStrategy): SubFlow[In, Out, Mat] =
-    new SubFlow(delegate.delayWith(() ⇒ DelayStrategy.asScala(delayStrategySupplier.get), overFlowStrategy))
+    new SubFlow(delegate.delayWith(() => DelayStrategy.asScala(delayStrategySupplier.get), overFlowStrategy))
 
   /**
    * Discard the given number of elements at the beginning of the stream.

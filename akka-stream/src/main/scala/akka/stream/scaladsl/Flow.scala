@@ -1602,7 +1602,7 @@ trait FlowOps[+Out, +Mat] {
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def delay(of: FiniteDuration, strategy: DelayOverflowStrategy = DelayOverflowStrategy.dropTail): Repr[Out] =
-    via(new Delay[Out](() ⇒ DelayStrategy.fixedDelay(of), strategy))
+    via(new Delay[Out](() => DelayStrategy.fixedDelay(of), strategy))
 
   /**
    * Shifts elements emission in time by an amount individually determined through delay strategy a specified amount.
@@ -1635,7 +1635,7 @@ trait FlowOps[+Out, +Mat] {
    * @param delayStrategySupplier creates new [[DelayStrategy]] object for each materialization
    * @param overFlowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def delayWith(delayStrategySupplier: () ⇒ DelayStrategy[Out], overFlowStrategy: DelayOverflowStrategy): Repr[Out] =
+  def delayWith(delayStrategySupplier: () => DelayStrategy[Out], overFlowStrategy: DelayOverflowStrategy): Repr[Out] =
     via(new Delay[Out](delayStrategySupplier, overFlowStrategy))
 
   /**

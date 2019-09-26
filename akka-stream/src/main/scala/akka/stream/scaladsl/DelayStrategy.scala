@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -41,7 +41,7 @@ object DelayStrategy {
    */
   def linearIncreasingDelay[T](
       increaseStep: FiniteDuration,
-      needsIncrease: T ⇒ Boolean,
+      needsIncrease: T => Boolean,
       initialDelay: FiniteDuration = Duration.Zero,
       maxDelay: Duration = Duration.Inf): DelayStrategy[T] = {
     require(increaseStep > Duration.Zero, "Increase step must be positive")

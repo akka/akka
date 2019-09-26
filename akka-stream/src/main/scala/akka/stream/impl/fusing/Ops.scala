@@ -1733,31 +1733,31 @@ private[stream] object Collect {
               completeIfReady()
             }
           }
-        case DropHead =>
+        case _: DropHead =>
           () => {
             buffer.dropHead()
             grabAndPull()
           }
-        case DropTail =>
+        case _: DropTail =>
           () => {
             buffer.dropTail()
             grabAndPull()
           }
-        case DropNew =>
+        case _: DropNew =>
           () => {
             grab(in)
             if (pullCondition) pull(in)
           }
-        case DropBuffer =>
+        case _: DropBuffer =>
           () => {
             buffer.clear()
             grabAndPull()
           }
-        case Fail =>
+        case _: Fail =>
           () => {
             failStage(new BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
           }
-        case Backpressure =>
+        case _: Backpressure =>
           () => {
             throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
           }
@@ -1780,7 +1780,7 @@ private[stream] object Collect {
       }
 
       private def pullCondition: Boolean =
-        overflowStrategy != Backpressure || buffer.used < size
+        !overflowStrategy.isBackpressure || buffer.used < size
 
       private def grabAndPull(): Unit = {
         val element = grab(in)

@@ -918,7 +918,7 @@ class SubSource[Out, Mat](
   def delayWith(
       delayStrategySupplier: Supplier[DelayStrategy[Out]],
       overFlowStrategy: DelayOverflowStrategy): SubSource[Out, Mat] =
-    new SubSource(delegate.delayWith(() ⇒ DelayStrategy.asScala(delayStrategySupplier.get), overFlowStrategy))
+    new SubSource(delegate.delayWith(() => DelayStrategy.asScala(delayStrategySupplier.get), overFlowStrategy))
 
   /**
    * Recover allows to send last element on failure and gracefully complete the stream

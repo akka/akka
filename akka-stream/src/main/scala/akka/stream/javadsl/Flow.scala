@@ -1382,7 +1382,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   def delayWith(
       delayStrategySupplier: Supplier[DelayStrategy[Out]],
       overFlowStrategy: DelayOverflowStrategy): Flow[In, Out, Mat] =
-    new Flow(delegate.delayWith(() ⇒ DelayStrategy.asScala(delayStrategySupplier.get), overFlowStrategy))
+    new Flow(delegate.delayWith(() => DelayStrategy.asScala(delayStrategySupplier.get), overFlowStrategy))
 
   /**
    * Discard the given number of elements at the beginning of the stream.

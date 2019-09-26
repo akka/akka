@@ -270,29 +270,23 @@ class FlowDelaySpec extends StreamSpec {
     }
 
     "work with empty source" in {
-      Source.empty[Int]
-        .delay(Duration.Zero)
-        .runWith(TestSink.probe)
-        .request(1)
-        .expectComplete()
+      Source.empty[Int].delay(Duration.Zero).runWith(TestSink.probe).request(1).expectComplete()
     }
 
     "work with fixed delay" in {
 
-      val fixedDelay = 1 second
+      val fixedDelay = 1.second
 
       val elems = 1 to 10
 
       val probe = Source(elems)
-        .map(_ ⇒ System.nanoTime())
+        .map(_ => System.nanoTime())
         .delay(fixedDelay)
-        .map(start ⇒ System.nanoTime() - start)
+        .map(start => System.nanoTime() - start)
         .runWith(TestSink.probe)
 
-      elems.foreach(_ ⇒ {
-        val next = probe
-          .request(1)
-          .expectNext(fixedDelay + fixedDelay.dilated)
+      elems.foreach(_ => {
+        val next = probe.request(1).expectNext(fixedDelay + fixedDelay.dilated)
         next should be >= fixedDelay.toNanos
       })
 
@@ -304,12 +298,7 @@ class FlowDelaySpec extends StreamSpec {
 
       val elems = Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
 
-      Source(elems)
-        .delay(Duration.Zero)
-        .runWith(TestSink.probe)
-        .request(elems.size)
-        .expectNextN(elems)
-        .expectComplete()
+      Source(elems).delay(Duration.Zero).runWith(TestSink.probe).request(elems.size).expectNextN(elems).expectComplete()
     }
 
     "work with linear increasing delay" taggedAs TimingTest in {
@@ -322,13 +311,14 @@ class FlowDelaySpec extends StreamSpec {
       def incWhile(i: (Int, Long)): Boolean = i._1 < 7
 
       val probe = Source(elems)
-        .map(e ⇒ (e, System.nanoTime()))
-        .delayWith(() ⇒ DelayStrategy
-          .linearIncreasingDelay(step, incWhile, initial, max), OverflowStrategies.Backpressure)
-        .map(start ⇒ System.nanoTime() - start._2)
+        .map(e => (e, System.nanoTime()))
+        .delayWith(
+          () => DelayStrategy.linearIncreasingDelay(step, incWhile, initial, max),
+          OverflowStrategy.backpressure)
+        .map(start => System.nanoTime() - start._2)
         .runWith(TestSink.probe)
 
-      elems.foreach(e ⇒
+      elems.foreach(e =>
         if (incWhile((e, 1L))) {
           val afterIncrease = initial + e * step
           val delay = if (afterIncrease < max) {
@@ -336,14 +326,10 @@ class FlowDelaySpec extends StreamSpec {
           } else {
             max
           }
-          val next = probe
-            .request(1)
-            .expectNext(delay + delay.dilated)
+          val next = probe.request(1).expectNext(delay + delay.dilated)
           next should be >= delay.toNanos
         } else {
-          val next = probe
-            .request(1)
-            .expectNext(initial + initial.dilated)
+          val next = probe.request(1).expectNext(initial + initial.dilated)
           next should be >= initial.toNanos
         })
 

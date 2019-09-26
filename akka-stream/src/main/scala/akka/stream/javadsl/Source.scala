@@ -2690,7 +2690,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def delayWith(
       delayStrategySupplier: Supplier[DelayStrategy[Out]],
       overFlowStrategy: DelayOverflowStrategy): Source[Out, Mat] =
-    new Source(delegate.delayWith(() ⇒ DelayStrategy.asScala(delayStrategySupplier.get), overFlowStrategy))
+    new Source(delegate.delayWith(() => DelayStrategy.asScala(delayStrategySupplier.get), overFlowStrategy))
 
   /**
    * Discard the given number of elements at the beginning of the stream.
