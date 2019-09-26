@@ -29,7 +29,6 @@ import akka.cluster.sharding.typed.scaladsl.ClusterSharding.ShardCommand
 import akka.cluster.sharding.{ ClusterSharding => ClassicClusterSharding }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.scaladsl.Effect
 import com.typesafe.config.ConfigFactory
@@ -52,12 +51,8 @@ object ClusterShardingPersistenceSpec {
 
   sealed trait Command
   final case class Add(s: String) extends Command
-  final case class AddWithConfirmation(s: String)(override val replyTo: ActorRef[Done])
-      extends Command
-      with ExpectingReply[Done]
-  final case class PassivateAndPersist(s: String)(override val replyTo: ActorRef[Done])
-      extends Command
-      with ExpectingReply[Done]
+  final case class AddWithConfirmation(s: String)(val replyTo: ActorRef[Done]) extends Command
+  final case class PassivateAndPersist(s: String)(val replyTo: ActorRef[Done]) extends Command
   final case class Get(replyTo: ActorRef[String]) extends Command
   final case class Echo(msg: String, replyTo: ActorRef[String]) extends Command
   final case class Block(latch: CountDownLatch) extends Command
@@ -99,7 +94,7 @@ object ClusterShardingPersistenceSpec {
               if (stashing)
                 Effect.stash()
               else
-                Effect.persist(s).thenReply(cmd)(_ => Done)
+                Effect.persist(s).thenReply(cmd.replyTo)(_ => Done)
 
             case Get(replyTo) =>
               replyTo ! s"$entityId:$state"
@@ -107,7 +102,7 @@ object ClusterShardingPersistenceSpec {
 
             case cmd @ PassivateAndPersist(s) =>
               shard ! Passivate(ctx.self)
-              Effect.persist(s).thenReply(cmd)(_ => Done)
+              Effect.persist(s).thenReply(cmd.replyTo)(_ => Done)
 
             case Echo(msg, replyTo) =>
               Effect.none.thenRun(_ => replyTo ! msg)

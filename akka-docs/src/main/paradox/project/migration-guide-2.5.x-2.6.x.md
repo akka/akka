@@ -539,6 +539,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `GetDataDeleted` and `UpdateDataDeleted` introduced as described in @ref[DataDeleted](#datadeleted).
 * `SubscribeResponse` introduced in `Subscribe` because the responses can be both `Changed` and `Deleted`.
 * `ReplicationDeleteFailure` renamed to `DeleteFailure`.
+* `EventSourcedBehavior.withEnforcedReplies` signature changed. Command is not required to extend `ExpectingReply` anymore. `ExpectingReply` has been removed therefore.  
 
 #### Akka Typed Stream API changes
 

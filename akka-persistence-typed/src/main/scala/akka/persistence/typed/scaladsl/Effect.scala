@@ -6,9 +6,9 @@ package akka.persistence.typed.scaladsl
 
 import scala.collection.{ immutable => im }
 import akka.annotation.DoNotInherit
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
+import akka.actor.typed.ActorRef
 
 /**
  * Factory methods for creating [[Effect]] directives - how an event sourced actor reacts on a command.
@@ -85,8 +85,8 @@ object Effect {
     CompositeEffect(none.asInstanceOf[EffectBuilder[Event, State]], SideEffect.unstashAll[State]())
 
   /**
-   * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
-   * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
+   * Send a reply message to the command. The type of the
+   * reply message must conform to the type specified by the passed replyTo `ActorRef`.
    *
    * This has the same semantics as `cmd.replyTo.tell`.
    *
@@ -96,9 +96,9 @@ object Effect {
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def reply[ReplyMessage, Event, State](cmd: ExpectingReply[ReplyMessage])(
+  def reply[ReplyMessage, Event, State](replyTo: ActorRef[ReplyMessage])(
       replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
-    none[Event, State].thenReply[ReplyMessage](cmd)(_ => replyWithMessage)
+    none[Event, State].thenReply[ReplyMessage](replyTo)(_ => replyWithMessage)
 
   /**
    * When [[EventSourcedBehavior.withEnforcedReplies]] is used there will be compilation errors if the returned effect
@@ -152,10 +152,10 @@ trait EffectBuilder[+Event, State] extends Effect[Event, State] {
   def thenUnstashAll(): Effect[Event, State]
 
   /**
-   * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
-   * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
+   * Send a reply message to the command. The type of the
+   * reply message must conform to the type specified by the passed replyTo `ActorRef`.
    *
-   * This has the same semantics as `cmd.replyTo.tell`.
+   * This has the same semantics as `replyTo.tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
    * when the `EventSourcedBehavior` is created with [[EventSourcedBehavior.withEnforcedReplies]]. When
@@ -163,7 +163,7 @@ trait EffectBuilder[+Event, State] extends Effect[Event, State] {
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def thenReply[ReplyMessage](cmd: ExpectingReply[ReplyMessage])(
+  def thenReply[ReplyMessage](replyTo: ActorRef[ReplyMessage])(
       replyWithMessage: State => ReplyMessage): ReplyEffect[Event, State]
 
   /**

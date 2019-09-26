@@ -157,7 +157,7 @@ public class AccountExampleTest extends JUnitSuite {
             .serializationTestKit()
             .verifySerialization(new Deposit(BigDecimal.valueOf(100), opProbe.getRef()), false);
     assertEquals(BigDecimal.valueOf(100), deposit2.amount);
-    assertEquals(opProbe.getRef(), deposit2.replyTo());
+    assertEquals(opProbe.getRef(), deposit2.replyTo);
     testKit
         .serializationTestKit()
         .verifySerialization(new Withdraw(BigDecimal.valueOf(90), opProbe.getRef()), false);

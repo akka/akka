@@ -9,7 +9,6 @@ import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.ActorRef;
 import akka.cluster.typed.Cluster;
 import akka.cluster.typed.Join;
-import akka.persistence.typed.ExpectingReply;
 import akka.persistence.typed.javadsl.*;
 import org.junit.ClassRule;
 import org.junit.Rule;
@@ -20,20 +19,15 @@ public class ShardingEventSourcedEntityWithEnforcedRepliesCompileOnlyTest {
 
   @Rule public final LogCapturing logCapturing = new LogCapturing();
 
-  interface Command extends ExpectingReply<String> {}
+  interface Command {}
 
   static class Append implements Command {
     public final String s;
-    private final ActorRef<String> replyToRef;
+    public final ActorRef<String> replyTo;
 
     Append(String s, ActorRef<String> replyTo) {
       this.s = s;
-      this.replyToRef = replyTo;
-    }
-
-    @Override
-    public ActorRef<String> replyTo() {
-      return replyToRef;
+      this.replyTo = replyTo;
     }
   }
 
@@ -61,7 +55,7 @@ public class ShardingEventSourcedEntityWithEnforcedRepliesCompileOnlyTest {
     }
 
     private ReplyEffect<String, String> add(String state, Append cmd) {
-      return Effect().persist(cmd.s).thenReply(cmd, s -> "Ok");
+      return Effect().persist(cmd.s).thenReply(cmd.replyTo, s -> "Ok");
     }
 
     @Override
