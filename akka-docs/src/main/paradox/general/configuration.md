@@ -354,7 +354,7 @@ Each Akka module has a reference configuration file with the default values.
 
 @@snip [reference.conf](/akka-actor/src/main/resources/reference.conf)
 
-<a id="config-akka-actor"></a>
+<a id="config-akka-actor-typed"></a>
 ### akka-actor-typed
 
 @@snip [reference.conf](/akka-actor-typed/src/main/resources/reference.conf)
