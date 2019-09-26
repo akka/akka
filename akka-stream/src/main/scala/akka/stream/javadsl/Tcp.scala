@@ -525,6 +525,6 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
   }
 
   private def durationToJavaOptional(duration: Duration): Optional[java.time.Duration] = {
-    if (duration.isFinite()) Optional.ofNullable(duration.asJava) else Optional.empty()
+    if (duration.isFinite) Optional.ofNullable(duration.asJava) else Optional.empty()
   }
 }
