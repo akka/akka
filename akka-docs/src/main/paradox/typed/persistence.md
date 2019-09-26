@@ -13,7 +13,7 @@
 
 @@@ note
 
-For the Akka Classic API see @ref:[Classic Akka Persistence](../persistence.md)
+For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
 
 @@@
 

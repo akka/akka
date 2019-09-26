@@ -12,7 +12,7 @@ For specific documentation topics see:
 
 @@@ note
 
-For the Akka Classic API see @ref:[Classic Cluster](../cluster-usage.md)
+For the Akka Classic documentation of this feature see @ref:[Classic Cluster](../cluster-usage.md).
 
 @@@
 

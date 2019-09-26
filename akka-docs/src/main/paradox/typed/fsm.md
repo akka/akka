@@ -2,7 +2,7 @@
 
 @@@ note
 
-For the Akka Classic API see @ref:[Classic FSM](../fsm.md)
+For the Akka Classic documentation of this feature see @ref:[Classic FSM](../fsm.md).
 
 @@@
 
