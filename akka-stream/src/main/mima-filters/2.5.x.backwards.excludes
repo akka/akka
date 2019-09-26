@@ -240,3 +240,5 @@ ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.stream.scaladsl.Flow.
 # #26187 Remove ActorPublisher, ActorSubscriber
 ProblemFilters.exclude[Problem]("akka.stream.actor.*")
 
+# system materializer guardian #26850
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.ActorMaterializer.systemMaterializer")

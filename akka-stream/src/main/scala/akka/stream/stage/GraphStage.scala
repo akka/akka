@@ -6,11 +6,9 @@ package akka.stream.stage
 
 import java.util.concurrent.atomic.AtomicReference
 
-import scala.deprecated
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.japi.function.{ Effect, Procedure }
-import akka.pattern.ask
 import akka.stream._
 import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
@@ -23,8 +21,7 @@ import akka.{ Done, NotUsed }
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Await, Future, Promise }
-import akka.stream.impl.StreamSupervisor
+import scala.concurrent.{ Future, Promise }
 import com.github.ghik.silencer.silent
 
 /**
@@ -204,6 +201,11 @@ object GraphStageLogic {
 
     private val callback = getAsyncCallback(internalReceive)
 
+    private def cell = materializer.supervisor match {
+      case ref: LocalActorRef => ref.underlying
+      case unknown =>
+        throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
+    }
     private val functionRef: FunctionRef = {
       val f: (ActorRef, Any) => Unit = {
         case (r, PoisonPill) if poisonPillFallback =>
@@ -217,22 +219,7 @@ object GraphStageLogic {
         case pair => callback.invoke(pair)
       }
 
-      materializer.supervisor match {
-        case ref: LocalActorRef =>
-          ref.underlying.addFunctionRef(f, name)
-        case ref: RepointableActorRef =>
-          if (ref.isStarted)
-            ref.underlying.asInstanceOf[ActorCell].addFunctionRef(f, name)
-          else {
-            // this may happen if materialized immediately before Materializer has been fully initialized,
-            // should be rare
-            implicit val timeout = ref.system.settings.CreationTimeout
-            val reply = (materializer.supervisor ? StreamSupervisor.AddFunctionRef(f, name)).mapTo[FunctionRef]
-            Await.result(reply, timeout.duration)
-          }
-        case unknown =>
-          throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
-      }
+      cell.addFunctionRef(f, name)
     }
 
     /**
@@ -266,7 +253,7 @@ object GraphStageLogic {
     }
 
     def stop(): Unit = {
-      materializer.supervisor ! StreamSupervisor.RemoveFunctionRef(functionRef)
+      cell.removeFunctionRef(functionRef)
     }
 
     def watch(actorRef: ActorRef): Unit = functionRef.watch(actorRef)

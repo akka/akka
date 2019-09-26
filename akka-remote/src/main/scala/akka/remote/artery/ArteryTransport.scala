@@ -402,9 +402,12 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     startTransport()
     topLevelFlightRecorder.loFreq(Transport_Started, NoMetaData)
 
-    materializer = ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remote", system)
-    controlMaterializer =
-      ActorMaterializer.systemMaterializer(settings.Advanced.ControlStreamMaterializerSettings, "remoteControl", system)
+    val systemMaterializer = SystemMaterializer(system)
+    materializer =
+      systemMaterializer.createAdditionalLegacySystemMaterializer("remote", settings.Advanced.MaterializerSettings)
+    controlMaterializer = systemMaterializer.createAdditionalLegacySystemMaterializer(
+      "remoteControl",
+      settings.Advanced.ControlStreamMaterializerSettings)
 
     messageDispatcher = new MessageDispatcher(system, provider)
     topLevelFlightRecorder.loFreq(Transport_MaterializerStarted, NoMetaData)
