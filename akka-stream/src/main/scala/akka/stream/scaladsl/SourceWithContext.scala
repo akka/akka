@@ -50,7 +50,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Sourc
    *
    * @see [[akka.stream.scaladsl.Source.mapMaterializedValue]]
    */
-  def mapMaterializedValue[Mat2](f: Mat => Mat2): SourceWithContext[Out, Ctx, Mat2] =
+  override def mapMaterializedValue[Mat2](f: Mat => Mat2): SourceWithContext[Out, Ctx, Mat2] =
     new SourceWithContext(delegate.mapMaterializedValue(f))
 
   /**
