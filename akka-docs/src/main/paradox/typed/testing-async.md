@@ -20,7 +20,7 @@ Java
 Tests create an instance of @apidoc[ActorTestKit]. This provides access to:
 
 * An ActorSystem
-* Methods for spawning Actors. These are created under the root guardian
+* Methods for spawning Actors. These are created under the special testkit user guardian
 * A method to shut down the ActorSystem from the test suite
 
 This first example is using the "raw" `ActorTestKit` but if you are using @scala[ScalaTest]@java[JUnit] you can
