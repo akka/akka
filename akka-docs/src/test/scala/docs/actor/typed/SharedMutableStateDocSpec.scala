@@ -68,7 +68,7 @@ class SharedMutableStateDocSpec {
         // Another example of incorrect approach
         // mutating actor state from ask future callback
         import akka.actor.typed.scaladsl.AskPattern._
-        implicit val timeout = Timeout(5.seconds) // needed for `?` below
+        implicit val timeout = Timeout(5.seconds) // needed for `ask` below
         implicit val scheduler = context.system.scheduler
         val future: Future[String] = otherActor.ask(Query)
         future.foreach { result =>
