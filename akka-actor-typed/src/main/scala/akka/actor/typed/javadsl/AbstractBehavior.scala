@@ -21,6 +21,15 @@ import akka.util.OptionVal
  * from the factory function. This is important because a new instance
  * should be created when restart supervision is used.
  *
+ * When switching `Behavior` to another `AbstractBehavior` the original `ActorContext`
+ * can be used as the `context` parameter instead of wrapping in a new `Behaviors.setup`,
+ * but it wouldn't be wrong to use `context` from `Behaviors.setup` since that is the same
+ * `ActorContext` instance.
+ *
+ * It must not be created with an `ActorContext` of another actor, such as the parent actor.
+ * Such mistake will be detected at runtime and throw `IllegalStateException` when the
+ * first message is received.
+ *
  * @see [[Behaviors.setup]]
  */
 abstract class AbstractBehavior[T](context: ActorContext[T]) extends ExtensibleBehavior[T] {
