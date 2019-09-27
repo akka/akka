@@ -441,7 +441,7 @@ class MutableScalaBehaviorSpec extends Messages with Become with Stoppable {
 
   def behv(monitor: ActorRef[Event]): Behavior[Command] =
     SBehaviors.setup[Command] { context =>
-      new SAbstractBehavior[Command] {
+      new SAbstractBehavior[Command](context) {
         private var state: State = StateA
 
         override def onMessage(message: Command): Behavior[Command] = {

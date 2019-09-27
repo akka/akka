@@ -19,6 +19,7 @@ class SeparateDispatcherFutureActor extends AbstractBehavior<Integer> {
   }
 
   private SeparateDispatcherFutureActor(ActorContext<Integer> context) {
+    super(context);
     ec =
         context
             .getSystem()

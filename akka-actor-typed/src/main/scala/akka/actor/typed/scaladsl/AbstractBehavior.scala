@@ -16,14 +16,19 @@ import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal, TypedActorContex
  * alternative is provided by the factory methods in [[Behaviors]], for example
  * [[Behaviors.receiveMessage]].
  *
- * Instances of this behavior should be created via [[Behaviors.setup]] and if
- * the [[ActorContext]] is needed it can be passed as a constructor parameter
+ * Instances of this behavior should be created via [[Behaviors.setup]] and
+ * the [[ActorContext]] should be passed as a constructor parameter
  * from the factory function. This is important because a new instance
  * should be created when restart supervision is used.
  *
  * @see [[Behaviors.setup]]
  */
-abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
+abstract class AbstractBehavior[T](protected val context: ActorContext[T]) extends ExtensibleBehavior[T] {
+
+  if (context eq null)
+    throw new IllegalArgumentException(
+      "context must not be null. Wrap in Behaviors.setup and " +
+      "pass the context to the constructor of AbstractBehavior.")
 
   /**
    * Implement this method to process an incoming message and return the next behavior.

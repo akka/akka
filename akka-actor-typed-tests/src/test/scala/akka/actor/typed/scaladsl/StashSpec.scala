@@ -131,7 +131,8 @@ object AbstractStashSpec {
       }
     }
 
-  class MutableStash(context: ActorContext[Command], buffer: StashBuffer[Command]) extends AbstractBehavior[Command] {
+  class MutableStash(context: ActorContext[Command], buffer: StashBuffer[Command])
+      extends AbstractBehavior[Command](context) {
 
     private var stashing = false
     private var processed = Vector.empty[String]

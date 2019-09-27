@@ -77,6 +77,7 @@ public class TailChopping<Reply> extends AbstractBehavior<TailChopping.Command> 
       ActorRef<Reply> replyTo,
       Duration finalTimeout,
       Reply timeoutReply) {
+    super(context);
     this.timers = timers;
     this.sendRequest = sendRequest;
     this.nextRequestAfter = nextRequestAfter;

@@ -542,7 +542,11 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `akka.cluster.sharding.typed.scaladsl.Entity.apply` changed to use two parameter lists because the new
   `EntityContext.entityTypeKey` required additional type parameter that is inferred better with a secondary
   parameter list.
-* `EventSourcedBehavior.withEnforcedReplies` signature changed. Command is not required to extend `ExpectingReply` anymore. `ExpectingReply` has been removed therefore.  
+* `EventSourcedBehavior.withEnforcedReplies` signature changed. Command is not required to extend `ExpectingReply`
+  anymore. `ExpectingReply` has therefore been removed.
+* `ActorContext` is now a mandatory constructor parameter in `AbstractBehavior`. Create via `Behaviors.setup.
+  The reason is to encourage right usage and detect mistakes like not creating a new instance (via `setup`)
+  when the behavior is supervised and restarted.    
 
 #### Akka Typed Stream API changes
 

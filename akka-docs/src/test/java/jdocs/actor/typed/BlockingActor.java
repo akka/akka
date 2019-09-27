@@ -13,7 +13,9 @@ public class BlockingActor extends AbstractBehavior<Integer> {
     return Behaviors.setup(BlockingActor::new);
   }
 
-  private BlockingActor(ActorContext<Integer> context) {}
+  private BlockingActor(ActorContext<Integer> context) {
+    super(context);
+  }
 
   @Override
   public Receive<Integer> createReceive() {

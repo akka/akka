@@ -38,7 +38,7 @@ object WhereTheBehaviorIsDefined {
 object BehaviorWhereTheLoggerIsUsed {
   def behavior: Behavior[String] = Behaviors.setup(ctx => new BehaviorWhereTheLoggerIsUsed(ctx))
 }
-class BehaviorWhereTheLoggerIsUsed(context: ActorContext[String]) extends AbstractBehavior[String] {
+class BehaviorWhereTheLoggerIsUsed(context: ActorContext[String]) extends AbstractBehavior[String](context) {
   context.log.info("Starting up")
   override def onMessage(msg: String): Behavior[String] = {
     Behaviors.same

@@ -152,13 +152,11 @@ public class AggregatorTest extends JUnitSuite {
         return Behaviors.setup(context -> new HotelCustomer(context, hotel1, hotel2));
       }
 
-      private final ActorContext<Command> context;
-
       public HotelCustomer(
           ActorContext<Command> context,
           ActorRef<Hotel1.RequestQuote> hotel1,
           ActorRef<Hotel2.RequestPrice> hotel2) {
-        this.context = context;
+        super(context);
 
         Consumer<ActorRef<Object>> sendRequests =
             replyTo -> {
@@ -209,8 +207,8 @@ public class AggregatorTest extends JUnitSuite {
       }
 
       private Behavior<Command> onAggregatedQuotes(AggregatedQuotes aggregated) {
-        if (aggregated.quotes.isEmpty()) context.getLog().info("Best Quote N/A");
-        else context.getLog().info("Best {}", aggregated.quotes.get(0));
+        if (aggregated.quotes.isEmpty()) getContext().getLog().info("Best Quote N/A");
+        else getContext().getLog().info("Best {}", aggregated.quotes.get(0));
         return this;
       }
     }

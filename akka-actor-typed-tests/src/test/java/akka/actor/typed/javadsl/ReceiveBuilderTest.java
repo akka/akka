@@ -31,7 +31,7 @@ public class ReceiveBuilderTest extends JUnitSuite {
     Behavior<BehaviorBuilderTest.CounterMessage> mutable =
         Behaviors.setup(
             context ->
-                new AbstractBehavior<BehaviorBuilderTest.CounterMessage>() {
+                new AbstractBehavior<BehaviorBuilderTest.CounterMessage>(context) {
                   int currentValue = 0;
 
                   private Behavior<BehaviorBuilderTest.CounterMessage> receiveIncrease(
@@ -54,28 +54,6 @@ public class ReceiveBuilderTest extends JUnitSuite {
                         .build();
                   }
                 });
-  }
-
-  private static class MyAbstractBehavior
-      extends AbstractBehavior<BehaviorBuilderTest.CounterMessage> {
-    private int value;
-
-    public MyAbstractBehavior(int initialValue) {
-      super();
-      this.value = initialValue;
-    }
-
-    @Override
-    public Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
-      assertEquals(42, value);
-      return newReceiveBuilder().build();
-    }
-  }
-
-  @Test
-  public void testInitializationOrder() throws Exception {
-    MyAbstractBehavior mutable = new MyAbstractBehavior(42);
-    assertEquals(Behaviors.unhandled(), mutable.receive(null, new BehaviorBuilderTest.Increase()));
   }
 
   @Test

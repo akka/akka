@@ -27,9 +27,11 @@ object WatchSpec {
       case (_, Stop) => Behaviors.stopped
     }
 
-  val mutableTerminatorBehavior = new AbstractBehavior[Stop.type] {
-    override def onMessage(message: Stop.type) = message match {
-      case Stop => Behaviors.stopped
+  val mutableTerminatorBehavior = Behaviors.setup[Stop.type] { context =>
+    new AbstractBehavior[Stop.type](context) {
+      override def onMessage(message: Stop.type) = message match {
+        case Stop => Behaviors.stopped
+      }
     }
   }
 

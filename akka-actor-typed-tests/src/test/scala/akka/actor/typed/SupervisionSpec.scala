@@ -22,6 +22,7 @@ import akka.actor.typed.SupervisorStrategy.Resume
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.actor.typed.scaladsl.AbstractBehavior
+import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
@@ -81,7 +82,8 @@ object SupervisionSpec {
         Behaviors.same
     }
 
-  class FailingConstructor(monitor: ActorRef[Event]) extends AbstractBehavior[Command] {
+  class FailingConstructor(context: ActorContext[Command], monitor: ActorRef[Event])
+      extends AbstractBehavior[Command](context) {
     monitor ! Started
     throw new RuntimeException("simulated exc from constructor") with NoStackTrace
 
@@ -263,7 +265,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
   class FailingConstructorTestSetup(failCount: Int) {
     val failCounter = new AtomicInteger(0)
-    class FailingConstructor(monitor: ActorRef[Event]) extends AbstractBehavior[Command] {
+    class FailingConstructor(context: ActorContext[Command], monitor: ActorRef[Event])
+        extends AbstractBehavior[Command](context) {
       monitor ! Started
       if (failCounter.getAndIncrement() < failCount) {
         throw TestException("simulated exc from constructor")
@@ -1023,7 +1026,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
 
     "fail when exception from AbstractBehavior constructor" in new FailingConstructorTestSetup(failCount = 1) {
       val probe = TestProbe[Event]("evt")
-      val behv = supervise(setup[Command](_ => new FailingConstructor(probe.ref)))
+      val behv = supervise(setup[Command](ctx => new FailingConstructor(ctx, probe.ref)))
         .onFailure[Exception](SupervisorStrategy.restart)
 
       LoggingEventFilter.error[ActorInitializationException].intercept {
@@ -1270,6 +1273,32 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       ref ! Ping(2)
       probe.expectMessage(Pong(2))
     }
+
+    "not allow AbstractBehavior without setup" in {
+      val contextProbe = createTestProbe[ActorContext[String]]
+      spawn(Behaviors.setup[String] { context =>
+        contextProbe.ref ! context
+        Behaviors.empty
+      })
+
+      val wrongContext = contextProbe.receiveMessage()
+
+      intercept[IllegalArgumentException] {
+        Behaviors
+          .supervise(new AbstractBehavior[String](wrongContext) {
+            override def onMessage(msg: String): Behavior[String] = Behaviors.same
+          })
+          .onFailure(SupervisorStrategy.restart)
+      }
+
+      intercept[IllegalArgumentException] {
+        Behaviors.supervise(new AbstractBehavior[String](null) {
+          override def onMessage(msg: String): Behavior[String] = Behaviors.same
+        })
+      }
+    }
+
+    // FIXME add another test verfiying checkRightContext
 
   }
 

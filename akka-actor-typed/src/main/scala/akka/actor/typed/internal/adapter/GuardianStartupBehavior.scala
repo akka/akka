@@ -8,16 +8,8 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.Signal
 import akka.actor.typed.TypedActorContext
-import akka.actor.typed.scaladsl.{ AbstractBehavior, Behaviors, StashOverflowException }
+import akka.actor.typed.scaladsl.{ Behaviors, StashOverflowException }
 import akka.annotation.InternalApi
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] object GuardianStartupBehavior {
-  case object Start
-}
 
 /**
  * INTERNAL API
@@ -27,29 +19,29 @@ private[akka] object GuardianStartupBehavior {
  * system, and we know that the bootstrap is completed and the actor context can be accessed.
  */
 @InternalApi
-private[akka] final class GuardianStartupBehavior[T](val guardianBehavior: Behavior[T]) extends AbstractBehavior[Any] {
+private[akka] object GuardianStartupBehavior {
+  case object Start
 
-  import GuardianStartupBehavior.Start
+  private val StashCapacity = 1000
 
-  private var tempStash: List[Any] = Nil
+  def apply[T](guardianBehavior: Behavior[T]): Behavior[Any] =
+    waitingForStart(guardianBehavior, Vector.empty)
 
-  override def onMessage(msg: Any): Behavior[Any] =
-    msg match {
+  private def waitingForStart[T](guardianBehavior: Behavior[T], tempStash: Vector[Any]): Behavior[Any] = {
+    Behaviors.receiveMessage {
       case Start =>
         // ctx is not available initially so we cannot use it until here
-        Behaviors.withStash[Any](1000) { stash =>
-          tempStash.reverse.foreach(stash.stash)
-          tempStash = null
+        Behaviors.withStash[Any](StashCapacity) { stash =>
+          tempStash.foreach(stash.stash)
           stash.unstashAll(Behaviors.intercept(() => new GuardianStopInterceptor)(guardianBehavior.unsafeCast[Any]))
         }
       case other =>
-        tempStash = other :: tempStash
-        if (tempStash.size > 1000) {
+        if (tempStash.size >= StashCapacity) {
           throw new StashOverflowException("Guardian Behavior did not receive start and buffer is full.")
         }
-        this
+        waitingForStart(guardianBehavior, tempStash :+ other)
     }
-
+  }
 }
 
 /**

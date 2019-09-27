@@ -45,11 +45,10 @@ public interface SingletonCompileOnlyTest {
       return Behaviors.setup(Counter::new);
     }
 
-    private final ActorContext<Command> context;
     private int value = 0;
 
     private Counter(ActorContext<Command> context) {
-      this.context = context;
+      super(context);
     }
 
     @Override

@@ -14,7 +14,7 @@ public class BlockingDispatcherTest {
         Behaviors.setup(
             context -> {
               ActorRef<Integer> actor1 = context.spawn(BlockingActor.create(), "BlockingActor");
-              ActorRef<Integer> actor2 = context.spawn(new PrintActor(), "PrintActor");
+              ActorRef<Integer> actor2 = context.spawn(PrintActor.create(), "PrintActor");
 
               for (int i = 0; i < 100; i++) {
                 actor1.tell(i);

@@ -46,10 +46,8 @@ interface TypedSample {
       return Behaviors.setup(HelloWorld::new);
     }
 
-    private final ActorContext<Greet> context;
-
     private HelloWorld(ActorContext<Greet> context) {
-      this.context = context;
+      super(context);
     }
 
     @Override
@@ -58,8 +56,8 @@ interface TypedSample {
     }
 
     private Behavior<Greet> onGreet(Greet command) {
-      context.getLog().info("Hello {}!", command.whom);
-      command.replyTo.tell(new Greeted(command.whom, context.getSelf()));
+      getContext().getLog().info("Hello {}!", command.whom);
+      command.replyTo.tell(new Greeted(command.whom, getContext().getSelf()));
       return this;
     }
   }
@@ -92,11 +90,10 @@ interface TypedSample {
       return Behaviors.setup(Parent::new);
     }
 
-    private final ActorContext<Command> context;
     private Map<String, ActorRef<Child.Command>> children = new HashMap<>();
 
     private Parent(ActorContext<Command> context) {
-      this.context = context;
+      super(context);
     }
 
     @Override
@@ -110,8 +107,8 @@ interface TypedSample {
     private Behavior<Command> onDelegateToChild(DelegateToChild command) {
       ActorRef<Child.Command> ref = children.get(command.name);
       if (ref == null) {
-        ref = context.spawn(Child.create(), command.name);
-        context.watchWith(ref, new ChildTerminated(command.name));
+        ref = getContext().spawn(Child.create(), command.name);
+        getContext().watchWith(ref, new ChildTerminated(command.name));
         children.put(command.name, ref);
       }
       ref.tell(command.message);
