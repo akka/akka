@@ -394,7 +394,7 @@ Jackson are used aside from the the following that are changed in Akka's default
 
 ### Date/time format
 
-`WRITE_DATES_AS_TIMESTAMPS` is by default disabled, which means that date/time fields are serialized in
+`WRITE_DATES_AS_TIMESTAMPS` and `WRITE_DURATIONS_AS_TIMESTAMPS` are by default disabled, which means that date/time fields are serialized in
 ISO-8601 (rfc3339) `yyyy-MM-dd'T'HH:mm:ss.SSSZ` format instead of numeric arrays. This is better for
 interoperability but it is slower. If you don't need the ISO format for interoperability with external systems
 you can change the following configuration for better performance of date/time fields.
