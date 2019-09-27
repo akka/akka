@@ -652,7 +652,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         }
 
         val handshakePacket =
-          AkkaPduProtobufCodec.constructAssociate(HandshakeInfo(rawRemoteAddress, uid = 0, cookie = None))
+          AkkaPduProtobufCodec.constructAssociate(HandshakeInfo(rawRemoteAddress, uid = 0))
         val brokenPacket = AkkaPduProtobufCodec.constructPayload(ByteString(0, 1, 2, 3, 4, 5, 6))
 
         // Finish the inbound handshake so now it is handed up to Remoting
@@ -734,7 +734,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         }
 
         val handshakePacket =
-          AkkaPduProtobufCodec.constructAssociate(HandshakeInfo(rawRemoteAddress, uid = remoteUID, cookie = None))
+          AkkaPduProtobufCodec.constructAssociate(HandshakeInfo(rawRemoteAddress, uid = remoteUID))
 
         // Finish the inbound handshake so now it is handed up to Remoting
         inboundHandle.write(handshakePacket)
