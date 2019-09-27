@@ -32,6 +32,12 @@ import org.slf4j.event.Level
  */
 @InternalApi private[akka] object Supervisor {
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] = {
+    if (initialBehavior.isInstanceOf[scaladsl.AbstractBehavior[_]] || initialBehavior
+          .isInstanceOf[javadsl.AbstractBehavior[_]]) {
+      throw new IllegalArgumentException(
+        "The supervised Behavior must not be a AbstractBehavior instance directly," +
+        "because a different instance should be created when it is restarted. Wrap in Behaviors.setup.")
+    }
 
     strategy match {
       case r: RestartOrBackoff =>

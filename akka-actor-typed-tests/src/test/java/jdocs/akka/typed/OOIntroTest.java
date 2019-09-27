@@ -108,11 +108,10 @@ public interface OOIntroTest {
     }
 
     public static class ChatRoomBehavior extends AbstractBehavior<RoomCommand> {
-      final ActorContext<RoomCommand> context;
       final List<ActorRef<SessionCommand>> sessions = new ArrayList<>();
 
       private ChatRoomBehavior(ActorContext<RoomCommand> context) {
-        this.context = context;
+        super(context);
       }
 
       @Override
@@ -129,9 +128,10 @@ public interface OOIntroTest {
           throws UnsupportedEncodingException {
         ActorRef<SessionEvent> client = getSession.replyTo;
         ActorRef<SessionCommand> ses =
-            context.spawn(
-                new SessionBehavior(context.getSelf(), getSession.screenName, client),
-                URLEncoder.encode(getSession.screenName, StandardCharsets.UTF_8.name()));
+            getContext()
+                .spawn(
+                    SessionBehavior.create(getContext().getSelf(), getSession.screenName, client),
+                    URLEncoder.encode(getSession.screenName, StandardCharsets.UTF_8.name()));
         // narrow to only expose PostMessage
         client.tell(new SessionGranted(ses.narrow()));
         sessions.add(ses);
@@ -151,8 +151,17 @@ public interface OOIntroTest {
       private final String screenName;
       private final ActorRef<SessionEvent> client;
 
-      SessionBehavior(
+      public static Behavior<ChatRoom.SessionCommand> create(
           ActorRef<RoomCommand> room, String screenName, ActorRef<SessionEvent> client) {
+        return Behaviors.setup(context -> new SessionBehavior(context, room, screenName, client));
+      }
+
+      private SessionBehavior(
+          ActorContext<ChatRoom.SessionCommand> context,
+          ActorRef<RoomCommand> room,
+          String screenName,
+          ActorRef<SessionEvent> client) {
+        super(context);
         this.room = room;
         this.screenName = screenName;
         this.client = client;
@@ -187,10 +196,8 @@ public interface OOIntroTest {
       return Behaviors.setup(Gabbler::new);
     }
 
-    private ActorContext<ChatRoom.SessionEvent> context;
-
     private Gabbler(ActorContext<ChatRoom.SessionEvent> context) {
-      this.context = context;
+      super(context);
     }
 
     @Override
@@ -204,7 +211,7 @@ public interface OOIntroTest {
     }
 
     private Behavior<ChatRoom.SessionEvent> onSessionDenied(ChatRoom.SessionDenied message) {
-      context.getLog().info("cannot start chat room session: {}", message.reason);
+      getContext().getLog().info("cannot start chat room session: {}", message.reason);
       return Behaviors.stopped();
     }
 
@@ -214,7 +221,7 @@ public interface OOIntroTest {
     }
 
     private Behavior<ChatRoom.SessionEvent> onMessagePosted(ChatRoom.MessagePosted message) {
-      context
+      getContext()
           .getLog()
           .info("message has been posted by '{}': {}", message.screenName, message.message);
       return Behaviors.stopped();

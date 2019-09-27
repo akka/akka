@@ -23,7 +23,7 @@ object PrintMyActorRefActor {
     Behaviors.setup(context => new PrintMyActorRefActor(context))
 }
 
-class PrintMyActorRefActor(context: ActorContext[String]) extends AbstractBehavior[String] {
+class PrintMyActorRefActor(context: ActorContext[String]) extends AbstractBehavior[String](context) {
 
   override def onMessage(msg: String): Behavior[String] =
     msg match {
@@ -41,7 +41,7 @@ object StartStopActor1 {
     Behaviors.setup(context => new StartStopActor1(context))
 }
 
-class StartStopActor1(context: ActorContext[String]) extends AbstractBehavior[String] {
+class StartStopActor1(context: ActorContext[String]) extends AbstractBehavior[String](context) {
   println("first started")
   context.spawn(StartStopActor2(), "second")
 
@@ -60,10 +60,10 @@ class StartStopActor1(context: ActorContext[String]) extends AbstractBehavior[St
 
 object StartStopActor2 {
   def apply(): Behavior[String] =
-    Behaviors.setup(_ => new StartStopActor2)
+    Behaviors.setup(new StartStopActor2(_))
 }
 
-class StartStopActor2 extends AbstractBehavior[String] {
+class StartStopActor2(context: ActorContext[String]) extends AbstractBehavior[String](context) {
   println("second started")
 
   override def onMessage(msg: String): Behavior[String] = {
@@ -86,7 +86,7 @@ object SupervisingActor {
     Behaviors.setup(context => new SupervisingActor(context))
 }
 
-class SupervisingActor(context: ActorContext[String]) extends AbstractBehavior[String] {
+class SupervisingActor(context: ActorContext[String]) extends AbstractBehavior[String](context) {
   private val child = context.spawn(
     Behaviors.supervise(SupervisedActor()).onFailure(SupervisorStrategy.restart),
     name = "supervised-actor")
@@ -101,10 +101,10 @@ class SupervisingActor(context: ActorContext[String]) extends AbstractBehavior[S
 
 object SupervisedActor {
   def apply(): Behavior[String] =
-    Behaviors.setup(_ => new SupervisedActor)
+    Behaviors.setup(context => new SupervisedActor(context))
 }
 
-class SupervisedActor extends AbstractBehavior[String] {
+class SupervisedActor(context: ActorContext[String]) extends AbstractBehavior[String](context) {
   println("supervised actor started")
 
   override def onMessage(msg: String): Behavior[String] =
@@ -134,7 +134,7 @@ object Main {
 
 }
 
-class Main(context: ActorContext[String]) extends AbstractBehavior[String] {
+class Main(context: ActorContext[String]) extends AbstractBehavior[String](context) {
   override def onMessage(msg: String): Behavior[String] =
     msg match {
       case "start" =>

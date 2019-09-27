@@ -77,7 +77,7 @@ object StyleGuideDocExamples {
       }
     }
 
-    class Counter(context: ActorContext[Counter.Command]) extends AbstractBehavior[Counter.Command] {
+    class Counter(context: ActorContext[Counter.Command]) extends AbstractBehavior[Counter.Command](context) {
       import Counter._
 
       private var n = 0

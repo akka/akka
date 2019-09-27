@@ -42,10 +42,8 @@ interface GracefulStopDocTest {
       return Behaviors.setup(MasterControlProgram::new);
     }
 
-    private final ActorContext<Command> context;
-
     public MasterControlProgram(ActorContext<Command> context) {
-      this.context = context;
+      super(context);
     }
 
     @Override
@@ -58,21 +56,21 @@ interface GracefulStopDocTest {
     }
 
     private Behavior<Command> onSpawnJob(SpawnJob message) {
-      context.getSystem().log().info("Spawning job {}!", message.name);
-      context.spawn(Job.create(message.name), message.name);
+      getContext().getSystem().log().info("Spawning job {}!", message.name);
+      getContext().spawn(Job.create(message.name), message.name);
       return this;
     }
 
     private Behavior<Command> onGracefulShutdown() {
-      context.getSystem().log().info("Initiating graceful shutdown...");
+      getContext().getSystem().log().info("Initiating graceful shutdown...");
 
       // perform graceful stop, executing cleanup before final system termination
       // behavior executing cleanup is passed as a parameter to Actor.stopped
-      return Behaviors.stopped(() -> context.getSystem().log().info("Cleanup!"));
+      return Behaviors.stopped(() -> getContext().getSystem().log().info("Cleanup!"));
     }
 
     private Behavior<Command> onPostStop() {
-      context.getSystem().log().info("Master Control Program stopped");
+      getContext().getSystem().log().info("Master Control Program stopped");
       return this;
     }
   }
@@ -106,11 +104,10 @@ interface GracefulStopDocTest {
       return Behaviors.setup(context -> new Job(context, name));
     }
 
-    private final ActorContext<Command> context;
     private final String name;
 
     public Job(ActorContext<Command> context, String name) {
-      this.context = context;
+      super(context);
       this.name = name;
     }
 
@@ -120,7 +117,7 @@ interface GracefulStopDocTest {
     }
 
     private Behavior<Command> onPostStop() {
-      context.getSystem().log().info("Worker {} stopped", name);
+      getContext().getSystem().log().info("Worker {} stopped", name);
       return this;
     }
   }

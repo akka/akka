@@ -81,7 +81,6 @@ interface ReplicatorDocSample {
                       new Counter(ctx, replicatorAdapter, key)));
     }
 
-    private final ActorContext<Command> context;
     // adapter that turns the response messages from the replicator into our own protocol
     private final ReplicatorMessageAdapter<Command, GCounter> replicatorAdapter;
     private final SelfUniqueAddress node;
@@ -93,8 +92,8 @@ interface ReplicatorDocSample {
         ActorContext<Command> context,
         ReplicatorMessageAdapter<Command, GCounter> replicatorAdapter,
         Key<GCounter> key) {
+      super(context);
 
-      this.context = context;
       this.replicatorAdapter = replicatorAdapter;
       this.key = key;
 

@@ -65,7 +65,7 @@ private[akka] object ReplayingEvents {
 private[akka] final class ReplayingEvents[C, E, S](
     override val setup: BehaviorSetup[C, E, S],
     var state: ReplayingState[S])
-    extends AbstractBehavior[InternalProtocol]
+    extends AbstractBehavior[InternalProtocol](setup.context)
     with JournalInteractions[C, E, S]
     with SnapshotInteractions[C, E, S]
     with StashManagement[C, E, S]

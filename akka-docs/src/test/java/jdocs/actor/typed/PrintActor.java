@@ -11,7 +11,11 @@ import akka.actor.typed.javadsl.*;
 class PrintActor extends AbstractBehavior<Integer> {
 
   public static Behavior<Integer> create() {
-    return Behaviors.setup(context -> new PrintActor());
+    return Behaviors.setup(PrintActor::new);
+  }
+
+  private PrintActor(ActorContext<Integer> context) {
+    super(context);
   }
 
   @Override

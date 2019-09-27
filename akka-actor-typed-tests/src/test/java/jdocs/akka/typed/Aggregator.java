@@ -66,6 +66,7 @@ public class Aggregator<Reply, Aggregate> extends AbstractBehavior<Aggregator.Co
       ActorRef<Aggregate> replyTo,
       Function<List<Reply>, Aggregate> aggregateReplies,
       Duration timeout) {
+    super(context);
     this.expectedReplies = expectedReplies;
     this.replyTo = replyTo;
     this.aggregateReplies = aggregateReplies;

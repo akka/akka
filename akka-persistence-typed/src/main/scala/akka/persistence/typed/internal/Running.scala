@@ -96,7 +96,7 @@ private[akka] object Running {
   import BehaviorSetup._
 
   final class HandlingCommands(state: RunningState[S])
-      extends AbstractBehavior[InternalProtocol]
+      extends AbstractBehavior[InternalProtocol](setup.context)
       with WithSeqNrAccessible {
 
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
@@ -226,7 +226,7 @@ private[akka] object Running {
       shouldSnapshotAfterPersist: SnapshotAfterPersist,
       var sideEffects: immutable.Seq[SideEffect[S]],
       persistStartTime: Long = System.nanoTime())
-      extends AbstractBehavior[InternalProtocol]
+      extends AbstractBehavior[InternalProtocol](setup.context)
       with WithSeqNrAccessible {
 
     private var eventCounter = 0

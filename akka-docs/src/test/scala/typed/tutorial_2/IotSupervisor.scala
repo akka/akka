@@ -17,7 +17,7 @@ object IotSupervisor {
     Behaviors.setup[Nothing](context => new IotSupervisor(context))
 }
 
-class IotSupervisor(context: ActorContext[Nothing]) extends AbstractBehavior[Nothing] {
+class IotSupervisor(context: ActorContext[Nothing]) extends AbstractBehavior[Nothing](context) {
   context.log.info("IoT Application started")
 
   override def onMessage(msg: Nothing): Behavior[Nothing] = {

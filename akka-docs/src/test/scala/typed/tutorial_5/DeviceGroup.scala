@@ -27,7 +27,7 @@ object DeviceGroup {
 
 //#query-added
 class DeviceGroup(context: ActorContext[DeviceGroup.Command], groupId: String)
-    extends AbstractBehavior[DeviceGroup.Command] {
+    extends AbstractBehavior[DeviceGroup.Command](context) {
   import DeviceGroup._
   import DeviceManager.{
     DeviceRegistered,

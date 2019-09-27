@@ -16,14 +16,28 @@ import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal, TypedActorContex
  * alternative is provided by the factory methods in [[Behaviors]], for example
  * [[Behaviors.receiveMessage]].
  *
- * Instances of this behavior should be created via [[Behaviors.setup]] and if
- * the [[ActorContext]] is needed it can be passed as a constructor parameter
+ * Instances of this behavior should be created via [[Behaviors.setup]] and
+ * the [[ActorContext]] should be passed as a constructor parameter
  * from the factory function. This is important because a new instance
  * should be created when restart supervision is used.
  *
+ * When switching `Behavior` to another `AbstractBehavior` the original `ActorContext`
+ * can be used as the `context` parameter instead of wrapping in a new `Behaviors.setup`,
+ * but it wouldn't be wrong to use `context` from `Behaviors.setup` since that is the same
+ * `ActorContext` instance.
+ *
+ * It must not be created with an `ActorContext` of another actor, such as the parent actor.
+ * Such mistake will be detected at runtime and throw `IllegalStateException` when the
+ * first message is received.
+ *
  * @see [[Behaviors.setup]]
  */
-abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
+abstract class AbstractBehavior[T](protected val context: ActorContext[T]) extends ExtensibleBehavior[T] {
+
+  if (context eq null)
+    throw new IllegalArgumentException(
+      "context must not be null. Wrap in Behaviors.setup and " +
+      "pass the context to the constructor of AbstractBehavior.")
 
   /**
    * Implement this method to process an incoming message and return the next behavior.
@@ -55,11 +69,22 @@ abstract class AbstractBehavior[T] extends ExtensibleBehavior[T] {
   @throws(classOf[Exception])
   def onSignal: PartialFunction[Signal, Behavior[T]] = PartialFunction.empty
 
-  @throws(classOf[Exception])
-  override final def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] =
-    onMessage(msg)
+  private def checkRightContext(ctx: TypedActorContext[T]): Unit =
+    if (ctx.asJava ne context)
+      throw new IllegalStateException(
+        s"Actor [${ctx.asJava.getSelf}] of AbstractBehavior class " +
+        s"[${getClass.getName}] was created with wrong ActorContext [${context.asJava.getSelf}]. " +
+        "Wrap in Behaviors.setup and pass the context to the constructor of AbstractBehavior.")
 
   @throws(classOf[Exception])
-  override final def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] =
+  override final def receive(ctx: TypedActorContext[T], msg: T): Behavior[T] = {
+    checkRightContext(ctx)
+    onMessage(msg)
+  }
+
+  @throws(classOf[Exception])
+  override final def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] = {
+    checkRightContext(ctx)
     onSignal.applyOrElse(msg, { case _ => Behaviors.unhandled }: PartialFunction[Signal, Behavior[T]])
+  }
 }

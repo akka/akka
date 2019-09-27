@@ -29,7 +29,7 @@ class SharedMutableStateDocSpec {
     }
   }
   //#mutable-state
-  class MyActor(context: ActorContext[MyActor.Command]) extends AbstractBehavior[MyActor.Command] {
+  class MyActor(context: ActorContext[MyActor.Command]) extends AbstractBehavior[MyActor.Command](context) {
     import MyActor._
 
     var state = ""

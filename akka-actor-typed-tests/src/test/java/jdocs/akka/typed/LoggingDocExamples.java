@@ -38,10 +38,8 @@ public interface LoggingDocExamples {
       return Behaviors.setup(MyLoggingBehavior::new);
     }
 
-    private final ActorContext<String> context;
-
     private MyLoggingBehavior(ActorContext<String> context) {
-      this.context = context;
+      super(context);
     }
 
     @Override
@@ -50,7 +48,7 @@ public interface LoggingDocExamples {
     }
 
     private Behavior<String> onReceive(String message) {
-      context.getLog().info("Received message: {}", message);
+      getContext().getLog().info("Received message: {}", message);
       return this;
     }
   }
@@ -68,10 +66,8 @@ public interface LoggingDocExamples {
           });
     }
 
-    private final ActorContext<String> context;
-
     private BackendManager(ActorContext<String> context) {
-      this.context = context;
+      super(context);
     }
 
     @Override
@@ -80,7 +76,7 @@ public interface LoggingDocExamples {
     }
 
     private Behavior<String> onReceive(String message) {
-      context.getLog().debug("Received message: {}", message);
+      getContext().getLog().debug("Received message: {}", message);
       return this;
     }
   }
@@ -120,6 +116,10 @@ public interface LoggingDocExamples {
 
     public static Behavior<Command> create() {
       return Behaviors.empty();
+    }
+
+    public BackendManager2(ActorContext<Command> context) {
+      super(context);
     }
 
     @Override

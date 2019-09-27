@@ -80,10 +80,8 @@ public class SyncTestingExampleTest extends JUnitSuite {
       return Behaviors.setup(Hello::new);
     }
 
-    private final ActorContext<Command> context;
-
     private Hello(ActorContext<Command> context) {
-      this.context = context;
+      super(context);
     }
 
     @Override
@@ -99,23 +97,23 @@ public class SyncTestingExampleTest extends JUnitSuite {
     }
 
     private Behavior<Command> onCreateAChild(CreateAChild message) {
-      context.spawn(Child.create(), message.childName);
+      getContext().spawn(Child.create(), message.childName);
       return Behaviors.same();
     }
 
     private Behavior<Command> onCreateAnonymousChild(CreateAnAnonymousChild message) {
-      context.spawnAnonymous(Child.create());
+      getContext().spawnAnonymous(Child.create());
       return Behaviors.same();
     }
 
     private Behavior<Command> onSayHelloToChild(SayHelloToChild message) {
-      ActorRef<String> child = context.spawn(Child.create(), message.childName);
+      ActorRef<String> child = getContext().spawn(Child.create(), message.childName);
       child.tell("hello");
       return Behaviors.same();
     }
 
     private Behavior<Command> onSayHelloToAnonymousChild(SayHelloToAnonymousChild message) {
-      ActorRef<String> child = context.spawnAnonymous(Child.create());
+      ActorRef<String> child = getContext().spawnAnonymous(Child.create());
       child.tell("hello stranger");
       return Behaviors.same();
     }
@@ -126,7 +124,7 @@ public class SyncTestingExampleTest extends JUnitSuite {
     }
 
     private Behavior<Command> onLogAndSayHello(LogAndSayHello message) {
-      context.getLog().info("Saying hello to {}", message.who.path().name());
+      getContext().getLog().info("Saying hello to {}", message.who.path().name());
       message.who.tell("hello");
       return Behaviors.same();
     }

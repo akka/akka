@@ -54,10 +54,8 @@ public interface IntroTest {
       return Behaviors.setup(HelloWorld::new);
     }
 
-    private final ActorContext<Greet> context;
-
     private HelloWorld(ActorContext<Greet> context) {
-      this.context = context;
+      super(context);
     }
 
     @Override
@@ -66,8 +64,8 @@ public interface IntroTest {
     }
 
     private Behavior<Greet> onGreet(Greet command) {
-      context.getLog().info("Hello {}!", command.whom);
-      command.replyTo.tell(new Greeted(command.whom, context.getSelf()));
+      getContext().getLog().info("Hello {}!", command.whom);
+      command.replyTo.tell(new Greeted(command.whom, getContext().getSelf()));
       return this;
     }
   }
@@ -80,12 +78,11 @@ public interface IntroTest {
       return Behaviors.setup(context -> new HelloWorldBot(context, max));
     }
 
-    private final ActorContext<HelloWorld.Greeted> context;
     private final int max;
     private int greetingCounter;
 
     private HelloWorldBot(ActorContext<HelloWorld.Greeted> context, int max) {
-      this.context = context;
+      super(context);
       this.max = max;
     }
 
@@ -96,11 +93,11 @@ public interface IntroTest {
 
     private Behavior<HelloWorld.Greeted> onGreeted(HelloWorld.Greeted message) {
       greetingCounter++;
-      context.getLog().info("Greeting {} for {}", greetingCounter, message.whom);
+      getContext().getLog().info("Greeting {} for {}", greetingCounter, message.whom);
       if (greetingCounter == max) {
         return Behaviors.stopped();
       } else {
-        message.from.tell(new HelloWorld.Greet(message.whom, context.getSelf()));
+        message.from.tell(new HelloWorld.Greet(message.whom, getContext().getSelf()));
         return this;
       }
     }
@@ -125,11 +122,10 @@ public interface IntroTest {
       return Behaviors.setup(HelloWorldMain::new);
     }
 
-    private final ActorContext<Start> context;
     private final ActorRef<HelloWorld.Greet> greeter;
 
     private HelloWorldMain(ActorContext<Start> context) {
-      this.context = context;
+      super(context);
       greeter = context.spawn(HelloWorld.create(), "greeter");
     }
     // #hello-world-main-setup
@@ -140,7 +136,8 @@ public interface IntroTest {
     }
 
     private Behavior<Start> onStart(Start command) {
-      ActorRef<HelloWorld.Greeted> replyTo = context.spawn(HelloWorldBot.create(3), command.name);
+      ActorRef<HelloWorld.Greeted> replyTo =
+          getContext().spawn(HelloWorldBot.create(3), command.name);
       greeter.tell(new HelloWorld.Greet(command.name, replyTo));
       return this;
     }
@@ -177,15 +174,14 @@ public interface IntroTest {
         return Behaviors.setup(HelloWorldMain::new);
       }
 
-      private final ActorContext<Start> context;
       private final ActorRef<HelloWorld.Greet> greeter;
 
       private HelloWorldMain(ActorContext<Start> context) {
-        this.context = context;
+        super(context);
 
         final String dispatcherPath = "akka.actor.default-blocking-io-dispatcher";
         Props greeterProps = DispatcherSelector.fromConfig(dispatcherPath);
-        greeter = context.spawn(HelloWorld.create(), "greeter", greeterProps);
+        greeter = getContext().spawn(HelloWorld.create(), "greeter", greeterProps);
       }
 
       // createReceive ...

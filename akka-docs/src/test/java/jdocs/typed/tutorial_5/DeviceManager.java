@@ -144,7 +144,6 @@ public class DeviceManager extends AbstractBehavior<DeviceManager.Command> {
     }
   }
 
-  private final ActorContext<Command> context;
   private final Map<String, ActorRef<DeviceGroup.Command>> groupIdToActor = new HashMap<>();
 
   public static Behavior<Command> create() {
@@ -152,7 +151,7 @@ public class DeviceManager extends AbstractBehavior<DeviceManager.Command> {
   }
 
   private DeviceManager(ActorContext<Command> context) {
-    this.context = context;
+    super(context);
     context.getLog().info("DeviceManager started");
   }
 
@@ -162,10 +161,10 @@ public class DeviceManager extends AbstractBehavior<DeviceManager.Command> {
     if (ref != null) {
       ref.tell(trackMsg);
     } else {
-      context.getLog().info("Creating device group actor for {}", groupId);
+      getContext().getLog().info("Creating device group actor for {}", groupId);
       ActorRef<DeviceGroup.Command> groupActor =
-          context.spawn(DeviceGroup.create(groupId), "group-" + groupId);
-      context.watchWith(groupActor, new DeviceGroupTerminated(groupId));
+          getContext().spawn(DeviceGroup.create(groupId), "group-" + groupId);
+      getContext().watchWith(groupActor, new DeviceGroupTerminated(groupId));
       groupActor.tell(trackMsg);
       groupIdToActor.put(groupId, groupActor);
     }
@@ -193,7 +192,7 @@ public class DeviceManager extends AbstractBehavior<DeviceManager.Command> {
   }
 
   private DeviceManager onTerminated(DeviceGroupTerminated t) {
-    context.getLog().info("Device group actor for {} has been terminated", t.groupId);
+    getContext().getLog().info("Device group actor for {} has been terminated", t.groupId);
     groupIdToActor.remove(t.groupId);
     return this;
   }
@@ -209,7 +208,7 @@ public class DeviceManager extends AbstractBehavior<DeviceManager.Command> {
   }
 
   private DeviceManager onPostStop() {
-    context.getLog().info("DeviceManager stopped");
+    getContext().getLog().info("DeviceManager stopped");
     return this;
   }
 }

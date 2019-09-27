@@ -37,12 +37,11 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroup.Command> {
     return Behaviors.setup(context -> new DeviceGroup(context, groupId));
   }
 
-  private final ActorContext<Command> context;
   private final String groupId;
   private final Map<String, ActorRef<Device.Command>> deviceIdToActor = new HashMap<>();
 
   private DeviceGroup(ActorContext<Command> context, String groupId) {
-    this.context = context;
+    super(context);
     this.groupId = groupId;
     context.getLog().info("DeviceGroup {} started", groupId);
   }
@@ -54,16 +53,17 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroup.Command> {
       if (deviceActor != null) {
         trackMsg.replyTo.tell(new DeviceManager.DeviceRegistered(deviceActor));
       } else {
-        context.getLog().info("Creating device actor for {}", trackMsg.deviceId);
+        getContext().getLog().info("Creating device actor for {}", trackMsg.deviceId);
         deviceActor =
-            context.spawn(Device.create(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
-        context.watchWith(
-            deviceActor, new DeviceTerminated(deviceActor, groupId, trackMsg.deviceId));
+            getContext()
+                .spawn(Device.create(groupId, trackMsg.deviceId), "device-" + trackMsg.deviceId);
+        getContext()
+            .watchWith(deviceActor, new DeviceTerminated(deviceActor, groupId, trackMsg.deviceId));
         deviceIdToActor.put(trackMsg.deviceId, deviceActor);
         trackMsg.replyTo.tell(new DeviceManager.DeviceRegistered(deviceActor));
       }
     } else {
-      context
+      getContext()
           .getLog()
           .warn(
               "Ignoring TrackDevice request for {}. This actor is responsible for {}.",
@@ -79,13 +79,13 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroup.Command> {
   }
 
   private DeviceGroup onTerminated(DeviceTerminated t) {
-    context.getLog().info("Device actor for {} has been terminated", t.deviceId);
+    getContext().getLog().info("Device actor for {} has been terminated", t.deviceId);
     deviceIdToActor.remove(t.deviceId);
     return this;
   }
 
   private DeviceGroup onPostStop() {
-    context.getLog().info("DeviceGroup {} stopped", groupId);
+    getContext().getLog().info("DeviceGroup {} stopped", groupId);
     return this;
   }
 
@@ -101,9 +101,10 @@ public class DeviceGroup extends AbstractBehavior<DeviceGroup.Command> {
     // applications!
     Map<String, ActorRef<Device.Command>> deviceIdToActorCopy = new HashMap<>(this.deviceIdToActor);
 
-    context.spawnAnonymous(
-        DeviceGroupQuery.create(
-            deviceIdToActorCopy, r.requestId, r.replyTo, Duration.ofSeconds(3)));
+    getContext()
+        .spawnAnonymous(
+            DeviceGroupQuery.create(
+                deviceIdToActorCopy, r.requestId, r.replyTo, Duration.ofSeconds(3)));
 
     return this;
   }

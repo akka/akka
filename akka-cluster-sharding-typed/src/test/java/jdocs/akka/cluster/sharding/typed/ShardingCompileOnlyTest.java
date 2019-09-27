@@ -49,12 +49,11 @@ interface ShardingCompileOnlyTest {
       return Behaviors.setup(context -> new Counter(context, entityId));
     }
 
-    private final ActorContext<Command> context;
     private final String entityId;
     private int value = 0;
 
     private Counter(ActorContext<Command> context, String entityId) {
-      this.context = context;
+      super(context);
       this.entityId = entityId;
     }
 
@@ -112,7 +111,6 @@ interface ShardingCompileOnlyTest {
           });
     }
 
-    private final ActorContext<Command> context;
     private final ActorRef<ClusterSharding.ShardCommand> shard;
     private final String entityId;
     private int value = 0;
@@ -121,7 +119,7 @@ interface ShardingCompileOnlyTest {
         ActorContext<Command> context,
         ActorRef<ClusterSharding.ShardCommand> shard,
         String entityId) {
-      this.context = context;
+      super(context);
       this.shard = shard;
       this.entityId = entityId;
     }
@@ -148,7 +146,7 @@ interface ShardingCompileOnlyTest {
 
     private Behavior<Command> onIdle() {
       // after receive timeout
-      shard.tell(new ClusterSharding.Passivate<>(context.getSelf()));
+      shard.tell(new ClusterSharding.Passivate<>(getContext().getSelf()));
       return this;
     }
 
