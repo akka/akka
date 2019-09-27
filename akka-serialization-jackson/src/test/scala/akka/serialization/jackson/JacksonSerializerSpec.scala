@@ -16,7 +16,6 @@ import java.util.logging.FileHandler
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
-
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -48,6 +47,10 @@ import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
 import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.StreamReadFeature
+import com.fasterxml.jackson.core.StreamWriteFeature
+import com.fasterxml.jackson.databind.json.JsonMapper
+import com.github.ghik.silencer.silent
 
 object ScalaTestMessages {
   trait TestMessage
@@ -109,6 +112,7 @@ class ScalaTestEventMigration extends JacksonMigration {
 
 class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor")
 
+@silent // this test uses Jackson deprecated APIs
 class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
   def serializeToJsonString(obj: AnyRef, sys: ActorSystem = system): String = {
@@ -161,6 +165,18 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
           # on is Jackson's default
           json-generator-features.AUTO_CLOSE_TARGET = off
+
+          # off is Jackson's default
+          stream-read-features.STRICT_DUPLICATE_DETECTION = on
+
+          # off is Jackson's default
+          stream-write-features.WRITE_BIGDECIMAL_AS_PLAIN = on
+
+          # off is Jackson's default
+          json-read-features.ALLOW_YAML_COMMENTS = on
+
+          # off is Jackson's default
+          json-write-features.ESCAPE_NON_ASCII = on
         }
       """) { sys =>
         val identifiedObjectMapper =
@@ -174,7 +190,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
           namedObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(false)
 
           // Default mapper follows Jackson and reference.conf default configuration
-          defaultObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(true)
+          defaultObjectMapper.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(false)
         }
 
         "support deserialization features" in {
@@ -209,14 +225,59 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
           defaultObjectMapper.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET) should ===(true)
         }
 
+        "support stream read features" in {
+          identifiedObjectMapper.isEnabled(StreamReadFeature.STRICT_DUPLICATE_DETECTION) should ===(true)
+          namedObjectMapper.isEnabled(StreamReadFeature.STRICT_DUPLICATE_DETECTION) should ===(true)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(StreamReadFeature.STRICT_DUPLICATE_DETECTION) should ===(false)
+        }
+
+        "support stream write features" in {
+          identifiedObjectMapper.isEnabled(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN) should ===(true)
+          namedObjectMapper.isEnabled(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN) should ===(true)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN) should ===(false)
+        }
+
+        "support json read features" in {
+          // ATTENTION: this is trick. Although we are configuring `json-read-features`, Jackson
+          // does not provides a way to check for `StreamReadFeature`s, so we need to check for
+          // `JsonParser.Feature`.ALLOW_YAML_COMMENTS.
+          // Same applies for json-write-features and JsonGenerator.Feature.
+          identifiedObjectMapper.isEnabled(JsonParser.Feature.ALLOW_YAML_COMMENTS) should ===(true)
+          namedObjectMapper.isEnabled(JsonParser.Feature.ALLOW_YAML_COMMENTS) should ===(true)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(JsonParser.Feature.ALLOW_YAML_COMMENTS) should ===(false)
+        }
+
+        "support json write features" in {
+          // ATTENTION: this is trickier than `json-read-features` vs JsonParser.Feature
+          // since the JsonWriteFeature replaces deprecated APIs in JsonGenerator.Feature.
+          // But just like the test for `json-read-features` there is no API to check for
+          // `JsonWriteFeature`s, so we need to use the deprecated APIs.
+          identifiedObjectMapper.isEnabled(JsonGenerator.Feature.ESCAPE_NON_ASCII) should ===(true)
+          namedObjectMapper.isEnabled(JsonGenerator.Feature.ESCAPE_NON_ASCII) should ===(true)
+
+          // Default mapper follows Jackson and reference.conf default configuration
+          defaultObjectMapper.isEnabled(JsonGenerator.Feature.ESCAPE_NON_ASCII) should ===(false)
+        }
+
         "fallback to defaults when object mapper is not configured" in {
           val notConfigured = JacksonObjectMapperProvider(sys).getOrCreate("jackson-not-configured", None)
           // Use Jacksons and Akka defaults
-          notConfigured.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(true)
+          notConfigured.isEnabled(SerializationFeature.WRITE_DURATIONS_AS_TIMESTAMPS) should ===(false)
           notConfigured.isEnabled(DeserializationFeature.EAGER_DESERIALIZER_FETCH) should ===(true)
           notConfigured.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(false)
           notConfigured.isEnabled(JsonParser.Feature.ALLOW_COMMENTS) should ===(false)
           notConfigured.isEnabled(JsonGenerator.Feature.AUTO_CLOSE_TARGET) should ===(true)
+
+          notConfigured.isEnabled(StreamReadFeature.STRICT_DUPLICATE_DETECTION) should ===(false)
+          notConfigured.isEnabled(StreamWriteFeature.WRITE_BIGDECIMAL_AS_PLAIN) should ===(false)
+          notConfigured.isEnabled(JsonParser.Feature.ALLOW_YAML_COMMENTS) should ===(false)
+          notConfigured.isEnabled(JsonGenerator.Feature.ESCAPE_NON_ASCII) should ===(false)
         }
       }
     }
@@ -253,6 +314,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       withSystem("""
         akka.serialization.jackson.serialization-features {
           WRITE_DATES_AS_TIMESTAMPS = on
+          WRITE_DURATIONS_AS_TIMESTAMPS = on
         }
         """) { sys =>
         val msg = new TimeCommand(LocalDateTime.of(2019, 4, 29, 23, 15, 3, 12345), Duration.of(5, ChronoUnit.SECONDS))
@@ -304,9 +366,9 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
 
     "be possible to create custom ObjectMapper" in {
       val customJacksonObjectMapperFactory = new JacksonObjectMapperFactory {
-        override def newObjectMapper(bindingName: String, jsonFactory: Option[JsonFactory]): ObjectMapper = {
+        override def newObjectMapper(bindingName: String, jsonFactory: JsonFactory): ObjectMapper = {
           if (bindingName == "jackson-json") {
-            val mapper = new ObjectMapper(jsonFactory.orNull)
+            val mapper: ObjectMapper = JsonMapper.builder(jsonFactory).build()
             // some customer configuration of the mapper
             mapper.setLocale(Locale.US)
             mapper
@@ -354,7 +416,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
             configuredFeatures: immutable.Seq[(JsonGenerator.Feature, Boolean)])
             : immutable.Seq[(JsonGenerator.Feature, Boolean)] =
           if (bindingName == "jackson-json")
-            configuredFeatures :+ (JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS -> true)
+            configuredFeatures :+ (JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN -> true)
           else
             super.overrideConfiguredJsonGeneratorFeatures(bindingName, configuredFeatures)
       }
@@ -370,14 +432,14 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
         mapper.isEnabled(MapperFeature.SORT_PROPERTIES_ALPHABETICALLY) should ===(true)
         mapper.isEnabled(JsonParser.Feature.ALLOW_SINGLE_QUOTES) should ===(true)
         mapper.isEnabled(SerializationFeature.INDENT_OUTPUT) should ===(true)
-        mapper.isEnabled(JsonGenerator.Feature.WRITE_NUMBERS_AS_STRINGS) should ===(true)
+        mapper.isEnabled(JsonGenerator.Feature.WRITE_BIGDECIMAL_AS_PLAIN) should ===(true)
 
         val msg = InstantCommand(Instant.ofEpochMilli(1559907792075L))
         val json = serializeToJsonString(msg, sys)
         // using the custom ObjectMapper with pretty printing enabled, and no JavaTimeModule
         json should include("""  "instant" : {""")
-        json should include("""    "nanos" : "75000000",""")
-        json should include("""    "seconds" : "1559907792"""")
+        json should include("""    "nanos" : 75000000,""")
+        json should include("""    "seconds" : 1559907792""")
       }
     }
 
