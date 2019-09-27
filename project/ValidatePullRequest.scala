@@ -16,6 +16,10 @@ import sbt._
 
 object AkkaValidatePullRequest extends AutoPlugin {
 
+  object CliOptions {
+    val mimaEnabled = CliOption("akka.mima.enabled", true)
+  }
+
   import ValidatePullRequest.autoImport._
 
   override def trigger = allRequirements
@@ -87,9 +91,8 @@ object MimaWithPrValidation extends AutoPlugin {
 
   override def trigger = allRequirements
   override def requires = AkkaValidatePullRequest && MimaPlugin
-  override lazy val projectSettings = Seq(
-    additionalTasks += mimaReportBinaryIssues
-  )
+  override lazy val projectSettings =
+    CliOptions.mimaEnabled.ifTrue(additionalTasks += mimaReportBinaryIssues).toList
 }
 
 /**
