@@ -9,6 +9,7 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
@@ -79,14 +80,15 @@ public interface ResumableProjectionExample {
     }
 
     public static Behavior<Command> create(String id, ExampleStore store) {
-      return Behaviors.setup(context -> new TheOneWhoWritesToQueryJournal(store));
+      return Behaviors.setup(context -> new TheOneWhoWritesToQueryJournal(context, store));
     }
 
     private final ExampleStore store;
 
     private ComplexState state = new ComplexState();
 
-    private TheOneWhoWritesToQueryJournal(ExampleStore store) {
+    private TheOneWhoWritesToQueryJournal(ActorContext<Command> context, ExampleStore store) {
+      super(context);
       this.store = store;
     }
 

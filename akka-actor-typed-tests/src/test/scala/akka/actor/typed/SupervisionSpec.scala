@@ -1298,7 +1298,30 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
     }
 
-    // FIXME add another test verfiying checkRightContext
+    "detect AbstractBehavior with wrong ActorContext" in {
+      val contextProbe = createTestProbe[ActorContext[String]]
+      spawn(Behaviors.setup[String] { context =>
+        contextProbe.ref ! context
+        Behaviors.empty
+      })
+
+      val wrongContext = contextProbe.receiveMessage()
+
+      val wrong = spawn(Behaviors.setup[String](_ =>
+        new AbstractBehavior[String](wrongContext) {
+          override def onMessage(msg: String): Behavior[String] = Behaviors.same
+        }))
+
+      val probe = createTestProbe()
+      LoggingEventFilter
+        .error[IllegalStateException]
+        .withMessageContains("created with wrong ActorContext")
+        .withOccurrences(2) // twice because also logged for PostStop signal
+        .intercept {
+          wrong ! "boom"
+        }
+      probe.expectTerminated(wrong)
+    }
 
   }
 

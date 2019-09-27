@@ -45,7 +45,7 @@ abstract class AbstractBehavior[T](context: ActorContext[T]) extends ExtensibleB
     if (ctx.asJava ne context)
       throw new IllegalStateException(
         s"Actor [${ctx.asJava.getSelf}] of AbstractBehavior class " +
-        s"[${getClass.getName}] was created with wrong ActorContext [${context.asJava.getSelf}]." +
+        s"[${getClass.getName}] was created with wrong ActorContext [${context.asJava.getSelf}]. " +
         "Wrap in Behaviors.setup and pass the context to the constructor of AbstractBehavior.")
 
   @throws(classOf[Exception])
