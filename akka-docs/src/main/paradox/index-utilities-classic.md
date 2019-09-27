@@ -14,9 +14,9 @@ To use Utilities, you must add the following dependency in your project:
 
 @@@ index
 
-* [event-bus](../event-bus.md)
-* [logging](../logging.md)
-* [scheduler](../scheduler.md)
-* [extending-akka](../extending-akka.md)
+* [event-bus](event-bus.md)
+* [logging](logging.md)
+* [scheduler](scheduler.md)
+* [extending-akka](extending-akka.md)
 
 @@@

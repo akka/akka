@@ -209,7 +209,7 @@ Java
 
 Note that stopped entities will be started again when a new message is targeted to the entity.
 
-If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see @ref:[Supervision](general/supervision.md#sharding)
+If 'on stop' backoff supervision strategy is used, a final termination message must be set and used for passivation, see @ref:[Backoff supervisor and sharding](fault-tolerance.md#sharding)
 
 ## Graceful Shutdown
 

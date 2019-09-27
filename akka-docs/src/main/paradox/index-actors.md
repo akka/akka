@@ -17,6 +17,7 @@ To use Classic Akka Actors, you must add the following dependency in your projec
 @@@ index
 
 * [actors](actors.md)
+* [supervision overview](supervision-classic.md)
 * [fault-tolerance](fault-tolerance.md)
 * [dispatchers](dispatchers.md)
 * [mailboxes](mailboxes.md)

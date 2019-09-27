@@ -158,12 +158,9 @@ their parent.
 
 ## Supervisor Strategy
 
-The final piece of an actor is its strategy for handling faults of its
-children. Fault handling is then done transparently by Akka, applying one
-of the strategies described in @ref:[Fault Tolerance](../typed/fault-tolerance.md)
-for each incoming failure.
-As this strategy is fundamental to how an actor system is structured, it
-cannot be changed once an actor has been created.
+The final piece of an actor is its a strategy for handling unexpected exceptions - failures. 
+Fault handling is then done transparently by Akka, applying one of the strategies described 
+in @ref:[Fault Tolerance](../typed/fault-tolerance.md) for each failure.
 
 ## When an Actor Terminates
 
