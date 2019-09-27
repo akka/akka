@@ -247,7 +247,7 @@ If you don’t use RP, you should anyway carefully read the [documentation](http
 of the Split Brain Resolver and make sure that the solution you are using handles the concerns
 described there.
 
-### Auto-downing (DO NOT USE)
+### Auto-downing - DO NOT USE
 
 There is an automatic downing feature that you should not use in production. For testing you can enable it with configuration:
 
