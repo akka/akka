@@ -97,7 +97,7 @@ class RetrySpec extends AkkaSpec with RetrySupport with Eventually {
         Future.failed(new IllegalStateException(failCount.toString))
       }
 
-      retry(attempt, 3, 100 milliseconds, 2)
+      retry(attempt _, 3, 100 milliseconds, 2)
 
       within(100 milliseconds, 3 second) {
         eventually {
@@ -124,8 +124,8 @@ class RetrySpec extends AkkaSpec with RetrySupport with Eventually {
       val delay = 100 milliseconds
       val backoff = 2
 
-      retryF(() ⇒ Future.failed(new Exception("oups")), attempts, delay, backoff) {
-        case (t, currentRetry) ⇒
+      retryF(() => Future.failed(new Exception("oups")), attempts, delay, backoff) {
+        case (t, currentRetry) =>
           s.append(s"${t.getMessage}, will retry in ${delay * math.pow(backoff, attempts - currentRetry + 1)}")
       }
 
