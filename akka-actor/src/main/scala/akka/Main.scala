@@ -18,6 +18,7 @@ import scala.util.control.NonFatal
  * top level application supervisor actor. It will shutdown
  * the actor system when the top level actor is terminated.
  */
+@deprecated("Implement your own main class instead, from which you start the ActorSystem and actors.", "2.6.0")
 object Main {
 
   /**

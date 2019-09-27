@@ -68,7 +68,7 @@ The plugin configuration might look like this:
       <transformer
        implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
        <manifestEntries>
-        <Main-Class>akka.Main</Main-Class>
+        <Main-Class>myapp.Main</Main-Class>
        </manifestEntries>
       </transformer>
     </transformers>
