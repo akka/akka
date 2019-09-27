@@ -52,13 +52,11 @@ interface SharedMutableStateDocTest {
       }
     }
 
-    private final ActorContext<Command> context;
-
     private String state = "";
     private Set<String> mySet = new HashSet<>();
 
     public MyActor(ActorContext<Command> context) {
-      this.context = context;
+      super(context);
     }
 
     @Override
@@ -96,12 +94,13 @@ interface SharedMutableStateDocTest {
       // Turn the future result into a message that is sent to
       // self when future completes
       CompletableFuture<String> futureResult = expensiveCalculation();
-      context.pipeToSelf(
-          futureResult,
-          (result, failure) -> {
-            if (result != null) return new UpdateState(result);
-            else throw new RuntimeException(failure);
-          });
+      getContext()
+          .pipeToSelf(
+              futureResult,
+              (result, failure) -> {
+                if (result != null) return new UpdateState(result);
+                else throw new RuntimeException(failure);
+              });
 
       // Another example of incorrect approach
       // mutating actor state from ask future callback
@@ -110,7 +109,7 @@ interface SharedMutableStateDocTest {
               message.otherActor,
               Query::new,
               Duration.ofSeconds(3),
-              context.getSystem().scheduler());
+              getContext().getSystem().scheduler());
       response.whenComplete(
           (result, failure) -> {
             if (result != null) state = "new state: " + result;
@@ -118,15 +117,16 @@ interface SharedMutableStateDocTest {
 
       // use context.ask instead, turns the completion
       // into a message sent to self
-      context.ask(
-          String.class,
-          message.otherActor,
-          Duration.ofSeconds(3),
-          Query::new,
-          (result, failure) -> {
-            if (result != null) return new UpdateState(result);
-            else throw new RuntimeException(failure);
-          });
+      getContext()
+          .ask(
+              String.class,
+              message.otherActor,
+              Duration.ofSeconds(3),
+              Query::new,
+              (result, failure) -> {
+                if (result != null) return new UpdateState(result);
+                else throw new RuntimeException(failure);
+              });
       return this;
     }
 
