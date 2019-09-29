@@ -11,9 +11,7 @@ For specific documentation topics see:
 * @ref:[Operating, Managing, Observability](../additional/operations.md)
 
 @@@ note
-
 For the Akka Classic documentation of this feature see @ref:[Classic Cluster](../cluster-usage.md).
-
 @@@
 
 You have to enable @ref:[serialization](../serialization.md)  to send messages between ActorSystems in the Cluster.

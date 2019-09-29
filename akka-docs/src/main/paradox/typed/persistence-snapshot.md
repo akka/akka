@@ -1,5 +1,9 @@
 # Snapshotting
 
+@@@ note
+For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
+@@@
+
 ## Snapshots
 
 As you model your domain using @ref:[event sourced actors](persistence.md), you may notice that some actors may be

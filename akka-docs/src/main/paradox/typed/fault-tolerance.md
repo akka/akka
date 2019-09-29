@@ -1,9 +1,7 @@
 # Fault Tolerance
 
 @@@ note
-
 For the Akka Classic documentation of this feature see @ref:[Classic Fault Tolerance](../fault-tolerance.md).
-
 @@@
 
 When an actor throws an unexpected exception, a failure, while processing a message or during initialization, the actor

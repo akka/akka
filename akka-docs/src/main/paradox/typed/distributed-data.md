@@ -1,9 +1,7 @@
 # Distributed Data
 
 @@@ note
-
 For the Akka Classic documentation of this feature see @ref:[Classic Distributed Data](../distributed-data.md).
-
 @@@
 
 ## Dependency
