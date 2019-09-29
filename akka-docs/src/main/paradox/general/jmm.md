@@ -1,3 +1,6 @@
+---
+project.description: Akka, Actors, Futures and the Java Memory Model.
+---
 # Akka and the Java Memory Model
 
 A major benefit of using the Lightbend Platform, including Scala and Akka, is that it simplifies the process of writing

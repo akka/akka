@@ -1,3 +1,6 @@
+---
+project.description: Multi node testing with Akka.
+---
 # Multi Node Testing
 
 ## Dependency

@@ -1,3 +1,6 @@
+---
+project.description: A distributed lock with Akka Coordination using a pluggable lease API.
+---
 # Coordination
 
 Akka Coordination is a set of tools for distributed coordination.

@@ -1,3 +1,6 @@
+---
+project.description: Migrating to Akka 2.6.
+---
 # Migration Guide 2.5.x to 2.6.x
 
 It is now recommended to use @apidoc[akka.util.ByteString]`.emptyByteString()` instead of

@@ -1,3 +1,6 @@
+---
+project.description: Logging options with Akka.
+---
 # Logging
 
 ## Dependency

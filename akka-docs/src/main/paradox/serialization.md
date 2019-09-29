@@ -1,3 +1,6 @@
+---
+project.description: Serialization with Akka.
+---
 # Serialization
 
 ## Dependency

@@ -1,3 +1,6 @@
+---
+project.description: Streaming events with Akka Streams using stream graphs, stream flows failure handling and backpressure.
+---
 # Streams
 
 ## Dependency

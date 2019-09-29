@@ -1,3 +1,6 @@
+---
+project.description: Akka remoting.
+---
 # Artery Remoting
 
 @@@ note

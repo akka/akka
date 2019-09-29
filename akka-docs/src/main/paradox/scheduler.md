@@ -1,3 +1,6 @@
+---
+project.description: How to schedule processes in Akka with the Scheduler.
+---
 # Classic Scheduler
 
 @@include[includes.md](includes.md) { #actor-api }

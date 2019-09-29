@@ -1,3 +1,6 @@
+---
+project.description: Service discovery with Akka using DNS, Kubernetes, AWS, Consul or Marathon.
+---
 # Discovery
 
 Akka Discovery provides an interface around various ways of locating services. The built in methods are:

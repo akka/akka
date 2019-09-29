@@ -1,3 +1,6 @@
+---
+project.description: Hierarchical supervision, lifecycle monitoring and error or failure handling in Akka.
+---
 # Supervision and Monitoring
 
 This chapter outlines the concept behind supervision, the primitives offered

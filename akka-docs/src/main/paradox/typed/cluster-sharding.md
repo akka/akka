@@ -1,3 +1,6 @@
+---
+project.description: Shard a clustered compute process across the network with location transparency message routing using Akka Cluster Sharding.
+---
 # Cluster Sharding
 
 @@@ note

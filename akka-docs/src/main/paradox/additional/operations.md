@@ -1,3 +1,6 @@
+---
+project.description: Operating, managing and monitoring Akka and Akka Cluster applications.
+---
 # Operating a Cluster
 
 This documentation discusses how to operate a cluster. For related, more specific guides

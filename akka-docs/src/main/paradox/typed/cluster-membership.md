@@ -1,3 +1,6 @@
+---
+project.description: The Akka Cluster node membership service, manages dynamic member states and lifecycle with no external infrastructure needed.
+---
 # Cluster Membership Service
 
 The core of Akka Cluster is the cluster membership, to keep track of what nodes are part of the cluster and

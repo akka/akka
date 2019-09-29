@@ -1,3 +1,6 @@
+---
+project.description: How to do rolling updates and restarts with Akka Cluster.
+---
 # Rolling Updates
 
 @@@ note

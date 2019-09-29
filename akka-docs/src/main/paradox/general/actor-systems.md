@@ -1,3 +1,6 @@
+---
+project.description: The Akka ActorSystem.
+---
 # Actor Systems
 
 Actors are objects which encapsulate state and behavior, they communicate
