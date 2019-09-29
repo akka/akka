@@ -70,33 +70,22 @@ of the cluster when the subscription starts and then it receives events for chan
 
 This section shows the basic usage of the membership API. For the in-depth descriptions on joining, joining to seed nodes, downing and leaving of any node in the cluster please see the full 
 @ref:[Cluster Membership API](typed/cluster.md#cluster-membership-api) documentation.
-
-If not using configuration to specify [seed nodes to join](#joining-to-seed-nodes), joining the cluster can be done programmatically: 
-
-Scala
-:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join }
-
-Java
-:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join }
-
-
-Leaving the cluster and downing a node are similar, for example:
- 
-Scala
-:  @@snip [ClusterDocSpec.scala](/akka-docs/src/test/scala/docs/cluster/ClusterDocSpec.scala) { #leave }
-
-Java
-:  @@snip [ClusterDocTest.java](/akka-docs/src/test/java/jdocs/cluster/ClusterDocTest.java) { #leave }
- 
   
 ### Joining to Seed Nodes
 
-Joining to initial cluster contact points `akka.cluster.seed-nodes` can be done manually, with @ref:[configuration](typed/cluster.md#joining-configured-seed-nodes), 
-[programatically](#programatically-joining-to-seed-nodes-with-joinseednodes), or @ref:[automatically with Cluster Bootstrap](typed/cluster.md#joining-automatically-to-seed-nodes-with-cluster-bootstrap).
-  
-#### Programatically joining to seed nodes with `joinSeedNodes`
+The seed nodes are initial contact points for joining a cluster, which can be done if different ways:
 
-@@include[cluster.md](includes/cluster.md) { #join-seeds-programmatic }
+* @ref:[automatically with Cluster Bootstrap](typed/cluster.md#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
+* @ref:[with configuration of seed-nodes](typed/cluster.md#joining-configured-seed-nodes)
+* [programatically](#joining-programmatically-to-seed-nodes)
+ 
+After the joining process the seed nodes are not special and they participate in the cluster in exactly the same
+way as other nodes.
+
+#### Joining programmatically to seed nodes
+
+You may also join programmatically, which is attractive when dynamically discovering other nodes
+at startup by using some external tool or API.
 
 Scala
 :  @@snip [ClusterDocSpec.scala](/akka-docs/src/test/scala/docs/cluster/ClusterDocSpec.scala) { #join-seed-nodes }
@@ -105,6 +94,15 @@ Java
 :  @@snip [ClusterDocTest.java](/akka-docs/src/test/java/jdocs/cluster/ClusterDocTest.java) { #join-seed-nodes-imports #join-seed-nodes }
 
 For more information see @ref[tuning joins](typed/cluster.md#tuning-joins)
+
+It's also possible to specifically join a single node as illustrated in below example, but `joinSeedNodes` should be
+preferred since it has redundancy and retry mechanisms built-in.
+
+Scala
+:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join }
+
+Java
+:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join }
 
 <a id="cluster-subscriber"></a>
 ## Subscribe to Cluster Events

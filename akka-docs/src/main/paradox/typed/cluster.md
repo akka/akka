@@ -134,20 +134,38 @@ There are more types of change events, consult the API documentation
 of classes that extends `akka.cluster.ClusterEvent.ClusterDomainEvent` for details about the events.
  
 ## Cluster Membership API
+
+### Joining
  
-The `akka.cluster.seed-nodes` are initial contact points for [automatically](#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
-or [manually](#joining-configured-seed-nodes) joining a cluster.
+The seed nodes are initial contact points for joining a cluster, which can be done if different ways:
+
+* [automatically with Cluster Bootstrap](#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
+* [with configuration of seed-nodes](#joining-configured-seed-nodes)
+* [programatically](#joining-programmatically-to-seed-nodes)
  
 After the joining process the seed nodes are not special and they participate in the cluster in exactly the same
 way as other nodes.
 
-### Joining configured seed nodes
- 
-When a new node is started it sends a message to all seed nodes and then sends a join command to the one that
+#### Joining automatically to seed nodes with Cluster Bootstrap
+
+Automatic discovery of nodes for the joining process is available
+using the open source Akka Management project's module, 
+@ref:[Cluster Bootstrap](../additional/operations.md#cluster-bootstrap).
+Please refer to its documentation for more details.
+
+#### Joining configured seed nodes
+
+When a new node is started it sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
 it retries this procedure until successful or shutdown.
 
-You define the seed nodes in the [configuration](#configuration) file (application.conf):
+You can define the seed nodes in the [configuration](#configuration) file (application.conf):
+
+```
+akka.cluster.seed-nodes = [
+  "akka://ClusterSystem@host1:2552",
+  "akka://ClusterSystem@host2:2552"]
+```
 
 This can also be defined as Java system properties when starting the JVM using the following syntax:
 
@@ -155,6 +173,11 @@ This can also be defined as Java system properties when starting the JVM using t
 -Dakka.cluster.seed-nodes.0=akka://ClusterSystem@host1:2552
 -Dakka.cluster.seed-nodes.1=akka://ClusterSystem@host2:2552
 ```
+
+ 
+When a new node is started it sends a message to all configured `seed-nodes` and then sends a join command to the
+one that answers first. If no one of the seed nodes replied (might not be started yet) it retries this procedure
+until successful or shutdown.
 
 The seed nodes can be started in any order and it is not necessary to have all
 seed nodes running, but the node configured as the **first element** in the `seed-nodes`
@@ -177,18 +200,22 @@ and don't stop all of them at the same time.
 Note that if you are going to start the nodes on different machines you need to specify the
 ip-addresses or host names of the machines in `application.conf` instead of `127.0.0.1`
 
-### Joining automatically to seed nodes with Cluster Bootstrap
+#### Joining programmatically to seed nodes
 
-Automatic discovery of nodes for the joining process is available
-using the open source Akka Management project's module, 
-@ref:[Cluster Bootstrap](../additional/operations.md#cluster-bootstrap).
-Please refer to its documentation for more details.
+You may also join programmatically, which is attractive when dynamically discovering other nodes
+at startup by using some external tool or API.
 
-### Joining programmatically to seed nodes
+Scala
+:  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #join-seed-nodes }
 
-@@include[cluster.md](../includes/cluster.md) { #join-seeds-programmatic }
+Java
+:  @@snip [BasicClusterExampleTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #join-seed-nodes }
+
+When joining to seed nodes you should not include the node itself except for the node that is supposed to be the
+first seed node that is bootstrapping the cluster, which should be placed first in the parameter to the programmatic
+join.
            
-### Tuning joins
+#### Tuning joins
 
 Unsuccessful attempts to contact seed nodes are automatically retried after the time period defined in
 configuration property `seed-node-timeout`. Unsuccessful attempt to join a specific seed node is

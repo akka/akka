@@ -42,13 +42,6 @@ so that one Cluster can span multiple data centers and still be tolerant to netw
 
 <!--- #cluster-multidc --->
 
-<!--- #join-seeds-programmatic --->
-You may also join programmatically, which is attractive when dynamically discovering other nodes
-at startup by using some external tool or API. When joining to seed nodes you should not include
-the node itself except for the node that is supposed to be the first seed node, which should be
-placed first in the parameter to the programmatic join.
-<!--- #join-seeds-programmatic --->
-
 <!--- #sharding-persistence-mode-deprecated --->
 @@@ warning
 

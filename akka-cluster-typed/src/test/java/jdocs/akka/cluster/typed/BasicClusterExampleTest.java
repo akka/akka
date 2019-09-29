@@ -4,8 +4,14 @@
 
 package jdocs.akka.cluster.typed;
 
-// #cluster-imports
+// #join-seed-nodes
 import akka.actor.Address;
+import akka.actor.AddressFromURIString;
+import akka.cluster.typed.JoinSeedNodes;
+
+// #join-seed-nodes
+
+// #cluster-imports
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
 import akka.cluster.ClusterEvent;
@@ -14,6 +20,9 @@ import akka.cluster.typed.*;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+
+import java.util.ArrayList;
+import java.util.List;
 
 // FIXME use awaitAssert to await cluster forming like in BasicClusterExampleSpec
 public class BasicClusterExampleTest { // extends JUnitSuite {
@@ -98,5 +107,17 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
       system.terminate();
       system2.terminate();
     }
+  }
+
+  void illustrateJoinSeedNodes() {
+    ActorSystem<Void> system = null;
+
+    // #join-seed-nodes
+    List<Address> seedNodes = new ArrayList<>();
+    seedNodes.add(AddressFromURIString.parse("akka://ClusterSystem@127.0.0.1:2551"));
+    seedNodes.add(AddressFromURIString.parse("akka://ClusterSystem@127.0.0.1:2552"));
+
+    Cluster.get(system).manager().tell(new JoinSeedNodes(seedNodes));
+    // #join-seed-nodes
   }
 }
