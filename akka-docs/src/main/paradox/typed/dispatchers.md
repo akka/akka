@@ -1,3 +1,6 @@
+---
+project.description: Akka dispatchers and how to choose the right ones.
+---
 # Dispatchers
 
 @@@ note

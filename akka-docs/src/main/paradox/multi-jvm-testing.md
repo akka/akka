@@ -1,3 +1,6 @@
+---
+project.description: Multi JVM testing of distributed systems built with Akka.
+---
 # Multi JVM Testing
 
 Supports running applications (objects with main methods) and ScalaTest tests in multiple JVMs at the same time.

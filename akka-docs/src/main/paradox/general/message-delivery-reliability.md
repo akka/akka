@@ -1,3 +1,6 @@
+---
+project.description: Akka message delivery semantics, at-most-once delivery and message ordering.
+---
 # Message Delivery Reliability
 
 Akka helps you build reliable applications which make use of multiple processor

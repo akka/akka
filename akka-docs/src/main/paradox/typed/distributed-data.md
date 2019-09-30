@@ -1,3 +1,6 @@
+---
+project.description: Share data between nodes and perform updates without coordination in an Akka Cluster using Conflict Free Replicated Data Types CRDT.
+---
 # Distributed Data
 
 @@@ note

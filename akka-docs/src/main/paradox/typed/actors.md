@@ -1,3 +1,6 @@
+---
+project.description: The Actor model, managing internal state and changing behavior in Akka Actors.
+---
 # Introduction to Actors
 
 @@@ note

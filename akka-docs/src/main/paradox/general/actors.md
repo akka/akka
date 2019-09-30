@@ -1,3 +1,6 @@
+---
+project.description: What is an Actor and sending messages between independent units of computation in Akka.
+---
 # What is an Actor?
 
 The previous section about @ref:[Actor Systems](actor-systems.md) explained how actors form

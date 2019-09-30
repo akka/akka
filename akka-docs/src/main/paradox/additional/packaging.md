@@ -1,3 +1,6 @@
+---
+project.description: How to package an Akka application for deployment.
+---
 # Packaging
 
 The simplest way to use Akka is as a regular library, adding the Akka jars you

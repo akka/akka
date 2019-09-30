@@ -1,3 +1,6 @@
+---
+project.description: Multi node testing of distributed systems built with Akka.
+---
 # Multi Node Testing
 
 ## Dependency

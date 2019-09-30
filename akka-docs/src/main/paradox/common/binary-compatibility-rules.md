@@ -1,3 +1,6 @@
+---
+project.description: Binary compatibility across Akka versions.
+---
 # Binary Compatibility Rules
 
 Akka maintains and verifies *backwards binary compatibility* across versions of modules.

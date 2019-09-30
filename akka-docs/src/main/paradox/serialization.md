@@ -1,3 +1,6 @@
+---
+project.description: Serialization APIs built into Akka.
+---
 # Serialization
 
 ## Dependency

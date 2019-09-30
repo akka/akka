@@ -1,3 +1,6 @@
+---
+project.description: How to deploy Akka Cluster to Kubernetes and Docker.
+---
 # Deploying
 
 ## Deploying to Docker containers

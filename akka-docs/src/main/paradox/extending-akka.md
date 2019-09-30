@@ -1,3 +1,6 @@
+---
+project.description: How to extend Akka with Akka Extensions.
+---
 # Classic Akka Extensions
 
 If you want to add features to Akka, there is a very elegant, but powerful mechanism for doing so.

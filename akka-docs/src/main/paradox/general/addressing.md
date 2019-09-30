@@ -1,3 +1,6 @@
+---
+project.description: Local and remote Akka Actor references, locating Actors, Actor paths and addresses.
+---
 # Actor References, Paths and Addresses
 
 This chapter describes how actors are identified and located within a possibly

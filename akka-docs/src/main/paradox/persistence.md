@@ -1,3 +1,6 @@
+---
+project.description: Akka Persistence Classic, event sourcing with Akka, At-Least-Once delivery, snapshots, recovery and replay with Akka actors.
+---
 # Classic Persistence
 
 @@include[includes.md](includes.md) { #actor-api }

@@ -1,3 +1,6 @@
+---
+project.description: Build distributed applications that scale across the network with Akka Cluster, a fault-tolerant decentralized peer-to-peer based cluster node membership service with no single point of failure.
+---
 # Cluster Usage
   
 This document describes how to use Akka Cluster and the Cluster APIs. 

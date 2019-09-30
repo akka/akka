@@ -1,3 +1,6 @@
+---
+project.description: Finite State Machines (FSM) with Akka Actors.
+---
 # Behaviors as finite state machines
 
 @@@ note

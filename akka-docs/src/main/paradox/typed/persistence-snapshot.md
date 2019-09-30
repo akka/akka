@@ -1,3 +1,6 @@
+---
+project.description: Append only event logs, snapshots and recovery with Akka event sourced actors.
+---
 # Snapshotting
 
 @@@ note

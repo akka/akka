@@ -1,3 +1,6 @@
+---
+project.description: Serialization with Jackson for Akka.
+---
 # Serialization with Jackson
 
 ## Dependency

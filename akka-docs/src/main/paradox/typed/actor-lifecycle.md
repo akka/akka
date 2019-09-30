@@ -1,3 +1,6 @@
+---
+project.description: The Akka Actor lifecycle.
+---
 # Actor lifecycle
 
 @@@ note
