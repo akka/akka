@@ -400,7 +400,7 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
     persistence % "compile->compile;test->test",
     persistenceQuery % "test",
     actorTypedTests % "test->test",
-    actorTestkitTyped % "compile->compile;test->test",
+    actorTestkitTyped % "test->test",
     jackson % "test->test")
   .settings(javacOptions += "-parameters") // for Jackson
   .settings(Dependencies.persistenceShared)
