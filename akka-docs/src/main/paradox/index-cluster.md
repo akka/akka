@@ -16,6 +16,5 @@ For the new API see @ref[Cluster](typed/index-cluster.md).
 * [cluster-metrics](cluster-metrics.md)
 * [distributed-data](distributed-data.md)
 * [serialization](serialization-classic.md)
-* [coordination](coordination.md)
 
 @@@
