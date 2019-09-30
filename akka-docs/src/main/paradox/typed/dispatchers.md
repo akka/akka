@@ -1,9 +1,7 @@
 # Dispatchers
 
 @@@ note
-
 For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers](../dispatchers.md).
-
 @@@
 
 ## Dependency

@@ -1,9 +1,7 @@
 # Cluster Sharding
 
 @@@ note
-
-For the Akka Classic API see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
-
+For the Akka Classic documentation of this feature see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
 @@@
 
 ## Dependency

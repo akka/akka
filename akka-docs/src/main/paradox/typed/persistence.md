@@ -13,9 +13,7 @@
 @@@
 
 @@@ note
-
 For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
-
 @@@
 
 ## Dependency
