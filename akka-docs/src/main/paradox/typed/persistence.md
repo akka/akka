@@ -251,7 +251,7 @@ state and must also carefully be reconstructed during recovery. If it would have
 that the behavior must be restored when replaying events and also encoded in the state anyway when snapshots are used.
 That would be very prone to mistakes and thus not allowed in Akka Persistence.
 
-For basic actors you can use the same set of command handlers independpedcanent of what state the entity is in,
+For basic actors you can use the same set of command handlers independent of what state the entity is in,
 as shown in above example. For more complex actors it's useful to be able to change the behavior in the sense
 that different functions for processing commands may be defined depending on what state the actor is in.
 This is useful when implementing finite state machine (FSM) like entities.
