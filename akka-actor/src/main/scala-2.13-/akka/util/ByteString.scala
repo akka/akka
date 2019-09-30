@@ -389,7 +389,7 @@ object ByteString {
 
   private[akka] object ByteStrings extends Companion {
     def apply(bytestrings: Vector[ByteString1]): ByteString =
-      new ByteStrings(bytestrings, (0 /: bytestrings)(_ + _.length))
+      new ByteStrings(bytestrings, bytestrings.foldLeft(0)(_ + _.length))
 
     def apply(bytestrings: Vector[ByteString1], length: Int): ByteString = new ByteStrings(bytestrings, length)
 
