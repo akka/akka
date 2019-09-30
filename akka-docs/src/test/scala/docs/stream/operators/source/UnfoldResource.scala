@@ -29,13 +29,13 @@ object UnfoldResource {
     implicit val actorSystem = ActorSystem()
     // #unfoldResource
     // we don't actually have one, it was just made up for the sample
-    val connectionPool: Database = ???
+    val database: Database = ???
 
     val queryResultSource: Source[DatabaseEntry, NotUsed] =
       Source.unfoldResource[DatabaseEntry, QueryResult](
         // open
         { () =>
-          connectionPool.doQuery()
+          database.doQuery()
         },
         // read
         { query =>

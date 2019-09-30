@@ -14,22 +14,22 @@ Wrap any resource that can be opened, queried for next element (in a blocking wa
 
 ## Description
 
-Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.
+`Source.unfoldResource` allows us to safely interact with this API by providing three functions: 
+
+1. `create`: Open or create the resource
+1. `read`: Fetch the next element or signal that we reached the end of the stream by returning a @java[`Optional.empty`]@scala[`None`]
+1. `close`: Close the resource, invoked on end of stream or if the stream fails
 
 The functions are by default called on the blocking io dispatcher to avoid interfering with other stream operations. 
-See @ref:[Blocking Needs Careful Management](../../../typed/dispatchers.md#blocking-needs-careful-management) for an explanation on why this is important
+See @ref:[Blocking Needs Careful Management](../../../typed/dispatchers.md#blocking-needs-careful-management) for an explanation on why this is important.
 
-@@@div { .callout }
-
-**emits** when there is demand and the `read` function returns value
-
-**completes** when read function returns @scala[`None`]@java[an empty `Optional`]
-
-@@@
+Note that there are pre-built `unfoldResource`-like operators for the old Java `InputStream` APIs in 
+@ref:[Additional Sink and Source converters](../index.md#additional-sink-and-source-converters), 
+`Iterator` in @ref:[fromIterator](fromIterator.md) and File IO in @ref:[File IO Sinks and Sources](../index.md#file-io-sinks-and-sources).
 
 ## Examples
 
-Imagine we have a blocking database API which may potentially block both when we initially perform a query and 
+Imagine we have a database API which may potentially block both when we initially perform a query and 
 on retrieving each result from the query. It also gives us an iterator like way to determine if we have reached
 the end of the result and a close method that must be called to free resources:
 
@@ -40,11 +40,6 @@ Java
 :   @@snip [UnfoldResource.java](/akka-docs/src/test/java/jdocs/stream/operators/source/UnfoldResource.java) { #unfoldResource-blocking-api }
 
 
-`Source.unfoldResource` allows us to safely interact with this API by providing three functions: 
-
-1. open the resource
-1. fetch the next element or signal that we reached the end of the stream
-1. close the resource, invoked on end of stream or if the stream fails
 
 Let's see how we use the API above safely through `unfoldResource`:
 
@@ -53,3 +48,17 @@ Scala
 
 Java
 :   @@snip [UnfoldResource.java](/akka-docs/src/test/java/jdocs/stream/operators/source/UnfoldResource.java) { #unfoldResource }
+
+If the resource produces more than one element at a time, combining `unfoldResource` with 
+@scala[`mapConcat(identity)`]@java[`mapConcat(elems -> elems)`] will give you a stream of individual elements.
+See @ref:[mapConcat](../Source-or-Flow/mapConcat.md)) for details.
+
+## Reactive Streams semantics
+
+@@@div { .callout }
+
+**emits** when there is demand and the `read` function returns value
+
+**completes** when read function returns @scala[`None`]@java[an empty `Optional`]
+
+@@@
