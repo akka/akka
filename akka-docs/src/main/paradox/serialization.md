@@ -1,5 +1,5 @@
 ---
-project.description: Serialization with Akka.
+project.description: Serialization APIs built into Akka.
 ---
 # Serialization
 

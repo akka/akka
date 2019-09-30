@@ -1,5 +1,5 @@
 ---
-project.description: Akka remoting.
+project.description: Details about the underlying remoting module for Akka Cluster.
 ---
 # Artery Remoting
 

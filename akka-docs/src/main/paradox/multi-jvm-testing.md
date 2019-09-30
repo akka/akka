@@ -1,5 +1,5 @@
 ---
-project.description: Multi JVM testing with Akka.
+project.description: Multi JVM testing of distributed systems built with Akka.
 ---
 # Multi JVM Testing
 

@@ -1,3 +1,6 @@
+---
+project.description: Query side to Akka Persistence allowing for building CQRS applications.
+---
 # Persistence Query
 
 ## Dependency

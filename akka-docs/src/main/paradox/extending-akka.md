@@ -1,5 +1,5 @@
 ---
-project.description: how to extend Akka with Akka Extensions.
+project.description: How to extend Akka with Akka Extensions.
 ---
 # Classic Akka Extensions
 

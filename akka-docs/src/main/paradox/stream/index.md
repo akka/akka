@@ -1,5 +1,5 @@
 ---
-project.description: Streaming events with Akka Streams using stream graphs, stream flows failure handling and backpressure.
+project.description: An intuitive and safe way to do asynchronous, non-blocking backpressured stream processing.
 ---
 # Streams
 

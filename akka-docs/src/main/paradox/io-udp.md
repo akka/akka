@@ -1,5 +1,5 @@
 ---
-project.description: Using UDP with Akka.
+project.description: Low level API for using UDP with classic actors.
 ---
 # Using UDP
 

@@ -1,5 +1,5 @@
 ---
-project.description: Using TCP with Akka.
+project.description: Low level API for using TCP with classic actors.
 ---
 # Using TCP
 
