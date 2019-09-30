@@ -68,7 +68,7 @@ And the minimum configuration required is to set a host/port for remoting and th
 
 @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #config-seeds }
 
-Starting the cluster on each node:
+Accessing the `Cluster` extension on each node:
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-create }
@@ -84,7 +84,7 @@ Java
 
 ### Joining and Leaving a Cluster 
 
-If not using configuration to specify [seed nodes to join](#joining-to-seed-nodes), joining the cluster can be done programmatically via the `manager`.
+If not using configuration to specify @ref:[seed nodes to join](#joining), joining the cluster can be done programmatically via the `manager`.
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-join }
@@ -92,7 +92,7 @@ Scala
 Java
 :  @@snip [BasicClusterExampleTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-join }
 
-[Leaving](#leaving) the cluster and [downing](#downing) a node are similar:
+@ref:[Leaving](#leaving) the cluster and @ref:[downing](#downing) a node are similar:
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-leave }
@@ -129,7 +129,7 @@ Instead of subscribing to cluster events it can sometimes be convenient to only 
 @scala[`Cluster(system).state`]@java[`Cluster.get(system).state()`]. Note that this state is not necessarily in sync with the events published to a
 cluster subscription.
 
-See [Cluster Membership](cluster-membership.md#member-events) more information on member events specifically.
+See @ref:[Cluster Membership](cluster-membership.md#member-events) more information on member events specifically.
 There are more types of change events, consult the API documentation
 of classes that extends `akka.cluster.ClusterEvent.ClusterDomainEvent` for details about the events.
  
@@ -139,9 +139,9 @@ of classes that extends `akka.cluster.ClusterEvent.ClusterDomainEvent` for detai
  
 The seed nodes are initial contact points for joining a cluster, which can be done if different ways:
 
-* [automatically with Cluster Bootstrap](#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
-* [with configuration of seed-nodes](#joining-configured-seed-nodes)
-* [programatically](#joining-programmatically-to-seed-nodes)
+* @ref:[automatically with Cluster Bootstrap](#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
+* @ref:[with configuration of seed-nodes](#joining-configured-seed-nodes)
+* @ref:[programatically](#joining-programmatically-to-seed-nodes)
  
 After the joining process the seed nodes are not special and they participate in the cluster in exactly the same
 way as other nodes.
@@ -159,7 +159,7 @@ When a new node is started it sends a message to all seed nodes and then sends j
 answers first. If no one of the seed nodes replied (might not be started yet)
 it retries this procedure until successful or shutdown.
 
-You can define the seed nodes in the [configuration](#configuration) file (application.conf):
+You can define the seed nodes in the @ref:[configuration](#configuration) file (application.conf):
 
 ```
 akka.cluster.seed-nodes = [
@@ -238,7 +238,7 @@ akka.coordinated-shutdown.terminate-actor-system = on
 ```
 
 If you don't configure seed nodes or use one of the join seed node functions you need to join the cluster manually,
-which can be performed by using [JMX](#jmx) or [HTTP](#http).
+which can be performed by using @ref:[JMX](../additional/operations.md#jmx) or @ref:[HTTP](../additional/operations.md#http).
 
 You can join to any node in the cluster. It does not have to be configured as a seed node.
 Note that you can only join to an existing cluster member, which means that for bootstrapping some
@@ -359,7 +359,7 @@ unreachable from the rest of the cluster. Please see:
 
 * @ref:[Failure Detector specification](cluster-concepts.md#failure-detector)
 * @ref:[Phi Accrual Failure Detector](failure-detector.md) implementation
-* [Using the Failure Detector](#using-the-failure-detector) 
+* @ref:[Using the Failure Detector](#using-the-failure-detector) 
  
 ### Using the Failure Detector
  
@@ -370,7 +370,7 @@ implementing the `akka.remote.FailureDetector` and configuring it:
 akka.cluster.implementation-class = "com.example.CustomFailureDetector"
 ```
 
-In the [Cluster Configuration](#configuration) you may want to adjust these
+In the @ref:[Cluster Configuration](#configuration) you may want to adjust these
 depending on you environment:
 
 * When a *phi* value is considered to be a failure `akka.cluster.failure-detector.threshold`

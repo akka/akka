@@ -44,7 +44,7 @@ It contains instructions on how to run the `SimpleClusterApp`.
 
 ## When and where to use Akka Cluster
  
-See [Choosing Akka Cluster](typed/choosing-cluster.md#when-and-where-to-use-akka-cluster) in the documentation of the new APIs.
+See @ref:[Choosing Akka Cluster](typed/choosing-cluster.md#when-and-where-to-use-akka-cluster) in the documentation of the new APIs.
 
 ## Cluster API Extension
 
@@ -77,7 +77,7 @@ The seed nodes are initial contact points for joining a cluster, which can be do
 
 * @ref:[automatically with Cluster Bootstrap](typed/cluster.md#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
 * @ref:[with configuration of seed-nodes](typed/cluster.md#joining-configured-seed-nodes)
-* [programatically](#joining-programmatically-to-seed-nodes)
+* @ref:[programatically](#joining-programmatically-to-seed-nodes)
  
 After the joining process the seed nodes are not special and they participate in the cluster in exactly the same
 way as other nodes.
@@ -311,7 +311,7 @@ unreachable from the rest of the cluster. Please see:
 
 * @ref:[Failure Detector specification](typed/cluster-concepts.md#failure-detector)
 * @ref:[Phi Accrual Failure Detector](typed/failure-detector.md) implementation
-* [Using the Failure Detector](typed/cluster.md#using-the-failure-detector) 
+* @ref:[Using the Failure Detector](typed/cluster.md#using-the-failure-detector) 
  
 ## How to Test
 
@@ -323,7 +323,7 @@ Set up your project according to the instructions in @ref:[Multi Node Testing](m
 add the `sbt-multi-jvm` plugin and the dependency to `akka-multi-node-testkit`.
 
 First, as described in @ref:[Multi Node Testing](multi-node-testing.md), we need some scaffolding to configure the `MultiNodeSpec`.
-Define the participating @ref:[roles](typed/cluster.md#node-roles) and their [configuration](#configuration) in an object extending `MultiNodeConfig`:
+Define the participating @ref:[roles](typed/cluster.md#node-roles) and their @ref:[configuration](#configuration) in an object extending `MultiNodeConfig`:
 
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #MultiNodeConfig }
 
@@ -351,7 +351,7 @@ From the test you interact with the cluster using the `Cluster` extension, e.g. 
 
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #join }
 
-Notice how the *testActor* from @ref:[testkit](testing.md) is added as [subscriber](#cluster-subscriber)
+Notice how the *testActor* from @ref:[testkit](testing.md) is added as @ref:[subscriber](#cluster-subscriber)
 to cluster changes and then waiting for certain events, such as in this case all members becoming 'Up'.
 
 The above code was running for all roles (JVMs). `runOn` is a convenient utility to declare that a certain block
@@ -387,7 +387,7 @@ There are several management tools for the cluster. Please refer to the
 @@@ warning
 
 **Deprecation warning** - The command line script has been deprecated and is scheduled for removal
-in the next major version. Use the [HTTP management](#cluster-http) API with [curl](https://curl.haxx.se/)
+in the next major version. Use the @ref:[HTTP management](additional/operations.md#http) API with [curl](https://curl.haxx.se/)
 or similar instead.
 
 @@@
