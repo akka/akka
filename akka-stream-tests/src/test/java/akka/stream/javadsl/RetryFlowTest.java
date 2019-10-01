@@ -34,24 +34,44 @@ public class RetryFlowTest extends StreamTest {
   public static AkkaJUnitActorSystemResource actorSystemResource =
       new AkkaJUnitActorSystemResource("RetryFlowTest", AkkaSpec.testConf());
 
+  public static
+  // #signature
+  <In, InCtx, Out, OutCtx, Mat> FlowWithContext<In, InCtx, Out, OutCtx, Mat> withBackoffAndContext(
+      Duration minBackoff,
+      Duration maxBackoff,
+      double randomFactor,
+      int maxRetries,
+      FlowWithContext<In, InCtx, Out, OutCtx, Mat> flow,
+      akka.japi.function.Function2<Pair<In, InCtx>, Pair<Out, OutCtx>, Optional<Pair<In, InCtx>>>
+          decideRetry)
+        // #signature
+      {
+    return RetryFlow.<In, InCtx, Out, OutCtx, Mat>withBackoffAndContext(
+        minBackoff, maxBackoff, randomFactor, maxRetries, flow, decideRetry);
+  }
+
   @Test
   public void retrySuccessfulResponses() {
     final Duration minBackoff = Duration.ofMillis(10);
     final Duration maxBackoff = Duration.ofSeconds(5);
     final double randomFactor = 0d;
     final int maxRetries = 3;
+
+    class SomeContext {}
+
     // #retry-success
-    final FlowWithContext<Integer, NotUsed, Try<Integer>, NotUsed, NotUsed> flow =
+    final FlowWithContext<Integer, SomeContext, Integer, SomeContext, NotUsed> flow =
         // #retry-success
         FlowWithContext.fromPairs(
             Flow.fromFunction(
                 in -> {
                   final Integer request = in.first();
-                  return Pair.create(Success.apply(request / 2), notUsed());
+                  return Pair.create(request / 2, in.second());
                 }));
 
     // #retry-success
-    final FlowWithContext<Integer, NotUsed, Try<Integer>, NotUsed, NotUsed> retryFlow =
+
+    final FlowWithContext<Integer, SomeContext, Integer, SomeContext, NotUsed> retryFlow =
         RetryFlow.withBackoffAndContext(
             minBackoff,
             maxBackoff,
@@ -59,34 +79,31 @@ public class RetryFlowTest extends StreamTest {
             maxRetries,
             flow,
             (in, out) -> {
-              if (out.first().isSuccess()) {
-                final Integer result = out.first().get();
-                if (result > 0) {
-                  return Optional.of(Pair.create(result, notUsed()));
-                }
+              Integer value = out.first();
+              SomeContext context = out.second();
+              if (value > 0) {
+                return Optional.of(Pair.create(value, context));
+              } else {
+                return Optional.empty();
               }
-              return Optional.empty();
             });
     // #retry-success
 
-    final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Pair<Try<Integer>, NotUsed>>>
+    final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Pair<Integer, SomeContext>>>
         probes =
             TestSource.<Integer>probe(system)
-                .map(i -> Pair.create(i, notUsed()))
+                .map(i -> Pair.create(i, new SomeContext()))
                 .via(retryFlow)
                 .toMat(TestSink.probe(system), Keep.both())
                 .run(system);
 
     final TestPublisher.Probe<Integer> source = probes.first();
-    final TestSubscriber.Probe<Pair<Try<Integer>, NotUsed>> sink = probes.second();
+    final TestSubscriber.Probe<Pair<Integer, SomeContext>> sink = probes.second();
 
     sink.request(4);
 
-    source.sendNext(8);
-    assertEquals(4, sink.expectNext().first().get().intValue());
-    assertEquals(2, sink.expectNext().first().get().intValue());
-    assertEquals(1, sink.expectNext().first().get().intValue());
-    assertEquals(0, sink.expectNext().first().get().intValue());
+    source.sendNext(5);
+    assertEquals(0, sink.expectNext().first().intValue());
 
     source.sendComplete();
     sink.expectComplete();
@@ -108,7 +125,6 @@ public class RetryFlowTest extends StreamTest {
                   else return Pair.create(Success.apply(request), in.second());
                 }));
 
-    // #retry-failure
     final FlowWithContext<Integer, Integer, Try<Integer>, Integer, NotUsed> retryFlow =
         RetryFlow.withBackoffAndContext(
             minBackoff,
@@ -123,7 +139,6 @@ public class RetryFlowTest extends StreamTest {
                 return Optional.empty();
               }
             });
-    // #retry-failure
 
     final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Pair<Try<Integer>, Integer>>>
         probes =

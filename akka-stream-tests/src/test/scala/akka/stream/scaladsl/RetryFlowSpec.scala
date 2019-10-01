@@ -81,35 +81,39 @@ class RetryFlowSpec extends StreamSpec("""
     }
 
     "allow retrying a successful element" in {
+      class SomeContext
+
       //#retry-success
-      val flow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] = // ???
+      val flow: FlowWithContext[Int, SomeContext, Int, SomeContext, NotUsed] = // ???
         //#retry-success
-        FlowWithContext.fromTuples[Int, Int, Try[Int], Int, NotUsed](Flow.fromFunction {
-          case (i, ctx) => Success(i) -> ctx
+        FlowWithContext.fromTuples[Int, SomeContext, Int, SomeContext, NotUsed](Flow.fromFunction {
+          case (i, ctx) => i / 2 -> ctx
         })
 
       //#retry-success
-      val retryFlow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] =
+
+      val retryFlow: FlowWithContext[Int, SomeContext, Int, SomeContext, NotUsed] =
         RetryFlow.withBackoffAndContext(
           minBackoff = 10.millis,
           maxBackoff = 5.seconds,
           randomFactor = 0d,
           maxRetries = 3,
           flow)(decideRetry = {
-          case ((_, _), (Success(i), ctx)) if i < 5 => Some((i + 1) -> (ctx + 1))
-          case _                                    => None
+          case ((_, _), (result, ctx)) if result > 0 => Some(result -> ctx)
+          case _                                     => None
         })
       //#retry-success
 
-      val (source, sink) = TestSource.probe[Int].map(_ -> 0).via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
+      val (source, sink) = TestSource.probe[(Int, SomeContext)].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
 
       sink.request(4)
 
-      source.sendNext(5)
-      sink.expectNext(Success(5) -> 0)
+      val ctx = new SomeContext
+      source.sendNext(5 -> ctx)
+      sink.expectNext(0 -> ctx)
 
-      source.sendNext(2)
-      sink.expectNext(Success(5) -> 3)
+      source.sendNext(2 -> ctx)
+      sink.expectNext(0 -> ctx)
 
       source.sendComplete()
       sink.expectComplete()
@@ -211,7 +215,6 @@ class RetryFlowSpec extends StreamSpec("""
 
   "Aborting" should {
     "propagate error from upstream" in {
-      //#retry-failure
       val retryFlow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] =
         RetryFlow.withBackoffAndContext(
           minBackoff = 10.millis,
@@ -222,7 +225,6 @@ class RetryFlowSpec extends StreamSpec("""
           case ((in, _), (Failure(_), ctx)) => Some((in + 1, ctx))
           case _                            => None
         })
-      //#retry-failure
 
       val (source, sink) = TestSource.probe[(Int, Int)].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
 
