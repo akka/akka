@@ -950,7 +950,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       }
       "calling length" in {
         check { a: ByteString =>
-          likeVecIt(a) { _.length }
+          likeVecIt(a)(_.length, strict = false)
         }
       }
       "calling duplicate" in {
