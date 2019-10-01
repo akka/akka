@@ -128,7 +128,7 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
    * Here we use `serialization-bindings` also when deserializing (fromBinary)
    * to check that the manifest class is of a known (registered) type.
    *
-   * If and old class is removed from `serialization-bindings` when it's not used for serialization
+   * If an old class is removed from `serialization-bindings` when it's not used for serialization
    * but still used for deserialization (e.g. rolling update with serialization changes) it can
    * be allowed by specifying in `akka.protobuf.whitelist-class`.
    *

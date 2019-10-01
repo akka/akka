@@ -320,7 +320,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
    * Here we use `serialization-bindings` also and more importantly when deserializing (fromBinary)
    * to check that the manifest class is of a known (registered) type.
    *
-   * If and old class is removed from `serialization-bindings` when it's not used for serialization
+   * If an old class is removed from `serialization-bindings` when it's not used for serialization
    * but still used for deserialization (e.g. rolling update with serialization changes) it can
    * be allowed by specifying in `whitelist-class-prefix`.
    *
