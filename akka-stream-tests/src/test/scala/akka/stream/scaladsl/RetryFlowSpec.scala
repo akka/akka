@@ -5,16 +5,18 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import akka.stream.OverflowStrategy
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber, Utils }
-import akka.stream.{ KillSwitches, OverflowStrategy }
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import org.scalatest.matchers.{ MatchResult, Matcher }
 
-import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 
-class RetryFlowSpec extends StreamSpec() with CustomMatchers {
+class RetryFlowSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 1
+    akka.stream.materializer.max-input-buffer-size = 1
+  """) with CustomMatchers {
 
   final val Failed = new Exception("prepared failure")
   final val FailedElem: Try[Int] = Failure(Failed)
@@ -113,9 +115,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       sink.expectComplete()
     }
 
-    // TODO
-    // make coordinator work with this behaviour
-    "work with a buffer in the inner flow" ignore {
+    "work with a buffer in the inner flow" in {
       val flow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] =
         FlowWithContext.fromTuples(Flow[(Int, Int)].buffer(10, OverflowStrategy.backpressure).via(failEvenValuesFlow))
       val (source, sink) = TestSource
@@ -210,7 +210,7 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
   }
 
   "Aborting" should {
-    "tolerate killswitch abort after start" in {
+    "propagate error from upstream" in {
       //#retry-failure
       val retryFlow: FlowWithContext[Int, Int, Try[Int], Int, NotUsed] =
         RetryFlow.withBackoffAndContext(
@@ -218,130 +218,129 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
           maxBackoff = 5.seconds,
           randomFactor = 0d,
           maxRetries = 3,
-          flow = failEvenValuesFlow) {
+          flow = failEvenValuesFlow)(decideRetry = {
           case ((in, _), (Failure(_), ctx)) => Some((in + 1, ctx))
           case _                            => None
-        }
+        })
       //#retry-failure
 
-      val ((source, killSwitch), sink) = TestSource
-        .probe[Int]
-        .via(Utils.delayCancellation(10.seconds))
-        .viaMat(KillSwitches.single[Int])(Keep.both)
-        .map(i => (i, i))
-        .via(retryFlow)
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
+      val (source, sink) = TestSource.probe[(Int, Int)].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
 
       sink.request(99)
 
-      source.sendNext(1)
-      sink.expectNext((Success(1), 1))
+      source.sendNext(1 -> 1)
+      sink.expectNext(Success(1) -> 1)
 
-      source.sendNext(2)
-      sink.expectNext((Success(3), 2))
+      source.sendNext(2 -> 2)
+      sink.expectNext(Success(3) -> 2)
 
-      killSwitch.abort(FailedElem.failed.get)
-      sink.expectError(FailedElem.failed.get)
+      source.sendError(Failed)
+      sink.expectError(Failed)
     }
 
-    "tolerate error on start" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+    "propagate error from upstream on start" in new AllSuccedBench[Int, Int, Int] {
       externalOut.request(99)
       externalIn.sendError(Failed)
       externalOut.expectError(Failed)
     }
 
-    "tolerate error before start" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+    "propagate error from upstream before start" in new AllSuccedBench[Int, Int, Int] {
       externalIn.sendError(Failed)
       externalOut.request(1)
       externalOut.expectError(Failed)
     }
 
-    "tolerate error on the inner flow after start" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+    "propagate error on the inner flow after start" in new AllSuccedBench[Int, Int, Int] {
       externalOut.request(99)
 
       // send one element through
       externalIn.sendNext(1 -> 0)
-      internalOut.requestNext() shouldBe 1 -> 0
+      internalOut.requestNext(1 -> 0)
       internalIn.sendNext(1 -> 0)
       externalOut.expectNext(1 -> 0)
 
       // fail inner flow
       internalIn.sendError(Failed)
       externalOut.expectError(Failed)
+      externalIn.expectCancellation()
     }
 
-    "tolerate error on the inner flow on start" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+    "propagate error on the inner flow on start" in new AllSuccedBench[Int, Int, Int] {
       externalOut.request(29)
       internalIn.sendError(Failed)
       externalOut.expectError(Failed)
+      externalIn.expectCancellation()
     }
 
-    "tolerate killswitch abort on the inner flow before start" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+    "propagate error on the inner flow before start" in new AllSuccedBench[Int, Int, Int] {
       internalIn.sendError(Failed)
       externalOut.request(13)
       externalOut.expectError(Failed)
+      externalIn.expectCancellation()
     }
 
-    val stuckForeverRetrying =
-      RetryFlow.withBackoffAndContext(10.millis, 5.seconds, 0d, 3, failAllValuesFlow)(alwaysRecoveringFunc)
-
-    "tolerate error before the RetryFlow while on retry spin" in new ConstructBench[Int, Int, Int]((v, _) => Some(v)) {
+    "propagate error before the RetryFlow, while on retry spin" in new ConstructBench[Int, Int, Int]((v, _) => Some(v)) {
       externalOut.request(92)
       // spinning message
       externalIn.sendNext(1 -> 0)
-      internalOut.requestNext() shouldBe 1 -> 0
+      internalOut.requestNext(1 -> 0)
       internalIn.sendNext(1 -> 0)
-      internalOut.requestNext() shouldBe 1 -> 0
+      internalOut.requestNext(1 -> 0)
 
       externalOut.expectNoMessage()
       externalIn.sendError(Failed)
       externalOut.expectError(Failed)
     }
 
-    "tolerate error on the inner flow while on retry spin" in new ConstructBench[Int, Int, Int]((v, _) => Some(v)) {
+    "propagate error on the inner flow, while on retry spin" in new ConstructBench[Int, Int, Int]((v, _) => Some(v)) {
       externalOut.request(35)
       // spinning message
       externalIn.sendNext(1 -> 0)
-      internalOut.requestNext() shouldBe 1 -> 0
+      internalOut.requestNext(1 -> 0)
       internalIn.sendNext(1 -> 0)
-      internalOut.requestNext() shouldBe 1 -> 0
+      internalOut.requestNext(1 -> 0)
 
       externalOut.expectNoMessage()
       internalIn.sendError(Failed)
       externalOut.expectError(Failed)
+      externalIn.expectCancellation()
     }
 
-    // TODO does this make sense? how to express it with signalling?
-    "tolerate killswitch abort after the RetryFlow while on retry spin" in {
-      val ((source, killSwitch), sink) = TestSource
-        .probe[Int]
-        .map(i => (i, i))
-        .via(stuckForeverRetrying)
-        .via(Utils.delayCancellation(10.seconds))
-        .viaMat(KillSwitches.single[(Try[Int], Int)])(Keep.both)
-        .toMat(TestSink.probe)(Keep.both)
-        .run()
+    "allow for downstream cancel while element is in flow" in new ConstructBench[Int, Int, Int]((v, _) => Some(v)) {
+      externalOut.request(78)
+      // spinning message
+      externalIn.sendNext(1 -> 0)
+      internalOut.requestNext(1 -> 0)
 
-      sink.request(99)
+      externalOut.cancel()
 
-      source.sendNext(1)
-      sink.expectNoMessage()
-
-      killSwitch.abort(FailedElem.failed.get)
-      sink.expectError(FailedElem.failed.get)
+      internalIn.expectCancellation()
+      externalIn.expectCancellation()
     }
 
-    "finish only after processing all elements in stream" in new ConstructBench[Int, Int, Int]((_, _) => None) {
+    "allow for downstream cancel while retry is backing off" in new ConstructBench[Int, Int, Int]((v, _) => Some(v)) {
+      externalOut.request(35)
+      // spinning message
+      externalIn.sendNext(1 -> 0)
+      internalOut.requestNext(1 -> 0)
+      internalIn.sendNext(1 -> 0)
+
+      externalOut.cancel()
+
+      internalIn.expectCancellation()
+      externalIn.expectCancellation()
+    }
+
+    "finish only after processing all elements in stream" in new AllSuccedBench[Int, Int, Int] {
       externalOut.request(32)
 
       // send one element and complete
       externalIn.sendNext(1 -> 0)
       externalIn.sendComplete()
 
-      internalOut.requestNext() shouldBe 1 -> 0
+      internalOut.requestNext(1 -> 0)
       internalIn.sendNext(1 -> 0)
-      externalOut.expectNext(1 -> 0)
+      externalOut.requestNext(1 -> 0)
 
       externalOut.expectComplete()
     }
@@ -353,19 +352,18 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
     type Ctx2 = Int
     type OutData = Try[String]
 
-    "send elements across" in new ConstructBench[InData, Ctx2, OutData]((_, _) => None) {
+    "send elements across" in new AllSuccedBench[InData, Ctx2, OutData] {
       // push element
       val elA = "A" -> 123
       externalIn.sendNext(elA)
 
       // let element go via retryable flow
-      val elA2 = internalOut.requestNext()
-      elA2._1 shouldBe elA._1
-      elA2._2 shouldBe elA._2
-      internalIn.sendNext(Success("result A") -> 123)
+      internalOut.requestNext(elA)
+      private val resA = Success("result A") -> 123
+      internalIn.sendNext(resA)
 
       // expect result
-      externalOut.requestNext() shouldBe Success("result A") -> 123
+      externalOut.requestNext(resA)
     }
 
     "retry for a failure" in new ConstructBench[InData, Ctx2, OutData]((_, out) =>
@@ -381,57 +379,21 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       externalIn.sendNext(element1)
 
       // let element go via retryable flow
-      val try1 = internalOut.requestNext()
-      try1._1 shouldBe element1._1
-      try1._2 shouldBe element1._2
+      internalOut.requestNext(element1)
       internalIn.sendNext(Failure(new RuntimeException("boom")) -> 1)
 
       // let element go via retryable flow
       val try2 = internalOut.requestNext(3.seconds)
       try2._1 shouldBe "A'"
       try2._2 shouldBe 2
-      internalIn.sendNext(Success("Ares") -> 1)
+      val res1 = Success("Ares") -> 1
+      internalIn.sendNext(res1)
 
       // expect result
-      externalOut.requestNext() shouldBe Success("Ares") -> 1
+      externalOut.requestNext(res1)
     }
 
-    "allow to send two elements" in new ConstructBench[InData, Ctx2, OutData]((_, out) =>
-      out._1 match {
-        case Failure(_) => Some("A'" -> 2)
-        case Success(_) => None
-      }) {
-      // demand on stream end
-      externalOut.request(2)
-
-      // push element
-      val element1 = "A" -> 1
-      externalIn.sendNext(element1)
-      val element2 = "B" -> 2
-      externalIn.sendNext(element2)
-
-      // let element go via retryable flow
-      val try1 = internalOut.requestNext()
-      try1 shouldBe element1
-      internalIn.sendNext(Failure(new RuntimeException("boom")) -> 1)
-
-      // let element go via retryable flow
-      val try2 = internalOut.requestNext()
-      try2._1 shouldBe "A'"
-      try2._2 shouldBe 2
-      internalIn.sendNext(Success("Ares") -> 1)
-
-      // let element2 go via retryable flow
-      val try2_1 = internalOut.requestNext()
-      try2_1 shouldBe element2
-      internalIn.sendNext(Success("Bres") -> 1)
-
-      // expect result
-      externalOut.requestNext() shouldBe Success("Ares") -> 1
-      externalOut.requestNext() shouldBe Success("Bres") -> 1
-    }
-
-    "fail if inner flow emits twice" in new ConstructBench[InData, Ctx2, OutData]((_, _) => None) {
+    "fail if inner flow emits twice" in new AllSuccedBench[InData, Ctx2, OutData] {
       externalOut.request(99)
 
       // push element
@@ -439,58 +401,51 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
       externalIn.sendNext(elA)
 
       // let element go via retryable flow
-      val elA2 = internalOut.requestNext()
-      elA2 shouldBe elA
-      internalIn.sendNext(Success("result A") -> 123)
+      internalOut.requestNext(elA)
+      val resA = Success("result A") -> 123
+      internalIn.sendNext(resA)
       internalIn.sendNext(Success("result B") -> 222)
 
       // expect result
-      externalOut.requestNext() shouldBe Success("result A") -> 123
+      externalOut.requestNext(resA)
       externalOut.expectError() shouldBe an[IllegalStateException]
     }
 
-    // TODO
-    // need to capture inner buffering
-    "work if inner flow pulls multiple" ignore new ConstructBench[InData, Ctx2, OutData]((_, _) => None) {
-      externalOut.request(5)
-      // simulate a buffer in the inner flow
-      internalOut.request(10)
+    "allow more demand in inner flow (but never pass in more than one element into the retrying cycle)" in new AllSuccedBench[
+      InData,
+      Ctx2,
+      OutData] {
+      externalOut.request(1)
+      internalIn.expectRequest() shouldBe 1L
+      internalOut.request(1)
+      externalIn.expectRequest() shouldBe 1L
 
       // push element
       val elA = "A" -> 123
       externalIn.sendNext(elA)
 
       // let element go via retryable flow
-      val elA2 = internalOut.expectNext()
-      elA2 shouldBe elA
-      internalIn.sendNext(Success("result A") -> 123)
+      internalOut.expectNext(elA)
 
-      // push second element
+      // more demand on retryable flow
+      internalOut.request(1)
+      internalOut.expectNoMessage(50.millis)
+
+      // emit from retryable flow, push to external
+      val resA = Success("result A") -> 123
+      internalIn.sendNext(resA)
+
+      // element should NOT reach internal before pushed from externalOut
+      internalOut.expectNoMessage(50.millis)
+
+      // put a new element in external in buffer
       val elB = "B" -> 567
       externalIn.sendNext(elB)
+      // element reaches internal flow before elA has bean fetched from externalOut
+      internalOut.expectNext(elB)
 
-      // let element go via retryable flow
-      val elB2 = internalOut.expectNext()
-      elB2 shouldBe elB
+      externalOut.expectNext(resA)
     }
-
-    // TODO
-    // Not sure if it should protect against inner flows not emitting elements
-    "fail if inner flow filters elements" ignore new ConstructBench[InData, Ctx2, OutData]((_, _) => None) {
-      externalOut.request(99)
-
-      // push element
-      val elA = "A" -> 123
-      externalIn.sendNext(elA)
-
-      // let element go via retryable flow
-      val elA2 = internalOut.requestNext()
-      elA2 shouldBe elA
-
-      // expect result
-      externalOut.expectError() shouldBe a[TimeoutException]
-    }
-
   }
 
   class ConstructBench[In, Ctx, Out](retryWith: ((In, Ctx), (Out, Ctx)) => Option[(In, Ctx)]) {
@@ -513,6 +468,8 @@ class RetryFlowSpec extends StreamSpec() with CustomMatchers {
         .toMat(TestSink.probe[(Out, Ctx)])(Keep.both)
         .run()
   }
+
+  class AllSuccedBench[In, Ctx, Out] extends ConstructBench[In, Ctx, Out]((_, _) => None)
 
 }
 

@@ -54,6 +54,22 @@ object RetryFlow {
 
 /**
  * INTERNAL API.
+ *
+ * ```
+ *        externalIn
+ *            |
+ *            |
+ *   +-> internalOut -->+
+ *   |                  |
+ *   |                 flow
+ *   |                  |
+ *   |     internalIn --+
+ *   +<-yes- retry?
+ *            |
+ *            no
+ *            |
+ *       externalOut
+ * ```
  */
 @InternalApi private[akka] final class RetryFlowCoordinator[In, CtxIn, Out, CtxOut](
     minBackoff: FiniteDuration,
@@ -76,6 +92,7 @@ object RetryFlow {
 
     private var elementInProgress: OptionVal[(In, CtxIn)] = OptionVal.None
     private var retryNo = 0
+    private var moreInternalDemand = false
 
     setHandler(
       externalIn,
@@ -84,7 +101,7 @@ object RetryFlow {
           val element = grab(externalIn)
           elementInProgress = OptionVal.Some(element)
           retryNo = 0
-          push(internalOut, element)
+          pushInternal(element)
         }
 
         override def onUpstreamFinish(): Unit =
@@ -96,12 +113,13 @@ object RetryFlow {
     setHandler(
       internalOut,
       new OutHandler {
+
         override def onPull(): Unit = {
           if (elementInProgress.isEmpty) {
             if (!hasBeenPulled(externalIn) && !isClosed(externalIn)) {
               pull(externalIn)
             }
-          }
+          } else moreInternalDemand = true
         }
 
         override def onDownstreamFinish(cause: Throwable): Unit = {
@@ -135,11 +153,18 @@ object RetryFlow {
         if (!hasBeenPulled(internalIn)) pull(internalIn)
     })
 
+    private def pushInternal(element: (In, CtxIn)): Unit = {
+      moreInternalDemand = false
+      push(internalOut, element)
+    }
+
     private def pushExternal(result: (Out, CtxOut)): Unit = {
       elementInProgress = OptionVal.None
       push(externalOut, result)
       if (isClosed(externalIn)) {
         completeStage()
+      } else if (moreInternalDemand) {
+        pull(externalIn)
       }
     }
 
@@ -153,7 +178,7 @@ object RetryFlow {
 
     override def onTimer(timerKey: Any): Unit = timerKey match {
       case element: (In, CtxIn) =>
-        push(internalOut, element)
+        pushInternal(element)
     }
 
   }

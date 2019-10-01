@@ -119,8 +119,9 @@ public class RetryFlowTest extends StreamTest {
             (in, out) -> {
               if (out.first().isFailure()) {
                 return Optional.of(Pair.create(in.first() + 1, out.second()));
+              } else {
+                return Optional.empty();
               }
-              return Optional.empty();
             });
     // #retry-failure
 
