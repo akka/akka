@@ -36,8 +36,9 @@ private object ActorRefSource {
   private[akka] override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes,
       eagerMaterializer: Materializer): (GraphStageLogic, ActorRef) = {
-    val stage: GraphStageLogic with StageLogging with ActorRefStage = new GraphStageLogic(shape) with StageLogging
-    with ActorRefStage {
+    val stage: GraphStageLogic with StageLogging with ActorRefStage = new GraphStageLogic(shape)
+      with StageLogging
+      with ActorRefStage {
       override protected def logSource: Class[_] = classOf[ActorRefSource[_]]
 
       private val buffer: OptionVal[Buffer[T]] =

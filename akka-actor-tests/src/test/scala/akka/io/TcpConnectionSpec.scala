@@ -464,9 +464,9 @@ class TcpConnectionSpec extends AkkaSpec("""
 
         val buffer = ByteBuffer.allocate(1)
         val thrown = the[IOException] thrownBy {
-            windowsWorkaroundToDetectAbort()
-            serverSideChannel.read(buffer)
-          }
+          windowsWorkaroundToDetectAbort()
+          serverSideChannel.read(buffer)
+        }
         thrown.getMessage should ===(ConnectionResetByPeerMessage)
       }
     }
