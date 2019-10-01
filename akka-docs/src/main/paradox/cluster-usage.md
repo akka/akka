@@ -44,7 +44,7 @@ It contains instructions on how to run the `SimpleClusterApp`.
 
 ## When and where to use Akka Cluster
  
-See [Choosing Akka Cluster](typed/choosing-cluster.md#when-and-where-to-use-akka-cluster) in the documentation of the new APIs.
+See @ref:[Choosing Akka Cluster](typed/choosing-cluster.md#when-and-where-to-use-akka-cluster) in the documentation of the new APIs.
 
 ## Cluster API Extension
 
@@ -70,33 +70,22 @@ of the cluster when the subscription starts and then it receives events for chan
 
 This section shows the basic usage of the membership API. For the in-depth descriptions on joining, joining to seed nodes, downing and leaving of any node in the cluster please see the full 
 @ref:[Cluster Membership API](typed/cluster.md#cluster-membership-api) documentation.
-
-If not using configuration to specify [seed nodes to join](#joining-to-seed-nodes), joining the cluster can be done programmatically: 
-
-Scala
-:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join }
-
-Java
-:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join }
-
-
-Leaving the cluster and downing a node are similar, for example:
- 
-Scala
-:  @@snip [ClusterDocSpec.scala](/akka-docs/src/test/scala/docs/cluster/ClusterDocSpec.scala) { #leave }
-
-Java
-:  @@snip [ClusterDocTest.java](/akka-docs/src/test/java/jdocs/cluster/ClusterDocTest.java) { #leave }
- 
   
 ### Joining to Seed Nodes
 
-Joining to initial cluster contact points `akka.cluster.seed-nodes` can be done manually, with @ref:[configuration](typed/cluster.md#joining-configured-seed-nodes), 
-[programatically](#programatically-joining-to-seed-nodes-with-joinseednodes), or @ref:[automatically with Cluster Bootstrap](typed/cluster.md#joining-automatically-to-seed-nodes-with-cluster-bootstrap).
-  
-#### Programatically joining to seed nodes with `joinSeedNodes`
+The seed nodes are initial contact points for joining a cluster, which can be done in different ways:
 
-@@include[cluster.md](includes/cluster.md) { #join-seeds-programmatic }
+* @ref:[automatically with Cluster Bootstrap](typed/cluster.md#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
+* @ref:[with configuration of seed-nodes](typed/cluster.md#joining-configured-seed-nodes)
+* @ref:[programatically](#joining-programmatically-to-seed-nodes)
+ 
+After the joining process the seed nodes are not special and they participate in the cluster in exactly the same
+way as other nodes.
+
+#### Joining programmatically to seed nodes
+
+You may also join programmatically, which is attractive when dynamically discovering other nodes
+at startup by using some external tool or API.
 
 Scala
 :  @@snip [ClusterDocSpec.scala](/akka-docs/src/test/scala/docs/cluster/ClusterDocSpec.scala) { #join-seed-nodes }
@@ -105,6 +94,15 @@ Java
 :  @@snip [ClusterDocTest.java](/akka-docs/src/test/java/jdocs/cluster/ClusterDocTest.java) { #join-seed-nodes-imports #join-seed-nodes }
 
 For more information see @ref[tuning joins](typed/cluster.md#tuning-joins)
+
+It's also possible to specifically join a single node as illustrated in below example, but `joinSeedNodes` should be
+preferred since it has redundancy and retry mechanisms built-in.
+
+Scala
+:  @@snip [SimpleClusterListener2.scala](/akka-docs/src/test/scala/docs/cluster/SimpleClusterListener2.scala) { #join }
+
+Java
+:  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join }
 
 <a id="cluster-subscriber"></a>
 ## Subscribe to Cluster Events
@@ -313,7 +311,7 @@ unreachable from the rest of the cluster. Please see:
 
 * @ref:[Failure Detector specification](typed/cluster-concepts.md#failure-detector)
 * @ref:[Phi Accrual Failure Detector](typed/failure-detector.md) implementation
-* [Using the Failure Detector](typed/cluster.md#using-the-failure-detector) 
+* @ref:[Using the Failure Detector](typed/cluster.md#using-the-failure-detector) 
  
 ## How to Test
 
@@ -325,7 +323,7 @@ Set up your project according to the instructions in @ref:[Multi Node Testing](m
 add the `sbt-multi-jvm` plugin and the dependency to `akka-multi-node-testkit`.
 
 First, as described in @ref:[Multi Node Testing](multi-node-testing.md), we need some scaffolding to configure the `MultiNodeSpec`.
-Define the participating @ref:[roles](typed/cluster.md#node-roles) and their [configuration](#configuration) in an object extending `MultiNodeConfig`:
+Define the participating @ref:[roles](typed/cluster.md#node-roles) and their @ref:[configuration](#configuration) in an object extending `MultiNodeConfig`:
 
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #MultiNodeConfig }
 
@@ -353,7 +351,7 @@ From the test you interact with the cluster using the `Cluster` extension, e.g. 
 
 @@snip [StatsSampleSpec.scala](/akka-cluster-metrics/src/multi-jvm/scala/akka/cluster/metrics/sample/StatsSampleSpec.scala) { #join }
 
-Notice how the *testActor* from @ref:[testkit](testing.md) is added as [subscriber](#cluster-subscriber)
+Notice how the *testActor* from @ref:[testkit](testing.md) is added as @ref:[subscriber](#cluster-subscriber)
 to cluster changes and then waiting for certain events, such as in this case all members becoming 'Up'.
 
 The above code was running for all roles (JVMs). `runOn` is a convenient utility to declare that a certain block
@@ -389,7 +387,7 @@ There are several management tools for the cluster. Please refer to the
 @@@ warning
 
 **Deprecation warning** - The command line script has been deprecated and is scheduled for removal
-in the next major version. Use the [HTTP management](#cluster-http) API with [curl](https://curl.haxx.se/)
+in the next major version. Use the @ref:[HTTP management](additional/operations.md#http) API with [curl](https://curl.haxx.se/)
 or similar instead.
 
 @@@

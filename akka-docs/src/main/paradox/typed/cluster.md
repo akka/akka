@@ -69,7 +69,7 @@ And the minimum configuration required is to set a host/port for remoting and th
 
 @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #config-seeds }
 
-Starting the cluster on each node:
+Accessing the `Cluster` extension on each node:
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-create }
@@ -85,7 +85,7 @@ Java
 
 ### Joining and Leaving a Cluster 
 
-If not using configuration to specify [seed nodes to join](#joining-to-seed-nodes), joining the cluster can be done programmatically via the `manager`.
+If not using configuration to specify @ref:[seed nodes to join](#joining), joining the cluster can be done programmatically via the `manager`.
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-join }
@@ -93,7 +93,7 @@ Scala
 Java
 :  @@snip [BasicClusterExampleTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #cluster-join }
 
-[Leaving](#leaving) the cluster and [downing](#downing) a node are similar:
+@ref:[Leaving](#leaving) the cluster and @ref:[downing](#downing) a node are similar:
 
 Scala
 :  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #cluster-leave }
@@ -130,25 +130,43 @@ Instead of subscribing to cluster events it can sometimes be convenient to only 
 @scala[`Cluster(system).state`]@java[`Cluster.get(system).state()`]. Note that this state is not necessarily in sync with the events published to a
 cluster subscription.
 
-See [Cluster Membership](cluster-membership.md#member-events) more information on member events specifically.
+See @ref:[Cluster Membership](cluster-membership.md#member-events) more information on member events specifically.
 There are more types of change events, consult the API documentation
 of classes that extends `akka.cluster.ClusterEvent.ClusterDomainEvent` for details about the events.
  
 ## Cluster Membership API
+
+### Joining
  
-The `akka.cluster.seed-nodes` are initial contact points for [automatically](#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
-or [manually](#joining-configured-seed-nodes) joining a cluster.
+The seed nodes are initial contact points for joining a cluster, which can be done in different ways:
+
+* @ref:[automatically with Cluster Bootstrap](#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
+* @ref:[with configuration of seed-nodes](#joining-configured-seed-nodes)
+* @ref:[programatically](#joining-programmatically-to-seed-nodes)
  
 After the joining process the seed nodes are not special and they participate in the cluster in exactly the same
 way as other nodes.
 
-### Joining configured seed nodes
- 
-When a new node is started it sends a message to all seed nodes and then sends a join command to the one that
+#### Joining automatically to seed nodes with Cluster Bootstrap
+
+Automatic discovery of nodes for the joining process is available
+using the open source Akka Management project's module, 
+@ref:[Cluster Bootstrap](../additional/operations.md#cluster-bootstrap).
+Please refer to its documentation for more details.
+
+#### Joining configured seed nodes
+
+When a new node is started it sends a message to all seed nodes and then sends join command to the one that
 answers first. If no one of the seed nodes replied (might not be started yet)
 it retries this procedure until successful or shutdown.
 
-You define the seed nodes in the [configuration](#configuration) file (application.conf):
+You can define the seed nodes in the @ref:[configuration](#configuration) file (application.conf):
+
+```
+akka.cluster.seed-nodes = [
+  "akka://ClusterSystem@host1:2552",
+  "akka://ClusterSystem@host2:2552"]
+```
 
 This can also be defined as Java system properties when starting the JVM using the following syntax:
 
@@ -156,6 +174,11 @@ This can also be defined as Java system properties when starting the JVM using t
 -Dakka.cluster.seed-nodes.0=akka://ClusterSystem@host1:2552
 -Dakka.cluster.seed-nodes.1=akka://ClusterSystem@host2:2552
 ```
+
+ 
+When a new node is started it sends a message to all configured `seed-nodes` and then sends a join command to the
+one that answers first. If no one of the seed nodes replied (might not be started yet) it retries this procedure
+until successful or shutdown.
 
 The seed nodes can be started in any order and it is not necessary to have all
 seed nodes running, but the node configured as the **first element** in the `seed-nodes`
@@ -178,18 +201,25 @@ and don't stop all of them at the same time.
 Note that if you are going to start the nodes on different machines you need to specify the
 ip-addresses or host names of the machines in `application.conf` instead of `127.0.0.1`
 
-### Joining automatically to seed nodes with Cluster Bootstrap
+#### Joining programmatically to seed nodes
 
-Automatic discovery of nodes for the joining process is available
-using the open source Akka Management project's module, 
-@ref:[Cluster Bootstrap](../additional/operations.md#cluster-bootstrap).
-Please refer to its documentation for more details.
+You may also join programmatically, which is attractive when dynamically discovering other nodes
+at startup by using some external tool or API.
 
-### Joining programmatically to seed nodes
+Scala
+:  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #join-seed-nodes }
 
-@@include[cluster.md](../includes/cluster.md) { #join-seeds-programmatic }
+Java
+:  @@snip [BasicClusterExampleTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #join-seed-nodes }
+
+The list of seed node addresses has the same semantics as for the configured `seed-nodes` and the the underlying
+implementation of the process is the same, see @ref:[Joining configured seed nodes](#joining-configured-seed-nodes).
+
+When joining to seed nodes you should not include the node itself except for the node that is supposed to be the
+first seed node that is bootstrapping the cluster, which should be placed first in the parameter to the programmatic
+join.
            
-### Tuning joins
+#### Tuning joins
 
 Unsuccessful attempts to contact seed nodes are automatically retried after the time period defined in
 configuration property `seed-node-timeout`. Unsuccessful attempt to join a specific seed node is
@@ -212,7 +242,7 @@ akka.coordinated-shutdown.terminate-actor-system = on
 ```
 
 If you don't configure seed nodes or use one of the join seed node functions you need to join the cluster manually,
-which can be performed by using [JMX](#jmx) or [HTTP](#http).
+which can be performed by using @ref:[JMX](../additional/operations.md#jmx) or @ref:[HTTP](../additional/operations.md#http).
 
 You can join to any node in the cluster. It does not have to be configured as a seed node.
 Note that you can only join to an existing cluster member, which means that for bootstrapping some
@@ -333,7 +363,7 @@ unreachable from the rest of the cluster. Please see:
 
 * @ref:[Failure Detector specification](cluster-concepts.md#failure-detector)
 * @ref:[Phi Accrual Failure Detector](failure-detector.md) implementation
-* [Using the Failure Detector](#using-the-failure-detector) 
+* @ref:[Using the Failure Detector](#using-the-failure-detector) 
  
 ### Using the Failure Detector
  
@@ -344,7 +374,7 @@ implementing the `akka.remote.FailureDetector` and configuring it:
 akka.cluster.implementation-class = "com.example.CustomFailureDetector"
 ```
 
-In the [Cluster Configuration](#configuration) you may want to adjust these
+In the @ref:[Cluster Configuration](#configuration) you may want to adjust these
 depending on you environment:
 
 * When a *phi* value is considered to be a failure `akka.cluster.failure-detector.threshold`
