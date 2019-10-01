@@ -353,12 +353,13 @@ private[akka] object Running {
         case SaveSnapshotSuccess(meta) =>
           setup.log.debug(s"Persistent snapshot [{}] saved successfully", meta)
           if (snapshotReason == SnapshotWithRetention) {
-            // deletion of old events and snspahots are triggered by the SaveSnapshotSuccess
+            // deletion of old events and snapshots are triggered by the SaveSnapshotSuccess
             setup.retention match {
               case DisabledRetentionCriteria                          => // no further actions
               case s @ SnapshotCountRetentionCriteriaImpl(_, _, true) =>
                 // deleteEventsOnSnapshot == true, deletion of old events
                 val deleteEventsToSeqNr = s.deleteUpperSequenceNr(meta.sequenceNr)
+                // snapshot deletion then happens on event deletion success in Running.onDeleteEventsJournalResponse
                 internalDeleteEvents(meta.sequenceNr, deleteEventsToSeqNr)
               case s @ SnapshotCountRetentionCriteriaImpl(_, _, false) =>
                 // deleteEventsOnSnapshot == false, deletion of old snapshots
@@ -377,8 +378,13 @@ private[akka] object Running {
           None
       }
 
-      setup.log.debug2("Received snapshot response [{}], emitting signal [{}].", response, signal)
-      signal.foreach(setup.onSignal(state.state, _, catchAndLog = false))
+      signal match {
+        case Some(signal) =>
+          setup.log.debug2("Received snapshot response [{}], emitting signal [{}].", response, signal)
+          setup.onSignal(state.state, signal, catchAndLog = false)
+        case None =>
+          setup.log.debug("Received snapshot response [{}], no signal emitted.", response)
+      }
     }
 
     Behaviors
