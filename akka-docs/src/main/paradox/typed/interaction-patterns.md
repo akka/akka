@@ -16,7 +16,7 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 
 ## Introduction
 
-Interacting with an Actor in Akka Typed is done through an @scala[`ActorRef[T]`]@java[`ActorRef<T>`] where `T` is the type of messages the actor accepts, also known as the "protocol". This ensures that only the right kind of messages can be sent to an actor and also that no one else but the Actor itself can access the Actor instance internals.
+Interacting with an Actor in Akka is done through an @scala[`ActorRef[T]`]@java[`ActorRef<T>`] where `T` is the type of messages the actor accepts, also known as the "protocol". This ensures that only the right kind of messages can be sent to an actor and also that no one else but the Actor itself can access the Actor instance internals.
 
 Message exchange with Actors follow a few common patterns, let's go through each one of them. 
 
@@ -59,7 +59,7 @@ Java
 
 Many interactions between actors requires one or more response message being sent back from the receiving actor. A response message can be a result of a query, some form of acknowledgment that the message was received and processed or events that the request subscribed to. 
 
-In Akka Typed the recipient of responses has to be encoded as a field in the message itself, which the recipient can then use to send (tell) a response back.
+In Akka the recipient of responses has to be encoded as a field in the message itself, which the recipient can then use to send (tell) a response back.
 
 With the following protocol:
 

@@ -149,7 +149,7 @@ The next example is more realistic and demonstrates some important patterns:
 * Using @scala[a sealed trait and case class/objects]@java[an interface and classes implementing that interface] to represent multiple messages an actor can receive
 * Handle sessions by using child actors
 * Handling state by changing behavior
-* Using multiple typed actors to represent different parts of a protocol in a type safe way
+* Using multiple actors to represent different parts of a protocol in a type safe way
 
 ### Functional Style
 

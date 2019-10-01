@@ -511,7 +511,7 @@ Akka Typed APIs are still marked as [may change](../common/may-change.md) and a 
 made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible changes are:
 
 * `Behaviors.intercept` now takes a factory function for the interceptor.
-* `ActorSystem.scheduler` previously gave access to the classic `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`.
+* `ActorSystem.scheduler` previously gave access to the classic `akka.actor.Scheduler` but now returns a specific `akka.actor.typed.Scheduler`.
   Additionally `schedule` method has been replaced by `scheduleWithFixedDelay` and `scheduleAtFixedRate`. Actors that needs to schedule tasks should
   prefer `Behaviors.withTimers`.
 * `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`

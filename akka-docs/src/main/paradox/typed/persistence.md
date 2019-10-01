@@ -82,7 +82,7 @@ Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #structure }
 
 The first important thing to notice is the `Behavior` of a persistent actor is typed to the type of the `Command`
-because this is the type of message a persistent actor should receive. In Akka Typed this is now enforced by the type system.
+because this is the type of message a persistent actor should receive. In Akka this is now enforced by the type system.
 
 The components that make up a EventSourcedBehavior are:
 
@@ -221,7 +221,7 @@ where resilience is important so that if a node crashes the persistent actors ar
 resume operations @ref:[Cluster Sharding](cluster-sharding.md) is an excellent fit to spread persistent actors over a
 cluster and address them by id.
 
-The `EventSourcedBehavior` can then be run as with any plain typed actor as described in @ref:[actors documentation](actors.md),
+The `EventSourcedBehavior` can then be run as with any plain actor as described in @ref:[actors documentation](actors.md),
 but since Akka Persistence is based on the single-writer principle the persistent actors are typically used together
 with Cluster Sharding. For a particular `persistenceId` only one persistent actor instance should be active at one time.
 If multiple instances were to persist events at the same time, the events would be interleaved and might not be
@@ -243,14 +243,14 @@ Java
 
 ## Changing Behavior
 
-After processing a message, plain typed actors are able to return the `Behavior` that is used
+After processing a message, actors are able to return the `Behavior` that is used
 for next message.
 
-As you can see in the above examples this is not supported by typed persistent actors. Instead, the state is
+As you can see in the above examples this is not supported by persistent actors. Instead, the state is
 returned by `eventHandler`. The reason a new behavior can't be returned is that behavior is part of the actor's
 state and must also carefully be reconstructed during recovery. If it would have been supported it would mean
 that the behavior must be restored when replaying events and also encoded in the state anyway when snapshots are used.
-That would be very prone to mistakes and thus not allowed in Typed Persistence.
+That would be very prone to mistakes and thus not allowed in Akka Persistence.
 
 For basic actors you can use the same set of command handlers independent of what state the entity is in,
 as shown in above example. For more complex actors it's useful to be able to change the behavior in the sense
@@ -491,7 +491,7 @@ akka.persistence.journal.leveldb.replay-filter {
 
 ## Tagging
 
-Persistence typed allows you to use event tags without using @ref[`EventAdapter`](../persistence.md#event-adapters):
+Persistence allows you to use event tags without using @ref[`EventAdapter`](../persistence.md#event-adapters):
 
 Scala
 :  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #tagging }
