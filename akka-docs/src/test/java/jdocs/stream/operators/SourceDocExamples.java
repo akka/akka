@@ -37,11 +37,9 @@ public class SourceDocExamples {
   public static final TestKitJunitResource testKit = new TestKitJunitResource(ManualTime.config());
 
   public static void fromExample() {
-    final ActorSystem theSystem = null;
+    final ActorSystem system = null;
 
     // #source-from-example
-    final ActorSystem system = theSystem;
-
     Source<Integer, NotUsed> ints = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5));
     ints.runForeach(System.out::println, system);
 
@@ -78,11 +76,9 @@ public class SourceDocExamples {
   }
 
   static void actorRef() {
-    final ActorSystem theSystem = null;
+    final ActorSystem system = null;
 
     // #actor-ref
-
-    final ActorSystem system = theSystem;
 
     int bufferSize = 100;
     Source<Object, ActorRef> source = Source.actorRef(bufferSize, OverflowStrategy.dropHead());
@@ -98,11 +94,9 @@ public class SourceDocExamples {
 
   static void actorRefWithBackpressure() {
     final TestProbe probe = null;
-    final ActorSystem theSystem = null;
+    final ActorSystem system = null;
 
     // #actorRefWithBackpressure
-    final ActorSystem system = theSystem;
-
     Source<Object, ActorRef> source =
         Source.actorRefWithBackpressure(
             "ack",
@@ -124,14 +118,12 @@ public class SourceDocExamples {
   }
 
   static void maybe() {
-    final ActorSystem theSystem = null;
+    final ActorSystem system = null;
 
     // #maybe
-
-    final ActorSystem system = theSystem;
-
     Source<Integer, CompletableFuture<Optional<Integer>>> source = Source.<Integer>maybe();
-    RunnableGraph<CompletableFuture<Optional<Integer>>> runnable = source.to(Sink.foreach(System.out::println));
+    RunnableGraph<CompletableFuture<Optional<Integer>>> runnable =
+        source.to(Sink.foreach(System.out::println));
 
     CompletableFuture<Optional<Integer>> completable1 = runnable.run(system);
     completable1.complete(Optional.of(1)); // prints 1

@@ -9,7 +9,7 @@ import akka.testkit.TestProbe
 
 object SourceOperators {
 
-  val theSystem: ActorSystem = ???
+  implicit val system: ActorSystem = ???
 
   def fromFuture = {
     //#sourceFromFuture
@@ -19,8 +19,6 @@ object SourceOperators {
     import akka.{ Done, NotUsed }
 
     import scala.concurrent.Future
-
-    implicit val system: ActorSystem = theSystem
 
     val source: Source[Int, NotUsed] = Source.fromFuture(Future.successful(10))
     val sink: Sink[Int, Future[Done]] = Sink.foreach((i: Int) => println(i))
@@ -38,7 +36,6 @@ object SourceOperators {
     import akka.stream.CompletionStrategy
     import akka.stream.scaladsl._
 
-    implicit val system: ActorSystem = theSystem
     val bufferSize = 100
 
     val source: Source[Any, ActorRef] = Source.actorRef[Any](bufferSize, OverflowStrategy.dropHead)
@@ -60,7 +57,6 @@ object SourceOperators {
     import akka.stream.CompletionStrategy
     import akka.stream.scaladsl._
 
-    implicit val system: ActorSystem = theSystem
     val probe = TestProbe()
 
     val source: Source[Any, ActorRef] = Source.actorRefWithBackpressure[Any]("ack", {
@@ -82,8 +78,6 @@ object SourceOperators {
     //#maybe
     import akka.stream.scaladsl._
     import scala.concurrent.Promise
-
-    implicit val system: ActorSystem = theSystem
 
     val source = Source.maybe[Int].to(Sink.foreach(elem => println(elem)))
 

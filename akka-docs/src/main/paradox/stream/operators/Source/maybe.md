@@ -1,6 +1,6 @@
 # maybe
 
-Materialize a @scala[`Promise[Option[T]]`] @java[`CompletableFuture`] that if completed with a @scala[`Some[T]`] @java[`Optional`] will emit that *T* and then complete the stream, or if completed with @scala[`None`] @java[`empty Optional`] complete the stream right away.
+Create a source that emits once the materialized @scala[`Promise`] @java[`CompletableFuture`] is completed with a value.
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -14,15 +14,16 @@ Materialize a @scala[`Promise[Option[T]]`] @java[`CompletableFuture`] that if co
 
 ## Description
 
-Materialize a @scala[`Promise[Option[T]]`] @java[`CompletableFuture`] which controls what element will be emitted by the
-Source.
+Create a source with a materialized @scala[`Promise[Option[T]]`] @java[`CompletableFuture<Optional<T>>`] which
+controls what element will be emitted by the Source. This makes it possible to inject a value into a stream
+after creation.
 
 * If the materialized promise is completed with a @scala[`Some`]@java[non-empty `Optional`],
   that value will be produced downstream, followed by completion.
 * If the materialized promise is completed with a @scala[`None`]@java[empty `Optional`],
   no value will be produced downstream and completion will be signalled immediately.
-* If the materialized promise is completed with a failure, then the returned source will terminate with that error.
-* If the downstream of this source cancels before the promise has been completed, then the promise will be completed
+* If the materialized promise is completed with a failure, then the source will fail with that error.
+* If the downstream of this source cancels or fails before the promise has been completed, then the promise will be completed
   with @scala[`None`]@java[empty `Optional`].
 
 `Source.maybe` has some similarities with @scala[@ref:[`Source.fromFuture`](fromFuture.md)]@java[@ref:[`Source.fromCompletionStage`](fromCompletionStage.md)].
