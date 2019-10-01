@@ -95,6 +95,11 @@ Warnings about `TypedActor` have been [mentioned in documentation](https://doc.a
 for many years.
 
 
+### akka.Main
+
+`akka.Main` is deprecated in favour of starting the `ActorSystem` from a custom main class instead. `akka.Main` was not
+adding much value and typically a custom main class is needed anyway.
+
 @@ Remoting
 
 ### Default remoting is now Artery TCP
