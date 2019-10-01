@@ -22,6 +22,9 @@ object ReplicatorPruningSpec extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
     akka.loglevel = INFO
+    # we use 3s as write timeouts in test, make sure we see that
+    # and not time out the expectMsg at the same time
+    akka.test.single-expect-default = 5s
     akka.actor.provider = "cluster"
     akka.log-dead-letters-during-shutdown = off
     """))
