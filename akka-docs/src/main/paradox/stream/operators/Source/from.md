@@ -18,6 +18,8 @@ Stream the values of an @scala[`immutable.Seq`]@java[`Iterable`].
 Stream the values of an @scala[`immutable.Seq`]@java[`Iterable`]. @java[Make sure the `Iterable` is immutable or at least not modified after being used
 as a source. Otherwise the stream may fail with `ConcurrentModificationException` or other more subtle errors may occur.]
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **emits** the next value of the seq

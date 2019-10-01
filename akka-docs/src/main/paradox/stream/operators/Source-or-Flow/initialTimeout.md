@@ -17,6 +17,7 @@ If the first element has not passed through this operators before the provided t
 If the first element has not passed through this operators before the provided timeout, the stream is failed
 with a `TimeoutException`.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

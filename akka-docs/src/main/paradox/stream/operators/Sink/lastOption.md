@@ -18,6 +18,7 @@ Materialize a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<T>>`] 
 emitted wrapped in an @scala[`Some`] @java[`Optional`] when the stream completes. if the stream completes with no elements the `CompletionStage` is
 completed with @scala[`None`] @java[an empty `Optional`].
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -16,6 +16,7 @@ Combine the elements of multiple streams into a stream of sequences using a comb
 
 Combine the elements of multiple streams into a stream of sequences using a combiner function.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

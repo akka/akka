@@ -17,6 +17,7 @@ If the completion of the stream does not happen until the provided timeout, the 
 If the completion of the stream does not happen until the provided timeout, the stream is failed
 with a `TimeoutException`.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

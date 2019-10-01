@@ -20,6 +20,7 @@ will not be requested until, the second element is required from downstream.
 
 Note that the `zero` value must be immutable.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -14,6 +14,7 @@ Attaches the given `Sink` to this `Flow`, meaning that elements that pass throug
 
 Attaches the given `Sink` to this `Flow`, meaning that elements that pass through this `Flow` will also be sent to the `Sink`.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

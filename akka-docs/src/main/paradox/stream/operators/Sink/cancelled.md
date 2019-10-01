@@ -16,6 +16,7 @@ Immediately cancel the stream
 
 Immediately cancel the stream
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -16,6 +16,7 @@ Limit number of element from upstream to given `max` number.
 
 Limit number of element from upstream to given `max` number.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

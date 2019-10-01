@@ -16,6 +16,7 @@ Merge multiple sources.
 
 Merge multiple sources. Picks elements randomly if all sources has elements ready.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -16,6 +16,7 @@ Zips elements of current flow with its indices.
 
 Zips elements of current flow with its indices.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

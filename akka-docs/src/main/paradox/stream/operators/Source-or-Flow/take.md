@@ -16,6 +16,7 @@ Pass `n` incoming elements downstream and then complete
 
 Pass `n` incoming elements downstream and then complete
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

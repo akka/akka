@@ -16,6 +16,7 @@ Transform each element into zero or more elements that are individually passed d
 
 Transform each element into zero or more elements that are individually passed downstream.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

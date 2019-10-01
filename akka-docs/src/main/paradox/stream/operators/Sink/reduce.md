@@ -19,6 +19,8 @@ receives the two first elements of the flow.
 
 Materializes into a @scala[`Future`] @java[`CompletionStage`] that will be completed by the last result of the reduction function.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **cancels** never

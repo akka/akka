@@ -26,6 +26,7 @@ fails then the future is completed with a failure.
 Adheres to the @scala[@scaladoc[`ActorAttributes.SupervisionStrategy`](akka.stream.ActorAttributes$$SupervisionStrategy)]
 @java[`ActorAttributes.SupervisionStrategy`] attribute.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

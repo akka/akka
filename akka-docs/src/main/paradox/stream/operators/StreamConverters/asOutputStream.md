@@ -18,6 +18,8 @@ are emitted from the source.
 The `OutputStream` will no longer be writable when the `Source` has been canceled from its downstream, and
 closing the `OutputStream` will complete the `Source`.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 **emits** when bytes are written to the `OutputStream`
 

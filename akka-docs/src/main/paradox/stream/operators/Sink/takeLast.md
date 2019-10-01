@@ -20,6 +20,8 @@ of elements taken at that point.
 If the stream never completes, the @scala[`Future`] @java[`CompletionStage`] will never complete.
 If there is a failure signaled in the stream the @scala[`Future`] @java[`CompletionStage`] will be completed with failure.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **cancels** never

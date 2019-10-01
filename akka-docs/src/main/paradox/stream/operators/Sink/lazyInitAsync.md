@@ -22,6 +22,8 @@ because of completion or error.
   sink fails then the @scala[`Future`]@java[`CompletionStage`] is completed with the exception.
 - Otherwise the @scala[`Future`]@java[`CompletionStage`] is completed with the materialized value of the internal sink.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **cancels** never

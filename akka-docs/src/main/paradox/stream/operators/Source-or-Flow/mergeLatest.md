@@ -19,6 +19,7 @@ i-th element in list is the latest emitted element from i-th input stream.
 MergeLatest emits list for each element emitted from some input stream,
 but only after each input stream emitted at least one element
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

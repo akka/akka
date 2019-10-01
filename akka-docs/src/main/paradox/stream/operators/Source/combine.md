@@ -14,6 +14,8 @@ Combine several sources, using a given strategy such as merge or concat, into on
 
 ## Description
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **emits** when there is demand, but depending on the strategy

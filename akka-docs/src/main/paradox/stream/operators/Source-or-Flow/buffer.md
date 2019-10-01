@@ -23,7 +23,7 @@ handled according to the specified `OverflowStrategy`:
  * `dropNew` drops the new element
  * `fail` fails the flow with a `BufferOverflowException`
 
-
+## Reactive Streams semantics
 
 @@@div { .callout }
 

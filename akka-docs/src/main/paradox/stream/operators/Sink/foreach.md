@@ -21,6 +21,7 @@ stream completes, or fails if the stream fails.
 
 Note that it is not safe to mutate state from the procedure.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

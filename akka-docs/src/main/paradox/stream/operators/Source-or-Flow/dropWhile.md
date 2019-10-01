@@ -16,6 +16,7 @@ Drop elements as long as a predicate function return true for the element
 
 Drop elements as long as a predicate function return true for the element
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

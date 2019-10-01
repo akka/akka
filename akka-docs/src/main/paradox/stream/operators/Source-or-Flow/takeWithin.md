@@ -16,6 +16,7 @@ Pass elements downstream within a timeout and then complete.
 
 Pass elements downstream within a timeout and then complete.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

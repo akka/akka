@@ -16,6 +16,7 @@ Delays the initial element by the specified duration.
 
 Delays the initial element by the specified duration.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

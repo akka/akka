@@ -23,6 +23,8 @@ already buffered elements will be sent out before signaling completion.
 Sending `akka.actor.PoisonPill` will signal completion immediately but this behavior is deprecated and scheduled to be removed.
 Using `akka.actor.ActorSystem.stop` to stop the actor and complete the stream is *not supported*.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **emits** when there is demand and there are messages in the buffer or a message is sent to the `ActorRef`
