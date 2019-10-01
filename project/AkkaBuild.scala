@@ -11,12 +11,10 @@ import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
 import java.time.ZoneOffset
 
-// Overriding CrossJava imports #26935
-import sbt.Keys.{fullJavaHomes=>_,_}
+import sbt.Keys._
 import sbt._
 
-import CrossJava.autoImport._
-import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
+import JdkOptions.autoImport._
 import scala.collection.breakOut
 
 object AkkaBuild {
@@ -132,14 +130,14 @@ object AkkaBuild {
     // compile options
     scalacOptions in Compile ++= DefaultScalacOptions,
     scalacOptions in Compile ++=
-      CrossJava.targetJdkScalacOptions(targetSystemJdk.value, fullJavaHomes.value),
+      JdkOptions.targetJdkScalacOptions(targetSystemJdk.value, fullJavaHomes.value),
     scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
     scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
       opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
     javacOptions in compile ++= DefaultJavacOptions ++
-      CrossJava.targetJdkJavacOptions(targetSystemJdk.value, fullJavaHomes.value),
+      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, fullJavaHomes.value),
     javacOptions in test ++= DefaultJavacOptions ++
-      CrossJava.targetJdkJavacOptions(targetSystemJdk.value, fullJavaHomes.value),
+      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, fullJavaHomes.value),
     javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
     javacOptions in doc ++= Seq(),
 
@@ -250,14 +248,14 @@ object AkkaBuild {
 
     mavenLocalResolverSettings,
     docLintingSettings,
-    CrossJava.crossJavaSettings,
+    JdkOptions.targetJdkSettings,
   )
 
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
     javacOptions in doc ++= {
-      if (JavaVersion.isJdk8) Seq("-Xdoclint:none")
+      if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
       else Seq("-Xdoclint:none", "--ignore-source-errors")
     }
   )

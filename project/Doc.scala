@@ -134,7 +134,7 @@ object UnidocRoot extends AutoPlugin {
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled
     .ifTrue(Seq(javacOptions in (JavaUnidoc, unidoc) := {
-      if (JavaVersion.isJdk8) Seq("-Xdoclint:none")
+      if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
       else Seq("-Xdoclint:none", "--frames", "--ignore-source-errors", "--no-module-directories")
     }))
     .getOrElse(Nil)
@@ -170,7 +170,7 @@ object BootstrapGenjavadoc extends AutoPlugin {
     UnidocRoot.CliOptions.genjavadocEnabled
       .ifTrue {
         // require 11, fail fast for 8, 9, 10
-        require(JavaVersion.isJdk11orHigher, "Javadoc generation requires at least jdk 11")
+        require(JdkOptions.isJdk11orHigher, "Javadoc generation requires at least jdk 11")
         sbtunidoc.GenJavadocPlugin
       }
       .getOrElse(plugins.JvmPlugin)
