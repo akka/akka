@@ -4,7 +4,7 @@ project.description: Operating, managing and monitoring Akka and Akka Cluster ap
 # Operating a Cluster
 
 This documentation discusses how to operate a cluster. For related, more specific guides
-see [Packaging](packaging.md), [Deploying](deploying.md) and [Rolling Updates](rolling-updates.md).
+see @ref:[Packaging](packaging.md), @ref:[Deploying](deploying.md) and @ref:[Rolling Updates](rolling-updates.md).
  
 ## Starting 
 

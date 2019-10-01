@@ -79,7 +79,7 @@ observed in that state. For a discussion on `CommandFailed` see
 [Throttling Reads and Writes](#throttling-reads-and-writes) below. `ConnectionClosed` is a trait,
 which marks the different connection close events. The last line handles all
 connection close events in the same way. It is possible to listen for more
-fine-grained connection close events, see [Closing Connections](#closing-connections) below.
+fine-grained connection close events, see @ref:[Closing Connections](#closing-connections) below.
 
 ## Accepting connections
 
@@ -113,7 +113,7 @@ Java
 :  @@snip [IODocTest.java](/akka-docs/src/test/java/jdocs/io/japi/IODocTest.java) { #simplistic-handler }
 
 For a more complete sample which also takes into account the possibility of
-failures when sending please see [Throttling Reads and Writes](#throttling-reads-and-writes) below.
+failures when sending please see @ref:[Throttling Reads and Writes](#throttling-reads-and-writes) below.
 
 The only difference to outgoing connections is that the internal actor managing
 the listen port—the sender of the `Bound` message—watches the actor

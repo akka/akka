@@ -43,7 +43,7 @@ You can send messages via the mediator on any node to registered actors on
 any other node.
 
 There a two different modes of message delivery, explained in the sections
-[Publish](#distributed-pub-sub-publish) and [Send](#distributed-pub-sub-send) below.
+@ref:[Publish](#distributed-pub-sub-publish) and @ref:[Send](#distributed-pub-sub-send) below.
 
 @@@ div { .group-scala }
 

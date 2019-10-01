@@ -83,7 +83,7 @@ as explained below.
 The result of the @scala[`receive` method is a partial function object, which is]
 @java[`createReceive` method is `AbstractActor.Receive` which is a wrapper around partial 
 scala function object. It is] stored within the actor as its “initial behavior”, 
-see [Become/Unbecome](#become-unbecome) for
+see @ref:[Become/Unbecome](#become-unbecome) for
 further information on changing the behavior of an actor after its
 construction.
 
@@ -382,7 +382,7 @@ are notified of the termination. After the incarnation is stopped, the path can
 be reused again by creating an actor with `actorOf()`. In this case the
 name of the new incarnation will be the same as the previous one but the
 UIDs will differ. An actor can be stopped by the actor itself, another actor
-or the `ActorSystem` (see [Stopping actors](#stopping-actors)).
+or the `ActorSystem` (see @ref:[Stopping actors](#stopping-actors)).
 
 @@@ note
 
@@ -404,7 +404,7 @@ occupying it. `ActorSelection` cannot be watched for this reason. It is
 possible to resolve the current incarnation's `ActorRef` living under the
 path by sending an `Identify` message to the `ActorSelection` which
 will be replied to with an `ActorIdentity` containing the correct reference
-(see [ActorSelection](#actorselection)). This can also be done with the `resolveOne`
+(see @ref:[ActorSelection](#actorselection)). This can also be done with the `resolveOne`
 method of the `ActorSelection`, which returns a `Future` of the matching
 `ActorRef`.
 
@@ -414,7 +414,7 @@ method of the `ActorSelection`, which returns a `Future` of the matching
 In order to be notified when another actor terminates (i.e. stops permanently,
 not temporary failure and restart), an actor may register itself for reception
 of the `Terminated` message dispatched by the other actor upon
-termination (see [Stopping Actors](#stopping-actors)). This service is provided by the
+termination (see @ref:[Stopping Actors](#stopping-actors)). This service is provided by the
 `DeathWatch` component of the actor system.
 
 Registering a monitor is easy:
@@ -935,7 +935,7 @@ Termination of an actor proceeds in two steps: first the actor suspends its
 mailbox processing and sends a stop command to all its children, then it keeps
 processing the internal termination notifications from its children until the last one is
 gone, finally terminating itself (invoking `postStop`, dumping mailbox,
-publishing `Terminated` on the [DeathWatch](#deathwatch), telling
+publishing `Terminated` on the @ref:[DeathWatch](#deathwatch), telling
 its supervisor). This procedure ensures that actor system sub-trees terminate
 in an orderly fashion, propagating the stop command to the leaves and
 collecting their confirmation back to the stopped supervisor. If one of the

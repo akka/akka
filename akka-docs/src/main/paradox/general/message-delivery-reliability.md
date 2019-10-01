@@ -192,7 +192,7 @@ will bind your application to local-only deployment: an application may have to
 be designed differently (as opposed to just employing some message exchange
 patterns local to some actors) in order to be fit for running on a cluster of
 machines. Our credo is “design once, deploy any way you wish”, and to achieve
-this you should only rely on [The General Rules](#the-general-rules).
+this you should only rely on @ref:[The General Rules](#the-general-rules).
 
 ### Reliability of Local Message Sends
 
@@ -310,7 +310,7 @@ at the receiving actor’s end in order to handle temporary failures. This
 pattern is mostly useful in the local communication context where delivery
 guarantees are otherwise sufficient to fulfill the application’s requirements.
 
-Please note that the caveats for [The Rules for In-JVM (Local) Message Sends](#the-rules-for-in-jvm-local-message-sends)
+Please note that the caveats for @ref:[The Rules for In-JVM (Local) Message Sends](#the-rules-for-in-jvm-local-message-sends)
 do apply.
 
 <a id="deadletters"></a>

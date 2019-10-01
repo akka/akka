@@ -272,7 +272,7 @@ running in that `Shard`. To permanently stop entities, a `Passivate` message mus
 sent to the parent of the entity actor, otherwise the entity will be automatically
 restarted after the entity restart backoff specified in the configuration.
 
-When [Distributed Data mode](#distributed-data-mode) is used the identifiers of the entities are
+When @ref:[Distributed Data mode](#distributed-data-mode) is used the identifiers of the entities are
 stored in @ref:[Durable Storage](distributed-data.md#durable-storage) of Distributed Data. You may want to change the
 configuration of the `akka.cluster.sharding.distributed-data.durable.lmdb.dir`, since
 the default directory contains the remote port of the actor system. If using a dynamically

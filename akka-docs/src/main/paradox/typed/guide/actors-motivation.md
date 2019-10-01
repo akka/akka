@@ -4,9 +4,9 @@ The actor model was proposed decades ago by @extref[Carl Hewitt](wikipedia:Carl_
 
 Today, the actor model is not only recognized as a highly effective solution &#8212; it has been proven in production for some of the world's most demanding applications. To highlight issues that the actor model addresses, this topic discusses the following mismatches between traditional programming assumptions and the reality of modern multi-threaded, multi-CPU architectures:
 
-* [The challenge of encapsulation](#the-illusion-of-encapsulation)
-* [The illusion of shared memory on modern computer architectures](#The-illusion-of-shared-memory-on-modern-computer-architectures)
-* [The illusion of a call stack](#the-illusion-of-a-call-stack)
+* @ref:[The challenge of encapsulation](#the-challenge-of-encapsulation)
+* @ref:[The illusion of shared memory on modern computer architectures](#the-illusion-of-shared-memory-on-modern-computer-architectures)
+* @ref:[The illusion of a call stack](#the-illusion-of-a-call-stack)
 
 
 ## The challenge of encapsulation

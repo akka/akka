@@ -197,7 +197,7 @@ akka.cluster.distributed-data.delta-crdt.enabled=off
 
 ### Consistency
 
-The consistency level that is supplied in the [Update](#update) and [Get](#get)
+The consistency level that is supplied in the @ref:[Update](#update) and @ref:[Get](#get)
 specifies per request how many replicas that must respond successfully to a write and read request.
 
 `WriteAll` and `ReadAll` is the strongest consistency level, but also the slowest and with
@@ -341,7 +341,7 @@ Scala
 Java
 : @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #pncounter }
 
-`GCounter` and `PNCounter` have support for [delta-CRDT](#delta-crdt) and don't need causal
+`GCounter` and `PNCounter` have support for @ref:[delta-CRDT](#delta-crdt) and don't need causal
 delivery of deltas.
 
 Several related counters can be managed in a map with the `PNCounterMap` data type.
@@ -367,7 +367,7 @@ Scala
 Java
 : @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #gset }
 
-`GSet` has support for [delta-CRDT](#delta-crdt) and it doesn't require causal delivery of deltas.
+`GSet` has support for @ref:[delta-CRDT](#delta-crdt) and it doesn't require causal delivery of deltas.
 
 If you need add and remove operations you should use the `ORSet` (observed-remove set).
 Elements can be added and removed any number of times. If an element is concurrently added and
@@ -384,7 +384,7 @@ Scala
 Java
 : @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/ddata/DistributedDataDocTest.java) { #orset }
 
-`ORSet` has support for [delta-CRDT](#delta-crdt) and it requires causal delivery of deltas.
+`ORSet` has support for @ref:[delta-CRDT](#delta-crdt) and it requires causal delivery of deltas.
 
 ### Maps
 
@@ -410,7 +410,7 @@ It is a specialized `ORMap` with `PNCounter` values.
 `LWWMap` (last writer wins map) is a specialized `ORMap` with `LWWRegister` (last writer wins register)
 values.
 
-`ORMap`, `ORMultiMap`, `PNCounterMap` and `LWWMap` have support for [delta-CRDT](#delta-crdt) and they require causal
+`ORMap`, `ORMultiMap`, `PNCounterMap` and `LWWMap` have support for @ref:[delta-CRDT](#delta-crdt) and they require causal
 delivery of deltas. Support for deltas here means that the `ORSet` being underlying key type for all those maps
 uses delta propagation to deliver updates. Effectively, the update for map is then a pair, consisting of delta for the `ORSet`
 being the key and full update for the respective value (`ORSet`, `PNCounter` or `LWWRegister`) kept in the map.
@@ -631,7 +631,7 @@ Note that you should be prepared to receive `WriteFailure` as reply to an `Updat
 durable entry if the data could not be stored for some reason. When enabling `write-behind-interval`
 such errors will only be logged and `UpdateSuccess` will still be the reply to the `Update`.
 
-There is one important caveat when it comes pruning of [CRDT Garbage](#crdt-garbage) for durable data.
+There is one important caveat when it comes pruning of @ref:[CRDT Garbage](#crdt-garbage) for durable data.
 If an old data entry that was never pruned is injected and merged with existing data after
 that the pruning markers have been removed the value will not be correct. The time-to-live
 of the markers is defined by configuration
@@ -668,7 +668,7 @@ be able to improve this if needed, but the design is still not intended for bill
 All data is held in memory, which is another reason why it is not intended for *Big Data*.
 
 When a data entry is changed the full state of that entry may be replicated to other nodes
-if it doesn't support [delta-CRDT](#delta-crdt). The full state is also replicated for delta-CRDTs,
+if it doesn't support @ref:[delta-CRDT](#delta-crdt). The full state is also replicated for delta-CRDTs,
 for example when new nodes are added to the cluster or when deltas could not be propagated because
 of network partitions or similar problems. This means that you cannot have too large
 data entries, because then the remote message size will be too large.

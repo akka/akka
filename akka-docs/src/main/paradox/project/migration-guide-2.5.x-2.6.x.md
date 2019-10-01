@@ -481,7 +481,7 @@ akka.remote.artery.advanced.materializer = ${akka.stream.materializer}
 The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
 `Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
 
-`StreamRefs` was marked as [may change](../common/may-change.md).
+`StreamRefs` was marked as @ref:[may change](../common/may-change.md).
 
 ## Akka Typed
 
@@ -512,7 +512,7 @@ rolling update from 2.5 to 2.6 if you use Akka Typed. See @ref:[rolling updates 
 
 ### Akka Typed API changes
 
-Akka Typed APIs are still marked as [may change](../common/may-change.md) and a few changes were
+Akka Typed APIs are still marked as @ref:[may change](../common/may-change.md) and a few changes were
 made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible changes are:
 
 * `Behaviors.intercept` now takes a factory function for the interceptor.
@@ -579,7 +579,7 @@ see below for more details.
 Having a default materializer available means that most, if not all, usages of Java `ActorMaterializer.create()`
 and Scala `implicit val materializer = ActorMaterializer()` should be removed.
 
-Details about the stream materializer can be found in [Actor Materializer Lifecycle](../stream/stream-flows-and-basics.md#actor-materializer-lifecycle)
+Details about the stream materializer can be found in @ref:[Actor Materializer Lifecycle](../stream/stream-flows-and-basics.md#actor-materializer-lifecycle)
 
 When using streams from typed the same factories and methods for creating materializers and running streams as from classic can now be used with typed. The
 `akka.stream.typed.scaladsl.ActorMaterializer` and `akka.stream.typed.javadsl.ActorMaterializerFactory` that previously existed in the `akka-stream-typed` module has been removed.

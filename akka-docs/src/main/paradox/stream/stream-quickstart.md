@@ -248,7 +248,7 @@ Java
 Streams always start flowing from a @scala[`Source[Out,M1]`]@java[`Source<Out,M1>`] then can continue through @scala[`Flow[In,Out,M2]`]@java[`Flow<In,Out,M2>`] elements or
 more advanced operators to finally be consumed by a @scala[`Sink[In,M3]`]@java[`Sink<In,M3>`] @scala[(ignore the type parameters `M1`, `M2`
 and `M3` for now, they are not relevant to the types of the elements produced/consumed by these classes – they are
-"materialized types", which we'll talk about [below](#materialized-values-quick))]@java[. The first type parameter—`Tweet` in this case—designates the kind of elements produced
+"materialized types", which we'll talk about @ref:[below](#materialized-values-quick))]@java[. The first type parameter—`Tweet` in this case—designates the kind of elements produced
 by the source while the `M` type parameters describe the object that is created during
 materialization ([see below](#materialized-values-quick))—`NotUsed` (from the `scala.runtime`
 package) means that no value is produced, it is the generic equivalent of `void`.]

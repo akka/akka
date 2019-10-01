@@ -18,7 +18,7 @@ you have to provide it inside the message.
 
 @@@
 
-This mechanism is used in different places within Akka, e.g. the [Event Stream](#event-stream).
+This mechanism is used in different places within Akka, e.g. the @ref:[Event Stream](#event-stream).
 Implementations can make use of the specific building blocks presented below.
 
 An event bus must define the following three @scala[abstract types]@java[type parameters]:
@@ -155,8 +155,8 @@ all use cases.
 ## Event Stream
 
 The event stream is the main event bus of each actor system: it is used for
-carrying @ref:[log messages](logging.md) and [Dead Letters](#dead-letters) and may be
-used by the user code for other purposes as well. It uses [Subchannel
+carrying @ref:[log messages](logging.md) and @ref:[Dead Letters](#dead-letters) and may be
+used by the user code for other purposes as well. It uses @ref:[Subchannel
 Classification](#subchannel-classification) which enables registering to related sets of channels (as is
 used for `RemotingLifecycleEvent`). The following example demonstrates
 how a simple subscription works. Given a simple actor:
@@ -190,7 +190,7 @@ Scala
 Java
 :  @@snip [LoggingDocTest.java](/akka-docs/src/test/java/jdocs/event/LoggingDocTest.java) { #superclass-subscription-eventstream }
 
-Similarly to [Actor Classification](#actor-classification), `EventStream` will automatically remove subscribers when they terminate.
+Similarly to @ref:[Actor Classification](#actor-classification), `EventStream` will automatically remove subscribers when they terminate.
 
 @@@ note
 

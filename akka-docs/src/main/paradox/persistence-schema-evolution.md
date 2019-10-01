@@ -68,10 +68,10 @@ definition - in a backwards compatible way - such that the new deserialization c
 
 The most common schema changes you will likely are:
 
- * [adding a field to an event type](#add-field),
- * [remove or rename field in event type](#rename-field),
- * [remove event type](#remove-event-class),
- * [split event into multiple smaller events](#split-large-event-into-smaller).
+ * @ref:[adding a field to an event type](#add-field),
+ * @ref:[remove or rename field in event type](#rename-field),
+ * @ref:[remove event type](#remove-event-class),
+ * @ref:[split event into multiple smaller events](#split-large-event-into-smaller).
 
 The following sections will explain some patterns which can be used to safely evolve your schema when facing those changes.
 
@@ -133,7 +133,7 @@ serializers, and the yellow payload indicates the user provided event (by callin
 As you can see, the `PersistentMessage` acts as an envelope around the payload, adding various fields related to the
 origin of the event (`persistenceId`, `sequenceNr` and more).
 
-More advanced techniques (e.g. [Remove event class and ignore events](#remove-event-class)) will dive into using the manifests for increasing the
+More advanced techniques (e.g. @ref:[Remove event class and ignore events](#remove-event-class)) will dive into using the manifests for increasing the
 flexibility of the persisted vs. exposed types even more. However for now we will focus on the simpler evolution techniques,
 concerning only configuring the payload serializers.
 
@@ -430,7 +430,7 @@ Then the serializer can simply convert the bytes do the domain object by using t
 You want to keep your persisted events in a human-readable format, for example JSON.
 
 **Solution:**
-This is a special case of the [Detach domain model from data model](#detach-domain-from-data-model) pattern, and thus requires some co-operation
+This is a special case of the @ref:[Detach domain model from data model](#detach-domain-from-data-model) pattern, and thus requires some co-operation
 from the Journal implementation to achieve this.
 
 An example of a Journal which may implement this pattern is MongoDB, however other databases such as PostgreSQL
