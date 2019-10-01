@@ -137,7 +137,7 @@ of classes that extends `akka.cluster.ClusterEvent.ClusterDomainEvent` for detai
 
 ### Joining
  
-The seed nodes are initial contact points for joining a cluster, which can be done if different ways:
+The seed nodes are initial contact points for joining a cluster, which can be done in different ways:
 
 * @ref:[automatically with Cluster Bootstrap](#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
 * @ref:[with configuration of seed-nodes](#joining-configured-seed-nodes)
@@ -210,6 +210,9 @@ Scala
 
 Java
 :  @@snip [BasicClusterExampleTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #join-seed-nodes }
+
+The list of seed node addresses has the same semantics as for the configured `seed-nodes` and the the underlying
+implementation of the process is the same, see @ref:[Joining configured seed nodes](#joining-configured-seed-nodes).
 
 When joining to seed nodes you should not include the node itself except for the node that is supposed to be the
 first seed node that is bootstrapping the cluster, which should be placed first in the parameter to the programmatic

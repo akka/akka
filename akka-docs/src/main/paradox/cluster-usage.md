@@ -73,7 +73,7 @@ This section shows the basic usage of the membership API. For the in-depth descr
   
 ### Joining to Seed Nodes
 
-The seed nodes are initial contact points for joining a cluster, which can be done if different ways:
+The seed nodes are initial contact points for joining a cluster, which can be done in different ways:
 
 * @ref:[automatically with Cluster Bootstrap](typed/cluster.md#joining-automatically-to-seed-nodes-with-cluster-bootstrap)
 * @ref:[with configuration of seed-nodes](typed/cluster.md#joining-configured-seed-nodes)
