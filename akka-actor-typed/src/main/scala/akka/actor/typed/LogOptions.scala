@@ -11,40 +11,6 @@ import org.slf4j.Logger
 import org.slf4j.event.Level
 
 /**
- * A log marker is an additional metadata tag supported by some logging backends to identify "special" log events.
- * In the Akka internal actors for example the "SECURITY" marker is used for warnings related to security.
- *
- * Not for user extension, create instances using factory methods
- */
-@DoNotInherit
-sealed trait LogMarker {
-  def name: String
-}
-
-/**
- * Factories for log markers
- */
-object LogMarker {
-
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private final class LogMarkerImpl(name: String) extends akka.event.LogMarker(name) with LogMarker
-
-  /**
-   * Scala API: Create a new log marker with the given name
-   */
-  def apply(name: String): LogMarker = new LogMarkerImpl(name)
-
-  /**
-   * Scala API: Create a new log marker with the given name
-   */
-  def create(name: String): LogMarker = apply(name)
-
-}
-
-/**
  * Logging options when using `Behaviors.logMessages`.
  */
 @DoNotInherit
