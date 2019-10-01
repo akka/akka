@@ -62,8 +62,11 @@ private[remote] class Encoder(
 
   override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes): (GraphStageLogic, OutboundCompressionAccess) = {
-    val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging
-    with OutboundCompressionAccess {
+    val logic = new GraphStageLogic(shape)
+      with InHandler
+      with OutHandler
+      with StageLogging
+      with OutboundCompressionAccess {
 
       private val headerBuilder = HeaderBuilder.out()
       headerBuilder.setVersion(version)
@@ -347,8 +350,11 @@ private[remote] class Decoder(
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)
 
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, InboundCompressionAccess) = {
-    val logic = new TimerGraphStageLogic(shape) with InboundCompressionAccessImpl with InHandler with OutHandler
-    with StageLogging {
+    val logic = new TimerGraphStageLogic(shape)
+      with InboundCompressionAccessImpl
+      with InHandler
+      with OutHandler
+      with StageLogging {
       import Decoder.RetryResolveRemoteDeployedRecipient
 
       override val compressions = inboundCompressions

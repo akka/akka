@@ -157,7 +157,6 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
       .mapConcat(identity) // Flatten the set of hashtags to a stream of hashtags
       .map(_.name.toUpperCase) // Convert all hashtags to upper case
       .runWith(Sink.foreach(println)) // Attach the Flow to a Sink that will finally print the hashtags
-
       //#fiddle_code
       .value
   }

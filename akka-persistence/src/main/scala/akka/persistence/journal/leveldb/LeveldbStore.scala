@@ -55,10 +55,10 @@ private[persistence] trait LeveldbStore
   import com.github.ghik.silencer.silent
   @silent("deprecated")
   private val persistenceIdSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]]
-  with mutable.MultiMap[String, ActorRef]
+    with mutable.MultiMap[String, ActorRef]
   @silent("deprecated")
   private val tagSubscribers = new mutable.HashMap[String, mutable.Set[ActorRef]]
-  with mutable.MultiMap[String, ActorRef]
+    with mutable.MultiMap[String, ActorRef]
   private var allPersistenceIdsSubscribers = Set.empty[ActorRef]
 
   private var tagSequenceNr = Map.empty[String, Long]
