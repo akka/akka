@@ -29,7 +29,9 @@ after creation.
 `Source.maybe` has some similarities with @scala[@ref:[`Source.fromFuture`](fromFuture.md)]@java[@ref:[`Source.fromCompletionStage`](fromCompletionStage.md)].
 One difference is that a new @scala[`Promise`]@java[`CompletableFuture`] is materialized from `Source.maybe` each time
 the stream is run while the @scala[`Future`]@java[`CompletionStage`] given to 
-@scala[`Source.fromFuture`]@java[`Source.fromCompletionStage`] can only be completed once. 
+@scala[`Source.fromFuture`]@java[`Source.fromCompletionStage`] can only be completed once.
+
+@ref:[`Source.queue`](queue.md) is an alternative for emitting more than one element. 
 
 ## Example
 
