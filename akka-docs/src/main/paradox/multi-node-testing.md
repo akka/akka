@@ -24,10 +24,10 @@ to see what this looks like in practice.
 When we talk about multi node testing in Akka we mean the process of running coordinated tests on multiple actor
 systems in different JVMs. The multi node testing kit consist of three main parts.
 
- * [The Test Conductor](#the-test-conductor). that coordinates and controls the nodes under test.
- * [The Multi Node Spec](#the-multi-node-spec). that is a convenience wrapper for starting the `TestConductor` and letting all
+ * @ref:[The Test Conductor](#the-test-conductor). that coordinates and controls the nodes under test.
+ * @ref:[The Multi Node Spec](#the-multi-node-spec). that is a convenience wrapper for starting the `TestConductor` and letting all
 nodes connect to it.
- * [The SbtMultiJvm Plugin](#the-sbtmultijvm-plugin). that starts tests in multiple JVMs possibly on multiple machines.
+ * @ref:[The SbtMultiJvm Plugin](#the-sbtmultijvm-plugin). that starts tests in multiple JVMs possibly on multiple machines.
 
 ## The Test Conductor
 

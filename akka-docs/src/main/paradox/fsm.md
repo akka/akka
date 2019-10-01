@@ -288,7 +288,7 @@ Within this handler the state of the FSM may be queried using the
 ### Initiating Transitions
 
 The result of any `stateFunction` must be a definition of the next state
-unless terminating the FSM, which is described in [Termination from Inside](#termination-from-inside).
+unless terminating the FSM, which is described in @ref:[Termination from Inside](#termination-from-inside).
 The state definition can either be the current state, as described by the
 `stay` directive, or it is a different state as given by
 `goto(state)`. The resulting object allows further qualification by way
@@ -307,7 +307,7 @@ use `Duration.Inf`.
  * 
    `using(data)`
    This modifier replaces the old state data with the new data given. If you
-follow the advice [above](#fsm-philosophy), this is the only place where
+follow the advice @ref:[above](#defining-states), this is the only place where
 internal state data are ever modified.
  * 
    `replying(msg)`

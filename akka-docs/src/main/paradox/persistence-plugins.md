@@ -22,8 +22,8 @@ akka.persistence.snapshot-store.plugin = ""
 
 However, these entries are provided as empty "", and require explicit user configuration via override in the user `application.conf`.
 
-* For an example of a journal plugin which writes messages to LevelDB see [Local LevelDB journal](#local-leveldb-journal).
-* For an example of a snapshot store plugin which writes snapshots as individual files to the local filesystem see [Local snapshot store](#local-snapshot-store).
+* For an example of a journal plugin which writes messages to LevelDB see @ref:[Local LevelDB journal](#local-leveldb-journal).
+* For an example of a snapshot store plugin which writes snapshots as individual files to the local filesystem see @ref:[Local snapshot store](#local-snapshot-store).
 
 ## Eager initialization of persistence plugin
 
@@ -108,7 +108,7 @@ purposes.
 @@@
 
 @@@ note
-This plugin has been supplanted by [Persistence Plugin Proxy](#persistence-plugin-proxy).
+This plugin has been supplanted by @ref:[Persistence Plugin Proxy](#persistence-plugin-proxy).
 @@@
 
 A shared LevelDB instance is started by instantiating the `SharedLeveldbStore` actor.

@@ -160,7 +160,7 @@ real network.
 
 In cases, where Network Address Translation (NAT) is used or other network bridging is involved, it is important
 to configure the system so that it understands that there is a difference between his externally visible, canonical
-address and between the host-port pair that is used to listen for connections. See [Akka behind NAT or in a Docker container](#remote-configuration-nat-artery)
+address and between the host-port pair that is used to listen for connections. See @ref:[Akka behind NAT or in a Docker container](#remote-configuration-nat-artery)
 for details.
 
 ## Acquiring references to remote actors
@@ -253,7 +253,7 @@ be delivered just fine.
 
 An `ActorSystem` should not be exposed via Akka Remote (Artery) over plain Aeron/UDP or TCP to an untrusted
 network (e.g. Internet). It should be protected by network security, such as a firewall. If that is not considered
-as enough protection [TLS with mutual authentication](#remote-tls) should be enabled.
+as enough protection @ref:[TLS with mutual authentication](#remote-tls) should be enabled.
 
 Best practice is that Akka remoting nodes should only be accessible from the adjacent network. Note that if TLS is
 enabled with mutual authentication there is still a risk that an attacker can gain access to a valid certificate by

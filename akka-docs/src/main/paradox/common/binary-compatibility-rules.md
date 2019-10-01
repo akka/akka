@@ -15,7 +15,7 @@ This means that the new JARs are a drop-in replacement for the old one
 
 Binary compatibility is maintained between:
 
- * **minor** and **patch** versions - please note that the meaning of "minor" has shifted to be more restrictive with Akka `2.4.0`, read [Change in versioning scheme](#24versioningchange) for details.
+ * **minor** and **patch** versions - please note that the meaning of "minor" has shifted to be more restrictive with Akka `2.4.0`, read @ref:[Change in versioning scheme](#24versioningchange) for details.
 
 Binary compatibility is **NOT** maintained between:
 
@@ -23,7 +23,7 @@ Binary compatibility is **NOT** maintained between:
  * any versions of **may change** modules – read @ref:[Modules marked "May Change"](may-change.md) for details
  * a few notable exclusions explained below
 
-Specific examples (please read [Change in versioning scheme](#24versioningchange) to understand the difference in "before 2.4 era" and "after 2.4 era"):
+Specific examples (please read @ref:[Change in versioning scheme](#24versioningchange) to understand the difference in "before 2.4 era" and "after 2.4 era"):
 
 ```
 # [epoch.major.minor] era

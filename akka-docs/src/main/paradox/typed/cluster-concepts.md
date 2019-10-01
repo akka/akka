@@ -10,7 +10,7 @@ This document describes the design concepts of Akka Cluster. For the guide on us
 
 Akka Cluster provides a fault-tolerant decentralized peer-to-peer based
 @ref:[Cluster Membership Service](cluster-membership.md#cluster-membership-service) with no single point of failure or 
-single point of bottleneck. It does this using [gossip](#gossip) protocols and an automatic [failure detector](#failure-detector).
+single point of bottleneck. It does this using @ref:[gossip](#gossip) protocols and an automatic [failure detector](#failure-detector).
 
 Akka Cluster allows for building distributed applications, where one application or service spans multiple nodes
 (in practice multiple `ActorSystem`s). 

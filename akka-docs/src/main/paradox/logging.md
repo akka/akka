@@ -288,7 +288,7 @@ that receives the log events in the same order they were emitted.
 
 The event handler actor does not have a bounded inbox and is run on the default dispatcher. This means
 that logging extreme amounts of data may affect your application badly. This can be somewhat mitigated by
-using an async logging backend though. (See [Using the SLF4J API directly](#slf4j-directly))
+using an async logging backend though. (See @ref:[Using the SLF4J API directly](#slf4j-directly))
 
 @@@
 

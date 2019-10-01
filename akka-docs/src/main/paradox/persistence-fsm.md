@@ -125,7 +125,7 @@ Persistent FSMs can be represented using @ref[Persistence Typed](typed/persisten
 using a snapshot adapter and an event adapter. The adapters are required as Persistent FSM doesn't store snapshots and user data directly, it wraps them in 
 internal types that include state transition information.
 
-Before reading the migration guide it is advised to understand [Persistence Typed](typed/persistence.md). 
+Before reading the migration guide it is advised to understand @ref:[Persistence Typed](typed/persistence.md). 
 
 ### Migration steps
 

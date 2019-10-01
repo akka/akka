@@ -44,7 +44,7 @@ You may define it another way, but it must be unique.
 When using the sharding extension you are first, typically at system startup on each node
 in the cluster, supposed to register the supported entity types with the `ClusterSharding.start`
 method. `ClusterSharding.start` gives you the reference which you can pass along.
-Please note that `ClusterSharding.start` will start a `ShardRegion` in [proxy only mode](#proxy-only-mode) 
+Please note that `ClusterSharding.start` will start a `ShardRegion` in @ref:[proxy only mode](#proxy-only-mode) 
 when there is no match between the roles of the current cluster node and the role specified in 
 `ClusterShardingSettings`.
 

@@ -41,7 +41,7 @@ implement manually.
 @@@
 
 @@@ warning { title=IMPORTANT }
-  Use stream refs with Akka Cluster. The [failure detector can cause quarantining](../typed/cluster-concepts.md#quarantined) if plain Akka remoting is used.
+  Use stream refs with Akka Cluster. The @ref:[failure detector can cause quarantining](../typed/cluster-concepts.md#quarantined) if plain Akka remoting is used.
 @@@
 
 ## Stream References

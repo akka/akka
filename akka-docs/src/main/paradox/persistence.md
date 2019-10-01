@@ -81,7 +81,7 @@ about successful state changes by publishing events.
 
 When persisting events with `persist` it is guaranteed that the persistent actor will not receive further commands between
 the `persist` call and the execution(s) of the associated event handler. This also holds for multiple `persist`
-calls in context of a single command. Incoming messages are [stashed](#internal-stash) until the `persist`
+calls in context of a single command. Incoming messages are @ref:[stashed](#internal-stash) until the `persist`
 is completed.
 
 If persistence of an event fails, `onPersistFailure` will be invoked (logging the error by default),
@@ -433,7 +433,7 @@ next message.
 If there is a problem with recovering the state of the actor from the journal when the actor is
 started, `onRecoveryFailure` is called (logging the error by default), and the actor will be stopped.
 Note that failure to load snapshot is also treated like this, but you can disable loading of snapshots
-if you for example know that serialization format has changed in an incompatible way, see [Recovery customization](#recovery-custom).
+if you for example know that serialization format has changed in an incompatible way, see @ref:[Recovery customization](#recovery-custom).
 
 ### Atomic writes
 
@@ -501,7 +501,7 @@ For critical failures, such as recovery or persisting events failing, the persis
 handler is invoked. This is because if the underlying journal implementation is signalling persistence failures it is most
 likely either failing completely or overloaded and restarting right-away and trying to persist the event again will most
 likely not help the journal recover – as it would likely cause a [Thundering herd problem](https://en.wikipedia.org/wiki/Thundering_herd_problem), as many persistent actors
-would restart and try to persist their events again. Instead, using a `BackoffSupervisor` (as described in [Failures](#failures)) which
+would restart and try to persist their events again. Instead, using a `BackoffSupervisor` (as described in @ref:[Failures](#failures)) which
 implements an exponential-backoff strategy which allows for more breathing room for the journal to recover between
 restarts of the persistent actor.
 
@@ -838,7 +838,7 @@ Also note that for the LevelDB Java port, you will need the following dependenci
 @@@ warning
 
 It is not possible to test persistence provided classes (i.e. `PersistentActor`
-and [AtLeastOnceDelivery](#at-least-once-delivery)) using `TestActorRef` due to its *synchronous* nature.
+and @ref:[AtLeastOnceDelivery](#at-least-once-delivery)) using `TestActorRef` due to its *synchronous* nature.
 These traits need to be able to perform asynchronous tasks in the background in order to handle internal persistence
 related events.
 

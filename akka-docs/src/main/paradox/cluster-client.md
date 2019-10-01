@@ -144,7 +144,7 @@ Java
 :  @@snip [ClusterClientTest.java](/akka-cluster-tools/src/test/java/akka/cluster/client/ClusterClientTest.java) { #initialContacts }
 
 You will probably define the address information of the initial contact points in configuration or system property.
-See also [Configuration](#cluster-client-config).
+See also @ref:[Configuration](#cluster-client-config).
 
 A more comprehensive sample is available in the tutorial named
 @scala[[Distributed workers with Akka and Scala](https://github.com/typesafehub/activator-akka-distributed-workers).]
