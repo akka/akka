@@ -22,6 +22,11 @@ import akka.stream.javadsl.Sink;
 import akka.testkit.TestProbe;
 // #actor-ref-imports
 
+// #maybe
+import akka.stream.javadsl.RunnableGraph;
+import java.util.concurrent.CompletableFuture;
+// #maybe
+
 import java.util.Arrays;
 import java.util.Optional;
 
@@ -32,8 +37,10 @@ public class SourceDocExamples {
   public static final TestKitJunitResource testKit = new TestKitJunitResource(ManualTime.config());
 
   public static void fromExample() {
+    final ActorSystem theSystem = null;
+
     // #source-from-example
-    final ActorSystem system = ActorSystem.create("SourceFromExample");
+    final ActorSystem system = theSystem;
 
     Source<Integer, NotUsed> ints = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5));
     ints.runForeach(System.out::println, system);
@@ -71,9 +78,11 @@ public class SourceDocExamples {
   }
 
   static void actorRef() {
+    final ActorSystem theSystem = null;
+
     // #actor-ref
 
-    final ActorSystem system = ActorSystem.create();
+    final ActorSystem system = theSystem;
 
     int bufferSize = 100;
     Source<Object, ActorRef> source = Source.actorRef(bufferSize, OverflowStrategy.dropHead());
@@ -89,9 +98,10 @@ public class SourceDocExamples {
 
   static void actorRefWithBackpressure() {
     final TestProbe probe = null;
+    final ActorSystem theSystem = null;
 
     // #actorRefWithBackpressure
-    final ActorSystem system = ActorSystem.create();
+    final ActorSystem system = theSystem;
 
     Source<Object, ActorRef> source =
         Source.actorRefWithBackpressure(
@@ -111,5 +121,24 @@ public class SourceDocExamples {
     // The stream completes successfully with the following message
     actorRef.tell("complete", ActorRef.noSender());
     // #actorRefWithBackpressure
+  }
+
+  static void maybe() {
+    final ActorSystem theSystem = null;
+
+    // #maybe
+
+    final ActorSystem system = theSystem;
+
+    Source<Integer, CompletableFuture<Optional<Integer>>> source = Source.<Integer>maybe();
+    RunnableGraph<CompletableFuture<Optional<Integer>>> runnable = source.to(Sink.foreach(System.out::println));
+
+    CompletableFuture<Optional<Integer>> completable1 = runnable.run(system);
+    completable1.complete(Optional.of(1)); // prints 1
+
+    CompletableFuture<Optional<Integer>> completable2 = runnable.run(system);
+    completable2.complete(Optional.of(2)); // prints 2
+    // #maybe
+
   }
 }

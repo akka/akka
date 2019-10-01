@@ -9,6 +9,8 @@ import akka.testkit.TestProbe
 
 object SourceOperators {
 
+  val theSystem: ActorSystem = ???
+
   def fromFuture = {
     //#sourceFromFuture
 
@@ -18,7 +20,7 @@ object SourceOperators {
 
     import scala.concurrent.Future
 
-    implicit val system: ActorSystem = ActorSystem()
+    implicit val system: ActorSystem = theSystem
 
     val source: Source[Int, NotUsed] = Source.fromFuture(Future.successful(10))
     val sink: Sink[Int, Future[Done]] = Sink.foreach((i: Int) => println(i))
@@ -36,7 +38,7 @@ object SourceOperators {
     import akka.stream.CompletionStrategy
     import akka.stream.scaladsl._
 
-    implicit val system: ActorSystem = ActorSystem()
+    implicit val system: ActorSystem = theSystem
     val bufferSize = 100
 
     val source: Source[Any, ActorRef] = Source.actorRef[Any](bufferSize, OverflowStrategy.dropHead)
@@ -58,7 +60,7 @@ object SourceOperators {
     import akka.stream.CompletionStrategy
     import akka.stream.scaladsl._
 
-    implicit val system: ActorSystem = ActorSystem()
+    implicit val system: ActorSystem = theSystem
     val probe = TestProbe()
 
     val source: Source[Any, ActorRef] = Source.actorRefWithBackpressure[Any]("ack", {
@@ -74,5 +76,23 @@ object SourceOperators {
     // The stream completes successfully with the following message
     actorRef ! Success(())
     //#actorRefWithBackpressure
+  }
+
+  def maybe(): Unit = {
+    //#maybe
+    import akka.stream.scaladsl._
+    import scala.concurrent.Promise
+
+    implicit val system: ActorSystem = theSystem
+
+    val source = Source.maybe[Int].to(Sink.foreach(elem => println(elem)))
+
+    val promise1: Promise[Option[Int]] = source.run()
+    promise1.success(Some(1)) // prints 1
+
+    // a new Promise is returned when the stream is materialized
+    val promise2 = source.run()
+    promise2.success(Some(2)) // prints 2
+    //#maybe
   }
 }
