@@ -117,7 +117,7 @@ public class SourceDocExamples {
     // #actorRefWithBackpressure
   }
 
-  static void maybe() {
+  static void maybeExample() {
     final ActorSystem system = null;
 
     // #maybe
@@ -131,6 +131,13 @@ public class SourceDocExamples {
     CompletableFuture<Optional<Integer>> completable2 = runnable.run(system);
     completable2.complete(Optional.of(2)); // prints 2
     // #maybe
+  }
 
+  static
+  // #maybe-signature
+  <Out> Source<Out, CompletableFuture<Optional<Out>>> maybe()
+        // #maybe-signature
+      {
+    return Source.maybe();
   }
 }
