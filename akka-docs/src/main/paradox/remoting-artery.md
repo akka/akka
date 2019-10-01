@@ -115,9 +115,11 @@ acts as a "server" to which arbitrary systems on the same network can connect to
 There are three alternatives of which underlying transport to use. It is configured by property
 `akka.remote.artery.transport` with the possible values:
 
-* `aeron-udp` - Based on [Aeron (UDP)](https://github.com/real-logic/aeron)
-* `tcp` - Based on @ref:[Akka Streams TCP](stream/stream-io.md#streaming-tcp)
+* `tcp` - Based on @ref:[Akka Streams TCP](stream/stream-io.md#streaming-tcp) (default if other not configured)
 * `tls-tcp` - Same as `tcp` with encryption using @ref:[Akka Streams TLS](stream/stream-io.md#tls)
+* `aeron-udp` - Based on [Aeron (UDP)](https://github.com/real-logic/aeron)
+
+If you are uncertain of what to select a good choice is to use the default, which is `tcp`.
 
 The Aeron (UDP) transport is a high performance transport and should be used for systems
 that require high throughput and low latency. It uses more CPU than TCP when the system
@@ -128,8 +130,7 @@ when encryption is needed, but it can also be used with plain TCP without TLS. I
 the obvious choice when UDP can't be used.
 It has very good performance (high throughput and low latency) but latency at high throughput
 might not be as good as the Aeron transport. It has less operational complexity than the
-Aeron transport and less risk of trouble in container environments. Artery TCP will be
-the default transport in Akka 2.6.0.
+Aeron transport and less risk of trouble in container environments.
 
 @@@ note
 
