@@ -160,7 +160,11 @@ object AkkaBuild {
     licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))),
     homepage := Some(url("https://akka.io/")),
     description := "Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications for Java and Scala.",
-    scmInfo := Some(ScmInfo(url("https://github.com/akka/akka"), "git@github.com:akka/akka.git")),
+    scmInfo := Some(ScmInfo(
+      url("https://github.com/akka/akka"),
+      "scm:git:https://github.com/akka/akka.git",
+      "scm:git:git@github.com:akka/akka.git",
+    )),
     apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
 
     initialCommands :=
