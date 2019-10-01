@@ -19,6 +19,18 @@ completes, the current value is emitted downstream.
 
 Note that the `zero` value must be immutable.
 
+## Example
+
+`fold` is typically used to 'fold up' the incoming values into an aggregate. For example, you might want to summarize the incoming values into a histogram:
+
+Scala
+:   @@snip [Fold.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Fold.scala) { #imports #histogram #fold }
+
+Java
+:   @@snip [Fold.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #fold }
+
+// TODO java
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
