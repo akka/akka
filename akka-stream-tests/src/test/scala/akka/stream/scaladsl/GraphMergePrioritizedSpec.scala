@@ -63,19 +63,20 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
 
       val subscription = probe.expectSubscription()
 
-      var collected = Seq.empty[Int]
+      val builder = Seq.newBuilder[Int]
       for (_ <- 1 to elementCount) {
         subscription.request(1)
-        collected :+= probe.expectNext()
+        builder += probe.expectNext()
       }
+      val collected = builder.result()
 
       val ones = collected.count(_ == 1).toDouble
       val twos = collected.count(_ == 2).toDouble
       val threes = collected.count(_ == 3).toDouble
 
-      (ones / twos).round shouldEqual 2
-      (ones / threes).round shouldEqual 6
-      (twos / threes).round shouldEqual 3
+      (ones / twos) should ===(2d +- 1)
+      (ones / threes) should ===(6d +- 1)
+      (twos / threes) should ===(3d +- 1)
     }
 
     "stream data when only one source produces" in {
@@ -121,18 +122,19 @@ class GraphMergePrioritizedSpec extends TwoStreamsSetup {
 
       val subscription = probe.expectSubscription()
 
-      var collected = Seq.empty[Int]
+      val builder = Vector.newBuilder[Int]
       for (_ <- 1 to elementCount) {
         subscription.request(1)
-        collected :+= probe.expectNext()
+        builder += probe.expectNext()
       }
+      val collected = builder.result()
 
       val ones = collected.count(_ == 1).toDouble
       val twos = collected.count(_ == 2).toDouble
       val threes = collected.count(_ == 3)
 
       threes shouldEqual 0
-      (ones / twos).round shouldBe 2
+      (ones / twos) should ===(2d +- 1)
     }
   }
 
