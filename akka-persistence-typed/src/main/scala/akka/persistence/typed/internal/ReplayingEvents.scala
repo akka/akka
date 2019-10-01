@@ -186,9 +186,10 @@ private[akka] final class ReplayingEvents[C, E, S](
   }
 
   /**
-   * Called whenever a message replay fails. By default it logs the error.
+   * Called whenever a message replay fails.
    *
-   * The actor is always stopped after this method has been invoked.
+   * This method throws `JournalFailureException` which will be caught by the internal
+   * supervision strategy to stop or restart the actor with backoff.
    *
    * @param cause failure cause.
    * @param event the event that was being processed when the exception was thrown

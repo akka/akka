@@ -496,7 +496,7 @@ class EventSourcedBehaviorSpec
     }
 
     "fail after recovery timeout" in {
-      LoggingEventFilter.error("Persistence failure when replaying snapshot").intercept {
+      LoggingEventFilter.error("Exception during recovery from snapshot").intercept {
         val c = spawn(
           Behaviors.setup[Command](ctx =>
             counter(ctx, nextPid)

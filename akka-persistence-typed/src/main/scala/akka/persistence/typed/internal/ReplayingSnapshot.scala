@@ -11,6 +11,7 @@ import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence._
+import akka.persistence.typed.RecoveryFailed
 import akka.util.unused
 
 /**
@@ -77,17 +78,26 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
   }
 
   /**
-   * Called whenever a message replay fails. By default it logs the error.
+   * Called whenever snapshot recovery fails.
    *
-   * The actor is always stopped after this method has been invoked.
+   * This method throws `JournalFailureException` which will be caught by the internal
+   * supervision strategy to stop or restart the actor with backoff.
    *
    * @param cause failure cause.
    */
   private def onRecoveryFailure(cause: Throwable): Behavior[InternalProtocol] = {
     onRecoveryFailed(setup.context, cause)
+    setup.onSignal(setup.emptyState, RecoveryFailed(cause), catchAndLog = true)
     setup.cancelRecoveryTimer()
-    setup.log.error(s"Persistence failure when replaying snapshot, due to: ${cause.getMessage}", cause)
-    Behaviors.stopped
+
+    tryReturnRecoveryPermit("on snapshot recovery failure: " + cause.getMessage)
+
+    if (setup.log.isDebugEnabled)
+      setup.log.debug("Recovery failure for persistenceId [{}]", setup.persistenceId)
+
+    val msg = s"Exception during recovery from snapshot. " +
+      s"PersistenceId [${setup.persistenceId.id}]. ${cause.getMessage}"
+    throw new JournalFailureException(msg, cause)
   }
 
   @InternalStableApi
