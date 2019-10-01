@@ -20,9 +20,7 @@ object Fold extends App {
   //#fold
   implicit val sys = ActorSystem()
 
-  Source(1 to 150)
-    .fold(Histogram())((acc, n) => acc.add(n))
-    .runForeach(println)
+  Source(1 to 150).fold(Histogram())((acc, n) => acc.add(n)).runForeach(println)
 
   // Prints: Histogram(99,51)
   //#fold
