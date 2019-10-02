@@ -410,13 +410,7 @@ object ShardRegion {
 
       case Terminated(ref) =>
         remaining -= ref
-        log.debug(
-          "HandOffStopper of the `{}` shard received Terminated message for the ActorRef {}, the remaining entities: {}",
-          shard,
-          ref,
-          remaining)
         if (remaining.isEmpty) {
-          log.debug("HandOffStopper remaining entities are empty, sending ShardStopped message for shard {}", shard)
           replyTo ! ShardStopped(shard)
           context.stop(self)
         }
