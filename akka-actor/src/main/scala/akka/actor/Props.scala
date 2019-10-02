@@ -208,7 +208,7 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * Returns a new Props with the specified set of tags.
    */
   def withTags(tags: Set[String]): Props =
-    copy(deploy = deploy.copy(tags = tags))
+    copy(deploy = deploy.withTags(tags))
 
   /**
    * Obtain an upper-bound approximation of the actor class which is going to
