@@ -119,7 +119,8 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.actor.provider = cluster
     akka.cluster {
       failure-detector.acceptable-heartbeat-pause =  10s
-      auto-down-unreachable-after = 1s
+      downing-provider-class = akka.cluster.testkit.AutoDowning
+      testkit.auto-down-unreachable-after = 1s
       publish-stats-interval = 1s
     }
     akka.loggers = ["akka.testkit.TestEventListener"]

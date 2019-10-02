@@ -135,7 +135,8 @@ abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryStr
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = 0s
     akka.cluster.roles = ["backend"]
     akka.cluster.distributed-data.gossip-interval = 1s
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"

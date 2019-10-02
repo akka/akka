@@ -36,7 +36,6 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
 object ClusterSingletonManagerSettings {
@@ -45,7 +44,6 @@ object ClusterSingletonManagerSettings {
    * Create settings from the default configuration
    * `akka.cluster.singleton`.
    */
-  @silent("deprecated") // DownRemovalMargin
   def apply(system: ActorSystem): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
     // note that this setting has some additional logic inside the ClusterSingletonManager

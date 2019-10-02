@@ -34,10 +34,14 @@ object StreamRefSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
         akka.cluster {
-          auto-down-unreachable-after = 1s
-        }""")).withFallback(MultiNodeClusterSpec.clusterConfig))
+          downing-provider-class = akka.cluster.testkit.AutoDowning
+          testkit.auto-down-unreachable-after = 1s
+        }"""))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 

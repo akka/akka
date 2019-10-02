@@ -33,7 +33,8 @@ object DistributedPubSubRestartSpec extends MultiNodeConfig {
     akka.cluster.pub-sub.gossip-interval = 500ms
     akka.actor.provider = cluster
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = off
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = off
     """))
 
   testTransport(on = true)

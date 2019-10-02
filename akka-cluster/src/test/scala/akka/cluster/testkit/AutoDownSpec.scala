@@ -2,15 +2,18 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster
+package akka.cluster.testkit
 
 import scala.concurrent.duration._
-import akka.actor.Address
-import akka.actor.Scheduler
+
 import akka.actor.ActorRef
+import akka.actor.Address
 import akka.actor.Props
-import akka.cluster.MemberStatus._
+import akka.actor.Scheduler
 import akka.cluster.ClusterEvent._
+import akka.cluster.Member
+import akka.cluster.MemberStatus._
+import akka.cluster.TestMember
 import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import akka.testkit.TimingTest

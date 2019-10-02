@@ -45,7 +45,8 @@ object ClusterClientSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = 0s
     akka.cluster.client.heartbeat-interval = 1s
     akka.cluster.client.acceptable-heartbeat-pause = 3s
     akka.cluster.client.refresh-contacts-interval = 1s
