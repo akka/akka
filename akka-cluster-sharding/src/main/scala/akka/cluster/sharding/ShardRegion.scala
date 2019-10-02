@@ -4,8 +4,6 @@
 
 package akka.cluster.sharding
 
-import java.net.URLEncoder
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -26,7 +24,7 @@ import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.Shard.ShardStats
 import akka.pattern.{ ask, pipe }
-import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
+import akka.util.{ ByteString, MessageBufferMap, PrettyDuration, Timeout }
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -394,8 +392,8 @@ object ShardRegion {
   private case object RegisterRetry extends ShardRegionCommand
 
   /**
-   * When an remembering entities and the shard stops unexpected (e.g. persist failure), we
-   * restart it after a back off using this message.
+   * When remembering entities and the shard stops unexpectedly (e.g. due to a persist failure),
+   * we restart it after a back off using this message.
    */
   private final case class RestartShard(shardId: ShardId)
 
@@ -464,6 +462,15 @@ object ShardRegion {
       stopMessage: Any,
       handoffTimeout: FiniteDuration): Props =
     Props(new HandOffStopper(shard, replyTo, entities, stopMessage, handoffTimeout)).withDeploy(Deploy.local)
+
+  private[sharding] def name(typeName: String): String =
+    java.net.URLEncoder.encode(typeName, ByteString.UTF_8)
+
+  // it must be possible to start several proxies, one per data center
+  private[sharding] def proxyName(typeName: String, dataCenter: Option[String]): String =
+    java.net.URLEncoder
+      .encode(dataCenter.map(dc => typeName + "-" + dc).getOrElse(s"${typeName}Proxy"), ByteString.UTF_8)
+
 }
 
 /**
@@ -651,23 +658,19 @@ private[akka] class ShardRegion(
 
     case ShardHome(shard, shardRegionRef) =>
       log.debug("{}: Shard [{}] located at [{}]", typeName, shard, shardRegionRef)
-      regionByShard.get(shard) match {
-        case Some(r) if r == self && shardRegionRef != self =>
-          // should not happen, inconsistency between ShardRegion and ShardCoordinator
-          throw new IllegalStateException(
-            s"$typeName: Unexpected change of shard [$shard] from self to [$shardRegionRef]")
-        case _ =>
+      if (regionByShard.get(shard).exists(_ == self && shardRegionRef != self)) {
+        // should not happen, inconsistency between ShardRegion and ShardCoordinator
+        throw new IllegalStateException(
+          s"$typeName: Unexpected change of shard [$shard] from self to [$shardRegionRef]")
       }
       regionByShard = regionByShard.updated(shard, shardRegionRef)
       regions = regions.updated(shardRegionRef, regions.getOrElse(shardRegionRef, Set.empty) + shard)
 
-      if (shardRegionRef != self)
+      if (shardRegionRef != self) {
         context.watch(shardRegionRef)
-
-      if (shardRegionRef == self)
-        getShard(shard).foreach(deliverBufferedMessages(shard, _))
-      else
         deliverBufferedMessages(shard, shardRegionRef)
+      } else
+        getShard(shard).foreach(deliverBufferedMessages(shard, _))
 
     case RegisterAck(coord) =>
       context.watch(coord)
@@ -945,7 +948,30 @@ private[akka] class ShardRegion(
     if (shardBuffers.contains(shardId)) {
       val buf = shardBuffers.getOrEmpty(shardId)
       log.debug("{}: Deliver [{}] buffered messages for shard [{}]", typeName, buf.size, shardId)
-      buf.foreach { case (msg, snd) => receiver.tell(msg, snd) }
+
+      buf.foreach {
+        case (msg, snd) =>
+          msg match {
+            case msg @ RestartShard(_) =>
+              if (Shard.isShard(typeName, shardId, receiver.path)) {
+                log.debug(
+                  "Attempted to send {} to a shard {}, which should only be sent to the local region.",
+                  msg,
+                  receiver)
+              } else if (receiver != self) {
+                log.debug(
+                  "Attempted to send {} to remote {} which should only route to the local {}. This would end badly.",
+                  msg,
+                  receiver,
+                  self)
+              }
+
+              if (regionByShard.get(shardId).contains(self)) self.tell(msg, snd)
+
+            case _ =>
+              receiver.tell(msg, snd)
+          }
+      }
       shardBuffers.remove(shardId)
     }
     loggedFullBufferWarning = false
@@ -964,7 +990,16 @@ private[akka] class ShardRegion(
     }
   }
 
-  def deliverMessage(msg: Any, snd: ActorRef): Unit =
+  def deliverMessage(msg: Any, snd: ActorRef): Unit = {
+
+    def requestShardLocation(shardId: ShardId): Unit =
+      if (!shardBuffers.contains(shardId)) {
+        coordinator.foreach { sc =>
+          log.debug("{}: Request shard [{}] home. Coordinator [{}]", typeName, shardId, sc)
+          sc ! GetShardHome(shardId)
+        }
+      }
+
     msg match {
       case RestartShard(shardId) =>
         regionByShard.get(shardId) match {
@@ -972,10 +1007,7 @@ private[akka] class ShardRegion(
             if (ref == self)
               getShard(shardId)
           case None =>
-            if (!shardBuffers.contains(shardId)) {
-              log.debug("{}: Request shard [{}] home. Coordinator [{}]", typeName, shardId, coordinator)
-              coordinator.foreach(_ ! GetShardHome(shardId))
-            }
+            requestShardLocation(shardId)
             val buf = shardBuffers.getOrEmpty(shardId)
             log.debug(
               "{}: Buffer message for shard [{}]. Total [{}] buffered messages.",
@@ -1005,13 +1037,11 @@ private[akka] class ShardRegion(
             log.warning("{}: Shard must not be empty, dropping message [{}]", typeName, msg.getClass.getName)
             context.system.deadLetters ! msg
           case None =>
-            if (!shardBuffers.contains(shardId)) {
-              log.debug("{}: Request shard [{}] home. Coordinator [{}]", typeName, shardId, coordinator)
-              coordinator.foreach(_ ! GetShardHome(shardId))
-            }
+            requestShardLocation(shardId)
             bufferMessage(shardId, msg, snd)
         }
     }
+  }
 
   def getShard(id: ShardId): Option[ActorRef] = {
     if (startingShards.contains(id))
@@ -1023,7 +1053,7 @@ private[akka] class ShardRegion(
           case Some(props) if !shardsByRef.values.exists(_ == id) =>
             log.debug("{}: Starting shard [{}] in region", typeName, id)
 
-            val name = URLEncoder.encode(id, "utf-8")
+            val name = Shard.name(id)
             val shard = context.watch(
               context.actorOf(
                 Shard

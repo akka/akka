@@ -6,7 +6,7 @@ package akka.cluster.sharding
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.{ Actor, ActorLogging, PoisonPill, Props }
+import akka.actor.{ Actor, ActorLogging, PoisonPill, Props, RootActorPath }
 import akka.cluster.TestLeaseExt
 import akka.cluster.sharding.ShardRegion.ShardInitialized
 import akka.coordination.lease.LeaseUsageSettings
@@ -92,6 +92,13 @@ class ShardSpec extends AkkaSpec(ShardSpec.config) with ImplicitSender {
       parent.expectMsg(ShardInitialized(shardId))
       lease.getCurrentCallback().apply(Some(BadLease("bye bye lease")))
       probe.expectTerminated(shard)
+    }
+
+    "be differentiated by its ShardId-encoded name from other ActorRefs" in new Setup {
+      val name = Shard.name(shardId)
+      val regionPath = RootActorPath(parent.ref.path.address) / "system" / "sharding" / typeName
+      Shard.isShard(typeName, shardId, regionPath) shouldEqual false
+      Shard.isShard(typeName, shardId, regionPath / name) shouldEqual true
     }
   }
 

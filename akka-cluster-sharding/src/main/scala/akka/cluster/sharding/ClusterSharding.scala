@@ -550,6 +550,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   }
 
   private def proxyName(typeName: String, dataCenter: Option[DataCenter]): String = {
+    // similar to the encoded actor name for region proxy but not the same -
+    // with a defined DC that pattern is: typeName + "-" + t
     dataCenter match {
       case None    => s"${typeName}Proxy"
       case Some(t) => s"${typeName}Proxy" + "-" + t
@@ -738,7 +740,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
         import settings.tuningParameters.coordinatorFailureBackoff
 
         val rep = replicator(settings)
-        val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
+        val encName = ShardRegion.name(typeName)
         val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(encName)
         val shardRegion = context.child(encName).getOrElse {
@@ -792,13 +794,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
 
     case StartProxy(typeName, dataCenter, settings, extractEntityId, extractShardId) =>
       try {
-        val encName = URLEncoder.encode(s"${typeName}Proxy", ByteString.UTF_8)
+        val actorName = ShardRegion.proxyName(typeName, dataCenter)
         val cPath = coordinatorPath(URLEncoder.encode(typeName, ByteString.UTF_8))
-        // it must be possible to start several proxies, one per data center
-        val actorName = dataCenter match {
-          case None    => encName
-          case Some(t) => URLEncoder.encode(typeName + "-" + t, ByteString.UTF_8)
-        }
         val shardRegion = context.child(actorName).getOrElse {
           context.actorOf(
             ShardRegion

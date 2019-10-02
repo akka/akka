@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.ActorPath
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.DeadLetterSuppression
@@ -33,6 +34,7 @@ import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.pattern.pipe
 import akka.persistence._
+import akka.util.ByteString
 import akka.util.MessageBufferMap
 import akka.util.PrettyDuration._
 import akka.util.unused
@@ -152,6 +154,19 @@ private[akka] object Shard {
   }
 
   case object PassivateIdleTick extends NoSerializationVerificationNeeded
+
+  private[sharding] def name(id: ShardRegion.ShardId): String =
+    URLEncoder.encode(id, ByteString.UTF_8)
+
+  /**
+   * INTERNAL API
+   *
+   * Use to determine whether an `ActorRef` is a shard.
+   * Returns true if the `path` is for a shard, meaning the name was encoded from the `shardId`.
+   * Region and region proxy names are encoded from their `typeName`, the coordinator name is derived from the encoded region name.
+   */
+  private[sharding] def isShard(typeName: String, shardId: ShardRegion.ShardId, path: ActorPath): Boolean =
+    path.parent.name.contains(typeName) && path.name == shardId // match parent: region or proxy
 
 }
 
