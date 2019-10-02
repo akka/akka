@@ -15,7 +15,7 @@ import akka.actor.typed.scaladsl.AskPattern._
 
 object TypedActorBenchmark {
   // Constants because they are used in annotations
-  final val threads = 8 // update according to cpu
+  final val threads = 12 // update according to cpu
   final val numMessagesPerActorPair = 1000000 // messages per actor pair
 
   final val numActors = 512
@@ -39,7 +39,7 @@ class TypedActorBenchmark {
   @Param(Array("50"))
   var batchSize = 0
 
-  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox"))
+  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox", "akka.dispatch.UnboundedMailbox"))
   var mailbox = ""
 
   @Param(Array("fjp-dispatcher")) //  @Param(Array("fjp-dispatcher", "affinity-dispatcher"))
