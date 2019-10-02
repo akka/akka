@@ -9,7 +9,7 @@ For the Akka Classic documentation of this feature see @ref:[Classic Actors](../
 
 ## Dependency
 
-To use Akka Actor Typed, you must add the following dependency in your project:
+To use Akka Actors, add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
@@ -17,13 +17,31 @@ To use Akka Actor Typed, you must add the following dependency in your project:
   version=$akka.version$
 }
 
+## Akka Actors
+
+The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) provides a higher level of abstraction for writing concurrent
+and distributed systems. It alleviates the developer from having to deal with
+explicit locking and thread management, making it easier to write correct
+concurrent and parallel systems. Actors were defined in the 1973 paper by Carl
+Hewitt but have been popularized by the Erlang language, and used for example at
+Ericsson with great success to build highly concurrent and reliable telecom
+systems.
+
+The API of Akka’s Actors is similar to Scala Actors which has borrowed some of
+its syntax from Erlang.
+
+Since Akka enforces parental supervision every actor is supervised and
+(potentially) the supervisor of its children, it is advisable that you
+familiarize yourself with @ref:[Actor Systems](../general/actor-systems.md) and @ref:[supervision](../general/supervision.md)
+and it may also help to read @ref:[Actor References, Paths and Addresses](../general/addressing.md).
+
 ## First example
 
 If you are new to Akka you might want to start with reading the @ref:[Getting Started Guide](guide/introduction.md)
 and then come back here to learn more.
 
 As discussed in @ref:[Actor Systems](../general/actor-systems.md) Actors are about
-sending messages between independent units of computation, but how does that
+sending messages between independent units of computation, but what does that
 look like?
 
 In all of the following these imports are assumed:
@@ -78,7 +96,7 @@ protocol but Actors can model arbitrarily complex protocols when needed. The
 protocol is bundled together with the behavior that implements it in a nicely
 wrapped scope—the `HelloWorld` @scala[object]@java[class].
 
-As Carl Hewitt said, one Actor is no Actor—it would be quite lonely with
+As Carl Hewitt said, one Actor is no Actor — it would be quite lonely with
 nobody to talk to. We need another Actor that interacts with the `Greeter`.
 Let's make a `HelloWorldBot` that receives the reply from the `Greeter` and sends a number
 of additional greeting messages and collect the replies until a given max number
@@ -427,3 +445,6 @@ the `Main` Actor terminates there is nothing more to do.
 Therefore after creating the Actor system with the `Main` Actor’s
 `Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
 the JVM alive until the root actor stops.
+
+@@include[includes.md](../includes/actors.md) { #actors-and-exceptions }
+See @ref:[supervision](../general/supervision.md).
