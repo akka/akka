@@ -174,7 +174,10 @@ public class TcpTest extends StreamTest {
 
   // compile only sample
   // #setting-up-ssl-engine
-  public SSLEngine createSSLEngine(TLSRole role) {
+  // initialize SSLContext once
+  private final SSLContext sslContext;
+
+  {
     try {
       // Don't hardcode your password in actual code
       char[] password = "abcdef".toCharArray();
@@ -189,20 +192,14 @@ public class TcpTest extends StreamTest {
       KeyManagerFactory keyManagerFactory = KeyManagerFactory.getInstance("SunX509");
       keyManagerFactory.init(keyStore, password);
 
-      // initial ssl context
-      SSLContext sslContext = SSLContext.getInstance("TLSv1.2");
-      sslContext.init(
+      // init ssl context
+      SSLContext context = SSLContext.getInstance("TLSv1.2");
+      context.init(
           keyManagerFactory.getKeyManagers(),
           trustManagerFactory.getTrustManagers(),
           new SecureRandom());
 
-      SSLEngine engine = sslContext.createSSLEngine();
-
-      engine.setUseClientMode(role.equals(akka.stream.TLSRole.client()));
-      engine.setEnabledCipherSuites(new String[] {"TLS_RSA_WITH_AES_128_CBC_SHA"});
-      engine.setEnabledProtocols(new String[] {"TLSv1.2"});
-
-      return engine;
+      sslContext = context;
 
     } catch (KeyStoreException
         | IOException
@@ -212,6 +209,17 @@ public class TcpTest extends StreamTest {
         | KeyManagementException e) {
       throw new RuntimeException(e);
     }
+  }
+
+  // create new SSLEngine from the SSLContext, which was initialized once
+  public SSLEngine createSSLEngine(TLSRole role) {
+    SSLEngine engine = sslContext.createSSLEngine();
+
+    engine.setUseClientMode(role.equals(akka.stream.TLSRole.client()));
+    engine.setEnabledCipherSuites(new String[] {"TLS_RSA_WITH_AES_128_CBC_SHA"});
+    engine.setEnabledProtocols(new String[] {"TLSv1.2"});
+
+    return engine;
   }
   // #setting-up-ssl-engine
 

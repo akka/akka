@@ -875,8 +875,8 @@ class TcpSpec extends StreamSpec("""
     import javax.net.ssl.SSLContext
     import akka.stream.TLSRole
 
-    def createSSLEngine(role: TLSRole): SSLEngine = {
-
+    // initialize SSLContext once
+    lazy val sslContext: SSLContext = {
       // Don't hardcode your password in actual code
       val password = "abcdef".toCharArray
 
@@ -890,10 +890,14 @@ class TcpSpec extends StreamSpec("""
       val keyManagerFactory = KeyManagerFactory.getInstance("SunX509")
       keyManagerFactory.init(keyStore, password)
 
-      // initial ssl context
-      val sslContext = SSLContext.getInstance("TLSv1.2")
-      sslContext.init(keyManagerFactory.getKeyManagers, trustManagerFactory.getTrustManagers, new SecureRandom)
+      // init ssl context
+      val context = SSLContext.getInstance("TLSv1.2")
+      context.init(keyManagerFactory.getKeyManagers, trustManagerFactory.getTrustManagers, new SecureRandom)
+      context
+    }
 
+    // create new SSLEngine from the SSLContext, which was initialized once
+    def createSSLEngine(role: TLSRole): SSLEngine = {
       val engine = sslContext.createSSLEngine()
 
       engine.setUseClientMode(role == akka.stream.Client)

@@ -124,7 +124,10 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         hostInfo: Option[(String, Int)]): SSLEngine = {
 
       val engine = hostInfo match {
-        case None                   => context.createSSLEngine()
+        case None =>
+          if (hostnameVerification)
+            throw new IllegalArgumentException("hostInfo must be defined for hostnameVerification to work.")
+          context.createSSLEngine()
         case Some((hostname, port)) => context.createSSLEngine(hostname, port)
       }
 
