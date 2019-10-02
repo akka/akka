@@ -260,6 +260,7 @@ class JoinConfigCompatCheckerSpec extends AkkaSpec with ClusterTestKit {
 
               # using explicit downing provider class
               downing-provider-class = "akka.cluster.AutoDowning"
+              auto-down-unreachable-after = 0s
 
               configuration-compatibility-check {
                 enforce-on-join = on
