@@ -7,12 +7,15 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.typed.ActorTags
 import akka.actor.typed.Behavior
+import akka.actor.typed.internal.ActorMdc
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.DefaultLoggingFilter
 import akka.event.Logging.DefaultLogger
@@ -247,6 +250,29 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       LoggingTestKit.info("via Slf4jLogger").intercept {
         // this will log via classic eventStream
         system.toClassic.log.info("via Slf4jLogger")
+      }
+    }
+
+    "pass tags from props to MDC" in {
+      val behavior = Behaviors.setup[String] { ctx =>
+        ctx.log.info("Starting up")
+
+        Behaviors.receiveMessage {
+          case msg =>
+            ctx.log.info("Got message {}", msg)
+            Behaviors.same
+        }
+      }
+      val customFilter: LoggingEvent => Boolean = { logEvt =>
+        logEvt.mdc.get(ActorMdc.TagsKey) == Some("tag1,tag2")
+      }
+      val actor =
+        LoggingEventFilter.custom(customFilter).intercept {
+          spawn(behavior, ActorTags("tag1", "tag2"))
+        }
+
+      LoggingEventFilter.custom(customFilter).intercept {
+        actor ! "ping"
       }
     }
 

@@ -32,6 +32,7 @@ import org.slf4j.LoggerFactory
   // lazily initialized
   private var logger: OptionVal[Logger] = OptionVal.None
   private var mdcUsed: Boolean = false
+  private var tags: OptionVal[String] = OptionVal.None
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any => T)] = Nil
@@ -87,9 +88,11 @@ import org.slf4j.LoggerFactory
         val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
         initLoggerWithName(logClass.getName)
     }
+    if (tags.isEmpty) initTags()
     // avoid access to MDC ThreadLocal if not needed
+    // FIXME mdc is always used if logger is initialized, so we could use that as a flag instead and save one field
     mdcUsed = true
-    ActorMdc.setMdc(self.path.toString)
+    ActorMdc.setMdc(self.path.toString, tags)
     l
   }
 
@@ -114,6 +117,18 @@ import org.slf4j.LoggerFactory
     val l = LoggerFactory.getLogger(name)
     logger = OptionVal.Some(l)
     l
+  }
+
+  private def initTags(): Unit = {
+    val tagSet = classicActorContext.props.deploy.tags
+    val string =
+      // tags == None means not initialized, Some("") means no tags
+      if (tagSet.isEmpty) ""
+      else
+        // mdc can only contain string values, and we don't want to render that string
+        // on each log entry or message, so do that up front here
+        tagSet.mkString(",")
+    tags = OptionVal.Some(string)
   }
 
   override def setReceiveTimeout(d: java.time.Duration, msg: T): Unit =

@@ -40,14 +40,15 @@ object Deploy {
  * val remoteProps = someProps.withDeploy(Deploy(scope = RemoteScope("someOtherNodeName")))
  * }}}
  */
-@SerialVersionUID(2L)
+@SerialVersionUID(3L)
 final case class Deploy(
     path: String = "",
     config: Config = ConfigFactory.empty,
     routerConfig: RouterConfig = NoRouter,
     scope: Scope = NoScopeGiven,
     dispatcher: String = Deploy.NoDispatcherGiven,
-    mailbox: String = Deploy.NoMailboxGiven) {
+    mailbox: String = Deploy.NoMailboxGiven,
+    tags: Set[String] = Set.empty) {
 
   /**
    * Java API to create a Deploy with the given RouterConfig
