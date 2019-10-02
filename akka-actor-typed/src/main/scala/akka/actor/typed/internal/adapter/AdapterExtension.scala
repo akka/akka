@@ -2,11 +2,10 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.actor.typed.scaladsl.adapter
+package akka.actor.typed.internal.adapter
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
-import akka.actor.typed.internal.adapter.ActorSystemAdapter
 
 /**
  * Internal API
