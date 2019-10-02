@@ -398,11 +398,11 @@ object ShardRegion {
       case ReceiveTimeout =>
         log.warning(
           "HandOffStopMessage[{}] is not handled by some of the entities of the `{}` shard after {}, " +
-          "stopping the remaining entities: {}",
+          "stopping the remaining {} entities.",
           stopMessage.getClass.getName,
           shard,
           handoffTimeout,
-          remaining)
+          remaining.size)
 
         remaining.foreach { ref =>
           context.stop(ref)
