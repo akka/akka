@@ -28,18 +28,18 @@ import akka.util.Helpers.toRootLowerCase
  * Downing provider used for testing.
  *
  * Auto-downing is a naïve approach to remove unreachable nodes from the cluster membership.
- * In a production environment it will eventually breakdown the cluster.
+ * In a production environment it will eventually break down the cluster.
  * When a network partition occurs, both sides of the partition will see the other side as unreachable
  * and remove it from the cluster. This results in the formation of two separate, disconnected, clusters
  * (known as *Split Brain*).
  *
- * This behaviour is not limited to network partitions. It can also occur if a node in the cluster is
+ * This behavior is not limited to network partitions. It can also occur if a node in the cluster is
  * overloaded, or experiences a long GC pause.
  *
  * When using Cluster Singleton or Cluster Sharding it can break the contract provided by those features.
  * Both provide a guarantee that an actor will be unique in a cluster.
  * With the auto-down feature enabled, it is possible for multiple independent clusters to form (*Split Brain*).
- * When this happens the guaranteed uniqueness will no longer be true resulting in undesirable behaviour
+ * When this happens the guaranteed uniqueness will no longer be true resulting in undesirable behavior
  * in the system.
  *
  * This is even more severe when Akka Persistence is used in conjunction with Cluster Sharding.

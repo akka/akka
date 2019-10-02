@@ -299,8 +299,9 @@ been removed from the Cluster. Removal of crashed (unreachable) nodes is perform
 
 A production solution for downing is provided by
 [Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html),
-which is part of the [Lightbend Reactive Platform](http://www.lightbend.com/platform).
-If you don’t use RP, you should anyway carefully read the [documentation](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
+which is part of the [Lightbend Platform](http://www.lightbend.com/platform).
+If you don’t have a Lightbend Platform Subscription, you should still carefully read the 
+[documentation](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
 of the Split Brain Resolver and make sure that the solution you are using handles the concerns and scenarios
 described there.
 
