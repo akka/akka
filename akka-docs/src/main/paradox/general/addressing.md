@@ -11,7 +11,7 @@ distributed Akka application.
 The above image displays the relationship between the most important entities
 within an actor system, please read on for the details.
 
-## What is an Actor Reference?
+## What is an Actor Reference
 
 An actor reference is a subtype of `ActorRef`, whose foremost purpose is
 to support sending messages to the actor it represents. Each actor has access
