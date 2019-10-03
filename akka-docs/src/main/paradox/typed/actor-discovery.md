@@ -14,15 +14,28 @@ To use Akka Actor Typed, you must add the following dependency in your project:
   version=$akka.version$
 }
 
-## Introduction
+## Obtaining Actor references
 
-With @ref:[classic actors](../general/addressing.md) you would use `ActorSelection` to "lookup" actors. Given an actor path with
-address information you can get hold of an `ActorRef` to any actor. `ActorSelection` does not exist in Akka Typed, 
-so how do you get the actor references? You can send refs in messages but you need something to bootstrap the interaction.
+There are two general ways to obtain @ref:[Actor references](../general/addressing.md#what-is-an-actor-reference): by
+@ref:[creating](#creating-actors) actors and by discovery using the @ref:[Receptionist](#receptionist).
+Once an Actor is created others can get its reference by including the `ActorRef` in messages sent.
+Whereas with @ref:[classic actors](../general/addressing.md) you would use `ActorSelection` to "lookup" actors
+from an actor path with address information.
+
+## Creating Actors
+
+An actor system is started by creating actors beneath the user guardian
+actor using the `ActorContext.spawn` method and then using
+`ActorContext.spawn` from within the created actors to spawn the actor
+tree. These methods return a reference to the newly created actor. Each actor
+has direct access (through its `ActorContext`) to references for its parent,
+itself and its children. These references may be sent within messages to other actors,
+enabling those to reply directly.
 
 ## Receptionist
 
-For this purpose there is an actor called the `Receptionist`. You register the specific actors that should be discoverable 
+When an actor needs to be discovered by another actor but you are unable to put a reference to it in an incoming message,
+you can use the `Receptionist`. You register the specific actors that should be discoverable 
 from other nodes in the local `Receptionist` instance. The API of the receptionist is also based on actor messages. 
 This registry of actor references is then automatically distributed to all other nodes in the cluster. 
 You can lookup such actors with the key that was used when they were registered. The reply to such a `Find` request is 
@@ -30,11 +43,8 @@ a `Listing`, which contains a `Set` of actor references that are registered for 
 registered to the same key.
 
 The registry is dynamic. New actors can be registered during the lifecycle of the system. Entries are removed when 
-registered actors are stopped or a node is removed from the cluster. To facilitate this dynamic aspect you can also subscribe 
+registered actors are stopped or a node is removed from the @ref:[Cluster](cluster.md). To facilitate this dynamic aspect you can also subscribe 
 to changes with the `Receptionist.Subscribe` message. It will send `Listing` messages to the subscriber when entries for a key are changed.
-
-The primary scenario for using the receptionist is when an actor needs to be discovered by another actor but you are unable
-to put a reference to it in an incoming message.
 
 These imports are used in the following example:
 
