@@ -217,7 +217,7 @@ object Entity {
    */
   def apply[M](typeKey: EntityTypeKey[M])(
       createBehavior: EntityContext[M] => Behavior[M]): Entity[M, ShardingEnvelope[M]] =
-    new Entity(createBehavior, typeKey, None, Props.empty, None, None, None)
+    new Entity(createBehavior, typeKey, None, Props.empty, None, None, None, None)
 }
 
 /**
@@ -230,7 +230,8 @@ final class Entity[M, E] private[akka] (
     val entityProps: Props,
     val settings: Option[ClusterShardingSettings],
     val messageExtractor: Option[ShardingMessageExtractor[E, M]],
-    val allocationStrategy: Option[ShardAllocationStrategy]) {
+    val allocationStrategy: Option[ShardAllocationStrategy],
+    val role: Option[String]) {
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -262,7 +263,7 @@ final class Entity[M, E] private[akka] (
    * is configured with `akka.cluster.sharding.number-of-shards`.
    */
   def withMessageExtractor[Envelope](newExtractor: ShardingMessageExtractor[Envelope, M]): Entity[M, Envelope] =
-    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, Option(newExtractor), allocationStrategy)
+    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, Option(newExtractor), allocationStrategy, role)
 
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,
@@ -271,14 +272,20 @@ final class Entity[M, E] private[akka] (
   def withAllocationStrategy(newAllocationStrategy: ShardAllocationStrategy): Entity[M, E] =
     copy(allocationStrategy = Option(newAllocationStrategy))
 
+  /**
+   *  Run the Entity actors on nodes with the given role.
+   */
+  def withRole(role: String): Entity[M, E] = copy(role = Some(role))
+
   private def copy(
       createBehavior: EntityContext[M] => Behavior[M] = createBehavior,
       typeKey: EntityTypeKey[M] = typeKey,
       stopMessage: Option[M] = stopMessage,
       entityProps: Props = entityProps,
       settings: Option[ClusterShardingSettings] = settings,
-      allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy): Entity[M, E] = {
-    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy)
+      allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy,
+      role: Option[String] = role): Entity[M, E] = {
+    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy, role)
   }
 
 }

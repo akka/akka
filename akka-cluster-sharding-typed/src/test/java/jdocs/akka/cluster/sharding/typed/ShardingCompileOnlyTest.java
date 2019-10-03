@@ -195,6 +195,20 @@ interface ShardingCompileOnlyTest {
     // #send
   }
 
+  public static void roleExample() {
+    ActorSystem system = ActorSystem.create(Behaviors.empty(), "ShardingExample");
+    ClusterSharding sharding = ClusterSharding.get(system);
+
+    // #roles
+    EntityTypeKey<Counter.Command> typeKey = EntityTypeKey.create(Counter.Command.class, "Counter");
+
+    ActorRef<ShardingEnvelope<Counter.Command>> shardRegionOrProxy =
+            sharding.init(
+                    Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId()))
+                            .withRole("backend"));
+    // #roles
+  }
+
   public static void persistenceExample() {
     ActorSystem system = ActorSystem.create(Behaviors.empty(), "ShardingExample");
     ClusterSharding sharding = ClusterSharding.get(system);
