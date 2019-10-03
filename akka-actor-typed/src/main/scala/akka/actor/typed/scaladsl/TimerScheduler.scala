@@ -37,6 +37,26 @@ trait TimerScheduler[T] {
 
   /**
    * Schedules a message to be sent repeatedly to the `self` actor with a
+   * fixed `delay` between messages.
+   *
+   * It will not compensate the delay between messages if scheduling is delayed
+   * longer than specified for some reason. The delay between sending of subsequent
+   * messages will always be (at least) the given `delay`.
+   *
+   * In the long run, the frequency of messages will generally be slightly lower than
+   * the reciprocal of the specified `delay`.
+   *
+   * When a new timer is started with same message
+   * the previous is cancelled and it's guaranteed that a message from the
+   * previous timer is not received, even though it might already be enqueued
+   * in the mailbox when the new timer is started. If you do not want this,
+   * you can start start them as individual timers by specifying different keys
+   */
+  def startTimerWithFixedDelay(msg: T, delay: FiniteDuration): Unit =
+    startTimerWithFixedDelay(msg, msg, delay)
+
+  /**
+   * Schedules a message to be sent repeatedly to the `self` actor with a
    * given frequency.
    *
    * It will compensate the delay for a subsequent message if the sending of previous
