@@ -32,8 +32,8 @@ with a fresh state that we know is valid.
 
 In Akka this "somewhere else" is called supervision. Supervision allows you to declaratively describe what should happen when certain types of exceptions are thrown inside an actor. 
 
-While Akka has @ref:[supervision](../general/supervision.md) and fault tolerance built into every Actor, in many cases
-you will want to further customize behavior. To use supervision the actual Actor behavior is wrapped using `Behaviors.supervise`. 
+The default @ref:[supervision](../general/supervision.md) strategy is to stop the actor if an exception is thrown. 
+In many cases you will want to further customize this behavior. To use supervision the actual Actor behavior is wrapped using `Behaviors.supervise`. 
 Typically you would wrap the actor with supervision in the parent when spawning it as a child.
  
 This example restarts the actor when it fails with an `IllegalStateException`: 
