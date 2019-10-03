@@ -166,4 +166,22 @@ package object adapter {
    */
   implicit def actorRefAdapter[T](ref: akka.actor.ActorRef): ActorRef[T] = ActorRefAdapter(ref)
 
+  /**
+   * Extension methods added to [[akka.actor.typed.Scheduler]].
+   */
+  implicit class TypedSchedulerOps(val scheduler: Scheduler) extends AnyVal {
+    def toClassic: akka.actor.Scheduler = SchedulerAdapter.toClassic(scheduler)
+  }
+
+  /**
+   * Extension methods added to [[akka.actor.Scheduler]].
+   */
+  implicit class ClassicSchedulerOps(val scheduler: akka.actor.Scheduler) extends AnyVal {
+
+    /**
+     * Adapt the classic `Scheduler` to `akka.actor.typed.Scheduler`.
+     */
+    def toTyped: Scheduler = new SchedulerAdapter(scheduler)
+  }
+
 }

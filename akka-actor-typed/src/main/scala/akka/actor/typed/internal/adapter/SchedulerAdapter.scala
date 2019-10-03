@@ -16,6 +16,20 @@ import scala.concurrent.duration.FiniteDuration
 /**
  * INTERNAL API
  */
+@InternalApi private[akka] object SchedulerAdapter {
+  def toClassic(scheduler: Scheduler): akka.actor.Scheduler =
+    scheduler match {
+      case s: SchedulerAdapter => s.classicScheduler
+      case _ =>
+        throw new UnsupportedOperationException(
+          "unknown Scheduler type " +
+          s"($scheduler of class ${scheduler.getClass.getName})")
+    }
+}
+
+/**
+ * INTERNAL API
+ */
 @InternalApi
 private[akka] final class SchedulerAdapter(private[akka] val classicScheduler: akka.actor.Scheduler) extends Scheduler {
   override def scheduleOnce(delay: FiniteDuration, runnable: Runnable)(

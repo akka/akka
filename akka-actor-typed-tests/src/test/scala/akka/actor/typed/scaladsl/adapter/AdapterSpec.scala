@@ -5,6 +5,7 @@
 package akka.actor.typed.scaladsl.adapter
 
 import scala.util.control.NoStackTrace
+
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.TestException
 import akka.actor.typed.scaladsl.Behaviors
@@ -17,6 +18,7 @@ import akka.Done
 import akka.NotUsed
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.typed.internal.adapter.SchedulerAdapter
 import akka.{ actor => classic }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
@@ -201,6 +203,12 @@ class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with Log
 
         } finally if (system != null) TestKit.shutdownActorSystem(systemN.toClassic)
       }
+    }
+
+    "convert Scheduler" in {
+      val typedScheduler = system.scheduler.toTyped
+      typedScheduler.getClass should ===(classOf[SchedulerAdapter])
+      (typedScheduler.toClassic should be).theSameInstanceAs(system.scheduler)
     }
   }
 
