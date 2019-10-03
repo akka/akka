@@ -17,20 +17,13 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 ## Obtaining Actor references
 
 There are two general ways to obtain @ref:[Actor references](../general/addressing.md#what-is-an-actor-reference): by
-@ref:[creating actors](#creating-actors) and by discovery using the @ref:[Receptionist](#receptionist).
+@ref:[creating actors](actor-lifecycle.md#creating-actors) and by discovery using the @ref:[Receptionist](#receptionist).
 
 You can pass actor references between actors as constructor parameters or part of messages.
 
 Sometimes you need something to bootstrap the interaction, for example when actors are running on
 different nodes in the Cluster or when "dependency injection" with constructor parameters is not
 applicable.
-
-## Creating Actors
-
-An actor system is started by creating actors beneath the user guardian
-actor using the `ActorContext.spawn` method and then using
-`ActorContext.spawn` from within the created actors to spawn the actor
-tree. These methods return a reference to the newly created actor.
 
 ## Receptionist
 
