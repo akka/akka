@@ -79,7 +79,7 @@ be the same. Otherwise the entity actor might accidentally be started in several
 
 Creating a good sharding algorithm is an interesting challenge in itself. Try to produce a uniform distribution,
 i.e. same amount of entities in each shard. As a rule of thumb, the number of shards should be a factor ten greater
-than the planned maximum number of cluster nodes. Less shards than number of nodes will result in that some nodes
+than the planned maximum number of cluster nodes. Fewer shards than number of nodes will result in that some nodes
 will not host any shards. Too many shards will result in less efficient management of the shards, e.g. rebalancing
 overhead, and increased latency because the coordinator is involved in the routing of the first message for each
 shard. The sharding algorithm must be the same on all nodes in a running cluster. It can be changed after stopping

@@ -122,16 +122,34 @@ is used but `tell` or any of the other @ref:[Interaction Patterns](interaction-p
 
 See @ref:[persistence](persistence.md) for more details.
 
-## Shard allocation strategy
+## Shard allocation
 
-The default implementation `akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy`
-allocates new shards to the `ShardRegion` with least number of previously allocated shards.
+A shard is a group of entities that will be managed together. The grouping is typically defined by a hashing
+function of the `entityId`. For a specific entity identifier the shard identifier must always
+be the same. Otherwise the entity actor might accidentally be started in several places at the same time.
+
+By default the shard identifier is the absolute value of the `hashCode` of the entity identifier modulo
+the total number of shards. The number of shards is configured by:
+
+@@snip [reference.conf](/akka-cluster-sharding-typed/src/main/resources/reference.conf) { #number-of-shards }
+
+As a rule of thumb, the number of shards should be a factor ten greater than the planned maximum number of
+cluster nodes. It doesn't have to be exact. Fewer shards than number of nodes will result in that some nodes will
+not host any shards. Too many shards will result in less efficient management of the shards, e.g. rebalancing overhead,
+and increased latency because the coordinator is involved in the routing of the first message for each
+shard.
+
+The `number-of-shards` configuration value must be the same for all nodes in the cluster and that is verified by
+configuration check when joining. Changing the value requires stopping all nodes in the cluster.
+
+The shards are allocated to the nodes in the cluster. The decision of where to allocate a shard is done
+by a shard allocation strategy. The default implementation `akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy`
+allocates new shards to the `ShardRegion` (node) with least number of previously allocated shards.
 This strategy can be replaced by an application specific implementation.
    
 An optional custom shard allocation strategy can be passed into the optional parameter when initializing an entity type 
 or explicitly using the `withAllocationStrategy` function.
-See the API documentation of @scala[`akka.cluster.sharding.ShardAllocationStrategy`]@java[`akka.cluster.sharding.AbstractShardAllocationStrategy`] for details
-of how to implement a custom `ShardAllocationStrategy`.
+See the API documentation of @scala[`akka.cluster.sharding.ShardAllocationStrategy`]@java[`akka.cluster.sharding.AbstractShardAllocationStrategy`] for details of how to implement a custom `ShardAllocationStrategy`.
 
 ## How it works
 
@@ -361,4 +379,8 @@ properties are read by the `ClusterShardingSettings` when created with an ActorS
 It is also possible to amend the `ClusterShardingSettings` or create it from another config section
 with the same layout as below. 
 
+One important configuration property is `number-of-shards` as described in @ref:[Shard allocation](#shard-allocation)
+
 @@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
+
+@@snip [reference.conf](/akka-cluster-sharding-typed/src/main/resources/reference.conf) { #sharding-ext-config }
