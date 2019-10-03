@@ -5,8 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.{ OverflowStrategy, SubscriptionWithCancelException }
-import akka.stream.SubscriptionWithCancelException.{ NoMoreElementsNeeded, NonFailureCancellation }
+import akka.stream.OverflowStrategy
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import org.scalatest.matchers.{ MatchResult, Matcher }
