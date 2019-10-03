@@ -35,7 +35,7 @@ import akka.dispatch.Mailboxes
         // specific support in classic Mailboxes
         dispatcherProps.withMailbox(s"${Mailboxes.BoundedCapacityPrefix}$capacity")
       case MailboxFromConfigSelector(path, _) =>
-        props.withMailbox(path)
+        dispatcherProps.withMailbox(path)
     }
 
     mailboxProps.withDeploy(Deploy.local) // disallow remote deployment for typed actors
