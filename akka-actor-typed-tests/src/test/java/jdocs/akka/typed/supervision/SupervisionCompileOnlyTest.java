@@ -6,9 +6,8 @@ package jdocs.akka.typed.supervision;
 
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.Behaviors;
-import scala.concurrent.duration.FiniteDuration;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 public class SupervisionCompileOnlyTest {
   // #wrap
@@ -74,7 +73,7 @@ public class SupervisionCompileOnlyTest {
     Behaviors.supervise(behavior)
         .onFailure(
             IllegalStateException.class,
-            SupervisorStrategy.restart().withLimit(10, FiniteDuration.apply(10, TimeUnit.SECONDS)));
+            SupervisorStrategy.restart().withLimit(10, Duration.ofSeconds(10)));
     // #restart-limit
 
     // #multiple
