@@ -230,7 +230,7 @@ For TCP:
 
 Classic remoting is deprecated but can be used in `2.6.` Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `false`. Further, any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
-are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration.md#config-akka-remote).
+are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration-reference.md#config-akka-remote).
 
 ## Java Serialization
 
