@@ -7,6 +7,8 @@ project.description: Share data between nodes and perform updates without coordi
 For the Akka Classic documentation of this feature see @ref:[Classic Distributed Data](../distributed-data.md).
 @@@
 
+@@project-info{ projectId="akka-cluster-typed" }
+
 ## Dependency
 
 To use Akka Cluster Distributed Data Typed, you must add the following dependency in your project:

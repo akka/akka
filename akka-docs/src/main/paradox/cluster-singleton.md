@@ -3,6 +3,8 @@
 @@include[includes.md](includes.md) { #actor-api }
 For the full documentation of this feature and for new projects see @ref:[Cluster Singleton](typed/cluster-singleton.md).
 
+@@project-info{ projectId="akka-cluster-tools" }
+
 ## Dependency
 
 To use Cluster Singleton, you must add the following dependency in your project:

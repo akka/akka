@@ -2,6 +2,8 @@
 
 @@include[includes.md](includes.md) { #actor-api }
 
+@@project-info{ projectId="akka-actor" }
+
 ## Dependency
 
 To use Classic Actors, you must add the following dependency in your project:

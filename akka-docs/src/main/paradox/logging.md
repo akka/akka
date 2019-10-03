@@ -3,6 +3,8 @@
 @@include[includes.md](includes.md) { #actor-api }
 For the new API see @ref[Logging](typed/logging.md).
 
+@@project-info{ projectId="akka-slf4j" }
+
 ## Dependency
 
 To use Logging, you must at least use the Akka actors dependency in your project, and will most likely want to configure logging via the SLF4J module (@ref:[see below](#slf4j)), or use `java.util.logging` (@ref:[see below](#java-util-logging)).

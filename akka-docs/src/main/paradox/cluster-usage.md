@@ -19,6 +19,8 @@ recommendation if you don't have other preferences or constraints.
 
 @@@
 
+@@project-info{ projectId="akka-cluster" }
+
 ## Dependency
 
 To use Akka Cluster add the following dependency in your project:
