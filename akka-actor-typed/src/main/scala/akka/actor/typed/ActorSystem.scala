@@ -182,8 +182,8 @@ object ActorSystem {
     createInternal(name, guardianBehavior, Props.empty, ActorSystemSetup.create(BootstrapSetup(config)))
 
   /**
-    * Scala API: Create an ActorSystem
-    */
+   * Scala API: Create an ActorSystem
+   */
   def apply[T](guardianBehavior: Behavior[T], name: String, config: Config, guardianProps: Props): ActorSystem[T] =
     createInternal(name, guardianBehavior, guardianProps, ActorSystemSetup.create(BootstrapSetup(config)))
 
@@ -219,8 +219,8 @@ object ActorSystem {
     apply(guardianBehavior, name, config)
 
   /**
-    * Java API: Create an ActorSystem
-    */
+   * Java API: Create an ActorSystem
+   */
   def create[T](guardianBehavior: Behavior[T], name: String, config: Config, guardianProps: Props): ActorSystem[T] =
     createInternal(name, guardianBehavior, guardianProps, ActorSystemSetup.create(BootstrapSetup(config)))
 
