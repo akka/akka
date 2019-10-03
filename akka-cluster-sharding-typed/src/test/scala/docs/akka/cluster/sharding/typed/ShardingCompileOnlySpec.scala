@@ -79,9 +79,7 @@ object ShardingCompileOnlySpec {
 
     //#roles
     sharding.init(
-      Entity(TypeKey)(createBehavior = entityContext => Counter(entityContext.entityId))
-        .withRole("backend")
-    )
+      Entity(TypeKey)(createBehavior = entityContext => Counter(entityContext.entityId)).withRole("backend"))
     //#roles
 
   }

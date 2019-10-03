@@ -142,8 +142,7 @@ import akka.util.Timeout
         settings = entity.settings.asScala,
         messageExtractor = entity.messageExtractor.asScala,
         allocationStrategy = entity.allocationStrategy.asScala,
-        role = entity.role.asScala
-      ))
+        role = entity.role.asScala))
   }
 
   private def internalInit[M, E](

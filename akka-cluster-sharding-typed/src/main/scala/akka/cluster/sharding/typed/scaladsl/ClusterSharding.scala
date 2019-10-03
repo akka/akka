@@ -263,7 +263,15 @@ final class Entity[M, E] private[akka] (
    * is configured with `akka.cluster.sharding.number-of-shards`.
    */
   def withMessageExtractor[Envelope](newExtractor: ShardingMessageExtractor[Envelope, M]): Entity[M, Envelope] =
-    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, Option(newExtractor), allocationStrategy, role)
+    new Entity(
+      createBehavior,
+      typeKey,
+      stopMessage,
+      entityProps,
+      settings,
+      Option(newExtractor),
+      allocationStrategy,
+      role)
 
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,
