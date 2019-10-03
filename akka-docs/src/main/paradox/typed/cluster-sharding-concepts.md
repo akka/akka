@@ -60,7 +60,7 @@ the oldest member among all cluster nodes or a group of nodes tagged with a spec
 role.
 
 The logic that decides where a shard is to be located is defined in a
-pluggable @ref:[shard allocation strategy](cluster-sharding.md#shard-allocation-strategy).
+pluggable @ref:[shard allocation strategy](cluster-sharding.md#shard-allocation).
 
 ### Shard rebalancing
 
