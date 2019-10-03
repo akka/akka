@@ -31,8 +31,8 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
   def compileOnlyApiCoverage(): Unit = {
     Routers.group(ServiceKey[String]("key")).withRandomRouting().withRoundRobinRouting()
 
-    Routers.pool(10)(() => Behaviors.empty[Any]).withRandomRouting()
-    Routers.pool(10)(() => Behaviors.empty[Any]).withRoundRobinRouting()
+    Routers.pool(10)(Behaviors.empty[Any]).withRandomRouting()
+    Routers.pool(10)(Behaviors.empty[Any]).withRoundRobinRouting()
   }
 
   "The router pool" must {
@@ -41,7 +41,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val childCounter = new AtomicInteger(0)
       case class Ack(msg: String, recipient: Int)
       val probe = createTestProbe[AnyRef]()
-      val pool = spawn(Routers.pool[String](4)(() =>
+      val pool = spawn(Routers.pool[String](4)(
         Behaviors.setup { _ =>
           val id = childCounter.getAndIncrement()
           probe.ref ! s"started $id"
@@ -76,7 +76,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
     "keep routing to the rest of the children if some children stops" in {
       val probe = createTestProbe[String]()
-      val pool = spawn(Routers.pool[String](4)(() =>
+      val pool = spawn(Routers.pool[String](4)(
         Behaviors.receiveMessage {
           case "stop" =>
             Behaviors.stopped
@@ -105,7 +105,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
     "stops if all children stops" in {
       val probe = createTestProbe()
-      val pool = spawn(Routers.pool[String](4)(() =>
+      val pool = spawn(Routers.pool[String](4)(
         Behaviors.receiveMessage { _ =>
           Behaviors.stopped
         }))
