@@ -27,10 +27,7 @@ from an actor path with address information.
 An actor system is started by creating actors beneath the user guardian
 actor using the `ActorContext.spawn` method and then using
 `ActorContext.spawn` from within the created actors to spawn the actor
-tree. These methods return a reference to the newly created actor. Each actor
-has direct access (through its `ActorContext`) to references for its parent,
-itself and its children. These references may be sent within messages to other actors,
-enabling those to reply directly.
+tree. These methods return a reference to the newly created actor.
 
 ## Receptionist
 
