@@ -202,7 +202,7 @@ class JacksonSerializationBench {
           }
           serialization.jackson {
             compress-larger-than = 100000 b
-            
+
             serialization-features {
               #WRITE_DATES_AS_TIMESTAMPS = off
             }
