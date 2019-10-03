@@ -113,7 +113,7 @@ You cannot freely create actor paths like symbolic links to refer to arbitrary a
 ## How are Actor References obtained?
 
 There are two general categories to how actor references may be obtained: by
-@ref:[creating](../typed/actor-discovery.md#creating-actors) actors or by looking them up through the @ref:[Receptionist](../typed/actor-discovery.md#receptionist).
+@ref:[creating actors](../typed/actor-lifecycle.md#creating-actors) or by looking them up through the @ref:[Receptionist](../typed/actor-discovery.md#receptionist).
 
 ## Actor Reference and Path Equality
 
