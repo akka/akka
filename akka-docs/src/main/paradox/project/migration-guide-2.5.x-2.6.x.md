@@ -199,6 +199,12 @@ Akka is now using Protobuf version 3.9.0 for serialization of messages defined b
 Cluster client has been deprecated as of 2.6 in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
 It is not advised to build new applications with Cluster client, and existing users @ref[should migrate to Akka gRPC](../cluster-client.md#migration-to-akka-grpc).
 
+### Persistent mode for Cluster Sharding
+
+Cluster Sharding coordinator and Replicated Entities state in 2.5 can be stored in Distributed Data or via Akka Persistence.
+The Persistence mode has been deprecated in favour of using the Distributed Data mode for the coordinator state. A replacement for the state
+for Remembered Entities is tracked in [issue 27763](https://github.com/akka/akka/issues/27763).
+
 ## Java Serialization
 
 Java serialization is known to be slow and [prone to attacks](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995)
