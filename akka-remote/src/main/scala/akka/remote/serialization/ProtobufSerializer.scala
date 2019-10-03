@@ -10,8 +10,12 @@ import java.util.concurrent.atomic.AtomicReference
 import akka.actor.{ ActorRef, ExtendedActorSystem }
 import akka.remote.WireFormats.ActorRefData
 import akka.serialization.{ BaseSerializer, Serialization }
-
 import scala.annotation.tailrec
+import scala.util.control.NonFatal
+
+import akka.event.LogMarker
+import akka.event.Logging
+import akka.serialization.SerializationExtension
 
 object ProtobufSerializer {
   private val ARRAY_OF_BYTE_ARRAY = Array[Class[_]](classOf[Array[Byte]])
@@ -43,6 +47,16 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
   private val parsingMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
   private val toByteArrayMethodBindingRef = new AtomicReference[Map[Class[_], Method]](Map.empty)
 
+  private val whitelistClassNames: Set[String] = {
+    import akka.util.ccompat.JavaConverters._
+    system.settings.config.getStringList("akka.serialization.protobuf.whitelist-class").asScala.toSet
+  }
+
+  // This must lazy otherwise it will deadlock the ActorSystem creation
+  private lazy val serialization = SerializationExtension(system)
+
+  private val log = Logging.withMarker(system, getClass)
+
   override def includeManifest: Boolean = true
 
   override def fromBinary(bytes: Array[Byte], manifest: Option[Class[_]]): AnyRef = {
@@ -54,6 +68,7 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
           parsingMethodBinding.get(clazz) match {
             case Some(cachedParsingMethod) => cachedParsingMethod
             case None =>
+              checkAllowedClass(clazz)
               val unCachedParsingMethod =
                 if (method eq null) clazz.getDeclaredMethod("parseFrom", ProtobufSerializer.ARRAY_OF_BYTE_ARRAY: _*)
                 else method
@@ -92,5 +107,50 @@ class ProtobufSerializer(val system: ExtendedActorSystem) extends BaseSerializer
       }
     }
     toByteArrayMethod().invoke(obj).asInstanceOf[Array[Byte]]
+  }
+
+  private def checkAllowedClass(clazz: Class[_]): Unit = {
+    if (!isInWhitelist(clazz)) {
+      val warnMsg = s"Can't deserialize object of type [${clazz.getName}] in [${getClass.getName}]. " +
+        "Only classes that are whitelisted are allowed for security reasons. " +
+        "Configure whitelist with akka.actor.serialization-bindings or " +
+        "akka.serialization.protobuf.whitelist-class"
+      log.warning(LogMarker.Security, warnMsg)
+      throw new IllegalArgumentException(warnMsg)
+    }
+  }
+
+  /**
+   * Using the `serialization-bindings` as source for the whitelist.
+   * Note that the intended usage of serialization-bindings is for lookup of
+   * serializer when serializing (`toBinary`). For deserialization (`fromBinary`) the serializer-id is
+   * used for selecting serializer.
+   * Here we use `serialization-bindings` also when deserializing (fromBinary)
+   * to check that the manifest class is of a known (registered) type.
+   *
+   * If an old class is removed from `serialization-bindings` when it's not used for serialization
+   * but still used for deserialization (e.g. rolling update with serialization changes) it can
+   * be allowed by specifying in `akka.protobuf.whitelist-class`.
+   *
+   * That is also possible when changing a binding from a ProtobufSerializer to another serializer (e.g. Jackson)
+   * and still bind with the same class (interface).
+   */
+  private def isInWhitelist(clazz: Class[_]): Boolean = {
+    isBoundToProtobufSerializer(clazz) || isInWhitelistClassName(clazz)
+  }
+
+  private def isBoundToProtobufSerializer(clazz: Class[_]): Boolean = {
+    try {
+      val boundSerializer = serialization.serializerFor(clazz)
+      boundSerializer.isInstanceOf[ProtobufSerializer]
+    } catch {
+      case NonFatal(_) => false // not bound
+    }
+  }
+
+  private def isInWhitelistClassName(clazz: Class[_]): Boolean = {
+    whitelistClassNames(clazz.getName) ||
+    whitelistClassNames(clazz.getSuperclass.getName) ||
+    clazz.getInterfaces.exists(c => whitelistClassNames(c.getName))
   }
 }
