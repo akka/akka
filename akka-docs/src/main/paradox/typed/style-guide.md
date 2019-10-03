@@ -91,7 +91,7 @@ Some reasons why you may want to use the object-oriented style:
 * You are more familiar with an object-oriented style of structuring the code with methods
   in a class rather than functions.
 * Some state is not immutable.
-* It could be more familiar and easier to migrate existing classic actors to this style.
+* It could be more familiar and easier to upgrade existing classic actors to this style.
 * Mutable state can sometimes have better performance, e.g. mutable collections and
   avoiding allocating new instance for next behavior (be sure to benchmark if this is your
   motivation).
@@ -111,7 +111,7 @@ Some reasons why you may want to use the object-oriented style:
 * Some state is not immutable, e.g. immutable collections are not widely used in Java.
   It is OK to use mutable state also with the functional style but you must make sure
   that it's not shared between different actor instances.
-* It could be more familiar and easier to migrate existing classic actors to this style.
+* It could be more familiar and easier to upgrade existing classic actors to this style.
 * Mutable state can sometimes have better performance, e.g. mutable collections and
   avoiding allocating new instance for next behavior (be sure to benchmark if this is your
   motivation).
