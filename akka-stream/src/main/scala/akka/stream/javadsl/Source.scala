@@ -51,8 +51,8 @@ object Source {
    * followed by completion.
    * If the materialized promise is completed with an empty Optional, no value will be produced downstream and completion will
    * be signalled immediately.
-   * If the materialized promise is completed with a failure, then the returned source will terminate with that error.
-   * If the downstream of this source cancels before the promise has been completed, then the promise will be completed
+   * If the materialized promise is completed with a failure, then the source will fail with that error.
+   * If the downstream of this source cancels or fails before the promise has been completed, then the promise will be completed
    * with an empty Optional.
    */
   def maybe[T]: Source[T, CompletableFuture[Optional[T]]] = {
