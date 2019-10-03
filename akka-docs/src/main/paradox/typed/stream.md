@@ -1,5 +1,7 @@
 # Streams
 
+@@project-info{ projectId="akka-stream-typed" }
+
 ## Dependency
 
 To use Akka Streams Typed, add the module to your project:

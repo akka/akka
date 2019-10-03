@@ -31,6 +31,8 @@ See @ref:[Migration hints](#migrating-from-akka-management-discovery-before-1-0-
 
 @@@
 
+@@project-info{ projectId="akka-discovery" }
+
 ## Dependency
 
 @@dependency[sbt,Gradle,Maven] {

@@ -7,6 +7,8 @@ project.description: The Actor model, managing internal state and changing behav
 For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
 @@@
 
+@@project-info{ projectId="akka-actor-typed" }
+
 ## Dependency
 
 To use Akka Actor Typed, you must add the following dependency in your project:

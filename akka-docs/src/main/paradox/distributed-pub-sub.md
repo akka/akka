@@ -3,6 +3,8 @@
 @@include[includes.md](includes.md) { #actor-api }
 For the new API see FIXME https://github.com/akka/akka/issues/26338.
 
+@@project-info{ projectId="akka-cluster-tools" }
+
 ## Dependency
 
 To use Distributed Publish Subscribe you must add the following dependency in your project:

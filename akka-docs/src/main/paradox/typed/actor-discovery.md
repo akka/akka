@@ -17,10 +17,13 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 ## Obtaining Actor references
 
 There are two general ways to obtain @ref:[Actor references](../general/addressing.md#what-is-an-actor-reference): by
-@ref:[creating](#creating-actors) actors and by discovery using the @ref:[Receptionist](#receptionist).
-Once an Actor is created others can get its reference by including the `ActorRef` in messages sent.
-Whereas with @ref:[classic actors](../general/addressing.md) you would use `ActorSelection` to "lookup" actors
-from an actor path with address information.
+@ref:[creating actors](#creating-actors) and by discovery using the @ref:[Receptionist](#receptionist).
+
+You can pass actor references between actors as constructor parameters or part of messages.
+
+Sometimes you need something to bootstrap the interaction, for example when actors are running on
+different nodes in the Cluster or when "dependency injection" with constructor parameters is not
+applicable.
 
 ## Creating Actors
 
@@ -81,6 +84,19 @@ Java
 Each time a new (which is just a single time in this example) `PingService` is registered the
 guardian actor spawns a `Pinger` for each currently known `PingService`. The `Pinger`
 sends a `Ping` message and when receiving the `Pong` reply it stops.
+
+In above example we used `Receptionist.Subscribe`, but it's also possible to request a single `Listing`
+of the current state without receiving further updates by sending the `Receptionist.Find` message to the
+receptionist. An example of using `Receptionist.Find`:
+
+Scala
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExample.scala) { #find }
+
+Java
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #find }
+
+Also note how a `messageAdapter` is used to convert the `Receptionist.Listing` to a message type that
+the `PingManager` understands.
 
 ## Cluster Receptionist
 

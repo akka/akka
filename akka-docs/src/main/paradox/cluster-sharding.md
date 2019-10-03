@@ -3,6 +3,8 @@
 @@include[includes.md](includes.md) { #actor-api }
 For the full documentation of this feature and for new projects see @ref:[Cluster Sharding](typed/cluster-sharding.md).
 
+@@project-info{ projectId="akka-cluster-sharding" }
+
 ## Dependency
 
 To use Cluster Sharding, you must add the following dependency in your project:

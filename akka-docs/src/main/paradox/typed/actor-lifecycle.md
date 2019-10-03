@@ -139,6 +139,8 @@ Java
 The `SpawnProtocol` can also be used at other places in the actor hierarchy. It doesn't have to be the root
 guardian actor.
 
+A way to find running actors is described in @ref:[Actor discovery](actor-discovery.md).
+
 ## Stopping Actors
 
 An actor can stop itself by returning `Behaviors.stopped` as the next behavior.

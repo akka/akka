@@ -20,6 +20,8 @@ such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
 
 @@@
 
+@@project-info{ projectId="akka-remote" }
+
 ## Dependency
 
 To use Akka Remoting, you must add the following dependency in your project:
