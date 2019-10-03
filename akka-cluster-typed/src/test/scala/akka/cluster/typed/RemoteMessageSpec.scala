@@ -4,46 +4,23 @@
 
 package akka.cluster.typed
 
-import java.nio.charset.StandardCharsets
-
-import akka.Done
-import akka.testkit.AkkaSpec
-import akka.actor.typed.{ ActorRef, ActorRefResolver }
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.{ ExtendedActorSystem, ActorSystem => ClassicActorSystem }
-import akka.serialization.SerializerWithStringManifest
-import com.typesafe.config.ConfigFactory
 import scala.concurrent.Promise
 
+import akka.Done
+import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorRefResolver
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-
-class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
-  override def identifier = 41
-  override def manifest(o: AnyRef) = "a"
-  override def toBinary(o: AnyRef) = o match {
-    case RemoteMessageSpec.Ping(who) =>
-      ActorRefResolver(system.toTyped).toSerializationFormat(who).getBytes(StandardCharsets.UTF_8)
-  }
-  override def fromBinary(bytes: Array[Byte], manifest: String) = {
-    val str = new String(bytes, StandardCharsets.UTF_8)
-    val ref = ActorRefResolver(system.toTyped).resolveActorRef[String](str)
-    RemoteMessageSpec.Ping(ref)
-  }
-}
+import akka.actor.{ ActorSystem => ClassicActorSystem }
+import akka.serialization.jackson.CborSerializable
+import akka.testkit.AkkaSpec
+import com.typesafe.config.ConfigFactory
 
 object RemoteMessageSpec {
   def config = ConfigFactory.parseString(s"""
     akka {
       loglevel = debug
-      actor {
-        provider = cluster
-        serializers {
-          test = "akka.cluster.typed.PingSerializer"
-        }
-        serialization-bindings {
-          "akka.cluster.typed.RemoteMessageSpec$$Ping" = test
-        }
-      }
+      actor.provider = cluster
       remote.classic.netty.tcp.port = 0
       remote.artery {
         canonical {
@@ -54,7 +31,7 @@ object RemoteMessageSpec {
     }
     """)
 
-  case class Ping(sender: ActorRef[String])
+  case class Ping(sender: ActorRef[String]) extends CborSerializable
 }
 
 class RemoteMessageSpec extends AkkaSpec(RemoteMessageSpec.config) {
