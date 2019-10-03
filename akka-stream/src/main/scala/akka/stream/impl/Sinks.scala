@@ -368,9 +368,9 @@ import org.reactivestreams.Subscriber
 
       private val callback = getAsyncCallback[Output[T]] {
         case QueueSink.Pull(pullPromise) =>
-          if (currentRequests.size >= requestBufferSize) pullPromise.failure(new IllegalStateException(
-            "Request buffer is full. You have to wait for one previous future to be resolved to send another request"
-          ))
+          if (currentRequests.size >= requestBufferSize)
+            pullPromise.failure(new IllegalStateException(
+              "Request buffer is full. You have to wait for one previous future to be resolved to send another request"))
           else if (buffer.isEmpty) currentRequests.enqueue(pullPromise)
           else {
             if (buffer.used == maxBuffer) tryPull(in)
