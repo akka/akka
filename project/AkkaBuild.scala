@@ -10,10 +10,10 @@ import java.util.Properties
 import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
 import java.time.ZoneOffset
+import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
 
 import sbt.Keys._
 import sbt._
-
 import JdkOptions.autoImport._
 import scala.collection.breakOut
 
@@ -64,7 +64,9 @@ object AkkaBuild {
     UnidocRoot.akkaSettings,
     Protobuf.settings,
     parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      version in ThisBuild := akkaVersion
+    version in ThisBuild := akkaVersion,
+    // used for linking to API docs (overwrites `project-info.version`)
+    ThisBuild / projectInfoVersion := { if (isSnapshot.value) "snapshot" else version.value }
   )
 
   lazy val mayChangeSettings = Seq(

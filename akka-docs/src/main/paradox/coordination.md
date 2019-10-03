@@ -5,6 +5,8 @@ project.description: A distributed lock with Akka Coordination using a pluggable
 
 Akka Coordination is a set of tools for distributed coordination.
 
+@@project-info{ projectId="akka-coordination" }
+
 ## Dependency
 
 @@dependency[sbt,Gradle,Maven] {

@@ -1,5 +1,7 @@
 # Classic Cluster Metrics Extension
 
+@@project-info{ projectId="akka-cluster-metrics" }
+
 ## Dependency
 
 To use Cluster Metrics Extension, you must add the following dependency in your project:

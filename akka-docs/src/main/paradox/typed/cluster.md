@@ -21,6 +21,8 @@ You have to enable @ref:[serialization](../serialization.md)  to send messages b
 @ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
 recommendation if you don't have other preferences or constraints.
 
+@@project-info{ projectId="akka-cluster-typed" }
+
 ## Dependency
 
 To use Akka Cluster add the following dependency in your project:
