@@ -5,10 +5,10 @@ are provided. Later on you might need to amend the settings to change the defaul
 or adapt for specific runtime environments. Typical examples of settings that you
 might amend:
 
- * log level and logger backend for the Akka internals
- * enable remoting
- * message serializers
- * tuning of dispatchers
+ * @ref:[log level and logger backend](../typed/logging.md)
+ * @ref:[enable Cluster](../typed/cluster.md)
+ * @ref:[message serializers](../serialization.md)
+ * @ref:[tuning of dispatchers](../typed/dispatchers.md)
 
 Akka uses the [Typesafe Config Library](https://github.com/lightbend/config), which might also be a good choice
 for the configuration of your own application or library built with or without
@@ -348,104 +348,4 @@ override the earlier stuff.
 ## Listing of the Reference Configuration
 
 Each Akka module has a reference configuration file with the default values.
-
-<a id="config-akka-actor"></a>
-### akka-actor
-
-@@snip [reference.conf](/akka-actor/src/main/resources/reference.conf)
-
-<a id="config-akka-actor-typed"></a>
-### akka-actor-typed
-
-@@snip [reference.conf](/akka-actor-typed/src/main/resources/reference.conf)
-
-<a id="config-akka-cluster-typed"></a>
-### akka-cluster-typed
-
-@@snip [reference.conf](/akka-cluster-typed/src/main/resources/reference.conf)
-
-<a id="config-akka-cluster"></a>
-### akka-cluster
-
-@@snip [reference.conf](/akka-cluster/src/main/resources/reference.conf)
-
-<a id="config-akka-discovery"></a>
-### akka-discovery
-
-@@snip [reference.conf](/akka-discovery/src/main/resources/reference.conf)
-
-<a id="config-akka-coordination"></a>
-### akka-coordination
-
-@@snip [reference.conf](/akka-coordination/src/main/resources/reference.conf)
-
-<a id="config-akka-multi-node-testkit"></a>
-### akka-multi-node-testkit
-
-@@snip [reference.conf](/akka-multi-node-testkit/src/main/resources/reference.conf)
-
-<a id="config-akka-persistence-typed"></a>
-### akka-persistence-typed
-
-@@snip [reference.conf](/akka-persistence-typed/src/main/resources/reference.conf)
-
-<a id="config-akka-persistence"></a>
-### akka-persistence
-
-@@snip [reference.conf](/akka-persistence/src/main/resources/reference.conf)
-
-<a id="config-akka-persistence-query"></a>
-### akka-persistence-query
-
-@@snip [reference.conf](/akka-persistence-query/src/main/resources/reference.conf)
-
-<a id="config-akka-remote-artery"></a>
-### akka-remote artery
-
-@@snip [reference.conf](/akka-remote/src/main/resources/reference.conf) { #shared #artery type=none }
-
-<a id="config-akka-remote"></a>
-### akka-remote classic (deprecated)
-
-@@snip [reference.conf](/akka-remote/src/main/resources/reference.conf) { #shared #classic type=none }
-
-<a id="config-akka-testkit"></a>
-### akka-testkit
-
-@@snip [reference.conf](/akka-testkit/src/main/resources/reference.conf)
-
-<a id="config-cluster-metrics"></a>
-### akka-cluster-metrics
-
-@@snip [reference.conf](/akka-cluster-metrics/src/main/resources/reference.conf)
-
-<a id="config-cluster-tools"></a>
-### akka-cluster-tools
-
-@@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf)
-
-<a id="config-cluster-sharding-typed"></a>
-### akka-cluster-sharding-typed
-
-@@snip [reference.conf](/akka-cluster-sharding-typed/src/main/resources/reference.conf)
-
-<a id="config-cluster-sharding"></a>
-### akka-cluster-sharding
-
-@@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf)
-
-<a id="config-distributed-data"></a>
-### akka-distributed-data
-
-@@snip [reference.conf](/akka-distributed-data/src/main/resources/reference.conf)
-
-<a id="config-akka-stream"></a>
-### akka-stream
-
-@@snip [reference.conf](/akka-stream/src/main/resources/reference.conf)
-
-<a id="config-akka-stream-testkit"></a>
-### akka-stream-testkit
-
-@@snip [reference.conf](/akka-stream-testkit/src/main/resources/reference.conf)
-
+Those `reference.conf` files are listed in @ref[Default configuration](configuration-reference.md)

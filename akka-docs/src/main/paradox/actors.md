@@ -1067,7 +1067,7 @@ is only used for debugging/logging.
 Tasks added to the same phase are executed in parallel without any ordering assumptions.
 Next phase will not start until all tasks of previous phase have been completed.
 
-If tasks are not completed within a configured timeout (see @ref:[reference.conf](general/configuration.md#config-akka-actor))
+If tasks are not completed within a configured timeout (see @ref:[reference.conf](general/configuration-reference.md#config-akka-actor))
 the next phase will be started anyway. It is possible to configure `recover=off` for a phase
 to abort the rest of the shutdown process if a task fails or is not completed within the timeout.
 

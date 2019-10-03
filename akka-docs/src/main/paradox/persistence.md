@@ -851,7 +851,7 @@ When testing Persistence based projects always rely on @ref:[asynchronous messag
 ## Configuration
 
 There are several configuration properties for the persistence module, please refer
-to the @ref:[reference configuration](general/configuration.md#config-akka-persistence).
+to the @ref:[reference configuration](general/configuration-reference.md#config-akka-persistence).
 
 The @ref:[journal and snapshot store plugins](persistence-plugins.md) have specific configuration, see
 reference documentation of the chosen plugin.

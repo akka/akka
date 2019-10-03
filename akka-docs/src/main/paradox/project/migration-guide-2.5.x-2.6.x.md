@@ -178,8 +178,8 @@ akka.remote.artery.canonical.port = 2552
 ```
 
 The configuration for Artery is different, so you might have to revisit any custom configuration. See the full
-@ref:[reference configuration for Artery](../general/configuration.md#config-akka-remote-artery) and
-@ref:[reference configuration for classic remoting](../general/configuration.md#config-akka-remote).
+@ref:[reference configuration for Artery](../general/configuration-reference.md#config-akka-remote-artery) and
+@ref:[reference configuration for classic remoting](../general/configuration-reference.md#config-akka-remote).
 
 @@@ note
 

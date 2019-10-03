@@ -13,5 +13,6 @@
 * [jmm](jmm.md)
 * [message-delivery-reliability](message-delivery-reliability.md)
 * [configuration](configuration.md)
+* [configuration-reference](configuration-reference.md)
 
 @@@

@@ -207,4 +207,4 @@ thread. This also means that you shouldn't use them from inside an actor, a futu
 ## Configuration
 
 There are several configuration properties for the Multi-Node Testing module, please refer
-to the @ref:[reference configuration](general/configuration.md#config-akka-multi-node-testkit).
+to the @ref:[reference configuration](general/configuration-reference.md#config-akka-multi-node-testkit).
