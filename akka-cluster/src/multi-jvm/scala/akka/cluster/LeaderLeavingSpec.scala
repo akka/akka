@@ -21,7 +21,9 @@ object LeaderLeavingMultiJvmSpec extends MultiNodeConfig {
 
   commonConfig(
     debugConfig(on = false)
-      .withFallback(ConfigFactory.parseString("akka.cluster.auto-down-unreachable-after = 0s"))
+      .withFallback(ConfigFactory.parseString("""
+      akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+      akka.cluster.testkit.auto-down-unreachable-after = 0s"""))
       .withFallback(MultiNodeClusterSpec.clusterConfigWithFailureDetectorPuppet))
 }
 

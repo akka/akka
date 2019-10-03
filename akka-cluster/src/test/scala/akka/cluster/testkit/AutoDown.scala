@@ -2,17 +2,82 @@
  * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster
-
-import akka.ConfigurationException
-import akka.actor.{ Actor, ActorSystem, Address, Cancellable, Props, Scheduler }
-
-import scala.concurrent.duration.FiniteDuration
-import akka.cluster.ClusterEvent._
+package akka.cluster.testkit
 
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.Actor
 import akka.actor.ActorLogging
-import com.github.ghik.silencer.silent
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.Cancellable
+import akka.actor.Props
+import akka.actor.Scheduler
+import akka.cluster.Cluster
+import akka.cluster.ClusterEvent._
+import akka.cluster.DowningProvider
+import akka.cluster.Member
+import akka.cluster.MembershipState
+import akka.cluster.UniqueAddress
+import akka.util.Helpers.ConfigOps
+import akka.util.Helpers.Requiring
+import akka.util.Helpers.toRootLowerCase
+
+/**
+ * Downing provider used for testing.
+ *
+ * Auto-downing is a naïve approach to remove unreachable nodes from the cluster membership.
+ * In a production environment it will eventually break down the cluster.
+ * When a network partition occurs, both sides of the partition will see the other side as unreachable
+ * and remove it from the cluster. This results in the formation of two separate, disconnected, clusters
+ * (known as *Split Brain*).
+ *
+ * This behavior is not limited to network partitions. It can also occur if a node in the cluster is
+ * overloaded, or experiences a long GC pause.
+ *
+ * When using Cluster Singleton or Cluster Sharding it can break the contract provided by those features.
+ * Both provide a guarantee that an actor will be unique in a cluster.
+ * With the auto-down feature enabled, it is possible for multiple independent clusters to form (*Split Brain*).
+ * When this happens the guaranteed uniqueness will no longer be true resulting in undesirable behavior
+ * in the system.
+ *
+ * This is even more severe when Akka Persistence is used in conjunction with Cluster Sharding.
+ * In this case, the lack of unique actors can cause multiple actors to write to the same journal.
+ * Akka Persistence operates on a single writer principle. Having multiple writers will corrupt
+ * the journal and make it unusable.
+ *
+ * Finally, even if you don't use features such as Persistence, Sharding, or Singletons, auto-downing can lead the
+ * system to form multiple small clusters. These small clusters will be independent from each other. They will be
+ * unable to communicate and as a result you may experience performance degradation. Once this condition occurs,
+ * it will require manual intervention in order to reform the cluster.
+ *
+ * Because of these issues, auto-downing should never be used in a production environment.
+ */
+final class AutoDowning(system: ActorSystem) extends DowningProvider {
+
+  private def clusterSettings = Cluster(system).settings
+
+  private val AutoDownUnreachableAfter: Duration = {
+    val key = "akka.cluster.testkit.auto-down-unreachable-after"
+    // it's not in reference.conf, since only used in tests
+    if (clusterSettings.config.hasPath(key)) {
+      toRootLowerCase(clusterSettings.config.getString(key)) match {
+        case "off" => Duration.Undefined
+        case _     => clusterSettings.config.getMillisDuration(key).requiring(_ >= Duration.Zero, key + " >= 0s, or off")
+      }
+    } else
+      Duration.Undefined
+  }
+
+  override def downRemovalMargin: FiniteDuration = clusterSettings.DownRemovalMargin
+
+  override def downingActorProps: Option[Props] =
+    AutoDownUnreachableAfter match {
+      case d: FiniteDuration => Some(AutoDown.props(d))
+      case _                 => None // auto-down-unreachable-after = off
+    }
+}
 
 /**
  * INTERNAL API
@@ -23,26 +88,6 @@ private[cluster] object AutoDown {
     Props(classOf[AutoDown], autoDownUnreachableAfter)
 
   final case class UnreachableTimeout(node: UniqueAddress)
-}
-
-/**
- * Used when no custom provider is configured and 'auto-down-unreachable-after' is enabled.
- */
-final class AutoDowning(system: ActorSystem) extends DowningProvider {
-
-  private def clusterSettings = Cluster(system).settings
-
-  @silent("deprecated")
-  override def downRemovalMargin: FiniteDuration = clusterSettings.DownRemovalMargin
-
-  override def downingActorProps: Option[Props] =
-    clusterSettings.AutoDownUnreachableAfter match {
-      case d: FiniteDuration => Some(AutoDown.props(d))
-      case _                 =>
-        // I don't think this can actually happen
-        throw new ConfigurationException(
-          "AutoDowning downing provider selected but 'akka.cluster.auto-down-unreachable-after' not set")
-    }
 }
 
 /**
@@ -68,9 +113,7 @@ private[cluster] class AutoDown(autoDownUnreachableAfter: FiniteDuration)
 
   // re-subscribe when restart
   override def preStart(): Unit = {
-    log.warning(
-      "Don't use auto-down feature of Akka Cluster in production. " +
-      "See 'Auto-downing (DO NOT USE)' section of Akka Cluster documentation.")
+    log.debug("Auto-down is enabled in test.")
     cluster.subscribe(self, classOf[ClusterDomainEvent])
     super.preStart()
   }
@@ -81,11 +124,7 @@ private[cluster] class AutoDown(autoDownUnreachableAfter: FiniteDuration)
 
   override def down(node: Address): Unit = {
     require(leader)
-    logInfo(
-      "Leader is auto-downing unreachable node [{}]. " +
-      "Don't use auto-down feature of Akka Cluster in production. " +
-      "See 'Auto-downing (DO NOT USE)' section of Akka Cluster documentation.",
-      node)
+    logInfo("Leader is auto-downing unreachable node [{}].", node)
     cluster.down(node)
   }
 

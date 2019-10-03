@@ -227,14 +227,6 @@ graceful leaving process of a cluster member.
 
 See @ref:[removal of Internal Cluster Sharding Data](typed/cluster-sharding.md#removal-of-internal-cluster-sharding-data) in the documentation of the new APIs.
 
-## Configuration
-
-`ClusterShardingSettings` is a parameter to the `start` method of
-the `ClusterSharding` extension, i.e. each each entity type can be configured with different settings
-if needed.
-
-See @ref:[configuration](typed/cluster-sharding.md#configuration) for more information.
-
 ## Inspecting cluster sharding state
 
 Two requests to inspect the cluster state are available:
@@ -256,20 +248,13 @@ directly sending messages to the individual entities.
 
 ## Lease
 
-A @ref[lease](coordination.md) can be used as an additional safety measure to ensure a shard 
-does not run on two nodes.
+A lease can be used as an additional safety measure to ensure a shard does not run on two nodes.
+See @ref:[Lease](typed/cluster-sharding.md#lease) in the documentation of the new APIs.
 
-Reasons for how this can happen:
+## Configuration
 
-* Network partitions without an appropriate downing provider
-* Mistakes in the deployment process leading to two separate Akka Clusters
-* Timing issues between removing members from the Cluster on one side of a network partition and shutting them down on the other side
+`ClusterShardingSettings` is a parameter to the `start` method of
+the `ClusterSharding` extension, i.e. each each entity type can be configured with different settings
+if needed.
 
-A lease can be a final backup that means that each shard won't create child entity actors unless it has the lease. 
-
-To use a lease for sharding set `akka.cluster.sharding.use-lease` to the configuration location
-of the lease to use. Each shard will try and acquire a lease with with the name `<actor system name>-shard-<type name>-<shard id>` and
-the owner is set to the `Cluster(system).selfAddress.hostPort`.
-
-If a shard can't acquire a lease it will remain uninitialized so messages for entities it owns will
-be buffered in the `ShardRegion`. If the lease is lost after initialization the Shard will be terminated.
+See @ref:[configuration](typed/cluster-sharding.md#configuration) for more information.

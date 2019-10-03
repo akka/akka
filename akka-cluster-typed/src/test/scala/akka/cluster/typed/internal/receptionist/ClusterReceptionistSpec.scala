@@ -52,7 +52,6 @@ object ClusterReceptionistSpec {
       }
 
       akka.cluster {
-        #auto-down-unreachable-after = 0s
         jmx.multi-mbeans-in-same-jvm = on
         failure-detector.acceptable-heartbeat-pause = 3s
       }

@@ -16,12 +16,16 @@ final case class SingletonClusterMultiNodeConfig(failureDetectorPuppet: Boolean)
   val first = role("first")
   val second = role("second")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
       akka.cluster {
-        auto-down-unreachable-after = 0s
+        downing-provider-class = akka.cluster.testkit.AutoDowning
+        testkit.auto-down-unreachable-after = 0s
         failure-detector.threshold = 4
       }
-    """)).withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
+    """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig(failureDetectorPuppet)))
 
 }
 

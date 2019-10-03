@@ -44,7 +44,8 @@ abstract class MultiNodeClusterShardingConfig(
       .withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = $loglevel
       akka.actor.provider = "cluster"
-      akka.cluster.auto-down-unreachable-after = 0s
+      akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+      akka.cluster.testkit.auto-down-unreachable-after = 0s
       akka.remote.log-remote-lifecycle-events = off
       akka.cluster.sharding.state-store-mode = "$mode"
       akka.cluster.sharding.distributed-data.durable.lmdb {

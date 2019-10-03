@@ -30,7 +30,8 @@ import scala.concurrent.duration._
 object ClusterSpec {
   val config = """
     akka.cluster {
-      auto-down-unreachable-after = 0s
+      downing-provider-class = akka.cluster.testkit.AutoDowning
+      testkit.auto-down-unreachable-after = 0s
       periodic-tasks-initial-delay = 120 seconds // turn off scheduled tasks
       publish-stats-interval = 0 s # always, when it happens
       failure-detector.implementation-class = akka.cluster.FailureDetectorPuppet

@@ -255,95 +255,69 @@ after the restart, when it come up as new incarnation of existing member in the 
 trying to join in, then the existing one will be removed from the cluster and then it will
 be allowed to join.
 
-<a id="automatic-vs-manual-downing"></a>
-### Downing
-
-When a member is considered by the failure detector to be `unreachable` the
-leader is not allowed to perform its duties, such as changing status of
-new joining members to 'Up'. The node must first become `reachable` again, or the
-status of the unreachable member must be changed to 'Down'. Changing status to 'Down'
-can be performed automatically or manually. By default it must be done manually, using
-@ref:[JMX](../additional/operations.md#jmx) or @ref:[HTTP](../additional/operations.md#http).
-
-It can also be performed programmatically with @scala[`Cluster(system).down(address)`]@java[`Cluster.get(system).down(address)`].
-
-If a node is still running and sees its self as Down it will shutdown. @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will automatically
-run if `run-coordinated-shutdown-when-down` is set to `on` (the default) however the node will not try
-and leave the cluster gracefully so sharding and singleton migration will not occur.
-
-A production solution for the downing problem is provided by
-[Split Brain Resolver](http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html),
-which is part of the [Lightbend Reactive Platform](http://www.lightbend.com/platform).
-If you don’t use RP, you should anyway carefully read the [documentation](http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html)
-of the Split Brain Resolver and make sure that the solution you are using handles the concerns
-described there.
-
-### Auto-downing - DO NOT USE
-
-There is an automatic downing feature that you should not use in production. For testing you can enable it with configuration:
-
-```
-akka.cluster.auto-down-unreachable-after = 120s
-```
-
-This means that the cluster leader member will change the `unreachable` node
-status to `down` automatically after the configured time of unreachability.
-
-This is a naïve approach to remove unreachable nodes from the cluster membership.
-It can be useful during development but in a production environment it will eventually breakdown the cluster. 
-When a network partition occurs, both sides of the partition will see the other side as unreachable and remove it from the cluster.
-This results in the formation of two separate, disconnected, clusters (known as *Split Brain*).
-
-This behaviour is not limited to network partitions. It can also occur if a node
-in the cluster is overloaded, or experiences a long GC pause.
-
-@@@ warning
-
-We recommend against using the auto-down feature of Akka Cluster in production. It
-has multiple undesirable consequences for production systems.
-
-If you are using @ref:[Cluster Singleton](cluster-singleton.md) or @ref:[Cluster Sharding](cluster-sharding.md) it can break the contract provided by 
-those features. Both provide a guarantee that an actor will be unique in a cluster.
-With the auto-down feature enabled, it is possible for multiple independent clusters
-to form (*Split Brain*). When this happens the guaranteed uniqueness will no
-longer be true resulting in undesirable behaviour in the system.
-
-This is even more severe when @ref:[Akka Persistence](persistence.md) is used in
-conjunction with Cluster Sharding. In this case, the lack of unique actors can 
-cause multiple actors to write to the same journal. Akka Persistence operates on a
-single writer principle. Having multiple writers will corrupt the journal
-and make it unusable. 
-
-Finally, even if you don't use features such as Persistence, Sharding, or Singletons, 
-auto-downing can lead the system to form multiple small clusters. These small
-clusters will be independent from each other. They will be unable to communicate
-and as a result you may experience performance degradation. Once this condition
-occurs, it will require manual intervention in order to reform the cluster.
-
-Because of these issues, auto-downing should **never** be used in a production environment.
-
-@@@
-
 ### Leaving
 
-There are two ways to remove a member from the cluster.
+There are a few ways to remove a member from the cluster.
 
-1. The recommended way to leave a cluster is a graceful exit, informing the cluster that a node shall leave. 
-This can be performed using @ref:[JMX](../additional/operations.md#jmx) or @ref:[HTTP](../additional/operations.md#http). 
-This method will offer faster hand off to peer nodes during node shutdown.
-1. When a graceful exit is not possible, you can stop the actor system (or the JVM process, for example a SIGTERM sent from the environment). It will be detected
-as unreachable and removed after the automatic or manual downing.
+1. The recommended way to leave a cluster is a graceful exit, informing the cluster that a node shall leave.
+  This is performed by @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) when the `ActorSystem`
+  is terminated and also when a SIGTERM is sent from the environment to stop the JVM process.
+1. Graceful exit can also be performed using @ref:[HTTP](../additional/operations.md#http) or @ref:[JMX](../additional/operations.md#jmx). 
+1. When a graceful exit is not possible, for example in case of abrupt termination of the the JVM process, the node
+  will be detected as unreachable by other nodes and removed after @ref:[Downing](#downing).
 
-The @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will automatically run when the cluster node sees itself as
+Graceful leaving will offer faster hand off to peer nodes during node shutdown than abrupt termination and downing.
+
+The @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will also run when the cluster node sees itself as
 `Exiting`, i.e. leaving from another node will trigger the shutdown process on the leaving node.
 Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and
 Cluster Sharding are added automatically when Akka Cluster is used, i.e. running the shutdown
 process will also trigger the graceful leaving if it's not already in progress.
 
 Normally this is handled automatically, but in case of network failures during this process it might still
-be necessary to set the node’s status to `Down` in order to complete the removal. For handling network failures
-see [Split Brain Resolver](http://developer.lightbend.com/docs/akka-commercial-addons/current/split-brain-resolver.html),
-part of the [Lightbend Reactive Platform](http://www.lightbend.com/platform).
+be necessary to set the node’s status to `Down` in order to complete the removal, see @ref:[Downing](#downing).
+
+### Downing
+
+In many cases a member can gracefully exit from the cluster as described in @ref:[Leaving](#leaving), but
+there are scenarios when an explicit downing decision is needed before it can be removed. For example in case
+of abrupt termination of the the JVM process, system overload that doesn't recover, or network partitions
+that don't heal. I such cases the node(s) will be detected as unreachable by other nodes, but they must also
+be marked as `Down` before they are removed.
+
+When a member is considered by the failure detector to be `unreachable` the
+leader is not allowed to perform its duties, such as changing status of
+new joining members to 'Up'. The node must first become `reachable` again, or the
+status of the unreachable member must be changed to `Down`. Changing status to `Down`
+can be performed automatically or manually.
+
+By default, downing must be performed manually using @ref:[HTTP](../additional/operations.md#http) or @ref:[JMX](../additional/operations.md#jmx).
+
+Note that @ref:[Cluster Singleton](cluster-singleton.md) or @ref:[Cluster Sharding entities](cluster-sharding.md) that
+are running on a crashed (unreachable) node will not be started on another node until the previous node has
+been removed from the Cluster. Removal of crashed (unreachable) nodes is performed after a downing decision.
+
+A production solution for downing is provided by
+[Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html),
+which is part of the [Lightbend Platform](http://www.lightbend.com/platform).
+If you don’t have a Lightbend Platform Subscription, you should still carefully read the 
+[documentation](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
+of the Split Brain Resolver and make sure that the solution you are using handles the concerns and scenarios
+described there.
+
+A custom downing strategy can be implemented with a @apidoc[akka.cluster.DowningProvider] and enabled with
+configuration `akka.cluster.downing-provider-class`.  
+
+Downing can also be performed programmatically with @scala[`Cluster(system).manager ! Down(address)`]@java[`Cluster.get(system).manager().tell(Down(address))`],
+but that is mostly useful from tests and when implementing a `DowningProvider`.
+
+If a crashed node is restarted with the same hostname and port and joining the cluster again the previous incarnation
+of that member will be downed and removed. The new join attempt with same hostname and port is used as evidence
+that the previous is not alive any more.
+
+If a node is still running and sees its self as `Down` it will shutdown. @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will automatically
+run if `run-coordinated-shutdown-when-down` is set to `on` (the default) however the node will not try
+and leave the cluster gracefully.
 
 ## Node Roles
 

@@ -31,7 +31,8 @@ class ClusterSingletonRestart2Spec
   akka.loglevel = INFO
   akka.cluster.roles = [singleton]
   akka.actor.provider = akka.cluster.ClusterActorRefProvider
-  akka.cluster.auto-down-unreachable-after = 2s
+  akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+  akka.cluster.testkit.auto-down-unreachable-after = 2s
   akka.cluster.singleton.min-number-of-hand-over-retries = 5
   akka.remote {
     classic.netty.tcp {

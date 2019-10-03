@@ -43,10 +43,10 @@ if that feature is enabled.
 
 @@@ warning
 
-**Don't use Cluster Sharding together with Automatic Downing**,
-since it allows the cluster to split up into two separate clusters, which in turn will result
-in *multiple shards and entities* being started, one in each separate cluster!
-See @ref:[Downing](cluster.md#automatic-vs-manual-downing).
+Make sure to not use a Cluster downing strategy that may split the cluster into several separate clusters in
+case of network problems or system overload (long GC pauses), since that will result in *multiple shards and entities*
+being started, one in each separate cluster!
+See @ref:[Downing](cluster.md#downing).
 
 @@@
 
@@ -304,6 +304,26 @@ rebalanced to other nodes.
 See @ref:[How To Startup when Cluster Size Reached](cluster.md#how-to-startup-when-a-cluster-size-is-reached)
 for more information about `min-nr-of-members`.
 
+## Lease
+
+A @ref[lease](../coordination.md) can be used as an additional safety measure to ensure a shard 
+does not run on two nodes.
+
+Reasons for how this can happen:
+
+* Network partitions without an appropriate downing provider
+* Mistakes in the deployment process leading to two separate Akka Clusters
+* Timing issues between removing members from the Cluster on one side of a network partition and shutting them down on the other side
+
+A lease can be a final backup that means that each shard won't create child entity actors unless it has the lease. 
+
+To use a lease for sharding set `akka.cluster.sharding.use-lease` to the configuration location
+of the lease to use. Each shard will try and acquire a lease with with the name `<actor system name>-shard-<type name>-<shard id>` and
+the owner is set to the `Cluster(system).selfAddress.hostPort`.
+
+If a shard can't acquire a lease it will remain uninitialized so messages for entities it owns will
+be buffered in the `ShardRegion`. If the lease is lost after initialization the Shard will be terminated.
+
 ## Removal of internal Cluster Sharding data
 
 Removal of internal Cluster Sharding data is only relevant for "Persistent Mode".
@@ -326,15 +346,6 @@ cannot startup because of corrupt data, which may happen if accidentally
 two clusters were running at the same time, e.g. caused by using auto-down
 and there was a network partition.
 
-@@@ warning
-
-**Don't use Cluster Sharding together with Automatic Downing**,
-since it allows the cluster to split up into two separate clusters, which in turn will result
-in *multiple shards and entities* being started, one in each separate cluster!
-See @ref:[Downing](cluster.md#automatic-vs-manual-downing).
-
-@@@
-
 Use this program as a standalone Java main program:
 
 ```
@@ -347,7 +358,7 @@ The program is included in the `akka-cluster-sharding` jar file. It
 is easiest to run it with same classpath and configuration as your ordinary
 application. It can be run from sbt or Maven in similar way.
 
-Specify the entity type names (same as you use in the `start` method
+Specify the entity type names (same as you use in the `init` method
 of `ClusterSharding`) as program arguments.
 
 If you specify `-2.3` as the first program argument it will also try

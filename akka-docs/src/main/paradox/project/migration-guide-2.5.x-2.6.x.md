@@ -11,6 +11,40 @@ is [no longer available as a static method](https://github.com/scala/bug/issues/
 
 If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
 
+## Auto-downing removed
+
+Auto-downing of unreachable Cluster members have been removed after warnings and recommendations against using it
+for many years. It was by default disabled, but could be enabled with configuration
+`akka.cluster.auto-down-unreachable-after`.
+
+For alternatives see the @ref:[documentation about Downing](../typed/cluster.md#downing).
+
+Auto-downing was a naïve approach to remove unreachable nodes from the cluster membership.
+In a production environment it will eventually break down the cluster. 
+When a network partition occurs, both sides of the partition will see the other side as unreachable
+and remove it from the cluster. This results in the formation of two separate, disconnected, clusters
+(known as *Split Brain*).
+
+This behavior is not limited to network partitions. It can also occur if a node in the cluster is
+overloaded, or experiences a long GC pause.
+
+When using @ref:[Cluster Singleton](../typed/cluster-singleton.md) or @ref:[Cluster Sharding](../typed/cluster-sharding.md)
+it can break the contract provided by those features. Both provide a guarantee that an actor will be unique in a cluster.
+With the auto-down feature enabled, it is possible for multiple independent clusters to form (*Split Brain*).
+When this happens the guaranteed uniqueness will no longer be true resulting in undesirable behavior in the system.
+
+This is even more severe when @ref:[Akka Persistence](../typed/persistence.md) is used in conjunction with
+Cluster Sharding. In this case, the lack of unique actors can cause multiple actors to write to the same journal.
+Akka Persistence operates on a single writer principle. Having multiple writers will corrupt the journal
+and make it unusable. 
+
+Finally, even if you don't use features such as Persistence, Sharding, or Singletons, auto-downing can lead the
+system to form multiple small clusters. These small clusters will be independent from each other. They will be
+unable to communicate and as a result you may experience performance degradation. Once this condition occurs,
+it will require manual intervention in order to reform the cluster.
+
+Because of these issues, auto-downing should **never** be used in a production environment.
+
 ## Removed features that were deprecated
 
 After being deprecated since 2.5.0, the following have been removed in Akka 2.6.
@@ -94,13 +128,25 @@ to make remote interactions look like local method calls.
 Warnings about `TypedActor` have been [mentioned in documentation](https://doc.akka.io/docs/akka/2.5/typed-actors.html#when-to-use-typed-actors)
 for many years.
 
+### akka-protobuf
+
+`akka-protobuf` was never intended to be used by end users but perhaps this was not well-documented.
+Applications should use standard Protobuf dependency instead of `akka-protobuf`. The artifact is still
+published, but the transitive dependency to `akka-protobuf` has been removed.
+
+Akka is now using Protobuf version 3.9.0 for serialization of messages defined by Akka.
+
+### Cluster Client
+
+Cluster client has been deprecated as of 2.6 in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
+It is not advised to build new applications with Cluster client, and existing users @ref[should migrate to Akka gRPC](../cluster-client.md#migration-to-akka-grpc).
 
 ### akka.Main
 
 `akka.Main` is deprecated in favour of starting the `ActorSystem` from a custom main class instead. `akka.Main` was not
 adding much value and typically a custom main class is needed anyway.
 
-@@ Remoting
+## Remoting
 
 ### Default remoting is now Artery TCP
 
@@ -184,20 +230,7 @@ For TCP:
 
 Classic remoting is deprecated but can be used in `2.6.` Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `false`. Further, any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
-are specific to classic search for them in: [`akka-remote/reference.conf`](/akka-remote/src/main/resources/reference.conf)
-
-### akka-protobuf
-
-`akka-protobuf` was never intended to be used by end users but perhaps this was not well-documented.
-Applications should use standard Protobuf dependency instead of `akka-protobuf`. The artifact is still
-published, but the transitive dependency to `akka-protobuf` has been removed.
-
-Akka is now using Protobuf version 3.9.0 for serialization of messages defined by Akka.
-
-### Cluster Client
-
-Cluster client has been deprecated as of 2.6 in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
-It is not advised to build new applications with Cluster client, and existing users @ref[should migrate to Akka gRPC](../cluster-client.md#migration-to-akka-grpc).
+are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration.md#config-akka-remote).
 
 ## Java Serialization
 
@@ -235,14 +268,12 @@ handling that type and it was previously "accidentally" serialized with Java ser
 The following documents configuration changes and behavior changes where no action is required. In some cases the old
 behavior can be restored via configuration.
 
-### Remoting
-
-#### Remoting dependencies have been made optional
+### Remoting dependencies have been made optional
 
 Classic remoting depends on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
 to be explicitly added. See @ref[classic remoting](../remoting.md) or @ref[artery remoting](../remoting-artery.md) for instructions.
 
-#### Remote watch and deployment have been disabled without Cluster use
+### Remote watch and deployment have been disabled without Cluster use
 
 By default, these remoting features are disabled when not using Akka Cluster:
 

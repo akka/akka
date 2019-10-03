@@ -55,7 +55,8 @@ object ClusterShardingQueriesSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "cluster"
     akka.remote.classic.log-remote-lifecycle-events = off
     akka.log-dead-letters-during-shutdown = off
-    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = 0s
     akka.cluster.sharding {
       state-store-mode = "ddata"
       shard-region-query-timeout = 0ms
