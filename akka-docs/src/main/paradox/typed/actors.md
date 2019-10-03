@@ -25,20 +25,16 @@ explicit locking and thread management, making it easier to write correct
 concurrent and parallel systems. Actors were defined in the 1973 paper by Carl
 Hewitt but have been popularized by the Erlang language, and used for example at
 Ericsson with great success to build highly concurrent and reliable telecom
-systems.
-
-The API of Akka’s Actors is similar to Scala Actors which has borrowed some of
-its syntax from Erlang.
-
-Since Akka enforces parental supervision every actor is supervised and
-(potentially) the supervisor of its children, it is advisable that you
-familiarize yourself with @ref:[Actor Systems](../general/actor-systems.md) and @ref:[supervision](../general/supervision.md)
-and it may also help to read @ref:[Actor References, Paths and Addresses](../general/addressing.md).
-
+systems. The API of Akka’s Actors has borrowed some of its syntax from Erlang.
+ 
 ## First example
 
 If you are new to Akka you might want to start with reading the @ref:[Getting Started Guide](guide/introduction.md)
-and then come back here to learn more.
+and then come back here to learn more. 
+
+It is helpful to become familiar with the foundational, external and internal
+ecosystem of your Actors, to see what you can leverage and customize as needed, see
+@ref:[Actor Systems](../general/actor-systems.md) and @ref:[Actor References, Paths and Addresses](../general/addressing.md).
 
 As discussed in @ref:[Actor Systems](../general/actor-systems.md) Actors are about
 sending messages between independent units of computation, but what does that
@@ -445,6 +441,3 @@ the `Main` Actor terminates there is nothing more to do.
 Therefore after creating the Actor system with the `Main` Actor’s
 `Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
 the JVM alive until the root actor stops.
-
-@@include[includes.md](../includes/actors.md) { #actors-and-exceptions }
-See @ref:[supervision](../general/supervision.md).

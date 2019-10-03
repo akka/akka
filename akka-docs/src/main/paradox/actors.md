@@ -1271,8 +1271,7 @@ then you should use the @scala[`UnboundedStash` trait] @java[`AbstractActorWithU
 
 @@@
 
-@@include[includes.md](includes/actors.md) { #actors-and-exceptions }
-See @ref:[supervision](general/supervision.md).
+See @ref:[supervision](general/supervision.md) and @ref:[supervision](general/supervision.md#actors-and-exceptions).
 
 @@@ div { .group-scala }
 
