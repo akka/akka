@@ -313,6 +313,26 @@ object Sink {
    * [[akka.stream.javadsl.SinkQueueWithCancel.pull]] method is pulling element from the stream and returns ``CompletionStage[Option[T]]``.
    * `CompletionStage` completes when element is available.
    *
+   * Before calling pull method second time need to ensure that request buffer is not full or wait until some of the previous CompletionStages completes.
+   * Pull returns Failed future with ''IllegalStateException'' if request buffer is full.
+   *
+   * `Sink` will request at most number of elements equal to size of `inputBuffer` from
+   * upstream and then stop back pressure.  You can configure size of input
+   * buffer by using [[Sink.withAttributes]] method.
+   *
+   * For stream completion you need to pull all elements from [[akka.stream.javadsl.SinkQueueWithCancel]] including last None
+   * as completion marker
+   *
+   * @see [[akka.stream.javadsl.SinkQueueWithCancel]]
+   */
+  def queue[T](requestBufferSize: Int): Sink[T, SinkQueueWithCancel[T]] =
+    new Sink(scaladsl.Sink.queue[T](requestBufferSize).mapMaterializedValue(_.asJava))
+
+  /**
+   * Creates a `Sink` that is materialized as an [[akka.stream.javadsl.SinkQueueWithCancel]].
+   * [[akka.stream.javadsl.SinkQueueWithCancel.pull]] method is pulling element from the stream and returns ``CompletionStage[Option[T]]``.
+   * `CompletionStage` completes when element is available.
+   *
    * Before calling pull method second time you need to wait until previous CompletionStage completes.
    * Pull returns Failed future with ''IllegalStateException'' if previous future has not yet completed.
    *
@@ -325,8 +345,7 @@ object Sink {
    *
    * @see [[akka.stream.javadsl.SinkQueueWithCancel]]
    */
-  def queue[T](): Sink[T, SinkQueueWithCancel[T]] =
-    new Sink(scaladsl.Sink.queue[T]().mapMaterializedValue(_.asJava))
+  def queue[T](): Sink[T, SinkQueueWithCancel[T]] = queue(1)
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,

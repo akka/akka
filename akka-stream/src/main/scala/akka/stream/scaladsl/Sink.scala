@@ -553,7 +553,24 @@ object Sink {
   def queue[T](requestBufferSize: Int): Sink[T, SinkQueueWithCancel[T]] =
     Sink.fromGraph(new QueueSink(requestBufferSize))
 
-  def queue[T](): Sink[T, SinkQueueWithCancel[T]] = Sink.fromGraph(new QueueSink(1))
+  /**
+   * Creates a `Sink` that is materialized as an [[akka.stream.scaladsl.SinkQueueWithCancel]].
+   * [[akka.stream.scaladsl.SinkQueueWithCancel.pull]] method is pulling element from the stream and returns ``Future[Option[T]]``.
+   * `Future` completes when element is available.
+   *
+   * Before calling pull method second time you need to wait until previous Future completes.
+   * Pull returns Failed future with ''IllegalStateException'' if previous future has not yet completed.
+   *
+   * `Sink` will request at most number of elements equal to size of `inputBuffer` from
+   * upstream and then stop back pressure.  You can configure size of input
+   * buffer by using [[Sink.withAttributes]] method.
+   *
+   * For stream completion you need to pull all elements from [[akka.stream.scaladsl.SinkQueueWithCancel]] including last None
+   * as completion marker
+   *
+   * See also [[akka.stream.scaladsl.SinkQueueWithCancel]]
+   */
+  def queue[T](): Sink[T, SinkQueueWithCancel[T]] = queue(1)
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
