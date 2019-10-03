@@ -1,8 +1,0 @@
-# Protobuf 3
-ProblemFilters.exclude[Problem]("akka.cluster.client.protobuf.msg.*")
-ProblemFilters.exclude[Problem]("akka.cluster.pubsub.protobuf.msg.*")
-
-# #27487 Singleton issue when several nodes leaving
-ProblemFilters.exclude[Problem]("akka.cluster.singleton.ClusterSingletonManager#Internal#OldestChangedBuffer*")
-ProblemFilters.exclude[Problem]("akka.cluster.singleton.ClusterSingletonManager#Internal#YoungerData.*")
-ProblemFilters.exclude[Problem]("akka.cluster.singleton.ClusterSingletonManager#Internal#BecomingOldestData.*")

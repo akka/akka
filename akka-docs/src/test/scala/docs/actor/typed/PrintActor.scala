@@ -4,15 +4,15 @@
 
 package docs.actor.typed
 
-// #print-actor
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 
+// #print-actor
 object PrintActor {
-  val behavior: Behavior[Integer] =
-    Behaviors.receiveMessage(i => {
-      println(s"PrintActor: ${i}")
+  def apply(): Behavior[Integer] =
+    Behaviors.receiveMessage { i =>
+      println(s"PrintActor: $i")
       Behaviors.same
-    })
+    }
 }
 // #print-actor

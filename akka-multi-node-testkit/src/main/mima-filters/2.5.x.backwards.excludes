@@ -1,6 +1,0 @@
-# Protobuf 3
-ProblemFilters.exclude[Problem]("akka.remote.testconductor.TestConductorProtocol*")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.testconductor.ProtobufDecoder.this")
-
-# Remove AFR #27581
-ProblemFilters.exclude[MissingClassProblem]("akka.remote.testkit.FlightRecordingSupport")

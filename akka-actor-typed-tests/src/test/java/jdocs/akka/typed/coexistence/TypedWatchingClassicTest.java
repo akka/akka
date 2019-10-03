@@ -39,11 +39,10 @@ public class TypedWatchingClassicTest extends JUnitSuite {
       INSTANCE
     }
 
-    private final akka.actor.typed.javadsl.ActorContext<Command> context;
     private final akka.actor.ActorRef second;
 
     private Typed(ActorContext<Command> context, akka.actor.ActorRef second) {
-      this.context = context;
+      super(context);
       this.second = second;
     }
 
@@ -70,7 +69,7 @@ public class TypedWatchingClassicTest extends JUnitSuite {
     }
 
     private Behavior<Command> onPong() {
-      Adapter.stop(context, second);
+      Adapter.stop(getContext(), second);
       return this;
     }
   }

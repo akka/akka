@@ -1,2 +1,0 @@
-# Upgrade to protobuf 3
-ProblemFilters.exclude[Problem]("akka.cluster.ddata.protobuf.*")

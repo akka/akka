@@ -35,7 +35,6 @@ object PerformanceSpec extends MultiNodeConfig {
     akka.remote.classic.log-frame-size-exceeding=1000b
     akka.testconductor.barrier-timeout = 60 s
     akka.cluster.distributed-data.gossip-interval = 1 s
-    akka.actor.serialize-messages = off
 
     #akka.cluster.distributed-data.durable.keys = ["*"]
     #akka.cluster.distributed-data.durable.lmdb.dir = target/PerformanceSpec-${System.currentTimeMillis}-ddata

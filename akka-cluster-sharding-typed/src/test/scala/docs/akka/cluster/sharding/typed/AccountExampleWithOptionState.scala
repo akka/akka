@@ -7,10 +7,9 @@ package docs.akka.cluster.sharding.typed
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.cluster.sharding.typed.scaladsl.EventSourcedEntity
-import akka.persistence.typed.ExpectingReply
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
-import akka.serialization.jackson.CborSerializable
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.serialization.jackson.CborSerializable
 
 /**
@@ -18,77 +17,75 @@ import akka.serialization.jackson.CborSerializable
  * - Option[State] that is starting with None as the initial state
  * - event handlers in the state classes
  * - command handlers in the state classes
- * - replies of various types, using ExpectingReply and withEnforcedReplies
+ * - replies of various types, using withEnforcedReplies
  */
 object AccountExampleWithOptionState {
 
   //#account-entity
   object AccountEntity {
     // Command
-    sealed trait AccountCommand[Reply] extends ExpectingReply[Reply] with CborSerializable
-    final case class CreateAccount(override val replyTo: ActorRef[OperationResult])
-        extends AccountCommand[OperationResult]
-    final case class Deposit(amount: BigDecimal, override val replyTo: ActorRef[OperationResult])
-        extends AccountCommand[OperationResult]
-    final case class Withdraw(amount: BigDecimal, override val replyTo: ActorRef[OperationResult])
-        extends AccountCommand[OperationResult]
-    final case class GetBalance(override val replyTo: ActorRef[CurrentBalance]) extends AccountCommand[CurrentBalance]
-    final case class CloseAccount(override val replyTo: ActorRef[OperationResult])
-        extends AccountCommand[OperationResult]
+    sealed trait Command[Reply <: CommandReply] extends CborSerializable {
+      def replyTo: ActorRef[Reply]
+    }
+    final case class CreateAccount(replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    final case class Deposit(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    final case class Withdraw(amount: BigDecimal, replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
+    final case class GetBalance(replyTo: ActorRef[CurrentBalance]) extends Command[CurrentBalance]
+    final case class CloseAccount(replyTo: ActorRef[OperationResult]) extends Command[OperationResult]
 
     // Reply
-    sealed trait AccountCommandReply extends CborSerializable
-    sealed trait OperationResult extends AccountCommandReply
+    sealed trait CommandReply extends CborSerializable
+    sealed trait OperationResult extends CommandReply
     case object Confirmed extends OperationResult
     final case class Rejected(reason: String) extends OperationResult
-    final case class CurrentBalance(balance: BigDecimal) extends AccountCommandReply
+    final case class CurrentBalance(balance: BigDecimal) extends CommandReply
 
     // Event
-    sealed trait AccountEvent extends CborSerializable
-    case object AccountCreated extends AccountEvent
-    case class Deposited(amount: BigDecimal) extends AccountEvent
-    case class Withdrawn(amount: BigDecimal) extends AccountEvent
-    case object AccountClosed extends AccountEvent
+    sealed trait Event extends CborSerializable
+    case object AccountCreated extends Event
+    case class Deposited(amount: BigDecimal) extends Event
+    case class Withdrawn(amount: BigDecimal) extends Event
+    case object AccountClosed extends Event
 
     val Zero = BigDecimal(0)
 
     // type alias to reduce boilerplate
-    type ReplyEffect = akka.persistence.typed.scaladsl.ReplyEffect[AccountEvent, Option[Account]]
+    type ReplyEffect = akka.persistence.typed.scaladsl.ReplyEffect[Event, Option[Account]]
 
     // State
     sealed trait Account extends CborSerializable {
-      def applyCommand(cmd: AccountCommand[_]): ReplyEffect
-      def applyEvent(event: AccountEvent): Account
+      def applyCommand(cmd: Command[_]): ReplyEffect
+      def applyEvent(event: Event): Account
     }
     case class OpenedAccount(balance: BigDecimal) extends Account {
       require(balance >= Zero, "Account balance can't be negative")
 
-      override def applyCommand(cmd: AccountCommand[_]): ReplyEffect =
+      override def applyCommand(cmd: Command[_]): ReplyEffect =
         cmd match {
-          case c: Deposit =>
-            Effect.persist(Deposited(c.amount)).thenReply(c)(_ => Confirmed)
+          case Deposit(amount, replyTo) =>
+            Effect.persist(Deposited(amount)).thenReply(replyTo)(_ => Confirmed)
 
-          case c: Withdraw =>
-            if (canWithdraw(c.amount))
-              Effect.persist(Withdrawn(c.amount)).thenReply(c)(_ => Confirmed)
+          case Withdraw(amount, replyTo) =>
+            if (canWithdraw(amount))
+              Effect.persist(Withdrawn(amount)).thenReply(replyTo)(_ => Confirmed)
             else
-              Effect.reply(c)(Rejected(s"Insufficient balance $balance to be able to withdraw ${c.amount}"))
+              Effect.reply(replyTo)(Rejected(s"Insufficient balance $balance to be able to withdraw $amount"))
 
-          case c: GetBalance =>
-            Effect.reply(c)(CurrentBalance(balance))
+          case GetBalance(replyTo) =>
+            Effect.reply(replyTo)(CurrentBalance(balance))
 
-          case c: CloseAccount =>
+          case CloseAccount(replyTo) =>
             if (balance == Zero)
-              Effect.persist(AccountClosed).thenReply(c)(_ => Confirmed)
+              Effect.persist(AccountClosed).thenReply(replyTo)(_ => Confirmed)
             else
-              Effect.reply(c)(Rejected("Can't close account with non-zero balance"))
+              Effect.reply(replyTo)(Rejected("Can't close account with non-zero balance"))
 
-          case c: CreateAccount =>
-            Effect.reply(c)(Rejected("Account is already created"))
+          case CreateAccount(replyTo) =>
+            Effect.reply(replyTo)(Rejected("Account is already created"))
 
         }
 
-      override def applyEvent(event: AccountEvent): Account =
+      override def applyEvent(event: Event): Account =
         event match {
           case Deposited(amount) => copy(balance = balance + amount)
           case Withdrawn(amount) => copy(balance = balance - amount)
@@ -102,29 +99,28 @@ object AccountExampleWithOptionState {
 
     }
     case object ClosedAccount extends Account {
-      override def applyCommand(cmd: AccountCommand[_]): ReplyEffect =
+      override def applyCommand(cmd: Command[_]): ReplyEffect =
         cmd match {
           case c @ (_: Deposit | _: Withdraw) =>
-            Effect.reply(c)(Rejected("Account is closed"))
-          case c: GetBalance =>
-            Effect.reply(c)(CurrentBalance(Zero))
-          case c: CloseAccount =>
-            Effect.reply(c)(Rejected("Account is already closed"))
-          case c: CreateAccount =>
-            Effect.reply(c)(Rejected("Account is already created"))
+            Effect.reply(c.replyTo)(Rejected("Account is closed"))
+          case GetBalance(replyTo) =>
+            Effect.reply(replyTo)(CurrentBalance(Zero))
+          case CloseAccount(replyTo) =>
+            Effect.reply(replyTo)(Rejected("Account is already closed"))
+          case CreateAccount(replyTo) =>
+            Effect.reply(replyTo)(Rejected("Account is already created"))
         }
 
-      override def applyEvent(event: AccountEvent): Account =
+      override def applyEvent(event: Event): Account =
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
 
-    val TypeKey: EntityTypeKey[AccountCommand[_]] =
-      EntityTypeKey[AccountCommand[_]]("Account")
+    val TypeKey: EntityTypeKey[Command[_]] =
+      EntityTypeKey[Command[_]]("Account")
 
-    def apply(accountNumber: String): Behavior[AccountCommand[_]] = {
-      EventSourcedEntity.withEnforcedReplies[AccountCommand[_], AccountEvent, Option[Account]](
-        TypeKey,
-        accountNumber,
+    def apply(persistenceId: PersistenceId): Behavior[Command[_]] = {
+      EventSourcedBehavior.withEnforcedReplies[Command[_], Event, Option[Account]](
+        persistenceId,
         None,
         (state, cmd) =>
           state match {
@@ -138,17 +134,17 @@ object AccountExampleWithOptionState {
           })
     }
 
-    def onFirstCommand(cmd: AccountCommand[_]): ReplyEffect = {
+    def onFirstCommand(cmd: Command[_]): ReplyEffect = {
       cmd match {
-        case c: CreateAccount =>
-          Effect.persist(AccountCreated).thenReply(c)(_ => Confirmed)
+        case CreateAccount(replyTo) =>
+          Effect.persist(AccountCreated).thenReply(replyTo)(_ => Confirmed)
         case _ =>
           // CreateAccount before handling any other commands
           Effect.unhandled.thenNoReply()
       }
     }
 
-    def onFirstEvent(event: AccountEvent): Account = {
+    def onFirstEvent(event: Event): Account = {
       event match {
         case AccountCreated => OpenedAccount(Zero)
         case _              => throw new IllegalStateException(s"unexpected event [$event] in state [EmptyAccount]")

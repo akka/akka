@@ -588,12 +588,6 @@ object ActorAttributes {
   def syncProcessingLimit(limit: Int): Attributes =
     Attributes(SyncProcessingLimit(limit))
 
-  /**
-   * FIXME Is this really needed anymore now that we have indirect dispatcher config?
-   */
-  final case class BlockingIoDispatcher(dispatcher: String) extends MandatoryAttribute
-  def blockingIoDispatcher(dispatcher: String): Attributes =
-    Attributes(BlockingIoDispatcher(dispatcher))
 }
 
 /**

@@ -21,11 +21,12 @@ object Dependencies {
   // needs to be inline with the aeron version
   val agronaVersion = "1.0.7"
   val nettyVersion = "3.10.6.Final"
-  val jacksonVersion = "2.9.9"
-  val jacksonDatabindVersion = "2.9.9.3"
-  val protobufJavaVersion = "3.9.1"
+  val jacksonVersion = "2.10.0"
+  val jacksonDatabindVersion = "2.10.0"
+  val protobufJavaVersion = "3.9.2"
+  val logbackVersion = "1.2.3"
 
-  val scala212Version = "2.12.9"
+  val scala212Version = "2.12.10"
   val scala213Version = "2.13.0"
 
   val reactiveStreamsVersion = "1.0.3"
@@ -98,7 +99,7 @@ object Dependencies {
 
     val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion
 
-    val logback = "ch.qos.logback" % "logback-classic" % "1.2.3" // EPL 1.0
+    val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"

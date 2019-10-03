@@ -1,6 +1,0 @@
-# Upgrade to protobuf 3
-ProblemFilters.exclude[Problem]("akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages*")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.metrics.protobuf.MessageSerializer.compress")
-ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages#NodeMetrics#MetricOrBuilder.getDefaultInstanceForType")
-
-

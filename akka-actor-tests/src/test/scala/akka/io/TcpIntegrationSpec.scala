@@ -21,7 +21,6 @@ class TcpIntegrationSpec extends AkkaSpec("""
     akka.loglevel = debug
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.tcp.trace-logging = on
-    akka.actor.serialize-creators = on
     """) with TcpIntegrationSpecSupport with TimeLimits with WithLogCapturing {
 
   def verifyActorTermination(actor: ActorRef): Unit = {

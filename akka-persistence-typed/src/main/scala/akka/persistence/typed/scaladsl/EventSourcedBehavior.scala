@@ -15,7 +15,6 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.SnapshotAdapter
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
@@ -59,7 +58,7 @@ object EventSourcedBehavior {
    * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
    * created with [[Effect.reply]], [[Effect.noReply]], [[Effect.thenReply]], or [[Effect.thenNoReply]].
    */
-  def withEnforcedReplies[Command <: ExpectingReply[_], Event, State](
+  def withEnforcedReplies[Command, Event, State](
       persistenceId: PersistenceId,
       emptyState: State,
       commandHandler: (State, Command) => ReplyEffect[Event, State],

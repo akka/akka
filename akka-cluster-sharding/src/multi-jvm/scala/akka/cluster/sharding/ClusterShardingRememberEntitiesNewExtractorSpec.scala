@@ -61,7 +61,8 @@ abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(val mode: S
     ConfigFactory
       .parseString(s"""
     akka.actor.provider = "cluster"
-    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = 0s
     akka.remote.classic.log-remote-lifecycle-events = off
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
     akka.persistence.journal.leveldb-shared {

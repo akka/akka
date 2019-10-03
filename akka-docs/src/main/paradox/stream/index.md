@@ -1,4 +1,9 @@
+---
+project.description: An intuitive and safe way to do asynchronous, non-blocking backpressured stream processing.
+---
 # Streams
+
+@@project-info{ projectId="akka-stream" }
 
 ## Dependency
 

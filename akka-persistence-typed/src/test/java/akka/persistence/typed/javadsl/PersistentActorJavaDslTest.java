@@ -85,17 +85,12 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     INSTANCE
   }
 
-  public static class IncrementWithConfirmation implements Command, ExpectingReply<Done> {
-    private final ActorRef<Done> replyTo;
+  public static class IncrementWithConfirmation implements Command {
+    public final ActorRef<Done> replyTo;
 
     @JsonCreator
     public IncrementWithConfirmation(ActorRef<Done> replyTo) {
       this.replyTo = replyTo;
-    }
-
-    @Override
-    public ActorRef<Done> replyTo() {
-      return replyTo;
     }
   }
 
@@ -107,17 +102,12 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     INSTANCE
   }
 
-  public static class GetValue implements Command, ExpectingReply<State> {
-    private final ActorRef<State> replyTo;
+  public static class GetValue implements Command {
+    public final ActorRef<State> replyTo;
 
     @JsonCreator
     public GetValue(ActorRef<State> replyTo) {
       this.replyTo = replyTo;
-    }
-
-    @Override
-    public ActorRef<State> replyTo() {
-      return replyTo;
     }
   }
 
@@ -233,11 +223,11 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     private ReplyEffect<Event, State> incrementWithConfirmation(
         State state, IncrementWithConfirmation command) {
-      return Effect().persist(new Incremented(1)).thenReply(command, newState -> done());
+      return Effect().persist(new Incremented(1)).thenReply(command.replyTo, newState -> done());
     }
 
     private ReplyEffect<Event, State> getValue(State state, GetValue command) {
-      return Effect().reply(command, state);
+      return Effect().reply(command.replyTo, state);
     }
 
     private Effect<Event, State> incrementLater(State state, IncrementLater command) {

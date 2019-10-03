@@ -31,7 +31,6 @@ object ClusterReceptionistSpec {
       akka.loglevel = DEBUG # issue #24960
       akka.actor {
         provider = cluster
-        serialize-messages = off
         serializers {
           test = "akka.cluster.typed.internal.receptionist.ClusterReceptionistSpec$$PingSerializer"
         }
@@ -53,7 +52,6 @@ object ClusterReceptionistSpec {
       }
 
       akka.cluster {
-        #auto-down-unreachable-after = 0s
         jmx.multi-mbeans-in-same-jvm = on
         failure-detector.acceptable-heartbeat-pause = 3s
       }

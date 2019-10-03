@@ -90,7 +90,7 @@ import scala.util.control.NoStackTrace
         handleSubscriptionTimeout(
           target,
           new SubscriptionTimeoutException(s"Publisher was not attached to upstream within deadline ($millis) ms")
-          with NoStackTrace)
+            with NoStackTrace)
 
       case p: Publisher[_] =>
         log.debug("Cancelling {} (after: {} ms)", p, millis)

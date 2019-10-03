@@ -5,7 +5,6 @@
 package akka.cluster.sharding.typed
 
 import scala.concurrent.duration.FiniteDuration
-import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
@@ -267,8 +266,7 @@ final class ClusterShardingSettings(
     val shardRegionQueryTimeout: FiniteDuration,
     val stateStoreMode: ClusterShardingSettings.StateStoreMode,
     val tuningParameters: ClusterShardingSettings.TuningParameters,
-    val coordinatorSingletonSettings: ClusterSingletonManagerSettings)
-    extends NoSerializationVerificationNeeded {
+    val coordinatorSingletonSettings: ClusterSingletonManagerSettings) {
 
   import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
   import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModePersistence
@@ -310,7 +308,7 @@ final class ClusterShardingSettings(
   def withStateStoreMode(stateStoreMode: ClusterShardingSettings.StateStoreMode): ClusterShardingSettings =
     copy(stateStoreMode = stateStoreMode)
 
-  def withPassivateIdleEntitiesAfter(duration: FiniteDuration): ClusterShardingSettings =
+  def withPassivateIdleEntityAfter(duration: FiniteDuration): ClusterShardingSettings =
     copy(passivateIdleEntityAfter = duration)
 
   def withPassivateIdleEntityAfter(duration: java.time.Duration): ClusterShardingSettings =

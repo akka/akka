@@ -5,12 +5,14 @@
 package docs.akka.cluster.sharding.typed
 
 import scala.concurrent.duration._
+
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.persistence.typed.PersistenceId
 import com.github.ghik.silencer.silent
-import docs.akka.persistence.typed.BlogPostExample
-import docs.akka.persistence.typed.BlogPostExample.BlogCommand
+import docs.akka.persistence.typed.BlogPostEntity
+import docs.akka.persistence.typed.BlogPostEntity.Command
 
 @silent
 object ShardingCompileOnlySpec {
@@ -55,7 +57,7 @@ object ShardingCompileOnlySpec {
     val TypeKey = EntityTypeKey[Counter.Command]("Counter")
 
     val shardRegion: ActorRef[ShardingEnvelope[Counter.Command]] =
-      sharding.init(Entity(typeKey = TypeKey, createBehavior = ctx => Counter(ctx.entityId)))
+      sharding.init(Entity(TypeKey)(createBehavior = entityContext => Counter(entityContext.entityId)))
     //#init
 
     //#send
@@ -67,12 +69,12 @@ object ShardingCompileOnlySpec {
     shardRegion ! ShardingEnvelope("counter-1", Counter.Increment)
     //#send
 
-    import BlogPostExample.behavior
-
     //#persistence
-    val BlogTypeKey = EntityTypeKey[BlogCommand]("BlogPost")
+    val BlogTypeKey = EntityTypeKey[Command]("BlogPost")
 
-    ClusterSharding(system).init(Entity(typeKey = BlogTypeKey, createBehavior = ctx => behavior(ctx.entityId)))
+    ClusterSharding(system).init(Entity(BlogTypeKey) { entityContext =>
+      BlogPostEntity(entityContext.entityId, PersistenceId(entityContext.entityTypeKey.name, entityContext.entityId))
+    })
     //#persistence
 
   }
@@ -117,9 +119,8 @@ object ShardingCompileOnlySpec {
     //#counter-passivate-init
     val TypeKey = EntityTypeKey[Counter.Command]("Counter")
 
-    ClusterSharding(system).init(
-      Entity(typeKey = TypeKey, createBehavior = ctx => Counter(ctx.shard, ctx.entityId))
-        .withStopMessage(Counter.GoodByeCounter))
+    ClusterSharding(system).init(Entity(TypeKey)(createBehavior = entityContext =>
+      Counter(entityContext.shard, entityContext.entityId)).withStopMessage(Counter.GoodByeCounter))
     //#counter-passivate-init
 
   }

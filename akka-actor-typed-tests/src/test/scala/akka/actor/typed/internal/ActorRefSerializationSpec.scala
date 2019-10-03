@@ -16,7 +16,6 @@ import org.scalatest.WordSpecLike
 object ActorRefSerializationSpec {
   def config = ConfigFactory.parseString("""
       akka.actor {
-        serialize-messages = off
         # test is verifying Java serialization of ActorRef
         allow-java-serialization = on
         warn-about-java-serializer-usage = off

@@ -48,6 +48,20 @@ akka {
         akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
      """).withFallback(configSystem1)
+
+  def illustrateJoinSeedNodes(): Unit = {
+    val system: ActorSystem[_] = ???
+
+    //#join-seed-nodes
+    import akka.actor.Address
+    import akka.actor.AddressFromURIString
+    import akka.cluster.typed.JoinSeedNodes
+
+    val seedNodes: List[Address] =
+      List("akka://ClusterSystem@127.0.0.1:2551", "akka://ClusterSystem@127.0.0.1:2552").map(AddressFromURIString.parse)
+    Cluster(system).manager ! JoinSeedNodes(seedNodes)
+    //#join-seed-nodes
+  }
 }
 
 class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually with Matchers with LogCapturing {

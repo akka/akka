@@ -140,7 +140,8 @@ understand it.
 ## ActorSystem
 
 `akka.actor.ActorSystem` has its correspondence in `akka.actor.typed.ActorSystem`. One difference is that
-when creating an `ActorSystem` in Typed you give it a `Behavior` that will be used as the top level user guardian.
+when creating an `ActorSystem` in Typed you give it a `Behavior` that will be used as the top level actor, also known 
+as the user guardian.
 
 It's from the user guardian you create additional actors for the application and initialize tools like
 Cluster Sharding. In contrast, such initialization are typically performed from the "outside" after
@@ -380,7 +381,7 @@ Links to reference documentation:
 The correspondence of the classic `PersistentActor` is @scala[`akka.persistence.typed.scaladsl.EventSourcedBehavior`]@java[`akka.persistence.typed.javadsl.EventSourcedBehavior`].
 
 The Typed API is much more guided to facilitate event sourcing best practises. It also has tighter integration with
-Cluster Sharding via `EventSourcedEntity`.
+Cluster Sharding.
 
 Links to reference documentation:
 
@@ -394,7 +395,7 @@ The Test Kits for asynchronous testing are rather similar.
 Links to reference documentation:
 
 * @ref:[Classic](../testing.md#async-integration-testing)
-* @ref:[Typed](testing.md#asynchronous-testing)
+* @ref:[Typed](testing-async.md#asynchronous-testing)
 
 ## Synchronous Testing
 
@@ -409,4 +410,4 @@ some limitations to be aware of. Similar limitations exists for synchronous test
 Links to reference documentation:
 
 * @ref:[Classic](../testing.md#sync-testing)
-* @ref:[Typed](testing.md#synchronous-behavior-testing)
+* @ref:[Typed](testing-sync.md#synchronous-behavior-testing)

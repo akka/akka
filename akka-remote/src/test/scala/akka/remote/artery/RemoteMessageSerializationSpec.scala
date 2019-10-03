@@ -24,10 +24,7 @@ object RemoteMessageSerializationSpec {
   }
 }
 
-class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec("""
-    akka.actor.serialize-messages = off
-    akka.actor.serialize-creators = off
-  """) with ImplicitSender {
+class RemoteMessageSerializationSpec extends ArteryMultiNodeSpec with ImplicitSender {
 
   val maxPayloadBytes = RARP(system).provider.remoteSettings.Artery.Advanced.MaximumFrameSize
 

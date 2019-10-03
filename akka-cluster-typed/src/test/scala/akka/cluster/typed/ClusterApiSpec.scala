@@ -26,9 +26,6 @@ object ClusterApiSpec {
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
       akka.coordinated-shutdown.terminate-actor-system = off
       akka.coordinated-shutdown.run-by-actor-system-terminate = off
-      akka.actor {
-        serialize-messages = off
-      }
       # generous timeout for cluster forming probes
       akka.actor.testkit.typed.default-timeout = 10s
       # disable this or we cannot be sure to observe node end state on the leaving side

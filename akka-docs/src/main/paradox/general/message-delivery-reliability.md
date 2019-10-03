@@ -1,3 +1,6 @@
+---
+project.description: Akka message delivery semantics, at-most-once delivery and message ordering.
+---
 # Message Delivery Reliability
 
 Akka helps you build reliable applications which make use of multiple processor
@@ -189,7 +192,7 @@ will bind your application to local-only deployment: an application may have to
 be designed differently (as opposed to just employing some message exchange
 patterns local to some actors) in order to be fit for running on a cluster of
 machines. Our credo is “design once, deploy any way you wish”, and to achieve
-this you should only rely on [The General Rules](#the-general-rules).
+this you should only rely on @ref:[The General Rules](#the-general-rules).
 
 ### Reliability of Local Message Sends
 
@@ -275,9 +278,12 @@ acknowledgement
  * a way for the receiver to detect and discard duplicates
 
 The third becomes necessary by virtue of the acknowledgements not being guaranteed
-to arrive either. An ACK-RETRY protocol with business-level acknowledgements is
-supported by @ref:[At-Least-Once Delivery](../persistence.md#at-least-once-delivery) of the Akka Persistence module. Duplicates can be
-detected by tracking the identifiers of messages sent via @ref:[At-Least-Once Delivery](../persistence.md#at-least-once-delivery).
+to arrive either. 
+
+An ACK-RETRY protocol with business-level acknowledgements and de-duplication using identifiers is
+supported by the @ref:[At-Least-Once Delivery](../persistence.md#at-least-once-delivery) of the Classic Akka Persistence module. 
+Corresponding functionality for typed has not yet been implemented (see [issue #20984](https://github.com/akka/akka/issues/20984)).
+
 Another way of implementing the third part would be to make processing the messages
 idempotent on the level of the business logic.
 
@@ -294,7 +300,7 @@ components may consume the event stream as a means to replicate the component’
 state on a different continent or to react to changes). If the component’s
 state is lost—due to a machine failure or by being pushed out of a cache—it can
 be reconstructed by replaying the event stream (usually employing
-snapshots to speed up the process). @ref:[Event sourcing](../persistence.md#event-sourcing) is supported by
+snapshots to speed up the process). @ref:[Event sourcing](../typed/persistence.md#event-sourcing-concepts) is supported by
 Akka Persistence.
 
 ### Mailbox with Explicit Acknowledgement
@@ -304,7 +310,7 @@ at the receiving actor’s end in order to handle temporary failures. This
 pattern is mostly useful in the local communication context where delivery
 guarantees are otherwise sufficient to fulfill the application’s requirements.
 
-Please note that the caveats for [The Rules for In-JVM (Local) Message Sends](#the-rules-for-in-jvm-local-message-sends)
+Please note that the caveats for @ref:[The Rules for In-JVM (Local) Message Sends](#the-rules-for-in-jvm-local-message-sends)
 do apply.
 
 <a id="deadletters"></a>
@@ -350,8 +356,8 @@ local system (if no network connection can be established) or the remote one
 Every time an actor does not terminate by its own decision, there is a chance
 that some messages which it sends to itself are lost. There is one which
 happens quite easily in complex shutdown scenarios that is usually benign:
-seeing a `akka.dispatch.Terminate` message dropped means that two
-termination requests were given, but only one can succeed. In the
+seeing instances of a graceful stop command for an actor being dropped means that two
+stop requests were given, but only one can succeed. In the
 same vein, you might see `akka.actor.Terminated` messages from children
 while stopping a hierarchy of actors turning up in dead letters if the parent
 is still watching the child when the parent terminates.

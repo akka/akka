@@ -32,3 +32,14 @@ class SystemMaterializerSpec extends StreamSpec with ScalaFutures {
   }
 
 }
+
+class SystemMaterializerEagerStartupSpec extends StreamSpec {
+
+  "The SystemMaterializer" must {
+
+    "be eagerly started on system startup" in {
+      system.hasExtension(SystemMaterializer.lookup) should ===(true)
+    }
+  }
+
+}

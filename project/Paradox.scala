@@ -18,6 +18,7 @@ object Paradox {
         "github.base_url" -> GitHub
           .url(version.value), // for links like this: @github[#1](#1) or @github[83986f9](83986f9)
         "extref.akka.http.base_url" -> "https://doc.akka.io/docs/akka-http/current/%s",
+        "extref.akka-management.base_url" -> "https://doc.akka.io/docs/akka-management/current/%s",
         "extref.wikipedia.base_url" -> "https://en.wikipedia.org/wiki/%s",
         "extref.github.base_url" -> (GitHub.url(version.value) + "/%s"), // for links to our sources
         "extref.samples.base_url" -> "https://developer.lightbend.com/start/?group=akka&amp;project=%s",
@@ -39,13 +40,16 @@ object Paradox {
         "fiddle.code.base_dir" -> (sourceDirectory in Test).value.getAbsolutePath,
         "fiddle.akka.base_dir" -> (baseDirectory in ThisBuild).value.getAbsolutePath,
         "aeron_version" -> Dependencies.aeronVersion,
-        "netty_version" -> Dependencies.nettyVersion))
+        "netty_version" -> Dependencies.nettyVersion,
+        "logback_version" -> Dependencies.logbackVersion))
 
   val rootsSettings = Seq(
     paradoxRoots := List(
         "index.html",
         // Page that recommends Alpakka:
         "camel.html",
+        // Page linked to from many others, but not in a TOC
+        "typed/failure-detector.html",
         // TODO page not linked to
         "fault-tolerance-sample.html"))
 

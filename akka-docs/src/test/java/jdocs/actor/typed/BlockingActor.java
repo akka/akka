@@ -4,6 +4,7 @@
 
 package jdocs.actor.typed;
 
+// #blocking-in-actor
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
 
@@ -12,7 +13,9 @@ public class BlockingActor extends AbstractBehavior<Integer> {
     return Behaviors.setup(BlockingActor::new);
   }
 
-  private BlockingActor(ActorContext<Integer> context) {}
+  private BlockingActor(ActorContext<Integer> context) {
+    super(context);
+  }
 
   @Override
   public Receive<Integer> createReceive() {
@@ -31,3 +34,4 @@ public class BlockingActor extends AbstractBehavior<Integer> {
         .build();
   }
 }
+// #blocking-in-actor

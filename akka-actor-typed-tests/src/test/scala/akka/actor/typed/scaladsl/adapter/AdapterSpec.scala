@@ -16,8 +16,11 @@ import akka.actor.typed.Terminated
 import akka.testkit._
 import akka.Done
 import akka.NotUsed
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.typed.internal.adapter.SchedulerAdapter
 import akka.{ actor => classic }
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
 object AdapterSpec {
   val classic1: classic.Props = classic.Props(new Classic1)
@@ -126,18 +129,18 @@ object AdapterSpec {
       case classic.Terminated(_) =>
         probe ! "terminated"
       case "supervise-stop" =>
-        testSupervice(ThrowIt1)
+        testSupervise(ThrowIt1)
       case "supervise-resume" =>
-        testSupervice(ThrowIt2)
+        testSupervise(ThrowIt2)
       case "supervise-restart" =>
-        testSupervice(ThrowIt3)
+        testSupervise(ThrowIt3)
       case "stop-child" =>
         val child = context.spawnAnonymous(typed2)
         context.watch(child)
         context.stop(child)
     }
 
-    private def testSupervice(t: ThrowIt): Unit = {
+    private def testSupervise(t: ThrowIt): Unit = {
       val child = context.spawnAnonymous(typed2)
       context.watch(child)
       child ! t
@@ -162,8 +165,10 @@ object AdapterSpec {
 
 }
 
-class AdapterSpec extends AkkaSpec {
+class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
   import AdapterSpec._
+
+  implicit val system = akka.actor.ActorSystem("AdapterSpec")
 
   "ActorSystem adaption" must {
     "only happen once for a given actor system" in {
@@ -175,20 +180,20 @@ class AdapterSpec extends AkkaSpec {
 
     "not crash if guardian is stopped" in {
       for { _ <- 0 to 10 } {
-        var system: akka.actor.typed.ActorSystem[NotUsed] = null
+        var systemN: akka.actor.typed.ActorSystem[NotUsed] = null
         try {
-          system = ActorSystem.create(
+          systemN = ActorSystem.create(
             Behaviors.setup[NotUsed](_ => Behaviors.stopped[NotUsed]),
             "AdapterSpec-stopping-guardian")
-        } finally if (system != null) shutdown(system.toClassic)
+        } finally if (system != null) TestKit.shutdownActorSystem(systemN.toClassic)
       }
     }
 
     "not crash if guardian is stopped very quickly" in {
       for { _ <- 0 to 10 } {
-        var system: akka.actor.typed.ActorSystem[Done] = null
+        var systemN: akka.actor.typed.ActorSystem[Done] = null
         try {
-          system = ActorSystem.create(Behaviors.receive[Done] { (context, message) =>
+          systemN = ActorSystem.create(Behaviors.receive[Done] { (context, message) =>
             context.self ! Done
             message match {
               case Done => Behaviors.stopped
@@ -196,8 +201,14 @@ class AdapterSpec extends AkkaSpec {
 
           }, "AdapterSpec-stopping-guardian-2")
 
-        } finally if (system != null) shutdown(system.toClassic)
+        } finally if (system != null) TestKit.shutdownActorSystem(systemN.toClassic)
       }
+    }
+
+    "convert Scheduler" in {
+      val typedScheduler = system.scheduler.toTyped
+      typedScheduler.getClass should ===(classOf[SchedulerAdapter])
+      (typedScheduler.toClassic should be).theSameInstanceAs(system.scheduler)
     }
   }
 
@@ -310,5 +321,10 @@ class AdapterSpec extends AkkaSpec {
           Thread.sleep(1000)
         }(system.toTyped)
     }
+  }
+
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    TestKit.shutdownActorSystem(system)
   }
 }

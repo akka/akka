@@ -5,7 +5,6 @@
 package jdocs.akka.persistence.typed.auction;
 
 import akka.Done;
-import akka.persistence.typed.ExpectingReply;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.*;
 
@@ -16,6 +15,7 @@ import java.time.Instant;
 import java.util.Arrays;
 import java.util.Optional;
 import java.util.UUID;
+import akka.actor.typed.ActorRef;
 
 /**
  * Based on
@@ -27,7 +27,6 @@ public class AuctionEntity
   private final UUID entityUUID;
 
   public AuctionEntity(String entityId) {
-    // when used with Cluster Sharding this should use EntityTypeKey, or PersistentEntity
     super(new PersistenceId("Auction|" + entityId));
     this.entityUUID = UUID.fromString(entityId);
   }
@@ -42,7 +41,7 @@ public class AuctionEntity
               .onCommand(
                   PlaceBid.class,
                   (state, cmd) ->
-                      Effect().reply(cmd, createResult(state, PlaceBidStatus.NOT_STARTED)));
+                      Effect().reply(cmd.replyTo, createResult(state, PlaceBidStatus.NOT_STARTED)));
 
   // Command handler for the under auction state.
   private CommandHandlerWithReplyBuilderByState<
@@ -50,7 +49,7 @@ public class AuctionEntity
       underAuctionHandler =
           newCommandHandlerWithReplyBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.UNDER_AUCTION)
-              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd.replyTo))
               .onCommand(PlaceBid.class, this::placeBid)
               .onCommand(FinishBidding.class, this::finishBidding);
 
@@ -60,12 +59,12 @@ public class AuctionEntity
       completedHandler =
           newCommandHandlerWithReplyBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.COMPLETE)
-              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
-              .onCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd.replyTo))
+              .onCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd.replyTo))
               .onCommand(
                   PlaceBid.class,
                   (state, cmd) ->
-                      Effect().reply(cmd, createResult(state, PlaceBidStatus.FINISHED)));
+                      Effect().reply(cmd.replyTo, createResult(state, PlaceBidStatus.FINISHED)));
 
   // Command handler for the cancelled state.
   private CommandHandlerWithReplyBuilderByState<
@@ -73,20 +72,20 @@ public class AuctionEntity
       cancelledHandler =
           newCommandHandlerWithReplyBuilder()
               .forState(state -> state.getStatus() == AuctionStatus.CANCELLED)
-              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd))
-              .onCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd))
-              .onCommand(CancelAuction.class, (state, cmd) -> alreadyDone(cmd))
+              .onCommand(StartAuction.class, (state, cmd) -> alreadyDone(cmd.replyTo))
+              .onCommand(FinishBidding.class, (state, cmd) -> alreadyDone(cmd.replyTo))
+              .onCommand(CancelAuction.class, (state, cmd) -> alreadyDone(cmd.replyTo))
               .onCommand(
                   PlaceBid.class,
                   (state, cmd) ->
-                      Effect().reply(cmd, createResult(state, PlaceBidStatus.CANCELLED)));
+                      Effect().reply(cmd.replyTo, createResult(state, PlaceBidStatus.CANCELLED)));
 
   private CommandHandlerWithReplyBuilderByState<
           AuctionCommand, AuctionEvent, AuctionState, AuctionState>
       getAuctionHandler =
           newCommandHandlerWithReplyBuilder()
               .forStateType(AuctionState.class)
-              .onCommand(GetAuction.class, (state, cmd) -> Effect().reply(cmd, state));
+              .onCommand(GetAuction.class, (state, cmd) -> Effect().reply(cmd.replyTo, state));
 
   private CommandHandlerBuilderByState<AuctionCommand, AuctionEvent, AuctionState, AuctionState>
       cancelHandler =
@@ -95,28 +94,28 @@ public class AuctionEntity
               .onCommand(CancelAuction.class, this::cancelAuction);
   // Note, an item can go from completed to cancelled, since it is the item service that controls
   // whether an auction is cancelled or not. If it cancels before it receives a bidding finished
-  // event from us, it will ignore the bidding finished event, so we need to update our state
-  // to reflect that.
+  // event from us, it will ignore the bidding finished event, so we need to update our state to
+  // reflect that.
 
   private ReplyEffect<AuctionEvent, AuctionState> startAuction(
       AuctionState state, StartAuction cmd) {
     return Effect()
-        .persist(new AuctionStarted(entityUUID, cmd.getAuction()))
-        .thenReply(cmd, __ -> Done.getInstance());
+        .persist(new AuctionStarted(entityUUID, cmd.auction))
+        .thenReply(cmd.replyTo, notUsed -> Done.getInstance());
   }
 
   private ReplyEffect<AuctionEvent, AuctionState> finishBidding(
       AuctionState state, FinishBidding cmd) {
     return Effect()
         .persist(new BiddingFinished(entityUUID))
-        .thenReply(cmd, __ -> Done.getInstance());
+        .thenReply(cmd.replyTo, notUsed -> Done.getInstance());
   }
 
   private ReplyEffect<AuctionEvent, AuctionState> cancelAuction(
       AuctionState state, CancelAuction cmd) {
     return Effect()
         .persist(new AuctionCancelled(entityUUID))
-        .thenReply(cmd, __ -> Done.getInstance());
+        .thenReply(cmd.replyTo, notUsed -> Done.getInstance());
   }
 
   /** The main logic for handling of bids. */
@@ -127,12 +126,14 @@ public class AuctionEntity
 
     // Even though we're not in the finished state yet, we should check
     if (auction.getEndTime().isBefore(now)) {
-      return Effect().reply(bid, createResult(state, PlaceBidStatus.FINISHED));
+      return Effect().reply(bid.replyTo, createResult(state, PlaceBidStatus.FINISHED));
     }
 
-    if (auction.getCreator().equals(bid.getBidder())) {
+    if (auction.getCreator().equals(bid.bidder)) {
       return Effect()
-          .reply(bid, new PlaceBidRejected("An auctions creator cannot bid in their own auction."));
+          .reply(
+              bid.replyTo,
+              new PlaceBidRejected("An auctions creator cannot bid in their own auction."));
     }
 
     Optional<Bid> currentBid = state.lastBid();
@@ -147,13 +148,13 @@ public class AuctionEntity
     }
 
     boolean bidderIsCurrentBidder =
-        currentBid.filter(b -> b.getBidder().equals(bid.getBidder())).isPresent();
+        currentBid.filter(b -> b.getBidder().equals(bid.bidder)).isPresent();
 
-    if (bidderIsCurrentBidder && bid.getBidPrice() >= currentBidPrice) {
+    if (bidderIsCurrentBidder && bid.bidPrice >= currentBidPrice) {
       // Allow the current bidder to update their bid
       if (auction.getReservePrice() > currentBidPrice) {
 
-        int newBidPrice = Math.min(auction.getReservePrice(), bid.getBidPrice());
+        int newBidPrice = Math.min(auction.getReservePrice(), bid.bidPrice);
         PlaceBidStatus placeBidStatus;
 
         if (newBidPrice == auction.getReservePrice()) {
@@ -162,25 +163,22 @@ public class AuctionEntity
           placeBidStatus = PlaceBidStatus.ACCEPTED_BELOW_RESERVE;
         }
         return Effect()
-            .persist(
-                new BidPlaced(
-                    entityUUID, new Bid(bid.getBidder(), now, newBidPrice, bid.getBidPrice())))
+            .persist(new BidPlaced(entityUUID, new Bid(bid.bidder, now, newBidPrice, bid.bidPrice)))
             .thenReply(
-                bid, newState -> new PlaceBidResult(placeBidStatus, newBidPrice, bid.getBidder()));
+                bid.replyTo,
+                newState -> new PlaceBidResult(placeBidStatus, newBidPrice, bid.bidder));
       }
       return Effect()
           .persist(
-              new BidPlaced(
-                  entityUUID, new Bid(bid.getBidder(), now, currentBidPrice, bid.getBidPrice())))
+              new BidPlaced(entityUUID, new Bid(bid.bidder, now, currentBidPrice, bid.bidPrice)))
           .thenReply(
-              bid,
-              newState ->
-                  new PlaceBidResult(PlaceBidStatus.ACCEPTED, currentBidPrice, bid.getBidder()));
+              bid.replyTo,
+              newState -> new PlaceBidResult(PlaceBidStatus.ACCEPTED, currentBidPrice, bid.bidder));
     }
 
-    if (bid.getBidPrice() < currentBidPrice + auction.getIncrement()) {
-      return Effect().reply(bid, createResult(state, PlaceBidStatus.TOO_LOW));
-    } else if (bid.getBidPrice() <= currentBidMaximum) {
+    if (bid.bidPrice < currentBidPrice + auction.getIncrement()) {
+      return Effect().reply(bid.replyTo, createResult(state, PlaceBidStatus.TOO_LOW));
+    } else if (bid.bidPrice <= currentBidMaximum) {
       return handleAutomaticOutbid(
           bid, auction, now, currentBid, currentBidPrice, currentBidMaximum);
     } else {
@@ -202,21 +200,20 @@ public class AuctionEntity
       Optional<Bid> currentBid,
       int currentBidPrice,
       int currentBidMaximum) {
-    // Adjust the bid so that the increment for the current maximum makes the current maximum a
-    // valid bid
-    int adjustedBidPrice = Math.min(bid.getBidPrice(), currentBidMaximum - auction.getIncrement());
+    // Adjust the bid so that the increment for the current maximum makes the
+    // current maximum a valid bid
+    int adjustedBidPrice = Math.min(bid.bidPrice, currentBidMaximum - auction.getIncrement());
     int newBidPrice = adjustedBidPrice + auction.getIncrement();
 
     return Effect()
         .persist(
             Arrays.asList(
-                new BidPlaced(
-                    entityUUID, new Bid(bid.getBidder(), now, adjustedBidPrice, bid.getBidPrice())),
+                new BidPlaced(entityUUID, new Bid(bid.bidder, now, adjustedBidPrice, bid.bidPrice)),
                 new BidPlaced(
                     entityUUID,
                     new Bid(currentBid.get().getBidder(), now, newBidPrice, currentBidMaximum))))
         .thenReply(
-            bid,
+            bid.replyTo,
             newState ->
                 new PlaceBidResult(
                     PlaceBidStatus.ACCEPTED_OUTBID, newBidPrice, currentBid.get().getBidder()));
@@ -225,19 +222,17 @@ public class AuctionEntity
   /** Handle the situation where a bid will be accepted as the new winning bidder. */
   private ReplyEffect<AuctionEvent, AuctionState> handleNewWinningBidder(
       PlaceBid bid, Auction auction, Instant now, int currentBidMaximum) {
-    int nextIncrement = Math.min(currentBidMaximum + auction.getIncrement(), bid.getBidPrice());
+    int nextIncrement = Math.min(currentBidMaximum + auction.getIncrement(), bid.bidPrice);
     int newBidPrice;
     if (nextIncrement < auction.getReservePrice()) {
-      newBidPrice = Math.min(auction.getReservePrice(), bid.getBidPrice());
+      newBidPrice = Math.min(auction.getReservePrice(), bid.bidPrice);
     } else {
       newBidPrice = nextIncrement;
     }
     return Effect()
-        .persist(
-            new BidPlaced(
-                entityUUID, new Bid(bid.getBidder(), now, newBidPrice, bid.getBidPrice())))
+        .persist(new BidPlaced(entityUUID, new Bid(bid.bidder, now, newBidPrice, bid.bidPrice)))
         .thenReply(
-            bid,
+            bid.replyTo,
             newState -> {
               PlaceBidStatus status;
               if (newBidPrice < auction.getReservePrice()) {
@@ -245,7 +240,7 @@ public class AuctionEntity
               } else {
                 status = PlaceBidStatus.ACCEPTED;
               }
-              return new PlaceBidResult(status, newBidPrice, bid.getBidder());
+              return new PlaceBidResult(status, newBidPrice, bid.bidder);
             });
   }
 
@@ -292,7 +287,7 @@ public class AuctionEntity
     }
   }
 
-  private ReplyEffect<AuctionEvent, AuctionState> alreadyDone(ExpectingReply<Done> cmd) {
-    return Effect().reply(cmd, Done.getInstance());
+  private ReplyEffect<AuctionEvent, AuctionState> alreadyDone(ActorRef<Done> replyTo) {
+    return Effect().reply(replyTo, Done.getInstance());
   }
 }

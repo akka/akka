@@ -59,6 +59,7 @@ interface ShardingReplyCompileOnlyTest {
     private int value = 0;
 
     private Counter(ActorContext<Command> context) {
+      super(context);
       this.sharding = ClusterSharding.get(context.getSystem());
     }
 

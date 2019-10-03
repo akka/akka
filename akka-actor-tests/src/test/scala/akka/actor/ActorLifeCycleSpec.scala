@@ -26,11 +26,7 @@ object ActorLifeCycleSpec {
 
 }
 
-class ActorLifeCycleSpec
-    extends AkkaSpec("akka.actor.serialize-messages=off")
-    with BeforeAndAfterEach
-    with ImplicitSender
-    with DefaultTimeout {
+class ActorLifeCycleSpec extends AkkaSpec with BeforeAndAfterEach with ImplicitSender with DefaultTimeout {
   import ActorLifeCycleSpec._
 
   "An Actor" must {

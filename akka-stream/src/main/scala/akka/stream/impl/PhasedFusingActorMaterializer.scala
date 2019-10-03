@@ -10,10 +10,9 @@ import java.util.concurrent.atomic.AtomicBoolean
 import akka.NotUsed
 import akka.actor.ActorContext
 import akka.actor.ActorRef
-import akka.actor.ActorRefFactory
 import akka.actor.ActorSystem
 import akka.actor.Cancellable
-import akka.actor.ExtendedActorSystem
+import akka.actor.Deploy
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.annotation.DoNotInherit
@@ -98,38 +97,28 @@ import com.github.ghik.silencer.silent
     },
     GraphStageTag -> DefaultPhase)
 
-  @silent("deprecated")
-  @InternalApi private[akka] def apply()(implicit context: ActorRefFactory): Materializer = {
+  def apply(
+      context: ActorContext,
+      namePrefix: String,
+      settings: ActorMaterializerSettings,
+      attributes: Attributes): PhasedFusingActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
-    val system = actorSystemOf(context)
-    val materializerSettings = ActorMaterializerSettings(system)
-    val defaultAttributes = materializerSettings.toAttributes
 
-    val streamSupervisor =
-      context.actorOf(StreamSupervisor.props(defaultAttributes, haveShutDown), StreamSupervisor.nextName())
+    val supervisorProps =
+      StreamSupervisor.props(attributes, haveShutDown).withDispatcher(context.props.dispatcher).withDeploy(Deploy.local)
 
-    PhasedFusingActorMaterializer(
-      system,
-      materializerSettings,
-      defaultAttributes,
-      system.dispatchers,
+    // FIXME why do we need a global unique name for the child?
+    val streamSupervisor = context.actorOf(supervisorProps, StreamSupervisor.nextName())
+
+    new PhasedFusingActorMaterializer(
+      context.system,
+      settings,
+      attributes,
+      context.system.dispatchers,
       streamSupervisor,
       haveShutDown,
-      FlowNames(system).name.copy("flow"))
+      FlowNames(context.system).name.copy(namePrefix))
   }
-
-  private def actorSystemOf(context: ActorRefFactory): ActorSystem = {
-    val system = context match {
-      case s: ExtendedActorSystem => s
-      case c: ActorContext        => c.system
-      case null                   => throw new IllegalArgumentException("ActorRefFactory context must be defined")
-      case _ =>
-        throw new IllegalArgumentException(
-          s"ActorRefFactory context must be an ActorSystem or ActorContext, got [${context.getClass.getName}]")
-    }
-    system
-  }
-
 }
 
 private final case class SegmentInfo(
@@ -625,10 +614,6 @@ private final case class SavedIslandData(
     val effectiveProps = props.dispatcher match {
       case Dispatchers.DefaultDispatcherId =>
         props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
-      case ActorAttributes.IODispatcher.dispatcher =>
-        // this one is actually not a dispatcher but a relative config key pointing containing the actual dispatcher name
-        // FIXME go via attributes here,or something
-        props.withDispatcher(settings.blockingIoDispatcher)
       case _ => props
     }
 

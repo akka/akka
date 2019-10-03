@@ -41,7 +41,8 @@ object DeviceManager {
   //#device-manager-msgs
 }
 
-class DeviceManager(context: ActorContext[DeviceManager.Command]) extends AbstractBehavior[DeviceManager.Command] {
+class DeviceManager(context: ActorContext[DeviceManager.Command])
+    extends AbstractBehavior[DeviceManager.Command](context) {
   import DeviceManager._
 
   var groupIdToActor = Map.empty[String, ActorRef[DeviceGroup.Command]]

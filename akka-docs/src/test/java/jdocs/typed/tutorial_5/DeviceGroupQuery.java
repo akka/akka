@@ -74,6 +74,7 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQuery.Command>
       Duration timeout,
       ActorContext<Command> context,
       TimerScheduler<Command> timers) {
+    super(context);
     this.requestId = requestId;
     this.requester = requester;
 

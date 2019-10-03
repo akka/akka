@@ -40,8 +40,6 @@ object LatencySpec extends MultiNodeConfig {
          testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
          actor {
            provider = remote
-           serialize-creators = false
-           serialize-messages = false
          }
          remote.artery {
            enabled = on

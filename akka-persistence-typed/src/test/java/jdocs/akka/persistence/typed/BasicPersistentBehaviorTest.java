@@ -13,6 +13,7 @@ import akka.persistence.typed.DeleteEventsFailed;
 import akka.persistence.typed.DeleteSnapshotsFailed;
 import akka.persistence.typed.RecoveryCompleted;
 import akka.persistence.typed.SnapshotFailed;
+import akka.persistence.typed.SnapshotSelectionCriteria;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
 // #behavior
@@ -25,6 +26,7 @@ import akka.persistence.typed.javadsl.SignalHandler;
 
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
@@ -36,16 +38,17 @@ public class BasicPersistentBehaviorTest {
         extends EventSourcedBehavior<
             MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
 
-      static EventSourcedBehavior<Command, Event, State> eventSourcedBehavior =
-          new MyPersistentBehavior(new PersistenceId("pid"));
-
       interface Command {}
 
       interface Event {}
 
       public static class State {}
 
-      public MyPersistentBehavior(PersistenceId persistenceId) {
+      public static Behavior<Command> create() {
+        return new MyPersistentBehavior(new PersistenceId("pid"));
+      }
+
+      private MyPersistentBehavior(PersistenceId persistenceId) {
         super(persistenceId);
       }
 
@@ -132,7 +135,13 @@ public class BasicPersistentBehaviorTest {
       // #state
 
       // #behavior
-      public MyPersistentBehavior(PersistenceId persistenceId) {
+      // commands, events and state defined here
+
+      public static Behavior<Command> create(PersistenceId persistenceId) {
+        return new MyPersistentBehavior(persistenceId);
+      }
+
+      private MyPersistentBehavior(PersistenceId persistenceId) {
         super(persistenceId);
       }
 
@@ -168,20 +177,31 @@ public class BasicPersistentBehaviorTest {
   }
 
   interface More {
-    interface Command {}
-
-    interface Event {}
-
-    public static class State {}
 
     // #supervision
-    public class MyPersistentBehavior extends EventSourcedBehavior<Command, Event, State> {
-      public MyPersistentBehavior(PersistenceId persistenceId) {
+    public class MyPersistentBehavior
+        extends EventSourcedBehavior<
+            MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
+
+      // #supervision
+      interface Command {}
+
+      interface Event {}
+
+      public static class State {}
+      // #supervision
+
+      public static Behavior<Command> create(PersistenceId persistenceId) {
+        return new MyPersistentBehavior(persistenceId);
+      }
+
+      private MyPersistentBehavior(PersistenceId persistenceId) {
         super(
             persistenceId,
             SupervisorStrategy.restartWithBackoff(
                 Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
       }
+
       // #supervision
 
       @Override
@@ -206,7 +226,7 @@ public class BasicPersistentBehaviorTest {
       // #recovery
 
       @Override
-      public SignalHandler signalHandler() {
+      public SignalHandler<State> signalHandler() {
         return newSignalHandlerBuilder()
             .onSignal(
                 RecoveryCompleted.instance(),
@@ -223,32 +243,128 @@ public class BasicPersistentBehaviorTest {
         throw new RuntimeException("TODO: inspect the event and return any tags it should have");
       }
       // #tagging
+      // #supervision
     }
+    // #supervision
+  }
 
-    EventSourcedBehavior<Command, Event, State> eventSourcedBehavior =
-        new MyPersistentBehavior(new PersistenceId("pid"));
+  interface More2 {
 
     // #wrapPersistentBehavior
-    Behavior<Command> debugAlwaysSnapshot =
-        Behaviors.setup(
-            (context) -> {
-              return new MyPersistentBehavior(new PersistenceId("pid")) {
-                @Override
-                public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
-                  context
-                      .getLog()
-                      .info(
-                          "Snapshot actor {} => state: {}", context.getSelf().path().name(), state);
-                  return true;
-                }
-              };
-            });
+    public class MyPersistentBehavior
+        extends EventSourcedBehavior<
+            MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
+
+      // #wrapPersistentBehavior
+      interface Command {}
+
+      interface Event {}
+
+      public static class State {}
+      // #wrapPersistentBehavior
+
+      public static Behavior<Command> create(PersistenceId persistenceId) {
+        return Behaviors.setup(context -> new MyPersistentBehavior(persistenceId, context));
+      }
+
+      private final ActorContext<Command> context;
+
+      private MyPersistentBehavior(PersistenceId persistenceId, ActorContext<Command> context) {
+        super(
+            persistenceId,
+            SupervisorStrategy.restartWithBackoff(
+                Duration.ofSeconds(10), Duration.ofSeconds(30), 0.2));
+        this.context = context;
+      }
+
+      // #wrapPersistentBehavior
+
+      @Override
+      public State emptyState() {
+        return new State();
+      }
+
+      @Override
+      public CommandHandler<Command, Event, State> commandHandler() {
+        return (state, command) -> {
+          throw new RuntimeException("TODO: process the command & return an Effect");
+        };
+      }
+
+      @Override
+      public EventHandler<State, Event> eventHandler() {
+        return (state, event) -> {
+          throw new RuntimeException("TODO: process the event return the next state");
+        };
+      }
+
+      // #wrapPersistentBehavior
+      @Override
+      public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
+        context
+            .getLog()
+            .info("Snapshot actor {} => state: {}", context.getSelf().path().name(), state);
+        return true;
+      }
+    }
     // #wrapPersistentBehavior
+  }
 
-    public static class BookingCompleted implements Event {}
+  interface TaggingQuery {
 
-    public static class Snapshotting extends EventSourcedBehavior<Command, Event, State> {
-      public Snapshotting(PersistenceId persistenceId) {
+    public abstract class MyPersistentBehavior
+        extends EventSourcedBehavior<
+            MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
+
+      interface Command {}
+
+      interface Event {}
+
+      interface OrderCompleted extends Event {}
+
+      public static class State {}
+
+      MyPersistentBehavior(String entityId) {
+        super(PersistenceId.of("ShoppingCart", entityId));
+        this.entityId = entityId;
+      }
+
+      // #tagging-query
+      private final String entityId;
+
+      public static final int NUMBER_OF_ENTITY_GROUPS = 10;
+
+      @Override
+      public Set<String> tagsFor(Event event) {
+        String entityGroup = "group-" + Math.abs(entityId.hashCode() % NUMBER_OF_ENTITY_GROUPS);
+        Set<String> tags = new HashSet<>();
+        tags.add(entityGroup);
+        if (event instanceof OrderCompleted) tags.add("order-completed");
+        return tags;
+      }
+      // #tagging-query
+    }
+  }
+
+  interface Snapshotting {
+
+    public class MyPersistentBehavior
+        extends EventSourcedBehavior<
+            MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
+
+      interface Command {}
+
+      interface Event {}
+
+      public static class BookingCompleted implements Event {}
+
+      public static class State {}
+
+      public static Behavior<Command> create(PersistenceId persistenceId) {
+        return new MyPersistentBehavior(persistenceId);
+      }
+
+      private MyPersistentBehavior(PersistenceId persistenceId) {
         super(persistenceId);
       }
 
@@ -287,7 +403,7 @@ public class BasicPersistentBehaviorTest {
 
       // #retentionCriteriaWithSignals
       @Override
-      public SignalHandler signalHandler() {
+      public SignalHandler<State> signalHandler() {
         return newSignalHandlerBuilder()
             .onSignal(
                 SnapshotFailed.class,
@@ -310,44 +426,62 @@ public class BasicPersistentBehaviorTest {
       }
       // #retentionCriteriaWithSignals
     }
+  }
 
-    public static class Snapshotting2 extends Snapshotting {
-      public Snapshotting2(PersistenceId persistenceId) {
-        super(persistenceId);
-      }
-
-      // #snapshotAndEventDeletes
-      @Override // override retentionCriteria in EventSourcedBehavior
-      public RetentionCriteria retentionCriteria() {
-        return RetentionCriteria.snapshotEvery(100, 2).withDeleteEventsOnSnapshot();
-      }
-      // #snapshotAndEventDeletes
+  public static class Snapshotting2 extends Snapshotting.MyPersistentBehavior {
+    public Snapshotting2(PersistenceId persistenceId) {
+      super(persistenceId);
     }
+
+    // #snapshotAndEventDeletes
+    @Override // override retentionCriteria in EventSourcedBehavior
+    public RetentionCriteria retentionCriteria() {
+      return RetentionCriteria.snapshotEvery(100, 2).withDeleteEventsOnSnapshot();
+    }
+    // #snapshotAndEventDeletes
+  }
+
+  public static class SnapshotSelection extends Snapshotting.MyPersistentBehavior {
+    public SnapshotSelection(PersistenceId persistenceId) {
+      super(persistenceId);
+    }
+
+    // #snapshotSelection
+    @Override
+    public SnapshotSelectionCriteria snapshotSelectionCriteria() {
+      return SnapshotSelectionCriteria.none();
+    }
+    // #snapshotSelection
   }
 
   interface WithActorContext {
-    interface Command {}
-
-    interface Event {}
-
-    public static class State {}
 
     // #actor-context
-    public class MyPersistentBehavior extends EventSourcedBehavior<Command, Event, State> {
+    public class MyPersistentBehavior
+        extends EventSourcedBehavior<
+            MyPersistentBehavior.Command, MyPersistentBehavior.Event, MyPersistentBehavior.State> {
+      // #actor-context
 
-      public static Behavior<Command> behavior(PersistenceId persistenceId) {
+      interface Command {}
+
+      interface Event {}
+
+      public static class State {}
+      // #actor-context
+
+      public static Behavior<Command> create(PersistenceId persistenceId) {
         return Behaviors.setup(ctx -> new MyPersistentBehavior(persistenceId, ctx));
       }
 
       // this makes the context available to the command handler etc.
-      private final ActorContext<Command> ctx;
+      private final ActorContext<Command> context;
 
       // optionally if you only need `ActorContext.getSelf()`
       private final ActorRef<Command> self;
 
       public MyPersistentBehavior(PersistenceId persistenceId, ActorContext<Command> ctx) {
         super(persistenceId);
-        this.ctx = ctx;
+        this.context = ctx;
         this.self = ctx.getSelf();
       }
 

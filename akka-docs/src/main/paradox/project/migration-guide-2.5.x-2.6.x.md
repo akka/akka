@@ -1,3 +1,6 @@
+---
+project.description: Migrating to Akka 2.6.
+---
 # Migration Guide 2.5.x to 2.6.x
 
 It is now recommended to use @apidoc[akka.util.ByteString]`.emptyByteString()` instead of
@@ -7,6 +10,40 @@ is [no longer available as a static method](https://github.com/scala/bug/issues/
 ## Scala 2.11 no longer supported
 
 If you are still using Scala 2.11 then you must upgrade to 2.12 or 2.13
+
+## Auto-downing removed
+
+Auto-downing of unreachable Cluster members have been removed after warnings and recommendations against using it
+for many years. It was by default disabled, but could be enabled with configuration
+`akka.cluster.auto-down-unreachable-after`.
+
+For alternatives see the @ref:[documentation about Downing](../typed/cluster.md#downing).
+
+Auto-downing was a naïve approach to remove unreachable nodes from the cluster membership.
+In a production environment it will eventually break down the cluster. 
+When a network partition occurs, both sides of the partition will see the other side as unreachable
+and remove it from the cluster. This results in the formation of two separate, disconnected, clusters
+(known as *Split Brain*).
+
+This behavior is not limited to network partitions. It can also occur if a node in the cluster is
+overloaded, or experiences a long GC pause.
+
+When using @ref:[Cluster Singleton](../typed/cluster-singleton.md) or @ref:[Cluster Sharding](../typed/cluster-sharding.md)
+it can break the contract provided by those features. Both provide a guarantee that an actor will be unique in a cluster.
+With the auto-down feature enabled, it is possible for multiple independent clusters to form (*Split Brain*).
+When this happens the guaranteed uniqueness will no longer be true resulting in undesirable behavior in the system.
+
+This is even more severe when @ref:[Akka Persistence](../typed/persistence.md) is used in conjunction with
+Cluster Sharding. In this case, the lack of unique actors can cause multiple actors to write to the same journal.
+Akka Persistence operates on a single writer principle. Having multiple writers will corrupt the journal
+and make it unusable. 
+
+Finally, even if you don't use features such as Persistence, Sharding, or Singletons, auto-downing can lead the
+system to form multiple small clusters. These small clusters will be independent from each other. They will be
+unable to communicate and as a result you may experience performance degradation. Once this condition occurs,
+it will require manual intervention in order to reform the cluster.
+
+Because of these issues, auto-downing should **never** be used in a production environment.
 
 ## Removed features that were deprecated
 
@@ -34,6 +71,8 @@ After being deprecated since 2.5.0, the following have been removed in Akka 2.6.
     - Use `AbstractPersistentActor` instead.
 * `UntypedPersistentActorWithAtLeastOnceDelivery`
     - Use @apidoc[AbstractPersistentActorWithAtLeastOnceDelivery] instead.
+* `akka.stream.actor.ActorSubscriber` and `akka.stream.actor.ActorPublisher`
+    - Use `GraphStage` instead.
 
 After being deprecated since 2.2, the following have been removed in Akka 2.6.
 
@@ -89,8 +128,25 @@ to make remote interactions look like local method calls.
 Warnings about `TypedActor` have been [mentioned in documentation](https://doc.akka.io/docs/akka/2.5/typed-actors.html#when-to-use-typed-actors)
 for many years.
 
+### akka-protobuf
 
-@@ Remoting
+`akka-protobuf` was never intended to be used by end users but perhaps this was not well-documented.
+Applications should use standard Protobuf dependency instead of `akka-protobuf`. The artifact is still
+published, but the transitive dependency to `akka-protobuf` has been removed.
+
+Akka is now using Protobuf version 3.9.0 for serialization of messages defined by Akka.
+
+### Cluster Client
+
+Cluster client has been deprecated as of 2.6 in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
+It is not advised to build new applications with Cluster client, and existing users @ref[should migrate to Akka gRPC](../cluster-client.md#migration-to-akka-grpc).
+
+### akka.Main
+
+`akka.Main` is deprecated in favour of starting the `ActorSystem` from a custom main class instead. `akka.Main` was not
+adding much value and typically a custom main class is needed anyway.
+
+## Remoting
 
 ### Default remoting is now Artery TCP
 
@@ -174,20 +230,7 @@ For TCP:
 
 Classic remoting is deprecated but can be used in `2.6.` Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `false`. Further, any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
-are specific to classic search for them in: [`akka-remote/reference.conf`](/akka-remote/src/main/resources/reference.conf)
-
-### akka-protobuf
-
-`akka-protobuf` was never intended to be used by end users but perhaps this was not well-documented.
-Applications should use standard Protobuf dependency instead of `akka-protobuf`. The artifact is still
-published, but the transitive dependency to `akka-protobuf` has been removed.
-
-Akka is now using Protobuf version 3.9.0 for serialization of messages defined by Akka.
-
-### Cluster Client
-
-Cluster client has been deprecated as of 2.6 in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
-It is not advised to build new applications with Cluster client, and existing users @ref[should migrate to Akka gRPC](../cluster-client.md#migration-to-akka-grpc).
+are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration.md#config-akka-remote).
 
 ## Java Serialization
 
@@ -225,14 +268,12 @@ handling that type and it was previously "accidentally" serialized with Java ser
 The following documents configuration changes and behavior changes where no action is required. In some cases the old
 behavior can be restored via configuration.
 
-### Remoting
-
-#### Remoting dependencies have been made optional
+### Remoting dependencies have been made optional
 
 Classic remoting depends on Netty and Artery UDP depends on Aeron. These are now both optional dependencies that need
 to be explicitly added. See @ref[classic remoting](../remoting.md) or @ref[artery remoting](../remoting-artery.md) for instructions.
 
-#### Remote watch and deployment have been disabled without Cluster use
+### Remote watch and deployment have been disabled without Cluster use
 
 By default, these remoting features are disabled when not using Akka Cluster:
 
@@ -423,6 +464,47 @@ akka.cluster.monitored-by-nr-of-members = 9
 `expectNoMessage()` without timeout parameter is now using a new configuration property
 `akka.test.expect-no-message-default` (short timeout) instead of `remainingOrDefault` (long timeout).
 
+### Config library resolution change
+
+The [Lightbend Config Library](https://github.com/lightbend/config) has been updated to load both `reference.conf`
+and user config files such as `application.conf` before substitution of variables used in the `reference.conf`. 
+This makes it possible to override such variables in `reference.conf` with user configuration.
+
+For example, the default config for Cluster Sharding, refers to the default config for Distributed Data, in 
+`reference.conf` like this:
+
+```ruby
+akka.cluster.sharding.distributed-data = ${akka.cluster.distributed-data}
+``` 
+
+In Akka 2.5 this meant that to override default gossip interval for both direct use of Distributed Data and Cluster Sharding
+in the same application you would have to change two settings:
+
+```ruby
+akka.cluster.distributed-data.gossip-interval = 3s
+akka.cluster.sharding.distributed-data = 3s
+```
+
+In Akka 2.6.0 and forward, changing the default in the `akka.cluster.distributed-data` config block will be done before
+the variable in `reference.conf` is resolved, so that the same change only needs to be done once:
+
+```ruby
+akka.cluster.distributed-data.gossip-interval = 3s
+```
+
+The following default settings in Akka are using such substitution and may be affected if you are changing the right
+hand config path in your `application.conf`:
+
+```ruby
+akka.cluster.sharding.coordinator-singleton = ${akka.cluster.singleton}
+akka.cluster.sharding.distributed-data = ${akka.cluster.distributed-data}
+akka.cluster.singleton-proxy.singleton-name = ${akka.cluster.singleton.singleton-name}
+akka.cluster.typed.receptionist.distributed-data = ${akka.cluster.distributed-data}
+akka.remote.classic.netty.ssl = ${akka.remote.classic.netty.tcp}
+akka.remote.artery.advanced.materializer = ${akka.stream.materializer}
+``` 
+
+
 ## Source incompatibilities
 
 ### StreamRefs
@@ -430,7 +512,7 @@ akka.cluster.monitored-by-nr-of-members = 9
 The materialized value for `StreamRefs.sinkRef` and `StreamRefs.sourceRef` is no longer wrapped in
 `Future`/`CompletionStage`. It can be sent as reply to `sender()` immediately without using the `pipe` pattern.
 
-`StreamRefs` was marked as [may change](../common/may-change.md).
+`StreamRefs` was marked as @ref:[may change](../common/may-change.md).
 
 ## Akka Typed
 
@@ -461,14 +543,11 @@ rolling update from 2.5 to 2.6 if you use Akka Typed. See @ref:[rolling updates 
 
 ### Akka Typed API changes
 
-Akka Typed APIs are still marked as [may change](../common/may-change.md) and a few changes were
+Akka Typed APIs are still marked as @ref:[may change](../common/may-change.md) and a few changes were
 made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible changes are:
 
 * `Behaviors.intercept` now takes a factory function for the interceptor.
-* Factory method `Entity.ofPersistentEntity` is renamed to `Entity.ofEventSourcedEntity` in the Java API for Akka Cluster Sharding Typed.
-* New abstract class `EventSourcedEntityWithEnforcedReplies` in Java API for Akka Cluster Sharding Typed and corresponding factory method `Entity.ofEventSourcedEntityWithEnforcedReplies` to ease the creation of `EventSourcedBehavior` with enforced replies.
-* New method `EventSourcedEntity.withEnforcedReplies` added to Scala API to ease the creation of `EventSourcedBehavior` with enforced replies.
-* `ActorSystem.scheduler` previously gave access to the classic `akka.actor.Scheduler` but now returns a typed specific `akka.actor.typed.Scheduler`.
+* `ActorSystem.scheduler` previously gave access to the classic `akka.actor.Scheduler` but now returns a specific `akka.actor.typed.Scheduler`.
   Additionally `schedule` method has been replaced by `scheduleWithFixedDelay` and `scheduleAtFixedRate`. Actors that needs to schedule tasks should
   prefer `Behaviors.withTimers`.
 * `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
@@ -496,6 +575,17 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `GetDataDeleted` and `UpdateDataDeleted` introduced as described in @ref[DataDeleted](#datadeleted).
 * `SubscribeResponse` introduced in `Subscribe` because the responses can be both `Changed` and `Deleted`.
 * `ReplicationDeleteFailure` renamed to `DeleteFailure`.
+* `EventSourcedEntity` removed in favor using plain `EventSourcedBehavior` because the alternative way was
+  causing more confusion than adding value. Construction of `PersistentId` for the `EventSourcedBehavior` is
+  facilitated by factory methods in `PersistenceId`.
+* `akka.cluster.sharding.typed.scaladsl.Entity.apply` changed to use two parameter lists because the new
+  `EntityContext.entityTypeKey` required additional type parameter that is inferred better with a secondary
+  parameter list.
+* `EventSourcedBehavior.withEnforcedReplies` signature changed. Command is not required to extend `ExpectingReply`
+  anymore. `ExpectingReply` has therefore been removed.
+* `ActorContext` is now a mandatory constructor parameter in `AbstractBehavior`. Create via `Behaviors.setup.
+  The reason is to encourage right usage and detect mistakes like not creating a new instance (via `setup`)
+  when the behavior is supervised and restarted.    
 
 #### Akka Typed Stream API changes
 
@@ -503,6 +593,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * Factories for creating a materializer from an `akka.actor.typed.ActorSystem` have been removed.
   A stream can be run with an `akka.actor.typed.ActorSystem` @scala[in implicit scope]@java[parameter]
   and therefore the need for creating a materializer has been reduced.
+* `actorRefWithAck` has been renamed to `actorRefWithBackpressure`
 
 ## Akka Stream changes
 
@@ -519,7 +610,7 @@ see below for more details.
 Having a default materializer available means that most, if not all, usages of Java `ActorMaterializer.create()`
 and Scala `implicit val materializer = ActorMaterializer()` should be removed.
 
-Details about the stream materializer can be found in [Actor Materializer Lifecycle](../stream/stream-flows-and-basics.md#actor-materializer-lifecycle)
+Details about the stream materializer can be found in @ref:[Actor Materializer Lifecycle](../stream/stream-flows-and-basics.md#actor-materializer-lifecycle)
 
 When using streams from typed the same factories and methods for creating materializers and running streams as from classic can now be used with typed. The
 `akka.stream.typed.scaladsl.ActorMaterializer` and `akka.stream.typed.javadsl.ActorMaterializerFactory` that previously existed in the `akka-stream-typed` module has been removed.
@@ -548,7 +639,7 @@ used for individual streams when they are materialized.
 | `streamRefSettings.demandRedeliveryInterval` | `StreamRefAttributes.demandRedeliveryInterval`  | `akka.stream.materializer.stream-ref.demand-redelivery-interval` |
 | `streamRefSettings.subscriptionTimeout`      | `StreamRefAttributes.subscriptionTimeout`       | `akka.stream.materializer.stream-ref.subscription-timeout` |
 | `streamRefSettings.finalTerminationSignalDeadline` | `StreamRefAttributes.finalTerminationSignalDeadline` | `akka.stream.materializer.stream-ref.final-termination-signal-deadline` |
-| `blockingIoDispatcher`                       | `ActorAttributes.blockingIoDispatcher`          | `akka.stream.materializer.blocking-io-dispatcher` |
+| `blockingIoDispatcher`                       | na                                              | `akka.stream.materializer.blocking-io-dispatcher` |
 | `subscriptionTimeoutSettings.mode`           | `ActorAttributes.streamSubscriptionTimeoutMode` | `akka.stream.materializer.subscription-timeout.mode` |
 | `subscriptionTimeoutSettings.timeout`        | `ActorAttributes.streamSubscriptionTimeout`     | `akka.stream.materializer.subscription-timeout.timeout` |
 

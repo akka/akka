@@ -4,13 +4,10 @@
 
 package jdocs.akka.typed.supervision;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.SupervisorStrategy;
+import akka.actor.typed.*;
 import akka.actor.typed.javadsl.Behaviors;
-import scala.concurrent.duration.FiniteDuration;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
 
 public class SupervisionCompileOnlyTest {
   // #wrap
@@ -76,7 +73,7 @@ public class SupervisionCompileOnlyTest {
     Behaviors.supervise(behavior)
         .onFailure(
             IllegalStateException.class,
-            SupervisorStrategy.restart().withLimit(10, FiniteDuration.apply(10, TimeUnit.SECONDS)));
+            SupervisorStrategy.restart().withLimit(10, Duration.ofSeconds(10)));
     // #restart-limit
 
     // #multiple
@@ -102,7 +99,7 @@ public class SupervisionCompileOnlyTest {
 
                   return Behaviors.receiveMessage(
                       msg -> {
-                        // there might be bugs here...
+                        // message handling that might throw an exception
                         String[] parts = msg.split(" ");
                         child1.tell(parts[0]);
                         child2.tell(parts[1]);
@@ -124,7 +121,7 @@ public class SupervisionCompileOnlyTest {
           return Behaviors.<String>supervise(
                   Behaviors.receiveMessage(
                       msg -> {
-                        // there might be bugs here...
+                        // message handling that might throw an exception
                         String[] parts = msg.split(" ");
                         child1.tell(parts[0]);
                         child2.tell(parts[1]);
@@ -135,4 +132,47 @@ public class SupervisionCompileOnlyTest {
   }
   // #restart-keep-children
 
+  interface Resource {
+    void close();
+
+    void process(String[] parts);
+  }
+
+  public static Resource claimResource() {
+    return null;
+  }
+
+  static void prerestartBehavior() {
+    // #restart-PreRestart-signal
+    Behaviors.supervise(
+            Behaviors.<String>setup(
+                ctx -> {
+                  final Resource resource = claimResource();
+
+                  return Behaviors.receive(String.class)
+                      .onMessage(
+                          String.class,
+                          msg -> {
+                            // message handling that might throw an exception
+                            String[] parts = msg.split(" ");
+                            resource.process(parts);
+                            return Behaviors.same();
+                          })
+                      .onSignal(
+                          PreRestart.class,
+                          signal -> {
+                            resource.close();
+                            return Behaviors.same();
+                          })
+                      .onSignal(
+                          PostStop.class,
+                          signal -> {
+                            resource.close();
+                            return Behaviors.same();
+                          })
+                      .build();
+                }))
+        .onFailure(Exception.class, SupervisorStrategy.restart());
+    // #restart-PreRestart-signal
+  }
 }

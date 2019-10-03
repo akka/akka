@@ -20,11 +20,11 @@ import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.sharding.typed.javadsl.Entity;
+import akka.persistence.typed.PersistenceId;
 
 // #import
 
-import jdocs.akka.persistence.typed.BlogPostExample.BlogCommand;
-import jdocs.akka.persistence.typed.BlogPostExample.BlogBehavior;
+import jdocs.akka.persistence.typed.BlogPostEntity;
 
 interface ShardingCompileOnlyTest {
 
@@ -49,12 +49,11 @@ interface ShardingCompileOnlyTest {
       return Behaviors.setup(context -> new Counter(context, entityId));
     }
 
-    private final ActorContext<Command> context;
     private final String entityId;
     private int value = 0;
 
     private Counter(ActorContext<Command> context, String entityId) {
-      this.context = context;
+      super(context);
       this.entityId = entityId;
     }
 
@@ -112,7 +111,6 @@ interface ShardingCompileOnlyTest {
           });
     }
 
-    private final ActorContext<Command> context;
     private final ActorRef<ClusterSharding.ShardCommand> shard;
     private final String entityId;
     private int value = 0;
@@ -121,7 +119,7 @@ interface ShardingCompileOnlyTest {
         ActorContext<Command> context,
         ActorRef<ClusterSharding.ShardCommand> shard,
         String entityId) {
-      this.context = context;
+      super(context);
       this.shard = shard;
       this.entityId = entityId;
     }
@@ -148,7 +146,7 @@ interface ShardingCompileOnlyTest {
 
     private Behavior<Command> onIdle() {
       // after receive timeout
-      shard.tell(new ClusterSharding.Passivate<>(context.getSelf()));
+      shard.tell(new ClusterSharding.Passivate<>(getContext().getSelf()));
       return this;
     }
 
@@ -202,9 +200,17 @@ interface ShardingCompileOnlyTest {
     ClusterSharding sharding = ClusterSharding.get(system);
 
     // #persistence
-    EntityTypeKey<BlogCommand> blogTypeKey = EntityTypeKey.create(BlogCommand.class, "BlogPost");
+    EntityTypeKey<BlogPostEntity.Command> blogTypeKey =
+        EntityTypeKey.create(BlogPostEntity.Command.class, "BlogPost");
 
-    sharding.init(Entity.of(blogTypeKey, ctx -> BlogBehavior.behavior(ctx.getEntityId())));
+    sharding.init(
+        Entity.of(
+            blogTypeKey,
+            entityContext ->
+                BlogPostEntity.create(
+                    entityContext.getEntityId(),
+                    PersistenceId.of(
+                        entityContext.getEntityTypeKey().name(), entityContext.getEntityId()))));
     // #persistence
   }
 }

@@ -1,3 +1,6 @@
+---
+project.description: Akka version migration guides.
+---
 # Migration Guides
 
 @@toc { depth=1 }

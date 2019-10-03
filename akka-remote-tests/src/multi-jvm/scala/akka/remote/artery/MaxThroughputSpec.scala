@@ -39,8 +39,6 @@ object MaxThroughputSpec extends MultiNodeConfig {
        testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
        actor {
          provider = remote
-         serialize-creators = false
-         serialize-messages = false
 
          serializers {
            test = "akka.remote.artery.MaxThroughputSpec$$TestSerializer"

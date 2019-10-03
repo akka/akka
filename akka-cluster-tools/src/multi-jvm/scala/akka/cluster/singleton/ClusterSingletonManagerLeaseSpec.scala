@@ -28,7 +28,8 @@ object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = 0s
     test-lease {
         lease-class = akka.cluster.TestLeaseActorClient
         heartbeat-interval = 1s

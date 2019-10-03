@@ -110,12 +110,10 @@ interface StyleGuideDocExamples {
         return Behaviors.setup(Counter::new);
       }
 
-      private final ActorContext<Counter.Command> context;
-
       private int n;
 
       private Counter(ActorContext<Command> context) {
-        this.context = context;
+        super(context);
       }
 
       @Override
@@ -130,7 +128,7 @@ interface StyleGuideDocExamples {
 
       private Behavior<Command> onIncrement() {
         n++;
-        context.getLog().debug("Incremented counter to [{}]", n);
+        getContext().getLog().debug("Incremented counter to [{}]", n);
         return this;
       }
 
@@ -426,13 +424,15 @@ interface StyleGuideDocExamples {
 
       // factory for the initial `Behavior`
       public static Behavior<Command> create(int countDownFrom, ActorRef<Done> notifyWhenZero) {
-        return Behaviors.setup(context -> new CountDown(countDownFrom, notifyWhenZero));
+        return Behaviors.setup(context -> new CountDown(context, countDownFrom, notifyWhenZero));
       }
 
       private final ActorRef<Done> notifyWhenZero;
       private int remaining;
 
-      private CountDown(int countDownFrom, ActorRef<Done> notifyWhenZero) {
+      private CountDown(
+          ActorContext<Command> context, int countDownFrom, ActorRef<Done> notifyWhenZero) {
+        super(context);
         this.remaining = countDownFrom;
         this.notifyWhenZero = notifyWhenZero;
       }
@@ -558,12 +558,11 @@ interface StyleGuideDocExamples {
       }
 
       private final String name;
-      private final ActorContext<Command> context;
       private int count;
 
       private Counter(String name, ActorContext<Command> context) {
+        super(context);
         this.name = name;
-        this.context = context;
       }
 
       // #on-message-lambda
@@ -589,14 +588,16 @@ interface StyleGuideDocExamples {
       // #on-message-lambda
       private Behavior<Command> onIncrement() {
         count++;
-        context.getLog().debug("[{}] Incremented counter to [{}]", name, count);
+        getContext().getLog().debug("[{}] Incremented counter to [{}]", name, count);
         return this;
       }
       // #on-message-lambda
 
       private Behavior<Command> onTick() {
         count++;
-        context.getLog().debug("[{}] Incremented counter by background tick to [{}]", name, count);
+        getContext()
+            .getLog()
+            .debug("[{}] Incremented counter by background tick to [{}]", name, count);
         return this;
       }
 
@@ -616,14 +617,14 @@ interface StyleGuideDocExamples {
                 Increment.class,
                 notUsed -> {
                   count++;
-                  context.getLog().debug("[{}] Incremented counter to [{}]", name, count);
+                  getContext().getLog().debug("[{}] Incremented counter to [{}]", name, count);
                   return this;
                 })
             .onMessage(
                 Tick.class,
                 notUsed -> {
                   count++;
-                  context
+                  getContext()
                       .getLog()
                       .debug("[{}] Incremented counter by background tick to [{}]", name, count);
                   return this;
@@ -694,12 +695,11 @@ interface StyleGuideDocExamples {
       }
 
       private final String name;
-      private final ActorContext<Message> context;
       private int count;
 
       private Counter(String name, ActorContext<Message> context) {
+        super(context);
         this.name = name;
-        this.context = context;
       }
 
       @Override
@@ -713,13 +713,15 @@ interface StyleGuideDocExamples {
 
       private Behavior<Message> onIncrement() {
         count++;
-        context.getLog().debug("[{}] Incremented counter to [{}]", name, count);
+        getContext().getLog().debug("[{}] Incremented counter to [{}]", name, count);
         return this;
       }
 
       private Behavior<Message> onTick() {
         count++;
-        context.getLog().debug("[{}] Incremented counter by background tick to [{}]", name, count);
+        getContext()
+            .getLog()
+            .debug("[{}] Incremented counter by background tick to [{}]", name, count);
         return this;
       }
 

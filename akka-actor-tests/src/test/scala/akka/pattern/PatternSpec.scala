@@ -21,7 +21,7 @@ object PatternSpec {
   }
 }
 
-class PatternSpec extends AkkaSpec("akka.actor.serialize-messages = off") {
+class PatternSpec extends AkkaSpec {
   implicit val ec = system.dispatcher
   import PatternSpec._
 

@@ -32,7 +32,8 @@ object LotsOfDataBot {
       // Override the configuration of the port
       val config = ConfigFactory
         .parseString("akka.remote.classic.netty.tcp.port=" + port)
-        .withFallback(ConfigFactory.load(ConfigFactory.parseString("""
+        .withFallback(
+          ConfigFactory.load(ConfigFactory.parseString("""
             passive = off
             max-entries = 100000
             akka.actor.provider = "cluster"
@@ -48,7 +49,8 @@ object LotsOfDataBot {
                 "akka://ClusterSystem@127.0.0.1:2551",
                 "akka://ClusterSystem@127.0.0.1:2552"]
 
-              auto-down-unreachable-after = 10s
+              downing-provider-class = akka.cluster.testkit.AutoDowning
+              testkit.auto-down-unreachable-after = 10s
             }
             """)))
 

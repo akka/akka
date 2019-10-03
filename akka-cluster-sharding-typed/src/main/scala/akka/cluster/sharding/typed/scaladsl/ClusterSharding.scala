@@ -24,7 +24,6 @@ import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
-import akka.persistence.typed.PersistenceId
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
 
@@ -212,17 +211,12 @@ object Entity {
    * Defines how the entity should be created. Used in [[ClusterSharding#init]]. More optional
    * settings can be defined using the `with` methods of the returned [[Entity]].
    *
-   * Any [[Behavior]] can be used as a sharded entity actor, but the combination of sharding and persistent actors
-   * is very common and therefore [[EventSourcedEntity]] is provided as a convenience for creating such
-   * `EventSourcedBehavior`.
-   *
    * @param typeKey A key that uniquely identifies the type of entity in this cluster
    * @param createBehavior Create the behavior for an entity given a [[EntityContext]] (includes entityId)
    * @tparam M The type of message the entity accepts
    */
-  def apply[M](
-      typeKey: EntityTypeKey[M],
-      createBehavior: EntityContext => Behavior[M]): Entity[M, ShardingEnvelope[M]] =
+  def apply[M](typeKey: EntityTypeKey[M])(
+      createBehavior: EntityContext[M] => Behavior[M]): Entity[M, ShardingEnvelope[M]] =
     new Entity(createBehavior, typeKey, None, Props.empty, None, None, None)
 }
 
@@ -230,7 +224,7 @@ object Entity {
  * Defines how the entity should be created. Used in [[ClusterSharding#init]].
  */
 final class Entity[M, E] private[akka] (
-    val createBehavior: EntityContext => Behavior[M],
+    val createBehavior: EntityContext[M] => Behavior[M],
     val typeKey: EntityTypeKey[M],
     val stopMessage: Option[M],
     val entityProps: Props,
@@ -278,7 +272,7 @@ final class Entity[M, E] private[akka] (
     copy(allocationStrategy = Option(newAllocationStrategy))
 
   private def copy(
-      createBehavior: EntityContext => Behavior[M] = createBehavior,
+      createBehavior: EntityContext[M] => Behavior[M] = createBehavior,
       typeKey: EntityTypeKey[M] = typeKey,
       stopMessage: Option[M] = stopMessage,
       entityProps: Props = entityProps,
@@ -290,9 +284,22 @@ final class Entity[M, E] private[akka] (
 }
 
 /**
- * Parameter to [[Entity.apply]]
+ * Parameter to `createBehavior` function in [[Entity.apply]].
+ *
+ * Cluster Sharding is often used together with [[akka.persistence.typed.scaladsl.EventSourcedBehavior]]
+ * for the entities. See more considerations in [[akka.persistence.typed.PersistenceId]].
+ * The `PersistenceId` of the `EventSourcedBehavior` can typically be constructed with:
+ * {{{
+ * PersistenceId(entityContext.entityTypeKey.name, entityContext.entityId)
+ * }}}
+ *
+ * @param entityTypeKey the key of the entity type
+ * @param entityId the business domain identifier of the entity
  */
-final class EntityContext(val entityId: String, val shard: ActorRef[ClusterSharding.ShardCommand])
+final class EntityContext[M](
+    val entityTypeKey: EntityTypeKey[M],
+    val entityId: String,
+    val shard: ActorRef[ClusterSharding.ShardCommand])
 
 /** Allows starting a specific Sharded Entity by its entity identifier */
 object StartEntity {
@@ -319,25 +326,6 @@ object StartEntity {
    */
   def name: String
 
-  /**
-   * Constructs a [[PersistenceId]] from this `EntityTypeKey` and the given `entityId` by
-   * concatenating them with `|` separator.
-   *
-   * The `|` separator is also used in Lagom's `scaladsl.PersistentEntity` but no separator is used
-   * in Lagom's `javadsl.PersistentEntity`. For compatibility with Lagom's `javadsl.PersistentEntity`
-   * you should use `""` as the separator in [[EntityTypeKey.withEntityIdSeparator]].
-   */
-  def persistenceIdFrom(entityId: String): PersistenceId
-
-  /**
-   * Specify a custom separator for compatibility with old naming conventions. The separator is used between the
-   * `EntityTypeKey` and the `entityId` when constructing a `persistenceId` with [[EntityTypeKey.persistenceIdFrom]].
-   *
-   * The default `|` separator is also used in Lagom's `scaladsl.PersistentEntity` but no separator is used
-   * in Lagom's `javadsl.PersistentEntity`. For compatibility with Lagom's `javadsl.PersistentEntity`
-   * you should use `""` as the separator here.
-   */
-  def withEntityIdSeparator(separator: String): EntityTypeKey[T]
 }
 
 object EntityTypeKey {

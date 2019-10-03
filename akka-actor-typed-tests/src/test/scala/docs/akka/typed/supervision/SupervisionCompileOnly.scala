@@ -5,8 +5,12 @@
 package docs.akka.typed.supervision
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.PostStop
+import akka.actor.typed.PreRestart
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
+import com.github.ghik.silencer.silent
+
 import scala.concurrent.duration._
 
 object SupervisionCompileOnly {
@@ -68,7 +72,7 @@ object SupervisionCompileOnly {
           val child2 = ctx.spawn(child(0), "child2")
 
           Behaviors.receiveMessage[String] { msg =>
-            // there might be bugs here...
+            // message handling that might throw an exception
             val parts = msg.split(" ")
             child1 ! parts(0)
             child2 ! parts(1)
@@ -90,7 +94,7 @@ object SupervisionCompileOnly {
       Behaviors
         .supervise {
           Behaviors.receiveMessage[String] { msg =>
-            // there might be bugs here...
+            // message handling that might throw an exception
             val parts = msg.split(" ")
             child1 ! parts(0)
             child2 ! parts(1)
@@ -101,4 +105,38 @@ object SupervisionCompileOnly {
     }
   }
   //#restart-keep-children
+
+  trait Resource {
+    def close(): Unit
+    def process(parts: Array[String]): Unit
+  }
+  def claimResource(): Resource = ???
+
+  @silent("never used")
+  //#restart-PreRestart-signal
+  def withPreRestart: Behavior[String] = {
+    Behaviors
+      .supervise[String] {
+        Behaviors.setup { ctx =>
+          val resource = claimResource()
+
+          Behaviors
+            .receiveMessage[String] { msg =>
+              // message handling that might throw an exception
+
+              val parts = msg.split(" ")
+              resource.process(parts)
+              Behaviors.same
+            }
+            .receiveSignal {
+              case (_, signal) if signal == PreRestart || signal == PostStop =>
+                resource.close()
+                Behaviors.same
+            }
+        }
+      }
+      .onFailure[Exception](SupervisorStrategy.restart)
+  }
+
+  //#restart-PreRestart-signal
 }

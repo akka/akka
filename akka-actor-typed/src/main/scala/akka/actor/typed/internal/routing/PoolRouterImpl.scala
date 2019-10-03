@@ -42,17 +42,17 @@ private final class PoolRouterImpl[T](
     poolSize: Int,
     behaviorFactory: () => Behavior[T],
     logic: RoutingLogic[T])
-    extends AbstractBehavior[T] {
+    extends AbstractBehavior[T](ctx) {
 
   (1 to poolSize).foreach { _ =>
-    val child = ctx.spawnAnonymous(behaviorFactory())
-    ctx.watch(child)
+    val child = context.spawnAnonymous(behaviorFactory())
+    context.watch(child)
     child
   }
   onRouteesChanged()
 
   private def onRouteesChanged(): Unit = {
-    val children = ctx.children.toSet.asInstanceOf[Set[ActorRef[T]]]
+    val children = context.children.toSet.asInstanceOf[Set[ActorRef[T]]]
     logic.routeesUpdated(children)
   }
 
@@ -67,12 +67,12 @@ private final class PoolRouterImpl[T](
       // for the `Terminated` we receive for the first child. This means it is not certain that
       // there will be a log entry per child in those cases (it does not make sense to keep the
       // pool alive just to get the logging right when there are no routees available)
-      if (ctx.children.nonEmpty) {
-        ctx.log.debug("Pool child stopped [{}]", child.path)
+      if (context.children.nonEmpty) {
+        context.log.debug("Pool child stopped [{}]", child.path)
         onRouteesChanged()
         this
       } else {
-        ctx.log.info("Last pool child stopped, stopping pool [{}]", ctx.self.path)
+        context.log.info("Last pool child stopped, stopping pool [{}]", context.self.path)
         Behaviors.stopped
       }
   }

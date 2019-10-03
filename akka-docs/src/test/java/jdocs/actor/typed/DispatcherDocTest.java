@@ -21,7 +21,7 @@ public class DispatcherDocTest {
     // #defining-dispatcher-in-code
     ActorRef<Integer> myActor =
         context.spawn(
-            new PrintActor(), "PrintActor", DispatcherSelector.fromConfig("my-dispatcher"));
+            PrintActor.create(), "PrintActor", DispatcherSelector.fromConfig("my-dispatcher"));
     // #defining-dispatcher-in-code
   }
 
@@ -29,7 +29,7 @@ public class DispatcherDocTest {
     // #defining-fixed-pool-size-dispatcher
     ActorRef<Integer> myActor =
         context.spawn(
-            new PrintActor(),
+            PrintActor.create(),
             "PrintActor",
             DispatcherSelector.fromConfig("blocking-io-dispatcher"));
     // #defining-fixed-pool-size-dispatcher
@@ -39,7 +39,9 @@ public class DispatcherDocTest {
     // #defining-pinned-dispatcher
     ActorRef<Integer> myActor =
         context.spawn(
-            new PrintActor(), "PrintActor", DispatcherSelector.fromConfig("my-pinned-dispatcher"));
+            PrintActor.create(),
+            "PrintActor",
+            DispatcherSelector.fromConfig("my-pinned-dispatcher"));
     // #defining-pinned-dispatcher
   }
 

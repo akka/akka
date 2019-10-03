@@ -70,10 +70,10 @@ public class BehaviorTestKitTest extends JUnitSuite {
 
   public static class CreateMessageAdapter implements Command {
     private final Class<Object> clazz;
-    private final Function<Object, Command> f;
+    private final akka.japi.function.Function<Object, Command> f;
 
     @SuppressWarnings("unchecked")
-    public CreateMessageAdapter(Class clazz, Function<Object, Command> f) {
+    public CreateMessageAdapter(Class clazz, akka.japi.function.Function<Object, Command> f) {
       this.clazz = clazz;
       this.f = f;
     }

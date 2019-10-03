@@ -6,7 +6,6 @@ package akka.cluster
 
 import akka.ConfigurationException
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Props }
-import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -35,6 +34,15 @@ private[cluster] object DowningProvider {
 /**
  * API for plugins that will handle downing of cluster nodes. Concrete plugins must subclass and
  * have a public one argument constructor accepting an [[akka.actor.ActorSystem]].
+ *
+ * A custom `DowningProvider` can be configured with `akka.cluster.downing-provider-class`
+ *
+ * When implementing a downing provider you should make sure that it will not split the cluster into
+ * several separate clusters in case of network problems or system overload (long GC pauses). This
+ * is much more difficult than it might be perceived at first, so carefully read the concerns and scenarios
+ * described in
+ * https://doc.akka.io/docs/akka/current/typed/cluster.html#downing and
+ * https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html
  */
 abstract class DowningProvider {
 
@@ -61,11 +69,9 @@ abstract class DowningProvider {
 }
 
 /**
- * Default downing provider used when no provider is configured and 'auto-down-unreachable-after'
- * is not enabled.
+ * Default downing provider used when no provider is configured.
  */
 final class NoDowning(system: ActorSystem) extends DowningProvider {
-  @silent("deprecated")
   override def downRemovalMargin: FiniteDuration = Cluster(system).settings.DownRemovalMargin
   override val downingActorProps: Option[Props] = None
 }

@@ -2,9 +2,11 @@
 
 @@include[includes.md](includes.md) { #actor-api }
 
+@@project-info{ projectId="akka-actor" }
+
 ## Dependency
 
-To use Classic Actors, you must add the following dependency in your project:
+To use Classic Actors, add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -30,9 +32,10 @@ its syntax from Erlang.
 @@@ note
 
 Since Akka enforces parental supervision every actor is supervised and
-(potentially) the supervisor of its children, it is advisable that you
-familiarize yourself with @ref:[Actor Systems](general/actor-systems.md) and @ref:[supervision](general/supervision.md)
-and it may also help to read @ref:[Actor References, Paths and Addresses](general/addressing.md).
+(potentially) the supervisor of its children, it is advisable to
+familiarize yourself with @ref:[Actor Systems](general/actor-systems.md), @ref:[supervision](general/supervision.md)
+and @ref:[handling exceptions](general/supervision.md#actors-and-exceptions)
+as well as @ref:[Actor References, Paths and Addresses](general/addressing.md).
 
 @@@
 
@@ -83,7 +86,7 @@ as explained below.
 The result of the @scala[`receive` method is a partial function object, which is]
 @java[`createReceive` method is `AbstractActor.Receive` which is a wrapper around partial 
 scala function object. It is] stored within the actor as its “initial behavior”, 
-see [Become/Unbecome](#become-unbecome) for
+see @ref:[Become/Unbecome](#become-unbecome) for
 further information on changing the behavior of an actor after its
 construction.
 
@@ -382,7 +385,7 @@ are notified of the termination. After the incarnation is stopped, the path can
 be reused again by creating an actor with `actorOf()`. In this case the
 name of the new incarnation will be the same as the previous one but the
 UIDs will differ. An actor can be stopped by the actor itself, another actor
-or the `ActorSystem` (see [Stopping actors](#stopping-actors)).
+or the `ActorSystem` (see @ref:[Stopping actors](#stopping-actors)).
 
 @@@ note
 
@@ -404,7 +407,7 @@ occupying it. `ActorSelection` cannot be watched for this reason. It is
 possible to resolve the current incarnation's `ActorRef` living under the
 path by sending an `Identify` message to the `ActorSelection` which
 will be replied to with an `ActorIdentity` containing the correct reference
-(see [ActorSelection](#actorselection)). This can also be done with the `resolveOne`
+(see @ref:[ActorSelection](#actorselection)). This can also be done with the `resolveOne`
 method of the `ActorSelection`, which returns a `Future` of the matching
 `ActorRef`.
 
@@ -414,7 +417,7 @@ method of the `ActorSelection`, which returns a `Future` of the matching
 In order to be notified when another actor terminates (i.e. stops permanently,
 not temporary failure and restart), an actor may register itself for reception
 of the `Terminated` message dispatched by the other actor upon
-termination (see [Stopping Actors](#stopping-actors)). This service is provided by the
+termination (see @ref:[Stopping Actors](#stopping-actors)). This service is provided by the
 `DeathWatch` component of the actor system.
 
 Registering a monitor is easy:
@@ -774,7 +777,6 @@ Java
 
 ## Receive messages
 
-
 An Actor has to
 @scala[implement the `receive` method to receive messages:]
 @java[define its initial receive behavior by implementing the `createReceive` method in the `AbstractActor`:]
@@ -935,7 +937,7 @@ Termination of an actor proceeds in two steps: first the actor suspends its
 mailbox processing and sends a stop command to all its children, then it keeps
 processing the internal termination notifications from its children until the last one is
 gone, finally terminating itself (invoking `postStop`, dumping mailbox,
-publishing `Terminated` on the [DeathWatch](#deathwatch), telling
+publishing `Terminated` on the @ref:[DeathWatch](#deathwatch), telling
 its supervisor). This procedure ensures that actor system sub-trees terminate
 in an orderly fashion, propagating the stop command to the leaves and
 collecting their confirmation back to the stopped supervisor. If one of the
@@ -1270,35 +1272,6 @@ If you want to enforce that your actor can only work with an unbounded stash,
 then you should use the @scala[`UnboundedStash` trait] @java[`AbstractActorWithUnboundedStash` class] instead.
 
 @@@
-
-
-## Actors and exceptions
-
-It can happen that while a message is being processed by an actor, that some
-kind of exception is thrown, e.g. a database exception.
-
-### What happens to the Message
-
-If an exception is thrown while a message is being processed (i.e. taken out of
-its mailbox and handed over to the current behavior), then this message will be
-lost. It is important to understand that it is not put back on the mailbox. So
-if you want to retry processing of a message, you need to deal with it yourself
-by catching the exception and retry your flow. Make sure that you put a bound
-on the number of retries since you don't want a system to livelock (so
-consuming a lot of cpu cycles without making progress).
-
-### What happens to the mailbox
-
-If an exception is thrown while a message is being processed, nothing happens to
-the mailbox. If the actor is restarted, the same mailbox will be there. So all
-messages on that mailbox will be there as well.
-
-### What happens to the actor
-
-If code within an actor throws an exception, that actor is suspended and the
-supervision process is started (see @ref:[supervision](general/supervision.md)). Depending on the
-supervisor’s decision the actor is resumed (as if nothing happened), restarted
-(wiping out its internal state and starting from scratch) or terminated.
 
 @@@ div { .group-scala }
 

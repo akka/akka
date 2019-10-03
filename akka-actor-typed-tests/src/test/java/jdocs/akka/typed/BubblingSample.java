@@ -45,7 +45,11 @@ public class BubblingSample {
   public static class Worker extends AbstractBehavior<Protocol.Command> {
 
     public static Behavior<Protocol.Command> create() {
-      return Behaviors.setup(context -> new Worker());
+      return Behaviors.setup(Worker::new);
+    }
+
+    private Worker(ActorContext<Protocol.Command> context) {
+      super(context);
     }
 
     @Override
@@ -72,11 +76,10 @@ public class BubblingSample {
       return Behaviors.setup(MiddleManagement::new);
     }
 
-    private final ActorContext<Protocol.Command> context;
     private final ActorRef<Protocol.Command> child;
 
     private MiddleManagement(ActorContext<Protocol.Command> context) {
-      this.context = context;
+      super(context);
 
       context.getLog().info("Middle management starting up");
       // default supervision of child, meaning that it will stop on failure
@@ -109,11 +112,10 @@ public class BubblingSample {
           .onFailure(DeathPactException.class, SupervisorStrategy.restart());
     }
 
-    private final ActorContext<Protocol.Command> context;
     private final ActorRef<Protocol.Command> middleManagement;
 
     private Boss(ActorContext<Protocol.Command> context) {
-      this.context = context;
+      super(context);
       context.getLog().info("Boss starting up");
       // default supervision of child, meaning that it will stop on failure
       middleManagement = context.spawn(MiddleManagement.create(), "middle-management");

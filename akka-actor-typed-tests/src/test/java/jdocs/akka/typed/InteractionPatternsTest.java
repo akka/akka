@@ -170,7 +170,6 @@ public class InteractionPatternsTest extends JUnitSuite {
       }
 
       public static class Translator extends AbstractBehavior<Command> {
-        private final ActorContext<Command> context;
         private final ActorRef<Backend.Request> backend;
         private final ActorRef<Backend.Response> backendResponseAdapter;
 
@@ -178,7 +177,7 @@ public class InteractionPatternsTest extends JUnitSuite {
         private Map<Integer, ActorRef<URI>> inProgress = new HashMap<>();
 
         public Translator(ActorContext<Command> context, ActorRef<Backend.Request> backend) {
-          this.context = context;
+          super(context);
           this.backend = backend;
           this.backendResponseAdapter =
               context.messageAdapter(Backend.Response.class, WrappedBackendResponse::new);
@@ -204,13 +203,13 @@ public class InteractionPatternsTest extends JUnitSuite {
           Backend.Response response = wrapped.response;
           if (response instanceof Backend.JobStarted) {
             Backend.JobStarted rsp = (Backend.JobStarted) response;
-            context.getLog().info("Started {}", rsp.taskId);
+            getContext().getLog().info("Started {}", rsp.taskId);
           } else if (response instanceof Backend.JobProgress) {
             Backend.JobProgress rsp = (Backend.JobProgress) response;
-            context.getLog().info("Progress {}", rsp.taskId);
+            getContext().getLog().info("Progress {}", rsp.taskId);
           } else if (response instanceof Backend.JobCompleted) {
             Backend.JobCompleted rsp = (Backend.JobCompleted) response;
-            context.getLog().info("Completed {}", rsp.taskId);
+            getContext().getLog().info("Completed {}", rsp.taskId);
             inProgress.get(rsp.taskId).tell(rsp.result);
             inProgress.remove(rsp.taskId);
           } else {
@@ -292,13 +291,15 @@ public class InteractionPatternsTest extends JUnitSuite {
 
       private Behavior<Command> onIdleCommand(Command message) {
         timers.startSingleTimer(TIMER_KEY, Timeout.INSTANCE, after);
-        return new Active(message);
+        return Behaviors.setup(context -> new Active(context, message));
       }
 
       private class Active extends AbstractBehavior<Command> {
+
         private final List<Command> buffer = new ArrayList<>();
 
-        Active(Command firstCommand) {
+        Active(ActorContext<Command> context, Command firstCommand) {
+          super(context);
           buffer.add(firstCommand);
         }
 
@@ -331,6 +332,14 @@ public class InteractionPatternsTest extends JUnitSuite {
 
     // #actor-ask
     public class Hal extends AbstractBehavior<Hal.Command> {
+
+      public Behavior<Hal.Command> create() {
+        return Behaviors.setup(Hal::new);
+      }
+
+      private Hal(ActorContext<Command> context) {
+        super(context);
+      }
 
       public interface Command {}
 
@@ -380,10 +389,8 @@ public class InteractionPatternsTest extends JUnitSuite {
         return Behaviors.setup(context -> new Dave(context, hal));
       }
 
-      private final ActorContext<Command> context;
-
       private Dave(ActorContext<Command> context, ActorRef<Hal.Command> hal) {
-        this.context = context;
+        super(context);
 
         // asking someone requires a timeout, if the timeout hits without response
         // the ask is failed with a TimeoutException
@@ -435,7 +442,7 @@ public class InteractionPatternsTest extends JUnitSuite {
       }
 
       private Behavior<Command> onAdaptedResponse(AdaptedResponse response) {
-        context.getLog().info("Got response from HAL: {}", response.message);
+        getContext().getLog().info("Got response from HAL: {}", response.message);
         return this;
       }
     }
@@ -535,7 +542,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
       private Behavior<Command> onLeaveHome(LeaveHome message) {
         context.spawn(
-            new PrepareToLeaveHome(message.who, message.respondTo, keyCabinet, drawer),
+            PrepareToLeaveHome.create(message.who, message.respondTo, keyCabinet, drawer),
             "leaving" + message.who);
         return Behaviors.same();
       }
@@ -548,6 +555,15 @@ public class InteractionPatternsTest extends JUnitSuite {
 
     // per session actor behavior
     class PrepareToLeaveHome extends AbstractBehavior<Object> {
+      static Behavior<Object> create(
+          String whoIsLeaving,
+          ActorRef<Home.ReadyToLeaveHome> replyTo,
+          ActorRef<KeyCabinet.GetKeys> keyCabinet,
+          ActorRef<Drawer.GetWallet> drawer) {
+        return Behaviors.setup(
+            context -> new PrepareToLeaveHome(context, whoIsLeaving, replyTo, keyCabinet, drawer));
+      }
+
       private final String whoIsLeaving;
       private final ActorRef<Home.ReadyToLeaveHome> replyTo;
       private final ActorRef<KeyCabinet.GetKeys> keyCabinet;
@@ -555,11 +571,13 @@ public class InteractionPatternsTest extends JUnitSuite {
       private Optional<Wallet> wallet = Optional.empty();
       private Optional<Keys> keys = Optional.empty();
 
-      PrepareToLeaveHome(
+      private PrepareToLeaveHome(
+          ActorContext<Object> context,
           String whoIsLeaving,
           ActorRef<Home.ReadyToLeaveHome> replyTo,
           ActorRef<KeyCabinet.GetKeys> keyCabinet,
           ActorRef<Drawer.GetWallet> drawer) {
+        super(context);
         this.whoIsLeaving = whoIsLeaving;
         this.replyTo = replyTo;
         this.keyCabinet = keyCabinet;

@@ -24,7 +24,7 @@ object TypedSample {
       Behaviors.setup(context => new HelloWorld(context))
   }
 
-  class HelloWorld(context: ActorContext[HelloWorld.Greet]) extends AbstractBehavior[HelloWorld.Greet] {
+  class HelloWorld(context: ActorContext[HelloWorld.Greet]) extends AbstractBehavior[HelloWorld.Greet](context) {
     import HelloWorld._
 
     override def onMessage(message: Greet): Behavior[Greet] = {

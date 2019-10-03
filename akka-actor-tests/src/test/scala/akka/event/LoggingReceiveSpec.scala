@@ -28,7 +28,6 @@ class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
   import LoggingReceiveSpec._
   val config = ConfigFactory.parseString("""
     akka.loglevel=DEBUG # test verifies debug
-    akka.actor.serialize-messages = off # debug noise from serialization
     """).withFallback(AkkaSpec.testConf)
   val appLogging =
     ActorSystem("logging", ConfigFactory.parseMap(Map("akka.actor.debug.receive" -> true).asJava).withFallback(config))

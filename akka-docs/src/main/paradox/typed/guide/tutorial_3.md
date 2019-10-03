@@ -51,8 +51,8 @@ But to further understand the need for flexibility in the protocol, it will help
 
 The following sections discuss this behavior in more detail:
 
-* [Message delivery](#message-delivery)
-* [Message ordering](#message-ordering)
+* @ref:[Message delivery](#message-delivery)
+* @ref:[Message ordering](#message-ordering)
 
 ### Message delivery
 The delivery semantics provided by messaging subsystems typically fall into the following categories:

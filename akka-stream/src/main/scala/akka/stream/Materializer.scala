@@ -222,9 +222,8 @@ object Materializer {
    * needs or want to test abrupt termination of a custom graph stage. If you want to tie the lifecycle
    * of the materializer to an actor, use the factory that takes an [[ActorContext]] instead.
    */
-  @silent("deprecated")
   def apply(systemProvider: ClassicActorSystemProvider): Materializer =
-    ActorMaterializer(None, None)(systemProvider.classicSystem)
+    SystemMaterializer(systemProvider.classicSystem).createAdditionalSystemMaterializer()
 
   /**
    * Scala API: Create a new materializer that will stay alive as long as the system does or until it is explicitly stopped.
@@ -234,7 +233,6 @@ object Materializer {
    * needs or want to test abrupt termination of a custom graph stage. If you want to tie the
    * lifecycle of the materializer to an actor, use the factory that takes an [[ActorContext]] instead.
    */
-  @silent("deprecated")
   def createMaterializer(systemProvider: ClassicActorSystemProvider): Materializer =
     apply(systemProvider)
 

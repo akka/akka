@@ -65,7 +65,7 @@ private[akka] object ReplayingEvents {
 private[akka] final class ReplayingEvents[C, E, S](
     override val setup: BehaviorSetup[C, E, S],
     var state: ReplayingState[S])
-    extends AbstractBehavior[InternalProtocol]
+    extends AbstractBehavior[InternalProtocol](setup.context)
     with JournalInteractions[C, E, S]
     with SnapshotInteractions[C, E, S]
     with StashManagement[C, E, S]
@@ -186,9 +186,10 @@ private[akka] final class ReplayingEvents[C, E, S](
   }
 
   /**
-   * Called whenever a message replay fails. By default it logs the error.
+   * Called whenever a message replay fails.
    *
-   * The actor is always stopped after this method has been invoked.
+   * This method throws `JournalFailureException` which will be caught by the internal
+   * supervision strategy to stop or restart the actor with backoff.
    *
    * @param cause failure cause.
    * @param event the event that was being processed when the exception was thrown

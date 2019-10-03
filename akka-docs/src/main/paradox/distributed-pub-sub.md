@@ -3,6 +3,8 @@
 @@include[includes.md](includes.md) { #actor-api }
 For the new API see FIXME https://github.com/akka/akka/issues/26338.
 
+@@project-info{ projectId="akka-cluster-tools" }
+
 ## Dependency
 
 To use Distributed Publish Subscribe you must add the following dependency in your project:
@@ -34,7 +36,7 @@ a few seconds. Changes are only performed in the own part of the registry and th
 changes are versioned. Deltas are disseminated in a scalable way to other nodes with
 a gossip protocol.
 
-Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up),
+Cluster members with status @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up),
 will participate in Distributed Publish Subscribe, i.e. subscribers on nodes with
 `WeaklyUp` status will receive published messages if the publisher and subscriber are on
 same side of a network partition.
@@ -43,7 +45,7 @@ You can send messages via the mediator on any node to registered actors on
 any other node.
 
 There a two different modes of message delivery, explained in the sections
-[Publish](#distributed-pub-sub-publish) and [Send](#distributed-pub-sub-send) below.
+@ref:[Publish](#distributed-pub-sub-publish) and @ref:[Send](#distributed-pub-sub-send) below.
 
 @@@ div { .group-scala }
 

@@ -39,7 +39,8 @@ object MultiDcSplitBrainMultiJvmSpec extends MultiNodeConfig {
       akka.cluster {
         gossip-interval                     = 500ms
         leader-actions-interval             = 1s
-        auto-down-unreachable-after = 1s
+        downing-provider-class = akka.cluster.testkit.AutoDowning
+        testkit.auto-down-unreachable-after = 1s
       }
     """)
       .withFallback(MultiNodeClusterSpec.clusterConfig))

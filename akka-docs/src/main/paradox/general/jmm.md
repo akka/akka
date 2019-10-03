@@ -1,3 +1,6 @@
+---
+project.description: Akka, Actors, Futures and the Java Memory Model.
+---
 # Akka and the Java Memory Model
 
 A major benefit of using the Lightbend Platform, including Scala and Akka, is that it simplifies the process of writing
@@ -65,8 +68,13 @@ Such are the perils of synchronized.
 
 Since Akka runs on the JVM there are still some rules to be followed.
 
- * Closing over internal Actor state and exposing it to other threads
+Most importantly, you must not close over internal Actor state and exposing it to other threads:
 
-@@snip [SharedMutableStateDocSpec.scala](/akka-docs/src/test/scala/docs/actor/SharedMutableStateDocSpec.scala) { #mutable-state }
+Scala
+: @@snip [SharedMutableStateDocSpec.scala](/akka-docs/src/test/scala/docs/actor/typed/SharedMutableStateDocSpec.scala) { #mutable-state }
+
+Java
+: @@snip [DistributedDataDocTest.java](/akka-docs/src/test/java/jdocs/actor/typed/SharedMutableStateDocTest.java) { #mutable-state }
+
 
  * Messages **should** be immutable, this is to avoid the shared mutable state trap.

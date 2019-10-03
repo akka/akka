@@ -256,7 +256,8 @@ private[akka] trait Children { this: ActorCell =>
       name: String,
       async: Boolean,
       systemService: Boolean): ActorRef = {
-    if (cell.system.settings.SerializeAllCreators && !systemService && props.deploy.scope != LocalScope) {
+    val settings = cell.system.settings
+    if (settings.SerializeAllCreators && !systemService && props.deploy.scope != LocalScope) {
       val oldInfo = Serialization.currentTransportInformation.value
       try {
         val ser = SerializationExtension(cell.system)
@@ -266,7 +267,8 @@ private[akka] trait Children { this: ActorCell =>
         props.args.forall(
           arg =>
             arg == null ||
-            arg.isInstanceOf[NoSerializationVerificationNeeded] || {
+            arg.isInstanceOf[NoSerializationVerificationNeeded] ||
+            settings.NoSerializationVerificationNeededClassPrefix.exists(arg.getClass.getName.startsWith) || {
               val o = arg.asInstanceOf[AnyRef]
               val serializer = ser.findSerializerFor(o)
               val bytes = serializer.toBinary(o)

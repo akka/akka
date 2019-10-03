@@ -53,7 +53,6 @@ abstract class AbstractTransientSerializationErrorSpec(config: Config)
       actor {
         provider = remote
         warn-about-java-serializer-usage = off
-        serialize-creators = off
         serializers {
           test = "akka.remote.TransientSerializationErrorSpec$TestSerializer"
         }

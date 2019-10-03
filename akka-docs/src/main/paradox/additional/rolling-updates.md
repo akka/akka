@@ -1,3 +1,6 @@
+---
+project.description: How to do rolling updates and restarts with Akka Cluster.
+---
 # Rolling Updates
 
 @@@ note
@@ -36,7 +39,7 @@ Additionally you can find advice on @ref:[Persistence - Schema Evolution](../per
 
 ## Cluster Sharding
 
-During a rolling upgrade, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../cluster-sharding.md#shard-rebalancing), 
+During a rolling upgrade, sharded entities receiving traffic may be moved during @ref:[shard rebalancing](../typed/cluster-sharding-concepts.md#shard-rebalancing), 
 to an old or new node in the cluster, based on the pluggable allocation strategy and settings.
 When an old node is stopped the shards that were running on it are moved to one of the
 other old nodes remaining in the cluster. The `ShardCoordinator` is itself a cluster singleton. 
@@ -63,7 +66,7 @@ Environments such as Kubernetes send a SIGTERM, however if the JVM is wrapped wi
 ### Ungraceful shutdown 
 
 In case of network failures it may still be necessary to set the node's status to Down in order to complete the removal. 
-@ref:[Cluster Downing](../cluster-usage.md#downing) details downing nodes and downing providers. 
+@ref:[Cluster Downing](../typed/cluster.md#downing) details downing nodes and downing providers. 
 [Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html) can be used to ensure 
 the cluster continues to function during network partitions and node failures. For example
 if there is an unreachability problem Split Brain Resolver would make a decision based on the configured downing strategy. 
@@ -79,7 +82,7 @@ and ensure all nodes are in this state
 * Deploy again and with the new nodes set to `akka.cluster.configuration-compatibility-check.enforce-on-join = on`. 
   
 Full documentation about enforcing these checks on joining nodes and optionally adding custom checks can be found in  
-@ref:[Akka Cluster configuration compatibility checks](../cluster-usage.md#configuration-compatibility-check).
+@ref:[Akka Cluster configuration compatibility checks](../typed/cluster.md#configuration-compatibility-check).
 
 ## Rolling Updates and Migrating Akka
 
@@ -137,7 +140,7 @@ If you need to change any of the following aspects of sharding it will require a
  
 ### Migrating from PersistentFSM to EventSourcedBehavior
 
-If you've [migrated from `PersistentFSM` to `EventSourcedBehavior`](../persistence-fsm.md#migration-to-eventsourcedbehavior)
+If you've @ref:[migrated from `PersistentFSM` to `EventSourcedBehavior`](../persistence-fsm.md#migration-to-eventsourcedbehavior)
 and are using PersistenceFSM with Cluster Sharding, a full shutdown is required as shards can move between new and old nodes.
   
 ### Migrating from classic remoting to Artery
@@ -146,3 +149,8 @@ If you've migrated from classic remoting to Artery
 which has a completely different protocol, a rolling update is not supported.
 For more details on this migration
 see @ref:[the migration guide](../project/migration-guide-2.5.x-2.6.x.md#migrating-from-classic-remoting-to-artery).
+
+### Migrating from Classic Sharding to Typed Sharding
+
+If you have been using classic sharding it is possible to do a rolling upgrade to typed sharding using a 3 step procedure.
+The steps along with example commits are detailed in [this sample PR](https://github.com/akka/akka-samples/pull/110) 

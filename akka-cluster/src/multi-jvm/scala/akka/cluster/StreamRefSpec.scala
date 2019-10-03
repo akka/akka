@@ -27,16 +27,21 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
+import akka.util.JavaDurationConverters._
 
 object StreamRefSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
         akka.cluster {
-          auto-down-unreachable-after = 1s
-        }""")).withFallback(MultiNodeClusterSpec.clusterConfig))
+          downing-provider-class = akka.cluster.testkit.AutoDowning
+          testkit.auto-down-unreachable-after = 1s
+        }"""))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 
@@ -244,7 +249,14 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec) with MultiNode
         streamLifecycle1.expectMsg("failed-system-42-tmp")
       }
       runOn(third) {
-        streamLifecycle3.expectMsg("failed-system-42-tmp")
+        // there's a race here, we know the SourceRef actor was started but we don't know if it
+        // got the remote actor ref and watched it terminate or if we cut connection before that
+        // and it triggered the subscription timeout. Therefore we must wait more than the
+        // the subscription timeout for a failure
+        val timeout = system.settings.config
+            .getDuration("akka.stream.materializer.subscription-timeout.timeout")
+            .asScala + 2.seconds
+        streamLifecycle3.expectMsg(timeout, "failed-system-42-tmp")
       }
 
       enterBarrier("after-3")

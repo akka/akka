@@ -5,7 +5,6 @@
 package akka.stream
 
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor.ActorContext
 import akka.actor.ActorRef
@@ -48,7 +47,7 @@ object ActorMaterializer {
       implicit context: ActorRefFactory): ActorMaterializer = {
     val system = actorSystemOf(context)
 
-    val settings = materializerSettings.getOrElse(ActorMaterializerSettings(system))
+    val settings = materializerSettings.getOrElse(SystemMaterializer(system).materializerSettings)
     apply(settings, namePrefix.getOrElse("flow"))(context)
   }
 
@@ -69,25 +68,17 @@ object ActorMaterializer {
     "2.6.0")
   def apply(materializerSettings: ActorMaterializerSettings, namePrefix: String)(
       implicit context: ActorRefFactory): ActorMaterializer = {
-    val haveShutDown = new AtomicBoolean(false)
-    val system = actorSystemOf(context)
-    val defaultAttributes = materializerSettings.toAttributes
 
-    new PhasedFusingActorMaterializer(
-      system,
-      materializerSettings,
-      defaultAttributes,
-      system.dispatchers,
-      actorOfStreamSupervisor(defaultAttributes, context, haveShutDown),
-      haveShutDown,
-      FlowNames(system).name.copy(namePrefix))
-  }
-
-  private def actorOfStreamSupervisor(attributes: Attributes, context: ActorRefFactory, haveShutDown: AtomicBoolean) = {
-    val props = StreamSupervisor.props(attributes, haveShutDown)
     context match {
-      case s: ExtendedActorSystem => s.systemActorOf(props, StreamSupervisor.nextName())
-      case a: ActorContext        => a.actorOf(props, StreamSupervisor.nextName())
+      case system: ActorSystem =>
+        // system level materializer, defer to the system materializer extension
+        SystemMaterializer(system)
+          .createAdditionalLegacySystemMaterializer(namePrefix, materializerSettings)
+          .asInstanceOf[ActorMaterializer]
+
+      case context: ActorContext =>
+        // actor context level materializer, will live as a child of this actor
+        PhasedFusingActorMaterializer(context, namePrefix, materializerSettings, materializerSettings.toAttributes)
     }
   }
 
@@ -108,25 +99,6 @@ object ActorMaterializer {
     "2.6.0")
   def apply(materializerSettings: ActorMaterializerSettings)(implicit context: ActorRefFactory): ActorMaterializer =
     apply(Some(materializerSettings), None)
-
-  /**
-   * INTERNAL API: Creates the `StreamSupervisor` as a system actor.
-   */
-  private[akka] def systemMaterializer(
-      materializerSettings: ActorMaterializerSettings,
-      namePrefix: String,
-      system: ExtendedActorSystem): ActorMaterializer = {
-    val haveShutDown = new AtomicBoolean(false)
-    val attributes = materializerSettings.toAttributes
-    new PhasedFusingActorMaterializer(
-      system,
-      materializerSettings,
-      attributes,
-      system.dispatchers,
-      system.systemActorOf(StreamSupervisor.props(attributes, haveShutDown), StreamSupervisor.nextName()),
-      haveShutDown,
-      FlowNames(system).name.copy(namePrefix))
-  }
 
   /**
    * Java API: Creates an ActorMaterializer that can materialize stream blueprints as running streams.
@@ -779,8 +751,7 @@ final class ActorMaterializerSettings @InternalApi private (
       ActorAttributes.OutputBurstLimit(outputBurstLimit) ::
       ActorAttributes.FuzzingMode(fuzzingMode) ::
       ActorAttributes.MaxFixedBufferSize(maxFixedBufferSize) ::
-      ActorAttributes.SyncProcessingLimit(syncProcessingLimit) ::
-      ActorAttributes.BlockingIoDispatcher(blockingIoDispatcher) :: Nil)
+      ActorAttributes.SyncProcessingLimit(syncProcessingLimit) :: Nil)
 
   override def toString: String =
     s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize," +

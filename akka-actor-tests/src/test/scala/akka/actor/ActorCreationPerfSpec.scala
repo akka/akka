@@ -30,7 +30,6 @@ object ActorCreationPerfSpec {
       #force-gc = on
       #report-metrics = on
     }
-    akka.actor.serialize-messages = off
     """)
 
   final case class Create(number: Int, props: () => Props)

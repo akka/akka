@@ -1,7 +1,7 @@
 # Classic Cluster Aware Routers
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see @ref[routers](typed/routers.md).
+For the full documentation of this feature and for new projects see @ref:[routers](typed/routers.md).
 
 All @ref:[routers](routing.md) can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.
@@ -10,7 +10,7 @@ automatically unregistered from the router. When new nodes join the cluster, add
 routees are added to the router, according to the configuration. Routees are also added
 when a node becomes reachable again, after having been unreachable.
 
-Cluster aware routers make use of members with status [WeaklyUp](#weakly-up) if that feature
+Cluster aware routers make use of members with status @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up) if that feature
 is enabled.
 
 There are two distinct types of routers.

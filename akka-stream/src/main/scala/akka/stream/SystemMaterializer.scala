@@ -5,10 +5,19 @@
 package akka.stream
 
 import akka.actor.ActorSystem
+import akka.actor.Deploy
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
+import akka.annotation.InternalApi
+import akka.stream.impl.MaterializerGuardian
+
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import akka.util.JavaDurationConverters._
+import akka.pattern.ask
+import akka.util.Timeout
 import com.github.ghik.silencer.silent
 
 /**
@@ -27,9 +36,51 @@ object SystemMaterializer extends ExtensionId[SystemMaterializer] with Extension
 }
 
 final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
-  @silent("deprecated")
-  val materializer = {
-    val settings = ActorMaterializerSettings(system)
-    ActorMaterializer.systemMaterializer(settings, "default", system)
+  private val systemMaterializerPromise = Promise[Materializer]()
+
+  // load these here so we can share the same instance across materializer guardian and other uses
+  /**
+   * INTERNAL API
+   */
+  @InternalApi @silent("deprecated")
+  private[akka] val materializerSettings = ActorMaterializerSettings(system)
+
+  private implicit val materializerTimeout: Timeout =
+    system.settings.config.getDuration("akka.stream.materializer.creation-timeout").asScala
+
+  @InternalApi @silent("deprecated")
+  private val materializerGuardian = system.systemActorOf(
+    MaterializerGuardian
+      .props(systemMaterializerPromise, materializerSettings)
+      .withDispatcher(materializerSettings.dispatcher)
+      .withDeploy(Deploy.local),
+    "Materializers")
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def createAdditionalSystemMaterializer(): Materializer = {
+    val started =
+      (materializerGuardian ? MaterializerGuardian.StartMaterializer).mapTo[MaterializerGuardian.MaterializerStarted]
+    Await.result(started, materializerTimeout.duration).materializer
   }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  @silent("deprecated")
+  private[akka] def createAdditionalLegacySystemMaterializer(
+      namePrefix: String,
+      settings: ActorMaterializerSettings): Materializer = {
+    val started =
+      (materializerGuardian ? MaterializerGuardian.LegacyStartMaterializer(namePrefix, settings))
+        .mapTo[MaterializerGuardian.MaterializerStarted]
+    Await.result(started, materializerTimeout.duration).materializer
+  }
+
+  // block on async creation to make it effectively final
+  val materializer = Await.result(systemMaterializerPromise.future, materializerTimeout.duration)
+
 }

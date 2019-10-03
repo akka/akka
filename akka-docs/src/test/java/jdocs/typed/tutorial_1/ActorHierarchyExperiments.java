@@ -28,10 +28,8 @@ class PrintMyActorRefActor extends AbstractBehavior<String> {
     return Behaviors.setup(PrintMyActorRefActor::new);
   }
 
-  private final ActorContext<String> context;
-
   private PrintMyActorRefActor(ActorContext<String> context) {
-    this.context = context;
+    super(context);
   }
 
   @Override
@@ -40,7 +38,7 @@ class PrintMyActorRefActor extends AbstractBehavior<String> {
   }
 
   private Behavior<String> printIt() {
-    ActorRef<String> secondRef = context.spawn(Behaviors.empty(), "second-actor");
+    ActorRef<String> secondRef = getContext().spawn(Behaviors.empty(), "second-actor");
     System.out.println("Second: " + secondRef);
     return this;
   }
@@ -51,10 +49,11 @@ class PrintMyActorRefActor extends AbstractBehavior<String> {
 class StartStopActor1 extends AbstractBehavior<String> {
 
   static Behavior<String> create() {
-    return Behaviors.setup(context -> new StartStopActor1());
+    return Behaviors.setup(StartStopActor1::new);
   }
 
-  private StartStopActor1() {
+  private StartStopActor1(ActorContext<String> context) {
+    super(context);
     System.out.println("first started");
   }
 
@@ -75,10 +74,11 @@ class StartStopActor1 extends AbstractBehavior<String> {
 class StartStopActor2 extends AbstractBehavior<String> {
 
   static Behavior<String> create() {
-    return Behaviors.setup(context -> new StartStopActor2());
+    return Behaviors.setup(StartStopActor2::new);
   }
 
-  private StartStopActor2() {
+  private StartStopActor2(ActorContext<String> context) {
+    super(context);
     System.out.println("second started");
   }
 
@@ -104,6 +104,7 @@ class SupervisingActor extends AbstractBehavior<String> {
   private final ActorRef<String> child;
 
   private SupervisingActor(ActorContext<String> context) {
+    super(context);
     child =
         context.spawn(
             Behaviors.supervise(SupervisedActor.create()).onFailure(SupervisorStrategy.restart()),
@@ -124,10 +125,11 @@ class SupervisingActor extends AbstractBehavior<String> {
 class SupervisedActor extends AbstractBehavior<String> {
 
   static Behavior<String> create() {
-    return Behaviors.setup(context -> new SupervisedActor());
+    return Behaviors.setup(SupervisedActor::new);
   }
 
-  private SupervisedActor() {
+  private SupervisedActor(ActorContext<String> context) {
+    super(context);
     System.out.println("supervised actor started");
   }
 
@@ -165,10 +167,8 @@ class Main extends AbstractBehavior<String> {
     return Behaviors.setup(Main::new);
   }
 
-  private final ActorContext<String> context;
-
   private Main(ActorContext<String> context) {
-    this.context = context;
+    super(context);
   }
 
   @Override
@@ -177,7 +177,7 @@ class Main extends AbstractBehavior<String> {
   }
 
   private Behavior<String> start() {
-    ActorRef<String> firstRef = context.spawn(PrintMyActorRefActor.create(), "first-actor");
+    ActorRef<String> firstRef = getContext().spawn(PrintMyActorRefActor.create(), "first-actor");
 
     System.out.println("First: " + firstRef);
     firstRef.tell("printit");

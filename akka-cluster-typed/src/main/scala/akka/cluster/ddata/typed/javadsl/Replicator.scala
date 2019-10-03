@@ -120,7 +120,7 @@ object Replicator {
       replyTo: ActorRef[GetResponse[A]])
       extends Command
 
-  @DoNotInherit sealed abstract class GetResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+  @DoNotInherit sealed abstract class GetResponse[A <: ReplicatedData] {
     def key: Key[A]
   }
 
@@ -180,8 +180,7 @@ object Replicator {
       key: Key[A],
       writeConsistency: WriteConsistency,
       replyTo: ActorRef[UpdateResponse[A]])(val modify: Option[A] => A)
-      extends Command
-      with NoSerializationVerificationNeeded {
+      extends Command {
 
     /**
      * Modify value of local `Replicator` and replicate with given `writeConsistency`.
@@ -200,7 +199,7 @@ object Replicator {
 
   }
 
-  @DoNotInherit sealed abstract class UpdateResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+  @DoNotInherit sealed abstract class UpdateResponse[A <: ReplicatedData] {
     def key: Key[A]
   }
   final case class UpdateSuccess[A <: ReplicatedData](key: Key[A]) extends UpdateResponse[A] with DeadLetterSuppression
@@ -312,9 +311,8 @@ object Replicator {
       consistency: WriteConsistency,
       replyTo: ActorRef[DeleteResponse[A]])
       extends Command
-      with NoSerializationVerificationNeeded
 
-  sealed trait DeleteResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+  sealed trait DeleteResponse[A <: ReplicatedData] {
     def key: Key[A]
   }
   final case class DeleteSuccess[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]

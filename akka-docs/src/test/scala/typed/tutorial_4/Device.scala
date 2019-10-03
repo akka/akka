@@ -33,7 +33,7 @@ object Device {
 }
 
 class Device(context: ActorContext[Device.Command], groupId: String, deviceId: String)
-    extends AbstractBehavior[Device.Command] {
+    extends AbstractBehavior[Device.Command](context) {
   import Device._
 
   var lastTemperatureReading: Option[Double] = None
