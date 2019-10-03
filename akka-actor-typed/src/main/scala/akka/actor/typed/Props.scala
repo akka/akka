@@ -191,7 +191,7 @@ object MailboxSelector {
   /**
    * Scala API: The default mailbox is SingleConsumerOnlyUnboundedMailbox
    */
-  def default(): MailboxSelector = fromConfig("akka.dispatch.SingleConsumerOnlyUnboundedMailbox")
+  def default(): MailboxSelector = fromConfig("akka.actor.typed.default-mailbox")
 
   /**
    * Java API: The default mailbox is SingleConsumerOnlyUnboundedMailbox

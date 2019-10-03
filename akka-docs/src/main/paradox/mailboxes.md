@@ -23,6 +23,23 @@ For more details on advanced mailbox config and custom mailbox implementations, 
 
 ## Mailbox Selection
 
+### Default Mailbox
+
+The default mailbox is used when the mailbox is not specified.
+This is an unbounded mailbox, backed by a
+`java.util.concurrent.ConcurrentLinkedQueue`.
+
+`SingleConsumerOnlyUnboundedMailbox` is an even more efficient mailbox, and
+it can be used as the default mailbox, but it cannot be used with a BalancingDispatcher.
+
+Configuration of `SingleConsumerOnlyUnboundedMailbox` as default mailbox:
+
+```
+akka.actor.default-mailbox {
+  mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
+}
+```
+
 ### Requiring a Message Queue Type for an Actor
 
 It is possible to require a certain type of message queue for a certain type of actor
