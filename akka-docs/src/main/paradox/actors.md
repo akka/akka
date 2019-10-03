@@ -30,9 +30,10 @@ its syntax from Erlang.
 @@@ note
 
 Since Akka enforces parental supervision every actor is supervised and
-(potentially) the supervisor of its children, it is advisable that you
-familiarize yourself with @ref:[Actor Systems](general/actor-systems.md) and @ref:[supervision](general/supervision.md)
-and it may also help to read @ref:[Actor References, Paths and Addresses](general/addressing.md).
+(potentially) the supervisor of its children, it is advisable to
+familiarize yourself with @ref:[Actor Systems](general/actor-systems.md), @ref:[supervision](general/supervision.md)
+and @ref:[handling exceptions](general/supervision.md#actors-and-exceptions)
+as well as @ref:[Actor References, Paths and Addresses](general/addressing.md).
 
 @@@
 
@@ -774,7 +775,6 @@ Java
 
 ## Receive messages
 
-
 An Actor has to
 @scala[implement the `receive` method to receive messages:]
 @java[define its initial receive behavior by implementing the `createReceive` method in the `AbstractActor`:]
@@ -1270,8 +1270,6 @@ If you want to enforce that your actor can only work with an unbounded stash,
 then you should use the @scala[`UnboundedStash` trait] @java[`AbstractActorWithUnboundedStash` class] instead.
 
 @@@
-
-See @ref:[supervision](general/supervision.md) and @ref:[supervision](general/supervision.md#actors-and-exceptions).
 
 @@@ div { .group-scala }
 
