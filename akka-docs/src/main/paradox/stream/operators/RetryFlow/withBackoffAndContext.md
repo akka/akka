@@ -31,7 +31,7 @@ This API was added in Akka 2.6.0 and may be changed in further patch releases.
 
 @@@
 
-This example wraps a `flow` which and retries elements until the result is 0, or `maxRetries` is hit.
+This example wraps a `flow` handling @scala[`Int`s]@java[`Integer`s] with `SomeContext` in context, and retries elements unless the result is 0 or negative, or `maxRetries` is hit.
 
 Scala
 :   @@snip [RetryFlowSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/RetryFlowSpec.scala) { #retry-success }

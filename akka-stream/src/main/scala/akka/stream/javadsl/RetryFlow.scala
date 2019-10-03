@@ -23,8 +23,9 @@ object RetryFlow {
    * The retry condition is controlled by the `decideRetry` function. It takes the originally emitted
    * element with its context, and the response emitted by `flow`, and may return a request to be retried.
    *
-   * The implementation of the `RetryFlow` assumes that `flow` follows one-in-one-out element semantics,
-   * which is expressed by the [[akka.stream.javadsl.FlowWithContext FlowWithContext]] type.
+   * The implementation of the `RetryFlow` requires that `flow` follows one-in-one-out semantics,
+   * the [[akka.stream.javadsl.FlowWithContext FlowWithContext]] may not filter elements,
+   * nor emit more than one element per incoming element.
    *
    * The wrapped `flow` and `decideRetry` take the additional context parameters which can be a context,
    * or used to control retrying with other information.

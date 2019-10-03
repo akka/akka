@@ -6,6 +6,7 @@ package akka.stream.scaladsl
 
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.pattern.BackoffSupervisor
+import akka.stream.SubscriptionWithCancelException.NonFailureCancellation
 import akka.stream.stage._
 import akka.stream.{ Attributes, BidiShape, Inlet, Outlet }
 import akka.util.OptionVal
@@ -22,8 +23,9 @@ object RetryFlow {
    * The retry condition is controlled by the `decideRetry` function. It takes the originally emitted
    * element with its context, and the response emitted by `flow`, and may return a request to be retried.
    *
-   * The implementation of the `RetryFlow` assumes that `flow` follows one-in-one-out element semantics,
-   * which is expressed by the [[akka.stream.scaladsl.FlowWithContext FlowWithContext]] type.
+   * The implementation of the `RetryFlow` requires that `flow` follows one-in-one-out semantics,
+   * the [[akka.stream.scaladsl.FlowWithContext FlowWithContext]] may not filter elements,
+   * nor emit more than one element per incoming element.
    *
    * The wrapped `flow` and `decideRetry` take the additional context parameters which can be a context,
    * or used to control retrying with other information.
@@ -123,7 +125,12 @@ object RetryFlow {
         }
 
         override def onDownstreamFinish(cause: Throwable): Unit = {
-          setKeepGoing(true)
+          if (elementInProgress.isEmpty || !cause.isInstanceOf[NonFailureCancellation]) {
+            super.onDownstreamFinish(cause)
+          } else {
+            // emit elements before finishing
+            setKeepGoing(true)
+          }
         }
       })
 

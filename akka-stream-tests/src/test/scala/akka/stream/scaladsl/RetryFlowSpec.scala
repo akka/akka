@@ -5,7 +5,8 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.OverflowStrategy
+import akka.stream.{ OverflowStrategy, SubscriptionWithCancelException }
+import akka.stream.SubscriptionWithCancelException.{ NoMoreElementsNeeded, NonFailureCancellation }
 import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import org.scalatest.matchers.{ MatchResult, Matcher }
@@ -240,19 +241,19 @@ class RetryFlowSpec extends StreamSpec("""
       sink.expectError(Failed)
     }
 
-    "propagate error from upstream on start" in new AllSuccedBench[Int, Int, Int] {
+    "propagate error from upstream on start" in new AllSucceedBench[Int, Int, Int] {
       externalOut.request(99)
       externalIn.sendError(Failed)
       externalOut.expectError(Failed)
     }
 
-    "propagate error from upstream before start" in new AllSuccedBench[Int, Int, Int] {
+    "propagate error from upstream before start" in new AllSucceedBench[Int, Int, Int] {
       externalIn.sendError(Failed)
       externalOut.request(1)
       externalOut.expectError(Failed)
     }
 
-    "propagate error on the inner flow after start" in new AllSuccedBench[Int, Int, Int] {
+    "propagate error on the inner flow after start" in new AllSucceedBench[Int, Int, Int] {
       externalOut.request(99)
 
       // send one element through
@@ -267,14 +268,21 @@ class RetryFlowSpec extends StreamSpec("""
       externalIn.expectCancellation()
     }
 
-    "propagate error on the inner flow on start" in new AllSuccedBench[Int, Int, Int] {
+    "propagate error on the inner flow on start" in new AllSucceedBench[Int, Int, Int] {
       externalOut.request(29)
       internalIn.sendError(Failed)
       externalOut.expectError(Failed)
       externalIn.expectCancellation()
     }
 
-    "propagate error on the inner flow before start" in new AllSuccedBench[Int, Int, Int] {
+    "propagate non-error cancel on the inner flow on start" in new AllSucceedBench[Int, Int, Int] {
+      externalOut.request(29)
+      internalOut.cancel()
+      externalOut.expectComplete()
+      externalIn.expectCancellation()
+    }
+
+    "propagate error on the inner flow before start" in new AllSucceedBench[Int, Int, Int] {
       internalIn.sendError(Failed)
       externalOut.request(13)
       externalOut.expectError(Failed)
@@ -333,7 +341,7 @@ class RetryFlowSpec extends StreamSpec("""
       externalIn.expectCancellation()
     }
 
-    "finish only after processing all elements in stream" in new AllSuccedBench[Int, Int, Int] {
+    "finish only after processing all elements in stream" in new AllSucceedBench[Int, Int, Int] {
       externalOut.request(32)
 
       // send one element and complete
@@ -354,7 +362,7 @@ class RetryFlowSpec extends StreamSpec("""
     type Ctx2 = Int
     type OutData = Try[String]
 
-    "send elements across" in new AllSuccedBench[InData, Ctx2, OutData] {
+    "send elements across" in new AllSucceedBench[InData, Ctx2, OutData] {
       // push element
       val elA = "A" -> 123
       externalIn.sendNext(elA)
@@ -395,7 +403,7 @@ class RetryFlowSpec extends StreamSpec("""
       externalOut.requestNext(res1)
     }
 
-    "fail if inner flow emits twice" in new AllSuccedBench[InData, Ctx2, OutData] {
+    "fail if inner flow emits twice" in new AllSucceedBench[InData, Ctx2, OutData] {
       externalOut.request(99)
 
       // push element
@@ -413,7 +421,7 @@ class RetryFlowSpec extends StreamSpec("""
       externalOut.expectError() shouldBe an[IllegalStateException]
     }
 
-    "allow more demand in inner flow (but never pass in more than one element into the retrying cycle)" in new AllSuccedBench[
+    "allow more demand in inner flow (but never pass in more than one element into the retrying cycle)" in new AllSucceedBench[
       InData,
       Ctx2,
       OutData] {
@@ -471,7 +479,7 @@ class RetryFlowSpec extends StreamSpec("""
         .run()
   }
 
-  class AllSuccedBench[In, Ctx, Out] extends ConstructBench[In, Ctx, Out]((_, _) => None)
+  class AllSucceedBench[In, Ctx, Out] extends ConstructBench[In, Ctx, Out]((_, _) => None)
 
 }
 
