@@ -32,16 +32,18 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
     "work in the happy case" in assertAllStagesStopped {
       val probe = TestSubscriber.manualProbe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create() { implicit b ⇒
-        val mergeSortedN = b.add(MergeSortedN[Int](2))
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val mergeSortedN = b.add(MergeSortedN[Int](2))
 
-        Source(1 to 4) ~> mergeSortedN.in(0)
-        Source(2 to 5) ~> mergeSortedN.in(1)
+          Source(1 to 4) ~> mergeSortedN.in(0)
+          Source(2 to 5) ~> mergeSortedN.in(1)
 
-        mergeSortedN.out ~> Sink.fromSubscriber(probe)
+          mergeSortedN.out ~> Sink.fromSubscriber(probe)
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       val subscription = probe.expectSubscription()
 
@@ -61,15 +63,17 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
-        val mergeSortedN = b.add(MergeSortedN[Int](2))
+      RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+          val mergeSortedN = b.add(MergeSortedN[Int](2))
 
-        Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
-        Source.fromPublisher(upstream2) ~> mergeSortedN.in(1)
-        mergeSortedN.out ~> out
+          Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
+          Source.fromPublisher(upstream2) ~> mergeSortedN.in(1)
+          mergeSortedN.out ~> out
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       upstream1.sendNext(1)
       upstream1.sendNext(2)
@@ -89,15 +93,17 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
-        val mergeSortedN = b.add(MergeSortedN[Int](2))
+      RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+          val mergeSortedN = b.add(MergeSortedN[Int](2))
 
-        Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
-        Source.fromPublisher(upstream2) ~> mergeSortedN.in(1)
-        mergeSortedN.out ~> out
+          Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
+          Source.fromPublisher(upstream2) ~> mergeSortedN.in(1)
+          mergeSortedN.out ~> out
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       downstream.request(2)
 
@@ -115,15 +121,17 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
-        val mergeSortedN = b.add(MergeSortedN[Int](2))
+      RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+          val mergeSortedN = b.add(MergeSortedN[Int](2))
 
-        Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
-        Source.fromPublisher(upstream2) ~> mergeSortedN.in(1)
-        mergeSortedN.out ~> out
+          Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
+          Source.fromPublisher(upstream2) ~> mergeSortedN.in(1)
+          mergeSortedN.out ~> out
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       upstream1.sendNext(1)
       upstream2.sendNext(2)
@@ -139,10 +147,11 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
     "work with generated booleans" in {
       val gen = Gen.listOf(Gen.oneOf(false, true))
 
-      forAll(gen) { picks ⇒
+      forAll(gen) { picks =>
         val N = picks.size
         val (left, right) = picks.zipWithIndex.partition(_._1)
-        Source.mergeSortedN(List(Source(left.map(_._2)), Source(right.map(_._2))))
+        Source
+          .mergeSortedN(List(Source(left.map(_._2)), Source(right.map(_._2))))
           .grouped(N max 1)
           .concat(Source.single(Nil))
           .runWith(Sink.head)
@@ -156,13 +165,9 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
 
       val underTest: Source[Int, NotUsed] = Source.mergeSortedN(List(leftSource, rightSource))
 
-      val grouped: Source[immutable.Seq[Int], NotUsed] = underTest
-        .grouped(4)
+      val grouped: Source[immutable.Seq[Int], NotUsed] = underTest.grouped(4)
 
-      val sortedResult: immutable.Seq[Int] = grouped
-        .concat(Source.single(Nil))
-        .runWith(Sink.head)
-        .futureValue
+      val sortedResult: immutable.Seq[Int] = grouped.concat(Source.single(Nil)).runWith(Sink.head).futureValue
 
       sortedResult shouldBe List(0, 1, 2)
     }
@@ -219,15 +224,17 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
       val upstream2 = TestPublisher.probe[Int]()
       val downstream = TestSubscriber.probe[Int]()
 
-      RunnableGraph.fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b ⇒ out ⇒
-        val mergeSortedN = b.add(MergeSortedN[Int](2))
+      RunnableGraph
+        .fromGraph(GraphDSL.create(Sink.fromSubscriber(downstream)) { implicit b => out =>
+          val mergeSortedN = b.add(MergeSortedN[Int](2))
 
-        Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
-        Source.fromPublisher(upstream2) ~> mergeSortedN.in(1)
-        mergeSortedN.out ~> out
+          Source.fromPublisher(upstream1) ~> mergeSortedN.in(0)
+          Source.fromPublisher(upstream2) ~> mergeSortedN.in(1)
+          mergeSortedN.out ~> out
 
-        ClosedShape
-      }).run()
+          ClosedShape
+        })
+        .run()
 
       upstream2.sendNext(2)
 

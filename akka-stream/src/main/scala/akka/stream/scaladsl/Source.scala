@@ -788,9 +788,9 @@ object Source {
    */
   def mergeSortedN[T: Ordering](sources: immutable.Seq[Source[T, _]]): Source[T, NotUsed] = {
     val source = sources match {
-      case immutable.Seq()   ⇒ empty[T]
-      case immutable.Seq(s1) ⇒ s1.mapMaterializedValue(_ ⇒ NotUsed)
-      case s1 +: s2 +: ss    ⇒ combine(s1, s2, ss: _*)(new MergeSortedN[T](_))
+      case immutable.Seq()   => empty[T]
+      case immutable.Seq(s1) => s1.mapMaterializedValue(_ => NotUsed)
+      case s1 +: s2 +: ss    => combine(s1, s2, ss: _*)(new MergeSortedN[T](_))
     }
 
     source.addAttributes(DefaultAttributes.mergeSortedN)

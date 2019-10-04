@@ -687,7 +687,9 @@ object Source {
    *
    * '''Cancels when''' downstream cancels
    */
-  def mergeSortedN[T](sources: java.util.List[Source[T, _ <: Any]], comp: util.Comparator[T]): javadsl.Source[T, _ <: Any] = {
+  def mergeSortedN[T](
+      sources: java.util.List[Source[T, _ <: Any]],
+      comp: util.Comparator[T]): javadsl.Source[T, _ <: Any] = {
     val seq = if (sources != null) Util.immutableSeq(sources).map(_.asScala) else immutable.Seq()
     new Source(scaladsl.Source.mergeSortedN(seq)(Ordering.comparatorToOrdering(comp)))
   }
