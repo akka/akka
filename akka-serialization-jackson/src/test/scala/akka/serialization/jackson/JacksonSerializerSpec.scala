@@ -110,7 +110,13 @@ class ScalaTestEventMigration extends JacksonMigration {
   }
 }
 
-class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor")
+class JacksonCborSerializerSpec extends JacksonSerializerSpec("jackson-cbor") {
+  "have compression disabled by default" in {
+    val conf = JacksonObjectMapperProvider.configForBinding("jackson-cbor", system.settings.config)
+    val compressionAlgo = conf.getString("compression.algorithm")
+    compressionAlgo should ===("off")
+  }
+}
 
 @silent // this test uses Jackson deprecated APIs
 class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
@@ -452,6 +458,24 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       val expected = OldCommandNotInBindings("abc")
 
       deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
+    }
+
+    "compress large payload with gzip" in {
+      val conf = JacksonObjectMapperProvider.configForBinding("jackson-json", system.settings.config)
+      val compressionAlgo = conf.getString("compression.algorithm")
+      compressionAlgo should ===("gzip")
+      val compressLargerThan = conf.getBytes("compression.compress-larger-than")
+      compressLargerThan should ===(32 * 1024)
+      val msg = SimpleCommand("0" * (compressLargerThan + 1).toInt)
+      val bytes = serializeToBinary(msg)
+      JacksonSerializer.isGZipped(bytes) should ===(true)
+      bytes.length should be < compressLargerThan.toInt
+    }
+
+    "not compress small payload with gzip" in {
+      val msg = SimpleCommand("0" * 1000)
+      val bytes = serializeToBinary(msg)
+      JacksonSerializer.isGZipped(bytes) should ===(false)
     }
   }
 }

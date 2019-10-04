@@ -201,12 +201,14 @@ class JacksonSerializationBench {
             }
           }
           serialization.jackson {
-            compress-larger-than = 100000 b
-
             serialization-features {
               #WRITE_DATES_AS_TIMESTAMPS = off
             }
           }
+        }
+        akka.serialization.jackson.jackson-json.compression {
+          algorithm = off
+          compress-larger-than = 100 b
         }
       """)
 
