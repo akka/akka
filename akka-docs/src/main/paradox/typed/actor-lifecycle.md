@@ -171,3 +171,7 @@ Java
    #worker-actor
    #graceful-shutdown
  }
+
+When cleaning up resources from `PostStop` you should also consider doing the same for the `PreRestart` signal,
+which is emitted when the @ref:[actor is restarted](fault-tolerance.md#the-prerestart-signal). Note that `PostStop`
+is not emitted for a restart. 
