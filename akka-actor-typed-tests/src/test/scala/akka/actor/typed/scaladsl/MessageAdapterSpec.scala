@@ -7,7 +7,7 @@ package akka.actor.typed.scaladsl
 import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.TestException
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
@@ -250,7 +250,7 @@ class MessageAdapterSpec
       }
 
       // Not expecting "Exception thrown out of adapter. Stopping myself"
-      LoggingEventFilter.error[TestException].withMessageContains("boom").intercept {
+      LoggingTestKit.error[TestException].withMessageContains("boom").intercept {
         spawn(snitch)
       }
 

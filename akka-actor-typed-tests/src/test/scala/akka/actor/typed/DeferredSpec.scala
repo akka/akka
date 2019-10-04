@@ -10,7 +10,7 @@ import akka.actor.testkit.typed.scaladsl._
 import scala.util.control.NoStackTrace
 
 import akka.actor.ActorInitializationException
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
 
 object DeferredSpec {
@@ -62,7 +62,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogC
             Behaviors.stopped
         }
       }
-      LoggingEventFilter.error[ActorInitializationException].intercept {
+      LoggingTestKit.error[ActorInitializationException].intercept {
         spawn(behv)
         probe.expectMessage(Started)
         probe.expectMessage(Pong)
@@ -138,7 +138,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogC
           Behaviors.same
         }
       }
-      LoggingEventFilter.error[ActorInitializationException].intercept {
+      LoggingTestKit.error[ActorInitializationException].intercept {
         val ref = spawn(behv)
         probe.expectTerminated(ref, probe.remainingOrDefault)
       }

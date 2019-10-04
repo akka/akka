@@ -16,7 +16,7 @@ import akka.testkit._
 import akka.Done
 import akka.NotUsed
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.{ actor => classic }
 import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
@@ -280,7 +280,7 @@ class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with Log
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
 
       // only stop supervisorStrategy
-      LoggingEventFilter
+      LoggingTestKit
         .error[AdapterSpec.ThrowIt3.type]
         .intercept {
           typedRef ! "supervise-restart"
@@ -306,7 +306,7 @@ class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with Log
 
     "log exception if not by handled typed supervisor" in {
       val throwMsg = "sad panda"
-      LoggingEventFilter
+      LoggingTestKit
         .error("sad panda")
         .intercept {
           system.spawnAnonymous(unhappyTyped(throwMsg))

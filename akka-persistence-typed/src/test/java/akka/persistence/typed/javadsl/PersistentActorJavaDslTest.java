@@ -6,12 +6,11 @@ package akka.persistence.typed.javadsl;
 
 import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
-import akka.actor.testkit.typed.javadsl.LoggingEventFilter;
+import akka.actor.testkit.typed.javadsl.LoggingTestKit;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.event.Logging;
 import akka.japi.Pair;
 import akka.persistence.query.EventEnvelope;
 import akka.persistence.query.NoOffset;
@@ -24,7 +23,6 @@ import akka.serialization.jackson.CborSerializable;
 import akka.stream.javadsl.Sink;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
-import akka.testkit.javadsl.EventFilter;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
@@ -33,7 +31,6 @@ import com.google.common.collect.Sets;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
@@ -695,12 +692,12 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
     probe.expectMessage("started!");
 
-    LoggingEventFilter.empty()
+    LoggingTestKit.empty()
         .withLogLevel(Level.ERROR)
         // the error messages slightly changed in later JDKs
         .withMessageRegex(
             "(class )?java.lang.Integer cannot be cast to (class )?java.lang.String.*")
-        .intercept(
+        .expect(
             testKit.system(),
             () -> {
               c.tell("expect wrong type");

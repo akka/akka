@@ -13,7 +13,7 @@ import scala.util.control.NoStackTrace
 
 import akka.actor.DeadLetter
 import akka.actor.testkit.typed.TestException
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
@@ -175,7 +175,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       probe.expectMessage(Tock(1))
 
       val latch = new CountDownLatch(1)
-      LoggingEventFilter.error[Exc].intercept {
+      LoggingTestKit.error[Exc].intercept {
         // next Tock(1) is enqueued in mailbox, but should be discarded by new incarnation
         ref ! SlowThenThrow(latch, new Exc)
 
@@ -205,7 +205,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
 
       probe.expectMessage(Tock(2))
 
-      LoggingEventFilter.error[Exc].intercept {
+      LoggingTestKit.error[Exc].intercept {
         val latch = new CountDownLatch(1)
         // next Tock(2) is enqueued in mailbox, but should be discarded by new incarnation
         ref ! SlowThenThrow(latch, new Exc)
@@ -226,7 +226,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
         target(probe.ref, timer, 1)
       }
       val ref = spawn(behv)
-      LoggingEventFilter.error[Exc].intercept {
+      LoggingTestKit.error[Exc].intercept {
         ref ! Throw(new Exc)
         probe.expectMessage(GotPostStop(false))
       }
@@ -305,7 +305,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
           }
         }
       })
-      LoggingEventFilter.info("stopping").intercept {
+      LoggingTestKit.info("stopping").intercept {
         ref ! "stop"
       }
       probe.expectTerminated(ref)
@@ -344,7 +344,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
           Behaviors.unhandled
       }
 
-    LoggingEventFilter.error[TestException].intercept {
+    LoggingTestKit.error[TestException].intercept {
       val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
       ref ! Tick(-1)
       probe.expectMessage(Tock(-1))
@@ -379,7 +379,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
         Behaviors.unhandled
     }
 
-    LoggingEventFilter.error[TestException].intercept {
+    LoggingTestKit.error[TestException].intercept {
       val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
       ref ! Tick(-1)
       probe.expectMessage(Tock(-1))
