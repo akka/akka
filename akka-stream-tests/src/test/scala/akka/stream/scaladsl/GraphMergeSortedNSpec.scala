@@ -19,7 +19,7 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
 
   override type Outputs = Int
 
-  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture(b) {
+  override def fixture(b: GraphDSL.Builder[_]): Fixture = new Fixture() {
     val mergeSortedN = b.add(MergeSortedN[Int](2))
 
     override def left: Inlet[Int] = mergeSortedN.in(0)
@@ -211,7 +211,7 @@ class GraphMergeSortedNSpec extends TwoStreamsSetup with ScalaCheckDrivenPropert
       subscriber1.expectSubscriptionAndError(TestException)
 
       val subscriber2 = setup(nonemptyPublisher(1 to 4), soonToFailPublisher)
-      val subscription2 = subscriber2.expectSubscriptionAndError(TestException)
+      subscriber2.expectSubscriptionAndError(TestException)
     }
 
     "never emit if a source does not emit" in assertAllStagesStopped {
