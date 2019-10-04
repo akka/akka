@@ -18,6 +18,8 @@ For piping the elements of a stream as messages to an ordinary actor you can use
 Messages can be sent to a stream with `Source.queue` or via the `ActorRef` that is
 materialized by `Source.actorRef`.
 
+Additionally you can use `ActorSource.actorRef`, `ActorSource.actorRefWithBackpressure`, `ActorSink.actorRef` and `ActorSink.actorRefWithBackpressure` shown below.
+ 
 ### ask
 
 @@@ note
@@ -180,6 +182,55 @@ Scala
 
 Java
 :   @@snip [IntegrationDocTest.java](/akka-docs/src/test/java/jdocs/stream/IntegrationDocTest.java) { #source-actorRef }
+
+
+### ActorSource.actorRef
+
+Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`]; sending messages to it will emit them on the stream only if they are of the same type as the stream.
+
+Scala
+:  @@snip [ActorSourceSinkExample.scala](/akka-stream-typed/src/test/scala/docs/akka/stream/typed/ActorSourceSinkExample.scala) { #actor-source-ref }
+
+Java
+:  @@snip [ActorSourceExample.java](/akka-stream-typed/src/test/java/docs/akka/stream/typed/ActorSourceExample.java) { #actor-source-ref }
+
+@@@ note
+  See also: @ref[ActorSource.actorRef operator reference docs](operators/ActorSource/actorRef.md)
+@@@
+
+### ActorSource.actorRefWithBackpressure
+
+Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`]; sending messages to it will emit them on the stream. The source acknowledges reception after emitting a message, to provide back pressure from the source.
+
+@@signature [ActorSource.scala](/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSource.scala) { #actorRefWithBackpressure }
+
+@@@ note
+  See also: @ref[ActorSource.actorRefWithBackpressure operator reference docs](operators/ActorSource/actorRefWithBackpressure.md)
+@@@
+
+### ActorSink.actorRef
+
+Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`], without considering backpressure.
+
+@@signature [ActorSink.scala](/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSink.scala) { #actorRef }
+
+@@@ note
+  See also: @ref[ActorSink.actorRef operator reference docs](operators/ActorSink/actorRef.md)
+@@@
+
+### ActorSink.actorRefWithBackpressure
+
+Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] with backpressure, to be able to signal demand when the actor is ready to receive more elements.
+
+Scala
+:  @@snip [ActorSourceSinkExample.scala](/akka-stream-typed/src/test/scala/docs/akka/stream/typed/ActorSourceSinkExample.scala) { #actor-sink-ref-with-backpressure }
+
+Java
+:  @@snip [ActorSinkWithAckExample.java](/akka-stream-typed/src/test/java/docs/akka/stream/typed/ActorSinkWithAckExample.java) { #actor-sink-ref-with-backpressure }
+
+@@@ note
+  See also: @ref[ActorSink.actorRefWithBackpressure operator reference docs](operators/ActorSink/actorRefWithBackpressure.md)
+@@@
 
 ## Integrating with External Services
 
