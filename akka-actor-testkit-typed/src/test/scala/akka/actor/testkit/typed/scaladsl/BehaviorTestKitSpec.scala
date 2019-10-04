@@ -196,7 +196,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
     }
   }
 
-  "BehaviorTestkit's spawn" must {
+  "BehaviorTestKit's spawn" must {
     "create children when no props specified" in {
       val testkit = BehaviorTestKit[Father.Command](Father.init)
       testkit.run(SpawnChildren(2))
