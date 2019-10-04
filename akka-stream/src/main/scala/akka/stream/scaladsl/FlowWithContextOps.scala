@@ -64,7 +64,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.mapError]]
    */
-  def mapError(pf: PartialFunction[Throwable, Throwable]): Repr[Out, Ctx] = 
+  def mapError(pf: PartialFunction[Throwable, Throwable]): Repr[Out, Ctx] =
     via(flow.mapError(pf))
 
   /**
