@@ -14,7 +14,10 @@ To use Akka Actor Typed, you must add the following dependency in your project:
   version=$akka.version$
 }
 
-## Introduction
+## Obtaining Actor references
+
+There are two general ways to obtain @ref:[Actor references](../general/addressing.md#what-is-an-actor-reference): by
+@ref:[creating actors](actor-lifecycle.md#creating-actors) and by discovery using the @ref:[Receptionist](#receptionist).
 
 You can pass actor references between actors as constructor parameters or part of messages.
 
@@ -24,7 +27,8 @@ applicable.
 
 ## Receptionist
 
-For this purpose there is an actor called the `Receptionist`. You register the specific actors that should be discoverable 
+When an actor needs to be discovered by another actor but you are unable to put a reference to it in an incoming message,
+you can use the `Receptionist`. You register the specific actors that should be discoverable 
 from other nodes in the local `Receptionist` instance. The API of the receptionist is also based on actor messages. 
 This registry of actor references is then automatically distributed to all other nodes in the cluster. 
 You can lookup such actors with the key that was used when they were registered. The reply to such a `Find` request is 
@@ -32,11 +36,8 @@ a `Listing`, which contains a `Set` of actor references that are registered for 
 registered to the same key.
 
 The registry is dynamic. New actors can be registered during the lifecycle of the system. Entries are removed when 
-registered actors are stopped or a node is removed from the cluster. To facilitate this dynamic aspect you can also subscribe 
+registered actors are stopped or a node is removed from the @ref:[Cluster](cluster.md). To facilitate this dynamic aspect you can also subscribe 
 to changes with the `Receptionist.Subscribe` message. It will send `Listing` messages to the subscriber when entries for a key are changed.
-
-The primary scenario for using the receptionist is when an actor needs to be discovered by another actor but you are unable
-to put a reference to it in an incoming message.
 
 These imports are used in the following example:
 
