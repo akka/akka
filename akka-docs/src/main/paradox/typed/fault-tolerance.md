@@ -153,9 +153,10 @@ to cleanup resources.
 In some scenarios it may be useful to push the decision about what to do on a failure upwards in the Actor hierarchy
  and let the parent actor handle what should happen on failures (in classic Akka Actors this is how it works by default).
 
-For a parent to be notified when a child is terminated it has to `watch` the child. If the child was stopped because of
-a failure the `ChildFailed` signal will be received which will contain the cause. `ChildFailed` extends `Terminated` so if
-your use case does not need to distinguish between stopping and failing you can handle both cases with the `Terminated` signal.
+For a parent to be notified when a child is terminated it has to @ref:[watch](actor-lifecycle.md#watching-actors) the
+child. If the child was stopped because of a failure the `ChildFailed` signal will be received which will contain the
+cause. `ChildFailed` extends `Terminated` so if your use case does not need to distinguish between stopping and failing
+you can handle both cases with the `Terminated` signal.
 
 If the parent in turn does not handle the `Terminated` message it will itself fail with an `akka.actor.typed.DeathPactException`.
 
