@@ -584,7 +584,7 @@ marking them `PossiblyHarmful` so that a client cannot forge them.
 ## Remote Configuration
 
 There are lots of configuration properties that are related to remoting in Akka. We refer to the
-@ref:[reference configuration](general/configuration.md#config-akka-remote) for more information.
+@ref:[reference configuration](general/configuration-reference.md#config-akka-remote) for more information.
 
 @@@ note
 

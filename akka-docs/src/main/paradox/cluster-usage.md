@@ -439,4 +439,4 @@ Make sure you understand the security implications of enabling remote monitoring
 ## Configuration
 
 There are several @ref:[configuration](typed/cluster.md#configuration) properties for the cluster,
-and the full @ref:[reference configuration](general/configuration.md#config-akka-cluster) for complete information. 
+and the full @ref:[reference configuration](general/configuration-reference.md#config-akka-cluster) for complete information. 
