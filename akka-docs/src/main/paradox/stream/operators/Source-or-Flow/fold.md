@@ -29,8 +29,6 @@ Scala
 Java
 :   @@snip [Fold.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #fold }
 
-// TODO java
-
 ## Reactive Streams semantics
 
 @@@div { .callout }
