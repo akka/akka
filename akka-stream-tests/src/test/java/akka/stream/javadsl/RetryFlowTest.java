@@ -60,7 +60,8 @@ public class RetryFlowTest extends StreamTest {
     class SomeContext {}
 
     // #retry-success
-    final FlowWithContext<Integer, SomeContext, Integer, SomeContext, NotUsed> flow =
+    FlowWithContext<Integer, SomeContext, Integer, SomeContext, NotUsed> flow = // ...
+        // the wrapped flow
         // #retry-success
         FlowWithContext.fromPairs(
             Flow.fromFunction(
@@ -71,7 +72,7 @@ public class RetryFlowTest extends StreamTest {
 
     // #retry-success
 
-    final FlowWithContext<Integer, SomeContext, Integer, SomeContext, NotUsed> retryFlow =
+    FlowWithContext<Integer, SomeContext, Integer, SomeContext, NotUsed> retryFlow =
         RetryFlow.withBackoffAndContext(
             minBackoff,
             maxBackoff,
@@ -167,13 +168,13 @@ public class RetryFlowTest extends StreamTest {
     final Duration minBackoff = Duration.ofMillis(10);
     final Duration maxBackoff = Duration.ofSeconds(5);
     final double randomFactor = 0d;
-    final int maxRetries = 3;
+    final int maxRetries = 5;
     final FlowWithContext<Integer, Integer, Try<Integer>, Integer, NotUsed> flow =
         Flow.<Integer>create()
             .<Integer, Integer, Integer>asFlowWithContext((el, ctx) -> el, ctx -> ctx)
             .map(
                 i -> {
-                  if (i > 0) return Failure.apply(new Error("i is larger than 0"));
+                  if (i > 0) return Failure.apply(new RuntimeException("i is larger than 0"));
                   else return Success.apply(i);
                 });
 

@@ -25,7 +25,10 @@ object RetryFlow {
    *
    * The implementation of the `RetryFlow` requires that `flow` follows one-in-one-out semantics,
    * the [[akka.stream.scaladsl.FlowWithContext FlowWithContext]] may not filter elements,
-   * nor emit more than one element per incoming element.
+   * nor emit more than one element per incoming element. The `RetryFlow` will fail if two elements are
+   * emitted from the `flow`, it will be stuck "forever" if nothing is emitted. Just one element will
+   * be emitted into the `flow` at any time. The `flow` needs to emit an element before the next
+   * will be emitted to it.
    *
    * The wrapped `flow` and `decideRetry` take the additional context parameters which can be a context,
    * or used to control retrying with other information.

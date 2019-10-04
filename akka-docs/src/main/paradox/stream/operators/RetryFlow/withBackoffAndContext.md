@@ -20,7 +20,7 @@ When an element is emitted by the wrapped `flow` it is passed to the `decideRetr
 The retry backoff is controlled by the `minBackoff`, `maxBackoff` and `randomFactor` parameters.
 At most `maxRetries` will be made after the initial try.
 
-The wrapped `flow` must have **one-in one-out semantics**. It may not filter, nor duplicate elements.
+The wrapped `flow` must have **one-in one-out semantics**. It may not filter, nor duplicate elements. The `RetryFlow` will fail if two elements are emitted from the `flow`, it will be stuck "forever" if nothing is emitted. Just one element will be emitted into the `flow` at any time. The `flow` needs to emit an element before the next will be emitted to it. 
 
 Elements are retried as long as `maxRetries` is not reached and the `decideRetry` function returns a new element to be sent to `flow`. The `decideRetry` function gets passed in the original element sent to the `flow` and the element emitted by it together with their contexts as @scala[tuples]@java[`akka.japi.Pair`s].
 When `decideRetry` returns @scala[`None`]@java[`Optional.empty`], no retries will be issued, and the response will be emitted downstream.
