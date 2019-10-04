@@ -52,7 +52,7 @@ class FlowWithContextSpec extends StreamSpec {
         .map {
           case m @ Message(_, offset) => if (offset == 3) throw ex else m
         }
-        .mapError{ case _: Throwable => boom }
+        .mapError { case _: Throwable => boom }
 
       Source(1L to 4L)
         .map { offset =>

@@ -115,7 +115,7 @@ class SourceWithContextSpec extends StreamSpec {
         .to(Sink.ignore)
         .run() shouldBe materializedValue
     }
-    
+
     "be able to map error via mapError" in {
       val ex = new RuntimeException("ex") with NoStackTrace
       val boom = new Exception("BOOM!") with NoStackTrace
