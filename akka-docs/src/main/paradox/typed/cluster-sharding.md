@@ -7,6 +7,8 @@ project.description: Shard a clustered compute process across the network with l
 For the Akka Classic documentation of this feature see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
 @@@
 
+@@project-info{ projectId="akka-cluster-sharding-typed" }
+
 ## Dependency
 
 To use Akka Cluster Sharding, you must add the following dependency in your project:
@@ -43,10 +45,10 @@ if that feature is enabled.
 
 @@@ warning
 
-**Don't use Cluster Sharding together with Automatic Downing**,
-since it allows the cluster to split up into two separate clusters, which in turn will result
-in *multiple shards and entities* being started, one in each separate cluster!
-See @ref:[Downing](cluster.md#automatic-vs-manual-downing).
+Make sure to not use a Cluster downing strategy that may split the cluster into several separate clusters in
+case of network problems or system overload (long GC pauses), since that will result in *multiple shards and entities*
+being started, one in each separate cluster!
+See @ref:[Downing](cluster.md#downing).
 
 @@@
 
@@ -85,6 +87,20 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #send }
 
+Cluster sharding `init` should be called on every node for each entity type. Which nodes entity actors are created on
+can be controlled with roles. `init` will create a `ShardRegion` or a proxy depending on whether the node's role matches
+the entity's role. 
+
+Specifying the role:
+
+Scala
+:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #roles }
+
+Java
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #roles }
+
+
+
 ## Persistence example
 
 When using sharding entities can be moved to different nodes in the cluster. Persistence can be used to recover the state of
@@ -122,16 +138,34 @@ is used but `tell` or any of the other @ref:[Interaction Patterns](interaction-p
 
 See @ref:[persistence](persistence.md) for more details.
 
-## Shard allocation strategy
+## Shard allocation
 
-The default implementation `akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy`
-allocates new shards to the `ShardRegion` with least number of previously allocated shards.
+A shard is a group of entities that will be managed together. The grouping is typically defined by a hashing
+function of the `entityId`. For a specific entity identifier the shard identifier must always
+be the same. Otherwise the entity actor might accidentally be started in several places at the same time.
+
+By default the shard identifier is the absolute value of the `hashCode` of the entity identifier modulo
+the total number of shards. The number of shards is configured by:
+
+@@snip [reference.conf](/akka-cluster-sharding-typed/src/main/resources/reference.conf) { #number-of-shards }
+
+As a rule of thumb, the number of shards should be a factor ten greater than the planned maximum number of
+cluster nodes. It doesn't have to be exact. Fewer shards than number of nodes will result in that some nodes will
+not host any shards. Too many shards will result in less efficient management of the shards, e.g. rebalancing overhead,
+and increased latency because the coordinator is involved in the routing of the first message for each
+shard.
+
+The `number-of-shards` configuration value must be the same for all nodes in the cluster and that is verified by
+configuration check when joining. Changing the value requires stopping all nodes in the cluster.
+
+The shards are allocated to the nodes in the cluster. The decision of where to allocate a shard is done
+by a shard allocation strategy. The default implementation `akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy`
+allocates new shards to the `ShardRegion` (node) with least number of previously allocated shards.
 This strategy can be replaced by an application specific implementation.
    
 An optional custom shard allocation strategy can be passed into the optional parameter when initializing an entity type 
 or explicitly using the `withAllocationStrategy` function.
-See the API documentation of @scala[`akka.cluster.sharding.ShardAllocationStrategy`]@java[`akka.cluster.sharding.AbstractShardAllocationStrategy`] for details
-of how to implement a custom `ShardAllocationStrategy`.
+See the API documentation of @scala[`akka.cluster.sharding.ShardAllocationStrategy`]@java[`akka.cluster.sharding.AbstractShardAllocationStrategy`] for details of how to implement a custom `ShardAllocationStrategy`.
 
 ## How it works
 
@@ -304,6 +338,26 @@ rebalanced to other nodes.
 See @ref:[How To Startup when Cluster Size Reached](cluster.md#how-to-startup-when-a-cluster-size-is-reached)
 for more information about `min-nr-of-members`.
 
+## Lease
+
+A @ref[lease](../coordination.md) can be used as an additional safety measure to ensure a shard 
+does not run on two nodes.
+
+Reasons for how this can happen:
+
+* Network partitions without an appropriate downing provider
+* Mistakes in the deployment process leading to two separate Akka Clusters
+* Timing issues between removing members from the Cluster on one side of a network partition and shutting them down on the other side
+
+A lease can be a final backup that means that each shard won't create child entity actors unless it has the lease. 
+
+To use a lease for sharding set `akka.cluster.sharding.use-lease` to the configuration location
+of the lease to use. Each shard will try and acquire a lease with with the name `<actor system name>-shard-<type name>-<shard id>` and
+the owner is set to the `Cluster(system).selfAddress.hostPort`.
+
+If a shard can't acquire a lease it will remain uninitialized so messages for entities it owns will
+be buffered in the `ShardRegion`. If the lease is lost after initialization the Shard will be terminated.
+
 ## Removal of internal Cluster Sharding data
 
 Removal of internal Cluster Sharding data is only relevant for "Persistent Mode".
@@ -326,15 +380,6 @@ cannot startup because of corrupt data, which may happen if accidentally
 two clusters were running at the same time, e.g. caused by using auto-down
 and there was a network partition.
 
-@@@ warning
-
-**Don't use Cluster Sharding together with Automatic Downing**,
-since it allows the cluster to split up into two separate clusters, which in turn will result
-in *multiple shards and entities* being started, one in each separate cluster!
-See @ref:[Downing](cluster.md#automatic-vs-manual-downing).
-
-@@@
-
 Use this program as a standalone Java main program:
 
 ```
@@ -347,7 +392,7 @@ The program is included in the `akka-cluster-sharding` jar file. It
 is easiest to run it with same classpath and configuration as your ordinary
 application. It can be run from sbt or Maven in similar way.
 
-Specify the entity type names (same as you use in the `start` method
+Specify the entity type names (same as you use in the `init` method
 of `ClusterSharding`) as program arguments.
 
 If you specify `-2.3` as the first program argument it will also try
@@ -361,4 +406,8 @@ properties are read by the `ClusterShardingSettings` when created with an ActorS
 It is also possible to amend the `ClusterShardingSettings` or create it from another config section
 with the same layout as below. 
 
+One important configuration property is `number-of-shards` as described in @ref:[Shard allocation](#shard-allocation)
+
 @@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
+
+@@snip [reference.conf](/akka-cluster-sharding-typed/src/main/resources/reference.conf) { #sharding-ext-config }

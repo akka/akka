@@ -406,12 +406,17 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   override def preStart(): Unit = {
     subscribeQuarantinedEvent()
 
-    cluster.downingProvider.downingActorProps.foreach { props =>
-      val propsWithDispatcher =
-        if (props.dispatcher == Deploy.NoDispatcherGiven) props.withDispatcher(context.props.dispatcher)
-        else props
+    cluster.downingProvider.downingActorProps match {
+      case Some(props) =>
+        val propsWithDispatcher =
+          if (props.dispatcher == Deploy.NoDispatcherGiven) props.withDispatcher(context.props.dispatcher)
+          else props
 
-      context.actorOf(propsWithDispatcher, name = "downingProvider")
+        context.actorOf(propsWithDispatcher, name = "downingProvider")
+      case None =>
+        logInfo(
+          "No downing-provider-class configured, manual cluster downing required, see " +
+          "https://doc.akka.io/docs/akka/current/typed/cluster.html#downing")
     }
 
     if (seedNodes.isEmpty) {
@@ -420,7 +425,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       else
         logInfo(
           "No seed-nodes configured, manual cluster join required, see " +
-          "https://doc.akka.io/docs/akka/current/cluster-usage.html#joining-to-seed-nodes")
+          "https://doc.akka.io/docs/akka/current/typed/cluster.html#joining")
     } else {
       self ! JoinSeedNodes(seedNodes)
     }

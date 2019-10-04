@@ -219,6 +219,7 @@ object Entity {
       Props.empty,
       Optional.empty(),
       Optional.empty(),
+      Optional.empty(),
       Optional.empty())
   }
 
@@ -234,7 +235,8 @@ final class Entity[M, E] private (
     val entityProps: Props,
     val settings: Optional[ClusterShardingSettings],
     val messageExtractor: Optional[ShardingMessageExtractor[E, M]],
-    val allocationStrategy: Optional[ShardAllocationStrategy]) {
+    val allocationStrategy: Optional[ShardAllocationStrategy],
+    val role: Optional[String]) {
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -273,7 +275,14 @@ final class Entity[M, E] private (
       entityProps,
       settings,
       Optional.ofNullable(newExtractor),
-      allocationStrategy)
+      allocationStrategy,
+      role)
+
+  /**
+   *  Run the Entity actors on nodes with the given role.
+   */
+  def withRole(role: String): Entity[M, E] =
+    copy(role = Optional.ofNullable(role))
 
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,
@@ -288,8 +297,9 @@ final class Entity[M, E] private (
       stopMessage: Optional[M] = stopMessage,
       entityProps: Props = entityProps,
       settings: Optional[ClusterShardingSettings] = settings,
-      allocationStrategy: Optional[ShardAllocationStrategy] = allocationStrategy): Entity[M, E] = {
-    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy)
+      allocationStrategy: Optional[ShardAllocationStrategy] = allocationStrategy,
+      role: Optional[String] = role): Entity[M, E] = {
+    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy, role)
   }
 
 }

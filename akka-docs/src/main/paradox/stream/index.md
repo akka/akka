@@ -3,6 +3,8 @@ project.description: An intuitive and safe way to do asynchronous, non-blocking 
 ---
 # Streams
 
+@@project-info{ projectId="akka-stream" }
+
 ## Dependency
 
 To use Akka Streams, add the module to your project:

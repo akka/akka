@@ -3,7 +3,7 @@
 ## Commercial Support
 
 Commercial support is provided by [Lightbend](http://www.lightbend.com).
-Akka is part of the [Lightbend Reactive Platform](http://www.lightbend.com/platform).
+Akka is part of the [Lightbend Platform](http://www.lightbend.com/platform).
 
 ## Sponsors
 

@@ -19,6 +19,8 @@ recommendation if you don't have other preferences or constraints.
 
 @@@
 
+@@project-info{ projectId="akka-cluster" }
+
 ## Dependency
 
 To use Akka Cluster add the following dependency in your project:
@@ -103,6 +105,14 @@ Scala
 
 Java
 :  @@snip [SimpleClusterListener2.java](/akka-docs/src/test/java/jdocs/cluster/SimpleClusterListener2.java) { #join }
+
+## Leaving
+
+See @ref:[Leaving](typed/cluster.md#leaving) in the documentation of the new APIs.
+
+## Downing
+
+See @ref:[Downing](typed/cluster.md#downing) in the documentation of the new APIs.
 
 <a id="cluster-subscriber"></a>
 ## Subscribe to Cluster Events

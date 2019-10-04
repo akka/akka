@@ -124,7 +124,7 @@ import akka.util.Timeout
       entity.entityProps,
       entity.typeKey,
       entity.stopMessage,
-      settings,
+      entity.role.fold(settings)(settings.withRole),
       extractor,
       entity.allocationStrategy)
   }
@@ -141,7 +141,8 @@ import akka.util.Timeout
         entityProps = entity.entityProps,
         settings = entity.settings.asScala,
         messageExtractor = entity.messageExtractor.asScala,
-        allocationStrategy = entity.allocationStrategy.asScala))
+        allocationStrategy = entity.allocationStrategy.asScala,
+        role = entity.role.asScala))
   }
 
   private def internalInit[M, E](

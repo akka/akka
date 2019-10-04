@@ -9,17 +9,17 @@ will by default be stopped.
 
 @@@ note
 
-An important difference between Typed and Classic actors is that Typed actors are by default stopped if
-an exception is thrown and no supervision strategy is defined while in Classic they are restarted.
+An important difference between @ref:[Typed actors](actors.md) and @ref:[Classic actors](../actors.md) is that 
+by default: the former are stopped if an exception is thrown and no supervision strategy is defined while in Classic they are restarted.
 
 @@@
 
 Note that there is an important distinction between failures and validation errors:
 
-A validation error means that the data of a command sent to an actor is not valid, this should rather be modelled as a
+A **validation error** means that the data of a command sent to an actor is not valid, this should rather be modelled as a
 part of the actor protocol than make the actor throw exceptions.
 
-A failure is instead something unexpected or outside the control of the actor itself, for example a database connection
+A **failure** is instead something unexpected or outside the control of the actor itself, for example a database connection
 that broke. Opposite to validation errors, it is seldom useful to model such as parts of the protocol as a sending actor
 very seldom can do anything useful about it.
 
@@ -30,10 +30,11 @@ with a fresh state that we know is valid.
 
 ## Supervision
 
-In Akka this "somewhere else" is called supervision. Supervision allows you to declaratively describe what should happen when a certain type of exceptions are thrown inside an actor. 
+In Akka this "somewhere else" is called supervision. Supervision allows you to declaratively describe what should happen when certain types of exceptions are thrown inside an actor. 
 
-To use supervision the actual Actor behavior is wrapped using `Behaviors.supervise`. Typically you would wrap the actor
- with supervision in the parent when spawning it as a child.
+The default @ref:[supervision](../general/supervision.md) strategy is to stop the actor if an exception is thrown. 
+In many cases you will want to further customize this behavior. To use supervision the actual Actor behavior is wrapped using `Behaviors.supervise`. 
+Typically you would wrap the actor with supervision in the parent when spawning it as a child.
  
 This example restarts the actor when it fails with an `IllegalStateException`: 
 

@@ -4,6 +4,8 @@
 For the Akka Classic documentation of this feature see @ref:[Classic Cluster Singleton](../cluster-singleton.md).
 @@@
 
+@@project-info{ projectId="akka-cluster-typed" }
+
 ## Dependency
 
 To use Cluster Singleton, you must add the following dependency in your project:
@@ -31,6 +33,15 @@ Using a singleton should not be the first design choice. It has several drawback
 such as single-point of bottleneck. Single-point of failure is also a relevant concern,
 but for some cases this feature takes care of that by making sure that another singleton
 instance will eventually be started.
+
+@@@ warning
+
+Make sure to not use a Cluster downing strategy that may split the cluster into several separate clusters in
+case of network problems or system overload (long GC pauses), since that will result in in *multiple Singletons*
+being started, one in each separate cluster!
+See @ref:[Downing](cluster.md#downing).
+
+@@@
 
 ### Singleton manager
 
@@ -80,23 +91,20 @@ The singleton instance will not run on members with status @ref:[WeaklyUp](clust
 
 This pattern may seem to be very tempting to use at first, but it has several drawbacks, some of them are listed below:
 
- * the cluster singleton may quickly become a *performance bottleneck*,
- * you can not rely on the cluster singleton to be *non-stop* available — e.g. when the node on which the singleton has
-been running dies, it will take a few seconds for this to be noticed and the singleton be migrated to another node,
- * in the case of a *network partition* appearing in a Cluster that is using Automatic Downing (see docs for
-@ref:[Auto Downing](cluster.md#auto-downing-do-not-use),
-it may happen that the isolated clusters each decide to spin up their own singleton, meaning that there might be multiple
-singletons running in the system, yet the Clusters have no way of finding out about them (because of the partition).
-
-Especially the last point is something you should be aware of — in general when using the Cluster Singleton pattern
-you should take care of downing nodes yourself and not rely on the timing based auto-down feature.
+ * The cluster singleton may quickly become a *performance bottleneck*.
+ * You can not rely on the cluster singleton to be *non-stop* available — e.g. when the node on which the singleton
+   has been running dies, it will take a few seconds for this to be noticed and the singleton be migrated to another node.
+ * If many singletons are used be aware of that all will run on the oldest node (or oldest with configured role).
+   @ref:[Cluster Sharding](cluster-sharding.md) combined with keeping the "singleton" entities alive can be a better
+   alternative. 
 
 @@@ warning
-
-**Don't use Cluster Singleton together with Automatic Downing**,
-since it allows the cluster to split up into two separate clusters, which in turn will result
-in *multiple Singletons* being started, one in each separate cluster!
-
+ 
+Make sure to not use a Cluster downing strategy that may split the cluster into several separate clusters in
+case of network problems or system overload (long GC pauses), since that will result in in *multiple Singletons*
+being started, one in each separate cluster!
+See @ref:[Downing](cluster.md#downing).
+ 
 @@@
 
 ## Example

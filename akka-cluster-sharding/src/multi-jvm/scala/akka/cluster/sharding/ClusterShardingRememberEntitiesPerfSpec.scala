@@ -56,7 +56,8 @@ object ClusterShardingRememberEntitiesPerfSpecConfig extends MultiNodeConfig {
   commonConfig(ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
-    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = 0s
     akka.remote.log-remote-lifecycle-events = off
     akka.testconductor.barrier-timeout = 3 minutes
     akka.remote.artery.advanced.outbound-message-queue-size = 10000
