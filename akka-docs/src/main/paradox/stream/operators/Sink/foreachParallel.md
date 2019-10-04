@@ -16,6 +16,7 @@ Like `foreach` but allows up to `parallellism` procedure calls to happen in para
 
 Like `foreach` but allows up to `parallellism` procedure calls to happen in parallel.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

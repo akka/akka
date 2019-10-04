@@ -20,6 +20,8 @@ The Java 8 `Stream` will be ended when the stream flowing into this `Sink` compl
 
 Be aware that Java `Stream` blocks current thread while waiting on next element from downstream.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 **cancels** when the Java Stream is closed
 

@@ -17,6 +17,7 @@ Send the single value of the `Future` when it completes and there is demand.
 Send the single value of the `Future` when it completes and there is demand.
 If the future fails the stream is failed with that exception.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

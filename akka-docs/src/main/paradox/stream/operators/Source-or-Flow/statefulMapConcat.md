@@ -17,6 +17,7 @@ Transform each element into zero or more elements that are individually passed d
 Transform each element into zero or more elements that are individually passed downstream. The difference to `mapConcat` is that
 the transformation function is created from a factory for every materialization of the flow.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

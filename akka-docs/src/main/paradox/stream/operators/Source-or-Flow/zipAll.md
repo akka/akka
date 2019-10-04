@@ -16,6 +16,7 @@ Combines all elements from each of multiple sources into @scala[tuples] @java[*P
 
 Combines all elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

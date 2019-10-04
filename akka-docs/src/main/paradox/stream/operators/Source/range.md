@@ -17,6 +17,7 @@ Emit each integer in a range, with an option to take bigger steps than 1.
 
 Emit each integer in a range, with an option to take bigger steps than 1. @scala[In Scala, use the `apply` method to generate a sequence of integers.]
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -16,6 +16,7 @@ Injects additional (configured) elements if upstream does not emit for a configu
 
 Injects additional (configured) elements if upstream does not emit for a configured amount of time.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

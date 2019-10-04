@@ -16,6 +16,7 @@ Intersperse stream with provided element similar to `List.mkString`.
 
 Intersperse stream with provided element similar to `List.mkString`. It can inject start and end marker elements to stream.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

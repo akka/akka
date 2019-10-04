@@ -18,6 +18,7 @@ Materializes to a `FlowMonitor` that monitors messages flowing through or comple
 passes through elements unchanged. Note that the `FlowMonitor` inserts a memory barrier every time it processes an
 event, and may therefore affect performance.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

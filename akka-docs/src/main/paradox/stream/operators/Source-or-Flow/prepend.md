@@ -18,6 +18,7 @@ Prepends the given source to the flow, consuming it until completion before the 
 
 If materialized values needs to be collected `prependMat` is available.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

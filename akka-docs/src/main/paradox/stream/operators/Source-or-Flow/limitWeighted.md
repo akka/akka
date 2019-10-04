@@ -17,6 +17,7 @@ Ensure stream boundedness by evaluating the cost of incoming elements using a co
 Ensure stream boundedness by evaluating the cost of incoming elements using a cost function.
 Evaluated cost of each element defines how many elements will be allowed to travel downstream.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

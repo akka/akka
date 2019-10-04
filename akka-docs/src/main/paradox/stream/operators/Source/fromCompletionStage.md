@@ -18,6 +18,7 @@ Send the single value of the `CompletionStage` when it completes and there is de
 If the `CompletionStage` completes with `null` stage is completed without emitting a value.
 If the `CompletionStage` fails the stream is failed with that exception.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

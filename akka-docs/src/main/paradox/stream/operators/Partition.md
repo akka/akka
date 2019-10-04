@@ -11,6 +11,7 @@ Fan-out the stream to several streams.
 Fan-out the stream to several streams. Each upstream element is emitted to one downstream consumer according to the
 partitioner function applied to the element.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

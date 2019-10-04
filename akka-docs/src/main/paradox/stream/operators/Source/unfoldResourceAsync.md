@@ -17,6 +17,7 @@ Wrap any resource that can be opened, queried for next element (in a blocking wa
 Wrap any resource that can be opened, queried for next element (in a blocking way) and closed using three distinct functions into a source.
 Functions return @scala[`Future`] @java[`CompletionStage`] to achieve asynchronous processing
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -17,6 +17,7 @@ Materializes into a @scala[`Future`] @java[`CompletionStage`] which will complet
 Materializes into a @scala[`Future`] @java[`CompletionStage`] which will complete with the last value emitted when the stream
 completes. If the stream completes with no elements the @scala[`Future`] @java[`CompletionStage`] is failed.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -16,6 +16,7 @@ Split off elements into a new substream whenever a predicate function return `tr
 
 Split off elements into a new substream whenever a predicate function return `true`.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

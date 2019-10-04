@@ -18,6 +18,7 @@ If the time between two processed elements exceeds the provided timeout, the str
 with a `TimeoutException`. The timeout is checked periodically, so the resolution of the
 check is one period (equals to timeout value).
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

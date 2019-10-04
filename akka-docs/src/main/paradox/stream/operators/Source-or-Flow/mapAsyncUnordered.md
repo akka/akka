@@ -20,6 +20,7 @@ that triggered them.
 If a @scala[`Future`] @java[`CompletionStage`] completes with `null`, element is not passed downstream.
 If a @scala[`Future`] @java[`CompletionStage`] fails, the stream also fails (unless a different supervision strategy is applied)
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

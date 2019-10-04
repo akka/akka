@@ -19,6 +19,7 @@ complete or emit when it completes.
 
 Can be used to implement many stateful sources without having to touch the more low level @ref[`GraphStage`](../../stream-customize.md) API.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

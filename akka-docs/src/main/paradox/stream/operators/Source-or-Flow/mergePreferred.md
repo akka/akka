@@ -10,6 +10,7 @@ Merge multiple sources.
 
 Merge multiple sources. Prefer one source if all sources have elements ready.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

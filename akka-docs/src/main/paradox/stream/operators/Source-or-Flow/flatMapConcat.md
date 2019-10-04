@@ -17,6 +17,7 @@ Transform each input element into a `Source` whose elements are then flattened i
 Transform each input element into a `Source` whose elements are then flattened into the output stream through
 concatenation. This means each source is fully consumed before consumption of the next source starts.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

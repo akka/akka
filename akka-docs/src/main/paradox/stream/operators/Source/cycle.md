@@ -19,6 +19,7 @@ when the original iterator runs out of elements to process it will start all ove
 provided by the evaluation of provided parameter. If the method argument provides an empty iterator the stream will be 
 terminated with an exception.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

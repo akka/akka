@@ -18,6 +18,7 @@ Watch a specific `ActorRef` and signal a failure downstream once the actor termi
 The signaled failure will be an @java[@javadoc:[WatchedActorTerminatedException](akka.stream.WatchedActorTerminatedException)]
 @scala[@scaladoc[WatchedActorTerminatedException](akka.stream.WatchedActorTerminatedException)].
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

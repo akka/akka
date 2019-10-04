@@ -22,6 +22,7 @@ the source of elements or is cancelled.
 
 Signal errors downstream, regardless which of the two sources emitted the error.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

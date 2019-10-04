@@ -18,6 +18,7 @@ Collect values emitted from the stream into a collection, the collection is avai
 which completes when the stream completes. Note that the collection is bounded to @scala[`Int.MaxValue`] @java[`Integer.MAX_VALUE`],
 if more element are emitted the sink will cancel the stream
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

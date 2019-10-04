@@ -21,6 +21,7 @@ backpressure.
 Will eagerly pull elements, this behavior may result in a single pending (i.e. buffered) element which cannot be
 aggregated to the batched value.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

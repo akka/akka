@@ -16,6 +16,7 @@ Drop elements until a timeout has fired
 
 Drop elements until a timeout has fired
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

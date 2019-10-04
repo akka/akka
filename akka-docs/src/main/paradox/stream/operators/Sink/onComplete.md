@@ -16,6 +16,7 @@ Invoke a callback when the stream has completed or failed.
 
 Invoke a callback when the stream has completed or failed.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

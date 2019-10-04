@@ -17,6 +17,7 @@ Consume all elements but discards them.
 Consume all elements but discards them. Useful when a stream has to be consumed but there is no use to actually
 do anything with the elements.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -8,6 +8,7 @@ Fan-out the stream to several streams.
 
 Fan-out the stream to several streams. Each upstream element is emitted to the first available downstream consumer.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

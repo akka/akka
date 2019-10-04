@@ -18,6 +18,8 @@ Bytes emitted through the stream will be available for reading through the `Inpu
 The `InputStream` will be ended when the stream flowing into this `Sink` completes, and the closing the
 `InputStream` will cancel the inflow of this `Sink`.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 **cancels** when the `InputStream` is closed
 

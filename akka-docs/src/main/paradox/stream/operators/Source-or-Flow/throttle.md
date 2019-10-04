@@ -17,6 +17,7 @@ Limit the throughput to a specific number of elements per time unit, or a specif
 Limit the throughput to a specific number of elements per time unit, or a specific total cost per time unit, where
 a function has to be provided to calculate the individual cost of each element.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

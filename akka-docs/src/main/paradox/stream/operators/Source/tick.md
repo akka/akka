@@ -17,6 +17,7 @@ A periodical repetition of an arbitrary object.
 A periodical repetition of an arbitrary object. Delay of first tick is specified
 separately from interval of the following ticks.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

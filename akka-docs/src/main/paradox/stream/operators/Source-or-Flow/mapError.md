@@ -23,6 +23,7 @@ This operators can recover the failure signal, but not the skipped elements, whi
 
 Similarly to `recover` throwing an exception inside `mapError` _will_ be logged on ERROR level automatically.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

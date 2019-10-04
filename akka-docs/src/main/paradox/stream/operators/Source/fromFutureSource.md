@@ -17,6 +17,7 @@ Streams the elements of the given future source once it successfully completes.
 Streams the elements of the given future source once it successfully completes. 
 If the future fails the stream is failed.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 
