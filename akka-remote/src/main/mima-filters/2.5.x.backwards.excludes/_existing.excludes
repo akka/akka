@@ -74,3 +74,10 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArteryTra
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArteryTransport.createFlightRecorderEventSink")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArteryTransport.createFlightRecorderEventSink$default$1")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.artery.ArteryTransport.flightRecorder")
+
+# Remove secure-cookie #27809
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.AkkaProtocolSettings.RequireCookie")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.AkkaProtocolSettings.SecureCookie")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.HandshakeInfo.tupled")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.HandshakeInfo.curried")
+ProblemFilters.exclude[MissingTypesProblem]("akka.remote.transport.HandshakeInfo$")
