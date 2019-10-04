@@ -378,8 +378,6 @@ It must still be possible to deserialize the events that were stored with the ol
 
 ## External Akka Serializers
 
-[Akka-quickser by Roman Levenstein](https://github.com/romix/akka-quickser-serialization)
+* [Kryo serializer for Akka](https://github.com/altoo-ag/akka-kryo-serialization)
 
-[Akka-kryo by Roman Levenstein](https://github.com/romix/akka-kryo-serialization)
-
-[Twitter Chill Scala extensions for Kryo (based on Akka Version 2.3.x but due to backwards compatibility of the Serializer Interface this extension also works with 2.4.x)](https://github.com/twitter/chill)
+* [Twitter Chill Scala extensions for Kryo](https://github.com/twitter/chill)
