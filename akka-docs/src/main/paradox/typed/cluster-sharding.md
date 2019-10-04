@@ -87,6 +87,20 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #send }
 
+Cluster sharding `init` should be called on every node for each entity type. Which nodes entity actors are created on
+can be controlled with roles. `init` will create a `ShardRegion` or a proxy depending on whether the node's role matches
+the entity's role. 
+
+Specifying the role:
+
+Scala
+:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #roles }
+
+Java
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #roles }
+
+
+
 ## Persistence example
 
 When using sharding entities can be moved to different nodes in the cluster. Persistence can be used to recover the state of
