@@ -14,17 +14,11 @@ This operator is included in:
   version="$akka.version$"
 }
 
-## Signature
-
 @@@div { .group-scala }
 
+## Signature
+
 @@signature [ActorSink.scala](/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSink.scala) { #actorRefWithBackpressure }
-
-@@@
-
-@@@div { .group-java }
-
-@@signature [ActorSink.scala](/akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorSink.scala) { #actorRefWithBackpressure }
 
 @@@
 
