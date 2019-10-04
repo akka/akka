@@ -58,7 +58,7 @@ overhead several times.
  
 ### Graceful shutdown 
 
-For rolling updates it is best to leave the Cluster gracefully via @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown),
+For rolling updates it is best to leave the Cluster gracefully via @ref:[Coordinated Shutdown](../coordinated-shutdown.md),
 which will run automatically on SIGTERM, when the Cluster node sees itself as `Exiting`.
 Environments such as Kubernetes send a SIGTERM, however if the JVM is wrapped with a script ensure that it forwards the signal.
 @ref:[Graceful shutdown](../cluster-sharding.md#graceful-shutdown) of Cluster Singletons and Cluster Sharding similarly happen automatically.
