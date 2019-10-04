@@ -61,6 +61,15 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
   override def withAttributes(attr: Attributes): SourceWithContext[Out, Ctx, Mat] =
     viaScala(_.withAttributes(attr))
 
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.mapError]].
+   *
+   * @see [[akka.stream.javadsl.Source.mapError]]
+   */
+  def mapError(pf: PartialFunction[Throwable, Throwable]): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.mapError(pf))
+
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.mapMaterializedValue]].
    *
