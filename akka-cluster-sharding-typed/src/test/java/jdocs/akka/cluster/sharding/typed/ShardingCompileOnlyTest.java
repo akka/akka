@@ -203,9 +203,8 @@ interface ShardingCompileOnlyTest {
     EntityTypeKey<Counter.Command> typeKey = EntityTypeKey.create(Counter.Command.class, "Counter");
 
     ActorRef<ShardingEnvelope<Counter.Command>> shardRegionOrProxy =
-            sharding.init(
-                    Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId()))
-                            .withRole("backend"));
+        sharding.init(
+            Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId())).withRole("backend"));
     // #roles
   }
 
