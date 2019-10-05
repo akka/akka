@@ -1,10 +1,8 @@
 # ActorSink.actorRef
 
-Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`].
+Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`], without considering backpressure.
 
 @ref[Actor interop operators](../index.md#actor-interop-operators)
-
-@@@div { .group-scala }
 
 ## Dependency
 
@@ -15,6 +13,8 @@ This operator is included in:
   artifact="akka-stream-typed_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@@div { .group-scala }
 
 ## Signature
 

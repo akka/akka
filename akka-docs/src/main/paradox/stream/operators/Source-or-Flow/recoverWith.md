@@ -18,6 +18,7 @@ Allow switching to alternative Source when a failure has happened upstream.
 
 Throwing an exception inside `recoverWith` _will_ be logged on ERROR level automatically.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

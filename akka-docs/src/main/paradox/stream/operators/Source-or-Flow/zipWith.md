@@ -17,6 +17,7 @@ Combines elements from multiple sources through a `combine` function and passes 
 Combines elements from multiple sources through a `combine` function and passes the
 returned value downstream.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

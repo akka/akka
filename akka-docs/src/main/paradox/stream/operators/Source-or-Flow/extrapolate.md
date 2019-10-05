@@ -25,6 +25,7 @@ Includes an optional `initial` argument to prevent blocking the entire stream wh
 See @ref:[Understanding extrapolate and expand](../../stream-rate.md#understanding-extrapolate-and-expand) for more information
 and examples.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

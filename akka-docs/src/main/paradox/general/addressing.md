@@ -11,7 +11,7 @@ distributed Akka application.
 The above image displays the relationship between the most important entities
 within an actor system, please read on for the details.
 
-## What is an Actor Reference?
+## What is an Actor Reference
 
 An actor reference is a subtype of `ActorRef`, whose foremost purpose is
 to support sending messages to the actor it represents. Each actor has access
@@ -113,17 +113,7 @@ You cannot freely create actor paths like symbolic links to refer to arbitrary a
 ## How are Actor References obtained?
 
 There are two general categories to how actor references may be obtained: by
-creating actors or by looking them up through the @ref:[Receptionist](../typed/actor-discovery.md#receptionist).
-
-### Creating Actors
-
-An actor system is started by creating actors beneath the user guardian
-actor using the `ActorContext.spawn` method and then using
-`ActorContext.spawn` from within the created actors to spawn the actor
-tree. These methods return a reference to the newly created actor. Each actor
-has direct access (through its `ActorContext`) to references for its parent,
-itself and its children. These references may be sent within messages to other actors,
-enabling those to reply directly.
+@ref:[creating actors](../typed/actor-lifecycle.md#creating-actors) or by looking them up through the @ref:[Receptionist](../typed/actor-discovery.md#receptionist).
 
 ## Actor Reference and Path Equality
 

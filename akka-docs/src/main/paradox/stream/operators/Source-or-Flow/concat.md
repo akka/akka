@@ -16,6 +16,7 @@ After completion of the original upstream the elements of the given source will 
 
 After completion of the original upstream the elements of the given source will be emitted.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

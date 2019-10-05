@@ -18,6 +18,7 @@ Allow sending of one last element downstream when a failure has happened upstrea
 
 Throwing an exception inside `recover` _will_ be logged on ERROR level automatically.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

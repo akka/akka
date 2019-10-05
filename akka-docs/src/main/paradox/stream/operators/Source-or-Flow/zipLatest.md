@@ -18,6 +18,8 @@ Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*
 
 No element is emitted until at least one element from each Source becomes available.
  
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **emits** when all of the inputs have at least an element available, and then each time an element becomes

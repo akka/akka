@@ -652,7 +652,7 @@ Note that lowest latency can be achieved with `inbound-lanes=1` and `outbound-la
 
 Also note that the total amount of parallel tasks are bound by the `remote-dispatcher` and the thread pool size should not exceed the number of CPU cores minus headroom for actually processing the messages in the application, i.e. in practice the the pool size should be less than half of the number of cores.
 
-See `inbound-lanes` and `outbound-lanes` in the @ref:[reference configuration](general/configuration.md#config-akka-remote-artery) for default values.
+See `inbound-lanes` and `outbound-lanes` in the @ref:[reference configuration](general/configuration-reference.md#config-akka-remote-artery) for default values.
 
 ### Dedicated subchannel for large messages
 
@@ -797,7 +797,7 @@ the system might have less latency than at low message rates.
 ## Remote Configuration
 
 There are lots of configuration properties that are related to remoting in Akka. We refer to the
-@ref:[reference configuration](general/configuration.md#config-akka-remote-artery) for more information.
+@ref:[reference configuration](general/configuration-reference.md#config-akka-remote-artery) for more information.
 
 @@@ note
 

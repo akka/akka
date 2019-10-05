@@ -20,6 +20,7 @@ element, allowing for it to be rewritten and/or filtered.
 See @ref:[Understanding extrapolate and expand](../../stream-rate.md#understanding-extrapolate-and-expand) for more information
 and examples.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

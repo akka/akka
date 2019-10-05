@@ -317,7 +317,7 @@ His full example is also available @ref:[here](testing.md#example).
 The tight timeouts you use during testing on your lightning-fast notebook will
 invariably lead to spurious test failures on the heavily loaded Jenkins server
 (or similar). To account for this situation, all maximum durations are
-internally scaled by a factor taken from the @ref:[Configuration](general/configuration.md#config-akka-testkit),
+internally scaled by a factor taken from the @ref:[Configuration](general/configuration-reference.md#config-akka-testkit),
 `akka.test.timefactor`, which defaults to 1.
 
 You can scale other durations with the same factor by using the @scala[implicit conversion
@@ -712,13 +712,13 @@ options:
 
 @@@ div { .group-scala }
 * *Logging of message invocations on certain actors*
-   This is enabled by a setting in the @ref:[Configuration](general/configuration.md#config-akka-actor) — namely
+   This is enabled by a setting in the @ref:[Configuration](general/configuration-reference.md#config-akka-actor) — namely
 `akka.actor.debug.receive` — which enables the `loggable`
 statement to be applied to an actor’s `receive` function:
 
 @@snip [TestkitDocSpec.scala](/akka-docs/src/test/scala/docs/testkit/TestkitDocSpec.scala) { #logging-receive }
 
-If the aforementioned setting is not given in the @ref:[Configuration](general/configuration.md#config-akka-actor), this method will
+If the aforementioned setting is not given in the @ref:[Configuration](general/configuration-reference.md#config-akka-actor), this method will
 pass through the given `Receive` function unmodified, meaning that
 there is no runtime cost unless actually enabled.
 
@@ -807,7 +807,7 @@ when writing the tests or alternatively the `sequential` keyword.
 ## Configuration
 
 There are several configuration properties for the TestKit module, please refer
-to the @ref:[reference configuration](general/configuration.md#config-akka-testkit).
+to the @ref:[reference configuration](general/configuration-reference.md#config-akka-testkit).
 
 @@@ div { .group-scala }
 

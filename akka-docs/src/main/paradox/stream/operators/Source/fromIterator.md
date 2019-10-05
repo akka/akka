@@ -19,6 +19,8 @@ for each materialization, which is the reason the @scala[`method`] @java[`factor
 
 If the iterator perform blocking operations, make sure to run it on a separate dispatcher.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **emits** the next value returned from the iterator

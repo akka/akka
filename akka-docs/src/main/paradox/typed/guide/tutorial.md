@@ -9,6 +9,12 @@ You should have already followed the instructions in the @scala[[Akka Quickstart
 
 FIXME update link to Quickstart to the Typed version, when it's ready, issue https://github.com/akka/akka/issues/25997
 
+@@@ note
+Both the Java and Scala DSLs of Akka modules bundled in the same JAR. For a smooth development experience,
+when using an IDE such as Eclipse or IntelliJ, you can disable the auto-importer from suggesting `javadsl`
+imports when working in Scala, or viceversa. See @ref:[IDE Tips](../../additional/ide.md). 
+@@@
+
 ## IoT example use case
 
 In this tutorial, we'll use Akka to build out part of an Internet of Things (IoT) system that reports data from sensor devices installed in customers' homes. The example focuses on temperature readings. The target use case allows customers to log in and view the last reported temperature from different areas of their homes. You can imagine that such sensors could also collect relative humidity or other interesting data and an application would likely support reading and changing device configuration, maybe even alerting home owners when sensor state falls outside of a particular range.

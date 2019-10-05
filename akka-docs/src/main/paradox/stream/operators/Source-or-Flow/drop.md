@@ -16,6 +16,7 @@ Drop `n` elements and then pass any subsequent element downstream.
 
 Drop `n` elements and then pass any subsequent element downstream.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

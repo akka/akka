@@ -70,9 +70,6 @@ class RemoteConfigSpec extends AkkaSpec("""
       val settings = new AkkaProtocolSettings(RARP(system).provider.remoteSettings.config)
       import settings._
 
-      RequireCookie should ===(false)
-      SecureCookie should ===(None)
-
       TransportFailureDetectorImplementationClass should ===(classOf[DeadlineFailureDetector].getName)
       TransportHeartBeatInterval should ===(4.seconds)
       TransportFailureDetectorConfig.getMillisDuration("acceptable-heartbeat-pause") should ===(120.seconds)

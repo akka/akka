@@ -14,6 +14,7 @@ Send the elements from the stream to an `ActorRef`.
 
 Send the elements from the stream to an `ActorRef`. No backpressure so care must be taken to not overflow the inbox.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

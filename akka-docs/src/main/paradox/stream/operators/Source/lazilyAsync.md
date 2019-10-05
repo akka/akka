@@ -10,6 +10,7 @@ Defers creation and materialization of a `CompletionStage` until there is demand
 
 Defers creation and materialization of a `CompletionStage` until there is demand.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

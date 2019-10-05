@@ -16,6 +16,7 @@ Each upstream element will either be diverted to the given sink, or the downstre
 
 Each upstream element will either be diverted to the given sink, or the downstream consumer according to the predicate function applied to the element.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

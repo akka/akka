@@ -367,7 +367,7 @@ Akka comes with and uses several types of testing strategies:
 ## Configuration
 
 There are several configuration properties for the cluster. Refer to the 
-@ref:[reference configuration](../general/configuration.md#config-akka-cluster) for full
+@ref:[reference configuration](../general/configuration-reference.md#config-akka-cluster) for full
 configuration descriptions, default values and options.
 
 ### How To Startup when a Cluster size is reached

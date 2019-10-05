@@ -8,6 +8,7 @@ Emit each incoming element each of `n` outputs.
 
 Emit each incoming element each of `n` outputs.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

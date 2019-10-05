@@ -10,6 +10,7 @@ Takes a stream of two element tuples and unzips the two elements ino two differe
 
 Takes a stream of two element tuples and unzips the two elements ino two different downstreams.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

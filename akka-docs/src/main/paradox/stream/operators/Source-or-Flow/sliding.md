@@ -18,6 +18,7 @@ Provide a sliding window over the incoming stream and pass the windows as groups
 
 Note: the last window might be smaller than the requested size due to end of stream.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

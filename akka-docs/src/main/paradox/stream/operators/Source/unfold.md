@@ -20,6 +20,7 @@ to pass a state. The first invocation of the provided fold function will receive
 
 Can be used to implement many stateful sources without having to touch the more low level @ref[`GraphStage`](../../stream-customize.md) API.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

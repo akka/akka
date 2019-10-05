@@ -27,6 +27,8 @@ Scala
 Java
 :   @@snip [SinkRecipeDocTest.java](/akka-docs/src/test/java/jdocs/stream/SinkRecipeDocTest.java) { #forseachAsync-processing }
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **cancels** when a @scala[`Future`] @java[`CompletionStage`] fails

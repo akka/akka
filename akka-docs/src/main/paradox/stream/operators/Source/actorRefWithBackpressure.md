@@ -15,6 +15,8 @@ Materialize an `ActorRef`; sending messages to it will emit them on the stream. 
 Materialize an `ActorRef`, sending messages to it will emit them on the stream. The actor responds with the provided ack message
 once the element could be emitted allowing for backpressure from the source. Sending another message before the previous one has been acknowledged will fail the stream.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **emits** when there is demand and there are messages in the buffer or a message is sent to the `ActorRef`

@@ -17,6 +17,7 @@ Accumulate incoming events until the specified number of elements have been accu
 Accumulate incoming events until the specified number of elements have been accumulated and then pass the collection of
 elements downstream.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

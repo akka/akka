@@ -19,6 +19,8 @@ Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*
 No element is emitted until at least one element from each Source becomes available. Whenever a new
 element appears, the zipping function is invoked with a tuple containing the new element and the last seen element of the other stream.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **emits** all of the inputs have at least an element available, and then each time an element becomes

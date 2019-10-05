@@ -18,6 +18,7 @@ Just like `fold` but receives a function that results in a @scala[`Future`] @jav
 
 Note that the `zero` value must be immutable.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

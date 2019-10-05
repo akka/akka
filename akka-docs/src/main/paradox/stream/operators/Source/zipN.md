@@ -16,6 +16,7 @@ Combine the elements of multiple streams into a stream of sequences.
 
 Combine the elements of multiple streams into a stream of sequences.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

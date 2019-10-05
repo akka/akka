@@ -16,6 +16,7 @@ Defers creation and materialization of a `Source` until there is demand.
 
 Defers creation and materialization of a `Source` until there is demand.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

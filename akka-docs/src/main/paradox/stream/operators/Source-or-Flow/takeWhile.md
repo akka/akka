@@ -17,6 +17,7 @@ Pass elements downstream as long as a predicate function return true for the ele
 Pass elements downstream as long as a predicate function return true for the element include the element
 when the predicate first return false and then complete.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

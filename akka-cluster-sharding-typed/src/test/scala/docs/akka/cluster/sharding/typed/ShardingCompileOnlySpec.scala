@@ -77,6 +77,11 @@ object ShardingCompileOnlySpec {
     })
     //#persistence
 
+    //#roles
+    sharding.init(
+      Entity(TypeKey)(createBehavior = entityContext => Counter(entityContext.entityId)).withRole("backend"))
+    //#roles
+
   }
 
   object CounterWithPassivate {

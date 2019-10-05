@@ -10,6 +10,7 @@ Splits each element of input into multiple downstreams using a function
 
 Splits each element of input into multiple downstreams using a function
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

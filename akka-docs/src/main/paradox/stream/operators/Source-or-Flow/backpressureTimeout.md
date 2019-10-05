@@ -17,6 +17,7 @@ If the time between the emission of an element and the following downstream dema
 the stream is failed with a `TimeoutException`. The timeout is checked periodically, so the resolution of the
 check is one period (equals to timeout value).
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

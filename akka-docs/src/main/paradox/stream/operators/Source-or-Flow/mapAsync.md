@@ -21,6 +21,7 @@ order will be kept when results complete. For use cases where order does not mat
 If a @scala[`Future`] @java[`CompletionStage`] completes with `null`, element is not passed downstream.
 If a @scala[`Future`] @java[`CompletionStage`] fails, the stream also fails (unless a different supervision strategy is applied)
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

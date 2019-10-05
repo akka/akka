@@ -30,6 +30,7 @@ memory issues. Elements belonging to those keys are drained directly and not sen
 
 @@@
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

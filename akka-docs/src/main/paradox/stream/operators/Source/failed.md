@@ -16,6 +16,7 @@ Fail directly with a user specified exception.
 
 Fail directly with a user specified exception.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

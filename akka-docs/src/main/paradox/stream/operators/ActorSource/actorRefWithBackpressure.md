@@ -1,19 +1,32 @@
-# actorRefWithBackpressure
+# ActorSource.actorRefWithBackpressure
 
 Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`]; sending messages to it will emit them on the stream. The source acknowledges reception after emitting a message, to provide back pressure from the source.
 
-@ref[Source operators](../index.md#source-operators)
+@ref[Actor interop operators](../index.md#actor-interop-operators)
 
-@@@ div { .group-scala }
+## Dependency
+
+This operator is included in:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-stream-typed_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+@@@div { .group-scala }
+
 ## Signature
 
-@@signature [Source.scala](/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSource.scala) { #actorRefWithBackpressure }
+@@signature [ActorSource.scala](/akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSource.scala) { #actorRefWithBackpressure }
 @@@
 
 ## Description
 
 Materialize an @java[`ActorRef<T>`]@scala[`ActorRef[T]`], sending messages to it will emit them on the stream. The actor responds with the provided ack message
 once the element could be emitted allowing for backpressure from the source. Sending another message before the previous one has been acknowledged will fail the stream.
+
+## Reactive Streams semantics
 
 @@@div { .callout }
 

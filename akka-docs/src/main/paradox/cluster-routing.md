@@ -80,7 +80,7 @@ Scala
 Java
 :  @@snip [StatsService.java](/akka-docs/src/test/java/jdocs/cluster/StatsService.java) { #router-lookup-in-code }
 
-See @ref:[reference configuration](general/configuration.md#config-akka-cluster) for further descriptions of the settings.
+See @ref:[reference configuration](general/configuration-reference.md#config-akka-cluster) for further descriptions of the settings.
 
 ### Router Example with Group of Routees
 
@@ -185,7 +185,7 @@ Scala
 Java
 :  @@snip [StatsService.java](/akka-docs/src/test/java/jdocs/cluster/StatsService.java) { #router-deploy-in-code }
 
-See @ref:[reference configuration](general/configuration.md#config-akka-cluster) for further descriptions of the settings.
+See @ref:[reference configuration](general/configuration-reference.md#config-akka-cluster) for further descriptions of the settings.
 
 When using a pool of remote deployed routees you must ensure that all parameters of the `Props` can
 be @ref:[serialized](serialization.md).

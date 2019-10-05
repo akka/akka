@@ -74,6 +74,10 @@ After being deprecated since 2.5.0, the following have been removed in Akka 2.6.
 * `akka.stream.actor.ActorSubscriber` and `akka.stream.actor.ActorPublisher`
     - Use `GraphStage` instead.
 
+After being deprecated since 2.4.0, the following have been removed in Akka 2.6.
+
+* Secure cookie in Classic Akka Remoting
+
 After being deprecated since 2.2, the following have been removed in Akka 2.6.
 
 * `actorFor`
@@ -178,8 +182,8 @@ akka.remote.artery.canonical.port = 2552
 ```
 
 The configuration for Artery is different, so you might have to revisit any custom configuration. See the full
-@ref:[reference configuration for Artery](../general/configuration.md#config-akka-remote-artery) and
-@ref:[reference configuration for classic remoting](../general/configuration.md#config-akka-remote).
+@ref:[reference configuration for Artery](../general/configuration-reference.md#config-akka-remote-artery) and
+@ref:[reference configuration for classic remoting](../general/configuration-reference.md#config-akka-remote).
 
 @@@ note
 
@@ -230,7 +234,7 @@ For TCP:
 
 Classic remoting is deprecated but can be used in `2.6.` Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `false`. Further, any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
-are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration.md#config-akka-remote).
+are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration-reference.md#config-akka-remote).
 
 ## Java Serialization
 

@@ -17,6 +17,7 @@ Emits a specifiable number of elements from the original source, then from the p
 Emits a specifiable number of elements from the original source, then from the provided source and repeats. If one
 source completes the rest of the other stream will be emitted.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 
