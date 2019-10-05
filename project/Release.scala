@@ -14,11 +14,9 @@ import com.lightbend.paradox.sbt.ParadoxKeys
 object Release extends ParadoxKeys {
   val releaseDirectory = SettingKey[File]("release-directory")
 
-  lazy val settings: Seq[Setting[_]] = commandSettings ++ Seq(
-    releaseDirectory := crossTarget.value / "release")
+  lazy val settings: Seq[Setting[_]] = commandSettings ++ Seq(releaseDirectory := target.value / "release")
 
-  lazy val commandSettings = Seq(
-    commands ++= Seq(buildReleaseCommand, buildDocsCommand))
+  lazy val commandSettings = Seq(commands ++= Seq(buildReleaseCommand, buildDocsCommand))
 
   def buildReleaseCommand = Command.command("buildRelease") { state =>
     val extracted = Project.extract(state)
@@ -36,7 +34,8 @@ object Release extends ParadoxKeys {
 
   def buildDocsCommand = Command.command("buildDocs") { state =>
     if (!sys.props.contains("akka.genjavadoc.enabled"))
-      throw new RuntimeException("Make sure you start sbt with \"-Dakka.genjavadoc.enabled=true\" otherwise no japi will be generated")
+      throw new RuntimeException(
+        "Make sure you start sbt with \"-Dakka.genjavadoc.enabled=true\" otherwise no japi will be generated")
     val extracted = Project.extract(state)
     // we want to build the api-docs and docs with the current "default" version of scala
     val scalaV = extracted.get(scalaVersion)

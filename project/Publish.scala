@@ -25,7 +25,7 @@ object Publish extends AutoPlugin {
     pomIncludeRepository := { x =>
       false
     },
-    defaultPublishTo := crossTarget.value / "repository")
+    defaultPublishTo := target.value / "repository")
 
   def akkaPomExtra = {
     <inceptionYear>2009</inceptionYear>
@@ -81,10 +81,11 @@ object DeployRsync extends AutoPlugin {
   object autoImport extends Keys
   import autoImport._
 
-  override def projectSettings = Seq(deployRsync := {
-    val (_, host) = (Space ~ StringBasic).parsed
-    deployRsyncArtifact.value.foreach {
-      case (from, to) => s"rsync -rvz $from/ $host:$to" !
-    }
-  })
+  override def projectSettings =
+    Seq(deployRsync := {
+      val (_, host) = (Space ~ StringBasic).parsed
+      deployRsyncArtifact.value.foreach {
+        case (from, to) => s"rsync -rvz $from/ $host:$to" !
+      }
+    })
 }
