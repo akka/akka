@@ -9,7 +9,7 @@ import java.util.UUID
 import akka.actor.{ ActorSystem, Props }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.persistence.testkit._
 
 class TestKitNOTSerializeSpec extends WordSpecLike with CommonTestkitTests {

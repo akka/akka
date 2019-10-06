@@ -9,7 +9,7 @@ import java.util.{ List => JList }
 import akka.annotation.InternalApi
 
 import scala.collection.immutable
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import scala.language.implicitConversions
 
 /**

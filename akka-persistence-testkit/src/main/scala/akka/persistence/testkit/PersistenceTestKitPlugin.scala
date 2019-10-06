@@ -46,7 +46,7 @@ object PersistenceTestKitPlugin {
 
   val PluginId = "akka.persistence.testkit.journal.pluginid"
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   def getInstance() = this
 
@@ -85,7 +85,7 @@ object PersistenceTestKitSnapshotPlugin {
 
   val PluginId = "akka.persistence.testkit.snapshotstore.pluginid"
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   def getInstance() = this
 

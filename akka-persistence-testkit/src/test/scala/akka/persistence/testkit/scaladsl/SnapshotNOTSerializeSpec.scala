@@ -11,7 +11,7 @@ import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 import akka.persistence.testkit._
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 class SnapshotNOTSerializeSpec extends WordSpecLike with CommonSnapshotTests {
 

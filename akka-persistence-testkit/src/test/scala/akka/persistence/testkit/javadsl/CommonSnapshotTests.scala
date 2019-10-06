@@ -12,7 +12,7 @@ import akka.testkit.{ EventFilter, TestKitBase }
 import org.scalatest.Matchers._
 import org.scalatest.WordSpecLike
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.japi.Pair
 
 trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils {

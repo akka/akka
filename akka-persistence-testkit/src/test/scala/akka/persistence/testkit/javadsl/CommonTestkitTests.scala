@@ -14,7 +14,7 @@ import akka.testkit.{ EventFilter, TestKitBase }
 import org.scalatest.Matchers._
 import org.scalatest._
 
-import scala.collection.JavaConverters._
+import akka.util.ccompat.JavaConverters._
 
 trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils {
 
