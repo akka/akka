@@ -156,8 +156,8 @@ sealed trait HighestSeqNumSupportStorage[K, R] extends InMemStorage[K, R] {
         val storeSn =
           read(key).flatMap(_.lastOption).map(reprToSeqNum)
         (for {
-          fsn ← savedSn
-          ssn ← storeSn
+          fsn <- savedSn
+          ssn <- storeSn
         } yield max(fsn, ssn)).orElse(savedSn).orElse(storeSn).getOrElse(0L)
       })
 
