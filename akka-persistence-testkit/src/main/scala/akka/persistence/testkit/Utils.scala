@@ -4,7 +4,7 @@
 
 package akka.persistence.testkit
 
-import java.util.{ List ⇒ JList }
+import java.util.{ List => JList }
 
 import akka.annotation.InternalApi
 
@@ -27,21 +27,21 @@ private[testkit] object Utils {
 
   private[testkit] object JavaFuncConversions {
 
-    import java.util.{ function ⇒ jf }
+    import java.util.{ function => jf }
 
-    implicit def javaBiFunToScala[A, B, R](javaFun: jf.BiFunction[A, B, R]): (A, B) ⇒ R = { (a: A, b: B) ⇒
+    implicit def javaBiFunToScala[A, B, R](javaFun: jf.BiFunction[A, B, R]): (A, B) => R = { (a: A, b: B) =>
       javaFun.apply(a, b)
     }
 
-    implicit def scalaFun1ToJava[I, Re](f: I ⇒ Re): jf.Function[I, Re] = new jf.Function[I, Re] {
+    implicit def scalaFun1ToJava[I, Re](f: I => Re): jf.Function[I, Re] = new jf.Function[I, Re] {
       override def apply(t: I): Re = f(t)
     }
 
-    implicit def scalaFunToConsumer[I](f: I ⇒ Unit): jf.Consumer[I] = new jf.Consumer[I] {
+    implicit def scalaFunToConsumer[I](f: I => Unit): jf.Consumer[I] = new jf.Consumer[I] {
       override def accept(t: I): Unit = f(t)
     }
 
-    implicit def scalaFun2ToJava[I, M, Re](f: (I, M) ⇒ Re): jf.BiFunction[I, M, Re] = new jf.BiFunction[I, M, Re] {
+    implicit def scalaFun2ToJava[I, M, Re](f: (I, M) => Re): jf.BiFunction[I, M, Re] = new jf.BiFunction[I, M, Re] {
       override def apply(t: I, u: M): Re = f(t, u)
     }
 

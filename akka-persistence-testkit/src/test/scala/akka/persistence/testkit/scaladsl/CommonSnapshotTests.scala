@@ -58,22 +58,22 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! NewSnapshot(2: Any)
 
       expectNextPersistedPF(pid) {
-        case 1 ⇒
+        case 1 =>
       }
 
       assertThrows[AssertionError] {
         expectNextPersistedPF(pid) {
-          case 3 ⇒
+          case 3 =>
         }
       }
 
       expectNextPersistedPF(pid) {
-        case 2 ⇒
+        case 2 =>
       }
 
       assertThrows[AssertionError] {
         expectNextPersistedPF(pid) {
-          case 3 ⇒
+          case 3 =>
         }
       }
 
@@ -88,17 +88,17 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       val newPolicy = new SnapshotStorage.SnapshotPolicies.PolicyType {
         override def tryProcess(persistenceId: String, processingUnit: SnapshotOperation): ProcessingResult = {
           processingUnit match {
-            case WriteSnapshot(_, msgs) ⇒
+            case WriteSnapshot(_, msgs) =>
               val ex = msgs match {
-                case 777 ⇒ true
-                case _ ⇒ false
+                case 777 => true
+                case _   => false
               }
               if (ex) {
                 ProcessingSuccess
               } else {
                 StorageFailure(err)
               }
-            case _ ⇒ ProcessingSuccess
+            case _ => ProcessingSuccess
           }
         }
       }
@@ -110,11 +110,11 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! NewSnapshot(1)
 
       expectMsg((List.empty, 0))
-      expectMsgPF() { case SaveSnapshotFailure(_, ee) if ee.getMessage == err.getMessage ⇒ }
+      expectMsgPF() { case SaveSnapshotFailure(_, ee) if ee.getMessage == err.getMessage => }
 
       a ! NewSnapshot(777)
 
-      expectMsgPF() { case SaveSnapshotSuccess(_) ⇒ }
+      expectMsgPF() { case SaveSnapshotSuccess(_) => }
       expectNextPersisted(pid, 777)
 
       returnDefaultPolicy()
@@ -168,14 +168,14 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! NewSnapshot(1)
 
       expectMsg((List.empty, 0))
-      expectMsgPF() { case SaveSnapshotFailure(_, ExpectedFailure) ⇒ }
+      expectMsgPF() { case SaveSnapshotFailure(_, ExpectedFailure) => }
 
       val b = system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
       b ! NewSnapshot(2)
 
       expectMsg((List.empty, 0))
-      expectMsgPF() { case SaveSnapshotFailure(_, ExpectedFailure) ⇒ }
+      expectMsgPF() { case SaveSnapshotFailure(_, ExpectedFailure) => }
 
       val c = system.actorOf(Props(classOf[A], pid, None))
 
@@ -198,7 +198,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! NewSnapshot(1)
 
       expectMsg((List.empty, 0))
-      expectMsgPF() { case SaveSnapshotFailure(_, ee) if err.getMessage == ee.getMessage ⇒ }
+      expectMsgPF() { case SaveSnapshotFailure(_, ee) if err.getMessage == ee.getMessage => }
 
     }
 
@@ -363,11 +363,11 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! DeleteSomeSnapshot(0)
 
       expectMsg((List.empty, 1))
-      expectMsgPF() { case DeleteSnapshotFailure(_, ExpectedFailure) ⇒ }
+      expectMsgPF() { case DeleteSnapshotFailure(_, ExpectedFailure) => }
 
       a ! DeleteSomeSnapshot(0)
 
-      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 ⇒ }
+      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 => }
       expectNoMessage()
 
     }
@@ -387,11 +387,11 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! DeleteSomeSnapshot(0)
 
       expectMsg((List.empty, 1))
-      expectMsgPF() { case DeleteSnapshotFailure(_, ee) if ee.getMessage == err.getMessage ⇒ }
+      expectMsgPF() { case DeleteSnapshotFailure(_, ee) if ee.getMessage == err.getMessage => }
 
       a ! DeleteSomeSnapshot(0)
 
-      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 ⇒ }
+      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 => }
       expectNoMessage()
 
     }
@@ -409,11 +409,11 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! DeleteSomeSnapshot(0)
 
       expectMsg((List.empty, 3))
-      expectMsgPF() { case DeleteSnapshotFailure(_, ExpectedFailure) ⇒ }
+      expectMsgPF() { case DeleteSnapshotFailure(_, ExpectedFailure) => }
 
       a ! DeleteSomeSnapshot(0)
 
-      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 ⇒ }
+      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 => }
       expectNoMessage()
 
     }
@@ -433,7 +433,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! DeleteSomeSnapshotByCriteria(SnapshotSelectionCriteria.Latest)
 
       expectMsg((List.empty, 3))
-      expectMsgPF() { case DeleteSnapshotsSuccess(SnapshotSelectionCriteria.Latest) ⇒ }
+      expectMsgPF() { case DeleteSnapshotsSuccess(SnapshotSelectionCriteria.Latest) => }
 
     }
 

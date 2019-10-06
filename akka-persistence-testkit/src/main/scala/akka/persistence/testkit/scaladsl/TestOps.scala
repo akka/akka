@@ -12,14 +12,14 @@ import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 
 private[testkit] trait RejectSupport[U] {
-  this: PolicyOpsTestKit[U] with HasStorage[U, _] ⇒
+  this: PolicyOpsTestKit[U] with HasStorage[U, _] =>
 
   /**
    * Reject `n` following journal events depending on the condition `cond`.
    * Rejection triggers, when `cond` returns true, .
    * Reject events with default `ExpectedRejection` exception.
    */
-  def rejectNextNOpsCond(cond: (String, U) ⇒ Boolean, n: Int): Unit =
+  def rejectNextNOpsCond(cond: (String, U) => Boolean, n: Int): Unit =
     rejectNextNOpsCond(cond, n, ExpectedRejection)
 
   /**
@@ -27,7 +27,7 @@ private[testkit] trait RejectSupport[U] {
    * Rejection triggers, when `cond` returns true, .
    * Rejects events with the `cause` exception.
    */
-  def rejectNextNOpsCond(cond: (String, U) ⇒ Boolean, n: Int, cause: Throwable): Unit = {
+  def rejectNextNOpsCond(cond: (String, U) => Boolean, n: Int, cause: Throwable): Unit = {
     val current = storage.currentPolicy
     val pol = new Policies.RejectNextNCond(n, cause, cond, withPolicy(current))
     withPolicy(pol)
@@ -53,7 +53,7 @@ private[testkit] trait RejectSupport[U] {
 }
 
 private[testkit] trait PolicyOpsTestKit[P] extends {
-  this: HasStorage[P, _] ⇒
+  this: HasStorage[P, _] =>
 
   private[testkit] val Policies: DefaultPolicies[P]
 
@@ -62,7 +62,7 @@ private[testkit] trait PolicyOpsTestKit[P] extends {
    * Failure triggers, when `cond` returns true, .
    * Fails events with default `ExpectedFailure` exception.
    */
-  def failNextNOpsCond(cond: (String, P) ⇒ Boolean, n: Int): Unit =
+  def failNextNOpsCond(cond: (String, P) => Boolean, n: Int): Unit =
     failNextNOpsCond(cond, n, ExpectedFailure)
 
   /**
@@ -70,7 +70,7 @@ private[testkit] trait PolicyOpsTestKit[P] extends {
    * Failure triggers, when `cond` returns true, .
    * Fails events with the `cause` exception.
    */
-  def failNextNOpsCond(cond: (String, P) ⇒ Boolean, n: Int, cause: Throwable): Unit = {
+  def failNextNOpsCond(cond: (String, P) => Boolean, n: Int, cause: Throwable): Unit = {
     val current = storage.currentPolicy
     val pol = new Policies.FailNextNCond(n, cause, cond, withPolicy(current))
     withPolicy(pol)
@@ -110,7 +110,7 @@ private[testkit] trait PolicyOpsTestKit[P] extends {
 }
 
 private[testkit] trait ExpectOps[U] {
-  this: HasStorage[_, U] ⇒
+  this: HasStorage[_, U] =>
 
   private[testkit] val probe: TestKitBase
 
@@ -205,12 +205,12 @@ private[testkit] trait ExpectOps[U] {
       {
         val actual = storage.findMany(persistenceId, nextInd, msgs.size)
         actual match {
-          case Some(reprs) ⇒
+          case Some(reprs) =>
             val ls = reprs.map(reprToAny)
             assert(
-              ls.size == msgs.size && ls.zip(msgs).forall(e ⇒ e._1 == e._2),
+              ls.size == msgs.size && ls.zip(msgs).forall(e => e._1 == e._2),
               "Persisted messages do not correspond to expected ones")
-          case None ⇒ assert(false, "No messages were persisted")
+          case None => assert(false, "No messages were persisted")
         }
         actual.get.map(reprToAny)
       },
@@ -239,12 +239,12 @@ private[testkit] trait ExpectOps[U] {
       {
         val actual = storage.findMany(persistenceId, nextInd, msgs.size)
         actual match {
-          case Some(reprs) ⇒
+          case Some(reprs) =>
             val ls = reprs.map(reprToAny)
             assert(
               ls.size == msgs.size && ls.diff(msgs).isEmpty,
               "Persisted messages do not correspond to the expected ones.")
-          case None ⇒ assert(false, "No messages were persisted.")
+          case None => assert(false, "No messages were persisted.")
         }
         actual.get.map(reprToAny)
       },
@@ -264,7 +264,7 @@ private[testkit] trait ExpectOps[U] {
 }
 
 private[testkit] trait ClearOps {
-  this: HasStorage[_, _] ⇒
+  this: HasStorage[_, _] =>
 
   /**
    * Clear all data from storage.
@@ -293,7 +293,7 @@ private[testkit] trait ClearOps {
 }
 
 private[testkit] trait ClearPreservingSeqNums {
-  this: HasStorage[_, _] ⇒
+  this: HasStorage[_, _] =>
 
   /**
    * Clear all data in storage preserving sequence numbers.

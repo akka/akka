@@ -94,17 +94,17 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       val newPolicy = new MessageStorage.JournalPolicies.PolicyType {
         override def tryProcess(persistenceId: String, processingUnit: JournalOperation): ProcessingResult = {
           processingUnit match {
-            case WriteMessages(msgs) ⇒
+            case WriteMessages(msgs) =>
               val ex = msgs.exists({
-                case B(666) ⇒ true
-                case _ ⇒ false
+                case B(666) => true
+                case _      => false
               })
               if (ex) {
                 ProcessingSuccess
               } else {
                 StorageFailure(err)
               }
-            case _ ⇒ ProcessingSuccess
+            case _ => ProcessingSuccess
           }
         }
       }
@@ -279,7 +279,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
     "recover persisted messages" in {
 
-      val preload = List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava
+      val preload = List(B(1), B(2), B(3)).map(e => e: Any).asJava
       val pid = randomPid()
 
       persistForRecovery(pid, preload)
@@ -292,7 +292,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
     "fail to recover persisted messages for any actor" in {
 
-      val preload = List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava
+      val preload = List(B(1), B(2), B(3)).map(e => e: Any).asJava
       val pid = randomPid()
 
       persistForRecovery(pid, preload)
@@ -308,7 +308,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
     "fail to recover persisted messages for any actor with custom error" in {
 
-      val preload = List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava
+      val preload = List(B(1), B(2), B(3)).map(e => e: Any).asJava
       val pid = randomPid()
 
       val err = new Exception("BOOM!")
@@ -327,7 +327,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
     "fail to recover persisted messages for actor with particular persistenceId" in {
 
-      val preload = List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava
+      val preload = List(B(1), B(2), B(3)).map(e => e: Any).asJava
       val pid = randomPid()
 
       persistForRecovery(pid, preload)
@@ -343,7 +343,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
     "recover persisted messages when fail for different persistenceId is set" in {
 
-      val preload = List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava
+      val preload = List(B(1), B(2), B(3)).map(e => e: Any).asJava
       val pid = randomPid()
 
       persistForRecovery(pid, preload)
@@ -362,7 +362,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val pid = randomPid()
 
-      val saved = List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava
+      val saved = List(B(1), B(2), B(3)).map(e => e: Any).asJava
 
       persistForRecovery(pid, saved)
 
@@ -376,7 +376,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val pid = randomPid()
 
-      val preload = List(B(1)).map(e ⇒ e: Any).asJava
+      val preload = List(B(1)).map(e => e: Any).asJava
       persistForRecovery(pid, preload)
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
@@ -386,11 +386,11 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       a ! DeleteAllMessages
 
       expectMsg((preload.asScala, 0))
-      expectMsgPF() { case DeleteMessagesFailure(ExpectedFailure, _) ⇒ }
+      expectMsgPF() { case DeleteMessagesFailure(ExpectedFailure, _) => }
 
       a ! DeleteAllMessages
 
-      expectMsgPF() { case DeleteMessagesSuccess(_) ⇒ }
+      expectMsgPF() { case DeleteMessagesSuccess(_) => }
 
     }
 
@@ -400,7 +400,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val err = new Exception("BOOM!")
 
-      val preload = List(B(1)).map(e ⇒ e: Any).asJava
+      val preload = List(B(1)).map(e => e: Any).asJava
       persistForRecovery(pid, preload)
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
@@ -410,11 +410,11 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       a ! DeleteAllMessages
 
       expectMsg((preload.asScala, 0))
-      expectMsgPF() { case DeleteMessagesFailure(e, _) if e.getMessage == err.getMessage ⇒ }
+      expectMsgPF() { case DeleteMessagesFailure(e, _) if e.getMessage == err.getMessage => }
 
       a ! DeleteAllMessages
 
-      expectMsgPF() { case DeleteMessagesSuccess(_) ⇒ }
+      expectMsgPF() { case DeleteMessagesSuccess(_) => }
 
     }
 
@@ -422,7 +422,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val pid = randomPid()
 
-      val preload = List(B(1)).map(e ⇒ e: Any).asJava
+      val preload = List(B(1)).map(e => e: Any).asJava
       persistForRecovery(pid, preload)
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
@@ -432,11 +432,11 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       a ! DeleteAllMessages
 
       expectMsg((preload.asScala, 0))
-      expectMsgPF() { case DeleteMessagesFailure(ExpectedFailure, _) ⇒ }
+      expectMsgPF() { case DeleteMessagesFailure(ExpectedFailure, _) => }
 
       a ! DeleteAllMessages
 
-      expectMsgPF() { case DeleteMessagesSuccess(_) ⇒ }
+      expectMsgPF() { case DeleteMessagesSuccess(_) => }
 
     }
 
@@ -444,7 +444,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(1).map(e ⇒ e: Any).asJava)
+      persistForRecovery(pid, List(1).map(e => e: Any).asJava)
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -455,7 +455,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       a ! DeleteAllMessages
 
       expectMsg((List(1), 0))
-      expectMsgPF() { case DeleteMessagesSuccess(_) ⇒ }
+      expectMsgPF() { case DeleteMessagesSuccess(_) => }
 
     }
 
@@ -463,7 +463,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava)
+      persistForRecovery(pid, List(B(1), B(2), B(3)).map(e => e: Any).asJava)
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -485,7 +485,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava)
+      persistForRecovery(pid, List(B(1), B(2), B(3)).map(e => e: Any).asJava)
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -507,7 +507,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava)
+      persistForRecovery(pid, List(B(1), B(2), B(3)).map(e => e: Any).asJava)
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -525,7 +525,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava)
+      persistForRecovery(pid, List(B(1), B(2), B(3)).map(e => e: Any).asJava)
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -547,7 +547,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List(B(1), B(2), B(3)).map(e ⇒ e: Any).asJava)
+      persistForRecovery(pid, List(B(1), B(2), B(3)).map(e => e: Any).asJava)
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
 

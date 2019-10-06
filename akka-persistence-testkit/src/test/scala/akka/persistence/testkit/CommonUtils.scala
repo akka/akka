@@ -35,39 +35,39 @@ class A(pid: String, notifyOnStateChange: Option[ActorRef]) extends PersistentAc
   var snapshotState = 0
 
   override def receiveRecover = {
-    case SnapshotOffer(_, snapshot: Int) ⇒
+    case SnapshotOffer(_, snapshot: Int) =>
       snapshotState = snapshot
-    case RecoveryCompleted ⇒
+    case RecoveryCompleted =>
       notifyOnStateChange.foreach(_ ! Tuple2(recovered, snapshotState))
-    case s ⇒ recovered :+= s
+    case s => recovered :+= s
   }
 
   override def receiveCommand = {
-    case AskMessageSeqNum ⇒
+    case AskMessageSeqNum =>
       notifyOnStateChange.foreach(_ ! lastSequenceNr)
-    case AskSnapshotSeqNum ⇒
+    case AskSnapshotSeqNum =>
       notifyOnStateChange.foreach(_ ! snapshotSequenceNr)
-    case d @ DeleteMessagesFailure(_, _) ⇒
+    case d @ DeleteMessagesFailure(_, _) =>
       notifyOnStateChange.foreach(_ ! d)
-    case d @ DeleteMessagesSuccess(_) ⇒
+    case d @ DeleteMessagesSuccess(_) =>
       notifyOnStateChange.foreach(_ ! d)
-    case s: SnapshotProtocol.Response ⇒
+    case s: SnapshotProtocol.Response =>
       notifyOnStateChange.foreach(_ ! s)
-    case DeleteAllMessages ⇒
+    case DeleteAllMessages =>
       deleteMessages(lastSequenceNr)
-    case DeleteSomeSnapshot(sn) ⇒
+    case DeleteSomeSnapshot(sn) =>
       deleteSnapshot(sn)
-    case DeleteSomeSnapshotByCriteria(crit) ⇒
+    case DeleteSomeSnapshotByCriteria(crit) =>
       deleteSnapshots(crit)
-    case DeleteSomeMessages(sn) ⇒
+    case DeleteSomeMessages(sn) =>
       deleteMessages(sn)
-    case NewSnapshot(state: Int) ⇒
+    case NewSnapshot(state: Int) =>
       snapshotState = state: Int
       saveSnapshot(state)
-    case NewSnapshot(other) ⇒
+    case NewSnapshot(other) =>
       saveSnapshot(other)
-    case s ⇒
-      persist(s) { _ ⇒
+    case s =>
+      persist(s) { _ =>
         sender() ! s
       }
   }

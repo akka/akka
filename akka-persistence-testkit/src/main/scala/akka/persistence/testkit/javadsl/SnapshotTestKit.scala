@@ -232,7 +232,7 @@ class SnapshotTestKit(system: ActorSystem) {
    * Retrieve all snapshots and their metadata saved in storage by persistence id.
    */
   def persistedInStorage(persistenceId: String): JList[Pair[SnapshotMeta, Any]] =
-    scalaTestkit.persistedInStorage(persistenceId).map(p ⇒ Pair(p._1, p._2)).asJava
+    scalaTestkit.persistedInStorage(persistenceId).map(p => Pair(p._1, p._2)).asJava
 
   /**
    * Clear all data from storage.

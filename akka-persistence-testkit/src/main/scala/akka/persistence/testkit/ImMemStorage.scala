@@ -47,17 +47,17 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
   private final val eventsMap: ConcurrentHashMap[K, Vector[InternalRepr]] =
     new ConcurrentHashMap()
 
-  def forEachKey(f: K ⇒ Unit): Unit = eventsMap.forEachKey(parallelism, f)
+  def forEachKey(f: K => Unit): Unit = eventsMap.forEachKey(parallelism, f)
 
   def findMany(key: K, fromInclusive: Int, maxNum: Int): Option[Vector[R]] =
     read(key).flatMap(
-      value ⇒
+      value =>
         if (value.size > fromInclusive)
           Some(value.drop(fromInclusive).take(maxNum))
         else None)
 
   def findOneByIndex(key: K, index: Int): Option[R] =
-    Option(eventsMap.get(key)).flatMap(value ⇒ if (value.size > index) Some(value(index)) else None).map(toRepr)
+    Option(eventsMap.get(key)).flatMap(value => if (value.size > index) Some(value(index)) else None).map(toRepr)
 
   def add(key: K, p: R): Unit =
     add(key, List(p))
@@ -68,25 +68,25 @@ sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
    *
    * @param elems elements to insert
    */
-  def add(key: K, elems: ⇒ immutable.Seq[R]): Unit =
+  def add(key: K, elems: => immutable.Seq[R]): Unit =
     eventsMap.compute(
       key,
-      (_: K, value: Vector[InternalRepr]) ⇒
+      (_: K, value: Vector[InternalRepr]) =>
         value match {
-          case null ⇒ elems.map(toInternal).toVector
-          case existing ⇒ existing ++ elems.map(toInternal)
+          case null     => elems.map(toInternal).toVector
+          case existing => existing ++ elems.map(toInternal)
         })
 
-  def delete(key: K, needsToBeDeleted: R ⇒ Boolean): Vector[R] =
+  def delete(key: K, needsToBeDeleted: R => Boolean): Vector[R] =
     eventsMap
-      .computeIfPresent(key, (_: K, value: Vector[InternalRepr]) ⇒ {
+      .computeIfPresent(key, (_: K, value: Vector[InternalRepr]) => {
         value.map(toRepr).filterNot(needsToBeDeleted).map(toInternal)
       })
       .map(toRepr)
 
-  def updateExisting(key: K, updater: Vector[R] ⇒ Vector[R]): Vector[R] =
+  def updateExisting(key: K, updater: Vector[R] => Vector[R]): Vector[R] =
     eventsMap
-      .computeIfPresent(key, (_: K, value: Vector[InternalRepr]) ⇒ {
+      .computeIfPresent(key, (_: K, value: Vector[InternalRepr]) => {
         updater(value.map(toRepr)).map(toInternal)
       })
       .map(toRepr)
@@ -130,7 +130,7 @@ sealed trait HighestSeqNumSupportStorage[K, R] extends InMemStorage[K, R] {
 
   override def removeKey(key: K): Vector[R] = {
     var re: Vector[R] = Vector.empty
-    seqNumbers.compute(key, (_, _) ⇒ {
+    seqNumbers.compute(key, (_, _) => {
       re = super.removeKey(key)
       null: java.lang.Long
     })
@@ -141,17 +141,17 @@ sealed trait HighestSeqNumSupportStorage[K, R] extends InMemStorage[K, R] {
   final def removePreservingSeqNumber(key: K): Unit = {
     val value = readInternal(key)
     value match {
-      case Some(v) ⇒
+      case Some(v) =>
         reloadHighestSequenceNum(key)
         if (!removeKeyInternal(key, v)) removePreservingSeqNumber(key)
-      case None ⇒
+      case None =>
     }
   }
 
   def reloadHighestSequenceNum(key: K): Long =
     seqNumbers.compute(
       key,
-      (_: K, sn: Long) ⇒ {
+      (_: K, sn: Long) => {
         val savedSn = Option(sn)
         val storeSn =
           read(key).flatMap(_.lastOption).map(reprToSeqNum)
@@ -162,7 +162,7 @@ sealed trait HighestSeqNumSupportStorage[K, R] extends InMemStorage[K, R] {
       })
 
   def deleteToSeqNumber(key: K, toSeqNumberInclusive: Long): Unit =
-    updateExisting(key, value ⇒ {
+    updateExisting(key, value => {
       reloadHighestSequenceNum(key)
       value.dropWhile(reprToSeqNum(_) <= toSeqNumberInclusive)
     })
@@ -217,7 +217,7 @@ sealed trait MessageStorage extends TestKitStorage[JournalOperation, PersistentR
 
   def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
     val sn = reloadHighestSequenceNum(key) + 1
-    elems.zipWithIndex.map(p ⇒ PersistentRepr(p._1, p._2 + sn, key))
+    elems.zipWithIndex.map(p => PersistentRepr(p._1, p._2 + sn, key))
   }
 
   def addAny(key: String, elem: Any): Unit =
@@ -229,7 +229,7 @@ sealed trait MessageStorage extends TestKitStorage[JournalOperation, PersistentR
   override def reprToSeqNum(repr: PersistentRepr): Long = repr.sequenceNr
 
   def add(elems: immutable.Seq[PersistentRepr]): Unit =
-    elems.groupBy(_.persistenceId).foreach(gr ⇒ add(gr._1, gr._2))
+    elems.groupBy(_.persistenceId).foreach(gr => add(gr._1, gr._2))
 
   override protected val DefaultPolicy = JournalPolicies.PassAll
 
@@ -240,25 +240,25 @@ sealed trait MessageStorage extends TestKitStorage[JournalOperation, PersistentR
     val grouped = elems.groupBy(_.persistenceId)
 
     val processed = grouped.map {
-      case (pid, els) ⇒ currentPolicy.tryProcess(pid, WriteMessages(els.map(_.payload)))
+      case (pid, els) => currentPolicy.tryProcess(pid, WriteMessages(els.map(_.payload)))
     }
 
     val reduced: ProcessingResult =
-      processed.foldLeft[ProcessingResult](ProcessingSuccess)((left: ProcessingResult, right: ProcessingResult) ⇒
+      processed.foldLeft[ProcessingResult](ProcessingSuccess)((left: ProcessingResult, right: ProcessingResult) =>
         (left, right) match {
-          case (ProcessingSuccess, ProcessingSuccess) ⇒ ProcessingSuccess
-          case (f: StorageFailure, _) ⇒ f
-          case (_, f: StorageFailure) ⇒ f
-          case (r: Reject, _) ⇒ r
-          case (_, r: Reject) ⇒ r
+          case (ProcessingSuccess, ProcessingSuccess) => ProcessingSuccess
+          case (f: StorageFailure, _)                 => f
+          case (_, f: StorageFailure)                 => f
+          case (r: Reject, _)                         => r
+          case (_, r: Reject)                         => r
         })
 
     reduced match {
-      case ProcessingSuccess ⇒
+      case ProcessingSuccess =>
         add(elems)
         Success(())
-      case Reject(ex) ⇒ Failure(ex)
-      case StorageFailure(ex) ⇒ throw ex
+      case Reject(ex)         => Failure(ex)
+      case StorageFailure(ex) => throw ex
     }
   }
 
@@ -269,25 +269,25 @@ sealed trait MessageStorage extends TestKitStorage[JournalOperation, PersistentR
       max: Long): immutable.Seq[PersistentRepr] = {
     val batch = read(persistenceId, fromSequenceNr, toSequenceNr, max)
     currentPolicy.tryProcess(persistenceId, ReadMessages(batch)) match {
-      case ProcessingSuccess ⇒ batch
-      case Reject(ex) ⇒ throw ex
-      case StorageFailure(ex) ⇒ throw ex
+      case ProcessingSuccess  => batch
+      case Reject(ex)         => throw ex
+      case StorageFailure(ex) => throw ex
     }
   }
 
   def tryReadSeqNumber(persistenceId: String): Long = {
     currentPolicy.tryProcess(persistenceId, ReadSeqNum) match {
-      case ProcessingSuccess ⇒ reloadHighestSequenceNum(persistenceId)
-      case Reject(ex) ⇒ throw ex
-      case StorageFailure(ex) ⇒ throw ex
+      case ProcessingSuccess  => reloadHighestSequenceNum(persistenceId)
+      case Reject(ex)         => throw ex
+      case StorageFailure(ex) => throw ex
     }
   }
 
   def tryDelete(persistenceId: String, toSeqNumber: Long): Unit = {
     currentPolicy.tryProcess(persistenceId, DeleteMessages(toSeqNumber)) match {
-      case ProcessingSuccess ⇒ deleteToSeqNumber(persistenceId, toSeqNumber)
-      case Reject(ex) ⇒ throw ex
-      case StorageFailure(ex) ⇒ throw ex
+      case ProcessingSuccess  => deleteToSeqNumber(persistenceId, toSeqNumber)
+      case Reject(ex)         => throw ex
+      case StorageFailure(ex) => throw ex
     }
   }
 
@@ -374,7 +374,7 @@ private[testkit] class SerializedMessageStorageImpl(system: ActorSystem) extends
    * @return (serializer id, serialized bytes)
    */
   override def toInternal(repr: PersistentRepr): (Int, Array[Byte]) =
-    Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () ⇒
+    Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
       val s = serialization.findSerializerFor(repr)
       (s.identifier, s.toBinary(repr))
     }
@@ -383,8 +383,10 @@ private[testkit] class SerializedMessageStorageImpl(system: ActorSystem) extends
    * @param internal (serializer id, serialized bytes)
    */
   override def toRepr(internal: (Int, Array[Byte])): PersistentRepr =
-    serialization.deserialize(internal._2, internal._1, PersistentRepr.Undefined)
-      .flatMap(r => Try(r.asInstanceOf[PersistentRepr])).get
+    serialization
+      .deserialize(internal._2, internal._1, PersistentRepr.Undefined)
+      .flatMap(r => Try(r.asInstanceOf[PersistentRepr]))
+      .get
 
 }
 
@@ -403,10 +405,10 @@ sealed trait SnapshotStorage extends TestKitStorage[SnapshotOperation, (Snapshot
 
   def tryAdd(meta: SnapshotMetadata, payload: Any): Unit = {
     currentPolicy.tryProcess(meta.persistenceId, WriteSnapshot(SnapshotMeta(meta.sequenceNr, meta.timestamp), payload)) match {
-      case ProcessingSuccess ⇒
+      case ProcessingSuccess =>
         add(meta.persistenceId, (meta, payload))
         Success(())
-      case f: ProcessingFailure ⇒ throw f.error
+      case f: ProcessingFailure => throw f.error
 
     }
   }
@@ -414,26 +416,26 @@ sealed trait SnapshotStorage extends TestKitStorage[SnapshotOperation, (Snapshot
   def tryRead(persistenceId: String, criteria: SnapshotSelectionCriteria): Option[SelectedSnapshot] = {
     val selectedSnapshot =
       read(persistenceId).flatMap(
-        _.reverseIterator.find(v ⇒ criteria.matches(v._1)).map(v ⇒ SelectedSnapshot(v._1, v._2)))
+        _.reverseIterator.find(v => criteria.matches(v._1)).map(v => SelectedSnapshot(v._1, v._2)))
     currentPolicy.tryProcess(persistenceId, ReadSnapshot(criteria, selectedSnapshot.map(_.snapshot))) match {
-      case ProcessingSuccess ⇒ selectedSnapshot
-      case f: ProcessingFailure ⇒ throw f.error
+      case ProcessingSuccess    => selectedSnapshot
+      case f: ProcessingFailure => throw f.error
     }
   }
 
   def tryDelete(persistenceId: String, selectionCriteria: SnapshotSelectionCriteria): Unit = {
     currentPolicy.tryProcess(persistenceId, DeleteSnapshotsByCriteria(selectionCriteria)) match {
-      case ProcessingSuccess ⇒
-        delete(persistenceId, v ⇒ selectionCriteria.matches(v._1))
-      case f: ProcessingFailure ⇒ throw f.error
+      case ProcessingSuccess =>
+        delete(persistenceId, v => selectionCriteria.matches(v._1))
+      case f: ProcessingFailure => throw f.error
     }
   }
 
   def tryDelete(meta: SnapshotMetadata): Unit = {
     currentPolicy.tryProcess(meta.persistenceId, DeleteSnapshotByMeta(SnapshotMeta(meta.sequenceNr, meta.timestamp))) match {
-      case ProcessingSuccess ⇒
+      case ProcessingSuccess =>
         delete(meta.persistenceId, _._1.sequenceNr == meta.sequenceNr)
-      case f: ProcessingFailure ⇒ throw f.error
+      case f: ProcessingFailure => throw f.error
     }
   }
 
@@ -554,7 +556,7 @@ private[testkit] class SerializedSnapshotStorageImpl(system: ActorSystem) extend
     (internal._1, serialization.deserialize(internal._4, internal._3, internal._2).get)
 
   override def toInternal(repr: (SnapshotMetadata, Any)): (SnapshotMetadata, String, Int, Array[Byte]) =
-    Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () ⇒
+    Serialization.withTransportInformation(system.asInstanceOf[ExtendedActorSystem]) { () =>
       val payload = repr._2.asInstanceOf[AnyRef]
       val s = serialization.findSerializerFor(payload)
       val manifest = Serializers.manifestFor(s, payload)

@@ -355,7 +355,7 @@ trait TestKitBase {
    * Note that the timeout is scaled using Duration.dilated,
    * which uses the configuration entry "akka.test.timefactor".
    */
-  def assertForDuration[A](a: ⇒ A, max: FiniteDuration, interval: Duration = 100.millis): A = {
+  def assertForDuration[A](a: => A, max: FiniteDuration, interval: Duration = 100.millis): A = {
     val _max = remainingOrDilated(max)
     val stop = now + _max
 
@@ -368,7 +368,7 @@ trait TestKitBase {
         try {
           a
         } catch {
-          case e: Throwable ⇒ throw e
+          case e: Throwable => throw e
         }
 
       if (instantNow < stop) {

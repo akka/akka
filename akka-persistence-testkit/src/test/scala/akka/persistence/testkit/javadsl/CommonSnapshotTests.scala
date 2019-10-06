@@ -59,17 +59,17 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       val newPolicy = new SnapshotStorage.SnapshotPolicies.PolicyType {
         override def tryProcess(persistenceId: String, processingUnit: SnapshotOperation): ProcessingResult = {
           processingUnit match {
-            case WriteSnapshot(_, msgs) ⇒
+            case WriteSnapshot(_, msgs) =>
               val ex = msgs match {
-                case 777 ⇒ true
-                case _ ⇒ false
+                case 777 => true
+                case _   => false
               }
               if (ex) {
                 ProcessingSuccess
               } else {
                 StorageFailure(err)
               }
-            case _ ⇒ ProcessingSuccess
+            case _ => ProcessingSuccess
           }
         }
       }
@@ -81,11 +81,11 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! NewSnapshot(1)
 
       expectMsg((List.empty, 0))
-      expectMsgPF() { case SaveSnapshotFailure(_, ee) if ee.getMessage == err.getMessage ⇒ }
+      expectMsgPF() { case SaveSnapshotFailure(_, ee) if ee.getMessage == err.getMessage => }
 
       a ! NewSnapshot(777)
 
-      expectMsgPF() { case SaveSnapshotSuccess(_) ⇒ }
+      expectMsgPF() { case SaveSnapshotSuccess(_) => }
       expectNextPersisted(pid, 777)
 
       returnDefaultPolicy()
@@ -139,14 +139,14 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! NewSnapshot(1)
 
       expectMsg((List.empty, 0))
-      expectMsgPF() { case SaveSnapshotFailure(_, ExpectedFailure) ⇒ }
+      expectMsgPF() { case SaveSnapshotFailure(_, ExpectedFailure) => }
 
       val b = system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
       b ! NewSnapshot(2)
 
       expectMsg((List.empty, 0))
-      expectMsgPF() { case SaveSnapshotFailure(_, ExpectedFailure) ⇒ }
+      expectMsgPF() { case SaveSnapshotFailure(_, ExpectedFailure) => }
 
       val c = system.actorOf(Props(classOf[A], pid, None))
 
@@ -169,7 +169,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! NewSnapshot(1)
 
       expectMsg((List.empty, 0))
-      expectMsgPF() { case SaveSnapshotFailure(_, ee) if err.getMessage == ee.getMessage ⇒ }
+      expectMsgPF() { case SaveSnapshotFailure(_, ee) if err.getMessage == ee.getMessage => }
 
     }
 
@@ -227,7 +227,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
       val preload = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-        .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+        .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
         .asJava
 
       persistForRecovery(pid, preload)
@@ -243,7 +243,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       val pid = randomPid()
 
       val preload = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-        .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+        .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
         .asJava
 
       persistForRecovery(pid, preload)
@@ -262,7 +262,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       val pid = randomPid()
 
       val preload = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-        .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+        .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
         .asJava
 
       val err = new Exception("Custom ERROR!")
@@ -283,7 +283,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
       val preload = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-        .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+        .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
         .asJava
 
       persistForRecovery(pid, preload)
@@ -302,7 +302,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       val pid = randomPid()
 
       val preload = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-        .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+        .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
         .asJava
 
       persistForRecovery(pid, preload)
@@ -322,7 +322,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       val pid = randomPid()
 
       val saved = List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-        .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+        .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
         .asJava
 
       persistForRecovery(pid, saved)
@@ -337,7 +337,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List((SnapshotMeta(0), 1)).map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2)).asJava)
+      persistForRecovery(pid, List((SnapshotMeta(0), 1)).map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2)).asJava)
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
 
@@ -346,11 +346,11 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! DeleteSomeSnapshot(0)
 
       expectMsg((List.empty, 1))
-      expectMsgPF() { case DeleteSnapshotFailure(_, ExpectedFailure) ⇒ }
+      expectMsgPF() { case DeleteSnapshotFailure(_, ExpectedFailure) => }
 
       a ! DeleteSomeSnapshot(0)
 
-      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 ⇒ }
+      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 => }
       expectNoMessage()
 
     }
@@ -359,7 +359,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
 
       val pid = randomPid()
 
-      persistForRecovery(pid, List((SnapshotMeta(0), 1)).map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2)).asJava)
+      persistForRecovery(pid, List((SnapshotMeta(0), 1)).map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2)).asJava)
 
       val err = new Exception("Custom ERROR!")
 
@@ -370,11 +370,11 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! DeleteSomeSnapshot(0)
 
       expectMsg((List.empty, 1))
-      expectMsgPF() { case DeleteSnapshotFailure(_, ee) if ee.getMessage == err.getMessage ⇒ }
+      expectMsgPF() { case DeleteSnapshotFailure(_, ee) if ee.getMessage == err.getMessage => }
 
       a ! DeleteSomeSnapshot(0)
 
-      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 ⇒ }
+      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 => }
       expectNoMessage()
 
     }
@@ -386,7 +386,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       persistForRecovery(
         pid,
         List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-          .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+          .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
           .asJava)
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
@@ -396,11 +396,11 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! DeleteSomeSnapshot(0)
 
       expectMsg((List.empty, 3))
-      expectMsgPF() { case DeleteSnapshotFailure(_, ExpectedFailure) ⇒ }
+      expectMsgPF() { case DeleteSnapshotFailure(_, ExpectedFailure) => }
 
       a ! DeleteSomeSnapshot(0)
 
-      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 ⇒ }
+      expectMsgPF() { case DeleteSnapshotSuccess(meta) if meta.sequenceNr == 0 => }
       expectNoMessage()
 
     }
@@ -412,7 +412,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       persistForRecovery(
         pid,
         List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-          .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+          .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
           .asJava)
 
       val a = system.actorOf(Props(classOf[A], pid, Some(testActor)))
@@ -424,7 +424,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       a ! DeleteSomeSnapshotByCriteria(SnapshotSelectionCriteria.Latest)
 
       expectMsg((List.empty, 3))
-      expectMsgPF() { case DeleteSnapshotsSuccess(SnapshotSelectionCriteria.Latest) ⇒ }
+      expectMsgPF() { case DeleteSnapshotsSuccess(SnapshotSelectionCriteria.Latest) => }
 
     }
 
@@ -435,7 +435,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       persistForRecovery(
         pid,
         List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-          .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+          .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
           .asJava)
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
@@ -461,7 +461,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       persistForRecovery(
         pid,
         List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-          .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+          .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
           .asJava)
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))
@@ -487,7 +487,7 @@ trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils
       persistForRecovery(
         pid,
         List((SnapshotMeta(0), 1), (SnapshotMeta(1), 2), (SnapshotMeta(2), 3))
-          .map(tpl ⇒ Pair[SnapshotMeta, Any](tpl._1, tpl._2))
+          .map(tpl => Pair[SnapshotMeta, Any](tpl._1, tpl._2))
           .asJava)
 
       system.actorOf(Props(classOf[A], pid, Some(testActor)))

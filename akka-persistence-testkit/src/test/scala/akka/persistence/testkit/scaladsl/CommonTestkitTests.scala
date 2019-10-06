@@ -59,22 +59,22 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       a ! B(2)
 
       expectNextPersistedPF(pid) {
-        case B(1) ⇒
+        case B(1) =>
       }
 
       assertThrows[AssertionError] {
         expectNextPersistedPF(pid) {
-          case B(3) ⇒
+          case B(3) =>
         }
       }
 
       expectNextPersistedPF(pid) {
-        case B(2) ⇒
+        case B(2) =>
       }
 
       assertThrows[AssertionError] {
         expectNextPersistedPF(pid) {
-          case B(3) ⇒
+          case B(3) =>
         }
       }
 
@@ -123,17 +123,17 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       val newPolicy = new MessageStorage.JournalPolicies.PolicyType {
         override def tryProcess(persistenceId: String, processingUnit: JournalOperation): ProcessingResult = {
           processingUnit match {
-            case WriteMessages(msgs) ⇒
+            case WriteMessages(msgs) =>
               val ex = msgs.exists({
-                case B(666) ⇒ true
-                case _ ⇒ false
+                case B(666) => true
+                case _      => false
               })
               if (ex) {
                 ProcessingSuccess
               } else {
                 StorageFailure(err)
               }
-            case _ ⇒ ProcessingSuccess
+            case _ => ProcessingSuccess
           }
         }
       }
@@ -415,11 +415,11 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       a ! DeleteAllMessages
 
       expectMsg((preload, 0))
-      expectMsgPF() { case DeleteMessagesFailure(ExpectedFailure, _) ⇒ }
+      expectMsgPF() { case DeleteMessagesFailure(ExpectedFailure, _) => }
 
       a ! DeleteAllMessages
 
-      expectMsgPF() { case DeleteMessagesSuccess(_) ⇒ }
+      expectMsgPF() { case DeleteMessagesSuccess(_) => }
 
     }
 
@@ -439,11 +439,11 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       a ! DeleteAllMessages
 
       expectMsg((preload, 0))
-      expectMsgPF() { case DeleteMessagesFailure(e, _) if e.getMessage == err.getMessage ⇒ }
+      expectMsgPF() { case DeleteMessagesFailure(e, _) if e.getMessage == err.getMessage => }
 
       a ! DeleteAllMessages
 
-      expectMsgPF() { case DeleteMessagesSuccess(_) ⇒ }
+      expectMsgPF() { case DeleteMessagesSuccess(_) => }
 
     }
 
@@ -461,11 +461,11 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       a ! DeleteAllMessages
 
       expectMsg((preload, 0))
-      expectMsgPF() { case DeleteMessagesFailure(ExpectedFailure, _) ⇒ }
+      expectMsgPF() { case DeleteMessagesFailure(ExpectedFailure, _) => }
 
       a ! DeleteAllMessages
 
-      expectMsgPF() { case DeleteMessagesSuccess(_) ⇒ }
+      expectMsgPF() { case DeleteMessagesSuccess(_) => }
 
     }
 
@@ -484,7 +484,7 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       a ! DeleteAllMessages
 
       expectMsg((List(1), 0))
-      expectMsgPF() { case DeleteMessagesSuccess(_) ⇒ }
+      expectMsgPF() { case DeleteMessagesSuccess(_) => }
 
     }
 

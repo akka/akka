@@ -42,7 +42,7 @@ class SnapshotSerializeSpec extends WordSpecLike with CommonSnapshotTests {
       a ! NewSnapshot(new C)
 
       expectMsg((List.empty, 0L))
-      expectMsgPF() { case SaveSnapshotFailure(_, _: NotSerializableException) ⇒ }
+      expectMsgPF() { case SaveSnapshotFailure(_, _: NotSerializableException) => }
 
     }
 

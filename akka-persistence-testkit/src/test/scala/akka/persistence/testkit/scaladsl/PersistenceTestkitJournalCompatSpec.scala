@@ -20,7 +20,7 @@ class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = Persisten
     InMemStorageExtension(system).setPolicy(new JournalPolicies.PolicyType {
       override def tryProcess(persistenceId: String, op: JournalOperation): ProcessingResult = {
         op match {
-          case WriteMessages(batch) ⇒
+          case WriteMessages(batch) =>
             val allSerializable =
               batch.filter(_.isInstanceOf[AnyRef]).forall(_.isInstanceOf[java.io.Serializable])
             if (allSerializable) {
@@ -28,7 +28,7 @@ class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = Persisten
             } else {
               Reject(new NotSerializableException("Some objects in the batch were not serializable"))
             }
-          case _ ⇒ ProcessingSuccess
+          case _ => ProcessingSuccess
         }
 
       }

@@ -45,37 +45,37 @@ object ProcessingPolicy {
     class RejectNextNCond(
         _numberToFail: Int,
         _failureException: Throwable,
-        cond: (String, U) ⇒ Boolean,
-        onLimitExceed: ⇒ Unit = ())
+        cond: (String, U) => Boolean,
+        onLimitExceed: => Unit = ())
         extends CountNextNCond(_numberToFail, Reject(_failureException), ProcessingSuccess, cond, onLimitExceed)
 
     class FailNextNCond(
         _numberToFail: Int,
         _failureException: Throwable,
-        cond: (String, U) ⇒ Boolean,
-        onLimitExceed: ⇒ Unit = ())
+        cond: (String, U) => Boolean,
+        onLimitExceed: => Unit = ())
         extends CountNextNCond(_numberToFail, StorageFailure(_failureException), ProcessingSuccess, cond, onLimitExceed)
 
-    class FailNextN(_numberToFail: Int, _failureException: Throwable, onLimitExceed: ⇒ Unit = ())
+    class FailNextN(_numberToFail: Int, _failureException: Throwable, onLimitExceed: => Unit = ())
         extends CountNextNCond(
           _numberToFail,
           StorageFailure(_failureException),
           ProcessingSuccess,
-          (_, _) ⇒ true,
+          (_, _) => true,
           onLimitExceed)
 
-    class RejectNextN(_numberToReject: Int, _rejectionException: Throwable, onLimitExceed: ⇒ Unit = ())
+    class RejectNextN(_numberToReject: Int, _rejectionException: Throwable, onLimitExceed: => Unit = ())
         extends CountNextNCond(
           _numberToReject,
           Reject(_rejectionException),
           ProcessingSuccess,
-          (_, _) ⇒ true,
+          (_, _) => true,
           onLimitExceed)
 
     class ReturnAfterNextNCond(
-        returnOnTrigger: ⇒ ProcessingResult,
-        returnNonTrigger: ⇒ ProcessingResult,
-        cond: (String, U) ⇒ Boolean)
+        returnOnTrigger: => ProcessingResult,
+        returnNonTrigger: => ProcessingResult,
+        cond: (String, U) => Boolean)
         extends PolicyType {
 
       override def tryProcess(persistenceId: String, processingUnit: U): ProcessingResult = {
@@ -90,10 +90,10 @@ object ProcessingPolicy {
 
     class CountNextNCond(
         numberToCount: Int,
-        returnOnTrigger: ⇒ ProcessingResult,
-        returnNonTrigger: ⇒ ProcessingResult,
-        cond: (String, U) ⇒ Boolean,
-        onLimitExceed: ⇒ Unit)
+        returnOnTrigger: => ProcessingResult,
+        returnNonTrigger: => ProcessingResult,
+        cond: (String, U) => Boolean,
+        onLimitExceed: => Unit)
         extends ReturnAfterNextNCond(returnOnTrigger, returnNonTrigger, new Function2[String, U, Boolean] {
 
           var counter = 0

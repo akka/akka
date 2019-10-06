@@ -25,13 +25,13 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
   private final val storage = InMemStorageExtension(context.system)
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
-    Future.fromTry(Try(messages.map(aw ⇒ storage.tryAdd(aw.payload))))
+    Future.fromTry(Try(messages.map(aw => storage.tryAdd(aw.payload))))
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
     Future.fromTry(Try(storage.tryDelete(persistenceId, toSequenceNr)))
 
   override def asyncReplayMessages(persistenceId: String, fromSequenceNr: Long, toSequenceNr: Long, max: Long)(
-      recoveryCallback: PersistentRepr ⇒ Unit): Future[Unit] =
+      recoveryCallback: PersistentRepr => Unit): Future[Unit] =
     Future.fromTry(Try(storage.tryRead(persistenceId, fromSequenceNr, toSequenceNr, max).foreach(recoveryCallback)))
 
   override def asyncReadHighestSequenceNr(persistenceId: String, fromSequenceNr: Long): Future[Long] =
