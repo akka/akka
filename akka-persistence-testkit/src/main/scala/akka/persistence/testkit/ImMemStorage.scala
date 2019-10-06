@@ -383,7 +383,8 @@ private[testkit] class SerializedMessageStorageImpl(system: ActorSystem) extends
    * @param internal (serializer id, serialized bytes)
    */
   override def toRepr(internal: (Int, Array[Byte])): PersistentRepr =
-    serialization.deserialize(internal._2, internal._1, Some(classOf[PersistentRepr])).get
+    serialization.deserialize(internal._2, internal._1, PersistentRepr.Undefined)
+      .flatMap(r => Try(r.asInstanceOf[PersistentRepr])).get
 
 }
 
