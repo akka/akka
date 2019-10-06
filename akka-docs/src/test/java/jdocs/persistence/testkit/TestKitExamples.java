@@ -97,7 +97,7 @@ public class TestKitExamples {
   // #set-snapshot-storage-policy
   class SnapshotStoragePolicy implements ProcessingPolicy<SnapshotOperation> {
 
-    // you can use internal state, it need not to be thread safe
+    // you can use internal state, it doesn't need to be thread safe
     int count = 1;
 
     @Override

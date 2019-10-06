@@ -966,7 +966,7 @@ Java
 #### Configuration of Persistence TestKit
 
 There are several configuration properties for persistence testkit, please refer
-to the @ref:[reference configuration](general/configuration.md#config-akka-persistence-testkit)
+to the @ref:[reference configuration](general/configuration-reference.md#config-akka-persistence-testkit)
 
 ### Testing with LevelDB journal
 
