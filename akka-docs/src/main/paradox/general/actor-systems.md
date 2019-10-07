@@ -107,8 +107,8 @@ while Akka does the heavy lifting under the hood.
 ## Terminating ActorSystem
 
 When you know everything is done for your application, you can have the user guardian
- actor stop, or call the `terminate` method of `ActorSystem`. That will run @ref:[`CoordinatedShutdown`](../actors.md#coordinated-shutdown)
+ actor stop, or call the `terminate` method of `ActorSystem`. That will run @ref:[`CoordinatedShutdown`](../coordinated-shutdown.md)
 stopping all running actors.
 
 If you want to execute some operations while terminating `ActorSystem`,
-look at @ref:[`CoordinatedShutdown`](../actors.md#coordinated-shutdown).
+look at @ref:[`CoordinatedShutdown`](../coordinated-shutdown.md).

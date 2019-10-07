@@ -72,7 +72,10 @@ For very simple applications the guardian may contain the actual application log
 handles more than one concern the the guardian should instead just bootstrap the application, spawn the various subsystems as 
 children and monitor their lifecycles.
 
-When the guardian actor stops this will stop the `ActorSystem`.  
+When the guardian actor stops this will stop the `ActorSystem`.
+
+When `ActorSystem.terminate` is invoked the @ref:[Coordinated Shutdown](../coordinated-shutdown.md) process will
+stop actors and services in a specific order.
 
 @@@ Note
 

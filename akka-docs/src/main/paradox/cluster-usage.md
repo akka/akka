@@ -261,7 +261,7 @@ Java
 You can do some clean up in a `registerOnMemberRemoved` callback, which will
 be invoked when the current member status is changed to 'Removed' or the cluster have been shutdown.
 
-An alternative is to register tasks to the @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown).
+An alternative is to register tasks to the @ref:[Coordinated Shutdown](coordinated-shutdown.md).
 
 @@@ note
 

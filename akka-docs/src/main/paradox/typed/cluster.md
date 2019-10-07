@@ -232,7 +232,7 @@ configured `seed-node-timeout`.
 
 The joining of given seed nodes will by default be retried indefinitely until
 a successful join. That process can be aborted if unsuccessful by configuring a
-timeout. When aborted it will run @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown),
+timeout. When aborted it will run @ref:[Coordinated Shutdown](../coordinated-shutdown.md),
 which by default will terminate the ActorSystem. CoordinatedShutdown can also be configured to exit
 the JVM. It is useful to define this timeout if the `seed-nodes` are assembled
 dynamically and a restart with new seed-nodes should be tried after unsuccessful
@@ -262,7 +262,7 @@ be allowed to join.
 There are a few ways to remove a member from the cluster.
 
 1. The recommended way to leave a cluster is a graceful exit, informing the cluster that a node shall leave.
-  This is performed by @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) when the `ActorSystem`
+  This is performed by @ref:[Coordinated Shutdown](../coordinated-shutdown.md) when the `ActorSystem`
   is terminated and also when a SIGTERM is sent from the environment to stop the JVM process.
 1. Graceful exit can also be performed using @ref:[HTTP](../additional/operations.md#http) or @ref:[JMX](../additional/operations.md#jmx). 
 1. When a graceful exit is not possible, for example in case of abrupt termination of the the JVM process, the node
@@ -270,7 +270,7 @@ There are a few ways to remove a member from the cluster.
 
 Graceful leaving will offer faster hand off to peer nodes during node shutdown than abrupt termination and downing.
 
-The @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will also run when the cluster node sees itself as
+The @ref:[Coordinated Shutdown](../coordinated-shutdown.md) will also run when the cluster node sees itself as
 `Exiting`, i.e. leaving from another node will trigger the shutdown process on the leaving node.
 Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and
 Cluster Sharding are added automatically when Akka Cluster is used, i.e. running the shutdown
@@ -317,7 +317,7 @@ If a crashed node is restarted with the same hostname and port and joining the c
 of that member will be downed and removed. The new join attempt with same hostname and port is used as evidence
 that the previous is not alive any more.
 
-If a node is still running and sees its self as `Down` it will shutdown. @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will automatically
+If a node is still running and sees its self as `Down` it will shutdown. @ref:[Coordinated Shutdown](../coordinated-shutdown.md) will automatically
 run if `run-coordinated-shutdown-when-down` is set to `on` (the default) however the node will not try
 and leave the cluster gracefully.
 

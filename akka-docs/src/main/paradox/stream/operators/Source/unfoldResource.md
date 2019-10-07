@@ -40,9 +40,6 @@ Scala
 Java
 :   @@snip [UnfoldResource.java](/akka-docs/src/test/java/jdocs/stream/operators/source/UnfoldResource.java) { #unfoldResource-blocking-api }
 
-## Reactive Streams semantics
-
-
 Let's see how we use the API above safely through `unfoldResource`:
 
 Scala

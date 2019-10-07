@@ -221,7 +221,7 @@ to the `ShardRegion` actor to hand off all shards that are hosted by that `Shard
 During this period other regions will buffer messages for those shards in the same way as when a rebalance is
 triggered by the coordinator. When the shards have been stopped the coordinator will allocate these shards elsewhere.
 
-This is performed automatically by the @ref:[Coordinated Shutdown](actors.md#coordinated-shutdown) and is therefore part of the
+This is performed automatically by the @ref:[Coordinated Shutdown](coordinated-shutdown.md) and is therefore part of the
 graceful leaving process of a cluster member.
 
 <a id="removeinternalclustershardingdata"></a>
