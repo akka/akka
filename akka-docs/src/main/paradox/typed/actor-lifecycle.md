@@ -189,3 +189,49 @@ Java
 When cleaning up resources from `PostStop` you should also consider doing the same for the `PreRestart` signal,
 which is emitted when the @ref:[actor is restarted](fault-tolerance.md#the-prerestart-signal). Note that `PostStop`
 is not emitted for a restart. 
+
+## Watching Actors
+
+In order to be notified when another actor terminates (i.e. stops permanently, not temporary failure and restart),
+an actor can `watch` another actor. It will receive the @apidoc[akka.actor.typed.Terminated] signal upon
+termination (see @ref:[Stopping Actors](#stopping-actors)) of the watched actor.
+
+Scala
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/GracefulStopDocSpec.scala) { #master-actor-watch }
+
+Java
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/GracefulStopDocTest.java)  { #master-actor-watch }
+
+An alternative to `watch` is `watchWith`, which allows specifying a custom message instead of the `Terminted`.
+This is often preferred over using `watch` and the `Terminated` signal because additional information can
+be included in the message that can be used later when receiving it.
+
+Similar example as above, but using `watchWith` and replies to the original requestor when the job has finished.
+
+Scala
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/GracefulStopDocSpec.scala) { #master-actor-watchWith }
+
+Java
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/GracefulStopDocTest.java)  { #master-actor-watchWith }
+
+Note how the `replyToWhenDone` is included in the `watchWith` message and then used later when receiving the
+`JobTerminated` message. 
+
+The watched actor can be any `ActorRef`, it doesn't have to be a child actor as in the above example.
+
+It should be noted that the terminated message is generated independent of the order in which registration
+and termination occur. In particular, the watching actor will receive a terminated message even if the
+watched actor has already been terminated at the time of registration.
+
+Registering multiple times does not necessarily lead to multiple messages being generated, but there is no
+guarantee that only exactly one such message is received: if termination of the watched actor has generated and queued
+the message, and another registration is done before this message has been processed, then a second message will be
+queued, because registering for monitoring of an already terminated actor leads to the immediate generation of
+the terminated message.
+
+It is also possible to deregister from watching another actor’s liveliness using `context.unwatch(target)`.
+This works even if the terminated message has already been enqueued in the mailbox; after calling `unwatch`
+no terminated message for that actor will be processed anymore.
+
+The terminated message is also sent when the watched actor is on a node that has been removed from the
+@ref:[Cluster](cluster.md).
