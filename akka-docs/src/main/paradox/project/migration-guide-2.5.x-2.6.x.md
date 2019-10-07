@@ -626,26 +626,34 @@ The `ActorMaterializerSettings` class has been deprecated.
 All materializer settings are available as configuration to change the system default or through attributes that can be
 used for individual streams when they are materialized.
 
-| Materializer setting   | Corresponding attribute | Setting |
--------------------------|-------------------------|---------|
-| `initialInputBufferSize`                     | `Attributes.inputBuffer(initial, max)`          | `akka.stream.materializer.initial-input-buffer-size` |
-| `maxInputBufferSize`                         | `Attributes.inputBuffer(initial, max)`          | `akka.stream.materializer.max-input-buffer-size` |
-| `dispatcher`                                 | `ActorAttributes.dispatcher(name)`              | `akka.stream.materializer.dispatcher` |
-| `supervisionDecider`                         | `ActorAttributes.supervisionStrategy(strategy)` | na |
-| `debugLogging`                               | `ActorAttributes.debugLogging`                  | `akka.stream.materializer.debug-logging` |
-| `outputBurstLimit`                           | `ActorAttributes.outputBurstLimit`              | `akka.stream.materializer.output-burst-limit` |
-| `fuzzingMode`                                | `ActorAttributes.fuzzingMode`                   | `akka.stream.materializer.debug.fuzzing-mode` |
-| `autoFusing`                                 | no longer used (since 2.5.0)                    | na |
-| `maxFixedBufferSize`                         | `ActorAttributes.maxFixedBufferSize`            | `akka.stream.materializer.max-fixed-buffer-size` |
-| `syncProcessingLimit`                        | `ActorAttributes.syncProcessingLimit`           | `akka.stream.materializer.sync-processing-limit` |
-| `ioSettings.tcpWriteBufferSize`              | `Tcp.writeBufferSize`                           | `akka.stream.materializer.io.tcp.write-buffer-size` |
-| `streamRefSettings.bufferCapacity`           | `StreamRefAttributes.bufferCapacity`            | `akka.stream.materializer.stream-ref.buffer-capacity` |
-| `streamRefSettings.demandRedeliveryInterval` | `StreamRefAttributes.demandRedeliveryInterval`  | `akka.stream.materializer.stream-ref.demand-redelivery-interval` |
-| `streamRefSettings.subscriptionTimeout`      | `StreamRefAttributes.subscriptionTimeout`       | `akka.stream.materializer.stream-ref.subscription-timeout` |
-| `streamRefSettings.finalTerminationSignalDeadline` | `StreamRefAttributes.finalTerminationSignalDeadline` | `akka.stream.materializer.stream-ref.final-termination-signal-deadline` |
-| `blockingIoDispatcher`                       | na                                              | `akka.stream.materializer.blocking-io-dispatcher` |
-| `subscriptionTimeoutSettings.mode`           | `ActorAttributes.streamSubscriptionTimeoutMode` | `akka.stream.materializer.subscription-timeout.mode` |
-| `subscriptionTimeoutSettings.timeout`        | `ActorAttributes.streamSubscriptionTimeout`     | `akka.stream.materializer.subscription-timeout.timeout` |
+| MaterializerSettings   | Corresponding attribute                           | Config  |
+-------------------------|---------------------------------------------------|---------|
+| `initialInputBufferSize`        | `Attributes.inputBuffer(initial, max)`   | `akka.stream.materializer.initial-input-buffer-size` |
+| `maxInputBufferSize`            | `Attributes.inputBuffer(initial, max)`   | `akka.stream.materializer.max-input-buffer-size` |
+| `dispatcher`                    | `ActorAttributes.dispatcher(name)`       | `akka.stream.materializer.dispatcher` |
+| `supervisionDecider`            | `ActorAttributes.supervisionStrategy`    | na |
+| `debugLogging`                  | `ActorAttributes.debugLogging`           | `akka.stream.materializer.debug-logging` |
+| `outputBurstLimit`              | `ActorAttributes.outputBurstLimit`       | `akka.stream.materializer.output-burst-limit` |
+| `fuzzingMode`                   | `ActorAttributes.fuzzingMode`            | `akka.stream.materializer.debug.fuzzing-mode` |
+| `autoFusing`                    | no longer used (since 2.5.0)             | na |
+| `maxFixedBufferSize`            | `ActorAttributes.maxFixedBufferSize`     | `akka.stream.materializer.max-fixed-buffer-size` |
+| `syncProcessingLimit`           | `ActorAttributes.syncProcessingLimit`    | `akka.stream.materializer.sync-processing-limit` |
+| `IOSettings.tcpWriteBufferSize` | `Tcp.writeBufferSize`                    | `akka.stream.materializer.io.tcp.write-buffer-size` |
+| `blockingIoDispatcher`          | na                                       | `akka.stream.materializer.blocking-io-dispatcher` |
+
+
+| StreamRefSettings                | Corresponding StreamRefAttributes | Config  |
+-----------------------------------|-----------------------------------|---------|
+| `bufferCapacity`                 | `bufferCapacity`                  | `akka.stream.materializer.stream-ref.buffer-capacity` |
+| `demandRedeliveryInterval`       | `demandRedeliveryInterval`        | `akka.stream.materializer.stream-ref.demand-redelivery-interval` |
+| `subscriptionTimeout`            | `subscriptionTimeout`             | `akka.stream.materializer.stream-ref.subscription-timeout` |
+| `finalTerminationSignalDeadline` | `finalTerminationSignalDeadline`  | `akka.stream.materializer.stream-ref.final-termination-signal-deadline` |
+
+
+| SubscriptionTimeoutSettings      | Corresponding ActorAttributes               | Config  |
+-----------------------------------|---------------------------------------------|---------|
+| `subscriptionTimeoutSettings.mode`           | `streamSubscriptionTimeoutMode` | `akka.stream.materializer.subscription-timeout.mode` |
+| `subscriptionTimeoutSettings.timeout`        | `streamSubscriptionTimeout`     | `akka.stream.materializer.subscription-timeout.timeout` |
 
 Setting attributes on individual streams can be done like so:
 
