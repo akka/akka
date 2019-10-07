@@ -21,6 +21,42 @@ object RetryFlow {
    * Allows retrying individual elements in the stream with an exponential backoff.
    *
    * The retry condition is controlled by the `decideRetry` function. It takes the originally emitted
+   * element and the response emitted by `flow`, and may return a request to be retried.
+   *
+   * The implementation of the `RetryFlow` requires that `flow` follows one-in-one-out semantics,
+   * the [[akka.stream.javadsl.Flow Flow]] may not filter elements,
+   * nor emit more than one element per incoming element. The `RetryFlow` will fail if two elements are
+   * emitted from the `flow`, it will be stuck "forever" if nothing is emitted. Just one element will
+   * be emitted into the `flow` at any time. The `flow` needs to emit an element before the next
+   * will be emitted to it.
+   *
+   * @param minBackoff minimum duration to backoff between issuing retries
+   * @param maxBackoff maximum duration to backoff between issuing retries
+   * @param randomFactor adds jitter to the retry delay. Use 0 for no jitter
+   * @param flow a flow to retry elements from
+   * @param decideRetry retry condition decision function
+   */
+  @ApiMayChange
+  def withBackoff[In, Out, Mat](
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double,
+      maxRetries: Int,
+      flow: Flow[In, Out, Mat],
+      decideRetry: akka.japi.function.Function2[In, Out, Optional[In]]): Flow[In, Out, Mat] =
+    scaladsl.RetryFlow
+      .withBackoff[In, Out, Mat](minBackoff.asScala, maxBackoff.asScala, randomFactor, maxRetries, flow.asScala) {
+        (in, out) =>
+          decideRetry.apply(in, out).asScala
+      }
+      .asJava
+
+  /**
+   * API may change!
+   *
+   * Allows retrying individual elements in the stream with an exponential backoff.
+   *
+   * The retry condition is controlled by the `decideRetry` function. It takes the originally emitted
    * element with its context, and the response emitted by `flow`, and may return a request to be retried.
    *
    * The implementation of the `RetryFlow` requires that `flow` follows one-in-one-out semantics,

@@ -35,6 +35,21 @@ public class RetryFlowTest extends StreamTest {
       new AkkaJUnitActorSystemResource("RetryFlowTest", AkkaSpec.testConf());
 
   public static
+  // #withBackoff-signature
+  <In, InCtx, Out, OutCtx, Mat> Flow<In, Out, Mat> withBackoff(
+      Duration minBackoff,
+      Duration maxBackoff,
+      double randomFactor,
+      int maxRetries,
+      Flow<In, Out, Mat> flow,
+      akka.japi.function.Function2<In, Out, Optional<In>> decideRetry)
+        // #withBackoff-signature
+      {
+    return RetryFlow.<In, Out, Mat>withBackoff(
+        minBackoff, maxBackoff, randomFactor, maxRetries, flow, decideRetry);
+  }
+
+  public static
   // #signature
   <In, InCtx, Out, OutCtx, Mat> FlowWithContext<In, InCtx, Out, OutCtx, Mat> withBackoffAndContext(
       Duration minBackoff,
@@ -51,7 +66,53 @@ public class RetryFlowTest extends StreamTest {
   }
 
   @Test
-  public void retrySuccessfulResponses() {
+  public void withBackoffShouldRetry() {
+    final Duration minBackoff = Duration.ofMillis(10);
+    final Duration maxBackoff = Duration.ofSeconds(5);
+    final double randomFactor = 0d;
+    final int maxRetries = 3;
+
+    // #withBackoff-demo
+    Flow<Integer, Integer, NotUsed> flow = // ...
+        // the wrapped flow
+        // #withBackoff-demo
+        Flow.fromFunction(in -> in / 2);
+
+    // #withBackoff-demo
+
+    Flow<Integer, Integer, NotUsed> retryFlow =
+        RetryFlow.withBackoff(
+            minBackoff,
+            maxBackoff,
+            randomFactor,
+            maxRetries,
+            flow,
+            (in, out) -> {
+              if (out > 0) return Optional.of(out);
+              else return Optional.empty();
+            });
+    // #withBackoff-demo
+
+    final Pair<TestPublisher.Probe<Integer>, TestSubscriber.Probe<Integer>> probes =
+        TestSource.<Integer>probe(system)
+            .via(retryFlow)
+            .toMat(TestSink.probe(system), Keep.both())
+            .run(system);
+
+    final TestPublisher.Probe<Integer> source = probes.first();
+    final TestSubscriber.Probe<Integer> sink = probes.second();
+
+    sink.request(4);
+
+    source.sendNext(5);
+    assertEquals(0, sink.expectNext().intValue());
+
+    source.sendComplete();
+    sink.expectComplete();
+  }
+
+  @Test
+  public void withBackoffAndContextShouldRetry() {
     final Duration minBackoff = Duration.ofMillis(10);
     final Duration maxBackoff = Duration.ofSeconds(5);
     final double randomFactor = 0d;

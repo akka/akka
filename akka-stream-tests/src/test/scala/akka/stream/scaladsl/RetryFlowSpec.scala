@@ -47,6 +47,66 @@ class RetryFlowSpec extends StreamSpec("""
 
   "RetryFlow.withBackoff" should {
 
+    val failEvenValuesFlow: Flow[Int, Try[Int], NotUsed] =
+      Flow.fromFunction {
+        case i if i % 2 == 0 => FailedElem
+        case i               => Success(i)
+      }
+
+    def incrementFailedValues[OutData](in: Int, out: Try[OutData]): Option[Int] = {
+      (in, out) match {
+        case (in, Failure(_)) => Some(in + 1)
+        case _                => None
+      }
+    }
+
+    "send elements through" in {
+      val sink =
+        Source(List(13, 17, 19, 23, 27))
+          .via(
+            RetryFlow.withBackoff(10.millis, 5.second, 0d, maxRetries = 3, failEvenValuesFlow)(incrementFailedValues))
+          .runWith(Sink.seq)
+      sink.futureValue should contain inOrderElementsOf List(
+        Success(13),
+        Success(17),
+        Success(19),
+        Success(23),
+        Success(27))
+    }
+
+    "allow retrying a successful element" in {
+      // #withBackoff-demo
+      val flow: Flow[Int, Int, NotUsed] = // ???
+        // #withBackoff-demo
+        Flow.fromFunction(i => i / 2)
+
+      // #withBackoff-demo
+
+      val retryFlow: Flow[Int, Int, NotUsed] =
+        RetryFlow.withBackoff(minBackoff = 10.millis, maxBackoff = 5.seconds, randomFactor = 0d, maxRetries = 3, flow)(
+          decideRetry = {
+            case (_, result) if result > 0 => Some(result)
+            case _                         => None
+          })
+      // #withBackoff-demo
+
+      val (source, sink) = TestSource.probe[Int].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
+
+      sink.request(4)
+
+      source.sendNext(5)
+      sink.expectNext(0)
+
+      source.sendNext(2)
+      sink.expectNext(0)
+
+      source.sendComplete()
+      sink.expectComplete()
+    }
+  }
+
+  "RetryFlow.withBackoffAndContext" should {
+
     "send elements through" in {
       val sink =
         Source(List(13, 17, 19, 23, 27).map(_ -> 0))
