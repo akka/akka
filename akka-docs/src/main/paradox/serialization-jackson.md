@@ -373,8 +373,8 @@ Compression can be disabled by setting the `algorithm` property to `off`. It wil
 payloads that were compressed when serialized, e.g. if this configuration is changed.
 
 For the `jackson-cbor` and custom bindings other than `jackson-json` compression is by default disabled,
-but can be enabled in the same way as thee configuration shown above but replacing `jackson-json` with
-the binding name (`jackson-cbor`).
+but can be enabled in the same way as the configuration shown above but replacing `jackson-json` with
+the binding name (for example `jackson-cbor`).
 
 ## Additional configuration
 
