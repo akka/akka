@@ -39,7 +39,7 @@ class DowningProviderSpec extends WordSpec with Matchers {
 
   val baseConf = ConfigFactory.parseString("""
       akka {
-        loglevel = WARNING
+        loglevel = INFO
         actor.provider = "cluster"
         remote {
           artery.canonical {
@@ -75,16 +75,26 @@ class DowningProviderSpec extends WordSpec with Matchers {
     }
 
     "stop the cluster if the downing provider throws exception in props method" in {
-      val system = ActorSystem(
-        "auto-downing",
-        ConfigFactory.parseString("""
+      try {
+        val system = ActorSystem(
+          "auto-downing",
+          ConfigFactory.parseString("""
           akka.cluster.downing-provider-class="akka.cluster.FailingDowningProvider"
         """).withFallback(baseConf))
-      val cluster = Cluster(system)
-      cluster.join(cluster.selfAddress)
+        val cluster = Cluster(system)
+        cluster.join(cluster.selfAddress)
 
-      awaitCond(cluster.isTerminated, 3.seconds)
-      shutdownActorSystem(system)
+        awaitCond(cluster.isTerminated, 3.seconds)
+        shutdownActorSystem(system)
+      } catch {
+        case e: IllegalStateException =>
+          if (e.getMessage.contains("ActorSystem was terminated"))
+            // ok, CoordinatedShutdown terminating the ActorSystem, but SystemMaterializer is still loaded,
+            // and cannot create children while terminating, see issue #27840
+            ()
+          else throw e
+      }
+
     }
 
   }
