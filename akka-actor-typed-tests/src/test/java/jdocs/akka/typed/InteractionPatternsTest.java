@@ -84,7 +84,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
       private static Behavior<Request> onRequest(Request request) {
         // ... process request ...
-        request.replyTo.tell(new Response("Here's the cookies for " + request.query));
+        request.replyTo.tell(new Response("Here are the cookies for " + request.query));
         return Behaviors.same();
       }
       // #request-response-respond

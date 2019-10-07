@@ -36,8 +36,10 @@ object RouterSpec {
   }
 
   // #pool
-
+  // #group
   val serviceKey = ServiceKey[Worker.Command]("log-worker")
+
+  // #group
 }
 
 class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with WordSpecLike with LogCapturing {

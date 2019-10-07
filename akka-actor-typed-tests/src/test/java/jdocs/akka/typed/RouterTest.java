@@ -82,7 +82,10 @@ public class RouterTest {
   }
 
   static Behavior<Void> showGroupRouting() {
+    // #group
     ServiceKey<Worker.Command> serviceKey = ServiceKey.create(Worker.Command.class, "log-worker");
+
+    // #group
     return Behaviors.setup(
         context -> {
           // #group
