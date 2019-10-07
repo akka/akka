@@ -19,7 +19,18 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 
 ## Introduction
 
-TODO intro
+An actor is a stateful resource that has to be explicitly started and stopped.
+
+It is important to note that actors do not stop automatically when no longer
+referenced, every Actor that is created must also explicitly be destroyed.
+The only simplification is that stopping a parent Actor will also recursively
+stop all the child Actors that this parent has created. All actors are also
+stopped automatically when the `ActorSystem` is shut down.
+
+@@@ note
+An `ActorSystem` is a heavyweight structure that will allocate threads,
+so create one per logical application. Typically on `ActorSystem` per JVM process.
+@@@
 
 ## Creating Actors
 
