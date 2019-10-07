@@ -7,6 +7,8 @@ package akka.stream.scaladsl
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
 
+import scala.util.control.NoStackTrace
+
 case class Message(data: String, offset: Long)
 
 class SourceWithContextSpec extends StreamSpec {
@@ -104,7 +106,7 @@ class SourceWithContextSpec extends StreamSpec {
         .expectComplete()
     }
 
-    "be able to change meterialized value via mapMaterializedValue" in {
+    "be able to change materialized value via mapMaterializedValue" in {
       val materializedValue = "MatedValue"
       Source
         .empty[Message]
@@ -112,6 +114,26 @@ class SourceWithContextSpec extends StreamSpec {
         .mapMaterializedValue(_ => materializedValue)
         .to(Sink.ignore)
         .run() shouldBe materializedValue
+    }
+
+    "be able to map error via mapError" in {
+      val ex = new RuntimeException("ex") with NoStackTrace
+      val boom = new Exception("BOOM!") with NoStackTrace
+
+      Source(1L to 4L)
+        .map { offset =>
+          Message("a", offset)
+        }
+        .map {
+          case m @ Message(_, offset) => if (offset == 3) throw ex else m
+        }
+        .asSourceWithContext(_.offset)
+        .mapError { case _: Throwable => boom }
+        .runWith(TestSink.probe[(Message, Long)])
+        .request(3)
+        .expectNext((Message("a", 1L), 1L))
+        .expectNext((Message("a", 2L), 2L))
+        .expectError(boom)
     }
   }
 }
