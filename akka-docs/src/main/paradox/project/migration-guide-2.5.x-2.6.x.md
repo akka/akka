@@ -236,6 +236,12 @@ Classic remoting is deprecated but can be used in `2.6.` Explicitly disable Arte
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration-reference.md#config-akka-remote).
 
+### Persistent mode for Cluster Sharding
+
+Cluster Sharding coordinator and [Remembering Entities](../cluster/cluster-sharding.md#remembering-entities) state could previously be stored in Distributed Data or via Akka Persistence.
+The Persistence mode has been deprecated in favour of using the Distributed Data mode for the coordinator state. A replacement for the state
+for Remembered Entities is tracked in [issue 27763](https://github.com/akka/akka/issues/27763).
+
 ## Java Serialization
 
 Java serialization is known to be slow and [prone to attacks](https://community.hpe.com/t5/Security-Research/The-perils-of-Java-deserialization/ba-p/6838995)
