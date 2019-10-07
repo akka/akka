@@ -225,7 +225,7 @@ that for both `PreRestart` and `PostStop`.
 Links to reference documentation:
 
 * @ref:[Classic](../actors.md#start-hook)
-* TODO Typed
+* @ref:[Typed](fault-tolerance.md#the-prerestart-signal)
 
 ## watch
 

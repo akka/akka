@@ -135,7 +135,7 @@ restarted.
 ## The PreRestart signal
 
 Before a supervised actor is restarted it is sent the @apidoc[akka.actor.typed.PreRestart] signal giving it a chance to clean up resources
-it has created, much like the @apidoc[akka.actor.typed.PostStop] signal when the actor stops. 
+it has created, much like the @apidoc[akka.actor.typed.PostStop] signal when the @ref[actor stops](actor-lifecycle.md#stopping-actors). 
 The returned behavior from the `PreRestart` signal is ignored.
 
 Scala
@@ -143,6 +143,9 @@ Scala
 
 Java
 :  @@snip [SupervisionCompileOnlyTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/supervision/SupervisionCompileOnlyTest.java) { #restart-PreRestart-signal }
+
+Note that `PostStop` is not emitted for a restart, so typically you need to handle both `PreRestart` and `PostStop`
+to cleanup resources.
 
 <a id="bubble"/>
 ## Bubble failures up through the hierarchy
