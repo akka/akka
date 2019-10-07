@@ -32,7 +32,7 @@ import akka.util.OptionVal
  *
  * @see [[Behaviors.setup]]
  */
-abstract class AbstractBehavior[T](private val context: ActorContext[T]) extends ExtensibleBehavior[T] {
+abstract class AbstractBehavior[T](context: ActorContext[T]) extends ExtensibleBehavior[T] {
 
   if (context eq null)
     throw new IllegalArgumentException(
