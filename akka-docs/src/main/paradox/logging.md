@@ -84,7 +84,7 @@ use.
 
 ### Logging of Dead Letters
 
-By default messages sent to dead letters are logged at info level. Existence of dead letters
+By default messages sent to dead letters are logged at `INFO` level. Existence of dead letters
 does not necessarily indicate a problem, but they are logged by default for the sake of caution.
 After a few messages this logging is turned off, to avoid flooding the logs.
 You can disable this logging completely or adjust how many dead letters are
@@ -106,7 +106,7 @@ to the @ref:[Event Stream](event-bus.md#event-stream).
 
 Akka has a few configuration options for very low level debugging. These make more sense in development than in production.
 
-You almost definitely need to have logging set to DEBUG to use any of the options below:
+You almost definitely need to have logging set to `DEBUG` to use any of the options below:
 
 ```ruby
 akka {
@@ -170,7 +170,7 @@ akka {
 }
 ```
 
-If you want unhandled messages logged at DEBUG:
+If you want unhandled messages logged at `DEBUG`:
 
 ```ruby
 akka {
@@ -212,7 +212,7 @@ akka {
 <a id="logging-remote"></a>
 ### Auxiliary remote logging options
 
-If you want to see all messages that are sent through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are sent by the transport layer, not by an actor.
+If you want to see all messages that are sent through remoting at `DEBUG` log level, use the following config option. Note that this logs the messages as they are sent by the transport layer, not by an actor.
 
 ```ruby
 akka.remote.artery {
@@ -222,7 +222,7 @@ akka.remote.artery {
 }
 ```
 
-If you want to see all messages that are received through remoting at DEBUG log level, use the following config option. Note that this logs the messages as they are received by the transport layer, not by an actor.
+If you want to see all messages that are received through remoting at `DEBUG` log level, use the following config option. Note that this logs the messages as they are received by the transport layer, not by an actor.
 
 ```ruby
 akka.remote.artery {
@@ -353,7 +353,7 @@ configuration (e.g. logback.xml) before they are published to the event bus.
 
 @@@ warning
 
-If you set the `loglevel` to a higher level than "DEBUG", any DEBUG events will be filtered
+If you set the `loglevel` to a higher level than `DEBUG`, any `DEBUG` events will be filtered
 out already at the source and will never reach the logging backend, regardless of how the backend
 is configured.
 
@@ -422,7 +422,7 @@ A starting point for configuration of `logback.xml` for production:
 
 @@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-prod.xml)
 
-For development you might want to log to standard out, but also have all debug level logging to file, like
+For development you might want to log to standard out, but also have all `DEBUG` level logging to file, like
 in this example:
 
 @@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-dev.xml)
@@ -599,7 +599,7 @@ configuration before they are published to the event bus.
 
 @@@ warning
 
-If you set the `loglevel` to a higher level than "DEBUG", any DEBUG events will be filtered
+If you set the `loglevel` to a higher level than `DEBUG`, any `DEBUG` events will be filtered
 out already at the source and will never reach the logging backend, regardless of how the backend
 is configured.
 
