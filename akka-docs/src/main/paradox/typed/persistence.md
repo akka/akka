@@ -3,19 +3,6 @@ project.description: Event Sourcing with Akka Persistence enables actors to pers
 ---
 # Event Sourcing
 
-@@@ index
-
-* [Persistence coding style](persistence-style.md)
-* [Persistence snapshotting](persistence-snapshot.md)
-* [Persistence testing](persistence-testing.md)
-* [Persistence schema evolution](../persistence-schema-evolution.md)
-* [Persistence query](../persistence-query.md)
-* [Persistence query LevelDB](../persistence-query-leveldb.md)
-* [Persistence Journals](../persistence-plugins.md)
-* [Persistence Journals](../persistence-journals.md)
-
-@@@
-
 @@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
 @@@
