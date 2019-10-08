@@ -117,14 +117,14 @@ class ExtensionSpec extends WordSpec with Matchers {
     }
 
     "fail the actor system if a library-extension fails to start" in {
-      intercept[FailingTestExtension.TestException] {
+      val ise = intercept[IllegalStateException] {
         ActorSystem(
           "failing",
           ConfigFactory.parseString("""
             akka.library-extensions += "akka.actor.FailingTestExtension"
           """).withFallback(ConfigFactory.load()).resolve())
       }
-
+      ise.getCause.isInstanceOf[FailingTestExtension.TestException] should be(true)
     }
 
     "fail the actor system if a library-extension cannot be loaded" in {
