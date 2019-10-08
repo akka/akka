@@ -145,6 +145,15 @@ Akka is now using Protobuf version 3.9.0 for serialization of messages defined b
 Cluster client has been deprecated as of 2.6 in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
 It is not advised to build new applications with Cluster client, and existing users @ref[should migrate to Akka gRPC](../cluster-client.md#migration-to-akka-grpc).
 
+### AkkaSslConfig
+
+`AkkaSslConfig` has been deprecated in favor of setting up TLS with `javax.net.ssl.SSLEngine` directly.
+
+This also means that methods Akka Streams `TLS` and `Tcp` that take `SSLContext` or `AkkaSslConfig` have been
+deprecated and replaced with corresponding methods that takes a factory function for creating the `SSLEngine`.
+
+See documentation of @ref:[streaming IO with TLS](../stream/stream-io.md#tls).    
+
 ### akka.Main
 
 `akka.Main` is deprecated in favour of starting the `ActorSystem` from a custom main class instead. `akka.Main` was not

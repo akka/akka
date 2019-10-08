@@ -5,8 +5,8 @@
 package akka.stream.scaladsl
 
 import java.util.Collections
-import javax.net.ssl.{ SNIHostName, SSLContext, SSLEngine, SSLSession }
 
+import javax.net.ssl.{ SNIHostName, SSLContext, SSLEngine, SSLSession }
 import akka.stream.impl.io.{ TlsModule, TlsUtils }
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -14,8 +14,9 @@ import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.util.ByteString
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-
 import scala.util.{ Failure, Success, Try }
+
+import javax.net.ssl.SSLParameters
 
 /**
  * Stream cipher support based upon JSSE.
@@ -30,10 +31,8 @@ import scala.util.{ Failure, Success, Try }
  * documentation. The philosophy of this integration into Akka Streams is to
  * expose all knobs and dials to client code and therefore not limit the
  * configuration possibilities. In particular the client code will have to
- * provide the SSLContext from which the SSLEngine is then created. Handshake
- * parameters are set using [[NegotiateNewSession]] messages, the settings for
- * the initial handshake need to be provided up front using the same class;
- * please refer to the method documentation below.
+ * provide the SSLEngine, which is typically created from a SSLContext. Handshake
+ * parameters and other parameters are defined when creating the SSLEngine.
  *
  * '''IMPORTANT NOTE'''
  *
@@ -71,6 +70,7 @@ object TLS {
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
+  @deprecated("Use apply that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
   def apply(
       sslContext: SSLContext,
       sslConfig: Option[AkkaSSLConfig],
@@ -94,7 +94,7 @@ object TLS {
       config.sslEngineConfigurator.configure(engine, sslContext)
       engine.setUseClientMode(role == Client)
 
-      val finalSessionParameters =
+      val paramsWithSni =
         if (firstSession.sslParameters.isDefined && hostInfo.isDefined && !config.config.loose.disableSNI) {
           val newParams = TlsUtils.cloneParameters(firstSession.sslParameters.get)
           // In Java 7, SNI was automatically enabled by enabling "jsse.enableSNIExtension" and using
@@ -102,21 +102,29 @@ object TLS {
           // In Java 8, SNI is only enabled if the server names are added to the parameters.
           // See https://github.com/akka/akka/issues/19287.
           newParams.setServerNames(Collections.singletonList(new SNIHostName(hostInfo.get._1)))
+
           firstSession.copy(sslParameters = Some(newParams))
         } else
           firstSession
 
-      TlsUtils.applySessionParameters(engine, finalSessionParameters)
+      val paramsWithHostnameVerification = if (hostInfo.isDefined && config.useJvmHostnameVerification) {
+        val newParams = paramsWithSni.sslParameters.map(TlsUtils.cloneParameters).getOrElse(new SSLParameters)
+        newParams.setEndpointIdentificationAlgorithm("HTTPS")
+        paramsWithSni.copy(sslParameters = Some(newParams))
+      } else
+        paramsWithSni
+
+      TlsUtils.applySessionParameters(engine, paramsWithHostnameVerification)
       engine
     }
     def verifySession: (ActorSystem, SSLSession) => Try[Unit] =
       hostInfo match {
         case Some((hostname, _)) => { (system, session) =>
-          val hostnameVerifier = theSslConfig(system).hostnameVerifier
-          if (!hostnameVerifier.verify(hostname, session))
-            Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $hostname"))
-          else
+          val config = theSslConfig(system)
+          if (config.useJvmHostnameVerification || config.hostnameVerifier.verify(hostname, session))
             Success(())
+          else
+            Failure(new ConnectionException(s"Hostname verification failed! Expected session to be for $hostname"))
         }
         case None => (_, _) => Success(())
       }
@@ -140,6 +148,7 @@ object TLS {
    * The SSLEngine may use this information e.g. when an endpoint identification algorithm was
    * configured using [[javax.net.ssl.SSLParameters.setEndpointIdentificationAlgorithm]].
    */
+  @deprecated("Use apply that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
   def apply(
       sslContext: SSLContext,
       firstSession: NegotiateNewSession,
@@ -158,6 +167,7 @@ object TLS {
    * that is not a requirement and depends entirely on the application
    * protocol.
    */
+  @deprecated("Use apply that takes a SSLEngine factory instead. Setup the SSLEngine with needed parameters.", "2.6.0")
   def apply(
       sslContext: SSLContext,
       firstSession: NegotiateNewSession,
@@ -165,9 +175,9 @@ object TLS {
     apply(sslContext, None, firstSession, role, IgnoreComplete, None)
 
   /**
-   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. This is a low-level interface.
+   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]].
    *
-   * You can specify a constructor to create an SSLEngine that must already be configured for
+   * You specify a factory to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
    * You can specify a verification function that will be called after every successful handshake
@@ -183,9 +193,9 @@ object TLS {
       TlsModule(Attributes.none, _ => createSSLEngine(), (_, session) => verifySession(session), closing))
 
   /**
-   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]]. This is a low-level interface.
+   * Create a StreamTls [[akka.stream.scaladsl.BidiFlow]].
    *
-   * You can specify a constructor to create an SSLEngine that must already be configured for
+   * You specify a factory to create an SSLEngine that must already be configured for
    * client and server mode and with all the parameters for the first session.
    *
    * For a description of the `closing` parameter please refer to [[TLSClosing]].
