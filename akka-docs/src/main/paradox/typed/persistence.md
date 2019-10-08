@@ -168,8 +168,10 @@ return the same instance. Both immutable and mutable state is supported.
 
 The same event handler is also used when the entity is started up to recover its state from the stored events.
 
-The event handler should only update the state and never perform side effects, as those would also be
-executed during recovery of the persistent actor.
+The event handler must only update the state and never perform side effects, as those would also be
+executed during recovery of the persistent actor. Side effects should be performed in `thenRun` from the
+@ref:[command handler](#command-handler) after persisting the event or from the `RecoveryCompleted`
+after @ref:[Recovery](#recovery).
 
 ### Completing the example
 
