@@ -15,21 +15,19 @@ import akka.util.ccompat.JavaConverters._
 import akka.actor.typed.ExtensionSetup
 
 /**
- * Actor system extensions registry
- *
  * INTERNAL API
+ *
+ * Actor system extensions registry
  */
 @InternalApi
-trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
+private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
 
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
   /**
-   * INTERNAL API
-   *
    * Hook for ActorSystem to load extensions on startup
    */
-  @InternalApi private[akka] def loadExtensions(): Unit = {
+  def loadExtensions(): Unit = {
 
     /*
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
