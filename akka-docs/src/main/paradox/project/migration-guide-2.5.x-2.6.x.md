@@ -101,7 +101,7 @@ After being deprecated since 2.2, the following have been removed in Akka 2.6.
 
 ### PersistentFSM
 
-[Migration guide to Persistence Typed](../persistence-fsm.md) is in the PersistentFSM documentation.
+@ref[Migration guide to Persistence Typed](../persistence-fsm.md) is in the PersistentFSM documentation.
 
 ### TypedActor
 
