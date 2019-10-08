@@ -292,6 +292,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
           .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
           .inLibrary(Dependencies.Compile.protobufRuntime)),
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeBin = false),
+    crossPaths := false,
     autoScalaLibrary := false, // do not include scala dependency in pom
     exportJars := true, // in dependent projects, use assembled and shaded jar
     makePomConfiguration := makePomConfiguration.value
