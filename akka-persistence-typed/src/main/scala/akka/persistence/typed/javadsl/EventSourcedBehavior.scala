@@ -68,7 +68,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * in order to keep updating the state state.
    *
    * For that reason it is strongly discouraged to perform side-effects in this handler;
-   * Side effects should be executed in `andThen` or `recoveryCompleted` blocks.
+   * Side effects should be executed in `thenRun` or `recoveryCompleted` blocks.
    */
   protected def eventHandler(): EventHandler[State, Event]
 

@@ -6,6 +6,7 @@ package docs.akka.persistence.typed
 
 import scala.concurrent.duration._
 
+import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
@@ -56,6 +57,17 @@ object BasicPersistentBehaviorCompileOnly {
       }
     }
     //#command-handler
+
+    //#effects
+    def onCommand(subscriber: ActorRef[State], state: State, command: Command): Effect[Event, State] = {
+      command match {
+        case Add(data) =>
+          Effect.persist(Added(data)).thenRun(newState => subscriber ! newState)
+        case Clear =>
+          Effect.persist(Cleared).thenRun((newState: State) => subscriber ! newState).thenStop()
+      }
+    }
+    //#effects
 
     //#event-handler
     val eventHandler: (State, Event) => State = { (state, event) =>
