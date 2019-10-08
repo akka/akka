@@ -1043,14 +1043,20 @@ private[akka] class ActorSystemImpl(
     case NonFatal(e) =>
       try terminate()
       catch { case NonFatal(_) => Try(stopScheduler()) }
-      throw e
+      if (terminating)
+        throw new IllegalStateException("ActorSystem was terminated before it was fully initialized.", e)
+      else
+        throw e
   }
 
   def start(): this.type = _start
   def registerOnTermination[T](code: => T): Unit = { registerOnTermination(new Runnable { def run = code }) }
   def registerOnTermination(code: Runnable): Unit = { terminationCallbacks.add(code) }
 
+  @volatile private var terminating = false
+
   override def terminate(): Future[Terminated] = {
+    terminating = true
     if (settings.CoordinatedShutdownRunByActorSystemTerminate && !aborting) {
       // Note that the combination CoordinatedShutdownRunByActorSystemTerminate==true &&
       // CoordinatedShutdownTerminateActorSystem==false is disallowed, checked in Settings.
