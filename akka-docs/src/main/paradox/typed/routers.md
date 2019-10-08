@@ -81,12 +81,15 @@ Java
 Rotates over the set of routees making sure that if there are `n` routees, then for `n` messages
 sent through the router, each actor is forwarded one message.
 
-This is the default for pool routers.
+Round robin gives fair routing where every available routee gets the same amount of messages as long as the set
+of routees stays relatively stable, but may be unfair if the set of routees changes a lot.
+
+This is the default for pool routers as the pool of routees is expected to remain the same. 
 
 ### Random
 Randomly selects a routee when a message is sent through the router.
 
-This is the default for group routers.
+This is the default for group routers as the group of routees is expected to change as nodes join and leave the cluster.
 
 ## Routers and performance
 
