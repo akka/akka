@@ -362,13 +362,19 @@ Java compiler option is enabled.
 
 ### Compression
 
-JSON can be rather verbose and for large messages it can be beneficial compress large payloads. Messages larger
-than the following configuration are compressed with GZIP.
+JSON can be rather verbose and for large messages it can be beneficial to compress large payloads. For
+the `jackson-json` binding the default configuration is:
 
 @@snip [reference.conf](/akka-serialization-jackson/src/main/resources/reference.conf) { #compression }
 
-Compression can be disabled by setting this configuration property to `off`. It will still be able to decompress
+Messages larger than the `compress-larger-than` property are compressed with GZIP.
+
+Compression can be disabled by setting the `algorithm` property to `off`. It will still be able to decompress
 payloads that were compressed when serialized, e.g. if this configuration is changed.
+
+For the `jackson-cbor` and custom bindings other than `jackson-json` compression is by default disabled,
+but can be enabled in the same way as the configuration shown above but replacing `jackson-json` with
+the binding name (for example `jackson-cbor`).
 
 ## Additional configuration
 
