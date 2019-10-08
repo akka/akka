@@ -216,6 +216,40 @@ Java
  * There can only be a single response to one `ask` (see @ref:[per session child Actor](#per-session-child-actor))
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
 
+## Send Future result to self
+
+When using an API that returns a @scala[`Future`]@java[`CompletionStage`] from an actor it's common that you would
+like to use the value of the in the actor when the @scala[`Future`]@java[`CompletionStage`] is completed. For
+this purpose the `ActorContext` provides a `pipeToSelf` method.
+
+**Example:**
+
+![pipe-to-self.png](./images/pipe-to-self.png)
+
+An actor, `CustomerRepository`, is invoking a method on `CustomerDataAccess` that returns a @scala[`Future`]@java[`CompletionStage`].
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #pipeToSelf }
+
+Java
+:  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #pipeToSelf }
+
+It could be tempting to just use @scala[`onComplete on the Future`]@java[`a callback on the CompletionStage`], but
+that introduces the risk of accessing internal state of the actor that is not thread-safe from an external thread.
+For example, the `numberOfPendingOperations` counter in above example can't be accessed from such callback.
+Therefore it is better to map the result to a message and perform further processing when receiving that message.
+
+**Useful when:**
+
+ * Accessing APIs that are returning @scala[`Future`]@java[`CompletionStage`] from an actor, such as a database or
+   an external service
+ * The actor needs to continue processing when the @scala[`Future`]@java[`CompletionStage`] has completed
+ * Keep context from the original request and use that when the @scala[`Future`]@java[`CompletionStage`] has completed,
+   for example an `replyTo` actor reference
+ 
+**Problems:**
+
+ * Boilerplate of adding wrapper messages for the results
 
 ## Per session child Actor
 
