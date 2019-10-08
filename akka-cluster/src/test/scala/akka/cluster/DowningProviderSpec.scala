@@ -7,6 +7,7 @@ package akka.cluster
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 import akka.ConfigurationException
 import akka.actor.ActorSystem
@@ -39,7 +40,7 @@ class DowningProviderSpec extends WordSpec with Matchers {
 
   val baseConf = ConfigFactory.parseString("""
       akka {
-        loglevel = INFO
+        loglevel = WARNING
         actor.provider = "cluster"
         remote {
           artery.canonical {
@@ -81,20 +82,19 @@ class DowningProviderSpec extends WordSpec with Matchers {
           ConfigFactory.parseString("""
           akka.cluster.downing-provider-class="akka.cluster.FailingDowningProvider"
         """).withFallback(baseConf))
+
         val cluster = Cluster(system)
         cluster.join(cluster.selfAddress)
 
         awaitCond(cluster.isTerminated, 3.seconds)
         shutdownActorSystem(system)
       } catch {
-        case e: IllegalStateException =>
-          if (e.getMessage.contains("ActorSystem was terminated"))
-            // ok, CoordinatedShutdown terminating the ActorSystem, but SystemMaterializer is still loaded,
-            // and cannot create children while terminating, see issue #27840
-            ()
-          else throw e
+        case NonFatal(e) if e.getMessage.contains("cannot create children while terminating") =>
+          // FIXME #27840
+          // cannot create children while terminating or terminated
+          // thrown from loadExtension SystemMaterializer
+          pending
       }
-
     }
 
   }
