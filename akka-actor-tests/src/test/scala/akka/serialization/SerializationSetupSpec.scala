@@ -117,10 +117,12 @@ class SerializationSetupSpec
              akka.actor.serializers.doe = "john.is.not.here"
           """).withFallback(ConfigFactory.load())
 
-      a[ClassNotFoundException] should be thrownBy {
+      val ise = intercept[IllegalStateException] {
         val system = ActorSystem("SerializationSetupSpec-FailingSystem", config)
         system.terminate()
       }
+
+      ise.getCause.isInstanceOf[ClassNotFoundException] should be(true)
     }
 
   }
