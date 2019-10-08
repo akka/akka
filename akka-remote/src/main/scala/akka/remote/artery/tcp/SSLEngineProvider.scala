@@ -213,7 +213,7 @@ object SSLEngineProviderSetup {
  * when the SSLEngineProvider implementation require other external constructor parameters
  * or is created before the ActorSystem is created.
  *
- * Constructor is *Internal API*, use factories in [[SSLEngineProviderSetup()]]
+ * Constructor is *Internal API*, use factories in [[SSLEngineProviderSetup]]
  */
 class SSLEngineProviderSetup private (val sslEngineProvider: ExtendedActorSystem => SSLEngineProvider) extends Setup
 

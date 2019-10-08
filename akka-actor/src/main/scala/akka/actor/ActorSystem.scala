@@ -634,7 +634,7 @@ abstract class ActorSystem extends ActorRefFactory with ClassicActorSystemProvid
   def mailboxes: Mailboxes
 
   /**
-   * Register a block of code (callback) to run after [[ActorSystem.terminate()]] has been issued and
+   * Register a block of code (callback) to run after [[ActorSystem.terminate]] has been issued and
    * all actors in this actor system have been stopped.
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
@@ -648,7 +648,7 @@ abstract class ActorSystem extends ActorRefFactory with ClassicActorSystemProvid
   def registerOnTermination[T](code: => T): Unit
 
   /**
-   * Java API: Register a block of code (callback) to run after [[ActorSystem.terminate()]] has been issued and
+   * Java API: Register a block of code (callback) to run after [[ActorSystem.terminate]] has been issued and
    * all actors in this actor system have been stopped.
    * Multiple code blocks may be registered by calling this method multiple times.
    * The callbacks will be run sequentially in reverse order of registration, i.e.
