@@ -89,7 +89,7 @@ This is the default for pool routers as the pool of routees is expected to remai
 ### Random
 Randomly selects a routee when a message is sent through the router.
 
-This is the default for group routers as the pool of routees is expected to change as nodes join and leave the cluster.
+This is the default for group routers as the group of routees is expected to change as nodes join and leave the cluster.
 
 ## Routers and performance
 
