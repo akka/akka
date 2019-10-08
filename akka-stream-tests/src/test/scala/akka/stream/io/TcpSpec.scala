@@ -833,7 +833,7 @@ class TcpSpec extends StreamSpec("""
 
   "TLS client and server convenience methods with SSLEngine setup" should {
 
-    "allow for 'simple' TLS with deprecated SSLContext setup" in {
+    "allow for TLS" in {
       // cert is valid until 2025, so if this tests starts failing after that you need to create a new one
       val address = temporaryServerAddress()
 
@@ -904,8 +904,6 @@ class TcpSpec extends StreamSpec("""
       engine.setEnabledCipherSuites(Array("TLS_RSA_WITH_AES_128_CBC_SHA"))
       engine.setEnabledProtocols(Array("TLSv1.2"))
 
-      // FIXME do we need to show hostnameVerification?
-
       engine
     }
     // #setting-up-ssl-engine
@@ -914,7 +912,7 @@ class TcpSpec extends StreamSpec("""
 
   "TLS client and server convenience methods with deprecated SSLContext setup" should {
 
-    "allow for 'simple' TLS" in {
+    "allow for TLS" in {
       test()
     }
 
