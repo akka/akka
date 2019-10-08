@@ -20,8 +20,9 @@ before_cache:
 
 cache:
   directories:
+    - $HOME/.cache/coursier
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot
+    - $HOME/.sbt
     - $HOME/.jabba/jdk
 
 # script for the default 'test' stage:
