@@ -438,7 +438,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       negotiateNewSession: NegotiateNewSession,
       backlog: Int,
       options: JIterable[SocketOption],
-      @silent // FIXME unused #26689
+      @silent // unused #26689
       halfClose: Boolean,
       idleTimeout: Duration): Source[IncomingConnection, CompletionStage[ServerBinding]] =
     Source.fromGraph(
@@ -500,7 +500,6 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
       idleTimeout: Optional[java.time.Duration],
       verifySession: JFunction[SSLSession, Optional[Throwable]],
       closing: TLSClosing): Source[IncomingConnection, CompletionStage[ServerBinding]] = {
-    // FIXME halfClose unused #26689
     Source.fromGraph(
       delegate
         .bindWithTls(

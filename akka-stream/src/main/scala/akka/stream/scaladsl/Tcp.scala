@@ -419,8 +419,6 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
 
     val tls = tlsWrapping.atop(TLS(createSSLEngine, verifySession, closing)).reversed
 
-    // FIXME halfClose true in scaladsl but parameter was not in javadsl #26689
-
     bind(interface, port, backlog, options, halfClose = true, idleTimeout).map { incomingConnection =>
       incomingConnection.copy(flow = incomingConnection.flow.join(tls))
     }
