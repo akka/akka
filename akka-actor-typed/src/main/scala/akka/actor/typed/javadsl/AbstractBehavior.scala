@@ -48,7 +48,7 @@ abstract class AbstractBehavior[T](context: ActorContext[T]) extends ExtensibleB
     case OptionVal.Some(r) => r
   }
 
-  def getContext: ActorContext[T] = context
+  protected def getContext: ActorContext[T] = context
 
   private def checkRightContext(ctx: TypedActorContext[T]): Unit =
     if (ctx.asJava ne context)
@@ -73,11 +73,11 @@ abstract class AbstractBehavior[T](context: ActorContext[T]) extends ExtensibleB
    * Implement this to define how messages and signals are processed. Use the
    * [[AbstractBehavior.newReceiveBuilder]] to define the message dispatch.
    */
-  def createReceive: Receive[T]
+  protected def createReceive: Receive[T]
 
   /**
    * Create a new [[ReceiveBuilder]] to define the message dispatch of the `Behavior`.
    * Typically used from [[AbstractBehavior.createReceive]].
    */
-  def newReceiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
+  protected def newReceiveBuilder: ReceiveBuilder[T] = ReceiveBuilder.create
 }
