@@ -17,7 +17,9 @@ Start with current value `zero` and then apply the current and next value to the
 Start with current value `zero` and then apply the current and next value to the given function. When upstream
 completes, the current value is emitted downstream.
 
-Note that the `zero` value must be immutable.
+Note that the `zero` value must be immutable, because otherwise
+the same mutable instance would be shared across different threads
+when running the stream more than once.
 
 ## Example
 
