@@ -821,13 +821,13 @@ To use the testkit you need to add the following dependency in your project:
 
 There are two testkit classes which have similar api:
 
- * @scala[`PersistenceTestKit` class]@java[`PersistenceTestKit` class] is for messages
- * @scala[`SnapshotTestKit` class]@java[`SnapshotTestKit` class] is for snapshots
+ * `PersistenceTestKit` class is for messages
+ * `SnapshotTestKit` class is for snapshots
  
 The testkit classes have two corresponding plugins which emulate the behavior of the storages: 
 
- * @scala[`PersistenceTestKitPlugin` class]@java[`PersistenceTestKitPlugin` class] emulates a messages storage 
- * @scala[`PersistenceTestKitSnapshotPlugin` class]@java[`PersistenceTestKitSnapshotPlugin` class] emulates a snapshots storage
+ * `PersistenceTestKitPlugin` class emulates a messages storage 
+ * `PersistenceTestKitSnapshotPlugin` class emulates a snapshots storage
 
 **Note!** The corresponding plugins **must** be configured in the actor system which is used to initialize the particular testkit class:
 
