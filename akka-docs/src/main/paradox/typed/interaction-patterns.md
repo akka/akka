@@ -404,8 +404,12 @@ which may in worst case cause undesired load on the system. `scheduleWithFixedDe
 
 ## Responding to a sharded actor
 
-When @ref:[Akka Cluster](cluster.md) is used to @ref:[shard actors](cluster-sharding.md) it is recommended to use
-the `entityId` to get the reply address and have the reply sent via sharding as the example below shows.
+When @ref:[Akka Cluster](cluster.md) is used to @ref:[shard actors](cluster-sharding.md) you need to
+take into account that an actor may move or get passivated.
+
+The normal pattern for expecting a reply is to include an @apidoc[akka.actor.typed.ActorRef] in the message, typically a message adapter. This can be used
+for a sharded actor but if @scala[`ctx.self`]@java[`ctx.getSelf()`] is sent and the sharded actor is moved or passivated then the reply
+will sent to dead letters.
 
 An alternative is to send the `entityId` in the message and have the reply sent via sharding.
 

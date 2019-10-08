@@ -47,7 +47,7 @@ Java
 The group router is created with a `ServiceKey` and uses the receptionist (see @ref:[Receptionist](actor-discovery.md#receptionist)) to discover
 available actors for that key and routes messages to one of the currently known registered actors for a key.
 
-Since the receptionist is used this means the group router is cluster-aware out of the box. The router routes
+Since the receptionist is used this means the group router is cluster-aware out of the box. The router sends
 messages to registered actors on any node in the cluster that is reachable. If no reachable actor exists the router
 will fallback and route messages to actors on nodes marked as unreachable.
 

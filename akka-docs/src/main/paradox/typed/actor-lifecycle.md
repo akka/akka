@@ -165,8 +165,8 @@ A child actor can be forced to stop after it finishes processing its current mes
 All child actors will be stopped when their parent is stopped.
 
 When an actor is stopped, it receives the `PostStop` signal that can be used for cleaning up resources.
-A behavior to handle the `PostStop` signal when stopping gracefully may be specified as parameter to
-`Behaviors.stopped`. This allows to apply different actions from when it is stopped abruptly.
+A callback function may be specified as parameter to `Behaviors.stopped` to handle the `PostStop` signal 
+when stopping gracefully. This allows to apply different actions from when it is stopped abruptly.
 
 Here is an illustrating example:
 
