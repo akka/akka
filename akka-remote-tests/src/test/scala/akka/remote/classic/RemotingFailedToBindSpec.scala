@@ -31,10 +31,11 @@ class RemotingFailedToBindSpec extends WordSpec with Matchers {
        """.stripMargin)
       val as = ActorSystem("RemotingFailedToBindSpec", config)
       try {
-        val ex = intercept[ChannelException] {
+        val ex = intercept[IllegalStateException] {
           ActorSystem("BindTest2", config)
         }
-        ex.getMessage should startWith("Failed to bind")
+        val ce = ex.getCause.asInstanceOf[ChannelException]
+        ce.getMessage should startWith("Failed to bind")
       } finally {
         as.terminate()
       }

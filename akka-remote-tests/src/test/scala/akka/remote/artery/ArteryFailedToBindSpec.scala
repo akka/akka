@@ -34,9 +34,10 @@ class ArteryFailedToBindSpec extends WordSpec with Matchers {
        """.stripMargin)
       val as = ActorSystem("BindTest1", config)
       try {
-        val ex = intercept[RemoteTransportException] {
+        val ise = intercept[IllegalStateException] {
           ActorSystem("BindTest2", config)
         }
+        val ex = ise.getCause.asInstanceOf[RemoteTransportException]
         RARP(as).provider.transport.asInstanceOf[ArteryTransport].settings.Transport match {
           case ArterySettings.AeronUpd =>
             ex.getMessage should ===("Inbound Aeron channel is in errored state. See Aeron logs for details.")
