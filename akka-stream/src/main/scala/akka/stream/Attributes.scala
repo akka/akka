@@ -99,7 +99,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    *
    * This is the expected way for operators to access attributes.
    *
-   * @see [[Attributes#get()]] For providing a default value if the attribute was not set
+   * @see [[Attributes#get]] For providing a default value if the attribute was not set
    */
   def get[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]

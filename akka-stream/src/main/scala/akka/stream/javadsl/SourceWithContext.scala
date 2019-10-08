@@ -34,7 +34,7 @@ object SourceWithContext {
  * use [[SourceWithContext#via]] to manually provide the context propagation for otherwise unsupported
  * operations.
  *
- * Can be created by calling [[Source.asSourceWithContext()]]
+ * Can be created by calling [[Source.asSourceWithContext]]
  */
 final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithContext[Out, Ctx, Mat])
     extends GraphDelegate(delegate) {
