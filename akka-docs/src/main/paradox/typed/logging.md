@@ -141,7 +141,7 @@ Scala
 Java
 :  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #tags }
 
-In addition to these two built in MDC attributes you can als decorate a `Behavior` with `Behaviors.withMdc` or 
+In addition to these two built in MDC attributes you can also decorate a `Behavior` with `Behaviors.withMdc` or 
 use the `org.slf4j.MDC` API directly.
 
 The `Behaviors.withMdc` decorator has two parts. A static `Map` of MDC attributes that are not changed,

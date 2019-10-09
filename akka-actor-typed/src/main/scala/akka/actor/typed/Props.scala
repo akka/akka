@@ -215,7 +215,7 @@ object MailboxSelector {
 }
 
 /**
- * Actor tags are used to logically group actors. The tags are included in logging as markers (FIXME we'll see if that is possible)
+ * Actor tags are used to logically group actors. The tags are included in logging as markers
  * Especially useful for logging from functional style actors and since those may not have a clear logger class.
  *
  * Not for user extension.
