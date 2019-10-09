@@ -225,8 +225,8 @@ private[remote] class Association(
         _outboundControlIngress match {
           case OptionVal.Some(o) => o
           case OptionVal.None =>
-            if (transport.isShutdown) throw ShuttingDown
-            else throw new IllegalStateException("outboundControlIngress not initialized yet")
+            if (transport.isShutdown || isRemovedAfterQuarantined()) throw ShuttingDown
+            else throw new IllegalStateException(s"outboundControlIngress for [$remoteAddress] not initialized yet")
         }
     }
   }
