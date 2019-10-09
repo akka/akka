@@ -16,7 +16,7 @@ import akka.annotation.InternalApi
 @InternalApi
 private[akka] final case class PoolRouterBuilder[T](
     poolSize: Int,
-    behaviorFactory: () => Behavior[T],
+    behavior: Behavior[T],
     logicFactory: () => RoutingLogic[T] = () => new RoutingLogics.RoundRobinLogic[T])
     extends javadsl.PoolRouter[T]
     with scaladsl.PoolRouter[T] {
@@ -24,7 +24,7 @@ private[akka] final case class PoolRouterBuilder[T](
 
   // deferred creation of the actual router
   def apply(ctx: TypedActorContext[T]): Behavior[T] =
-    new PoolRouterImpl[T](ctx.asScala, poolSize, behaviorFactory, logicFactory())
+    new PoolRouterImpl[T](ctx.asScala, poolSize, behavior, logicFactory())
 
   def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RandomLogic[T]())
 
@@ -40,12 +40,12 @@ private[akka] final case class PoolRouterBuilder[T](
 private final class PoolRouterImpl[T](
     ctx: ActorContext[T],
     poolSize: Int,
-    behaviorFactory: () => Behavior[T],
+    behavior: Behavior[T],
     logic: RoutingLogic[T])
     extends AbstractBehavior[T](ctx) {
 
   (1 to poolSize).foreach { _ =>
-    val child = context.spawnAnonymous(behaviorFactory())
+    val child = context.spawnAnonymous(behavior)
     context.watch(child)
     child
   }
