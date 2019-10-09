@@ -235,7 +235,7 @@ lazy val osgi = akkaModule("akka-osgi")
   .settings(parallelExecution in Test := false)
 
 lazy val persistence = akkaModule("akka-persistence")
-  .dependsOn(actor, testkit % "test->test", protobufV3)
+  .dependsOn(actor, stream, testkit % "test->test")
   .settings(Dependencies.persistence)
   .settings(AutomaticModuleName.settings("akka.persistence"))
   .settings(OSGi.persistence)
@@ -251,7 +251,7 @@ lazy val persistenceQuery = akkaModule("akka-persistence-query")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val persistenceShared = akkaModule("akka-persistence-shared")
-  .dependsOn(persistence % "test->test", testkit % "test->test", remote % "test", protobufV3)
+  .dependsOn(persistence % "test->test", testkit % "test->test", remote % "test")
   .settings(Dependencies.persistenceShared)
   .settings(AutomaticModuleName.settings("akka.persistence.shared"))
   .settings(fork in Test := true)
@@ -299,7 +299,6 @@ lazy val remote =
     .dependsOn(
       actor,
       stream,
-      protobufV3,
       protobuf % "test",
       actorTests % "test->test",
       testkit % "test->test",
@@ -407,7 +406,6 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     distributedData,
     persistence % "test->test",
     persistenceTyped % "test->test",
-    protobufV3,
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     remoteTests % "test->test",
