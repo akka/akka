@@ -227,7 +227,7 @@ and can be one of:
 * `unstashAll` process the commands that were stashed with @scala[`Effect.stash`]@java[`Effect().stash`]
 * `reply` send a reply message to the given `ActorRef`
 
-Note that there is only one of these. It is not possible to both persist and say none/unhandled.
+Note that only one of those can be chosen per incoming command. It is not possible to both persist and say none/unhandled.
 
 In addition to returning the primary `Effect` for the command `EventSourcedBehavior`s can also 
 chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
@@ -264,19 +264,28 @@ Java
 
 ### Side effects ordering and guarantees
 
-Any side effects are executed on an at-once basis and will not be executed if the persist fails.
-The side effects are executed sequentially, it is not possible to execute side effects in parallel.
+Any side effects are executed on an at-most-once basis and will not be executed if the persist fails.
+
+Side effects are not run when the actor is restarted or started again after being stopped.
+You may inspect the state when receiving the `RecoveryCompleted` signal and execute side effects that
+have not been acknowledged at that point. That may possibly result in executing side effects more than once.
+
+The side effects are executed sequentially, it is not possible to execute side effects in parallel, unless they
+call out to something that is running concurrently (for example sending a message to another actor).
+
+It's possible to execute a side effects before persisting the event, but that can result in that the
+side effect is performed but the event is not stored if the persist fails.
 
 ### Atomic writes
 
-It is possible to store several events atomically by using the `persistAll` effect. That means that all events
-passed to that method are stored or none of them are stored if there is an error.
+It is possible to store several events atomically by using the `persist` effect with a list of events.
+That means that all events passed to that method are stored or none of them are stored if there is an error.
 
 The recovery of a persistent actor will therefore never be done partially with only a subset of events persisted by
-`persistAll`.
+a single `persist` effect.
 
-Some journals may not support atomic writes of several events and they will then reject the `persistAll`
-command. This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` (typically with a 
+Some journals may not support atomic writes of several events and they will then reject the `persist` with
+multiple events. This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` (typically with a 
 `UnsupportedOperationException`) and can be handled with a @ref[supervisor](fault-tolerance.md).
 
 ## Cluster Sharding and EventSourcedBehavior
