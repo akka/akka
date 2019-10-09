@@ -9,7 +9,7 @@
 * [general/index](general/index.md)
 * [index-actors](typed/index.md)
 * [index-cluster](typed/index-cluster.md)
-* [persistence](typed/persistence.md)
+* [index-persistence](typed/index-persistence.md)
 * [stream/index](stream/index.md)
 * [discovery](discovery/index.md)
 * [index-utilities](index-utilities.md)
