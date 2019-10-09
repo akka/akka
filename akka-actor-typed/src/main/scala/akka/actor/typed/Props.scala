@@ -189,12 +189,12 @@ abstract class MailboxSelector extends Props
 object MailboxSelector {
 
   /**
-   * Scala API: The default mailbox is unbounded and backed by a [[java.util.concurrent.ConcurrentLinkedQueue]]
+   * Scala API: The default mailbox is SingleConsumerOnlyUnboundedMailbox
    */
-  def default(): MailboxSelector = DefaultMailboxSelector.empty
+  def default(): MailboxSelector = fromConfig("akka.actor.typed.default-mailbox")
 
   /**
-   * Java API: The default mailbox is unbounded and backed by a [[java.util.concurrent.ConcurrentLinkedQueue]]
+   * Java API: The default mailbox is SingleConsumerOnlyUnboundedMailbox
    */
   def defaultMailbox(): MailboxSelector = default()
 

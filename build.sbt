@@ -42,7 +42,6 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   actorTyped,
   actorTypedTests,
   benchJmh,
-  benchJmhTyped,
   cluster,
   clusterMetrics,
   clusterSharding,
@@ -77,7 +76,7 @@ lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
   .settings(rootSettings: _*)
   .settings(
-    unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, benchJmhTyped, protobuf, protobufV3, akkaScalaNightly, docs))
+    unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
 
@@ -104,18 +103,10 @@ lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderInPr)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
-  .dependsOn(Seq(actor, stream, streamTests, persistence, distributedData, jackson, testkit).map(
+  .dependsOn(Seq(actor, actorTyped, stream, streamTests, persistence, distributedData, jackson, testkit).map(
     _ % "compile->compile;compile->test"): _*)
   .settings(Dependencies.benchJmh)
   .settings(javacOptions += "-parameters") // for Jackson
-  .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
-  .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
-
-// typed benchmarks only on 2.12+
-lazy val benchJmhTyped = akkaModule("akka-bench-jmh-typed")
-  .dependsOn(Seq(persistenceTyped, distributedData, clusterTyped, testkit, benchJmh).map(
-    _ % "compile->compile;compile->test"): _*)
-  .settings(Dependencies.benchJmh)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
 

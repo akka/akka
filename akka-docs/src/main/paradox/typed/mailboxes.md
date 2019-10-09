@@ -46,20 +46,7 @@ Java
 
 ### Default Mailbox
 
-The default mailbox is used when the mailbox is not specified.
-This is an unbounded mailbox, backed by a
-`java.util.concurrent.ConcurrentLinkedQueue`.
-
-`SingleConsumerOnlyUnboundedMailbox` is an even more efficient mailbox, and
-it can be used as the default mailbox, but it cannot be used with a BalancingDispatcher.
-
-Configuration of `SingleConsumerOnlyUnboundedMailbox` as default mailbox:
-
-```
-akka.actor.default-mailbox {
-  mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
-}
-```
+The default mailbox is used when the mailbox is not specified and is the **SingleConsumerOnlyUnboundedMailbox**>
 
 ### Which Configuration is passed to the Mailbox Type
 
@@ -75,19 +62,19 @@ fall-back to the default mailbox configuration section.
 Akka ships with a number of mailbox implementations:
 
  * 
-   **UnboundedMailbox** (default)
-    * The default mailbox
-    * Backed by a `java.util.concurrent.ConcurrentLinkedQueue`
-    * Blocking: No
-    * Bounded: No
-    * Configuration name: `"unbounded"` or `"akka.dispatch.UnboundedMailbox"`
- * 
-   **SingleConsumerOnlyUnboundedMailbox**
-   Depending on your use case, this queue may or may not be faster than the default one — be sure to benchmark properly!
+   **SingleConsumerOnlyUnboundedMailbox** (default)
+    * This is the default
     * Backed by a Multiple-Producer Single-Consumer queue, cannot be used with `BalancingDispatcher`
     * Blocking: No
     * Bounded: No
     * Configuration name: `"akka.dispatch.SingleConsumerOnlyUnboundedMailbox"`
+ * 
+   **UnboundedMailbox**
+    * Backed by a `java.util.concurrent.ConcurrentLinkedQueue`
+    * Blocking: No
+    * Bounded: No
+    * Configuration name: `"unbounded"` or `"akka.dispatch.UnboundedMailbox"`
+
  * 
    **NonBlockingBoundedMailbox**
     * Backed by a very efficient Multiple-Producer Single-Consumer queue
