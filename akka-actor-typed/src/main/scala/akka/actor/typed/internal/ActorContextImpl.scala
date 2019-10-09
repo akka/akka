@@ -124,6 +124,7 @@ import org.slf4j.LoggerFactory
 
   override def log: Logger = {
     val logging = loggingContext()
+    // avoid access to MDC ThreadLocal if not needed, see details in LoggingContext
     logging.mdcUsed = true
     ActorMdc.setMdc(self.path.toString, logging.tagsString)
     logging.logger
@@ -140,7 +141,7 @@ import org.slf4j.LoggerFactory
 
   // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message
   override private[akka] def clearMdc(): Unit = {
-    // avoid access to MDC ThreadLocal if not needed
+    // avoid access to MDC ThreadLocal if not needed, see details in LoggingContext
     _logging match {
       case OptionVal.Some(ctx) if ctx.mdcUsed =>
         ActorMdc.clearMdc()

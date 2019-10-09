@@ -7,7 +7,6 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
@@ -263,15 +262,12 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
             Behaviors.same
         }
       }
-      val customFilter: LoggingEvent => Boolean = { logEvt =>
-        logEvt.mdc.get(ActorMdc.TagsKey) == Some("tag1,tag2")
-      }
       val actor =
-        LoggingEventFilter.custom(customFilter).intercept {
+        LoggingEventFilter.info("Starting up").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).intercept {
           spawn(behavior, ActorTags("tag1", "tag2"))
         }
 
-      LoggingEventFilter.custom(customFilter).intercept {
+      LoggingEventFilter.info("Got message").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).intercept {
         actor ! "ping"
       }
     }
