@@ -14,8 +14,9 @@ import com.typesafe.config.Config
 import java.util.function.{ Function => JFunction }
 
 import akka.util.unused
-
 import scala.collection.immutable
+
+import akka.event.Logging
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -117,7 +118,9 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
           val settings =
             new Settings(system.settings.config.getConfig("akka.io.dns"), "async-dns")
           val provider = system.dynamicAccess.createInstanceFor[DnsProvider](settings.ProviderObjectName, Nil).get
-          system.log.info("Creating async dns resolver {} with manager name {}", settings.Resolver, managerName)
+          Logging(system, classOf[DnsExt])
+            .info("Creating async dns resolver {} with manager name {}", settings.Resolver, managerName)
+
           system.systemActorOf(
             props = Props(
               provider.managerClass,
