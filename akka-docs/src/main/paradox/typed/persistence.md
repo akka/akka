@@ -127,23 +127,19 @@ illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `e
 The command handler is a function with 2 parameters, the current `State` and the incoming `Command`.
 
 A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
-Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory]
-and can be one of: 
+Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory].
+
+The two most commonly used effects are: 
 
 * `persist` will persist one single event or several events atomically, i.e. all events
   are stored or none of them are stored if there is an error
 * `none` no events are to be persisted, for example a read-only command
-* `unhandled` the command is unhandled (not supported) in current state
-* `stop` stop this actor
+
+More effects are explained in @ref:[Effects and Side Effects](#effects-and-side-effects).
 
 In addition to returning the primary `Effect` for the command `EventSourcedBehavior`s can also 
-chain side effects (`SideEffect`s) are to be performed after successful persist which is achieved with the `andThen`  and `thenRun`
-function e.g @scala[`Effect.persist(..).andThen`]@java[`Effect().persist(..).andThen`]. The `thenRun` function
-is a convenience around creating a `SideEffect`.
-
-In the example below a reply is sent to the `replyTo` ActorRef. Note that the new state after applying 
-the event is passed as parameter to the `thenRun` function. All `thenRun` registered callbacks
-are executed sequentially after successful execution of the persist statement (or immediately, in case of `none` and `unhandled`).
+chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
+function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
 
 ### Event handler
 
@@ -206,6 +202,82 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #behavior }
 
+## Effects and Side Effects
+
+A command handler returns an `Effect` directive that defines what event or events, if any, to persist. 
+Effects are created using @java[a factory that is returned via the `Effect()` method] @scala[the `Effect` factory]
+and can be one of: 
+
+* `persist` will persist one single event or several events atomically, i.e. all events
+  are stored or none of them are stored if there is an error
+* `none` no events are to be persisted, for example a read-only command
+* `unhandled` the command is unhandled (not supported) in current state
+* `stop` stop this actor
+* `stash` the current command is stashed
+* `unstashAll` process the commands that were stashed with @scala[`Effect.stash`]@java[`Effect().stash`]
+* `reply` send a reply message to the given `ActorRef`
+
+Note that only one of those can be chosen per incoming command. It is not possible to both persist and say none/unhandled.
+
+In addition to returning the primary `Effect` for the command `EventSourcedBehavior`s can also 
+chain side effects that are to be performed after successful persist which is achieved with the `thenRun`
+function e.g @scala[`Effect.persist(..).thenRun`]@java[`Effect().persist(..).thenRun`].
+
+In the example below the state is sent to the `subscriber` ActorRef. Note that the new state after applying 
+the event is passed as parameter of the `thenRun` function.
+
+All `thenRun` registered callbacks are executed sequentially after successful execution of the persist statement
+(or immediately, in case of `none` and `unhandled`).
+
+In addition to `thenRun` the following actions can also be performed after successful persist:
+
+* `thenStop` the actor will be stopped
+* `thenUnstashAll` process the commands that were stashed with @scala[`Effect.stash`]@java[`Effect().stash`]
+* `thenReply` send a reply message to the given `ActorRef`
+
+Example of effects:
+
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #effects }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #effects }
+
+Most of the time this will be done with the `thenRun` method on the `Effect` above. You can factor out
+common side effects into functions and reuse for several commands. For example:
+
+Scala
+:  @@snip [PersistentActorCompileOnlyTest.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
+
+Java
+:  @@snip [PersistentActorCompileOnlyTest.java](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
+
+### Side effects ordering and guarantees
+
+Any side effects are executed on an at-most-once basis and will not be executed if the persist fails.
+
+Side effects are not run when the actor is restarted or started again after being stopped.
+You may inspect the state when receiving the `RecoveryCompleted` signal and execute side effects that
+have not been acknowledged at that point. That may possibly result in executing side effects more than once.
+
+The side effects are executed sequentially, it is not possible to execute side effects in parallel, unless they
+call out to something that is running concurrently (for example sending a message to another actor).
+
+It's possible to execute a side effects before persisting the event, but that can result in that the
+side effect is performed but the event is not stored if the persist fails.
+
+### Atomic writes
+
+It is possible to store several events atomically by using the `persist` effect with a list of events.
+That means that all events passed to that method are stored or none of them are stored if there is an error.
+
+The recovery of a persistent actor will therefore never be done partially with only a subset of events persisted by
+a single `persist` effect.
+
+Some journals may not support atomic writes of several events and they will then reject the `persist` with
+multiple events. This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` (typically with a 
+`UnsupportedOperationException`) and can be handled with a @ref[supervisor](fault-tolerance.md).
+
 ## Cluster Sharding and EventSourcedBehavior
 
 In a use case where the number of persistent actors needed is higher than what would fit in the memory of one node or
@@ -230,8 +302,6 @@ Scala
 
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #actor-context }
-
-
 
 ## Changing Behavior
 
@@ -303,45 +373,6 @@ illustrated in @ref:[event handlers in the state](persistence-style.md#event-han
 @ref:[command handlers in the state](persistence-style.md#command-handlers-in-the-state).
 
 There is also an example illustrating an @ref:[optional initial state](persistence-style.md#optional-initial-state).
-
-## Effects and Side Effects
-
-Each command has a single `Effect` which can be:
-
-* Persist events
-* None: Accept the command but no effects
-* Unhandled: Don't handle this command
-* Stash: the current command is placed in a buffer and can be unstashed and processed later
-
-Note that there is only one of these. It is not possible to both persist and say none/unhandled.
-These are created using @java[a factory that is returned via the `Effect()` method]
-@scala[the `Effect` factory] and once created additional side effects can be added.
-
-Most of the time this will be done with the `thenRun` method on the `Effect` above. You can factor out
-common side effects into functions and reuse for several commands. For example:
-
-Scala
-:  @@snip [PersistentActorCompileOnlyTest.scala](/akka-persistence-typed/src/test/scala/akka/persistence/typed/scaladsl/PersistentActorCompileOnlyTest.scala) { #commonChainedEffects }
-
-Java
-:  @@snip [PersistentActorCompileOnlyTest.java](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #commonChainedEffects }
-
-### Side effects ordering and guarantees
-
-Any side effects are executed on an at-once basis and will not be executed if the persist fails.
-The side effects are executed sequentially, it is not possible to execute side effects in parallel.
-
-### Atomic writes
-
-It is possible to store several events atomically by using the `persistAll` effect. That means that all events
-passed to that method are stored or none of them are stored if there is an error.
-
-The recovery of a persistent actor will therefore never be done partially with only a subset of events persisted by
-`persistAll`.
-
-Some journals may not support atomic writes of several events and they will then reject the `persistAll`
-command. This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` (typically with a 
-`UnsupportedOperationException`) and can be handled with a @ref[supervisor](fault-tolerance.md).
 
 ## Replies
 
