@@ -44,7 +44,7 @@ Java
 The group router is created with a `ServiceKey` and uses the receptionist (see @ref:[Receptionist](actor-discovery.md#receptionist)) to discover
 available actors for that key and routes messages to one of the currently known registered actors for a key.
 
-Since the receptionist is used this means the group router is cluster aware out of the box. The router route
+Since the receptionist is used this means the group router is cluster-aware out of the box. The router sends
 messages to registered actors on any node in the cluster that is reachable. If no reachable actor exists the router
 will fallback and route messages to actors on nodes marked as unreachable.
 
@@ -53,7 +53,7 @@ the group router is started the set of routees it knows about is empty, until it
 it stashes incoming messages and forwards them as soon as it gets a listing from the receptionist.  
 
 When the router has received a listing from the receptionist and the set of registered actors is empty the router will
-drop them (published them to the event stream as `akka.actor.Dropped`).
+drop them (publish them to the event stream as `akka.actor.Dropped`).
 
 Scala
 :  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #group }
@@ -96,4 +96,4 @@ it will not give better performance to create more routees than there are thread
 
 Since the router itself is an actor and has a mailbox this means that messages are routed sequentially to the routees
 where it can be processed in parallel (depending on the available threads in the dispatcher).
-In a high throughput use cases the sequential routing could be a bottle neck. Akka Typed does not provide an optimized tool for this.
+In a high throughput use cases the sequential routing could become a bottle neck. Akka Typed does not provide an optimized tool for this.

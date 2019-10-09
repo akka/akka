@@ -70,7 +70,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
           Behaviors.receiveMessage[Request] {
             case Request(query, replyTo) =>
               // ... process query ...
-              replyTo ! Response(s"Here's the cookies for [$query]!")
+              replyTo ! Response(s"Here are the cookies for [$query]!")
               Behaviors.same
           }
         // #request-response-respond
