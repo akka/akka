@@ -145,7 +145,7 @@ final class Deploy(
   }
 
   override def hashCode(): Int = {
-    val state = Seq(path, config, routerConfig, scope, dispatcher, mailbox, tags)
+    val state = Seq[AnyRef](path, config, routerConfig, scope, dispatcher, mailbox, tags)
     state.map(_.hashCode()).foldLeft(0)((a, b) => 31 * a + b)
   }
 
