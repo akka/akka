@@ -377,8 +377,8 @@ using Cluster Sharding. Stop all Cluster nodes before using this program.
 
 It can be needed to remove the data if the Cluster Sharding coordinator
 cannot startup because of corrupt data, which may happen if accidentally
-two clusters were running at the same time, e.g. caused by using auto-down
-and there was a network partition.
+two clusters were running at the same time, e.g. caused by an invalid downing
+provider when there was a network partition.
 
 Use this program as a standalone Java main program:
 

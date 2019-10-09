@@ -113,11 +113,6 @@ The role of the `leader` is to shift members in and out of the cluster, changing
 state. Currently `leader` actions are only triggered by receiving a new cluster
 state with gossip convergence.
 
-The `leader` also has the power, if configured so, to "auto-down" a node that
-according to the @ref:[Failure Detector](#failure-detector) is considered `unreachable`. This means setting
-the `unreachable` node status to `down` automatically after a configured time
-of unreachability.
-
 #### Seed Nodes
 
 The seed nodes are contact points for new nodes joining the cluster.
