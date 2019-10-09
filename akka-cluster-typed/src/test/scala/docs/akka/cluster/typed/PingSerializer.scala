@@ -24,6 +24,8 @@ class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
   override def manifest(msg: AnyRef) = msg match {
     case _: PingService.Ping => PingManifest
     case PingService.Pong    => PongManifest
+    case _ =>
+      throw new IllegalArgumentException(s"Can't serialize object of type ${msg.getClass} in [${getClass.getName}]")
   }
 
   override def toBinary(msg: AnyRef) = msg match {
@@ -31,6 +33,8 @@ class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
       actorRefResolver.toSerializationFormat(who).getBytes(StandardCharsets.UTF_8)
     case PingService.Pong =>
       Array.emptyByteArray
+    case _ =>
+      throw new IllegalArgumentException(s"Can't serialize object of type ${msg.getClass} in [${getClass.getName}]")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String) = {
@@ -41,6 +45,8 @@ class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
         PingService.Ping(ref)
       case PongManifest =>
         PingService.Pong
+      case _ =>
+        throw new IllegalArgumentException(s"Unknown manifest [$manifest]")
     }
   }
 }
