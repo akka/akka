@@ -49,8 +49,7 @@ import akka.util.OptionVal
  * INTERNAL API
  */
 @InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T], rethrowTypedFailure: Boolean)
-    extends classic.Actor
-    with classic.ActorLogging {
+    extends classic.Actor {
 
   private var behavior: Behavior[T] = _initialBehavior
   def currentBehavior: Behavior[T] = behavior
@@ -181,7 +180,7 @@ import akka.util.OptionVal
       case Success(a) =>
         body(a)
       case Failure(ex) =>
-        log.error(ex, s"Exception thrown out of adapter. Stopping myself. ${ex.getMessage}")
+        ctx.log.error(s"Exception thrown out of adapter. Stopping myself. ${ex.getMessage}", ex)
         context.stop(self)
     }
   }
@@ -220,7 +219,7 @@ import akka.util.OptionVal
         case e => e.getMessage
       }
       // log at Error as that is what the supervision strategy would have done.
-      log.error(ex, logMessage)
+      ctx.log.error(logMessage, ex)
       if (isTypedActor)
         classic.SupervisorStrategy.Stop
       else

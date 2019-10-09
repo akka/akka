@@ -158,4 +158,3 @@ The `leader` has the following duties:
 causing the monitored node to be marked as unreachable
    
  * **unreachable*** - unreachable is not a real member states but more of a flag in addition to the state signaling that the cluster is unable to talk to this node, after being unreachable the failure detector may detect it as reachable again and thereby remove the flag
-   

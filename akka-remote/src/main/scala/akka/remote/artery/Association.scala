@@ -142,7 +142,7 @@ private[remote] class Association(
 
   require(remoteAddress.port.nonEmpty)
 
-  private val log = Logging(transport.system, getClass.getName)
+  private val log = Logging(transport.system, getClass)
   private def flightRecorder = transport.topLevelFlightRecorder
 
   override def settings = transport.settings

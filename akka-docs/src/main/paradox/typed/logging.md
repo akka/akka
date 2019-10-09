@@ -400,27 +400,33 @@ With Logback the timestamp is available with `%X{akkaTimestamp}` specifier withi
 ### Logger names
 
 It can be useful to enable debug level or other SLF4J backend configuration for certain modules of Akka when
-troubleshooting. For example, in Logback the configuration may look like: 
+troubleshooting. Those logger names are typically prefixed with the package name of the classes in that module.
+For example, in Logback the configuration may look like this to enable debug logging for Cluster Sharding: 
 
 ```
-   <logger name="akka.cluster.ClusterHeartbeat" level="DEBUG" />
+   <logger name="akka.cluster.sharding" level="DEBUG" />
 
     <root level="INFO">
         <appender-ref ref="ASYNC"/>
     </root>
 ```
 
-The following logger names are used
-
-Core Cluster membership:
+Other examples of logger names or prefixes:
 
 ```
+akka.cluster
 akka.cluster.Cluster
 akka.cluster.ClusterHeartbeat
 akka.cluster.ClusterGossip
+akka.cluster.ddata
+akka.cluster.pubsub
+akka.cluster.singleton
+akka.cluster.sharding
+akka.coordination.lease
+akka.discovery
+akka.persistence
+akka.remote
 ```
-
-FIXME more...
 
 ## Logging in tests
 

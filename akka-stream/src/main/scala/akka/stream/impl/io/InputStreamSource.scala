@@ -46,6 +46,8 @@ private[akka] final class InputStreamSource(factory: () => InputStream, chunkSiz
       private var inputStream: InputStream = _
       private def isClosed = mat.isCompleted
 
+      override protected def logSource: Class[_] = classOf[InputStreamSource]
+
       override def preStart(): Unit = {
         try {
           inputStream = factory()
