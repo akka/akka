@@ -7,6 +7,7 @@ package jdocs.akka.cluster.typed;
 // #join-seed-nodes
 import akka.actor.Address;
 import akka.actor.AddressFromURIString;
+import akka.cluster.Member;
 import akka.cluster.typed.JoinSeedNodes;
 
 // #join-seed-nodes
@@ -119,5 +120,30 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
 
     Cluster.get(system).manager().tell(new JoinSeedNodes(seedNodes));
     // #join-seed-nodes
+  }
+
+  static class Backend {
+    static Behavior<Void> create() {
+      return Behaviors.empty();
+    }
+  }
+
+  static class Frontend {
+    static Behavior<Void> create() {
+      return Behaviors.empty();
+    }
+  }
+
+  void illustrateRoles() {
+    ActorContext<Void> context = null;
+
+    // #hasRole
+    Member selfMember = Cluster.get(context.getSystem()).selfMember();
+    if (selfMember.hasRole("backend")) {
+      context.spawn(Backend.create(), "back");
+    } else if (selfMember.hasRole("front")) {
+      context.spawn(Frontend.create(), "front");
+    }
+    // #hasRole
   }
 }

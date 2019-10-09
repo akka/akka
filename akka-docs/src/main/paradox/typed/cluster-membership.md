@@ -76,20 +76,9 @@ any `leader` actions are also not possible (for instance, allowing a node to
 become a part of the cluster). To be able to move forward the state of the
 `unreachable` nodes must be changed. It must become `reachable` again or marked
 as `down`. If the node is to join the cluster again the actor system must be
-restarted and go through the joining process again. The cluster can, through the
-leader, also *auto-down* a node after a configured time of unreachability. If new
-incarnation of unreachable node tries to rejoin the cluster old incarnation will be 
-marked as `down` and new incarnation can rejoin the cluster without manual intervention. 
-
-@@@ note
-
-If you have *auto-down* enabled and the failure detector triggers, you
-can over time end up with a lot of single node clusters if you don't put
-measures in place to shut down nodes that have become `unreachable`. This
-follows from the fact that the `unreachable` node will likely see the rest of
-the cluster as `unreachable`, become its own leader and form its own cluster.
-
-@@@
+restarted and go through the joining process again. If new incarnation of the unreachable
+node tries to rejoin the cluster old incarnation will be marked as `down` and new
+incarnation can rejoin the cluster without manual intervention. 
 
 <a id="weakly-up"></a>
 ## WeaklyUp Members
@@ -158,4 +147,3 @@ The `leader` has the following duties:
 causing the monitored node to be marked as unreachable
    
  * **unreachable*** - unreachable is not a real member states but more of a flag in addition to the state signaling that the cluster is unable to talk to this node, after being unreachable the failure detector may detect it as reachable again and thereby remove the flag
-   
