@@ -239,7 +239,7 @@ class PersistentFsmToTypedMigrationSpec extends WordSpec with ScalaFutures with 
       try {
         import typedTestKit._
         val typedProbe = akka.actor.testkit.typed.scaladsl.TestProbe[ShoppingCart]()
-        val typedReplacement = spawn(ShoppingCartBehavior(PersistenceId(pid)))
+        val typedReplacement = spawn(ShoppingCartBehavior(PersistenceId.ofUniqueId(pid)))
         typedReplacement ! ShoppingCartBehavior.AddItem(coat)
         typedReplacement ! ShoppingCartBehavior.GetCurrentCart(typedProbe.ref)
         typedProbe.expectMessage(NonEmptyShoppingCart(List(shirt, shoes, coat)))
@@ -277,7 +277,7 @@ class PersistentFsmToTypedMigrationSpec extends WordSpec with ScalaFutures with 
       try {
         import typedTestKit._
         val typedProbe = akka.actor.testkit.typed.scaladsl.TestProbe[ShoppingCart]()
-        val typedReplacement = spawn(ShoppingCartBehavior(PersistenceId(pid)))
+        val typedReplacement = spawn(ShoppingCartBehavior(PersistenceId.ofUniqueId(pid)))
         typedReplacement ! ShoppingCartBehavior.GetCurrentCart(typedProbe.ref)
         typedProbe.expectMessage(NonEmptyShoppingCart(Seq(shirt)))
       } finally {

@@ -81,7 +81,7 @@ object BasicPersistentBehaviorCompileOnly {
     //#behavior
     def apply(id: String): Behavior[Command] =
       EventSourcedBehavior[Command, Event, State](
-        persistenceId = PersistenceId(id),
+        persistenceId = PersistenceId.ofUniqueId(id),
         emptyState = State(Nil),
         commandHandler = commandHandler,
         eventHandler = eventHandler)
@@ -97,7 +97,7 @@ object BasicPersistentBehaviorCompileOnly {
 
     def apply(): Behavior[Command] =
       EventSourcedBehavior[Command, Event, State](
-        persistenceId = PersistenceId("abc"),
+        persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -110,7 +110,7 @@ object BasicPersistentBehaviorCompileOnly {
     def apply(): Behavior[Command] =
       //#recovery
       EventSourcedBehavior[Command, Event, State](
-        persistenceId = PersistenceId("abc"),
+        persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -125,7 +125,7 @@ object BasicPersistentBehaviorCompileOnly {
     def apply(): Behavior[Command] =
       //#tagging
       EventSourcedBehavior[Command, Event, State](
-        persistenceId = PersistenceId("abc"),
+        persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -163,7 +163,7 @@ object BasicPersistentBehaviorCompileOnly {
       //#wrapPersistentBehavior
       Behaviors.setup[Command] { context =>
         EventSourcedBehavior[Command, Event, State](
-          persistenceId = PersistenceId("abc"),
+          persistenceId = PersistenceId.ofUniqueId("abc"),
           emptyState = State(),
           commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
           eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -179,7 +179,7 @@ object BasicPersistentBehaviorCompileOnly {
     def apply(): Behavior[Command] =
       //#supervision
       EventSourcedBehavior[Command, Event, State](
-        persistenceId = PersistenceId("abc"),
+        persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
         eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -196,7 +196,7 @@ object BasicPersistentBehaviorCompileOnly {
     def apply(): Behavior[String] =
       Behaviors.setup { context =>
         EventSourcedBehavior[String, String, State](
-          persistenceId = PersistenceId("myPersistenceId"),
+          persistenceId = PersistenceId.ofUniqueId("myPersistenceId"),
           emptyState = State(),
           commandHandler = CommandHandler.command { cmd =>
             context.log.info("Got command {}", cmd)
@@ -216,7 +216,7 @@ object BasicPersistentBehaviorCompileOnly {
   //#snapshottingEveryN
 
   EventSourcedBehavior[Command, Event, State](
-    persistenceId = PersistenceId("abc"),
+    persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -225,7 +225,7 @@ object BasicPersistentBehaviorCompileOnly {
 
   //#snapshottingPredicate
   EventSourcedBehavior[Command, Event, State](
-    persistenceId = PersistenceId("abc"),
+    persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -239,7 +239,7 @@ object BasicPersistentBehaviorCompileOnly {
   import akka.persistence.typed.SnapshotSelectionCriteria
 
   EventSourcedBehavior[Command, Event, State](
-    persistenceId = PersistenceId("abc"),
+    persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -251,7 +251,7 @@ object BasicPersistentBehaviorCompileOnly {
   import akka.persistence.typed.scaladsl.Effect
 
   EventSourcedBehavior[Command, Event, State](
-    persistenceId = PersistenceId("abc"),
+    persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => state) // do something based on a particular state
@@ -265,7 +265,7 @@ object BasicPersistentBehaviorCompileOnly {
   //#snapshotAndEventDeletes
 
   EventSourcedBehavior[Command, Event, State](
-    persistenceId = PersistenceId("abc"),
+    persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -280,7 +280,7 @@ object BasicPersistentBehaviorCompileOnly {
   //#retentionCriteriaWithSignals
 
   EventSourcedBehavior[Command, Event, State](
-    persistenceId = PersistenceId("abc"),
+    persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
@@ -302,7 +302,7 @@ object BasicPersistentBehaviorCompileOnly {
 
   //#install-event-adapter
   EventSourcedBehavior[Command, Event, State](
-    persistenceId = PersistenceId("abc"),
+    persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
     eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))

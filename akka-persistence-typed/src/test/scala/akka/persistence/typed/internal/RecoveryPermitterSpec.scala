@@ -47,7 +47,7 @@ object RecoveryPermitterSpec {
       eventProbe: TestProbe[Any],
       throwOnRecovery: Boolean = false): Behavior[Command] =
     EventSourcedBehavior[Command, Event, State](
-      persistenceId = PersistenceId(name),
+      persistenceId = PersistenceId.ofUniqueId(name),
       emptyState = EmptyState,
       commandHandler = CommandHandler.command {
         case StopActor => Effect.stop()

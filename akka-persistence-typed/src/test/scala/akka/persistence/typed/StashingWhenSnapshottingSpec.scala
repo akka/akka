@@ -91,7 +91,8 @@ class StashingWhenSnapshottingSpec
   "A persistent actor" should {
     "stash messages and automatically replay when snapshot is in progress" in {
       val eventProbe = TestProbe[String]()
-      val persistentActor = spawn(StashingWhenSnapshottingSpec.persistentTestBehavior(PersistenceId("1"), eventProbe))
+      val persistentActor =
+        spawn(StashingWhenSnapshottingSpec.persistentTestBehavior(PersistenceId.ofUniqueId("1"), eventProbe))
       persistentActor ! "one"
       eventProbe.expectMessage("one")
       persistentActor ! "snap"

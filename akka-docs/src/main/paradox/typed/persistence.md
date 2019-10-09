@@ -122,6 +122,8 @@ The @ref:[Persistence example in the Cluster Sharding documentation](cluster-sha
 illustrates how to construct the `PersistenceId` from the `entityTypeKey` and `entityId` provided by the
 `EntityContext`.
 
+A custom identifier can be created with `PersistenceId.ofUniqueId`.  
+
 ### Command handler
 
 The command handler is a function with 2 parameters, the current `State` and the incoming `Command`.
