@@ -359,8 +359,9 @@ private[akka] class Shard(
     case None =>
       log.debug("HandOff shard [{}]", shardId)
 
-      if (state.entities.nonEmpty) {
+      if (idByRef.nonEmpty) {
         val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
+        log.debug("Starting HandOffStopper for shard [{}] to terminate [{}] entities.", shardId, idByRef.keySet.size)
         handOffStopper = Some(
           context.watch(context.actorOf(
             handOffStopperProps(shardId, replyTo, idByRef.keySet, handOffStopMessage, entityHandOffTimeout))))
