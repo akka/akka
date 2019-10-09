@@ -43,7 +43,7 @@ import akka.dispatch.Mailboxes
 
     val tags = deploy.firstOrElse[ActorTags](ActorTagsImpl.empty).tags
     if (tags.isEmpty) localDeploy
-    else localDeploy.withTags(tags)
+    else localDeploy.withActorTags(tags)
   }
 
 }

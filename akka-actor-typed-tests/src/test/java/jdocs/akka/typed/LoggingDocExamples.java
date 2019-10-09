@@ -187,10 +187,10 @@ public interface LoggingDocExamples {
   }
 
   static void tagsExample() {
-      ActorContext<Object> context = null;
-      Behavior<Object> myBehavior = Behaviors.empty();
-      // #tags
-      context.spawn(myBehavior, "MyActor", ActorTags.create("processing"));
-      // #tags
-    }
+    ActorContext<Object> context = null;
+    Behavior<Object> myBehavior = Behaviors.empty();
+    // #tags
+    context.spawn(myBehavior, "MyActor", ActorTags.create("processing"));
+    // #tags
+  }
 }

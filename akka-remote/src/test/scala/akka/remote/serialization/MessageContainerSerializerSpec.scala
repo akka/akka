@@ -38,7 +38,7 @@ class MessageContainerSerializerSpec extends AkkaSpec {
     }
 
     "serialize and deserialize DaemonMsgCreate with tagged actor" in {
-      val props = TestActors.echoActorProps.withTags("one", "two")
+      val props = TestActors.echoActorProps.withActorTags("one", "two")
       val deserialized =
         verifySerialization(DaemonMsgCreate(props, props.deploy, "/user/some/path", system.deadLetters))
       deserialized.deploy.tags should ===(Set("one", "two"))

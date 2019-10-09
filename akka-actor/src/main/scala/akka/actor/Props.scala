@@ -197,17 +197,13 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * Returns a new Props with the specified set of tags.
    */
   @varargs
-  def withTags(tag: String, additional: String*): Props = {
-    val tags =
-      if (additional.isEmpty) Set(tag)
-      else Set(tag) ++ additional
-    withTags(tags)
-  }
+  def withActorTags(tags: String*): Props =
+    withActorTags(tags.toSet)
 
   /**
-   * Returns a new Props with the specified set of tags.
+   * Scala API: Returns a new Props with the specified set of tags.
    */
-  def withTags(tags: Set[String]): Props =
+  def withActorTags(tags: Set[String]): Props =
     copy(deploy = deploy.withTags(tags))
 
   /**
