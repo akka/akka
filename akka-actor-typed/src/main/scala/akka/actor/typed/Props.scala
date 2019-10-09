@@ -241,7 +241,7 @@ object ActorTags {
    * Java API: create a tag props with one or more tags
    */
   @varargs
-  def create(tag: String, additionalTags: String*): ActorTags = apply(tag, additionalTags: _*)
+  def create(tags: String*): ActorTags = apply(tags.toSet)
 
   /**
    * Java API: create a multi-tag props

@@ -8,9 +8,9 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.ActorTags
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import org.slf4j.LoggerFactory
@@ -139,6 +139,16 @@ object LoggingDocExamples {
         ref ! Message("hejdå")
       }
     //#test-logging-criteria
+  }
+
+  def tagsExample() {
+    Behaviors.setup[AnyRef] { context =>
+      val myBehavior = Behaviors.empty[AnyRef]
+      //#tags
+      context.spawn(myBehavior, "MyActor", ActorTags("processing"))
+      //#tags
+      Behaviors.stopped
+    }
   }
 
 }
