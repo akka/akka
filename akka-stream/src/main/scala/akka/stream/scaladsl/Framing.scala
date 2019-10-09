@@ -421,7 +421,7 @@ object Framing {
             if (frameSize > maximumFrameLength) {
               failStage(new FramingException(
                 s"Maximum allowed frame size is $maximumFrameLength but decoded frame header reported size $frameSize"))
-            } else if (parsedLength < 0) {
+            } else if (computeFrameSize.isEmpty && parsedLength < 0) {
               failStage(new FramingException(s"Decoded frame header reported negative size $parsedLength"))
             } else if (frameSize < minimumChunkSize) {
               failStage(
