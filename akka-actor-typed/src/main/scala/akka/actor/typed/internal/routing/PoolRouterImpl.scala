@@ -16,7 +16,7 @@ import akka.annotation.InternalApi
 @InternalApi
 private[akka] final case class PoolRouterBuilder[T](
     poolSize: Int,
-    behavior:  Behavior[T],
+    behavior: Behavior[T],
     logicFactory: () => RoutingLogic[T] = () => new RoutingLogics.RoundRobinLogic[T])
     extends javadsl.PoolRouter[T]
     with scaladsl.PoolRouter[T] {
