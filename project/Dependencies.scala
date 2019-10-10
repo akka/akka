@@ -17,9 +17,9 @@ object Dependencies {
   val junitVersion = "4.12"
   val slf4jVersion = "1.7.28"
   // check agrona version when updating this
-  val aeronVersion = "1.21.2"
+  val aeronVersion = "1.22.0"
   // needs to be inline with the aeron version
-  val agronaVersion = "1.0.7"
+  val agronaVersion = "1.0.8"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.10.0"
   val jacksonDatabindVersion = "2.10.0"
@@ -31,12 +31,12 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.3"
 
-  val sslConfigVersion = "0.3.8"
+  val sslConfigVersion = "0.4.0"
 
   val Versions = Seq(
     crossScalaVersions := Seq(scala212Version, scala213Version),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
-    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.0"),
+    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.2"),
     scalaTestVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 13 => "3.0.8"
@@ -208,8 +208,7 @@ object Dependencies {
         Provided.levelDBNative,
         Test.junit,
         Test.scalatest.value,
-        Test.commonsIo,
-        Test.mockito)
+        Test.commonsIo)
 
   val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
 

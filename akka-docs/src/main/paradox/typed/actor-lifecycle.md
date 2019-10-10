@@ -19,7 +19,18 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 
 ## Introduction
 
-TODO intro
+An actor is a stateful resource that has to be explicitly started and stopped.
+
+It is important to note that actors do not stop automatically when no longer
+referenced, every Actor that is created must also explicitly be destroyed.
+The only simplification is that stopping a parent Actor will also recursively
+stop all the child Actors that this parent has created. All actors are also
+stopped automatically when the `ActorSystem` is shut down.
+
+@@@ note
+An `ActorSystem` is a heavyweight structure that will allocate threads,
+so create one per logical application. Typically on `ActorSystem` per JVM process.
+@@@
 
 ## Creating Actors
 
@@ -69,10 +80,13 @@ Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
 
 For very simple applications the guardian may contain the actual application logic and handle messages. As soon as the application
-handles more than one concern the the guardian should instead just bootstrap the application, spawn the various subsystems as 
+handles more than one concern the guardian should instead just bootstrap the application, spawn the various subsystems as
 children and monitor their lifecycles.
 
-When the guardian actor stops this will stop the `ActorSystem`.  
+When the guardian actor stops this will stop the `ActorSystem`.
+
+When `ActorSystem.terminate` is invoked the @ref:[Coordinated Shutdown](../coordinated-shutdown.md) process will
+stop actors and services in a specific order.
 
 @@@ Note
 
@@ -145,14 +159,14 @@ A way to find running actors is described in @ref:[Actor discovery](actor-discov
 
 An actor can stop itself by returning `Behaviors.stopped` as the next behavior.
 
-Child actors can be forced to be stopped after it finishes processing its current message by using the
+A child actor can be forced to stop after it finishes processing its current message by using the
 `stop` method of the `ActorContext` from the parent actor. Only child actors can be stopped in that way.
 
-The child actors will be stopped as part of the shutdown procedure of the parent.
+All child actors will be stopped when their parent is stopped.
 
-The `PostStop` signal that results from stopping an actor can be used for cleaning up resources. Note that
-a behavior that handles such `PostStop` signal can optionally be defined as a parameter to `Behaviors.stopped`
-if different actions is needed when the actor gracefully stops itself from when it is stopped abruptly.
+When an actor is stopped, it receives the `PostStop` signal that can be used for cleaning up resources.
+A callback function may be specified as parameter to `Behaviors.stopped` to handle the `PostStop` signal 
+when stopping gracefully. This allows to apply different actions from when it is stopped abruptly.
 
 Here is an illustrating example:
 
@@ -171,3 +185,53 @@ Java
    #worker-actor
    #graceful-shutdown
  }
+
+When cleaning up resources from `PostStop` you should also consider doing the same for the `PreRestart` signal,
+which is emitted when the @ref:[actor is restarted](fault-tolerance.md#the-prerestart-signal). Note that `PostStop`
+is not emitted for a restart. 
+
+## Watching Actors
+
+In order to be notified when another actor terminates (i.e. stops permanently, not temporary failure and restart),
+an actor can `watch` another actor. It will receive the @apidoc[akka.actor.typed.Terminated] signal upon
+termination (see @ref:[Stopping Actors](#stopping-actors)) of the watched actor.
+
+Scala
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/GracefulStopDocSpec.scala) { #master-actor-watch }
+
+Java
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/GracefulStopDocTest.java)  { #master-actor-watch }
+
+An alternative to `watch` is `watchWith`, which allows specifying a custom message instead of the `Terminted`.
+This is often preferred over using `watch` and the `Terminated` signal because additional information can
+be included in the message that can be used later when receiving it.
+
+Similar example as above, but using `watchWith` and replies to the original requestor when the job has finished.
+
+Scala
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/GracefulStopDocSpec.scala) { #master-actor-watchWith }
+
+Java
+:  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/GracefulStopDocTest.java)  { #master-actor-watchWith }
+
+Note how the `replyToWhenDone` is included in the `watchWith` message and then used later when receiving the
+`JobTerminated` message. 
+
+The watched actor can be any `ActorRef`, it doesn't have to be a child actor as in the above example.
+
+It should be noted that the terminated message is generated independent of the order in which registration
+and termination occur. In particular, the watching actor will receive a terminated message even if the
+watched actor has already been terminated at the time of registration.
+
+Registering multiple times does not necessarily lead to multiple messages being generated, but there is no
+guarantee that only exactly one such message is received: if termination of the watched actor has generated and queued
+the message, and another registration is done before this message has been processed, then a second message will be
+queued, because registering for monitoring of an already terminated actor leads to the immediate generation of
+the terminated message.
+
+It is also possible to deregister from watching another actor’s liveliness using `context.unwatch(target)`.
+This works even if the terminated message has already been enqueued in the mailbox; after calling `unwatch`
+no terminated message for that actor will be processed anymore.
+
+The terminated message is also sent when the watched actor is on a node that has been removed from the
+@ref:[Cluster](cluster.md).

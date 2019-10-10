@@ -36,8 +36,10 @@ object RouterSpec {
   }
 
   // #pool
-
+  // #group
   val serviceKey = ServiceKey[Worker.Command]("log-worker")
+
+  // #group
 }
 
 class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with WordSpecLike with LogCapturing {
@@ -57,7 +59,7 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
 
       spawn(Behaviors.setup[Unit] { ctx =>
         // #pool
-        val pool = Routers.pool(poolSize = 4)(() =>
+        val pool = Routers.pool(poolSize = 4)(
           // make sure the workers are restarted if they fail
           Behaviors.supervise(Worker()).onFailure[Exception](SupervisorStrategy.restart))
         val router = ctx.spawn(pool, "worker-pool")
@@ -97,8 +99,8 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
         val worker = ctx.spawn(Worker(), "worker")
         ctx.system.receptionist ! Receptionist.Register(serviceKey, worker)
 
-        val group = Routers.group(serviceKey);
-        val router = ctx.spawn(group, "worker-group");
+        val group = Routers.group(serviceKey)
+        val router = ctx.spawn(group, "worker-group")
 
         // the group router will stash messages until it sees the first listing of registered
         // services from the receptionist, so it is safe to send messages right away

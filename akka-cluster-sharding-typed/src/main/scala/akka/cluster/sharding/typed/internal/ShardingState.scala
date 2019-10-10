@@ -14,8 +14,7 @@ import akka.cluster.sharding.typed.{ ClusterShardingQuery, GetShardRegionState }
 /**
  * INTERNAL API
  */
-@InternalApi
-object ShardingState {
+@InternalApi private[akka] object ShardingState {
 
   def behavior(classicSharding: ClusterSharding): Behavior[ClusterShardingQuery] = Behaviors.receiveMessage {
     case GetShardRegionState(key, replyTo) =>

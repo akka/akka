@@ -2,11 +2,7 @@
 
 ## Introduction
 
-Remote DeathWatch uses heartbeat messages and the failure detector to 
-
-* detect network failures and JVM crashes
-* generate the `Terminated` message to the watching actor on failure 
-* gracefully terminate watched actors  
+Remote DeathWatch uses heartbeat messages and the failure detector to detect network failures and JVM crashes. 
 
 The heartbeat arrival times are interpreted by an implementation of
 [The Phi Accrual Failure Detector](https://pdfs.semanticscholar.org/11ae/4c0c0d0c36dc177c1fff5eb84fa49aa3e1a8.pdf) by Hayashibara et al.
@@ -59,10 +55,46 @@ This is how the curve looks like for `failure-detector.acceptable-heartbeat-paus
 
 ![phi3.png](../images/phi3.png)
  
+## Logging
+
+When the Cluster failure detector observes another node as unreachable it will log:
+
+```
+Marking node(s) as UNREACHABLE
+```
+
+and if it becomes reachable again:
+```
+Marking node(s) as REACHABLE
+```
+
+There is also a warning when the heartbeat arrival interval exceeds 2/3 of the `acceptable-heartbeat-pause`
+
+```
+heartbeat interval is growing too large
+```
+
+
+If you see false positives, as indicated by frequent `UNREACHABLE` followed by `REACHABLE` logging, you can
+increase the `acceptable-heartbeat-pause` if you suspect that your environment is more unstable than what
+is tolerated by the default value. However, it can be good to investigate the reason so that it is not caused
+by long (unexpected) garbage collection pauses, overloading the system, too restrictive CPU quotas settings,
+and similar.  
+
+```
+akka.cluster.failure-detector.acceptable-heartbeat-pause = 7s
+```
+
+Another log message to watch out for that typically requires investigation of the root cause:
+
+```
+Scheduled sending of heartbeat was delayed
+```
+
 ## Failure Detector Threshold
 
 The `threshold` that is the basis for the calculation is configurable by the
-user. 
+user, but typically it's enough to configure the `acceptable-heartbeat-pause` as described above.
 
 * A low `threshold` is prone to generate many false positives but ensures
 a quick detection in the event of a real crash. 

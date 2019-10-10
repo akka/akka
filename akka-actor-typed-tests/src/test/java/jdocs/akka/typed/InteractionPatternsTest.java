@@ -4,6 +4,7 @@
 
 package jdocs.akka.typed;
 
+import akka.Done;
 import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.typed.ActorRef;
@@ -19,10 +20,12 @@ import org.scalatest.junit.JUnitSuite;
 import java.net.URI;
 import java.time.Duration;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.TimeUnit;
 
 import static jdocs.akka.typed.InteractionPatternsTest.Samples.*;
+import static org.junit.Assert.assertEquals;
 
 public class InteractionPatternsTest extends JUnitSuite {
 
@@ -84,7 +87,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
       private static Behavior<Request> onRequest(Request request) {
         // ... process request ...
-        request.replyTo.tell(new Response("Here's the cookies for " + request.query));
+        request.replyTo.tell(new Response("Here are the cookies for " + request.query));
         return Behaviors.same();
       }
       // #request-response-respond
@@ -665,6 +668,130 @@ public class InteractionPatternsTest extends JUnitSuite {
     }
   }
 
+  interface PipeToSelfSample {
+    // #pipeToSelf
+    public interface CustomerDataAccess {
+      CompletionStage<Done> update(Customer customer);
+    }
+
+    public class Customer {
+      public final String id;
+      public final long version;
+      public final String name;
+      public final String address;
+
+      public Customer(String id, long version, String name, String address) {
+        this.id = id;
+        this.version = version;
+        this.name = name;
+        this.address = address;
+      }
+    }
+
+    public class CustomerRepository extends AbstractBehavior<CustomerRepository.Command> {
+
+      private static final int MAX_OPERATIONS_IN_PROGRESS = 10;
+
+      interface Command {}
+
+      public static class Update implements Command {
+        public final Customer customer;
+        public final ActorRef<OperationResult> replyTo;
+
+        public Update(Customer customer, ActorRef<OperationResult> replyTo) {
+          this.customer = customer;
+          this.replyTo = replyTo;
+        }
+      }
+
+      interface OperationResult {}
+
+      public static class UpdateSuccess implements OperationResult {
+        public final String id;
+
+        public UpdateSuccess(String id) {
+          this.id = id;
+        }
+      }
+
+      public static class UpdateFailure implements OperationResult {
+        public final String id;
+        public final String reason;
+
+        public UpdateFailure(String id, String reason) {
+          this.id = id;
+          this.reason = reason;
+        }
+      }
+
+      private static class WrappedUpdateResult implements Command {
+        public final OperationResult result;
+        public final ActorRef<OperationResult> replyTo;
+
+        private WrappedUpdateResult(OperationResult result, ActorRef<OperationResult> replyTo) {
+          this.result = result;
+          this.replyTo = replyTo;
+        }
+      }
+
+      public static Behavior<Command> create(CustomerDataAccess dataAccess) {
+        return Behaviors.setup(context -> new CustomerRepository(context, dataAccess));
+      }
+
+      private final CustomerDataAccess dataAccess;
+      private int operationsInProgress = 0;
+
+      private CustomerRepository(ActorContext<Command> context, CustomerDataAccess dataAccess) {
+        super(context);
+        this.dataAccess = dataAccess;
+      }
+
+      @Override
+      public Receive<Command> createReceive() {
+        return newReceiveBuilder()
+            .onMessage(Update.class, this::onUpdate)
+            .onMessage(WrappedUpdateResult.class, this::onUpdateResult)
+            .build();
+      }
+
+      private Behavior<Command> onUpdate(Update command) {
+        if (operationsInProgress == MAX_OPERATIONS_IN_PROGRESS) {
+          command.replyTo.tell(
+              new UpdateFailure(
+                  command.customer.id,
+                  "Max " + MAX_OPERATIONS_IN_PROGRESS + " concurrent operations supported"));
+        } else {
+          // increase operationsInProgress counter
+          operationsInProgress++;
+          CompletionStage<Done> futureResult = dataAccess.update(command.customer);
+          getContext()
+              .pipeToSelf(
+                  futureResult,
+                  (ok, exc) -> {
+                    if (exc == null)
+                      return new WrappedUpdateResult(
+                          new UpdateSuccess(command.customer.id), command.replyTo);
+                    else
+                      return new WrappedUpdateResult(
+                          new UpdateFailure(command.customer.id, exc.getMessage()),
+                          command.replyTo);
+                  });
+        }
+        return this;
+      }
+
+      private Behavior<Command> onUpdateResult(WrappedUpdateResult wrapped) {
+        // decrease operationsInProgress counter
+        operationsInProgress--;
+        // send result to original requestor
+        wrapped.replyTo.tell(wrapped.result);
+        return this;
+      }
+    }
+    // #pipeToSelf
+
+  }
+
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
   @Rule public final LogCapturing logCapturing = new LogCapturing();
@@ -699,5 +826,30 @@ public class InteractionPatternsTest extends JUnitSuite {
     buncher.tell(msgTwo);
     probe.expectNoMessage();
     probe.expectMessage(Duration.ofSeconds(2), new Buncher.Batch(Arrays.asList(msgOne, msgTwo)));
+  }
+
+  @Test
+  public void testPipeToSelf() {
+
+    PipeToSelfSample.CustomerDataAccess dataAccess =
+        new PipeToSelfSample.CustomerDataAccess() {
+          @Override
+          public CompletionStage<Done> update(PipeToSelfSample.Customer customer) {
+            return CompletableFuture.completedFuture(Done.getInstance());
+          }
+        };
+
+    ActorRef<PipeToSelfSample.CustomerRepository.Command> repository =
+        testKit.spawn(PipeToSelfSample.CustomerRepository.create(dataAccess));
+    TestProbe<PipeToSelfSample.CustomerRepository.OperationResult> probe =
+        testKit.createTestProbe(PipeToSelfSample.CustomerRepository.OperationResult.class);
+
+    repository.tell(
+        new PipeToSelfSample.CustomerRepository.Update(
+            new PipeToSelfSample.Customer("123", 1L, "Alice", "Fairy tail road 7"),
+            probe.getRef()));
+    assertEquals(
+        "123",
+        probe.expectMessageClass(PipeToSelfSample.CustomerRepository.UpdateSuccess.class).id);
   }
 }

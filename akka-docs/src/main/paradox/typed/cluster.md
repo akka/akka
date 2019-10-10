@@ -6,9 +6,9 @@ project.description: Build distributed applications that scale across the networ
 This document describes how to use Akka Cluster and the Cluster APIs. 
 For specific documentation topics see: 
 
+* @ref:[When and where to use Akka Cluster](choosing-cluster.md)
 * @ref:[Cluster Specification](cluster-concepts.md)
 * @ref:[Cluster Membership Service](cluster-membership.md)
-* @ref:[When and where to use Akka Cluster](choosing-cluster.md)
 * @ref:[Higher level Cluster tools](#higher-level-cluster-tools)
 * @ref:[Rolling Updates](../additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](../additional/operations.md)
@@ -17,7 +17,7 @@ For specific documentation topics see:
 For the Akka Classic documentation of this feature see @ref:[Classic Cluster](../cluster-usage.md).
 @@@
 
-You have to enable @ref:[serialization](../serialization.md)  to send messages between ActorSystems in the Cluster.
+You have to enable @ref:[serialization](../serialization.md)  to send messages between ActorSystems (nodes) in the Cluster.
 @ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
 recommendation if you don't have other preferences or constraints.
 
@@ -52,11 +52,11 @@ The Cluster extension gives you access to management tasks such as @ref:[Joining
 and subscription of cluster membership events such as @ref:[MemberUp, MemberRemoved and UnreachableMember](cluster-membership.md#membership-lifecycle),
 which are exposed as event APIs.  
 
-It does this through these references are on the `Cluster` extension:
+It does this through these references on the `Cluster` extension:
 
-* manager: An @scala[`ActorRef[akka.cluster.typed.ClusterCommand]`]@java[`ActorRef<akka.cluster.typed.ClusterCommand>`] where a `ClusterCommand` is a command such as: `Join`, `Leave` and `Down`
-* subscriptions: An @scala[`ActorRef[akka.cluster.typed.ClusterStateSubscription]`]@java[`ActorRef<akka.cluster.typed.ClusterStateSubscription>`] where a `ClusterStateSubscription` is one of `GetCurrentState` or `Subscribe` and `Unsubscribe` to cluster events like `MemberRemoved`
-* state: The current `CurrentClusterState`
+* `manager`: An @scala[`ActorRef[akka.cluster.typed.ClusterCommand]`]@java[`ActorRef<akka.cluster.typed.ClusterCommand>`] where a `ClusterCommand` is a command such as: `Join`, `Leave` and `Down`
+* `subscriptions`: An @scala[`ActorRef[akka.cluster.typed.ClusterStateSubscription]`]@java[`ActorRef<akka.cluster.typed.ClusterStateSubscription>`] where a `ClusterStateSubscription` is one of `GetCurrentState` or `Subscribe` and `Unsubscribe` to cluster events like `MemberRemoved`
+* `state`: The current `CurrentClusterState`
 
 All of the examples below assume the following imports:
 
@@ -232,7 +232,7 @@ configured `seed-node-timeout`.
 
 The joining of given seed nodes will by default be retried indefinitely until
 a successful join. That process can be aborted if unsuccessful by configuring a
-timeout. When aborted it will run @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown),
+timeout. When aborted it will run @ref:[Coordinated Shutdown](../coordinated-shutdown.md),
 which by default will terminate the ActorSystem. CoordinatedShutdown can also be configured to exit
 the JVM. It is useful to define this timeout if the `seed-nodes` are assembled
 dynamically and a restart with new seed-nodes should be tried after unsuccessful
@@ -262,7 +262,7 @@ be allowed to join.
 There are a few ways to remove a member from the cluster.
 
 1. The recommended way to leave a cluster is a graceful exit, informing the cluster that a node shall leave.
-  This is performed by @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) when the `ActorSystem`
+  This is performed by @ref:[Coordinated Shutdown](../coordinated-shutdown.md) when the `ActorSystem`
   is terminated and also when a SIGTERM is sent from the environment to stop the JVM process.
 1. Graceful exit can also be performed using @ref:[HTTP](../additional/operations.md#http) or @ref:[JMX](../additional/operations.md#jmx). 
 1. When a graceful exit is not possible, for example in case of abrupt termination of the the JVM process, the node
@@ -270,7 +270,7 @@ There are a few ways to remove a member from the cluster.
 
 Graceful leaving will offer faster hand off to peer nodes during node shutdown than abrupt termination and downing.
 
-The @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will also run when the cluster node sees itself as
+The @ref:[Coordinated Shutdown](../coordinated-shutdown.md) will also run when the cluster node sees itself as
 `Exiting`, i.e. leaving from another node will trigger the shutdown process on the leaving node.
 Tasks for graceful leaving of cluster including graceful shutdown of Cluster Singletons and
 Cluster Sharding are added automatically when Akka Cluster is used, i.e. running the shutdown
@@ -317,20 +317,28 @@ If a crashed node is restarted with the same hostname and port and joining the c
 of that member will be downed and removed. The new join attempt with same hostname and port is used as evidence
 that the previous is not alive any more.
 
-If a node is still running and sees its self as `Down` it will shutdown. @ref:[Coordinated Shutdown](../actors.md#coordinated-shutdown) will automatically
+If a node is still running and sees its self as `Down` it will shutdown. @ref:[Coordinated Shutdown](../coordinated-shutdown.md) will automatically
 run if `run-coordinated-shutdown-when-down` is set to `on` (the default) however the node will not try
 and leave the cluster gracefully.
 
 ## Node Roles
 
 Not all nodes of a cluster need to perform the same function: there might be one sub-set which runs the web front-end,
-one which runs the data access layer and one for the number-crunching. Deployment of actors, for example by cluster-aware
-routers, can take node roles into account to achieve this distribution of responsibilities.
+one which runs the data access layer and one for the number-crunching. Choosing which actors to start on each node,
+for example cluster-aware routers, can take node roles into account to achieve this distribution of responsibilities.
 
 The node roles are defined in the configuration property named `akka.cluster.roles`
 and typically defined in the start script as a system property or environment variable.
 
-The roles are part of the membership information in `MemberEvent` that you can subscribe to.
+The roles are part of the membership information in `MemberEvent` that you can subscribe to. The roles
+of the own node are available from the `selfMember` and that can be used for conditionally start certain
+actors:
+
+Scala
+:  @@snip [BasicClusterExampleSpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/BasicClusterExampleSpec.scala) { #hasRole }
+
+Java
+:  @@snip [BasicClusterExampleTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/BasicClusterExampleTest.java) { #hasRole }
 
 ## Failure Detector
 
@@ -416,7 +424,7 @@ or made run on the same dispatcher to keep the number of threads down.
 
 ### Configuration Compatibility Check
 
-Creating a cluster is about deploying two or more nodes and make then behave as if they were one single application. Therefore it's extremely important that all nodes in a cluster are configured with compatible settings. 
+Creating a cluster is about deploying two or more nodes and make them behave as if they were one single application. Therefore it's extremely important that all nodes in a cluster are configured with compatible settings. 
 
 The Configuration Compatibility Check feature ensures that all nodes in a cluster have a compatible configuration. Whenever a new node is joining an existing cluster, a subset of its configuration settings (only those that are required to be checked) is sent to the nodes in the cluster for verification. Once the configuration is checked on the cluster side, the cluster sends back its own set of required configuration settings. The joining node will then verify if it's compliant with the cluster configuration. The joining node will only proceed if all checks pass, on both sides.   
 

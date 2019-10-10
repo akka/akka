@@ -44,7 +44,7 @@ class EventSourcedSequenceNumberSpec
 
     "be accessible in the handlers" in {
       val probe = TestProbe[String]()
-      val ref = spawn(behavior(PersistenceId("ess-1"), probe.ref))
+      val ref = spawn(behavior(PersistenceId.ofUniqueId("ess-1"), probe.ref))
       probe.expectMessage("0 onRecoveryComplete")
 
       ref ! "cmd1"

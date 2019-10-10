@@ -23,6 +23,23 @@ For more details on advanced mailbox config and custom mailbox implementations, 
 
 ## Mailbox Selection
 
+### Default Mailbox
+
+The default mailbox is used when the mailbox is not specified.
+This is an unbounded mailbox, backed by a
+`java.util.concurrent.ConcurrentLinkedQueue`.
+
+`SingleConsumerOnlyUnboundedMailbox` is an even more efficient mailbox, and
+it can be used as the default mailbox, but it cannot be used with a BalancingDispatcher.
+
+Configuration of `SingleConsumerOnlyUnboundedMailbox` as default mailbox:
+
+```
+akka.actor.default-mailbox {
+  mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
+}
+```
+
 ### Requiring a Message Queue Type for an Actor
 
 It is possible to require a certain type of message queue for a certain type of actor
@@ -54,7 +71,40 @@ The type of the queue in the mailbox created for an actor will be checked agains
 ### Requiring a Message Queue Type for a Dispatcher
 
 A dispatcher may also have a requirement for the mailbox type used by the
-actors running on it. This can be configured as documented at [typed/mailboxes.md#requiring-a-message-queue-type-for-a-dispatcher]
+actors running on it. An example is the @apidoc[BalancingDispatcher] which requires a
+message queue that is thread-safe for multiple concurrent consumers. Such a
+requirement is formulated within the dispatcher configuration section:
+
+```
+my-dispatcher {
+  mailbox-requirement = org.example.MyInterface
+}
+```
+
+The given requirement names a class or interface which will then be ensured to
+be a supertype of the message queue's implementation. In case of a
+conflict—e.g. if the actor requires a mailbox type which does not satisfy this
+requirement—then actor creation will fail.
+
+### How the Mailbox Type is Selected
+
+When an actor is created, the `ActorRefProvider` first determines the
+dispatcher which will execute it. Then the mailbox is determined as follows:
+
+ 1. If the actor's deployment configuration section contains a `mailbox` key,
+this refers to a configuration section describing the mailbox type.
+ 2. If the actor's `Props` contains a mailbox selection then that names a configuration section describing the
+mailbox type to be used. This needs to be an absolute config path,
+for example `myapp.special-mailbox`, and is not nested inside the `akka` namespace.
+ 3. If the dispatcher's configuration section contains a `mailbox-type` key
+the same section will be used to configure the mailbox type.
+ 4. If the actor requires a mailbox type as described above then the mapping for
+that requirement will be used to determine the mailbox type to be used; if
+that fails then the dispatcher's requirement—if any—will be tried instead.
+ 5. If the dispatcher requires a mailbox type as described above then the
+mapping for that requirement will be used to determine the mailbox type to
+be used.
+ 6. The default mailbox `akka.actor.default-mailbox` will be used.
 
 ## Mailbox configuration examples
 

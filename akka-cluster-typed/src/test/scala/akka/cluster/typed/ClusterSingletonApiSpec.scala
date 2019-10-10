@@ -4,38 +4,24 @@
 
 package akka.cluster.typed
 
-import java.nio.charset.StandardCharsets
-
-import akka.actor.ExtendedActorSystem
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.typed.{ ActorRef, ActorRefResolver }
-import akka.serialization.SerializerWithStringManifest
-import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
+import akka.serialization.jackson.CborSerializable
+import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object ClusterSingletonApiSpec {
 
   val config = ConfigFactory.parseString(s"""
-      akka.actor {
-        provider = cluster
-
-        serializers {
-          test = "akka.cluster.typed.ClusterSingletonApiSpec$$PingSerializer"
-        }
-        serialization-bindings {
-          "akka.cluster.typed.ClusterSingletonApiSpec$$Ping" = test
-          "akka.cluster.typed.ClusterSingletonApiSpec$$Pong$$" = test
-          "akka.cluster.typed.ClusterSingletonApiSpec$$Perish$$" = test
-        }
-      }
+      akka.actor.provider = cluster
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
@@ -43,10 +29,10 @@ object ClusterSingletonApiSpec {
     """)
 
   trait PingProtocol
-  case object Pong
-  case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol
+  case object Pong extends CborSerializable
+  case class Ping(respondTo: ActorRef[Pong.type]) extends PingProtocol with CborSerializable
 
-  case object Perish extends PingProtocol
+  case object Perish extends PingProtocol with CborSerializable
 
   val pingPong = Behaviors.receive[PingProtocol] { (_, msg) =>
     msg match {
@@ -60,29 +46,6 @@ object ClusterSingletonApiSpec {
 
   }
 
-  class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
-    // Reproducer of issue #24620, by eagerly creating the ActorRefResolver in serializer
-    val actorRefResolver = ActorRefResolver(system.toTyped)
-
-    def identifier: Int = 47
-    def manifest(o: AnyRef): String = o match {
-      case _: Ping => "a"
-      case Pong    => "b"
-      case Perish  => "c"
-    }
-
-    def toBinary(o: AnyRef): Array[Byte] = o match {
-      case p: Ping => actorRefResolver.toSerializationFormat(p.respondTo).getBytes(StandardCharsets.UTF_8)
-      case Pong    => Array.emptyByteArray
-      case Perish  => Array.emptyByteArray
-    }
-
-    def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-      case "a" => Ping(actorRefResolver.resolveActorRef(new String(bytes, StandardCharsets.UTF_8)))
-      case "b" => Pong
-      case "c" => Perish
-    }
-  }
 }
 
 class ClusterSingletonApiSpec

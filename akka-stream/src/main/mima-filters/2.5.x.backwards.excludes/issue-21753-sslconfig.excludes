@@ -1,0 +1,12 @@
+# #21753 internal method WithSSLEngine renamed and changed
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.outgoingTlsConnectionWithSSLEngine")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.outgoingTlsConnectionWithSSLEngine$default$3")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.outgoingTlsConnectionWithSSLEngine$default$4")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.outgoingTlsConnectionWithSSLEngine$default$5")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.outgoingTlsConnectionWithSSLEngine$default$6")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.outgoingTlsConnectionWithSSLEngine$default$8")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.bindTlsWithSSLEngine")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.bindTlsWithSSLEngine$default$4")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.bindTlsWithSSLEngine$default$5")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.bindTlsWithSSLEngine$default$6")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Tcp.bindTlsWithSSLEngine$default$8")

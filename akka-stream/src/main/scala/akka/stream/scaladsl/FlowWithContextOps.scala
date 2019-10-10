@@ -60,6 +60,14 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
     via(flow.map { case (e, ctx) => (f(e), ctx) })
 
   /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.mapError]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.mapError]]
+   */
+  def mapError(pf: PartialFunction[Throwable, Throwable]): Repr[Out, Ctx] =
+    via(flow.mapError(pf))
+
+  /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.mapAsync]].
    *
    * @see [[akka.stream.scaladsl.FlowOps.mapAsync]]

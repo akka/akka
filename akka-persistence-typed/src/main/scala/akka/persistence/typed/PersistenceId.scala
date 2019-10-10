@@ -68,7 +68,7 @@ object PersistenceId {
           s"entityTypeHint [$entityTypeHint] contains [$separator] which is a reserved character")
     }
 
-    PersistenceId(entityTypeHint + separator + entityId)
+    new PersistenceId(entityTypeHint + separator + entityId)
   }
 
   /**
@@ -122,18 +122,28 @@ object PersistenceId {
   /**
    * Constructs a [[PersistenceId]] with `id` as the full unique identifier.
    */
-  def of(id: String): PersistenceId =
-    PersistenceId(id)
+  def ofUniqueId(id: String): PersistenceId =
+    new PersistenceId(id)
+
 }
 
 /**
  * Unique identifier in the backend data store (journal and snapshot store) of the
  * persistent actor.
  */
-final case class PersistenceId(id: String) {
+final class PersistenceId private (val id: String) {
   if (id eq null)
     throw new IllegalArgumentException("persistenceId must not be null")
 
   if (id.trim.isEmpty)
     throw new IllegalArgumentException("persistenceId must not be empty")
+
+  override def toString: String = s"PersistenceId($id)"
+
+  override def hashCode(): Int = id.hashCode
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: PersistenceId => id == other.id
+    case _                    => false
+  }
 }

@@ -19,6 +19,7 @@ completes, the current value is emitted downstream.
 
 Note that the `zero` value must be immutable.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

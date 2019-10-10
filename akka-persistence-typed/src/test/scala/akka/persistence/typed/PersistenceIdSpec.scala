@@ -12,15 +12,15 @@ class PersistenceIdSpec extends WordSpec with Matchers with LogCapturing {
 
   "PersistenceId" must {
     "use | as default entityIdSeparator for compatibility with Lagom's scaladsl" in {
-      PersistenceId("MyType", "abc") should ===(PersistenceId("MyType|abc"))
+      PersistenceId("MyType", "abc") should ===(PersistenceId.ofUniqueId("MyType|abc"))
     }
 
     "support custom separator for compatibility with Lagom's javadsl" in {
-      PersistenceId("MyType", "abc", "") should ===(PersistenceId("MyTypeabc"))
+      PersistenceId("MyType", "abc", "") should ===(PersistenceId.ofUniqueId("MyTypeabc"))
     }
 
     "support custom entityIdSeparator for compatibility with other naming" in {
-      PersistenceId("MyType", "abc", "#/#") should ===(PersistenceId("MyType#/#abc"))
+      PersistenceId("MyType", "abc", "#/#") should ===(PersistenceId.ofUniqueId("MyType#/#abc"))
     }
 
     "not allow | in entityTypeName because it's the default separator" in {

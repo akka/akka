@@ -101,7 +101,7 @@ After being deprecated since 2.2, the following have been removed in Akka 2.6.
 
 ### PersistentFSM
 
-[Migration guide to Persistence Typed](../persistence-fsm.md) is in the PersistentFSM documentation.
+@ref[Migration guide to Persistence Typed](../persistence-fsm.md) is in the PersistentFSM documentation.
 
 ### TypedActor
 
@@ -144,6 +144,15 @@ Akka is now using Protobuf version 3.9.0 for serialization of messages defined b
 
 Cluster client has been deprecated as of 2.6 in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
 It is not advised to build new applications with Cluster client, and existing users @ref[should migrate to Akka gRPC](../cluster-client.md#migration-to-akka-grpc).
+
+### AkkaSslConfig
+
+`AkkaSslConfig` has been deprecated in favor of setting up TLS with `javax.net.ssl.SSLEngine` directly.
+
+This also means that methods Akka Streams `TLS` and `Tcp` that take `SSLContext` or `AkkaSslConfig` have been
+deprecated and replaced with corresponding methods that takes a factory function for creating the `SSLEngine`.
+
+See documentation of @ref:[streaming IO with TLS](../stream/stream-io.md#tls).    
 
 ### akka.Main
 
@@ -235,6 +244,12 @@ For TCP:
 Classic remoting is deprecated but can be used in `2.6.` Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `false`. Further, any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration-reference.md#config-akka-remote).
+
+### Persistent mode for Cluster Sharding
+
+Cluster Sharding coordinator and [Remembering Entities](../cluster/cluster-sharding.md#remembering-entities) state could previously be stored in Distributed Data or via Akka Persistence.
+The Persistence mode has been deprecated in favour of using the Distributed Data mode for the coordinator state. A replacement for the state
+for Remembered Entities is tracked in [issue 27763](https://github.com/akka/akka/issues/27763).
 
 ## Java Serialization
 
@@ -411,7 +426,7 @@ Akka Typed.
 
 No migration is needed but it is mentioned here because it is a change in behavior.
 
-When `ActorSystem.terminate()` is called, @ref:[`CoordinatedShutdown`](../actors.md#coordinated-shutdown)
+When `ActorSystem.terminate()` is called, @ref:[`CoordinatedShutdown`](../coordinated-shutdown.md)
 will be run in Akka 2.6.x, which wasn't the case in 2.5.x. For example, if using Akka Cluster this means that
 member will attempt to leave the cluster gracefully.
 
@@ -582,6 +597,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `EventSourcedEntity` removed in favor using plain `EventSourcedBehavior` because the alternative way was
   causing more confusion than adding value. Construction of `PersistentId` for the `EventSourcedBehavior` is
   facilitated by factory methods in `PersistenceId`.
+* `PersistenceId.apply(String)` renamed to `PersistenceId.ofUniqueId(String)`  
 * `akka.cluster.sharding.typed.scaladsl.Entity.apply` changed to use two parameter lists because the new
   `EntityContext.entityTypeKey` required additional type parameter that is inferred better with a secondary
   parameter list.
@@ -626,26 +642,34 @@ The `ActorMaterializerSettings` class has been deprecated.
 All materializer settings are available as configuration to change the system default or through attributes that can be
 used for individual streams when they are materialized.
 
-| Materializer setting   | Corresponding attribute | Setting |
--------------------------|-------------------------|---------|
-| `initialInputBufferSize`                     | `Attributes.inputBuffer(initial, max)`          | `akka.stream.materializer.initial-input-buffer-size` |
-| `maxInputBufferSize`                         | `Attributes.inputBuffer(initial, max)`          | `akka.stream.materializer.max-input-buffer-size` |
-| `dispatcher`                                 | `ActorAttributes.dispatcher(name)`              | `akka.stream.materializer.dispatcher` |
-| `supervisionDecider`                         | `ActorAttributes.supervisionStrategy(strategy)` | na |
-| `debugLogging`                               | `ActorAttributes.debugLogging`                  | `akka.stream.materializer.debug-logging` |
-| `outputBurstLimit`                           | `ActorAttributes.outputBurstLimit`              | `akka.stream.materializer.output-burst-limit` |
-| `fuzzingMode`                                | `ActorAttributes.fuzzingMode`                   | `akka.stream.materializer.debug.fuzzing-mode` |
-| `autoFusing`                                 | no longer used (since 2.5.0)                    | na |
-| `maxFixedBufferSize`                         | `ActorAttributes.maxFixedBufferSize`            | `akka.stream.materializer.max-fixed-buffer-size` |
-| `syncProcessingLimit`                        | `ActorAttributes.syncProcessingLimit`           | `akka.stream.materializer.sync-processing-limit` |
-| `ioSettings.tcpWriteBufferSize`              | `Tcp.writeBufferSize`                           | `akka.stream.materializer.io.tcp.write-buffer-size` |
-| `streamRefSettings.bufferCapacity`           | `StreamRefAttributes.bufferCapacity`            | `akka.stream.materializer.stream-ref.buffer-capacity` |
-| `streamRefSettings.demandRedeliveryInterval` | `StreamRefAttributes.demandRedeliveryInterval`  | `akka.stream.materializer.stream-ref.demand-redelivery-interval` |
-| `streamRefSettings.subscriptionTimeout`      | `StreamRefAttributes.subscriptionTimeout`       | `akka.stream.materializer.stream-ref.subscription-timeout` |
-| `streamRefSettings.finalTerminationSignalDeadline` | `StreamRefAttributes.finalTerminationSignalDeadline` | `akka.stream.materializer.stream-ref.final-termination-signal-deadline` |
-| `blockingIoDispatcher`                       | na                                              | `akka.stream.materializer.blocking-io-dispatcher` |
-| `subscriptionTimeoutSettings.mode`           | `ActorAttributes.streamSubscriptionTimeoutMode` | `akka.stream.materializer.subscription-timeout.mode` |
-| `subscriptionTimeoutSettings.timeout`        | `ActorAttributes.streamSubscriptionTimeout`     | `akka.stream.materializer.subscription-timeout.timeout` |
+| MaterializerSettings   | Corresponding attribute                           | Config  |
+-------------------------|---------------------------------------------------|---------|
+| `initialInputBufferSize`        | `Attributes.inputBuffer(initial, max)`   | `akka.stream.materializer.initial-input-buffer-size` |
+| `maxInputBufferSize`            | `Attributes.inputBuffer(initial, max)`   | `akka.stream.materializer.max-input-buffer-size` |
+| `dispatcher`                    | `ActorAttributes.dispatcher(name)`       | `akka.stream.materializer.dispatcher` |
+| `supervisionDecider`            | `ActorAttributes.supervisionStrategy`    | na |
+| `debugLogging`                  | `ActorAttributes.debugLogging`           | `akka.stream.materializer.debug-logging` |
+| `outputBurstLimit`              | `ActorAttributes.outputBurstLimit`       | `akka.stream.materializer.output-burst-limit` |
+| `fuzzingMode`                   | `ActorAttributes.fuzzingMode`            | `akka.stream.materializer.debug.fuzzing-mode` |
+| `autoFusing`                    | no longer used (since 2.5.0)             | na |
+| `maxFixedBufferSize`            | `ActorAttributes.maxFixedBufferSize`     | `akka.stream.materializer.max-fixed-buffer-size` |
+| `syncProcessingLimit`           | `ActorAttributes.syncProcessingLimit`    | `akka.stream.materializer.sync-processing-limit` |
+| `IOSettings.tcpWriteBufferSize` | `Tcp.writeBufferSize`                    | `akka.stream.materializer.io.tcp.write-buffer-size` |
+| `blockingIoDispatcher`          | na                                       | `akka.stream.materializer.blocking-io-dispatcher` |
+
+
+| StreamRefSettings                | Corresponding StreamRefAttributes | Config  |
+-----------------------------------|-----------------------------------|---------|
+| `bufferCapacity`                 | `bufferCapacity`                  | `akka.stream.materializer.stream-ref.buffer-capacity` |
+| `demandRedeliveryInterval`       | `demandRedeliveryInterval`        | `akka.stream.materializer.stream-ref.demand-redelivery-interval` |
+| `subscriptionTimeout`            | `subscriptionTimeout`             | `akka.stream.materializer.stream-ref.subscription-timeout` |
+| `finalTerminationSignalDeadline` | `finalTerminationSignalDeadline`  | `akka.stream.materializer.stream-ref.final-termination-signal-deadline` |
+
+
+| SubscriptionTimeoutSettings      | Corresponding ActorAttributes               | Config  |
+-----------------------------------|---------------------------------------------|---------|
+| `subscriptionTimeoutSettings.mode`           | `streamSubscriptionTimeoutMode` | `akka.stream.materializer.subscription-timeout.mode` |
+| `subscriptionTimeoutSettings.timeout`        | `streamSubscriptionTimeout`     | `akka.stream.materializer.subscription-timeout.timeout` |
 
 Setting attributes on individual streams can be done like so:
 

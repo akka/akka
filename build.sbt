@@ -42,7 +42,6 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   actorTyped,
   actorTypedTests,
   benchJmh,
-  benchJmhTyped,
   cluster,
   clusterMetrics,
   clusterSharding,
@@ -77,7 +76,7 @@ lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
   .settings(rootSettings: _*)
   .settings(
-    unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, benchJmhTyped, protobuf, protobufV3, akkaScalaNightly, docs))
+    unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
 
@@ -104,18 +103,10 @@ lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderInPr)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
-  .dependsOn(Seq(actor, stream, streamTests, persistence, distributedData, jackson, testkit).map(
+  .dependsOn(Seq(actor, actorTyped, stream, streamTests, persistence, distributedData, jackson, testkit).map(
     _ % "compile->compile;compile->test"): _*)
   .settings(Dependencies.benchJmh)
   .settings(javacOptions += "-parameters") // for Jackson
-  .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
-  .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
-
-// typed benchmarks only on 2.12+
-lazy val benchJmhTyped = akkaModule("akka-bench-jmh-typed")
-  .dependsOn(Seq(persistenceTyped, distributedData, clusterTyped, testkit, benchJmh).map(
-    _ % "compile->compile;compile->test"): _*)
-  .settings(Dependencies.benchJmh)
   .enablePlugins(JmhPlugin, ScaladocNoVerificationOfDiagrams, NoPublish, CopyrightHeader)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin, ValidatePullRequest, CopyrightHeaderInPr)
 
@@ -244,7 +235,7 @@ lazy val osgi = akkaModule("akka-osgi")
   .settings(parallelExecution in Test := false)
 
 lazy val persistence = akkaModule("akka-persistence")
-  .dependsOn(actor, testkit % "test->test", protobufV3)
+  .dependsOn(actor, stream, testkit % "test->test")
   .settings(Dependencies.persistence)
   .settings(AutomaticModuleName.settings("akka.persistence"))
   .settings(OSGi.persistence)
@@ -260,7 +251,7 @@ lazy val persistenceQuery = akkaModule("akka-persistence-query")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
 
 lazy val persistenceShared = akkaModule("akka-persistence-shared")
-  .dependsOn(persistence % "test->test", testkit % "test->test", remote % "test", protobufV3)
+  .dependsOn(persistence % "test->test", testkit % "test->test", remote % "test")
   .settings(Dependencies.persistenceShared)
   .settings(AutomaticModuleName.settings("akka.persistence.shared"))
   .settings(fork in Test := true)
@@ -292,6 +283,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
           .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
           .inLibrary(Dependencies.Compile.protobufRuntime)),
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeBin = false),
+    crossPaths := false,
     autoScalaLibrary := false, // do not include scala dependency in pom
     exportJars := true, // in dependent projects, use assembled and shaded jar
     makePomConfiguration := makePomConfiguration.value
@@ -307,7 +299,6 @@ lazy val remote =
     .dependsOn(
       actor,
       stream,
-      protobufV3,
       protobuf % "test",
       actorTests % "test->test",
       testkit % "test->test",
@@ -415,7 +406,6 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     distributedData,
     persistence % "test->test",
     persistenceTyped % "test->test",
-    protobufV3,
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     remoteTests % "test->test",

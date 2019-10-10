@@ -63,7 +63,7 @@ object Replicator {
       extends Command
 
   /**
-   * Reply from `Get`. The data value is retrieved with [[#get]] using the typed key.
+   * Reply from `Get`. The data value is retrieved with [[dd.Replicator.GetSuccess.get]] using the typed key.
    */
   type GetResponse[A <: ReplicatedData] = dd.Replicator.GetResponse[A]
   object GetSuccess {
@@ -114,7 +114,7 @@ object Replicator {
      */
     def apply[A <: ReplicatedData](key: Key[A], initial: A, writeConsistency: WriteConsistency)(
         modify: A => A): ActorRef[UpdateResponse[A]] => Update[A] =
-      (replyTo => Update(key, writeConsistency, replyTo)(modifyWithInitial(initial, modify)))
+      replyTo => Update(key, writeConsistency, replyTo)(modifyWithInitial(initial, modify))
 
     private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A => A): Option[A] => A = {
       case Some(data) => modify(data)
@@ -225,28 +225,28 @@ object Replicator {
   /**
    * Unregister a subscriber.
    *
-   * @see [[Replicator.Subscribe]]
+   * @see [[Subscribe]]
    */
   final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
 
   /**
-   * @see [[Replicator.Subscribe]]
+   * @see [[Subscribe]]
    */
   type SubscribeResponse[A <: ReplicatedData] = dd.Replicator.SubscribeResponse[A]
 
   /**
-   * The data value is retrieved with [[#get]] using the typed key.
+   * The data value is retrieved with [[dd.Replicator.Changed.get]] using the typed key.
    *
-   * @see [[Replicator.Subscribe]]
+   * @see [[Subscribe]]
    */
   object Changed {
     def unapply[A <: ReplicatedData](chg: Changed[A]): Option[Key[A]] = Some(chg.key)
   }
 
   /**
-   * The data value is retrieved with [[#get]] using the typed key.
+   * The data value is retrieved with [[dd.Replicator.Changed.get]] using the typed key.
    *
-   * @see [[Replicator.Subscribe]]
+   * @see [[Subscribe]]
    */
   type Changed[A <: ReplicatedData] = dd.Replicator.Changed[A]
 
@@ -255,7 +255,7 @@ object Replicator {
   }
 
   /**
-   * @see [[Replicator.Subscribe]]
+   * @see [[Delete]]
    */
   type Deleted[A <: ReplicatedData] = dd.Replicator.Deleted[A]
 
@@ -267,7 +267,7 @@ object Replicator {
     def apply[A <: ReplicatedData](
         key: Key[A],
         consistency: WriteConsistency): ActorRef[DeleteResponse[A]] => Delete[A] =
-      (replyTo => Delete(key, consistency, replyTo))
+      replyTo => Delete(key, consistency, replyTo)
   }
 
   /**

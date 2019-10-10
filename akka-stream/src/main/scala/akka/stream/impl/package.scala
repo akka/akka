@@ -211,7 +211,7 @@ package akka.stream
  *     val newBuilder = builder.add(submodule, newShape) // Add the module, and register it with the new shape
  *     newBuilder.wire(newShape.in, ...) // Use the new ports to wire
  *
- *  What happens in the background is that [[Shape.deepCopy()]] creates copies of the ports, and fills their
+ *  What happens in the background is that [[Shape.deepCopy]] creates copies of the ports, and fills their
  *  mappedTo field to point to their original port counterpart. Whenever we call wire in the outer module, it
  *  delegates calls to the submodule, but using the original port (as the submodule builder has no knowledge of
  *  the external mapping):
@@ -300,7 +300,7 @@ package akka.stream
  *  If we consider the purely linear case, we still need to figure out how can we provide a traversal even though
  *  the last output port is unwired. The trick that is used is to wire this output port optimistically to the
  *  relative address -1 which is almost always correct (why -1? explained a bit later). If it turns out to be incorrect
- *  later, we fix it by the helper method [[akka.stream.impl.Traversal.rewireFirstTo()]] which tears down the traversal
+ *  later, we fix it by the helper method [[akka.stream.impl.Traversal.rewireFirstTo]] which tears down the traversal
  *  until the wrong module is found, then fixes the port assignment. This is only possible on purely linear layouts though.
  *  Again, this is an example of the 90% rule. Most appends will not need this rewiring and hence be as fast as possible
  *  while the rarer cases suffering a minor penalty.
@@ -455,8 +455,8 @@ package akka.stream
  *
  *   * [[akka.stream.impl.PhasedFusingActorMaterializer.Debug]]: if this flag is turned on, the materializer will
  *     log the steps it takes
- *   * [[akka.stream.impl.TraversalBuilder.printTraversal()]]: Prints the Traversal in a readable format
- *   * [[akka.stream.impl.TraversalBuilder.printWiring()]]: Prints the calculated port assignments. Useful for
+ *   * [[akka.stream.impl.TraversalBuilder.printTraversal]]: Prints the Traversal in a readable format
+ *   * [[akka.stream.impl.TraversalBuilder.printWiring]]: Prints the calculated port assignments. Useful for
  *     debugging if everything is wired to the right thing.
  *
  */

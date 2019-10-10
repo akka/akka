@@ -18,6 +18,9 @@ import akka.actor.typed.javadsl.Receive;
 
 // #imports
 
+import akka.actor.typed.ActorRef;
+import akka.actor.typed.Terminated;
+
 interface GracefulStopDocTest {
 
   // #master-actor
@@ -122,4 +125,115 @@ interface GracefulStopDocTest {
     }
   }
   // #worker-actor
+
+  interface IllustrateWatch {
+    // #master-actor-watch
+    public class MasterControlProgram extends AbstractBehavior<MasterControlProgram.Command> {
+
+      interface Command {}
+
+      public static final class SpawnJob implements Command {
+        public final String name;
+
+        public SpawnJob(String name) {
+          this.name = name;
+        }
+      }
+
+      public static Behavior<Command> create() {
+        return Behaviors.setup(MasterControlProgram::new);
+      }
+
+      public MasterControlProgram(ActorContext<Command> context) {
+        super(context);
+      }
+
+      @Override
+      public Receive<Command> createReceive() {
+        return newReceiveBuilder()
+            .onMessage(SpawnJob.class, this::onSpawnJob)
+            .onSignal(Terminated.class, this::onTerminated)
+            .build();
+      }
+
+      private Behavior<Command> onSpawnJob(SpawnJob message) {
+        getContext().getSystem().log().info("Spawning job {}!", message.name);
+        ActorRef<Job.Command> job = getContext().spawn(Job.create(message.name), message.name);
+        getContext().watch(job);
+        return this;
+      }
+
+      private Behavior<Command> onTerminated(Terminated terminated) {
+        getContext().getSystem().log().info("Job stopped: {}", terminated.getRef().path().name());
+        return this;
+      }
+    }
+    // #master-actor-watch
+  }
+
+  interface IllustrateWatchWith {
+    // #master-actor-watchWith
+    public class MasterControlProgram extends AbstractBehavior<MasterControlProgram.Command> {
+
+      interface Command {}
+
+      public static final class SpawnJob implements Command {
+        public final String name;
+        public final ActorRef<JobDone> replyToWhenDone;
+
+        public SpawnJob(String name, ActorRef<JobDone> replyToWhenDone) {
+          this.name = name;
+          this.replyToWhenDone = replyToWhenDone;
+        }
+      }
+
+      public static final class JobDone {
+        public final String name;
+
+        public JobDone(String name) {
+          this.name = name;
+        }
+      }
+
+      private static final class JobTerminated implements Command {
+        final String name;
+        final ActorRef<JobDone> replyToWhenDone;
+
+        JobTerminated(String name, ActorRef<JobDone> replyToWhenDone) {
+          this.name = name;
+          this.replyToWhenDone = replyToWhenDone;
+        }
+      }
+
+      public static Behavior<Command> create() {
+        return Behaviors.setup(MasterControlProgram::new);
+      }
+
+      public MasterControlProgram(ActorContext<Command> context) {
+        super(context);
+      }
+
+      @Override
+      public Receive<Command> createReceive() {
+        return newReceiveBuilder()
+            .onMessage(SpawnJob.class, this::onSpawnJob)
+            .onMessage(JobTerminated.class, this::onJobTerminated)
+            .build();
+      }
+
+      private Behavior<Command> onSpawnJob(SpawnJob message) {
+        getContext().getSystem().log().info("Spawning job {}!", message.name);
+        ActorRef<Job.Command> job = getContext().spawn(Job.create(message.name), message.name);
+        getContext().watchWith(job, new JobTerminated(message.name, message.replyToWhenDone));
+        return this;
+      }
+
+      private Behavior<Command> onJobTerminated(JobTerminated terminated) {
+        getContext().getSystem().log().info("Job stopped: {}", terminated.name);
+        terminated.replyToWhenDone.tell(new JobDone(terminated.name));
+        return this;
+      }
+    }
+    // #master-actor-watchWith
+  }
 }

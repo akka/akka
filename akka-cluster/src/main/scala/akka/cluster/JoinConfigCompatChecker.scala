@@ -23,7 +23,7 @@ abstract class JoinConfigCompatChecker {
    * Runs the Config check.
    *
    * Implementers are free to define what makes Config entry compatible or not.
-   * We do provide some pre-build checks tough: [[JoinConfigCompatChecker.exists()]] and [[JoinConfigCompatChecker.fullMatch()]]
+   * We do provide some pre-build checks tough: [[JoinConfigCompatChecker.exists]] and [[JoinConfigCompatChecker.fullMatch]]
    *
    * @param toCheck - the Config instance to be checked
    * @param actualConfig - the Config instance containing the actual values

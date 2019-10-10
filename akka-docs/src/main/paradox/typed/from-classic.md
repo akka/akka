@@ -225,7 +225,7 @@ that for both `PreRestart` and `PostStop`.
 Links to reference documentation:
 
 * @ref:[Classic](../actors.md#start-hook)
-* TODO Typed
+* @ref:[Typed](fault-tolerance.md#the-prerestart-signal)
 
 ## watch
 
@@ -241,7 +241,7 @@ When watching child actors it's possible to see if the child terminated voluntar
 Links to reference documentation:
 
 * @ref:[Classic](../actors.md#deathwatch)
-* TODO Typed
+* @ref:[Typed](actor-lifecycle.md#watching-actors)
 
 ## Stopping
 

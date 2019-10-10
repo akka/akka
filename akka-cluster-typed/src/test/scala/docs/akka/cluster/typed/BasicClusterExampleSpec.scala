@@ -62,6 +62,27 @@ akka {
     Cluster(system).manager ! JoinSeedNodes(seedNodes)
     //#join-seed-nodes
   }
+
+  object Backend {
+    def apply(): Behavior[_] = Behaviors.empty
+  }
+
+  object Frontend {
+    def apply(): Behavior[_] = Behaviors.empty
+  }
+
+  def illustrateRoles(): Unit = {
+    val context: ActorContext[_] = ???
+
+    //#hasRole
+    val selfMember = Cluster(context.system).selfMember
+    if (selfMember.hasRole("backend")) {
+      context.spawn(Backend(), "back")
+    } else if (selfMember.hasRole("frontend")) {
+      context.spawn(Frontend(), "front")
+    }
+    //#hasRole
+  }
 }
 
 class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually with Matchers with LogCapturing {

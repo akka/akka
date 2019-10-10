@@ -10,6 +10,7 @@ project.description: Akka Cluster concepts, node membership service, CRDT Distri
 * [cluster](cluster.md)
 * [cluster-specification](cluster-concepts.md)
 * [cluster-membership](cluster-membership.md)
+* [failure-detector](failure-detector.md)
 * [distributed-data](distributed-data.md)
 * [cluster-singleton](cluster-singleton.md)
 * [cluster-sharding](cluster-sharding.md)
