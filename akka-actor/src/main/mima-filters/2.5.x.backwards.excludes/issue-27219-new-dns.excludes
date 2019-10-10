@@ -1,0 +1,3 @@
+# Two new methods on a class that should have been marked not for user extension
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.Dns.cached")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.io.Dns.resolved")

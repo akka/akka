@@ -4,33 +4,49 @@
 
 package akka.io
 
-import java.net.{ Inet4Address, Inet6Address, InetAddress, UnknownHostException }
+import java.net.{Inet4Address, Inet6Address, InetAddress, UnknownHostException}
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.typesafe.config.Config
-import java.util.function.{ Function => JFunction }
+import java.util.function.{Function => JFunction}
 
+import akka.annotation.DoNotInherit
+import akka.io.dns.AAAARecord
+import akka.io.dns.ARecord
+import akka.io.dns.DnsProtocol
 import akka.util.unused
 
 import scala.collection.immutable
 import akka.util.ccompat._
+import com.github.ghik.silencer.silent
 
+
+/**
+* Not for user extension
+ */
 @ccompatUsedUntil213
+@DoNotInherit
 abstract class Dns {
 
   /**
    * Lookup if a DNS resolved is cached. The exact behavior of caching will depend on
    * the akka.actor.io.dns.resolver that is configured.
    */
+  @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
   def cached(@unused name: String): Option[Dns.Resolved] = None
+
+  def cached(@unused request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved]
+
+  def resolve(@unused request: DnsProtocol.Resolve)(@unused system: ActorSystem, @unused sender: ActorRef): Option[DnsProtocol.Resolved]
 
   /**
    * If an entry is cached return it immediately. If it is not then
    * trigger a resolve and return None.
    */
+  @deprecated("resolve(DnsProtocol.Resolve)", "2.6.0")
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Dns.Resolved] = {
     val ret = cached(name)
     if (ret.isEmpty)
@@ -39,13 +55,15 @@ abstract class Dns {
   }
 }
 
-object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
+ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   sealed trait Command
 
+  @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
   case class Resolve(name: String) extends Command with ConsistentHashable {
     override def consistentHashKey = name
   }
 
+  @deprecated("cached(DnsProtocol.Resolved)", "2.6.0")
   case class Resolved(name: String, ipv4: immutable.Seq[Inet4Address], ipv6: immutable.Seq[Inet6Address])
       extends Command {
     val addrOption: Option[InetAddress] = IpVersionSelector.getInetAddress(ipv4.headOption, ipv6.headOption)
@@ -57,6 +75,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     }
   }
 
+   //  @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
   object Resolved {
     def apply(name: String, addresses: Iterable[InetAddress]): Resolved = {
       val ipv4: immutable.Seq[Inet4Address] =
@@ -65,12 +84,23 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
         addresses.iterator.collect { case a: Inet6Address => a }.to(immutable.IndexedSeq)
       Resolved(name, ipv4, ipv6)
     }
+
+     def apply(newProtocol: DnsProtocol.Resolved): Resolved = {
+       Resolved(
+         newProtocol.name,
+         newProtocol.records.collect {
+           case r: ARecord    => r.ip
+           case r: AAAARecord => r.ip
+         }
+       )
+     }
   }
 
   /**
    * Lookup if a DNS resolved is cached. The exact behavior of caching will depend on
    * the akka.actor.io.dns.resolver that is configured.
    */
+  @deprecated("use cached(DnsProtocol.Resolve)", "2.6.0")
   def cached(name: String)(system: ActorSystem): Option[Resolved] = {
     Dns(system).cache.cached(name)
   }
@@ -79,8 +109,10 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
    * If an entry is cached return it immediately. If it is not then
    * trigger a resolve and return None.
    */
+  @deprecated("use resolve(DnsProtocol.Resolve)", "2.6.0")
+  @silent("deprecated")
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Resolved] = {
-    Dns(system).cache.resolve(name)(system, sender)
+    Dns(system).cache.resolve(DnsProtocol.resolve(name))(system, sender).map(dpr => Resolved(dpr))
   }
 
   override def lookup() = Dns

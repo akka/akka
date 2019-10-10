@@ -6,13 +6,18 @@ package akka.io.dns.internal
 
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
-import akka.io.{ Dns, PeriodicCacheCleanup }
+import akka.io.{Dns, PeriodicCacheCleanup}
 import akka.io.dns.CachePolicy.CachePolicy
 import akka.io.SimpleDnsCache._
-import akka.io.dns.DnsProtocol.{ Ip, RequestType, Resolved }
-import akka.io.dns.{ AAAARecord, ARecord }
+import akka.io.dns.DnsProtocol
+import akka.io.dns.DnsProtocol.{Ip, RequestType, Resolved}
+import akka.io.dns.{AAAARecord, ARecord}
+import com.github.ghik.silencer.silent
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 
@@ -32,6 +37,7 @@ import scala.collection.immutable
    * Gets any IPv4 and IPv6 cached entries.
    * To get Srv or just one type use DnsProtocol
    */
+  @silent("deprecated")
   override def cached(name: String): Option[Dns.Resolved] = {
     val ipv4 = cacheRef.get().get((name, Ip(ipv6 = false))).toList.flatMap(_.records)
     val ipv6 = cacheRef.get().get((name, Ip(ipv4 = false))).toList.flatMap(_.records)
@@ -69,4 +75,7 @@ import scala.collection.immutable
     if (!cacheRef.compareAndSet(c, c.cleanup()))
       cleanup()
   }
+
+  override def cached(request: DnsProtocol.Resolve): Option[Resolved] = ???
+  override def resolve(request: DnsProtocol.Resolve)(system: ActorSystem, sender: ActorRef): Option[Resolved] = ???
 }

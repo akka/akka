@@ -4,20 +4,22 @@
 
 package akka.io
 
-import java.net.{ InetAddress, UnknownHostException }
+import java.net.{InetAddress, UnknownHostException}
 import java.security.Security
 import java.util.concurrent.TimeUnit
 
 import akka.io.dns.CachePolicy._
-import akka.actor.{ Actor, ActorLogging }
+import akka.actor.{Actor, ActorLogging}
 import akka.util.Helpers.Requiring
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 
 /** Respects the settings that can be set on the Java runtime via parameters. */
+@silent("deprecated")
 class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Actor with ActorLogging {
 
   // Controls the cache policy for successful lookups only
@@ -94,6 +96,7 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
     }
   }
 
+  // FIXME support new protocol
   override def receive = {
     case Dns.Resolve(name) =>
       val answer = cache.cached(name) match {

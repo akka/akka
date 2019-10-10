@@ -41,6 +41,7 @@ class SimpleDnsManager(val ext: DnsExt)
     system.scheduler.scheduleWithFixedDelay(interval, interval, self, SimpleDnsManager.CacheCleanup)
   }
 
+  // FIXME remove dropping of new protocol
   override def receive: Receive = {
     case r @ Dns.Resolve(name) =>
       log.debug("Resolution request for {} from {}", name, sender())

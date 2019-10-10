@@ -6,9 +6,13 @@ package akka.io
 
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.annotation.InternalApi
 import akka.io.Dns.Resolved
 import akka.io.dns.CachePolicy._
+import akka.io.dns.DnsProtocol
+import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -17,6 +21,7 @@ private[io] trait PeriodicCacheCleanup {
   def cleanup(): Unit
 }
 
+@silent("deprecated")
 class SimpleDnsCache extends Dns with PeriodicCacheCleanup {
   import SimpleDnsCache._
 
@@ -48,6 +53,9 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup {
     if (!cache.compareAndSet(c, c.cleanup()))
       cleanup()
   }
+
+  override def cached(request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] = ???
+  override def resolve(request: DnsProtocol.Resolve)(system: ActorSystem, sender: ActorRef): Option[DnsProtocol.Resolved] = ???
 }
 
 object SimpleDnsCache {
