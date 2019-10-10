@@ -552,12 +552,18 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         Await.result(run("unknown.example.org"), 3.seconds)
       }
 
-      cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
-      val cause2 = cause.getCause
-      cause2.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
-      val cause3 = cause2.getCause
-      cause3.getClass should ===(classOf[CertificateException])
-      cause3.getMessage should ===("No name matching unknown.example.org found")
+      val rootCause =
+        if (JavaVersion.majorVersion >= 11) {
+          cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+          cause.getCause
+        } else {
+          cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+          val cause2 = cause.getCause
+          cause2.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+          cause2.getCause
+        }
+      rootCause.getClass should ===(classOf[CertificateException])
+      rootCause.getMessage should ===("No name matching unknown.example.org found")
     }
 
   }
