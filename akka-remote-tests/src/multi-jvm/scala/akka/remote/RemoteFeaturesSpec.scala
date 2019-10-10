@@ -126,6 +126,7 @@ abstract class RemotingFeaturesSafeSpec
       runOn(second) {
         system.actorOf(Props(classOf[ProbeActor], probe.ref), "terminating")
       }
+      enterBarrier("terminating-started")
       runOn(first) {
         val watcher = system.actorOf(Props(classOf[ProbeActor], probe.ref), "watch-terminating")
         val terminating = identify(second, "terminating")
