@@ -161,27 +161,49 @@ final class ManifestInfo(val system: ExtendedActorSystem) extends Extension {
 
   /**
    * Verify that the version is the same for all given artifacts.
+   *
+   * If configuration `akka.fail-mixed-versions=on` it will throw an `IllegalStateException` if the
+   * versions are not the same for all given artifacts.
+   *
+   * @return `true` if versions are the same
    */
   def checkSameVersion(productName: String, dependencies: immutable.Seq[String], logWarning: Boolean): Boolean = {
+    checkSameVersion(productName, dependencies, logWarning, throwException = system.settings.FailMixedVersions)
+  }
+
+  /**
+   * Verify that the version is the same for all given artifacts.
+   *
+   * If `throwException` is `true` it will throw an `IllegalStateException` if the versions are not the same
+   * for all given artifacts.
+   *
+   * @return `true` if versions are the same
+   */
+  def checkSameVersion(
+      productName: String,
+      dependencies: immutable.Seq[String],
+      logWarning: Boolean,
+      throwException: Boolean): Boolean = {
     @silent("deprecated")
     val filteredVersions = versions.filterKeys(dependencies.toSet)
     val values = filteredVersions.values.toSet
     if (values.size > 1) {
-      if (logWarning) {
-        val conflictingVersions = values.mkString(", ")
-        val fullInfo = filteredVersions.map { case (k, v) => s"$k:$v" }.mkString(", ")
-        val highestVersion = values.max
-        Logging(system, getClass).warning(
-          "Detected possible incompatible versions on the classpath. " +
-          s"Please note that a given $productName version MUST be the same across all modules of $productName " +
-          "that you are using, e.g. if you use [{}] all other modules that are released together MUST be of the " +
-          "same version. Make sure you're using a compatible set of libraries. " +
-          "Possibly conflicting versions [{}] in libraries [{}]",
-          highestVersion,
-          conflictingVersions,
-          fullInfo)
-      }
-      false
+      val conflictingVersions = values.mkString(", ")
+      val fullInfo = filteredVersions.map { case (k, v) => s"$k:$v" }.mkString(", ")
+      val highestVersion = values.max
+      val message = "Detected possible incompatible versions on the classpath. " +
+        s"Please note that a given $productName version MUST be the same across all modules of $productName " +
+        s"that you are using, e.g. if you use [$highestVersion] all other modules that are released together MUST be of the " +
+        "same version. Make sure you're using a compatible set of libraries. " +
+        s"Possibly conflicting versions [$conflictingVersions] in libraries [$fullInfo]"
+
+      if (logWarning)
+        Logging(system, getClass).warning(message)
+
+      if (throwException)
+        throw new IllegalStateException(message)
+      else
+        false
     } else
       true
   }
