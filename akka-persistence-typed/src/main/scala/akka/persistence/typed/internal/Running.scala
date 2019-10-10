@@ -280,7 +280,7 @@ private[akka] object Running {
             tryUnstashOne(newState)
           } else {
             internalSaveSnapshot(state)
-            storingSnapshot(state, sideEffects, shouldSnapshotAfterPersist)
+            new StoringSnapshot(state, sideEffects, shouldSnapshotAfterPersist)
           }
         }
       }
@@ -331,10 +331,13 @@ private[akka] object Running {
 
   // ===============================================
 
-  def storingSnapshot(
+  /** INTERNAL API */
+  @InternalApi private[akka] class StoringSnapshot(
       state: RunningState[S],
       sideEffects: immutable.Seq[SideEffect[S]],
-      snapshotReason: SnapshotAfterPersist): Behavior[InternalProtocol] = {
+      snapshotReason: SnapshotAfterPersist)
+      extends AbstractBehavior[InternalProtocol](setup.context)
+      with WithSeqNrAccessible {
     setup.setMdcPhase(PersistenceMdc.StoringSnapshot)
 
     def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
@@ -387,32 +390,33 @@ private[akka] object Running {
       }
     }
 
-    Behaviors
-      .receiveMessage[InternalProtocol] {
-        case cmd: IncomingCommand[C] @unchecked =>
-          onCommand(cmd)
-        case JournalResponse(r) =>
-          onDeleteEventsJournalResponse(r, state.state)
-        case SnapshotterResponse(response) =>
-          response match {
-            case _: SaveSnapshotSuccess | _: SaveSnapshotFailure =>
-              onSaveSnapshotResponse(response)
-              tryUnstashOne(applySideEffects(sideEffects, state))
-            case _ =>
-              onDeleteSnapshotResponse(response, state.state)
-          }
-        case _ =>
-          Behaviors.unhandled
-      }
-      .receiveSignal {
-        case (_, PoisonPill) =>
-          // wait for snapshot response before stopping
-          storingSnapshot(state.copy(receivedPoisonPill = true), sideEffects, snapshotReason)
-        case (_, signal) =>
-          setup.onSignal(state.state, signal, catchAndLog = false)
-          Behaviors.same
-      }
+    def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
+      case cmd: IncomingCommand[C] @unchecked =>
+        onCommand(cmd)
+      case JournalResponse(r) =>
+        onDeleteEventsJournalResponse(r, state.state)
+      case SnapshotterResponse(response) =>
+        response match {
+          case _: SaveSnapshotSuccess | _: SaveSnapshotFailure =>
+            onSaveSnapshotResponse(response)
+            tryUnstashOne(applySideEffects(sideEffects, state))
+          case _ =>
+            onDeleteSnapshotResponse(response, state.state)
+        }
+      case _ =>
+        Behaviors.unhandled
+    }
 
+    override def onSignal: PartialFunction[Signal, Behavior[InternalProtocol]] = {
+      case PoisonPill =>
+        // wait for snapshot response before stopping
+        new StoringSnapshot(state.copy(receivedPoisonPill = true), sideEffects, snapshotReason)
+      case signal =>
+        setup.onSignal(state.state, signal, catchAndLog = false)
+        Behaviors.same
+    }
+
+    override def currentSequenceNumber: Long = state.seqNr
   }
 
   // --------------------------
