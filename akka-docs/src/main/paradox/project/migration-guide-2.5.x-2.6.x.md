@@ -154,6 +154,11 @@ deprecated and replaced with corresponding methods that takes a factory function
 
 See documentation of @ref:[streaming IO with TLS](../stream/stream-io.md#tls).    
 
+### JavaLogger
+
+`akka.event.jul.JavaLogger` for integration with `java.util.logging` has been deprecated. Use SLF4J instead,
+which also has support for `java.util.logging`.
+
 ### akka.Main
 
 `akka.Main` is deprecated in favour of starting the `ActorSystem` from a custom main class instead. `akka.Main` was not
