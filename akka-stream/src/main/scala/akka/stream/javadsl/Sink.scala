@@ -14,6 +14,7 @@ import akka._
 import akka.japi.function
 import akka.stream.impl.LinearTraversalBuilder
 import akka.stream.{ javadsl, scaladsl, _ }
+import com.github.ghik.silencer.silent
 import org.reactivestreams.{ Publisher, Subscriber }
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -383,6 +384,7 @@ object Sink {
    * sink fails then the `Future` is completed with the exception.
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
+  @silent("deprecated")
   def lazyInitAsync[T, M](
       sinkFactory: function.Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[Optional[M]]] = {
     val sSink = scaladsl.Sink
