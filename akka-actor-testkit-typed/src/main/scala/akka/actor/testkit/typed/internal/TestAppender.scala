@@ -105,9 +105,7 @@ import ch.qos.logback.core.AppenderBase
 
   def removeTestFilter(filter: LoggingTestKitImpl): Unit = synchronized {
     @scala.annotation.tailrec
-    def removeFirst(
-                     list: List[LoggingTestKitImpl],
-                     zipped: List[LoggingTestKitImpl] = Nil): List[LoggingTestKitImpl] =
+    def removeFirst(list: List[LoggingTestKitImpl], zipped: List[LoggingTestKitImpl] = Nil): List[LoggingTestKitImpl] =
       list match {
         case head :: tail if head == filter => tail.reverse_:::(zipped)
         case head :: tail                   => removeFirst(tail, head :: zipped)

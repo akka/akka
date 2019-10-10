@@ -326,12 +326,9 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
 
       // mdc on message
-      LoggingTestKit
-        .info("Got message!")
-        .withMdc(Map("static" -> "1", "txId" -> "1", "first" -> "true"))
-        .intercept {
-          ref ! Message(1, "first")
-        }
+      LoggingTestKit.info("Got message!").withMdc(Map("static" -> "1", "txId" -> "1", "first" -> "true")).intercept {
+        ref ! Message(1, "first")
+      }
 
       // mdc does not leak between messages
       LoggingTestKit
@@ -465,15 +462,11 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
 
       // on message
-      LoggingTestKit
-        .info("Got message!")
-        .withMdc(Map("akkaSource" -> actorPathStr.get))
-        .withOccurrences(10)
-        .intercept {
-          (1 to 10).foreach { n =>
-            ref ! Message(n, s"msg-$n")
-          }
+      LoggingTestKit.info("Got message!").withMdc(Map("akkaSource" -> actorPathStr.get)).withOccurrences(10).intercept {
+        (1 to 10).foreach { n =>
+          ref ! Message(n, s"msg-$n")
         }
+      }
 
     }
 

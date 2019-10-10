@@ -74,8 +74,7 @@ class LoggingTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike wit
     }
 
     "filter with matching MDC" in {
-      LoggingTestKit.empty.withMdc(Map("a" -> "A")).matches(errorNoCause.copy(mdc = Map("a" -> "A"))) should ===(
-        true)
+      LoggingTestKit.empty.withMdc(Map("a" -> "A")).matches(errorNoCause.copy(mdc = Map("a" -> "A"))) should ===(true)
       LoggingTestKit.empty
         .withMdc(Map("a" -> "A", "b" -> "B"))
         .matches(errorNoCause.copy(mdc = Map("a" -> "A", "b" -> "B"))) should ===(true)
@@ -126,10 +125,8 @@ class LoggingTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike wit
     }
     "filter warning with matching source" in {
       val source = "akka://Sys/user/foo"
-      LoggingTestKit.empty
-        .withLogLevel(Level.WARN)
-        .withSource(source)
-        .matches(warningWithSource(source)) should ===(true)
+      LoggingTestKit.empty.withLogLevel(Level.WARN).withSource(source).matches(warningWithSource(source)) should ===(
+        true)
       LoggingTestKit.empty
         .withLogLevel(Level.WARN)
         .withSource("akka://Sys/user/bar")
