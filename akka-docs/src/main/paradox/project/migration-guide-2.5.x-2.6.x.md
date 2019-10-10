@@ -375,6 +375,12 @@ blocking and protect a bit against starving the internal actors. Since the inter
 the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
 `8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
 
+### Mixed version
+
+Startup will fail if mixed versions of a product family (such as Akka) are accidentally used. This was previously
+only logged as a warning. There is no guarantee mixed modules will work and it's better to fail early than
+that the application is crashing at a later time than startup. 
+
 ### Cluster Sharding
 
 #### waiting-for-state-timeout reduced to 2s
