@@ -280,7 +280,7 @@ object GraphStageLogic {
  *    of the enclosing [[GraphStage]]
  *  * Possible mutable state, accessible from the [[InHandler]] and [[OutHandler]] callbacks, but not from anywhere
  *    else (as such access would not be thread-safe)
- *  * The lifecycle hooks [[preStart()]] and [[postStop()]]
+ *  * The lifecycle hooks [[preStart]] and [[postStop]]
  *  * Methods for performing stream processing actions, like pulling or pushing elements
  *
  * The operator logic is completed once all its input and output ports have been closed. This can be changed by
@@ -474,7 +474,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Requests an element on the given port. Calling this method twice before an element arrived will fail.
-   * There can only be one outstanding request at any given time. The method [[hasBeenPulled()]] can be used
+   * There can only be one outstanding request at any given time. The method [[hasBeenPulled]] can be used
    * query whether pull is allowed to be called or not. This method will also fail if the port is already closed.
    */
   final protected def pull[T](in: Inlet[T]): Unit = {
@@ -499,7 +499,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Requests an element on the given port unless the port is already closed.
    * Calling this method twice before an element arrived will fail.
-   * There can only be one outstanding request at any given time. The method [[hasBeenPulled()]] can be used
+   * There can only be one outstanding request at any given time. The method [[hasBeenPulled]] can be used
    * query whether pull is allowed to be called or not.
    */
   final protected def tryPull[T](in: Inlet[T]): Unit = if (!isClosed(in)) pull(in)
@@ -518,11 +518,11 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def cancel[T](in: Inlet[T], cause: Throwable): Unit = interpreter.cancel(conn(in), cause)
 
   /**
-   * Once the callback [[InHandler.onPush()]] for an input port has been invoked, the element that has been pushed
-   * can be retrieved via this method. After [[grab()]] has been called the port is considered to be empty, and further
-   * calls to [[grab()]] will fail until the port is pulled again and a new element is pushed as a response.
+   * Once the callback [[InHandler.onPush]] for an input port has been invoked, the element that has been pushed
+   * can be retrieved via this method. After [[grab]] has been called the port is considered to be empty, and further
+   * calls to [[grab]] will fail until the port is pulled again and a new element is pushed as a response.
    *
-   * The method [[isAvailable()]] can be used to query if the port has an element that can be grabbed or not.
+   * The method [[isAvailable]] can be used to query if the port has an element that can be grabbed or not.
    */
   final protected def grab[T](in: Inlet[T]): T = {
     val connection = conn(in)
@@ -554,15 +554,15 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Indicates whether there is already a pending pull for the given input port. If this method returns true
-   * then [[isAvailable()]] must return false for that same port.
+   * then [[isAvailable]] must return false for that same port.
    */
   final protected def hasBeenPulled[T](in: Inlet[T]): Boolean = (conn(in).portState & (InReady | InClosed)) == 0
 
   /**
-   * Indicates whether there is an element waiting at the given input port. [[grab()]] can be used to retrieve the
-   * element. After calling [[grab()]] this method will return false.
+   * Indicates whether there is an element waiting at the given input port. [[grab]] can be used to retrieve the
+   * element. After calling [[grab]] this method will return false.
    *
-   * If this method returns true then [[hasBeenPulled()]] will return false for that same port.
+   * If this method returns true then [[hasBeenPulled]] will return false for that same port.
    */
   final protected def isAvailable[T](in: Inlet[T]): Boolean = {
     val connection = conn(in)
@@ -591,8 +591,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def isClosed[T](in: Inlet[T]): Boolean = (conn(in).portState & InClosed) != 0
 
   /**
-   * Emits an element through the given output port. Calling this method twice before a [[pull()]] has been arrived
-   * will fail. There can be only one outstanding push request at any given time. The method [[isAvailable()]] can be
+   * Emits an element through the given output port. Calling this method twice before a [[pull]] has been arrived
+   * will fail. There can be only one outstanding push request at any given time. The method [[isAvailable]] can be
    * used to check if the port is ready to be pushed or not.
    */
   final protected def push[T](out: Outlet[T], elem: T): Unit = {
@@ -645,7 +645,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def fail[T](out: Outlet[T], ex: Throwable): Unit = interpreter.fail(conn(out), ex)
 
   /**
-   * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
+   * Automatically invokes [[cancel]] or [[complete]] on all the input or output ports that have been called,
    * then marks the operator as stopped.
    */
   final def completeStage(): Unit = cancelStage(SubscriptionWithCancelException.StageWasCompleted)
@@ -658,7 +658,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   @InternalApi private[stream] var lastCancellationCause: Throwable = _
 
   /**
-   * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
+   * Automatically invokes [[cancel]] or [[complete]] on all the input or output ports that have been called,
    * then marks the stage as stopped.
    */
   final def cancelStage(cause: Throwable): Unit = {
@@ -681,7 +681,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   }
 
   /**
-   * Automatically invokes [[cancel()]] or [[fail()]] on all the input or output ports that have been called,
+   * Automatically invokes [[cancel]] or [[fail]] on all the input or output ports that have been called,
    * then marks the operator as stopped.
    */
   final def failStage(ex: Throwable): Unit = {
@@ -1077,14 +1077,14 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Obtain a callback object that can be used asynchronously to re-enter the
-   * current [[GraphStage]] with an asynchronous notification. The [[invoke()]] method of the returned
+   * current [[GraphStage]] with an asynchronous notification. The [[invoke]] method of the returned
    * [[AsyncCallback]] is safe to be called from other threads. It will in the background thread-safely
-   * delegate to the passed callback function. I.e. [[invoke()]] will be called by other thread and
+   * delegate to the passed callback function. I.e. [[invoke]] will be called by other thread and
    * the passed handler will be invoked eventually in a thread-safe way by the execution environment.
    *
    * In case stream is not yet materialized [[AsyncCallback]] will buffer events until stream is available.
    *
-   * [[AsyncCallback.invokeWithFeedback()]] has an internal promise that will be failed if event cannot be processed
+   * [[AsyncCallback.invokeWithFeedback]] has an internal promise that will be failed if event cannot be processed
    * due to stream completion.
    *
    * To be thread safe this method must only be called from either the constructor of the graph operator during
@@ -1100,26 +1100,26 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   }
 
   /**
-   * ConcurrentAsyncCallback allows to call [[invoke()]] and [[invokeWithPromise()]] with event attribute.
+   * ConcurrentAsyncCallback allows to call [[invoke]] and [[invokeWithPromise]] with event attribute.
    * This event will be sent to the stream and the corresponding handler will be called with this attribute in thread-safe manner.
    *
    * State of this object can be changed both "internally" by the owning GraphStage or by the "external world" (e.g. other threads).
    * Specifically, calls to this class can be made:
-   * * From the owning [[GraphStage]], to [[onStart]] - when materialization is finished and to [[onStop()]] -
+   * * From the owning [[GraphStage]], to [[onStart]] - when materialization is finished and to [[onStop]] -
    * because the operator is about to stop or fail.
-   * * "Real world" calls [[invoke()]] and [[invokeWithFeedback()]]. These methods have synchronization
+   * * "Real world" calls [[invoke]] and [[invokeWithFeedback]]. These methods have synchronization
    *   with class state that reflects the stream state
    *
    * onStart sends all events that were buffered while stream was materializing.
    * In case "Real world" added more events while initializing, onStart checks for more events in buffer when exiting and
    * resend new events
    *
-   * Once class is in `Initialized` state - all "Real world" calls of [[invoke()]] and [[invokeWithFeedback()]] are running
+   * Once class is in `Initialized` state - all "Real world" calls of [[invoke]] and [[invokeWithFeedback]] are running
    * as is - without blocking each other.
    *
-   * [[GraphStage]] is called [[onStop()]] when stream is wrapping down. onStop fails all futures for events that have not yet processed
-   * [[onStop()]] puts class in `Completed` state
-   * "Real world" calls of [[invokeWithFeedback()]] always return failed promises for `Completed` state
+   * [[GraphStage]] is called [[onStop]] when stream is wrapping down. onStop fails all futures for events that have not yet processed
+   * [[onStop]] puts class in `Completed` state
+   * "Real world" calls of [[invokeWithFeedback]] always return failed promises for `Completed` state
    */
   private final class ConcurrentAsyncCallback[T](handler: T => Unit) extends AsyncCallback[T] {
 
@@ -1198,12 +1198,12 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * Java API: Obtain a callback object that can be used asynchronously to re-enter the
-   * current [[GraphStage]] with an asynchronous notification. The [[invoke()]] method of the returned
+   * current [[GraphStage]] with an asynchronous notification. The [[invoke]] method of the returned
    * [[AsyncCallback]] is safe to be called from other threads. It will in the background thread-safely
-   * delegate to the passed callback function. I.e. [[invoke()]] will be called by other thread and
+   * delegate to the passed callback function. I.e. [[invoke]] will be called by other thread and
    * the passed handler will be invoked eventually in a thread-safe way by the execution environment.
    *
-   * [[AsyncCallback.invokeWithFeedback()]] has an internal promise that will be failed if event cannot be processed due to stream completion.
+   * [[AsyncCallback.invokeWithFeedback]] has an internal promise that will be failed if event cannot be processed due to stream completion.
    *
    * This object can be cached and reused within the same [[GraphStageLogic]].
    */
@@ -1752,7 +1752,7 @@ trait InHandler {
 
   /**
    * Called when the input port has a new element available. The actual element can be retrieved via the
-   * [[GraphStageLogic.grab()]] method.
+   * [[GraphStageLogic.grab]] method.
    */
   @throws(classOf[Exception])
   def onPush(): Unit
@@ -1776,7 +1776,7 @@ trait InHandler {
 trait OutHandler {
 
   /**
-   * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push()]]
+   * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push]]
    * is now allowed to be called on this port.
    */
   @throws(classOf[Exception])

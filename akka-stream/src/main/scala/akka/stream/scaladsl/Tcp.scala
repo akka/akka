@@ -247,12 +247,12 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The returned flow represents a TCP client connection to the given endpoint where all bytes in and
    * out go through TLS.
    *
-   * For more advanced use cases you can manually combine [[Tcp.outgoingConnection()]] and [[TLS]]
+   * For more advanced use cases you can manually combine [[Tcp.outgoingConnection]] and [[TLS]]
    *
    * @param negotiateNewSession Details about what to require when negotiating the connection with the server
    * @param sslContext Context containing details such as the trust and keystore
    *
-   * @see [[Tcp.outgoingConnection()]]
+   * @see [[Tcp.outgoingConnection]]
    */
   @deprecated(
     "Use outgoingConnectionWithTls that takes a SSLEngine factory instead. " +
@@ -270,7 +270,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The returned flow represents a TCP client connection to the given endpoint where all bytes in and
    * out go through TLS.
    *
-   * @see [[Tcp.outgoingConnection()]]
+   * @see [[Tcp.outgoingConnection]]
    * @param negotiateNewSession Details about what to require when negotiating the connection with the server
    * @param sslContext Context containing details such as the trust and keystore
    *
@@ -304,7 +304,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * You specify a factory to create an SSLEngine that must already be configured for
    * client mode and with all the parameters for the first session.
    *
-   * @see [[Tcp.outgoingConnection()]]
+   * @see [[Tcp.outgoingConnection]]
    */
   def outgoingConnectionWithTls(
       remoteAddress: InetSocketAddress,
@@ -327,7 +327,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * You specify a factory to create an SSLEngine that must already be configured for
    * client mode and with all the parameters for the first session.
    *
-   * @see [[Tcp.outgoingConnection()]]
+   * @see [[Tcp.outgoingConnection]]
    */
   def outgoingConnectionWithTls(
       remoteAddress: InetSocketAddress,
@@ -483,7 +483,7 @@ final class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    *
    * @param negotiateNewSession Details about what to require when negotiating the connection with the server
    * @param sslContext Context containing details such as the trust and keystore
-   * @see [[Tcp.bindAndHandle()]]
+   * @see [[Tcp.bindAndHandle]]
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */

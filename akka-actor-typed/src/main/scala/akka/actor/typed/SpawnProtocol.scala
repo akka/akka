@@ -11,7 +11,7 @@ import akka.annotation.DoNotInherit
 /**
  * A message protocol for actors that support spawning a child actor when receiving a [[SpawnProtocol#Spawn]]
  * message and sending back the [[ActorRef]] of the child actor. Create instances through the [[SpawnProtocol#apply]]
- * or [[SpawnProtocol.create()]] factory methods.
+ * or [[SpawnProtocol#create]] factory methods.
  *
  * The typical usage of this is to use it as the guardian actor of the [[ActorSystem]], possibly combined with
  * `Behaviors.setup` to starts some initial tasks or actors. Child actors can then be started from the outside

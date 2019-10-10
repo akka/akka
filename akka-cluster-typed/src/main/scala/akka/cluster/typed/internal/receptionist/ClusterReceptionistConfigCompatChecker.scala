@@ -14,7 +14,7 @@ import com.typesafe.config.Config
  * Verifies that receptionist distributed-key-count are the same across cluster nodes
  */
 @InternalApi
-final class ClusterReceptionistConfigCompatChecker extends JoinConfigCompatChecker {
+private[akka] final class ClusterReceptionistConfigCompatChecker extends JoinConfigCompatChecker {
 
   override def requiredKeys = "akka.cluster.typed.receptionist.distributed-key-count" :: Nil
 

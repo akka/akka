@@ -314,7 +314,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The returned flow represents a TCP client connection to the given endpoint where all bytes in and
    * out go through TLS.
    *
-   * @see [[Tcp.outgoingConnection()]]
+   * @see [[Tcp.outgoingConnection]]
    */
   @deprecated(
     "Use outgoingConnectionWithTls that takes a SSLEngine factory instead. " +
@@ -335,7 +335,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * The returned flow represents a TCP client connection to the given endpoint where all bytes in and
    * out go through TLS.
    *
-   * @see [[Tcp.outgoingConnection()]]
+   * @see [[Tcp.outgoingConnection]]
    *
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    */
@@ -371,7 +371,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * You specify a factory to create an SSLEngine that must already be configured for
    * client mode and with all the parameters for the first session.
    *
-   * @see [[Tcp.outgoingConnection()]]
+   * @see [[Tcp.outgoingConnection]]
    */
   def outgoingConnectionWithTls(
       remoteAddress: InetSocketAddress,
@@ -389,7 +389,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * You specify a factory to create an SSLEngine that must already be configured for
    * client mode and with all the parameters for the first session.
    *
-   * @see [[Tcp.outgoingConnection()]]
+   * @see [[Tcp.outgoingConnection]]
    */
   def outgoingConnectionWithTls(
       remoteAddress: InetSocketAddress,
@@ -422,7 +422,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
    * where all incoming and outgoing bytes are passed through TLS.
    *
-   * @see [[Tcp.bind()]]
+   * @see [[Tcp.bind]]
    * Marked API-may-change to leave room for an improvement around the very long parameter list.
    *
    * Note: the half close parameter is currently ignored
@@ -451,7 +451,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
    * where all incoming and outgoing bytes are passed through TLS.
    *
-   * @see [[Tcp.bind()]]
+   * @see [[Tcp.bind]]
    */
   @deprecated(
     "Use bindWithTls that takes a SSLEngine factory instead. " +
@@ -472,7 +472,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
    * where all incoming and outgoing bytes are passed through TLS.
    *
-   * @see [[Tcp.bind()]]
+   * @see [[Tcp.bind]]
    */
   def bindWithTls(
       interface: String,
@@ -489,7 +489,7 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
    * Creates a [[Tcp.ServerBinding]] instance which represents a prospective TCP server binding on the given `endpoint`
    * where all incoming and outgoing bytes are passed through TLS.
    *
-   * @see [[Tcp.bind()]]
+   * @see [[Tcp.bind]]
    */
   def bindWithTls(
       interface: String,

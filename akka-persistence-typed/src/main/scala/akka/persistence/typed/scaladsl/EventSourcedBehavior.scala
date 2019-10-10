@@ -56,7 +56,7 @@ object EventSourcedBehavior {
   /**
    * Create a `Behavior` for a persistent actor that is enforcing that replies to commands are not forgotten.
    * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
-   * created with [[Effect.reply]], [[Effect.noReply]], [[Effect.thenReply]], or [[Effect.thenNoReply]].
+   * created with [[Effect.reply]], [[Effect.noReply]], [[EffectBuilder.thenReply]], or [[EffectBuilder.thenNoReply]].
    */
   def withEnforcedReplies[Command, Event, State](
       persistenceId: PersistenceId,

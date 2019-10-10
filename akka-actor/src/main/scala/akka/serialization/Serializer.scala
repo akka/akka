@@ -236,7 +236,7 @@ trait BaseSerializer extends Serializer {
   /**
    * Globally unique serialization identifier configured in the `reference.conf`.
    *
-   * See [[Serializer#identifier]].
+   * See [[Serializer.identifier]].
    */
   override val identifier: Int = identifierFromConfig
 
