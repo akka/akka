@@ -27,7 +27,7 @@ When `decideRetry` returns @scala[`None`]@java[`Optional.empty`], no retries wil
 
 @@@ note
 
-This API was added in Akka 2.6.0 and may be changed in further patch releases.
+This API was added in Akka 2.6.0 and @ref:[may be changed](../../../common/may-change.md) in further patch releases.
 
 @@@
 

@@ -38,7 +38,7 @@ object RetryFlow {
    * @param flow a flow to retry elements from
    * @param decideRetry retry condition decision function
    */
-  @ApiMayChange
+  @ApiMayChange("https://github.com/akka/akka/issues/27960")
   def withBackoff[In, Out, Mat](
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
@@ -77,7 +77,7 @@ object RetryFlow {
    * @param flow a flow with context to retry elements from
    * @param decideRetry retry condition decision function
    */
-  @ApiMayChange
+  @ApiMayChange("https://github.com/akka/akka/issues/27960")
   def withBackoffAndContext[In, CtxIn, Out, CtxOut, Mat](
       minBackoff: FiniteDuration,
       maxBackoff: FiniteDuration,
