@@ -1,6 +1,6 @@
 # EventSourced behaviors as finite state machines
 
-An @apidoc[EventSourcedBehavior] can be used to represet a persistent FSM. If you're migrating an existing classic
+An @apidoc[EventSourcedBehavior] can be used to represent a persistent FSM. If you're migrating an existing classic
 persistent FSM to EventSourcedBehavior see the @ref[migration guide](../persistence-fsm.md#migration-to-eventsourcedbehavior).
 
 To demonstrate this consider an example of a shopping application. A an customer can be in the following states:
