@@ -597,6 +597,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `EventSourcedEntity` removed in favor using plain `EventSourcedBehavior` because the alternative way was
   causing more confusion than adding value. Construction of `PersistentId` for the `EventSourcedBehavior` is
   facilitated by factory methods in `PersistenceId`.
+* `PersistenceId.apply(String)` renamed to `PersistenceId.ofUniqueId(String)`  
 * `akka.cluster.sharding.typed.scaladsl.Entity.apply` changed to use two parameter lists because the new
   `EntityContext.entityTypeKey` required additional type parameter that is inferred better with a secondary
   parameter list.

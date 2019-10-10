@@ -132,7 +132,7 @@ class EventSourcedBehaviorRetentionSpec
   import EventSourcedBehaviorRetentionSpec._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   "EventSourcedBehavior with retention" must {
 

@@ -27,7 +27,7 @@ object OptionalSnapshotStoreSpec {
 
   def persistentBehavior(probe: TestProbe[State], name: String = UUID.randomUUID().toString) =
     EventSourcedBehavior[Command, Event, State](
-      persistenceId = PersistenceId(name),
+      persistenceId = PersistenceId.ofUniqueId(name),
       emptyState = State(),
       commandHandler = CommandHandler.command { _ =>
         Effect.persist(Event()).thenRun(probe.ref ! _)

@@ -289,7 +289,7 @@ class EventSourcedBehaviorSpec
     PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   "A typed persistent actor" must {
 
@@ -531,14 +531,14 @@ class EventSourcedBehaviorSpec
 
     "fail fast if persistenceId is null" in {
       intercept[IllegalArgumentException] {
-        PersistenceId(null)
+        PersistenceId.ofUniqueId(null)
       }
       val probe = TestProbe[AnyRef]
       LoggingEventFilter
         .error[ActorInitializationException]
         .withMessageContains("persistenceId must not be null")
         .intercept {
-          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId(null))))
+          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId.ofUniqueId(null))))
           probe.expectTerminated(ref)
         }
       LoggingEventFilter
@@ -552,14 +552,14 @@ class EventSourcedBehaviorSpec
 
     "fail fast if persistenceId is empty" in {
       intercept[IllegalArgumentException] {
-        PersistenceId("")
+        PersistenceId.ofUniqueId("")
       }
       val probe = TestProbe[AnyRef]
       LoggingEventFilter
         .error[ActorInitializationException]
         .withMessageContains("persistenceId must not be empty")
         .intercept {
-          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId(""))))
+          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId.ofUniqueId(""))))
           probe.expectTerminated(ref)
         }
     }

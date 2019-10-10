@@ -46,7 +46,7 @@ class PrimitiveStateSpec
   "A typed persistent actor with primitive state" must {
     "persist primitive events and update state" in {
       val probe = TestProbe[String]()
-      val b = primitiveState(PersistenceId("a"), probe.ref)
+      val b = primitiveState(PersistenceId.ofUniqueId("a"), probe.ref)
       val ref1 = spawn(b)
       probe.expectMessage("onRecoveryCompleted:0")
       ref1 ! 1
