@@ -20,7 +20,7 @@ object SourceOperators {
 
     import scala.concurrent.Future
 
-    val source: Source[Int, NotUsed] = Source.fromFuture(Future.successful(10))
+    val source: Source[Int, NotUsed] = Source.future(Future.successful(10))
     val sink: Sink[Int, Future[Done]] = Sink.foreach((i: Int) => println(i))
 
     val done: Future[Done] = source.runWith(sink) //10

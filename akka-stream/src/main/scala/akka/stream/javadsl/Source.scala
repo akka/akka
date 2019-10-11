@@ -205,7 +205,7 @@ object Source {
   @deprecated("Use 'Source.completionStageSource' (potentially together with `Source.fromGraph`) instead", "2.6.0")
   def fromSourceCompletionStage[T, M](
       completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): javadsl.Source[T, CompletionStage[M]] =
-    new Source(scaladsl.Source.fromSourceCompletionStage(completion))
+    completionStageSource(completion.thenApply(fromGraph[T, M]))
 
   /**
    * Elements are emitted periodically with the specified interval.
@@ -315,7 +315,7 @@ object Source {
    * If the `create` function fails when invoked the stream is failed.
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
-   * the lazyness and will trigger the factory immediately.
+   * the laziness and will trigger the factory immediately.
    *
    * The materialized future `Done` value is completed when the `create` function has successfully been invoked,
    * if the function throws the future materialized value is failed with that exception.
@@ -332,7 +332,7 @@ object Source {
    * is failed or the `create` function itself fails.
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
-   * the lazyness and will trigger the factory immediately.
+   * the laziness and will trigger the factory immediately.
    *
    * The materialized future `Done` value is completed when the `create` function has successfully been invoked and the future completes,
    * if the function throws or the future fails the future materialized value is failed with that exception.
@@ -357,7 +357,7 @@ object Source {
    * when the created source completes and fails when the created source fails.
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
-   * the lazyness and will trigger the factory immediately.
+   * the laziness and will trigger the factory immediately.
    *
    * The materialized future value is completed with the materialized value of the created source when
    * it has been materialized. If the function throws or the source materialization fails the future materialized value
@@ -377,7 +377,7 @@ object Source {
    * If the `CompletionStage` or the `create` function fails the stream is failed.
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
-   * the lazyness and triggers the factory immediately.
+   * the laziness and triggers the factory immediately.
    *
    * The materialized `CompletionStage` value is completed with the materialized value of the created source when
    * it has been materialized. If the function throws or the source materialization fails the future materialized value

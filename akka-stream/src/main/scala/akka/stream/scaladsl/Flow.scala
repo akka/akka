@@ -629,7 +629,7 @@ object Flow {
    * future value is failed with a [[NeverMaterializedException]].
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
-   * the lazyness and can trigger the factory earlier than expected.
+   * the laziness and can trigger the factory earlier than expected.
    *
    * '''Emits when''' the internal flow is successfully created and it emits
    *
@@ -653,7 +653,7 @@ object Flow {
    * future value is failed with a [[NeverMaterializedException]].
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
-   * the lazyness and can trigger the factory earlier than expected.
+   * the laziness and can trigger the factory earlier than expected.
    *
    * '''Emits when''' the internal flow is successfully created and it emits
    *

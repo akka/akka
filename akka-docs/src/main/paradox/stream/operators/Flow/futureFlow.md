@@ -1,6 +1,6 @@
-# Flow.lazyInitAsync
+# Flow.futureFlow
 
-`fromCompletionStage` has been deprecated in 2.6.0 use `Flow.lazyFutureFlow` instead.
+Streams the elements through the given future flow once it successfully completes.
 
 @ref[Simple operators](../index.md#simple-operators)
 
@@ -8,15 +8,14 @@
 
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #lazyInitAsync }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #futureFlow }
 
 @@@
 
 ## Description
 
-`fromCompletionStage` has been deprecated in 2.6.0 use @ref:[lazyFutureFlow](lazyFutureFlow.md) instead.
-
-Defers creation until a first element arrives.
+Streams the elements through the given future flow once it successfully completes. 
+If the future fails the stream is failed.
 
 ## Reactive Streams semantics
 

@@ -24,7 +24,6 @@ import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Future, Promise }
 import akka.stream.stage.GraphStageWithMaterializedValue
-import com.github.ghik.silencer.silent
 
 import scala.compat.java8.FutureConverters._
 
@@ -368,17 +367,6 @@ object Source {
     fromGraph(new FutureFlattenSource(future))
 
   /**
-   * Streams the elements of an asynchronous source once its given `completion` operator completes.
-   * If the [[CompletionStage]] fails the stream is failed with the exception from the future.
-   * If downstream cancels before the stream completes the materialized `Future` will be failed
-   * with a [[StreamDetachedException]]
-   */
-  @silent // FIXME should we even have this in the scaladsl?
-  def fromSourceCompletionStage[T, M](
-      completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] =
-    fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
-
-  /**
    * Elements are emitted periodically with the specified interval.
    * The tick element will be delivered to downstream consumers that has requested any elements.
    * If a consumer has not requested any elements at the point in time when the tick
@@ -513,7 +501,7 @@ object Source {
    * If the `create` function fails when invoked the stream is failed.
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
-   * the lazyness and will trigger the factory immediately.
+   * the laziness and will trigger the factory immediately.
    *
    * The materialized future `Done` value is completed when the `create` function has successfully been invoked,
    * if the function throws the future materialized value is failed with that exception.
@@ -530,7 +518,7 @@ object Source {
    * is failed or the `create` function itself fails.
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
-   * the lazyness and will trigger the factory immediately.
+   * the laziness and will trigger the factory immediately.
    *
    * The materialized future `Done` value is completed when the `create` function has successfully been invoked and the future completes,
    * if the function throws or the future fails the future materialized value is failed with that exception.
@@ -550,7 +538,7 @@ object Source {
    * when the created source completes and fails when the created source fails.
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
-   * the lazyness and will trigger the factory immediately.
+   * the laziness and will trigger the factory immediately.
    *
    * The materialized future value is completed with the materialized value of the created source when
    * it has been materialized. If the function throws or the source materialization fails the future materialized value
@@ -570,7 +558,7 @@ object Source {
    * If the future or the `create` function fails the stream is failed.
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
-   * the lazyness and triggers the factory immediately.
+   * the laziness and triggers the factory immediately.
    *
    * The materialized future value is completed with the materialized value of the created source when
    * it has been materialized. If the function throws or the source materialization fails the future materialized value
