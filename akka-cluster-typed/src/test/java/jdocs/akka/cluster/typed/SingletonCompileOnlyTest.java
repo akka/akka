@@ -117,4 +117,12 @@ public interface SingletonCompileOnlyTest {
     // #backoff
     proxy.tell(Counter.Increment.INSTANCE); // avoid unused warning
   }
+
+  public static void dcProxy() {
+    // #create-singleton-proxy-dc
+    ActorRef<Counter.Command> singletonProxy =
+        ClusterSingleton.get(system).init(SingletonActor.of(Counter.create(), "GlobalCounter"));
+    // #create-singleton-proxy-dc
+
+  }
 }

@@ -162,18 +162,18 @@ If you need a global singleton you have to pick one data center to host that sin
 `ClusterSingletonManager` on nodes of that data center. If the data center is unreachable from another data center the
 singleton is inaccessible, which is a reasonable trade-off when selecting consistency over availability.
 
-The `ClusterSingletonProxy` is by default routing messages to the singleton in the own data center, but
-it can be started with a `data-center` parameter in the `ClusterSingletonProxySettings` to define that 
+The singleton proxy is by default routing messages to the singleton in the own data center, but
+it can be started with a `dataCenter` parameter in the `ClusterSingletonProxySettings` to define that 
 it should route messages to a singleton located in another data center. That is useful for example when
 having a global singleton in one data center and accessing it from other data centers.
 
 This is how to create a singleton proxy for a specific data center:
 
 Scala
-:  @@snip [ClusterSingletonManagerSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/singleton/ClusterSingletonManagerSpec.scala) { #create-singleton-proxy-dc }
+:  @@snip [SingletonCompileOnlySpec.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/SingletonCompileOnlySpec.scala) { #create-singleton-proxy-dc }
 
 Java
-:  @@snip [ClusterSingletonManagerTest.java](/akka-cluster-tools/src/test/java/akka/cluster/singleton/ClusterSingletonManagerTest.java) { #create-singleton-proxy-dc }
+:  @@snip [SingletonCompileOnlyTest.java](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/SingletonCompileOnlyTest.java) { #create-singleton-proxy-dc }
 
 If using the own data center as the `withDataCenter` parameter that would be a proxy for the singleton in the own data center, which
 is also the default if `withDataCenter` is not given.
