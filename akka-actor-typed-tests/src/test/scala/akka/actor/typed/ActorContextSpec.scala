@@ -12,7 +12,7 @@ import scala.reflect.ClassTag
 
 import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestException
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
@@ -139,7 +139,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
 
       val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.restart)
       val actor = spawn(behavior)
-      LoggingEventFilter.error[TestException].intercept {
+      LoggingTestKit.error[TestException].intercept {
         actor ! Fail
       }
       probe.expectMessage(ReceivedSignal(PreRestart))
@@ -203,7 +203,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
 
       val parentRef = spawn(parent)
       val childRef = probe.expectMessageType[ChildMade].ref
-      LoggingEventFilter.error[TestException].intercept {
+      LoggingTestKit.error[TestException].intercept {
         childRef ! Fail
       }
       probe.expectMessage(GotChildSignal(PreRestart))
@@ -260,7 +260,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(1)
-      LoggingEventFilter.error[TestException].intercept {
+      LoggingTestKit.error[TestException].intercept {
         actor ! Fail
       }
       actor ! Ping
@@ -286,7 +286,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(1)
-      LoggingEventFilter.error[TestException].intercept {
+      LoggingTestKit.error[TestException].intercept {
         actor ! Fail
       }
       actor ! Ping
@@ -328,7 +328,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       probe.expectMessage(Pong)
       watcher ! Ping
       probe.expectMessage(Pong)
-      LoggingEventFilter.error[TestException].intercept {
+      LoggingTestKit.error[TestException].intercept {
         actorToWatch ! Fail
       }
       probe.expectMessage(ReceivedSignal(PostStop))
@@ -513,7 +513,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       val childRef = probe.expectMessageType[ChildMade].ref
       actor ! Inert
       probe.expectMessage(InertEvent)
-      LoggingEventFilter.error[DeathPactException].intercept {
+      LoggingTestKit.error[DeathPactException].intercept {
         childRef ! Stop
         probe.expectMessage(GotChildSignal(PostStop))
         probe.expectMessage(ReceivedSignal(PostStop))

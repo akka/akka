@@ -6,7 +6,7 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.Dropped
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -83,7 +83,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
           Behaviors.same
       }))
 
-      LoggingEventFilter.debug("Pool child stopped").withOccurrences(2).intercept {
+      LoggingTestKit.debug("Pool child stopped").withOccurrences(2).intercept {
         pool ! "stop"
         pool ! "stop"
       }
@@ -107,7 +107,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
         Behaviors.stopped
       }))
 
-      LoggingEventFilter.info("Last pool child stopped, stopping pool").intercept {
+      LoggingTestKit.info("Last pool child stopped, stopping pool").intercept {
         (0 to 3).foreach { _ =>
           pool ! "stop"
         }

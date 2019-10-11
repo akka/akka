@@ -5,7 +5,7 @@
 package akka.persistence.typed.javadsl;
 
 import akka.actor.testkit.typed.javadsl.LogCapturing;
-import akka.actor.testkit.typed.javadsl.LoggingEventFilter;
+import akka.actor.testkit.typed.javadsl.LoggingTestKit;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
@@ -105,10 +105,10 @@ public class LoggerSourceTest extends JUnitSuite {
     expectedMdc1.put("persistencePhase", "replay-evt");
 
     ActorRef<String> ref =
-        LoggingEventFilter.info("recovery-completed")
+        LoggingTestKit.info("recovery-completed")
             .withMdc(expectedMdc1)
             .withCustom(event -> event.loggerName().equals(LoggingBehavior.class.getName()))
-            .intercept(
+            .expect(
                 testKit.system(),
                 () -> {
                   return testKit.spawn(behavior);
@@ -119,13 +119,13 @@ public class LoggerSourceTest extends JUnitSuite {
     // EventSourcedBehaviorImpl
     // isn't involved.
 
-    LoggingEventFilter.info("command-received")
+    LoggingTestKit.info("command-received")
         .withCustom(
             event -> {
               return event.loggerName().equals(LoggingBehavior.class.getName())
                   && event.getMdc().get("akkaSource").equals(ref.path().toString());
             })
-        .intercept(
+        .expect(
             testKit.system(),
             () -> {
               ref.tell("command");
@@ -136,14 +136,14 @@ public class LoggerSourceTest extends JUnitSuite {
     expectedMdc3.put("persistenceId", "1");
     expectedMdc3.put("persistencePhase", "running-cmd");
 
-    LoggingEventFilter.info("event-received")
+    LoggingTestKit.info("event-received")
         .withMdc(expectedMdc3)
         .withCustom(
             event -> {
               return event.loggerName().equals(LoggingBehavior.class.getName())
                   && event.getMdc().get("akkaSource").equals(ref.path().toString());
             })
-        .intercept(
+        .expect(
             testKit.system(),
             () -> {
               ref.tell("command");

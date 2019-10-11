@@ -12,7 +12,7 @@ import org.scalatest.WordSpecLike
 import scala.concurrent.duration._
 
 import akka.actor.ActorInitializationException
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.internal.PoisonPill
@@ -282,7 +282,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit with WordSpecLike with Log
       val probe = TestProbe[String]()
       val interceptor = snitchingInterceptor(probe.ref)
 
-      LoggingEventFilter.error[ActorInitializationException].intercept {
+      LoggingTestKit.error[ActorInitializationException].intercept {
         val ref = spawn(Behaviors.intercept(() => interceptor)(Behaviors.setup[String] { _ =>
           Behaviors.same[String]
         }))

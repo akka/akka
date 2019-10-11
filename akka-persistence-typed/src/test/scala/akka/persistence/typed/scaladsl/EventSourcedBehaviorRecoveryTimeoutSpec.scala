@@ -85,7 +85,7 @@ class EventSourcedBehaviorRecoveryTimeoutSpec
 
       // now replay, but don't give the journal any tokens to replay events
       // so that we cause the timeout to trigger
-      LoggingEventFilter
+      LoggingTestKit
         .error[JournalFailureException]
         .withMessageRegex("Exception during recovery.*Replay timed out")
         .intercept {

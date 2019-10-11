@@ -542,7 +542,7 @@ class EventSourcedBehaviorStashSpec
       c ! "start-stashing"
 
       val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
-      LoggingEventFilter.warn("Stash buffer is full, dropping message").intercept {
+      LoggingTestKit.warn("Stash buffer is full, dropping message").intercept {
         (0 to limit).foreach { n =>
           c ! s"cmd-$n" // limit triggers overflow
         }
@@ -588,7 +588,7 @@ class EventSourcedBehaviorStashSpec
         c ! "ping"
         probe.expectMessage("pong")
 
-        LoggingEventFilter
+        LoggingTestKit
           .error[StashOverflowException]
           .intercept {
             val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")

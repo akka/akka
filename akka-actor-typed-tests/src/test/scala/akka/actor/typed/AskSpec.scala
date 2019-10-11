@@ -20,7 +20,7 @@ import scala.concurrent.Future
 
 import akka.actor.DeadLetter
 import akka.actor.UnhandledMessage
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
 
@@ -174,7 +174,7 @@ class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCaptur
       ref ! "start-ask"
       val Question(replyRef2) = probe.expectMessageType[Question]
 
-      LoggingEventFilter
+      LoggingTestKit
         .error("Exception thrown out of adapter. Stopping myself.")
         .intercept {
           replyRef2 ! 42L

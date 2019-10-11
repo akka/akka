@@ -13,7 +13,7 @@ import ch.qos.logback.core.AppenderBase
 /**
  * INTERNAL API
  *
- * The `TestAppender` emits the logging events to the registered [[LoggingEventFilterImpl]], which
+ * The `TestAppender` emits the logging events to the registered [[LoggingTestKitImpl]], which
  * are added and removed to the appender dynamically from tests.
  *
  * `TestAppender` is currently requiring Logback as SLF4J implementation.
@@ -40,10 +40,10 @@ import ch.qos.logback.core.AppenderBase
     }
   }
 
-  def addFilter(loggerName: String, filter: LoggingEventFilterImpl): Unit =
+  def addFilter(loggerName: String, filter: LoggingTestKitImpl): Unit =
     getTestAppender(loggerName).addTestFilter(filter)
 
-  def removeFilter(loggerName: String, filter: LoggingEventFilterImpl): Unit =
+  def removeFilter(loggerName: String, filter: LoggingTestKitImpl): Unit =
     getTestAppender(loggerName).removeTestFilter(filter)
 
   private def getTestAppender(loggerName: String): TestAppender = {
@@ -65,7 +65,7 @@ import ch.qos.logback.core.AppenderBase
 @InternalApi private[akka] class TestAppender extends AppenderBase[ILoggingEvent] {
   import LogbackUtil._
 
-  private var filters: List[LoggingEventFilterImpl] = Nil
+  private var filters: List[LoggingTestKitImpl] = Nil
 
   // invocations are synchronized via doAppend in AppenderBase
   override def append(event: ILoggingEvent): Unit = {
@@ -99,15 +99,13 @@ import ch.qos.logback.core.AppenderBase
       })
   }
 
-  def addTestFilter(filter: LoggingEventFilterImpl): Unit = synchronized {
+  def addTestFilter(filter: LoggingTestKitImpl): Unit = synchronized {
     filters ::= filter
   }
 
-  def removeTestFilter(filter: LoggingEventFilterImpl): Unit = synchronized {
+  def removeTestFilter(filter: LoggingTestKitImpl): Unit = synchronized {
     @scala.annotation.tailrec
-    def removeFirst(
-        list: List[LoggingEventFilterImpl],
-        zipped: List[LoggingEventFilterImpl] = Nil): List[LoggingEventFilterImpl] =
+    def removeFirst(list: List[LoggingTestKitImpl], zipped: List[LoggingTestKitImpl] = Nil): List[LoggingTestKitImpl] =
       list match {
         case head :: tail if head == filter => tail.reverse_:::(zipped)
         case head :: tail                   => removeFirst(tail, head :: zipped)

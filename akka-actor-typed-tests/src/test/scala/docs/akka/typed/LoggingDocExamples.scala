@@ -113,18 +113,18 @@ object LoggingDocExamples {
     val ref: ActorRef[Message] = ???
 
     //#test-logging
-    import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+    import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 
     // implicit ActorSystem is needed, but that is given by ScalaTestWithActorTestKit
     //implicit val system: ActorSystem[_]
 
-    LoggingEventFilter.info("Received message").intercept {
+    LoggingTestKit.info("Received message").intercept {
       ref ! Message("hello")
     }
     //#test-logging
 
     //#test-logging-criteria
-    LoggingEventFilter
+    LoggingTestKit
       .error[IllegalArgumentException]
       .withMessageRegex(".*was rejected.*expecting ascii input.*")
       .withCustom { event =>

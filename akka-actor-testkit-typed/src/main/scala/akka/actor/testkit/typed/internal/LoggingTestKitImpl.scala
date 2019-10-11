@@ -22,14 +22,14 @@ import org.slf4j.event.Level
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object LoggingEventFilterImpl {
-  def empty: LoggingEventFilterImpl = new LoggingEventFilterImpl(1, None, None, None, None, None, None, Map.empty, None)
+@InternalApi private[akka] object LoggingTestKitImpl {
+  def empty: LoggingTestKitImpl = new LoggingTestKitImpl(1, None, None, None, None, None, None, Map.empty, None)
 }
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case class LoggingEventFilterImpl(
+@InternalApi private[akka] final case class LoggingTestKitImpl(
     occurrences: Int,
     logLevel: Option[Level],
     loggerName: Option[String],
@@ -39,8 +39,8 @@ import org.slf4j.event.Level
     cause: Option[Class[_ <: Throwable]],
     mdc: Map[String, String],
     custom: Option[Function[LoggingEvent, Boolean]])
-    extends javadsl.LoggingEventFilter
-    with scaladsl.LoggingEventFilter {
+    extends javadsl.LoggingTestKit
+    with scaladsl.LoggingTestKit {
 
   @volatile // JMM does not guarantee visibility for non-final fields
   private var todo = occurrences
@@ -113,44 +113,44 @@ import org.slf4j.event.Level
     }
   }
 
-  override def withOccurrences(newOccurrences: Int): LoggingEventFilterImpl =
+  override def withOccurrences(newOccurrences: Int): LoggingTestKitImpl =
     copy(occurrences = newOccurrences)
 
-  override def withLogLevel(newLogLevel: Level): LoggingEventFilterImpl =
+  override def withLogLevel(newLogLevel: Level): LoggingTestKitImpl =
     copy(logLevel = Option(newLogLevel))
 
-  def withLoggerName(newLoggerName: String): LoggingEventFilterImpl =
+  def withLoggerName(newLoggerName: String): LoggingTestKitImpl =
     copy(loggerName = Some(newLoggerName))
 
-  override def withSource(newSource: String): LoggingEventFilterImpl =
+  override def withSource(newSource: String): LoggingTestKitImpl =
     copy(source = Option(newSource))
 
-  override def withMessageContains(newMessageContains: String): LoggingEventFilterImpl =
+  override def withMessageContains(newMessageContains: String): LoggingTestKitImpl =
     copy(messageContains = Option(newMessageContains))
 
-  def withMessageRegex(newMessageRegex: String): LoggingEventFilterImpl =
+  def withMessageRegex(newMessageRegex: String): LoggingTestKitImpl =
     copy(messageRegex = Option(new Regex(newMessageRegex)))
 
-  override def withCause[A <: Throwable: ClassTag]: LoggingEventFilterImpl = {
+  override def withCause[A <: Throwable: ClassTag]: LoggingTestKitImpl = {
     val causeClass = implicitly[ClassTag[A]].runtimeClass.asInstanceOf[Class[Throwable]]
     copy(cause = Option(causeClass))
   }
 
-  override def withMdc(newMdc: Map[String, String]): LoggingEventFilterImpl =
+  override def withMdc(newMdc: Map[String, String]): LoggingTestKitImpl =
     copy(mdc = newMdc)
 
-  override def withMdc(newMdc: java.util.Map[String, String]): javadsl.LoggingEventFilter = {
+  override def withMdc(newMdc: java.util.Map[String, String]): javadsl.LoggingTestKit = {
     import akka.util.ccompat.JavaConverters._
     withMdc(newMdc.asScala.toMap)
   }
 
-  override def withCustom(newCustom: Function[LoggingEvent, Boolean]): LoggingEventFilterImpl =
+  override def withCustom(newCustom: Function[LoggingEvent, Boolean]): LoggingTestKitImpl =
     copy(custom = Option(newCustom))
 
-  override def withCause(newCause: Class[_ <: Throwable]): javadsl.LoggingEventFilter =
+  override def withCause(newCause: Class[_ <: Throwable]): javadsl.LoggingTestKit =
     copy(cause = Option(newCause))
 
-  override def intercept[T](system: ActorSystem[_], code: Supplier[T]): T =
+  override def expect[T](system: ActorSystem[_], code: Supplier[T]): T =
     intercept(code.get())(system)
 
 }
