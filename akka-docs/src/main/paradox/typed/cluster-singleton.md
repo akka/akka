@@ -46,36 +46,40 @@ See @ref:[Downing](cluster.md#downing).
 ### Singleton manager
 
 The cluster singleton pattern manages one singleton actor instance among all cluster nodes or a group of nodes tagged with
-a specific role. The singleton is an actor that is supposed to be started as early as possible
-on all nodes, or all nodes with specified role, in the cluster. 
+a specific role. The singleton manager is an actor that is supposed to be started with `ClusterSingleton.init` as
+early as possible on all nodes, or all nodes with specified role, in the cluster. 
 
 The actual singleton actor is
 
 * Started on the oldest node by creating a child actor from
-supplied `Props`. It makes sure that at most one singleton instance is running at any point in time.
+supplied `Behavior`. It makes sure that at most one singleton instance is running at any point in time.
 * Always running on the oldest member with specified role.
 
 The oldest member is determined by `akka.cluster.Member#isOlderThan`.
 This can change when removing that member from the cluster. Be aware that there is a short time
 period when there is no active singleton during the hand-over process.
 
+When the oldest node is @ref:[Leaving](cluster.md#leaving) the cluster there is an exchange from the oldest
+and the new oldest before a new singleton is started up.
+
 The cluster @ref:[failure detector](cluster.md#failure-detector) will notice when oldest node becomes unreachable due to
-things like JVM crash, hard shut down, or network failure. Then a new oldest node will
-take over and a new singleton actor is created. For these failure scenarios there will
-not be a graceful hand-over, but more than one active singletons is prevented by all
-reasonable means. Some corner cases are eventually resolved by configurable timeouts.
+things like JVM crash, hard shut down, or network failure. After @ref:[Downing](cluster.md#downing) and removing that
+node the a new oldest node will take over and a new singleton actor is created. For these failure scenarios there will
+not be a graceful hand-over, but more than one active singletons is prevented by all reasonable means. Some corner
+cases are eventually resolved by configurable timeouts. Additional safety can be added by using a @ref:[Lease](#lease). 
 
 ### Singleton proxy
 
-To communicate with a given named singleton in the cluster you can access it though a proxy.
-When creating the proxy for a given `singletonName` on a node, if there already is a singleton manager 
-running on this node, no additional manager is started, and if there is one running an [[ActorRef]] to that is returned.
+To communicate with a given named singleton in the cluster you can access it though a proxy `ActorRef`.
+When calling `ClusterSingleton.init` for a given `singletonName` on a node an `ActorRef` is returned. It is
+to this `ActorRef` that you can send messages to the singleton instance, independent of which node the singleton
+instance is active. `ClusterSingleton.init` can be called multiple times, if there already is a singleton manager 
+running on this node, no additional manager is started, and if there is one running an `ActorRef` to the proxy
+is returned.
    
 The proxy will route all messages to the current instance of the singleton, and keep track of
-the oldest node in the cluster and resolve the singleton's `ActorRef` by explicitly sending the
-singleton's `actorSelection` the `akka.actor.Identify` message and waiting for it to reply.
-This is performed periodically if the singleton doesn't reply within a certain (configurable) time.
-Given the implementation, there might be periods of time during which the `ActorRef` is unavailable,
+the oldest node in the cluster and discover the singleton's `ActorRef`.
+There might be periods of time during which the singleton is unavailable,
 e.g., when a node leaves the cluster. In these cases, the proxy will buffer the messages sent to the
 singleton and then deliver them when the singleton is finally available. If the buffer is full
 the proxy will drop old messages when new messages are sent via the proxy.
@@ -178,7 +182,7 @@ If the lease is lost then the singleton actor will be terminated then the lease 
 
 ## Accessing singleton of another data centre
 
-TODO
+TODO @github[#27705](#27705)
 
 ## Configuration
 
@@ -190,11 +194,10 @@ with different settings if needed.
 
 @@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-config }
 
-The following configuration properties are read by the `ClusterSingletonProxySettings`
-when created with a `ActorSystem` parameter. It is also possible to amend the `ClusterSingletonProxySettings`
-or create it from another config section with the same layout as below. `ClusterSingletonProxySettings` is
-a parameter to the `ClusterSingletonProxy.props` factory method, i.e. each singleton proxy can be configured
-with different settings if needed.
+The following configuration properties are read by the `ClusterSingletonSettings`
+when created with a `ActorSystem` parameter. `ClusterSingletonSettings` is an optional parameter in
+`ClusterSingleton.init`. It is also possible to amend the `ClusterSingletonProxySettings`
+or create it from another config section with the same layout as below.
 
 @@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf) { #singleton-proxy-config }
 
