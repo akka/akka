@@ -18,7 +18,7 @@ import scala.collection.immutable.Seq
 
 // tests deprecated DNS API
 @silent("deprecated")
-class SimpleDnsCacheSpec extends AkkaSpec("""
+class AsyncDnsManagerSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.dns.resolver = async-dns
@@ -48,7 +48,7 @@ class SimpleDnsCacheSpec extends AkkaSpec("""
 
     "provide access to cache" in {
       dns ! AsyncDnsManager.GetCache
-      (expectMsgType[SimpleDnsCache] should be).theSameInstanceAs(Dns(system).cache)
+      (expectMsgType[akka.io.SimpleDnsCache] should be).theSameInstanceAs(Dns(system).cache)
     }
   }
 

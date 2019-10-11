@@ -4,8 +4,14 @@
 
 package akka.io
 
-import akka.io.dns.internal.SimpleDnsCache
+import akka.annotation.InternalApi
+import com.github.ghik.silencer.silent
 
+/**
+ * INTERNAL API
+ */
+@silent("deprecated")
+@InternalApi
 class InetAddressDnsProvider extends DnsProvider {
   override def cache: Dns = new SimpleDnsCache()
   override def actorClass = classOf[InetAddressDnsResolver]

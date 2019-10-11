@@ -3,7 +3,6 @@
  */
 
 package akka.io
-// FIXME, test async dns cache instead
 
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicLong
@@ -12,7 +11,6 @@ import akka.io.dns.ARecord
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol
 import akka.io.dns.DnsProtocol.Ip
-import akka.io.dns.internal.SimpleDnsCache
 import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._

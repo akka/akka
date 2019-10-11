@@ -2,13 +2,12 @@
  * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.io.dns.internal
+package akka.io
 
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
-import akka.io.Dns
 import akka.io.dns.CachePolicy.CachePolicy
 import akka.io.dns.CachePolicy.Forever
 import akka.io.dns.CachePolicy.Never
@@ -25,10 +24,7 @@ private[io] trait PeriodicCacheCleanup {
   def cleanup(): Unit
 }
 
-/**
- * INTERNAL API
- */
-@InternalApi class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationVerificationNeeded {
+class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationVerificationNeeded {
   import SimpleDnsCache._
   private val cacheRef = new AtomicReference(
     new Cache[(String, RequestType), Resolved](

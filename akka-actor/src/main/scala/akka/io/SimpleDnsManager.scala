@@ -8,12 +8,10 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ Actor, ActorLogging, Deploy, Props }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.io.dns.internal.PeriodicCacheCleanup
 import akka.routing.FromConfig
 
 import scala.concurrent.duration.Duration
 
-// TODO can this be combined with the async dns manager?
 class SimpleDnsManager(val ext: DnsExt)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics]
@@ -40,19 +38,18 @@ class SimpleDnsManager(val ext: DnsExt)
     system.scheduler.scheduleWithFixedDelay(interval, interval, self, SimpleDnsManager.CacheCleanup)
   }
 
-  // FIXME remove dropping of new protocol
+  // the inet resolver supports the old and new DNS APIs
   override def receive: Receive = {
     case r @ Dns.Resolve(name) =>
       log.debug("(deprecated) Resolution request for {} from {}", name, sender())
       resolver.forward(r)
 
-    case SimpleDnsManager.CacheCleanup =>
-      cacheCleanup.foreach(_.cleanup())
-
     case m: dns.DnsProtocol.Resolve =>
       log.debug("Resolution request for {} from {}", m.name, sender())
       resolver.forward(m)
 
+    case SimpleDnsManager.CacheCleanup =>
+      cacheCleanup.foreach(_.cleanup())
   }
 
   override def postStop(): Unit = {

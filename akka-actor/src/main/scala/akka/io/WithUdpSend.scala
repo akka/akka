@@ -33,8 +33,6 @@ private[io] trait WithUdpSend {
 
   import settings._
 
-  // FIXMEk use new DNS API
-  @silent
   def sendHandlers(registration: ChannelRegistration): Receive = {
     case send: Send if hasWritePending =>
       if (TraceLogging) log.debug("Dropping write because queue is full")

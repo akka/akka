@@ -10,6 +10,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.io.PeriodicCacheCleanup
 import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, DnsSettings }
 import akka.io.dns.internal.AsyncDnsManager.CacheCleanup
 import akka.io.{ Dns, DnsExt, DnsProvider }
@@ -34,6 +35,7 @@ private[akka] object AsyncDnsManager {
  * INTERNAL API
  */
 @InternalApi
+@silent("deprecated")
 private[io] final class AsyncDnsManager(
     name: String,
     system: ExtendedActorSystem,
@@ -86,7 +88,7 @@ private[io] final class AsyncDnsManager(
     }
   }
 
-  // still deprecated DNS API
+  // still support deprecated DNS API
   @silent("deprecated")
   override def receive: Receive = {
     case r: DnsProtocol.Resolve =>
@@ -94,7 +96,8 @@ private[io] final class AsyncDnsManager(
       resolver.forward(r)
 
     case Dns.Resolve(name) =>
-      // adapt legacy protocol to new protocol and back again
+      // adapt legacy protocol to new protocol and back again, no where in akka
+      // sends this message but supported until the old messages are removed
       log.debug("(deprecated) Resolution request for {} from {}", name, sender())
       val adapted = DnsProtocol.Resolve(name)
       val reply = (resolver ? adapted).mapTo[DnsProtocol.Resolved].map { asyncResolved =>

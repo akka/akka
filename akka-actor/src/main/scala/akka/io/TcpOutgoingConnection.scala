@@ -56,8 +56,6 @@ private[io] class TcpOutgoingConnection(
     }
   }
 
-  // FIXME switch to new protocol
-  @silent
   def receive: Receive = {
     case registration: ChannelRegistration =>
       setRegistration(registration)

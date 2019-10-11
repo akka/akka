@@ -19,7 +19,6 @@ import akka.io.dns.DnsProtocol
 import akka.io.dns.DnsProtocol.Ip
 import akka.io.dns.DnsProtocol.Srv
 import akka.io.dns.ResourceRecord
-import akka.io.dns.internal.SimpleDnsCache
 import akka.util.Helpers.Requiring
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
@@ -106,7 +105,6 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
     }
   }
 
-  // FIXME support new protocol
   override def receive: Receive = {
     case DnsProtocol.Resolve(_, Srv) =>
       sender() ! Status.Failure(

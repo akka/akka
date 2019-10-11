@@ -24,7 +24,9 @@ import akka.util.ccompat._
 import com.github.ghik.silencer.silent
 
 /**
- * Not for user extension
+ * Not for user extension.
+ *
+ * This used to be a supported extension point but will be removed in future versions of Akka.
  */
 @ccompatUsedUntil213
 @DoNotInherit
@@ -37,15 +39,6 @@ abstract class Dns {
   @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
   def cached(@unused name: String): Option[Dns.Resolved] = None
 
-  def cached(@unused request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] = None
-
-  def resolve(request: DnsProtocol.Resolve)(system: ActorSystem, sender: ActorRef): Option[DnsProtocol.Resolved] = {
-    val ret = cached(request)
-    if (ret.isEmpty)
-      IO(Dns)(system).tell(request, sender)
-    ret
-  }
-
   /**
    * If an entry is cached return it immediately. If it is not then
    * trigger a resolve and return None.
@@ -56,6 +49,15 @@ abstract class Dns {
     val ret = cached(name)
     if (ret.isEmpty)
       IO(Dns)(system).tell(Dns.Resolve(name), sender)
+    ret
+  }
+
+  def cached(@unused request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] = None
+
+  def resolve(request: DnsProtocol.Resolve)(system: ActorSystem, sender: ActorRef): Option[DnsProtocol.Resolved] = {
+    val ret = cached(request)
+    if (ret.isEmpty)
+      IO(Dns)(system).tell(request, sender)
     ret
   }
 }
@@ -143,6 +145,7 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
    * be used in this case
    */
   @InternalApi
+  @silent("deprecated")
   private[akka] def loadAsyncDns(managerName: String): ActorRef = {
     // This can't pass in `this` as then AsyncDns would pick up the system settings
     asyncDns.computeIfAbsent(
@@ -197,6 +200,7 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
   val Settings: Settings = new Settings(system.settings.config.getConfig("akka.io.dns"), resolverName)
 
   // System DNS resolver
+  @silent("deprecated")
   val provider: DnsProvider =
     system.dynamicAccess.createInstanceFor[DnsProvider](Settings.ProviderObjectName, Nil).get
 

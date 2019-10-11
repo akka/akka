@@ -16,12 +16,10 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.{ unused, ByteString }
 import akka.io.SelectionHandler._
 import akka.io.UdpConnected._
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
  */
-@silent // FIXME, use new DNS API
 private[io] class UdpConnection(
     udpConn: UdpConnectedExt,
     channelRegistry: ChannelRegistry,
