@@ -99,9 +99,7 @@ abstract class DistributedData extends Extension {
 
 object DistributedDataSetup {
   def apply[T <: Extension](createExtension: ActorSystem[_] => DistributedData): DistributedDataSetup =
-    new DistributedDataSetup(new java.util.function.Function[ActorSystem[_], DistributedData] {
-      override def apply(sys: ActorSystem[_]): DistributedData = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+    new DistributedDataSetup(createExtension(_))
 
 }
 
