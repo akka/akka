@@ -14,6 +14,7 @@ import akka.annotation.InternalApi
 import akka.io.TcpConnection.CloseInformation
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
+import com.github.ghik.silencer.silent
 
 /**
  * An actor handling the connection state machine for an outgoing connection
@@ -55,6 +56,8 @@ private[io] class TcpOutgoingConnection(
     }
   }
 
+  // FIXME switch to new protocol
+  @silent
   def receive: Receive = {
     case registration: ChannelRegistration =>
       setRegistration(registration)

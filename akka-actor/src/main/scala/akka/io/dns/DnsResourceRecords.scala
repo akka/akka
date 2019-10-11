@@ -9,23 +9,25 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress }
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
 import CachePolicy._
+import akka.io.dns.CachePolicy.Never.Ttl
 import akka.io.dns.internal.{ DomainName, _ }
 import akka.util.{ unused, ByteIterator, ByteString }
 
 import scala.annotation.switch
 import scala.concurrent.duration._
 
-sealed abstract class ResourceRecord(val name: String, val ttl: Ttl, val recType: Short, val recClass: Short)
+sealed abstract class ResourceRecord(val name: String, val ttl: CachePolicy, val recType: Short, val recClass: Short)
     extends NoSerializationVerificationNeeded {}
 
-final case class ARecord(override val name: String, override val ttl: Ttl, ip: InetAddress)
+// FIXME, see if the RFC allows this
+final case class ARecord(override val name: String, override val ttl: CachePolicy, ip: InetAddress)
     extends ResourceRecord(name, ttl, RecordType.A.code, RecordClass.IN.code) {}
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[dns] object ARecord {
+private[io] object ARecord {
   def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator): ARecord = {
     val addr = Array.ofDim[Byte](4)
     it.getBytes(addr)
@@ -33,14 +35,14 @@ private[dns] object ARecord {
   }
 }
 
-final case class AAAARecord(override val name: String, override val ttl: Ttl, ip: Inet6Address)
+final case class AAAARecord(override val name: String, override val ttl: CachePolicy, ip: Inet6Address)
     extends ResourceRecord(name, ttl, RecordType.AAAA.code, RecordClass.IN.code) {}
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[dns] object AAAARecord {
+private[io] object AAAARecord {
 
   /**
    * INTERNAL API

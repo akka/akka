@@ -4,12 +4,18 @@
 
 package akka.io.dns
 
+import java.net.Inet4Address
+import java.net.Inet6Address
+import java.net.InetAddress
 import java.util
 
 import akka.actor.NoSerializationVerificationNeeded
+import akka.io.dns.CachePolicy.Ttl
 
 import scala.collection.{ immutable => im }
 import akka.util.ccompat.JavaConverters._
+
+import scala.collection.immutable
 
 /**
  * Supersedes [[akka.io.Dns]] protocol.

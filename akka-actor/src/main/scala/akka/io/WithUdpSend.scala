@@ -6,9 +6,11 @@ package akka.io
 
 import java.net.InetSocketAddress
 import java.nio.channels.{ DatagramChannel, SelectionKey }
+
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
+import com.github.ghik.silencer.silent
 
 import scala.util.control.NonFatal
 
@@ -31,6 +33,8 @@ private[io] trait WithUdpSend {
 
   import settings._
 
+  // FIXMEk use new DNS API
+  @silent
   def sendHandlers(registration: ChannelRegistration): Receive = {
     case send: Send if hasWritePending =>
       if (TraceLogging) log.debug("Dropping write because queue is full")

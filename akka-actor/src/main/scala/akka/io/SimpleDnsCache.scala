@@ -55,7 +55,6 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup {
   }
 
   override def cached(request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] = ???
-  override def resolve(request: DnsProtocol.Resolve)(system: ActorSystem, sender: ActorRef): Option[DnsProtocol.Resolved] = ???
 }
 
 object SimpleDnsCache {

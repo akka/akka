@@ -4,14 +4,14 @@
 
 package akka.io
 
-import java.net.{Inet4Address, Inet6Address, InetAddress, UnknownHostException}
+import java.net.{ Inet4Address, Inet6Address, InetAddress, UnknownHostException }
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import com.typesafe.config.Config
-import java.util.function.{Function => JFunction}
+import java.util.function.{ Function => JFunction }
 
 import akka.annotation.DoNotInherit
 import akka.io.dns.AAAARecord
@@ -23,9 +23,8 @@ import scala.collection.immutable
 import akka.util.ccompat._
 import com.github.ghik.silencer.silent
 
-
 /**
-* Not for user extension
+ * Not for user extension
  */
 @ccompatUsedUntil213
 @DoNotInherit
@@ -40,7 +39,14 @@ abstract class Dns {
 
   def cached(@unused request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved]
 
-  def resolve(@unused request: DnsProtocol.Resolve)(@unused system: ActorSystem, @unused sender: ActorRef): Option[DnsProtocol.Resolved]
+  def resolve(@unused request: DnsProtocol.Resolve)(
+      @unused system: ActorSystem,
+      @unused sender: ActorRef): Option[DnsProtocol.Resolved] = {
+    val ret = cached(request)
+    if (ret.isEmpty)
+      IO(Dns)(system).tell(request, sender)
+    ret
+  }
 
   /**
    * If an entry is cached return it immediately. If it is not then
@@ -55,7 +61,7 @@ abstract class Dns {
   }
 }
 
- object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
+object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   sealed trait Command
 
   @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
@@ -75,7 +81,7 @@ abstract class Dns {
     }
   }
 
-   //  @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
+  //  @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
   object Resolved {
     def apply(name: String, addresses: Iterable[InetAddress]): Resolved = {
       val ipv4: immutable.Seq[Inet4Address] =
@@ -85,15 +91,12 @@ abstract class Dns {
       Resolved(name, ipv4, ipv6)
     }
 
-     def apply(newProtocol: DnsProtocol.Resolved): Resolved = {
-       Resolved(
-         newProtocol.name,
-         newProtocol.records.collect {
-           case r: ARecord    => r.ip
-           case r: AAAARecord => r.ip
-         }
-       )
-     }
+    def apply(newProtocol: DnsProtocol.Resolved): Resolved = {
+      Resolved(newProtocol.name, newProtocol.records.collect {
+        case r: ARecord    => r.ip
+        case r: AAAARecord => r.ip
+      })
+    }
   }
 
   /**

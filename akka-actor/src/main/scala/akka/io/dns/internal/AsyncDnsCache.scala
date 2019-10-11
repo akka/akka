@@ -6,16 +6,14 @@ package akka.io.dns.internal
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
-import akka.io.{Dns, PeriodicCacheCleanup}
+import akka.io.{ Dns, PeriodicCacheCleanup }
 import akka.io.dns.CachePolicy.CachePolicy
 import akka.io.SimpleDnsCache._
 import akka.io.dns.DnsProtocol
-import akka.io.dns.DnsProtocol.{Ip, RequestType, Resolved}
-import akka.io.dns.{AAAARecord, ARecord}
+import akka.io.dns.DnsProtocol.{ Ip, RequestType, Resolved }
+import akka.io.dns.{ AAAARecord, ARecord }
 import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
@@ -39,6 +37,7 @@ import scala.collection.immutable
    */
   @silent("deprecated")
   override def cached(name: String): Option[Dns.Resolved] = {
+    // adapt response to the old protocol
     val ipv4 = cacheRef.get().get((name, Ip(ipv6 = false))).toList.flatMap(_.records)
     val ipv6 = cacheRef.get().get((name, Ip(ipv4 = false))).toList.flatMap(_.records)
     val both = cacheRef.get().get((name, Ip())).toList.flatMap(_.records)
@@ -50,6 +49,9 @@ import scala.collection.immutable
     if (all.isEmpty) None
     else Some(Dns.Resolved(name, all))
   }
+
+  override def cached(request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] =
+    cacheRef.get().get((request.name, request.requestType))
 
   // Milliseconds since start
   protected def clock(): Long = {
@@ -76,6 +78,4 @@ import scala.collection.immutable
       cleanup()
   }
 
-  override def cached(request: DnsProtocol.Resolve): Option[Resolved] = ???
-  override def resolve(request: DnsProtocol.Resolve)(system: ActorSystem, sender: ActorRef): Option[Resolved] = ???
 }

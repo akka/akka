@@ -4,19 +4,31 @@
 
 package akka.io
 
-import java.net.{InetAddress, UnknownHostException}
+import java.net.Inet4Address
+import java.net.Inet6Address
+import java.net.{ InetAddress, UnknownHostException }
 import java.security.Security
 import java.util.concurrent.TimeUnit
 
+import akka.actor.Status
 import akka.io.dns.CachePolicy._
-import akka.actor.{Actor, ActorLogging}
+import akka.actor.{ Actor, ActorLogging }
+import akka.io.dns.AAAARecord
+import akka.io.dns.ARecord
+import akka.io.dns.CachePolicy.Never.Forever
+import akka.io.dns.CachePolicy.Never.Ttl
+import akka.io.dns.DnsProtocol
+import akka.io.dns.DnsProtocol.Ip
+import akka.io.dns.DnsProtocol.Resolved
+import akka.io.dns.DnsProtocol.Srv
+import akka.io.dns.ResourceRecord
 import akka.util.Helpers.Requiring
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.util.{Failure, Success, Try}
+import scala.util.{ Failure, Success, Try }
 
 /** Respects the settings that can be set on the Java runtime via parameters. */
 @silent("deprecated")
@@ -98,7 +110,22 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
 
   // FIXME support new protocol
   override def receive = {
+    case DnsProtocol.Resolve(_, Srv) =>
+      sender() ! Status.Failure(
+        new IllegalArgumentException(
+          "SRV request sent to InetResolver. SRV requests are only supported by async-dns resolver"))
+
+    case DnsProtocol.Resolve(name, Ip(ipv4, ipv6)) =>
+      val addresses: Array[InetAddress] = InetAddress.getAllByName(name)
+      val records = addresses.collect {
+        case a: Inet4Address => ARecord(name, positiveCachePolicy, a)
+        case a: Inet6Address => AAAARecord(name, positiveCachePolicy, a)
+      }
+      // FIXME, deal with unknown host exception
+      val answer = DnsProtocol.Resolved(name, records.toList)
+      sender() ! answer
     case Dns.Resolve(name) =>
+      // no where in akka now sends this message, but supported until Dns.Resolve/Resolved have been removed
       val answer = cache.cached(name) match {
         case Some(a) => a
         case None =>
@@ -115,4 +142,5 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
       }
       sender() ! answer
   }
+
 }
