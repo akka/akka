@@ -136,8 +136,6 @@ To retrieve the current value of a data you send `Replicator.Get` message to the
 The example has the `GetValue` command, which is asking the replicator for current value. Note how the `replyTo` from the
 incoming message can be used when the `GetSuccess` response from the replicator is received.
 
-You supply a consistency level which has the following meaning:
-
 @@@ div { .group-scala }
 Alternative way of constructing the function for the `Get` and `Delete`:
 
