@@ -8,6 +8,7 @@ import java.security.Security
 import java.util.concurrent.TimeUnit
 
 import akka.actor.Props
+import akka.io.dns.internal.SimpleDnsCache
 import akka.testkit.{ AkkaSpec, TestActorRef }
 import com.github.ghik.silencer.silent
 

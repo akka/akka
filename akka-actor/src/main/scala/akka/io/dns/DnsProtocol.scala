@@ -4,18 +4,13 @@
 
 package akka.io.dns
 
-import java.net.Inet4Address
-import java.net.Inet6Address
-import java.net.InetAddress
 import java.util
 
 import akka.actor.NoSerializationVerificationNeeded
-import akka.io.dns.CachePolicy.Ttl
+import akka.routing.ConsistentHashingRouter.ConsistentHashable
 
 import scala.collection.{ immutable => im }
 import akka.util.ccompat.JavaConverters._
-
-import scala.collection.immutable
 
 /**
  * Supersedes [[akka.io.Dns]] protocol.
@@ -47,7 +42,9 @@ object DnsProtocol {
    */
   def srvRequestType(): RequestType = Srv
 
-  final case class Resolve(name: String, requestType: RequestType)
+  final case class Resolve(name: String, requestType: RequestType) extends ConsistentHashable {
+    override def consistentHashKey: Any = name
+  }
 
   object Resolve {
     def apply(name: String): Resolve = Resolve(name, Ip())

@@ -15,13 +15,11 @@ import akka.io.dns.CachePolicy._
 import akka.actor.{ Actor, ActorLogging }
 import akka.io.dns.AAAARecord
 import akka.io.dns.ARecord
-import akka.io.dns.CachePolicy.Never.Forever
-import akka.io.dns.CachePolicy.Never.Ttl
 import akka.io.dns.DnsProtocol
 import akka.io.dns.DnsProtocol.Ip
-import akka.io.dns.DnsProtocol.Resolved
 import akka.io.dns.DnsProtocol.Srv
 import akka.io.dns.ResourceRecord
+import akka.io.dns.internal.SimpleDnsCache
 import akka.util.Helpers.Requiring
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
@@ -109,38 +107,65 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
   }
 
   // FIXME support new protocol
-  override def receive = {
+  override def receive: Receive = {
     case DnsProtocol.Resolve(_, Srv) =>
       sender() ! Status.Failure(
         new IllegalArgumentException(
           "SRV request sent to InetResolver. SRV requests are only supported by async-dns resolver"))
 
-    case DnsProtocol.Resolve(name, Ip(ipv4, ipv6)) =>
-      val addresses: Array[InetAddress] = InetAddress.getAllByName(name)
-      val records = addresses.collect {
-        case a: Inet4Address => ARecord(name, positiveCachePolicy, a)
-        case a: Inet6Address => AAAARecord(name, positiveCachePolicy, a)
-      }
-      // FIXME, deal with unknown host exception
-      val answer = DnsProtocol.Resolved(name, records.toList)
-      sender() ! answer
-    case Dns.Resolve(name) =>
-      // no where in akka now sends this message, but supported until Dns.Resolve/Resolved have been removed
-      val answer = cache.cached(name) match {
+    case r @ DnsProtocol.Resolve(name, ip @ Ip(ipv4, ipv6)) =>
+      val answer = cache.cached(r) match {
         case Some(a) => a
         case None =>
           try {
-            val answer = Dns.Resolved(name, InetAddress.getAllByName(name))
-            if (positiveCachePolicy != Never) cache.put(answer, positiveCachePolicy)
+            val addresses: Array[InetAddress] = InetAddress.getAllByName(name)
+            val records = addressToRecords(name, addresses.toList, ipv4, ipv6)
+            val answer = DnsProtocol.Resolved(name, records.toList)
+            if (positiveCachePolicy != Never)
+              cache.put((name, Ip()), DnsProtocol.Resolved(name, records), positiveCachePolicy)
+            answer
+          } catch {
+            case _: UnknownHostException =>
+              val a = DnsProtocol.Resolved(name, immutable.Seq.empty)
+              if (negativeCachePolicy != Never)
+                cache.put((name, ip), a, negativeCachePolicy)
+              a
+          }
+      }
+      sender() ! answer
+    case Dns.Resolve(name) =>
+      // no where in akka now sends this message, but supported until Dns.Resolve/Resolved have been removed
+      val answer: Dns.Resolved = cache.cached(name) match {
+        case Some(a) => a
+        case None =>
+          try {
+            val addresses = InetAddress.getAllByName(name)
+            val records = addressToRecords(name, addresses.toList)
+            // response with the old protocol as the request was the new protocol
+            val answer = Dns.Resolved(name, addresses)
+            if (positiveCachePolicy != Never)
+              cache.put((name, Ip()), DnsProtocol.Resolved(name, records), positiveCachePolicy)
             answer
           } catch {
             case _: UnknownHostException =>
               val answer = Dns.Resolved(name, immutable.Seq.empty, immutable.Seq.empty)
-              if (negativeCachePolicy != Never) cache.put(answer, negativeCachePolicy)
+              if (negativeCachePolicy != Never)
+                cache.put((name, Ip()), DnsProtocol.Resolved(name, immutable.Seq.empty), negativeCachePolicy)
               answer
           }
       }
       sender() ! answer
+  }
+
+  private def addressToRecords(
+      name: String,
+      addresses: immutable.Seq[InetAddress],
+      ipv4: Boolean = true,
+      ipv6: Boolean = true): immutable.Seq[ResourceRecord] = {
+    addresses.collect {
+      case a: Inet4Address if ipv4 => ARecord(name, positiveCachePolicy, a)
+      case a: Inet6Address if ipv6 => AAAARecord(name, positiveCachePolicy, a)
+    }
   }
 
 }

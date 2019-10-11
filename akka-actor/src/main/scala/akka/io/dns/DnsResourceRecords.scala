@@ -9,7 +9,6 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress }
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
 import CachePolicy._
-import akka.io.dns.CachePolicy.Never.Ttl
 import akka.io.dns.internal.{ DomainName, _ }
 import akka.util.{ unused, ByteIterator, ByteString }
 
@@ -29,9 +28,9 @@ final case class ARecord(override val name: String, override val ttl: CachePolic
 @InternalApi
 private[io] object ARecord {
   def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator): ARecord = {
-    val addr = Array.ofDim[Byte](4)
-    it.getBytes(addr)
-    ARecord(name, ttl, InetAddress.getByAddress(addr).asInstanceOf[Inet4Address])
+    val address = Array.ofDim[Byte](4)
+    it.getBytes(address)
+    ARecord(name, ttl, InetAddress.getByAddress(address).asInstanceOf[Inet4Address])
   }
 }
 
@@ -49,9 +48,9 @@ private[io] object AAAARecord {
    */
   @InternalApi
   def parseBody(name: String, ttl: Ttl, @unused length: Short, it: ByteIterator): AAAARecord = {
-    val addr = Array.ofDim[Byte](16)
-    it.getBytes(addr)
-    AAAARecord(name, ttl, InetAddress.getByAddress(addr).asInstanceOf[Inet6Address])
+    val address = Array.ofDim[Byte](16)
+    it.getBytes(address)
+    AAAARecord(name, ttl, InetAddress.getByAddress(address).asInstanceOf[Inet6Address])
   }
 }
 

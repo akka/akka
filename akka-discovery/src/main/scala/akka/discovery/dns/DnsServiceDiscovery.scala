@@ -24,7 +24,7 @@ import scala.collection.{ immutable => im }
 import scala.util.Failure
 import scala.util.Success
 
-import akka.io.dns.internal.AsyncDnsCache
+import akka.io.dns.internal.SimpleDnsCache
 import akka.io.dns.internal.AsyncDnsManager
 import akka.util.OptionVal
 import akka.util.Timeout
@@ -82,12 +82,12 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
 
   // updated from ask AsyncDnsManager.GetCache, but doesn't have to volatile since will still work when unset
   // (eventually visible)
-  private var asyncDnsCache: OptionVal[AsyncDnsCache] = OptionVal.None
+  private var asyncDnsCache: OptionVal[SimpleDnsCache] = OptionVal.None
 
   private implicit val ec = system.dispatchers.internalDispatcher
 
   dns.ask(AsyncDnsManager.GetCache)(Timeout(30.seconds)).onComplete {
-    case Success(cache: AsyncDnsCache) =>
+    case Success(cache: SimpleDnsCache) =>
       asyncDnsCache = OptionVal.Some(cache)
     case Success(other) =>
       log.error("Expected AsyncDnsCache but got [{}]", other.getClass.getName)

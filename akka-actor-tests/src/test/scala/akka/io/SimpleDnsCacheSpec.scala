@@ -3,14 +3,20 @@
  */
 
 package akka.io
+// FIXME, test async dns cache instead
 
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicLong
 
+import akka.io.dns.ARecord
 import akka.io.dns.CachePolicy.Ttl
+import akka.io.dns.DnsProtocol
+import akka.io.dns.DnsProtocol.Ip
+import akka.io.dns.internal.SimpleDnsCache
 import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
+import scala.collection.immutable
 
 class SimpleDnsCacheSpec extends WordSpec with Matchers {
   "Cache" should {
@@ -19,8 +25,11 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
       val cache: SimpleDnsCache = new SimpleDnsCache() {
         override protected def clock() = localClock.get
       }
-      val cacheEntry = Dns.Resolved("test.local", Seq(InetAddress.getByName("127.0.0.1")))
-      cache.put(cacheEntry, Ttl.fromPositive(5000.millis))
+      val ttl = Ttl.fromPositive(5000.millis)
+      val cacheEntry = DnsProtocol.Resolved(
+        "test.local",
+        immutable.Seq(ARecord("test.local", ttl, InetAddress.getByName("127.0.0.1"))))
+      cache.put(("testl.local", Ip()), cacheEntry, ttl)
 
       cache.cached("test.local") should ===(Some(cacheEntry))
       localClock.set(4999)
@@ -34,8 +43,12 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
       val cache: SimpleDnsCache = new SimpleDnsCache() {
         override protected def clock() = localClock.get
       }
-      val cacheEntry = Dns.Resolved("test.local", Seq(InetAddress.getByName("127.0.0.1")))
-      cache.put(cacheEntry, Ttl.fromPositive(5000.millis))
+      val ttl = Ttl.fromPositive(5000.millis)
+      val cacheEntry =
+        DnsProtocol.Resolved(
+          "test.local",
+          immutable.Seq(ARecord("test.local", ttl, InetAddress.getByName("127.0.0.1"))))
+      cache.put(("test.local", Ip()), cacheEntry, ttl)
 
       cache.cached("test.local") should ===(Some(cacheEntry))
       localClock.set(5000)
@@ -48,5 +61,6 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
       localClock.set(0)
       cache.cached("test.local") should ===(None)
     }
+
   }
 }

@@ -11,7 +11,7 @@ import scala.concurrent.duration.{ Duration, FiniteDuration, _ }
 object CachePolicy {
 
   sealed trait CachePolicy
-  case object Never extends CachePolicy {
+  case object Never extends CachePolicy
   case object Forever extends CachePolicy
 
   final class Ttl private (val value: FiniteDuration) extends CachePolicy {

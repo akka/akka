@@ -12,7 +12,7 @@ import akka.io._
  */
 @InternalApi
 private[akka] class AsyncDnsProvider extends DnsProvider {
-  override def cache: Dns = new AsyncDnsCache()
+  override def cache: Dns = new SimpleDnsCache()
   override def actorClass = classOf[AsyncDnsResolver]
   override def managerClass = classOf[AsyncDnsManager]
 }

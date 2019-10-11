@@ -4,6 +4,8 @@
 
 package akka.io
 
+import akka.io.dns.internal.SimpleDnsCache
+
 class InetAddressDnsProvider extends DnsProvider {
   override def cache: Dns = new SimpleDnsCache()
   override def actorClass = classOf[InetAddressDnsResolver]

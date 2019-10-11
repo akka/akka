@@ -37,11 +37,9 @@ abstract class Dns {
   @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
   def cached(@unused name: String): Option[Dns.Resolved] = None
 
-  def cached(@unused request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved]
+  def cached(@unused request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] = None
 
-  def resolve(@unused request: DnsProtocol.Resolve)(
-      @unused system: ActorSystem,
-      @unused sender: ActorRef): Option[DnsProtocol.Resolved] = {
+  def resolve(request: DnsProtocol.Resolve)(system: ActorSystem, sender: ActorRef): Option[DnsProtocol.Resolved] = {
     val ret = cached(request)
     if (ret.isEmpty)
       IO(Dns)(system).tell(request, sender)
@@ -54,6 +52,7 @@ abstract class Dns {
    */
   @deprecated("resolve(DnsProtocol.Resolve)", "2.6.0")
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Dns.Resolved] = {
+    // doesn't delegate to new method as sender is expecting old protocol back
     val ret = cached(name)
     if (ret.isEmpty)
       IO(Dns)(system).tell(Dns.Resolve(name), sender)
@@ -81,7 +80,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     }
   }
 
-  //  @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
+  @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
   object Resolved {
     def apply(name: String, addresses: Iterable[InetAddress]): Resolved = {
       val ipv4: immutable.Seq[Inet4Address] =
@@ -91,6 +90,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
       Resolved(name, ipv4, ipv6)
     }
 
+    @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
     def apply(newProtocol: DnsProtocol.Resolved): Resolved = {
       Resolved(newProtocol.name, newProtocol.records.collect {
         case r: ARecord    => r.ip
@@ -115,7 +115,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   @deprecated("use resolve(DnsProtocol.Resolve)", "2.6.0")
   @silent("deprecated")
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Resolved] = {
-    Dns(system).cache.resolve(DnsProtocol.resolve(name))(system, sender).map(dpr => Resolved(dpr))
+    Dns(system).cache.resolve(name)(system, sender)
   }
 
   override def lookup() = Dns
@@ -136,7 +136,7 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
   /**
    * INTERNAL API
    *
-   * Load an additional async-dns resolver. Can be used to use async-dns even if inet-resolver is the configuerd
+   * Load an additional async-dns resolver. Can be used to use async-dns even if inet-resolver is the configured
    * default.
    * Intentionally chosen not to support loading an arbitrary resolver as it required a specific constructor
    * for the manager actor. The expected constructor for DNS plugins is just to take in a DnsExt which can't
@@ -215,7 +215,16 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
 
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 object IpVersionSelector {
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   def getInetAddress(ipv4: Option[Inet4Address], ipv6: Option[Inet6Address]): Option[InetAddress] =
     System.getProperty("java.net.preferIPv6Addresses") match {
       case "true" => ipv6.orElse(ipv4)

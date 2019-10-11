@@ -26,7 +26,7 @@ import scala.util.control.NonFatal
 @InternalApi
 private[io] final class AsyncDnsResolver(
     settings: DnsSettings,
-    cache: AsyncDnsCache,
+    cache: SimpleDnsCache,
     clientFactory: (ActorRefFactory, List[InetSocketAddress]) => List[ActorRef])
     extends Actor
     with ActorLogging {
