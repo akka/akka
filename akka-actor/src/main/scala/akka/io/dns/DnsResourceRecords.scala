@@ -15,11 +15,15 @@ import akka.util.{ unused, ByteIterator, ByteString }
 import scala.annotation.switch
 import scala.concurrent.duration._
 
-sealed abstract class ResourceRecord(val name: String, val ttl: CachePolicy, val recType: Short, val recClass: Short)
+sealed abstract class ResourceRecord(
+    val name: String,
+    val ttl: CachePolicy.Ttl,
+    val recType: Short,
+    val recClass: Short)
     extends NoSerializationVerificationNeeded {}
 
 // FIXME, see if the RFC allows this
-final case class ARecord(override val name: String, override val ttl: CachePolicy, ip: InetAddress)
+final case class ARecord(override val name: String, override val ttl: CachePolicy.Ttl, ip: InetAddress)
     extends ResourceRecord(name, ttl, RecordType.A.code, RecordClass.IN.code) {}
 
 /**
@@ -34,7 +38,7 @@ private[io] object ARecord {
   }
 }
 
-final case class AAAARecord(override val name: String, override val ttl: CachePolicy, ip: Inet6Address)
+final case class AAAARecord(override val name: String, override val ttl: CachePolicy.Ttl, ip: Inet6Address)
     extends ResourceRecord(name, ttl, RecordType.AAAA.code, RecordClass.IN.code) {}
 
 /**

@@ -82,7 +82,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
     }
   }
 
-  @deprecated("cached(DnsProtocol.Resolve)", "2.6.0")
+  @deprecated("cached(DnsProtocol.Resolved)", "2.6.0")
   object Resolved {
     def apply(name: String, addresses: Iterable[InetAddress]): Resolved = {
       val ipv4: immutable.Seq[Inet4Address] =
@@ -117,6 +117,22 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
   @deprecated("use resolve(DnsProtocol.Resolve)", "2.6.0")
   @silent("deprecated")
   def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Resolved] = {
+    Dns(system).cache.resolve(name)(system, sender)
+  }
+
+  /**
+   * Lookup if a DNS resolved is cached. The exact behavior of caching will depend on
+   * the akka.actor.io.dns.resolver that is configured.
+   */
+  def cached(name: DnsProtocol.Resolve)(system: ActorSystem): Option[DnsProtocol.Resolved] = {
+    Dns(system).cache.cached(name)
+  }
+
+  /**
+   * If an entry is cached return it immediately. If it is not then
+   * trigger a resolve and return None.
+   */
+  def resolve(name: DnsProtocol.Resolve)(system: ActorSystem, sender: ActorRef): Option[DnsProtocol.Resolved] = {
     Dns(system).cache.resolve(name)(system, sender)
   }
 

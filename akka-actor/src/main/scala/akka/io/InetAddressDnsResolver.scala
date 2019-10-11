@@ -161,8 +161,8 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
       ipv4: Boolean = true,
       ipv6: Boolean = true): immutable.Seq[ResourceRecord] = {
     addresses.collect {
-      case a: Inet4Address if ipv4 => ARecord(name, positiveCachePolicy, a)
-      case a: Inet6Address if ipv6 => AAAARecord(name, positiveCachePolicy, a)
+      case a: Inet4Address if ipv4 => ARecord(name, Ttl.toTll(positiveCachePolicy), a)
+      case a: Inet6Address if ipv6 => AAAARecord(name, Ttl.toTll(positiveCachePolicy), a)
     }
   }
 
