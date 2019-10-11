@@ -141,7 +141,7 @@ object LoggingDocExamples {
     //#test-logging-criteria
   }
 
-  def tagsExample() {
+  def tagsExample(): Unit = {
     Behaviors.setup[AnyRef] { context =>
       val myBehavior = Behaviors.empty[AnyRef]
       //#tags
