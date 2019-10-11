@@ -708,3 +708,73 @@ This also means that custom `GraphStage` implementations should be changed to pa
 cancellation cause when downstream cancels by implementing the `OutHandler.onDownstreamFinish` signature
 taking a `cause` parameter and calling `cancelStage(cause)` to pass the cause upstream. The old zero-argument
 `onDownstreamFinish` method has been deprecated.
+
+
+### Lazy and async stream operator changes
+
+The operators that provide support for lazy and `Future`/`CompletionStage`  stream construction has gotten a workthrough
+to be more consistent.
+
+#### javadsl.Flow 
+  
+| old                     | new |
+------------------------|----------------
+| lazyInit                | lazyCompletionStageFlow in combination with prefixAndTail(1) |
+| lazyInitAsync           | lazyCompletionStageFlow |
+| -                       | completionStageFlow |
+| -                       | lazyFlow |
+
+### javadsl.Sink            
+  
+| old                     | new |
+------------------------|----------------
+| lazyInit                | lazyCompletionStageSink in combination with Flow.prefixAndTail(1) |
+| lazyInitAsync           | lazyCompletionStageSink |
+| -                       | completionStageSink |
+| -                       | lazySink |
+  
+### javadsl.Source
+  
+| old                       | new |
+--------------------------|----------------
+| fromFuture                | future |
+| fromCompletionStage       | completionStage |
+| fromFutureSource          | futureSource |
+| fromSourceCompletionStage | completionStageSource |
+| lazily                    | lazySource |
+| lazilyAsync               | lazyCompletionStage |
+| -                         | lazySingle |
+| -                         | lazySource |
+| -                         | lazyCompletionStageSource |
+    
+### scaladsl.Flow
+
+| old                     | new |
+------------------------|----------------
+| lazyInit                | lazyFutureFlow |
+| lazyInitAsync           | lazyFutureFlow |
+| -                       | futureFlow |
+| -                       | lazyFlow |
+
+### scaladsl.Sink            
+
+| old                     | new |
+------------------------|----------------
+| lazyInit                | lazyFutureSink in combination with Flow.prefixAndTail(1) |
+| lazyInitAsync           | lazyFutureSink |
+| -                       | futureSink |
+| -                       | lazySink |
+
+### scaladsl.Source
+
+| old                       | new |
+--------------------------|----------------
+| fromFuture                | future |
+| fromCompletionStage       | completionStage |
+| fromFutureSource          | futureSource |
+| fromSourceCompletionStage | - |
+| lazily                    | lazySource |
+| lazilyAsync               | lazyFuture |
+| -                         | lazySingle |
+| -                         | lazySource |
+| -                         | lazyFutureSource |
