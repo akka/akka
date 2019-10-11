@@ -62,7 +62,7 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #import #sharding-extension }
 
-It is common for sharding to be used with persistence however any Behavior can be used with sharding e.g. a basic counter:
+It is common for sharding to be used with persistence however any `Behavior` can be used with sharding e.g. a basic counter:
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #counter }
@@ -78,8 +78,8 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #init }
 
-Messages to a specific entity are then sent via an EntityRef.
-It is also possible to wrap methods in a `ShardingEnvelop` or define extractor functions and send messages directly to the shard region.
+Messages to a specific entity are then sent via an `EntityRef`.
+It is also possible to wrap methods in a `ShardingEnvelope` or define extractor functions and send messages directly to the shard region.
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #send }
@@ -88,7 +88,7 @@ Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #send }
 
 Cluster sharding `init` should be called on every node for each entity type. Which nodes entity actors are created on
-can be controlled with roles. `init` will create a `ShardRegion` or a proxy depending on whether the node's role matches
+can be controlled with @ref:[roles](cluster.md#node-roles). `init` will create a `ShardRegion` or a proxy depending on whether the node's role matches
 the entity's role. 
 
 Specifying the role:
@@ -103,7 +103,7 @@ Java
 
 ## Persistence example
 
-When using sharding entities can be moved to different nodes in the cluster. Persistence can be used to recover the state of
+When using sharding, entities can be moved to different nodes in the cluster. Persistence can be used to recover the state of
 an actor after it has moved.
 
 Akka Persistence is based on the single-writer principle, for a particular `PersistenceId` only one persistent actor
@@ -129,7 +129,7 @@ Java
 
 Note how an unique @apidoc[akka.persistence.typed.PersistenceId] can be constructed from the `EntityTypeKey` and the `entityId`
 provided by the @apidoc[typed.*.EntityContext] in the factory function for the `Behavior`. This is a typical way
-of defining the `PersistenceId` but formats are possible, as described in the
+of defining the `PersistenceId` but other formats are possible, as described in the
 @ref:[PersistenceId section](persistence.md#persistenceid).
 
 Sending messages to persistent entities is the same as if the entity wasn't persistent. The only difference is
@@ -281,18 +281,15 @@ It is disabled automatically if @ref:[Remembering Entities](#remembering-entitie
 Remembering entities pertains to restarting entities after a rebalance or recovering from a crash.
 Enabling or disabling (the default) this feature drives the behavior of the restarts:
 
-* enabled: entities are restarted, even though no new messages are sent to them. This will also automatically disable @ref:[Passivation](#passivation).
+* enabled: entities are restarted, even though no new messages are sent to them. This will also disable @ref:[Automtic Passivation](#passivation).
 * disabled: entities are restarted, on demand when a new message arrives.
 
 Note that the state of the entities themselves will not be restored unless they have been made persistent,
 for example with @ref:[Event Sourcing](persistence.md).
 
-To make the list of entities in each `Shard` persistent (durable):
-
-1. set the `rememberEntities` flag to true in `ClusterShardingSettings` when 
-starting a shard region (or its proxy) for a given `entity` type,
-or configure `akka.cluster.sharding.remember-entities = on`, 
-1. make sure the it is possible to extract the ID of the sharded entity in the message.
+To make the list of entities in each `Shard` persistent (durable) set the `rememberEntities` flag to true in
+`ClusterShardingSettings` when starting a shard region (or its proxy) for a given `entity` type or configure
+`akka.cluster.sharding.remember-entities = on`.
 
 The performance cost of `rememberEntities` is rather high when starting/stopping entities and when
 shards are rebalanced. This cost increases with number of entities per shard, thus it is not
