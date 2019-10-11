@@ -17,6 +17,16 @@ Streams the elements through the given future flow once it successfully complete
 Streams the elements through the given future flow once it successfully completes. 
 If the future fails the stream is failed.
 
+## Examples
+
+A deferred creation of the stream based on the initial element like how the deprecated `lazyInit` worked can be achieved by combining `futureFlow`
+with `prefixAndTail` like so:
+
+Scala
+:   @@snip [FutureFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/flow/FutureFlow.scala) { #base-on-first-element }
+
+
+
 ## Reactive Streams semantics
 
 @@@div { .callout }

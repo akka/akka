@@ -255,7 +255,9 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  @deprecated("Use 'Flow.lazyCompletionStageFlow' in combination with 'Flow.prefixAndTail(1)' instead", "2.6.0")
+  @deprecated(
+    "Use 'Flow.completionStageFlow' in combination with prefixAndTail(1) instead, see `completionStageFlow` operator docs for details",
+    "2.6.0")
   def lazyInit[I, O, M](
       flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]],
       fallback: function.Creator[M]): Flow[I, O, M] = {

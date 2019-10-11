@@ -16,6 +16,9 @@ and failed with a `akka.stream.NeverMaterializedException` if the stream fails o
 
 See also @ref:[lazyFlow](lazyFlow.md).
 
+Can be combined with `prefixAndTail(1)` to base the flow construction on the initial element triggering creation.
+See @ref:[lazyFlow](lazyFlow.md) for sample.
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
