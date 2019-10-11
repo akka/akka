@@ -4,5 +4,9 @@
 
 package akka.stream
 
-final class NeverMaterializedException
-    extends RuntimeException("Downstream canceled without triggering lazy source materialization")
+final class NeverMaterializedException(cause: Throwable)
+    extends RuntimeException("Downstream canceled without triggering lazy source materialization", cause) {
+
+  def this() = this(null)
+
+}

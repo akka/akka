@@ -22,12 +22,15 @@ class DslFactoriesConsistencySpec extends WordSpec with Matchers {
       "getClass",
       "shape",
       "identityTraversalBuilder",
-      // Futures are for Scala
-      "lazyFutureSource",
-      "futureSource",
-      "lazyFuture",
-      "lazyFutureFlow",
-      "futureFlow")
+      // futures in scaladsl vs completion stage in javadsl
+      "lazyFutureSource", // lazyCompletionStageSource
+      "futureSource", // completionStageSource
+      "lazyFuture", // lazyCompletionStage
+      "lazyFutureFlow", // lazyCompletionStageFlow
+      "futureFlow", // completionStageFlow
+      "futureSink", // completionStageSink
+      "lazyFutureSink" // lazyCompletionStageSink
+    )
 
   val javaIgnore =
     Set("adapt") // the scaladsl -> javadsl bridge

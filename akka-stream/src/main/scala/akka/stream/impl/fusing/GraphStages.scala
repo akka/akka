@@ -335,6 +335,11 @@ import scala.concurrent.{ Future, Promise }
         override def onUpstreamFinish(): Unit =
           completeStage()
 
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          sinkIn.cancel(cause)
+          super.onDownstreamFinish(cause)
+        }
+
         override def postStop(): Unit =
           if (!sinkIn.isClosed) sinkIn.cancel()
 

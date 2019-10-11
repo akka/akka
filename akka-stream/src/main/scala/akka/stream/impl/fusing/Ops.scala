@@ -2141,7 +2141,8 @@ private[stream] object Collect {
         }
 
       override def onUpstreamFinish(): Unit = {
-        matPromise.tryFailure(new NeverMaterializedException)
+        if (!matPromise.isCompleted)
+          matPromise.tryFailure(new NeverMaterializedException)
         // ignore onUpstreamFinish while the stage is switching but setKeepGoing
         if (switching) {
           setKeepGoing(true)
@@ -2152,7 +2153,8 @@ private[stream] object Collect {
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
         super.onUpstreamFailure(ex)
-        matPromise.tryFailure(new NeverMaterializedException)
+        if (!matPromise.isCompleted)
+          matPromise.tryFailure(new NeverMaterializedException(ex))
       }
 
       override def onPull(): Unit = {

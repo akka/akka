@@ -279,7 +279,7 @@ object Source {
    *
    * @see [[Source.lazily]]
    */
-  @deprecated("Use 'Source.lazyFuture' instead", "2.6.0")
+  @deprecated("Use 'Source.lazyCompletionStage' instead", "2.6.0")
   def lazilyAsync[T](create: function.Creator[CompletionStage[T]]): Source[T, Future[NotUsed]] =
     scaladsl.Source.lazilyAsync[T](() => create.create().toScala).asJava
 

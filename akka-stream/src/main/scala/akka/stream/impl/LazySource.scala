@@ -35,9 +35,7 @@ import scala.util.control.NonFatal
     val logic = new GraphStageLogic(shape) with OutHandler {
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
-        // FIXME NeverMaterializedException with cause
-        matPromise.failure(
-          new RuntimeException("Downstream canceled without triggering lazy source materialization", cause))
+        matPromise.failure(new NeverMaterializedException(cause))
         completeStage()
       }
 

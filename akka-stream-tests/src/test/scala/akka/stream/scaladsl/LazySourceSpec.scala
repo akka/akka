@@ -403,7 +403,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
     "propagate downstream cancellation cause when inner source has been materialized" in {
       val probe = TestProbe()
-      val (doneF, killswitch) =
+      val (terminationF, killswitch) =
         Source
           .lazyFutureSource(() =>
             Future {
@@ -419,7 +419,7 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val boom = TE("boom")
       probe.expectMsg(Done)
       killswitch.abort(boom)
-      doneF.failed.futureValue should ===(boom)
+      terminationF.failed.futureValue should ===(boom)
     }
 
   }
