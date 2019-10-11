@@ -283,7 +283,7 @@ final class ClusterShardingSettings(
   @InternalApi
   private[akka] def shouldHostShard(cluster: Cluster): Boolean =
     role.forall(cluster.selfMember.roles.contains) &&
-    dataCenter.forall(cluster.selfMember.dataCenter.contains)
+    dataCenter.forall(_ == cluster.selfMember.dataCenter)
 
   // no withNumberOfShards because it should be defined in configuration to be able to verify same
   // value on all nodes with `JoinConfigCompatChecker`
