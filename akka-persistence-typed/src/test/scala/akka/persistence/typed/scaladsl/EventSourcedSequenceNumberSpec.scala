@@ -80,7 +80,7 @@ class EventSourcedSequenceNumberSpec
 
     "be available while replaying stash" in {
       val probe = TestProbe[String]()
-      val ref = spawn(behavior(PersistenceId("ess-2"), probe.ref))
+      val ref = spawn(behavior(PersistenceId.ofUniqueId("ess-2"), probe.ref))
       probe.expectMessage("0 onRecoveryComplete")
 
       ref ! "stash"
@@ -103,7 +103,7 @@ class EventSourcedSequenceNumberSpec
     // reproducer for #27935
     "not fail when snapshotting" in {
       val probe = TestProbe[String]()
-      val ref = spawn(behavior(PersistenceId("ess-3"), probe.ref))
+      val ref = spawn(behavior(PersistenceId.ofUniqueId("ess-3"), probe.ref))
       probe.expectMessage("0 onRecoveryComplete")
 
       ref ! "cmd"
