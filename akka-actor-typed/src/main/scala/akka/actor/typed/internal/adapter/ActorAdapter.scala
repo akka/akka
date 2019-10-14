@@ -43,6 +43,11 @@ import akka.util.OptionVal
     case _ => throw new RuntimeException("receive should never be called on the typed ActorAdapter")
   }
 
+  private val classicSupervisorDecider: Throwable => classic.SupervisorStrategy.Directive = { exc =>
+    // ActorInitializationException => Stop in defaultDecider
+    classic.SupervisorStrategy.defaultDecider.applyOrElse(exc, (_: Throwable) => classic.SupervisorStrategy.Restart)
+  }
+
 }
 
 /**
@@ -223,10 +228,8 @@ import akka.util.OptionVal
       log.error(ex, logMessage)
       if (isTypedActor)
         classic.SupervisorStrategy.Stop
-      else {
-        // ActorInitializationException => Stop in defaultDecider
-        classic.SupervisorStrategy.defaultDecider.applyOrElse(ex, (_: Throwable) => classic.SupervisorStrategy.Restart)
-      }
+      else
+        ActorAdapter.classicSupervisorDecider(ex)
   }
 
   private def recordChildFailure(ex: Throwable): Unit = {
