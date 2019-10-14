@@ -16,7 +16,13 @@ Just like `scan` but receives a function that results in a @scala[`Future`] @jav
 
 Just like `scan` but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
 
-Note that the `zero` value must be immutable.
+@@@ warning
+
+Note that the `zero` value must be immutable, because otherwise
+the same mutable instance would be shared across different threads
+when running the stream more than once.
+
+@@@
 
 ## Reactive Streams semantics
 
@@ -30,3 +36,19 @@ Note that the `zero` value must be immutable.
 
 @@@
 
+## Examples
+
+Below example demonstrates how `scanAsync` is similar to `fold`, but it keeps value from every iteration.
+
+Scala
+:  @@snip [ScanAsync.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ScanAsync.scala) { #scanAsync }
+
+Java
+:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #scanAsync }
+
+@@@ warning
+
+In an actual application the future would probably involve some external API that returns a @scala[`Future`]
+@java[`CompletionStage`] rather than an immediately completed value.
+
+@@@
