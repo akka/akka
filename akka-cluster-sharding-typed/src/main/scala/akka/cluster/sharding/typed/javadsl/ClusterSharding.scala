@@ -194,7 +194,7 @@ abstract class ClusterSharding {
    * You have to correctly specify the type of messages the target can handle via the `typeKey`.
    *
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
-   * here provided `entityId`.
+   * provided `entityId`.
    *
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
