@@ -126,10 +126,23 @@ Java
 :  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #logMessages }
 
 
-## Behaviors.withMdc
+## MDC
 
-To include [MDC](http://logback.qos.ch/manual/mdc.html) attributes in logging events from an actor
-you can decorate a `Behavior` with `Behaviors.withMdc` or use the `org.slf4j.MDC` API directly.
+[MDC](http://logback.qos.ch/manual/mdc.html) allows for adding additional context dependent attributes to log entries.
+Out of the box Akka will place the path of the actor in the the MDC attribute `akkaSource`.
+
+One or more tags can also be added to the MDC using the `ActorTags` props. The tags will be rendered as a comma separated
+list and be put in the MDC attribute `akkaTags`. This can be used to categorize log entries from a set of different actors
+to allow easier filtering of logs:
+
+Scala
+:  @@snip [LoggingDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/LoggingDocExamples.scala) { #tags }
+
+Java
+:  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #tags }
+
+In addition to these two built in MDC attributes you can also decorate a `Behavior` with `Behaviors.withMdc` or 
+use the `org.slf4j.MDC` API directly.
 
 The `Behaviors.withMdc` decorator has two parts. A static `Map` of MDC attributes that are not changed,
 and a dynamic `Map` that can be constructed for each message.
