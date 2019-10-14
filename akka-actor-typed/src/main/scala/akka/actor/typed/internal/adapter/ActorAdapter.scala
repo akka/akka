@@ -223,8 +223,10 @@ import akka.util.OptionVal
       log.error(ex, logMessage)
       if (isTypedActor)
         classic.SupervisorStrategy.Stop
-      else
-        classic.SupervisorStrategy.Restart
+      else {
+        // ActorInitializationException => Stop in defaultDecider
+        classic.SupervisorStrategy.defaultDecider.applyOrElse(ex, (_: Throwable) => classic.SupervisorStrategy.Restart)
+      }
   }
 
   private def recordChildFailure(ex: Throwable): Unit = {
