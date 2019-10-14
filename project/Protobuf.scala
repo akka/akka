@@ -32,7 +32,7 @@ object Protobuf {
     Compile / unmanagedJars ++= Seq(
         baseDirectory.value / ".." / "akka-protobuf-v3" / "target" / s"akka-protobuf-v3-assembly-${version.value}.jar"),
     protoc := "protoc",
-    protocVersion := "3.9.0",
+    protocVersion := "3.10.0",
     generate := {
       val sourceDirs = paths.value
       val targetDirs = outputPaths.value

@@ -24,10 +24,12 @@ public final class StreamRefMessages {
 
     /**
      * <code>required .ActorRef targetRef = 1;</code>
+     * @return Whether the targetRef field is set.
      */
     boolean hasTargetRef();
     /**
      * <code>required .ActorRef targetRef = 1;</code>
+     * @return The targetRef.
      */
     akka.stream.StreamRefMessages.ActorRef getTargetRef();
     /**
@@ -131,12 +133,14 @@ public final class StreamRefMessages {
     private akka.stream.StreamRefMessages.ActorRef targetRef_;
     /**
      * <code>required .ActorRef targetRef = 1;</code>
+     * @return Whether the targetRef field is set.
      */
     public boolean hasTargetRef() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef targetRef = 1;</code>
+     * @return The targetRef.
      */
     public akka.stream.StreamRefMessages.ActorRef getTargetRef() {
       return targetRef_ == null ? akka.stream.StreamRefMessages.ActorRef.getDefaultInstance() : targetRef_;
@@ -490,12 +494,14 @@ public final class StreamRefMessages {
           akka.stream.StreamRefMessages.ActorRef, akka.stream.StreamRefMessages.ActorRef.Builder, akka.stream.StreamRefMessages.ActorRefOrBuilder> targetRefBuilder_;
       /**
        * <code>required .ActorRef targetRef = 1;</code>
+       * @return Whether the targetRef field is set.
        */
       public boolean hasTargetRef() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef targetRef = 1;</code>
+       * @return The targetRef.
        */
       public akka.stream.StreamRefMessages.ActorRef getTargetRef() {
         if (targetRefBuilder_ == null) {
@@ -661,10 +667,12 @@ public final class StreamRefMessages {
 
     /**
      * <code>required .ActorRef originRef = 1;</code>
+     * @return Whether the originRef field is set.
      */
     boolean hasOriginRef();
     /**
      * <code>required .ActorRef originRef = 1;</code>
+     * @return The originRef.
      */
     akka.stream.StreamRefMessages.ActorRef getOriginRef();
     /**
@@ -768,12 +776,14 @@ public final class StreamRefMessages {
     private akka.stream.StreamRefMessages.ActorRef originRef_;
     /**
      * <code>required .ActorRef originRef = 1;</code>
+     * @return Whether the originRef field is set.
      */
     public boolean hasOriginRef() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef originRef = 1;</code>
+     * @return The originRef.
      */
     public akka.stream.StreamRefMessages.ActorRef getOriginRef() {
       return originRef_ == null ? akka.stream.StreamRefMessages.ActorRef.getDefaultInstance() : originRef_;
@@ -1127,12 +1137,14 @@ public final class StreamRefMessages {
           akka.stream.StreamRefMessages.ActorRef, akka.stream.StreamRefMessages.ActorRef.Builder, akka.stream.StreamRefMessages.ActorRefOrBuilder> originRefBuilder_;
       /**
        * <code>required .ActorRef originRef = 1;</code>
+       * @return Whether the originRef field is set.
        */
       public boolean hasOriginRef() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef originRef = 1;</code>
+       * @return The originRef.
        */
       public akka.stream.StreamRefMessages.ActorRef getOriginRef() {
         if (originRefBuilder_ == null) {
@@ -1298,14 +1310,17 @@ public final class StreamRefMessages {
 
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     boolean hasPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     java.lang.String getPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     akka.protobufv3.internal.ByteString
         getPathBytes();
@@ -1400,12 +1415,14 @@ public final class StreamRefMessages {
     private volatile java.lang.Object path_;
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     public boolean hasPath() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
@@ -1423,6 +1440,7 @@ public final class StreamRefMessages {
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     public akka.protobufv3.internal.ByteString
         getPathBytes() {
@@ -1763,12 +1781,14 @@ public final class StreamRefMessages {
       private java.lang.Object path_ = "";
       /**
        * <code>required string path = 1;</code>
+       * @return Whether the path field is set.
        */
       public boolean hasPath() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The path.
        */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
@@ -1786,6 +1806,7 @@ public final class StreamRefMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The bytes for path.
        */
       public akka.protobufv3.internal.ByteString
           getPathBytes() {
@@ -1802,6 +1823,8 @@ public final class StreamRefMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The path to set.
+       * @return This builder for chaining.
        */
       public Builder setPath(
           java.lang.String value) {
@@ -1815,6 +1838,7 @@ public final class StreamRefMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPath() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -1824,6 +1848,8 @@ public final class StreamRefMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The bytes for path to set.
+       * @return This builder for chaining.
        */
       public Builder setPathBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -1894,28 +1920,34 @@ public final class StreamRefMessages {
 
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return Whether the enclosedMessage field is set.
      */
     boolean hasEnclosedMessage();
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return The enclosedMessage.
      */
     akka.protobufv3.internal.ByteString getEnclosedMessage();
 
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     boolean hasSerializerId();
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     int getSerializerId();
 
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return Whether the messageManifest field is set.
      */
     boolean hasMessageManifest();
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return The messageManifest.
      */
     akka.protobufv3.internal.ByteString getMessageManifest();
   }
@@ -2019,12 +2051,14 @@ public final class StreamRefMessages {
     private akka.protobufv3.internal.ByteString enclosedMessage_;
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return Whether the enclosedMessage field is set.
      */
     public boolean hasEnclosedMessage() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return The enclosedMessage.
      */
     public akka.protobufv3.internal.ByteString getEnclosedMessage() {
       return enclosedMessage_;
@@ -2034,12 +2068,14 @@ public final class StreamRefMessages {
     private int serializerId_;
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     public int getSerializerId() {
       return serializerId_;
@@ -2049,12 +2085,14 @@ public final class StreamRefMessages {
     private akka.protobufv3.internal.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return Whether the messageManifest field is set.
      */
     public boolean hasMessageManifest() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return The messageManifest.
      */
     public akka.protobufv3.internal.ByteString getMessageManifest() {
       return messageManifest_;
@@ -2441,18 +2479,22 @@ public final class StreamRefMessages {
       private akka.protobufv3.internal.ByteString enclosedMessage_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return Whether the enclosedMessage field is set.
        */
       public boolean hasEnclosedMessage() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return The enclosedMessage.
        */
       public akka.protobufv3.internal.ByteString getEnclosedMessage() {
         return enclosedMessage_;
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @param value The enclosedMessage to set.
+       * @return This builder for chaining.
        */
       public Builder setEnclosedMessage(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -2465,6 +2507,7 @@ public final class StreamRefMessages {
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEnclosedMessage() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -2476,18 +2519,22 @@ public final class StreamRefMessages {
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return Whether the serializerId field is set.
        */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return The serializerId.
        */
       public int getSerializerId() {
         return serializerId_;
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @param value The serializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000002;
@@ -2497,6 +2544,7 @@ public final class StreamRefMessages {
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -2508,18 +2556,22 @@ public final class StreamRefMessages {
       private akka.protobufv3.internal.ByteString messageManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @return Whether the messageManifest field is set.
        */
       public boolean hasMessageManifest() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @return The messageManifest.
        */
       public akka.protobufv3.internal.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @param value The messageManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setMessageManifest(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -2532,6 +2584,7 @@ public final class StreamRefMessages {
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessageManifest() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -2598,10 +2651,12 @@ public final class StreamRefMessages {
 
     /**
      * <code>required .ActorRef targetRef = 1;</code>
+     * @return Whether the targetRef field is set.
      */
     boolean hasTargetRef();
     /**
      * <code>required .ActorRef targetRef = 1;</code>
+     * @return The targetRef.
      */
     akka.stream.StreamRefMessages.ActorRef getTargetRef();
     /**
@@ -2705,12 +2760,14 @@ public final class StreamRefMessages {
     private akka.stream.StreamRefMessages.ActorRef targetRef_;
     /**
      * <code>required .ActorRef targetRef = 1;</code>
+     * @return Whether the targetRef field is set.
      */
     public boolean hasTargetRef() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef targetRef = 1;</code>
+     * @return The targetRef.
      */
     public akka.stream.StreamRefMessages.ActorRef getTargetRef() {
       return targetRef_ == null ? akka.stream.StreamRefMessages.ActorRef.getDefaultInstance() : targetRef_;
@@ -3064,12 +3121,14 @@ public final class StreamRefMessages {
           akka.stream.StreamRefMessages.ActorRef, akka.stream.StreamRefMessages.ActorRef.Builder, akka.stream.StreamRefMessages.ActorRefOrBuilder> targetRefBuilder_;
       /**
        * <code>required .ActorRef targetRef = 1;</code>
+       * @return Whether the targetRef field is set.
        */
       public boolean hasTargetRef() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef targetRef = 1;</code>
+       * @return The targetRef.
        */
       public akka.stream.StreamRefMessages.ActorRef getTargetRef() {
         if (targetRefBuilder_ == null) {
@@ -3235,10 +3294,12 @@ public final class StreamRefMessages {
 
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return Whether the seqNr field is set.
      */
     boolean hasSeqNr();
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return The seqNr.
      */
     long getSeqNr();
   }
@@ -3330,12 +3391,14 @@ public final class StreamRefMessages {
     private long seqNr_;
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return Whether the seqNr field is set.
      */
     public boolean hasSeqNr() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return The seqNr.
      */
     public long getSeqNr() {
       return seqNr_;
@@ -3666,18 +3729,22 @@ public final class StreamRefMessages {
       private long seqNr_ ;
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @return Whether the seqNr field is set.
        */
       public boolean hasSeqNr() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @return The seqNr.
        */
       public long getSeqNr() {
         return seqNr_;
       }
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @param value The seqNr to set.
+       * @return This builder for chaining.
        */
       public Builder setSeqNr(long value) {
         bitField0_ |= 0x00000001;
@@ -3687,6 +3754,7 @@ public final class StreamRefMessages {
       }
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSeqNr() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -3753,19 +3821,23 @@ public final class StreamRefMessages {
 
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return Whether the seqNr field is set.
      */
     boolean hasSeqNr();
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return The seqNr.
      */
     long getSeqNr();
 
     /**
      * <code>required .Payload payload = 2;</code>
+     * @return Whether the payload field is set.
      */
     boolean hasPayload();
     /**
      * <code>required .Payload payload = 2;</code>
+     * @return The payload.
      */
     akka.stream.StreamRefMessages.Payload getPayload();
     /**
@@ -3874,12 +3946,14 @@ public final class StreamRefMessages {
     private long seqNr_;
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return Whether the seqNr field is set.
      */
     public boolean hasSeqNr() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return The seqNr.
      */
     public long getSeqNr() {
       return seqNr_;
@@ -3889,12 +3963,14 @@ public final class StreamRefMessages {
     private akka.stream.StreamRefMessages.Payload payload_;
     /**
      * <code>required .Payload payload = 2;</code>
+     * @return Whether the payload field is set.
      */
     public boolean hasPayload() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .Payload payload = 2;</code>
+     * @return The payload.
      */
     public akka.stream.StreamRefMessages.Payload getPayload() {
       return payload_ == null ? akka.stream.StreamRefMessages.Payload.getDefaultInstance() : payload_;
@@ -4279,18 +4355,22 @@ public final class StreamRefMessages {
       private long seqNr_ ;
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @return Whether the seqNr field is set.
        */
       public boolean hasSeqNr() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @return The seqNr.
        */
       public long getSeqNr() {
         return seqNr_;
       }
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @param value The seqNr to set.
+       * @return This builder for chaining.
        */
       public Builder setSeqNr(long value) {
         bitField0_ |= 0x00000001;
@@ -4300,6 +4380,7 @@ public final class StreamRefMessages {
       }
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSeqNr() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -4313,12 +4394,14 @@ public final class StreamRefMessages {
           akka.stream.StreamRefMessages.Payload, akka.stream.StreamRefMessages.Payload.Builder, akka.stream.StreamRefMessages.PayloadOrBuilder> payloadBuilder_;
       /**
        * <code>required .Payload payload = 2;</code>
+       * @return Whether the payload field is set.
        */
       public boolean hasPayload() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .Payload payload = 2;</code>
+       * @return The payload.
        */
       public akka.stream.StreamRefMessages.Payload getPayload() {
         if (payloadBuilder_ == null) {
@@ -4484,10 +4567,12 @@ public final class StreamRefMessages {
 
     /**
      * <code>optional bytes cause = 1;</code>
+     * @return Whether the cause field is set.
      */
     boolean hasCause();
     /**
      * <code>optional bytes cause = 1;</code>
+     * @return The cause.
      */
     akka.protobufv3.internal.ByteString getCause();
   }
@@ -4580,12 +4665,14 @@ public final class StreamRefMessages {
     private akka.protobufv3.internal.ByteString cause_;
     /**
      * <code>optional bytes cause = 1;</code>
+     * @return Whether the cause field is set.
      */
     public boolean hasCause() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional bytes cause = 1;</code>
+     * @return The cause.
      */
     public akka.protobufv3.internal.ByteString getCause() {
       return cause_;
@@ -4908,18 +4995,22 @@ public final class StreamRefMessages {
       private akka.protobufv3.internal.ByteString cause_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes cause = 1;</code>
+       * @return Whether the cause field is set.
        */
       public boolean hasCause() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional bytes cause = 1;</code>
+       * @return The cause.
        */
       public akka.protobufv3.internal.ByteString getCause() {
         return cause_;
       }
       /**
        * <code>optional bytes cause = 1;</code>
+       * @param value The cause to set.
+       * @return This builder for chaining.
        */
       public Builder setCause(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -4932,6 +5023,7 @@ public final class StreamRefMessages {
       }
       /**
        * <code>optional bytes cause = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearCause() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -4998,10 +5090,12 @@ public final class StreamRefMessages {
 
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return Whether the seqNr field is set.
      */
     boolean hasSeqNr();
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return The seqNr.
      */
     long getSeqNr();
   }
@@ -5093,12 +5187,14 @@ public final class StreamRefMessages {
     private long seqNr_;
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return Whether the seqNr field is set.
      */
     public boolean hasSeqNr() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int64 seqNr = 1;</code>
+     * @return The seqNr.
      */
     public long getSeqNr() {
       return seqNr_;
@@ -5429,18 +5525,22 @@ public final class StreamRefMessages {
       private long seqNr_ ;
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @return Whether the seqNr field is set.
        */
       public boolean hasSeqNr() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @return The seqNr.
        */
       public long getSeqNr() {
         return seqNr_;
       }
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @param value The seqNr to set.
+       * @return This builder for chaining.
        */
       public Builder setSeqNr(long value) {
         bitField0_ |= 0x00000001;
@@ -5450,6 +5550,7 @@ public final class StreamRefMessages {
       }
       /**
        * <code>required int64 seqNr = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSeqNr() {
         bitField0_ = (bitField0_ & ~0x00000001);

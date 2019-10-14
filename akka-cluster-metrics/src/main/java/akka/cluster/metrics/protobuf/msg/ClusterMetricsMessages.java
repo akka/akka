@@ -24,10 +24,12 @@ public final class ClusterMetricsMessages {
 
     /**
      * <code>required .Address from = 1;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .Address from = 1;</code>
+     * @return The from.
      */
     akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.Address getFrom();
     /**
@@ -37,10 +39,12 @@ public final class ClusterMetricsMessages {
 
     /**
      * <code>required .MetricsGossip gossip = 2;</code>
+     * @return Whether the gossip field is set.
      */
     boolean hasGossip();
     /**
      * <code>required .MetricsGossip gossip = 2;</code>
+     * @return The gossip.
      */
     akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsGossip getGossip();
     /**
@@ -50,10 +54,12 @@ public final class ClusterMetricsMessages {
 
     /**
      * <code>required bool reply = 3;</code>
+     * @return Whether the reply field is set.
      */
     boolean hasReply();
     /**
      * <code>required bool reply = 3;</code>
+     * @return The reply.
      */
     boolean getReply();
   }
@@ -176,12 +182,14 @@ public final class ClusterMetricsMessages {
     private akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.Address from_;
     /**
      * <code>required .Address from = 1;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Address from = 1;</code>
+     * @return The from.
      */
     public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.Address getFrom() {
       return from_ == null ? akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.Address.getDefaultInstance() : from_;
@@ -197,12 +205,14 @@ public final class ClusterMetricsMessages {
     private akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsGossip gossip_;
     /**
      * <code>required .MetricsGossip gossip = 2;</code>
+     * @return Whether the gossip field is set.
      */
     public boolean hasGossip() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .MetricsGossip gossip = 2;</code>
+     * @return The gossip.
      */
     public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsGossip getGossip() {
       return gossip_ == null ? akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsGossip.getDefaultInstance() : gossip_;
@@ -218,12 +228,14 @@ public final class ClusterMetricsMessages {
     private boolean reply_;
     /**
      * <code>required bool reply = 3;</code>
+     * @return Whether the reply field is set.
      */
     public boolean hasReply() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required bool reply = 3;</code>
+     * @return The reply.
      */
     public boolean getReply() {
       return reply_;
@@ -657,12 +669,14 @@ public final class ClusterMetricsMessages {
           akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.Address, akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.Address.Builder, akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.AddressOrBuilder> fromBuilder_;
       /**
        * <code>required .Address from = 1;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Address from = 1;</code>
+       * @return The from.
        */
       public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.Address getFrom() {
         if (fromBuilder_ == null) {
@@ -775,12 +789,14 @@ public final class ClusterMetricsMessages {
           akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsGossip, akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsGossip.Builder, akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsGossipOrBuilder> gossipBuilder_;
       /**
        * <code>required .MetricsGossip gossip = 2;</code>
+       * @return Whether the gossip field is set.
        */
       public boolean hasGossip() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .MetricsGossip gossip = 2;</code>
+       * @return The gossip.
        */
       public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsGossip getGossip() {
         if (gossipBuilder_ == null) {
@@ -891,18 +907,22 @@ public final class ClusterMetricsMessages {
       private boolean reply_ ;
       /**
        * <code>required bool reply = 3;</code>
+       * @return Whether the reply field is set.
        */
       public boolean hasReply() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required bool reply = 3;</code>
+       * @return The reply.
        */
       public boolean getReply() {
         return reply_;
       }
       /**
        * <code>required bool reply = 3;</code>
+       * @param value The reply to set.
+       * @return This builder for chaining.
        */
       public Builder setReply(boolean value) {
         bitField0_ |= 0x00000004;
@@ -912,6 +932,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required bool reply = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearReply() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -1002,19 +1023,25 @@ public final class ClusterMetricsMessages {
 
     /**
      * <code>repeated string allMetricNames = 2;</code>
+     * @return A list containing the allMetricNames.
      */
     java.util.List<java.lang.String>
         getAllMetricNamesList();
     /**
      * <code>repeated string allMetricNames = 2;</code>
+     * @return The count of allMetricNames.
      */
     int getAllMetricNamesCount();
     /**
      * <code>repeated string allMetricNames = 2;</code>
+     * @param index The index of the element to return.
+     * @return The allMetricNames at the given index.
      */
     java.lang.String getAllMetricNames(int index);
     /**
      * <code>repeated string allMetricNames = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the allMetricNames at the given index.
      */
     akka.protobufv3.internal.ByteString
         getAllMetricNamesBytes(int index);
@@ -1204,6 +1231,7 @@ public final class ClusterMetricsMessages {
     private akka.protobufv3.internal.LazyStringList allMetricNames_;
     /**
      * <code>repeated string allMetricNames = 2;</code>
+     * @return A list containing the allMetricNames.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getAllMetricNamesList() {
@@ -1211,18 +1239,23 @@ public final class ClusterMetricsMessages {
     }
     /**
      * <code>repeated string allMetricNames = 2;</code>
+     * @return The count of allMetricNames.
      */
     public int getAllMetricNamesCount() {
       return allMetricNames_.size();
     }
     /**
      * <code>repeated string allMetricNames = 2;</code>
+     * @param index The index of the element to return.
+     * @return The allMetricNames at the given index.
      */
     public java.lang.String getAllMetricNames(int index) {
       return allMetricNames_.get(index);
     }
     /**
      * <code>repeated string allMetricNames = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the allMetricNames at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getAllMetricNamesBytes(int index) {
@@ -1971,6 +2004,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>repeated string allMetricNames = 2;</code>
+       * @return A list containing the allMetricNames.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getAllMetricNamesList() {
@@ -1978,18 +2012,23 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>repeated string allMetricNames = 2;</code>
+       * @return The count of allMetricNames.
        */
       public int getAllMetricNamesCount() {
         return allMetricNames_.size();
       }
       /**
        * <code>repeated string allMetricNames = 2;</code>
+       * @param index The index of the element to return.
+       * @return The allMetricNames at the given index.
        */
       public java.lang.String getAllMetricNames(int index) {
         return allMetricNames_.get(index);
       }
       /**
        * <code>repeated string allMetricNames = 2;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the allMetricNames at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getAllMetricNamesBytes(int index) {
@@ -1997,6 +2036,9 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>repeated string allMetricNames = 2;</code>
+       * @param index The index to set the value at.
+       * @param value The allMetricNames to set.
+       * @return This builder for chaining.
        */
       public Builder setAllMetricNames(
           int index, java.lang.String value) {
@@ -2010,6 +2052,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>repeated string allMetricNames = 2;</code>
+       * @param value The allMetricNames to add.
+       * @return This builder for chaining.
        */
       public Builder addAllMetricNames(
           java.lang.String value) {
@@ -2023,6 +2067,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>repeated string allMetricNames = 2;</code>
+       * @param values The allMetricNames to add.
+       * @return This builder for chaining.
        */
       public Builder addAllAllMetricNames(
           java.lang.Iterable<java.lang.String> values) {
@@ -2034,6 +2080,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>repeated string allMetricNames = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAllMetricNames() {
         allMetricNames_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -2043,6 +2090,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>repeated string allMetricNames = 2;</code>
+       * @param value The bytes of the allMetricNames to add.
+       * @return This builder for chaining.
        */
       public Builder addAllMetricNamesBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -2353,19 +2402,23 @@ public final class ClusterMetricsMessages {
 
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return Whether the addressIndex field is set.
      */
     boolean hasAddressIndex();
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return The addressIndex.
      */
     int getAddressIndex();
 
     /**
      * <code>required int64 timestamp = 2;</code>
+     * @return Whether the timestamp field is set.
      */
     boolean hasTimestamp();
     /**
      * <code>required int64 timestamp = 2;</code>
+     * @return The timestamp.
      */
     long getTimestamp();
 
@@ -2553,6 +2606,8 @@ public final class ClusterMetricsMessages {
       }
 
       /**
+       * @param value The numeric wire value of the corresponding enum entry.
+       * @return The enum associated with the given numeric wire value.
        * @deprecated Use {@link #forNumber(int)} instead.
        */
       @java.lang.Deprecated
@@ -2560,6 +2615,10 @@ public final class ClusterMetricsMessages {
         return forNumber(value);
       }
 
+      /**
+       * @param value The numeric wire value of the corresponding enum entry.
+       * @return The enum associated with the given numeric wire value.
+       */
       public static NumberType forNumber(int value) {
         switch (value) {
           case 0: return Serialized;
@@ -2622,37 +2681,45 @@ public final class ClusterMetricsMessages {
 
       /**
        * <code>required .NodeMetrics.NumberType type = 1;</code>
+       * @return Whether the type field is set.
        */
       boolean hasType();
       /**
        * <code>required .NodeMetrics.NumberType type = 1;</code>
+       * @return The type.
        */
       akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.NumberType getType();
 
       /**
        * <code>optional uint32 value32 = 2;</code>
+       * @return Whether the value32 field is set.
        */
       boolean hasValue32();
       /**
        * <code>optional uint32 value32 = 2;</code>
+       * @return The value32.
        */
       int getValue32();
 
       /**
        * <code>optional uint64 value64 = 3;</code>
+       * @return Whether the value64 field is set.
        */
       boolean hasValue64();
       /**
        * <code>optional uint64 value64 = 3;</code>
+       * @return The value64.
        */
       long getValue64();
 
       /**
        * <code>optional bytes serialized = 4;</code>
+       * @return Whether the serialized field is set.
        */
       boolean hasSerialized();
       /**
        * <code>optional bytes serialized = 4;</code>
+       * @return The serialized.
        */
       akka.protobufv3.internal.ByteString getSerialized();
     }
@@ -2768,12 +2835,14 @@ public final class ClusterMetricsMessages {
       private int type_;
       /**
        * <code>required .NodeMetrics.NumberType type = 1;</code>
+       * @return Whether the type field is set.
        */
       public boolean hasType() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .NodeMetrics.NumberType type = 1;</code>
+       * @return The type.
        */
       public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.NumberType getType() {
         @SuppressWarnings("deprecation")
@@ -2785,12 +2854,14 @@ public final class ClusterMetricsMessages {
       private int value32_;
       /**
        * <code>optional uint32 value32 = 2;</code>
+       * @return Whether the value32 field is set.
        */
       public boolean hasValue32() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional uint32 value32 = 2;</code>
+       * @return The value32.
        */
       public int getValue32() {
         return value32_;
@@ -2800,12 +2871,14 @@ public final class ClusterMetricsMessages {
       private long value64_;
       /**
        * <code>optional uint64 value64 = 3;</code>
+       * @return Whether the value64 field is set.
        */
       public boolean hasValue64() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional uint64 value64 = 3;</code>
+       * @return The value64.
        */
       public long getValue64() {
         return value64_;
@@ -2815,12 +2888,14 @@ public final class ClusterMetricsMessages {
       private akka.protobufv3.internal.ByteString serialized_;
       /**
        * <code>optional bytes serialized = 4;</code>
+       * @return Whether the serialized field is set.
        */
       public boolean hasSerialized() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional bytes serialized = 4;</code>
+       * @return The serialized.
        */
       public akka.protobufv3.internal.ByteString getSerialized() {
         return serialized_;
@@ -3225,12 +3300,14 @@ public final class ClusterMetricsMessages {
         private int type_ = 0;
         /**
          * <code>required .NodeMetrics.NumberType type = 1;</code>
+         * @return Whether the type field is set.
          */
         public boolean hasType() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required .NodeMetrics.NumberType type = 1;</code>
+         * @return The type.
          */
         public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.NumberType getType() {
           @SuppressWarnings("deprecation")
@@ -3239,6 +3316,8 @@ public final class ClusterMetricsMessages {
         }
         /**
          * <code>required .NodeMetrics.NumberType type = 1;</code>
+         * @param value The type to set.
+         * @return This builder for chaining.
          */
         public Builder setType(akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.NumberType value) {
           if (value == null) {
@@ -3251,6 +3330,7 @@ public final class ClusterMetricsMessages {
         }
         /**
          * <code>required .NodeMetrics.NumberType type = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearType() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -3262,18 +3342,22 @@ public final class ClusterMetricsMessages {
         private int value32_ ;
         /**
          * <code>optional uint32 value32 = 2;</code>
+         * @return Whether the value32 field is set.
          */
         public boolean hasValue32() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>optional uint32 value32 = 2;</code>
+         * @return The value32.
          */
         public int getValue32() {
           return value32_;
         }
         /**
          * <code>optional uint32 value32 = 2;</code>
+         * @param value The value32 to set.
+         * @return This builder for chaining.
          */
         public Builder setValue32(int value) {
           bitField0_ |= 0x00000002;
@@ -3283,6 +3367,7 @@ public final class ClusterMetricsMessages {
         }
         /**
          * <code>optional uint32 value32 = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearValue32() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -3294,18 +3379,22 @@ public final class ClusterMetricsMessages {
         private long value64_ ;
         /**
          * <code>optional uint64 value64 = 3;</code>
+         * @return Whether the value64 field is set.
          */
         public boolean hasValue64() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>optional uint64 value64 = 3;</code>
+         * @return The value64.
          */
         public long getValue64() {
           return value64_;
         }
         /**
          * <code>optional uint64 value64 = 3;</code>
+         * @param value The value64 to set.
+         * @return This builder for chaining.
          */
         public Builder setValue64(long value) {
           bitField0_ |= 0x00000004;
@@ -3315,6 +3404,7 @@ public final class ClusterMetricsMessages {
         }
         /**
          * <code>optional uint64 value64 = 3;</code>
+         * @return This builder for chaining.
          */
         public Builder clearValue64() {
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -3326,18 +3416,22 @@ public final class ClusterMetricsMessages {
         private akka.protobufv3.internal.ByteString serialized_ = akka.protobufv3.internal.ByteString.EMPTY;
         /**
          * <code>optional bytes serialized = 4;</code>
+         * @return Whether the serialized field is set.
          */
         public boolean hasSerialized() {
           return ((bitField0_ & 0x00000008) != 0);
         }
         /**
          * <code>optional bytes serialized = 4;</code>
+         * @return The serialized.
          */
         public akka.protobufv3.internal.ByteString getSerialized() {
           return serialized_;
         }
         /**
          * <code>optional bytes serialized = 4;</code>
+         * @param value The serialized to set.
+         * @return This builder for chaining.
          */
         public Builder setSerialized(akka.protobufv3.internal.ByteString value) {
           if (value == null) {
@@ -3350,6 +3444,7 @@ public final class ClusterMetricsMessages {
         }
         /**
          * <code>optional bytes serialized = 4;</code>
+         * @return This builder for chaining.
          */
         public Builder clearSerialized() {
           bitField0_ = (bitField0_ & ~0x00000008);
@@ -3416,19 +3511,23 @@ public final class ClusterMetricsMessages {
 
       /**
        * <code>required double value = 1;</code>
+       * @return Whether the value field is set.
        */
       boolean hasValue();
       /**
        * <code>required double value = 1;</code>
+       * @return The value.
        */
       double getValue();
 
       /**
        * <code>required double alpha = 2;</code>
+       * @return Whether the alpha field is set.
        */
       boolean hasAlpha();
       /**
        * <code>required double alpha = 2;</code>
+       * @return The alpha.
        */
       double getAlpha();
     }
@@ -3525,12 +3624,14 @@ public final class ClusterMetricsMessages {
       private double value_;
       /**
        * <code>required double value = 1;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required double value = 1;</code>
+       * @return The value.
        */
       public double getValue() {
         return value_;
@@ -3540,12 +3641,14 @@ public final class ClusterMetricsMessages {
       private double alpha_;
       /**
        * <code>required double alpha = 2;</code>
+       * @return Whether the alpha field is set.
        */
       public boolean hasAlpha() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required double alpha = 2;</code>
+       * @return The alpha.
        */
       public double getAlpha() {
         return alpha_;
@@ -3911,18 +4014,22 @@ public final class ClusterMetricsMessages {
         private double value_ ;
         /**
          * <code>required double value = 1;</code>
+         * @return Whether the value field is set.
          */
         public boolean hasValue() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required double value = 1;</code>
+         * @return The value.
          */
         public double getValue() {
           return value_;
         }
         /**
          * <code>required double value = 1;</code>
+         * @param value The value to set.
+         * @return This builder for chaining.
          */
         public Builder setValue(double value) {
           bitField0_ |= 0x00000001;
@@ -3932,6 +4039,7 @@ public final class ClusterMetricsMessages {
         }
         /**
          * <code>required double value = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearValue() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -3943,18 +4051,22 @@ public final class ClusterMetricsMessages {
         private double alpha_ ;
         /**
          * <code>required double alpha = 2;</code>
+         * @return Whether the alpha field is set.
          */
         public boolean hasAlpha() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required double alpha = 2;</code>
+         * @return The alpha.
          */
         public double getAlpha() {
           return alpha_;
         }
         /**
          * <code>required double alpha = 2;</code>
+         * @param value The alpha to set.
+         * @return This builder for chaining.
          */
         public Builder setAlpha(double value) {
           bitField0_ |= 0x00000002;
@@ -3964,6 +4076,7 @@ public final class ClusterMetricsMessages {
         }
         /**
          * <code>required double alpha = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearAlpha() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -4030,19 +4143,23 @@ public final class ClusterMetricsMessages {
 
       /**
        * <code>required int32 nameIndex = 1;</code>
+       * @return Whether the nameIndex field is set.
        */
       boolean hasNameIndex();
       /**
        * <code>required int32 nameIndex = 1;</code>
+       * @return The nameIndex.
        */
       int getNameIndex();
 
       /**
        * <code>required .NodeMetrics.Number number = 2;</code>
+       * @return Whether the number field is set.
        */
       boolean hasNumber();
       /**
        * <code>required .NodeMetrics.Number number = 2;</code>
+       * @return The number.
        */
       akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.Number getNumber();
       /**
@@ -4052,10 +4169,12 @@ public final class ClusterMetricsMessages {
 
       /**
        * <code>optional .NodeMetrics.EWMA ewma = 3;</code>
+       * @return Whether the ewma field is set.
        */
       boolean hasEwma();
       /**
        * <code>optional .NodeMetrics.EWMA ewma = 3;</code>
+       * @return The ewma.
        */
       akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.EWMA getEwma();
       /**
@@ -4177,12 +4296,14 @@ public final class ClusterMetricsMessages {
       private int nameIndex_;
       /**
        * <code>required int32 nameIndex = 1;</code>
+       * @return Whether the nameIndex field is set.
        */
       public boolean hasNameIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int32 nameIndex = 1;</code>
+       * @return The nameIndex.
        */
       public int getNameIndex() {
         return nameIndex_;
@@ -4192,12 +4313,14 @@ public final class ClusterMetricsMessages {
       private akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.Number number_;
       /**
        * <code>required .NodeMetrics.Number number = 2;</code>
+       * @return Whether the number field is set.
        */
       public boolean hasNumber() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .NodeMetrics.Number number = 2;</code>
+       * @return The number.
        */
       public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.Number getNumber() {
         return number_ == null ? akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.Number.getDefaultInstance() : number_;
@@ -4213,12 +4336,14 @@ public final class ClusterMetricsMessages {
       private akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.EWMA ewma_;
       /**
        * <code>optional .NodeMetrics.EWMA ewma = 3;</code>
+       * @return Whether the ewma field is set.
        */
       public boolean hasEwma() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .NodeMetrics.EWMA ewma = 3;</code>
+       * @return The ewma.
        */
       public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.EWMA getEwma() {
         return ewma_ == null ? akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.EWMA.getDefaultInstance() : ewma_;
@@ -4647,18 +4772,22 @@ public final class ClusterMetricsMessages {
         private int nameIndex_ ;
         /**
          * <code>required int32 nameIndex = 1;</code>
+         * @return Whether the nameIndex field is set.
          */
         public boolean hasNameIndex() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required int32 nameIndex = 1;</code>
+         * @return The nameIndex.
          */
         public int getNameIndex() {
           return nameIndex_;
         }
         /**
          * <code>required int32 nameIndex = 1;</code>
+         * @param value The nameIndex to set.
+         * @return This builder for chaining.
          */
         public Builder setNameIndex(int value) {
           bitField0_ |= 0x00000001;
@@ -4668,6 +4797,7 @@ public final class ClusterMetricsMessages {
         }
         /**
          * <code>required int32 nameIndex = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearNameIndex() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -4681,12 +4811,14 @@ public final class ClusterMetricsMessages {
             akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.Number, akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.Number.Builder, akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.NumberOrBuilder> numberBuilder_;
         /**
          * <code>required .NodeMetrics.Number number = 2;</code>
+         * @return Whether the number field is set.
          */
         public boolean hasNumber() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required .NodeMetrics.Number number = 2;</code>
+         * @return The number.
          */
         public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.Number getNumber() {
           if (numberBuilder_ == null) {
@@ -4799,12 +4931,14 @@ public final class ClusterMetricsMessages {
             akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.EWMA, akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.EWMA.Builder, akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.EWMAOrBuilder> ewmaBuilder_;
         /**
          * <code>optional .NodeMetrics.EWMA ewma = 3;</code>
+         * @return Whether the ewma field is set.
          */
         public boolean hasEwma() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>optional .NodeMetrics.EWMA ewma = 3;</code>
+         * @return The ewma.
          */
         public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.NodeMetrics.EWMA getEwma() {
           if (ewmaBuilder_ == null) {
@@ -4969,12 +5103,14 @@ public final class ClusterMetricsMessages {
     private int addressIndex_;
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return Whether the addressIndex field is set.
      */
     public boolean hasAddressIndex() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return The addressIndex.
      */
     public int getAddressIndex() {
       return addressIndex_;
@@ -4984,12 +5120,14 @@ public final class ClusterMetricsMessages {
     private long timestamp_;
     /**
      * <code>required int64 timestamp = 2;</code>
+     * @return Whether the timestamp field is set.
      */
     public boolean hasTimestamp() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int64 timestamp = 2;</code>
+     * @return The timestamp.
      */
     public long getTimestamp() {
       return timestamp_;
@@ -5458,18 +5596,22 @@ public final class ClusterMetricsMessages {
       private int addressIndex_ ;
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return Whether the addressIndex field is set.
        */
       public boolean hasAddressIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return The addressIndex.
        */
       public int getAddressIndex() {
         return addressIndex_;
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @param value The addressIndex to set.
+       * @return This builder for chaining.
        */
       public Builder setAddressIndex(int value) {
         bitField0_ |= 0x00000001;
@@ -5479,6 +5621,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAddressIndex() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -5490,18 +5633,22 @@ public final class ClusterMetricsMessages {
       private long timestamp_ ;
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return Whether the timestamp field is set.
        */
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return The timestamp.
        */
       public long getTimestamp() {
         return timestamp_;
       }
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @param value The timestamp to set.
+       * @return This builder for chaining.
        */
       public Builder setTimestamp(long value) {
         bitField0_ |= 0x00000002;
@@ -5511,6 +5658,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTimestamp() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -5817,51 +5965,62 @@ public final class ClusterMetricsMessages {
 
     /**
      * <code>required string system = 1;</code>
+     * @return Whether the system field is set.
      */
     boolean hasSystem();
     /**
      * <code>required string system = 1;</code>
+     * @return The system.
      */
     java.lang.String getSystem();
     /**
      * <code>required string system = 1;</code>
+     * @return The bytes for system.
      */
     akka.protobufv3.internal.ByteString
         getSystemBytes();
 
     /**
      * <code>required string hostname = 2;</code>
+     * @return Whether the hostname field is set.
      */
     boolean hasHostname();
     /**
      * <code>required string hostname = 2;</code>
+     * @return The hostname.
      */
     java.lang.String getHostname();
     /**
      * <code>required string hostname = 2;</code>
+     * @return The bytes for hostname.
      */
     akka.protobufv3.internal.ByteString
         getHostnameBytes();
 
     /**
      * <code>required uint32 port = 3;</code>
+     * @return Whether the port field is set.
      */
     boolean hasPort();
     /**
      * <code>required uint32 port = 3;</code>
+     * @return The port.
      */
     int getPort();
 
     /**
      * <code>optional string protocol = 4;</code>
+     * @return Whether the protocol field is set.
      */
     boolean hasProtocol();
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The protocol.
      */
     java.lang.String getProtocol();
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The bytes for protocol.
      */
     akka.protobufv3.internal.ByteString
         getProtocolBytes();
@@ -5980,12 +6139,14 @@ public final class ClusterMetricsMessages {
     private volatile java.lang.Object system_;
     /**
      * <code>required string system = 1;</code>
+     * @return Whether the system field is set.
      */
     public boolean hasSystem() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string system = 1;</code>
+     * @return The system.
      */
     public java.lang.String getSystem() {
       java.lang.Object ref = system_;
@@ -6003,6 +6164,7 @@ public final class ClusterMetricsMessages {
     }
     /**
      * <code>required string system = 1;</code>
+     * @return The bytes for system.
      */
     public akka.protobufv3.internal.ByteString
         getSystemBytes() {
@@ -6022,12 +6184,14 @@ public final class ClusterMetricsMessages {
     private volatile java.lang.Object hostname_;
     /**
      * <code>required string hostname = 2;</code>
+     * @return Whether the hostname field is set.
      */
     public boolean hasHostname() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string hostname = 2;</code>
+     * @return The hostname.
      */
     public java.lang.String getHostname() {
       java.lang.Object ref = hostname_;
@@ -6045,6 +6209,7 @@ public final class ClusterMetricsMessages {
     }
     /**
      * <code>required string hostname = 2;</code>
+     * @return The bytes for hostname.
      */
     public akka.protobufv3.internal.ByteString
         getHostnameBytes() {
@@ -6064,12 +6229,14 @@ public final class ClusterMetricsMessages {
     private int port_;
     /**
      * <code>required uint32 port = 3;</code>
+     * @return Whether the port field is set.
      */
     public boolean hasPort() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required uint32 port = 3;</code>
+     * @return The port.
      */
     public int getPort() {
       return port_;
@@ -6079,12 +6246,14 @@ public final class ClusterMetricsMessages {
     private volatile java.lang.Object protocol_;
     /**
      * <code>optional string protocol = 4;</code>
+     * @return Whether the protocol field is set.
      */
     public boolean hasProtocol() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The protocol.
      */
     public java.lang.String getProtocol() {
       java.lang.Object ref = protocol_;
@@ -6102,6 +6271,7 @@ public final class ClusterMetricsMessages {
     }
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The bytes for protocol.
      */
     public akka.protobufv3.internal.ByteString
         getProtocolBytes() {
@@ -6538,12 +6708,14 @@ public final class ClusterMetricsMessages {
       private java.lang.Object system_ = "";
       /**
        * <code>required string system = 1;</code>
+       * @return Whether the system field is set.
        */
       public boolean hasSystem() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string system = 1;</code>
+       * @return The system.
        */
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
@@ -6561,6 +6733,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @return The bytes for system.
        */
       public akka.protobufv3.internal.ByteString
           getSystemBytes() {
@@ -6577,6 +6750,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @param value The system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystem(
           java.lang.String value) {
@@ -6590,6 +6765,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSystem() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -6599,6 +6775,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @param value The bytes for system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystemBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6614,12 +6792,14 @@ public final class ClusterMetricsMessages {
       private java.lang.Object hostname_ = "";
       /**
        * <code>required string hostname = 2;</code>
+       * @return Whether the hostname field is set.
        */
       public boolean hasHostname() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return The hostname.
        */
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
@@ -6637,6 +6817,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return The bytes for hostname.
        */
       public akka.protobufv3.internal.ByteString
           getHostnameBytes() {
@@ -6653,6 +6834,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @param value The hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostname(
           java.lang.String value) {
@@ -6666,6 +6849,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearHostname() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -6675,6 +6859,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @param value The bytes for hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostnameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6690,18 +6876,22 @@ public final class ClusterMetricsMessages {
       private int port_ ;
       /**
        * <code>required uint32 port = 3;</code>
+       * @return Whether the port field is set.
        */
       public boolean hasPort() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @return The port.
        */
       public int getPort() {
         return port_;
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @param value The port to set.
+       * @return This builder for chaining.
        */
       public Builder setPort(int value) {
         bitField0_ |= 0x00000004;
@@ -6711,6 +6901,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPort() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -6722,12 +6913,14 @@ public final class ClusterMetricsMessages {
       private java.lang.Object protocol_ = "";
       /**
        * <code>optional string protocol = 4;</code>
+       * @return Whether the protocol field is set.
        */
       public boolean hasProtocol() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return The protocol.
        */
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
@@ -6745,6 +6938,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return The bytes for protocol.
        */
       public akka.protobufv3.internal.ByteString
           getProtocolBytes() {
@@ -6761,6 +6955,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @param value The protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocol(
           java.lang.String value) {
@@ -6774,6 +6970,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearProtocol() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -6783,6 +6980,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @param value The bytes for protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocolBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6857,6 +7056,7 @@ public final class ClusterMetricsMessages {
      * </pre>
      *
      * <code>optional .MetricsSelector metricsSelector = 1;</code>
+     * @return Whether the metricsSelector field is set.
      */
     boolean hasMetricsSelector();
     /**
@@ -6865,6 +7065,7 @@ public final class ClusterMetricsMessages {
      * </pre>
      *
      * <code>optional .MetricsSelector metricsSelector = 1;</code>
+     * @return The metricsSelector.
      */
     akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsSelector getMetricsSelector();
     /**
@@ -6878,10 +7079,12 @@ public final class ClusterMetricsMessages {
 
     /**
      * <code>required uint32 nrOfInstances = 2;</code>
+     * @return Whether the nrOfInstances field is set.
      */
     boolean hasNrOfInstances();
     /**
      * <code>required uint32 nrOfInstances = 2;</code>
+     * @return The nrOfInstances.
      */
     int getNrOfInstances();
 
@@ -6891,6 +7094,7 @@ public final class ClusterMetricsMessages {
      * </pre>
      *
      * <code>optional string routerDispatcher = 3;</code>
+     * @return Whether the routerDispatcher field is set.
      */
     boolean hasRouterDispatcher();
     /**
@@ -6899,6 +7103,7 @@ public final class ClusterMetricsMessages {
      * </pre>
      *
      * <code>optional string routerDispatcher = 3;</code>
+     * @return The routerDispatcher.
      */
     java.lang.String getRouterDispatcher();
     /**
@@ -6907,16 +7112,19 @@ public final class ClusterMetricsMessages {
      * </pre>
      *
      * <code>optional string routerDispatcher = 3;</code>
+     * @return The bytes for routerDispatcher.
      */
     akka.protobufv3.internal.ByteString
         getRouterDispatcherBytes();
 
     /**
      * <code>required bool usePoolDispatcher = 4;</code>
+     * @return Whether the usePoolDispatcher field is set.
      */
     boolean hasUsePoolDispatcher();
     /**
      * <code>required bool usePoolDispatcher = 4;</code>
+     * @return The usePoolDispatcher.
      */
     boolean getUsePoolDispatcher();
   }
@@ -7037,6 +7245,7 @@ public final class ClusterMetricsMessages {
      * </pre>
      *
      * <code>optional .MetricsSelector metricsSelector = 1;</code>
+     * @return Whether the metricsSelector field is set.
      */
     public boolean hasMetricsSelector() {
       return ((bitField0_ & 0x00000001) != 0);
@@ -7047,6 +7256,7 @@ public final class ClusterMetricsMessages {
      * </pre>
      *
      * <code>optional .MetricsSelector metricsSelector = 1;</code>
+     * @return The metricsSelector.
      */
     public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsSelector getMetricsSelector() {
       return metricsSelector_ == null ? akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsSelector.getDefaultInstance() : metricsSelector_;
@@ -7066,12 +7276,14 @@ public final class ClusterMetricsMessages {
     private int nrOfInstances_;
     /**
      * <code>required uint32 nrOfInstances = 2;</code>
+     * @return Whether the nrOfInstances field is set.
      */
     public boolean hasNrOfInstances() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint32 nrOfInstances = 2;</code>
+     * @return The nrOfInstances.
      */
     public int getNrOfInstances() {
       return nrOfInstances_;
@@ -7085,6 +7297,7 @@ public final class ClusterMetricsMessages {
      * </pre>
      *
      * <code>optional string routerDispatcher = 3;</code>
+     * @return Whether the routerDispatcher field is set.
      */
     public boolean hasRouterDispatcher() {
       return ((bitField0_ & 0x00000004) != 0);
@@ -7095,6 +7308,7 @@ public final class ClusterMetricsMessages {
      * </pre>
      *
      * <code>optional string routerDispatcher = 3;</code>
+     * @return The routerDispatcher.
      */
     public java.lang.String getRouterDispatcher() {
       java.lang.Object ref = routerDispatcher_;
@@ -7116,6 +7330,7 @@ public final class ClusterMetricsMessages {
      * </pre>
      *
      * <code>optional string routerDispatcher = 3;</code>
+     * @return The bytes for routerDispatcher.
      */
     public akka.protobufv3.internal.ByteString
         getRouterDispatcherBytes() {
@@ -7135,12 +7350,14 @@ public final class ClusterMetricsMessages {
     private boolean usePoolDispatcher_;
     /**
      * <code>required bool usePoolDispatcher = 4;</code>
+     * @return Whether the usePoolDispatcher field is set.
      */
     public boolean hasUsePoolDispatcher() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required bool usePoolDispatcher = 4;</code>
+     * @return The usePoolDispatcher.
      */
     public boolean getUsePoolDispatcher() {
       return usePoolDispatcher_;
@@ -7580,6 +7797,7 @@ public final class ClusterMetricsMessages {
        * </pre>
        *
        * <code>optional .MetricsSelector metricsSelector = 1;</code>
+       * @return Whether the metricsSelector field is set.
        */
       public boolean hasMetricsSelector() {
         return ((bitField0_ & 0x00000001) != 0);
@@ -7590,6 +7808,7 @@ public final class ClusterMetricsMessages {
        * </pre>
        *
        * <code>optional .MetricsSelector metricsSelector = 1;</code>
+       * @return The metricsSelector.
        */
       public akka.cluster.metrics.protobuf.msg.ClusterMetricsMessages.MetricsSelector getMetricsSelector() {
         if (metricsSelectorBuilder_ == null) {
@@ -7728,18 +7947,22 @@ public final class ClusterMetricsMessages {
       private int nrOfInstances_ ;
       /**
        * <code>required uint32 nrOfInstances = 2;</code>
+       * @return Whether the nrOfInstances field is set.
        */
       public boolean hasNrOfInstances() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint32 nrOfInstances = 2;</code>
+       * @return The nrOfInstances.
        */
       public int getNrOfInstances() {
         return nrOfInstances_;
       }
       /**
        * <code>required uint32 nrOfInstances = 2;</code>
+       * @param value The nrOfInstances to set.
+       * @return This builder for chaining.
        */
       public Builder setNrOfInstances(int value) {
         bitField0_ |= 0x00000002;
@@ -7749,6 +7972,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required uint32 nrOfInstances = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearNrOfInstances() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -7764,6 +7988,7 @@ public final class ClusterMetricsMessages {
        * </pre>
        *
        * <code>optional string routerDispatcher = 3;</code>
+       * @return Whether the routerDispatcher field is set.
        */
       public boolean hasRouterDispatcher() {
         return ((bitField0_ & 0x00000004) != 0);
@@ -7774,6 +7999,7 @@ public final class ClusterMetricsMessages {
        * </pre>
        *
        * <code>optional string routerDispatcher = 3;</code>
+       * @return The routerDispatcher.
        */
       public java.lang.String getRouterDispatcher() {
         java.lang.Object ref = routerDispatcher_;
@@ -7795,6 +8021,7 @@ public final class ClusterMetricsMessages {
        * </pre>
        *
        * <code>optional string routerDispatcher = 3;</code>
+       * @return The bytes for routerDispatcher.
        */
       public akka.protobufv3.internal.ByteString
           getRouterDispatcherBytes() {
@@ -7815,6 +8042,8 @@ public final class ClusterMetricsMessages {
        * </pre>
        *
        * <code>optional string routerDispatcher = 3;</code>
+       * @param value The routerDispatcher to set.
+       * @return This builder for chaining.
        */
       public Builder setRouterDispatcher(
           java.lang.String value) {
@@ -7832,6 +8061,7 @@ public final class ClusterMetricsMessages {
        * </pre>
        *
        * <code>optional string routerDispatcher = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRouterDispatcher() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -7845,6 +8075,8 @@ public final class ClusterMetricsMessages {
        * </pre>
        *
        * <code>optional string routerDispatcher = 3;</code>
+       * @param value The bytes for routerDispatcher to set.
+       * @return This builder for chaining.
        */
       public Builder setRouterDispatcherBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -7860,18 +8092,22 @@ public final class ClusterMetricsMessages {
       private boolean usePoolDispatcher_ ;
       /**
        * <code>required bool usePoolDispatcher = 4;</code>
+       * @return Whether the usePoolDispatcher field is set.
        */
       public boolean hasUsePoolDispatcher() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required bool usePoolDispatcher = 4;</code>
+       * @return The usePoolDispatcher.
        */
       public boolean getUsePoolDispatcher() {
         return usePoolDispatcher_;
       }
       /**
        * <code>required bool usePoolDispatcher = 4;</code>
+       * @param value The usePoolDispatcher to set.
+       * @return This builder for chaining.
        */
       public Builder setUsePoolDispatcher(boolean value) {
         bitField0_ |= 0x00000008;
@@ -7881,6 +8117,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required bool usePoolDispatcher = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUsePoolDispatcher() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -7947,33 +8184,40 @@ public final class ClusterMetricsMessages {
 
     /**
      * <code>required uint32 serializerId = 1;</code>
+     * @return Whether the serializerId field is set.
      */
     boolean hasSerializerId();
     /**
      * <code>required uint32 serializerId = 1;</code>
+     * @return The serializerId.
      */
     int getSerializerId();
 
     /**
      * <code>required string manifest = 2;</code>
+     * @return Whether the manifest field is set.
      */
     boolean hasManifest();
     /**
      * <code>required string manifest = 2;</code>
+     * @return The manifest.
      */
     java.lang.String getManifest();
     /**
      * <code>required string manifest = 2;</code>
+     * @return The bytes for manifest.
      */
     akka.protobufv3.internal.ByteString
         getManifestBytes();
 
     /**
      * <code>required bytes data = 3;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>required bytes data = 3;</code>
+     * @return The data.
      */
     akka.protobufv3.internal.ByteString getData();
   }
@@ -8082,12 +8326,14 @@ public final class ClusterMetricsMessages {
     private int serializerId_;
     /**
      * <code>required uint32 serializerId = 1;</code>
+     * @return Whether the serializerId field is set.
      */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint32 serializerId = 1;</code>
+     * @return The serializerId.
      */
     public int getSerializerId() {
       return serializerId_;
@@ -8097,12 +8343,14 @@ public final class ClusterMetricsMessages {
     private volatile java.lang.Object manifest_;
     /**
      * <code>required string manifest = 2;</code>
+     * @return Whether the manifest field is set.
      */
     public boolean hasManifest() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string manifest = 2;</code>
+     * @return The manifest.
      */
     public java.lang.String getManifest() {
       java.lang.Object ref = manifest_;
@@ -8120,6 +8368,7 @@ public final class ClusterMetricsMessages {
     }
     /**
      * <code>required string manifest = 2;</code>
+     * @return The bytes for manifest.
      */
     public akka.protobufv3.internal.ByteString
         getManifestBytes() {
@@ -8139,12 +8388,14 @@ public final class ClusterMetricsMessages {
     private akka.protobufv3.internal.ByteString data_;
     /**
      * <code>required bytes data = 3;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required bytes data = 3;</code>
+     * @return The data.
      */
     public akka.protobufv3.internal.ByteString getData() {
       return data_;
@@ -8543,18 +8794,22 @@ public final class ClusterMetricsMessages {
       private int serializerId_ ;
       /**
        * <code>required uint32 serializerId = 1;</code>
+       * @return Whether the serializerId field is set.
        */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint32 serializerId = 1;</code>
+       * @return The serializerId.
        */
       public int getSerializerId() {
         return serializerId_;
       }
       /**
        * <code>required uint32 serializerId = 1;</code>
+       * @param value The serializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000001;
@@ -8564,6 +8819,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required uint32 serializerId = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -8575,12 +8831,14 @@ public final class ClusterMetricsMessages {
       private java.lang.Object manifest_ = "";
       /**
        * <code>required string manifest = 2;</code>
+       * @return Whether the manifest field is set.
        */
       public boolean hasManifest() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string manifest = 2;</code>
+       * @return The manifest.
        */
       public java.lang.String getManifest() {
         java.lang.Object ref = manifest_;
@@ -8598,6 +8856,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string manifest = 2;</code>
+       * @return The bytes for manifest.
        */
       public akka.protobufv3.internal.ByteString
           getManifestBytes() {
@@ -8614,6 +8873,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string manifest = 2;</code>
+       * @param value The manifest to set.
+       * @return This builder for chaining.
        */
       public Builder setManifest(
           java.lang.String value) {
@@ -8627,6 +8888,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string manifest = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearManifest() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -8636,6 +8898,8 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required string manifest = 2;</code>
+       * @param value The bytes for manifest to set.
+       * @return This builder for chaining.
        */
       public Builder setManifestBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8651,18 +8915,22 @@ public final class ClusterMetricsMessages {
       private akka.protobufv3.internal.ByteString data_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes data = 3;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required bytes data = 3;</code>
+       * @return The data.
        */
       public akka.protobufv3.internal.ByteString getData() {
         return data_;
       }
       /**
        * <code>required bytes data = 3;</code>
+       * @param value The data to set.
+       * @return This builder for chaining.
        */
       public Builder setData(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -8675,6 +8943,7 @@ public final class ClusterMetricsMessages {
       }
       /**
        * <code>required bytes data = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearData() {
         bitField0_ = (bitField0_ & ~0x00000004);

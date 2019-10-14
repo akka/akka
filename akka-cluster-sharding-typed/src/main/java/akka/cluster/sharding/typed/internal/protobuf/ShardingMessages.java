@@ -24,24 +24,29 @@ public final class ShardingMessages {
 
     /**
      * <code>required string entityId = 1;</code>
+     * @return Whether the entityId field is set.
      */
     boolean hasEntityId();
     /**
      * <code>required string entityId = 1;</code>
+     * @return The entityId.
      */
     java.lang.String getEntityId();
     /**
      * <code>required string entityId = 1;</code>
+     * @return The bytes for entityId.
      */
     akka.protobufv3.internal.ByteString
         getEntityIdBytes();
 
     /**
      * <code>required .Payload message = 2;</code>
+     * @return Whether the message field is set.
      */
     boolean hasMessage();
     /**
      * <code>required .Payload message = 2;</code>
+     * @return The message.
      */
     akka.remote.ContainerFormats.Payload getMessage();
     /**
@@ -152,12 +157,14 @@ public final class ShardingMessages {
     private volatile java.lang.Object entityId_;
     /**
      * <code>required string entityId = 1;</code>
+     * @return Whether the entityId field is set.
      */
     public boolean hasEntityId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string entityId = 1;</code>
+     * @return The entityId.
      */
     public java.lang.String getEntityId() {
       java.lang.Object ref = entityId_;
@@ -175,6 +182,7 @@ public final class ShardingMessages {
     }
     /**
      * <code>required string entityId = 1;</code>
+     * @return The bytes for entityId.
      */
     public akka.protobufv3.internal.ByteString
         getEntityIdBytes() {
@@ -194,12 +202,14 @@ public final class ShardingMessages {
     private akka.remote.ContainerFormats.Payload message_;
     /**
      * <code>required .Payload message = 2;</code>
+     * @return Whether the message field is set.
      */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .Payload message = 2;</code>
+     * @return The message.
      */
     public akka.remote.ContainerFormats.Payload getMessage() {
       return message_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : message_;
@@ -584,12 +594,14 @@ public final class ShardingMessages {
       private java.lang.Object entityId_ = "";
       /**
        * <code>required string entityId = 1;</code>
+       * @return Whether the entityId field is set.
        */
       public boolean hasEntityId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return The entityId.
        */
       public java.lang.String getEntityId() {
         java.lang.Object ref = entityId_;
@@ -607,6 +619,7 @@ public final class ShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return The bytes for entityId.
        */
       public akka.protobufv3.internal.ByteString
           getEntityIdBytes() {
@@ -623,6 +636,8 @@ public final class ShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @param value The entityId to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityId(
           java.lang.String value) {
@@ -636,6 +651,7 @@ public final class ShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEntityId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -645,6 +661,8 @@ public final class ShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @param value The bytes for entityId to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityIdBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -662,12 +680,14 @@ public final class ShardingMessages {
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> messageBuilder_;
       /**
        * <code>required .Payload message = 2;</code>
+       * @return Whether the message field is set.
        */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .Payload message = 2;</code>
+       * @return The message.
        */
       public akka.remote.ContainerFormats.Payload getMessage() {
         if (messageBuilder_ == null) {

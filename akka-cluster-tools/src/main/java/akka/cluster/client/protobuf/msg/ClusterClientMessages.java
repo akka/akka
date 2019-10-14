@@ -24,19 +24,25 @@ public final class ClusterClientMessages {
 
     /**
      * <code>repeated string contactPoints = 1;</code>
+     * @return A list containing the contactPoints.
      */
     java.util.List<java.lang.String>
         getContactPointsList();
     /**
      * <code>repeated string contactPoints = 1;</code>
+     * @return The count of contactPoints.
      */
     int getContactPointsCount();
     /**
      * <code>repeated string contactPoints = 1;</code>
+     * @param index The index of the element to return.
+     * @return The contactPoints at the given index.
      */
     java.lang.String getContactPoints(int index);
     /**
      * <code>repeated string contactPoints = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the contactPoints at the given index.
      */
     akka.protobufv3.internal.ByteString
         getContactPointsBytes(int index);
@@ -136,6 +142,7 @@ public final class ClusterClientMessages {
     private akka.protobufv3.internal.LazyStringList contactPoints_;
     /**
      * <code>repeated string contactPoints = 1;</code>
+     * @return A list containing the contactPoints.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getContactPointsList() {
@@ -143,18 +150,23 @@ public final class ClusterClientMessages {
     }
     /**
      * <code>repeated string contactPoints = 1;</code>
+     * @return The count of contactPoints.
      */
     public int getContactPointsCount() {
       return contactPoints_.size();
     }
     /**
      * <code>repeated string contactPoints = 1;</code>
+     * @param index The index of the element to return.
+     * @return The contactPoints at the given index.
      */
     public java.lang.String getContactPoints(int index) {
       return contactPoints_.get(index);
     }
     /**
      * <code>repeated string contactPoints = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the contactPoints at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getContactPointsBytes(int index) {
@@ -491,6 +503,7 @@ public final class ClusterClientMessages {
       }
       /**
        * <code>repeated string contactPoints = 1;</code>
+       * @return A list containing the contactPoints.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getContactPointsList() {
@@ -498,18 +511,23 @@ public final class ClusterClientMessages {
       }
       /**
        * <code>repeated string contactPoints = 1;</code>
+       * @return The count of contactPoints.
        */
       public int getContactPointsCount() {
         return contactPoints_.size();
       }
       /**
        * <code>repeated string contactPoints = 1;</code>
+       * @param index The index of the element to return.
+       * @return The contactPoints at the given index.
        */
       public java.lang.String getContactPoints(int index) {
         return contactPoints_.get(index);
       }
       /**
        * <code>repeated string contactPoints = 1;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the contactPoints at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getContactPointsBytes(int index) {
@@ -517,6 +535,9 @@ public final class ClusterClientMessages {
       }
       /**
        * <code>repeated string contactPoints = 1;</code>
+       * @param index The index to set the value at.
+       * @param value The contactPoints to set.
+       * @return This builder for chaining.
        */
       public Builder setContactPoints(
           int index, java.lang.String value) {
@@ -530,6 +551,8 @@ public final class ClusterClientMessages {
       }
       /**
        * <code>repeated string contactPoints = 1;</code>
+       * @param value The contactPoints to add.
+       * @return This builder for chaining.
        */
       public Builder addContactPoints(
           java.lang.String value) {
@@ -543,6 +566,8 @@ public final class ClusterClientMessages {
       }
       /**
        * <code>repeated string contactPoints = 1;</code>
+       * @param values The contactPoints to add.
+       * @return This builder for chaining.
        */
       public Builder addAllContactPoints(
           java.lang.Iterable<java.lang.String> values) {
@@ -554,6 +579,7 @@ public final class ClusterClientMessages {
       }
       /**
        * <code>repeated string contactPoints = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearContactPoints() {
         contactPoints_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -563,6 +589,8 @@ public final class ClusterClientMessages {
       }
       /**
        * <code>repeated string contactPoints = 1;</code>
+       * @param value The bytes of the contactPoints to add.
+       * @return This builder for chaining.
        */
       public Builder addContactPointsBytes(
           akka.protobufv3.internal.ByteString value) {
