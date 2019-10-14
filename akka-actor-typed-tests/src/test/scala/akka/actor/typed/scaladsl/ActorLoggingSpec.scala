@@ -263,11 +263,11 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
       }
       val actor =
-        LoggingEventFilter.info("Starting up").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).intercept {
+        LoggingTestKit.info("Starting up").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).intercept {
           spawn(behavior, ActorTags("tag1", "tag2"))
         }
 
-      LoggingEventFilter.info("Got message").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).intercept {
+      LoggingTestKit.info("Got message").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).intercept {
         actor ! "ping"
       }
     }
