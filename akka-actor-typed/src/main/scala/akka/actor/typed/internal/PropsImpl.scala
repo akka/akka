@@ -56,8 +56,8 @@ import akka.annotation.InternalApi
   }
 
   final case class ActorTagsImpl(tags: Set[String], next: Props = Props.empty) extends ActorTags {
-    if (tags == null || tags.isEmpty)
-      throw new IllegalArgumentException(s"Tags must be one or more strings but was $tags")
+    if (tags == null)
+      throw new IllegalArgumentException("Tags must not be null")
     def withNext(next: Props): Props = copy(next = next)
   }
 
