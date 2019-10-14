@@ -744,9 +744,10 @@ private[persistence] trait Eventsourced
                 finally context.stop(self)
                 returnRecoveryPermit()
             }
-          case RecoverySuccess(highestSeqNr) =>
+          case RecoverySuccess(highestJournalSeqNr) =>
             timeoutCancellable.cancel()
             onReplaySuccess() // callback for subclass implementation
+            val highestSeqNr = Math.max(highestJournalSeqNr, lastSequenceNr)
             sequenceNr = highestSeqNr
             setLastSequenceNr(highestSeqNr)
             _recoveryRunning = false
