@@ -48,7 +48,6 @@ class TypedActorBenchmark {
   implicit var system: ActorSystem[Start] = _
 
   implicit val askTimeout = akka.util.Timeout(timeout)
-  implicit def scheduler = system.scheduler
 
   @Setup(Level.Trial)
   def setup(): Unit = {

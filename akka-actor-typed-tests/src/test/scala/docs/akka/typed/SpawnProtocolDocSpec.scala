@@ -28,7 +28,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Props
 import akka.util.Timeout
-import akka.actor.typed.Scheduler
 
 //#imports2
 
@@ -57,7 +56,7 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike w
     "be able to spawn actors" in {
       //#system-spawn
 
-      val system: ActorSystem[SpawnProtocol.Command] =
+      implicit val system: ActorSystem[SpawnProtocol.Command] =
         ActorSystem(HelloWorldMain(), "hello")
 
       // needed in implicit scope for ask (?)
