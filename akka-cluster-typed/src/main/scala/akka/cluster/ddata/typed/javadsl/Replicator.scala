@@ -29,14 +29,14 @@ object Replicator {
    * The `Behavior` for the `Replicator` actor.
    */
   def behavior(settings: dd.ReplicatorSettings): Behavior[Command] =
-    ReplicatorBehavior.behavior(settings, underlyingReplicator = None).narrow[Command]
+    ReplicatorBehavior(settings, underlyingReplicator = None).narrow[Command]
 
   /**
    * The `Behavior` for the `Replicator` actor.
    * It will use the given underlying [[akka.cluster.ddata.Replicator]]
    */
   def behavior(settings: dd.ReplicatorSettings, underlyingReplicator: akka.actor.ActorRef): Behavior[Command] =
-    ReplicatorBehavior.behavior(settings, Some(underlyingReplicator)).narrow[Command]
+    ReplicatorBehavior(settings, Some(underlyingReplicator)).narrow[Command]
 
   @DoNotInherit trait Command extends akka.cluster.ddata.typed.scaladsl.Replicator.Command
 
