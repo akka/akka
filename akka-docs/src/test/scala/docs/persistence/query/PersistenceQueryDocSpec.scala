@@ -296,7 +296,6 @@ class PersistenceQueryDocSpec(s: String) extends AkkaSpec(s) {
         PersistenceQuery(system.toClassic).readJournalFor[MyScaladslReadJournal](JournalId)
 
       import system.executionContext
-      implicit val scheduler = system.scheduler
       implicit val timeout = Timeout(3.seconds)
 
       val bidProjection = new MyResumableProjection("bid")

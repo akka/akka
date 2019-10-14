@@ -64,7 +64,6 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike w
       import akka.actor.typed.scaladsl.AskPattern._
       implicit val ec: ExecutionContext = system.executionContext
       implicit val timeout: Timeout = Timeout(3.seconds)
-      implicit val scheduler: Scheduler = system.scheduler
 
       val greeter: Future[ActorRef[HelloWorld.Greet]] =
         system.ask(SpawnProtocol.Spawn(behavior = HelloWorld(), name = "greeter", props = Props.empty, _))
