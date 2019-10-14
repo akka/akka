@@ -410,10 +410,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     import akka.actor.typed.scaladsl.AskPattern._
     import akka.util.Timeout
 
-    // asking someone requires a timeout and a scheduler, if the timeout hits without response
+    // asking someone requires a timeout if the timeout hits without response
     // the ask is failed with a TimeoutException
     implicit val timeout: Timeout = 3.seconds
-    implicit val scheduler = system.scheduler
 
     val result: Future[CookieFabric.Cookies] = cookieFabric.ask(ref => CookieFabric.GiveMeCookies(ref))
 
