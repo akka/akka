@@ -18,15 +18,27 @@ import akka.dispatch.sysmsg._
 import akka.event.Logging
 import akka.event.Logging.Debug
 import akka.event.Logging.Error
-
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.util.control.Exception._
 import scala.util.control.NonFatal
+
 import akka.actor.ActorRefScope
+import akka.annotation.InternalApi
 import com.github.ghik.silencer.silent
 
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object FaultHandling {
+  sealed trait FailedInfo
+  private case object NoFailedInfo extends FailedInfo
+  private final case class FailedRef(ref: ActorRef, fatally: Boolean) extends FailedInfo
+  private case object FailedFatally extends FailedInfo
+}
+
 private[akka] trait FaultHandling { this: ActorCell =>
+  import FaultHandling._
 
   /* =================
    * T H E   R U L E S
@@ -51,12 +63,37 @@ private[akka] trait FaultHandling { this: ActorCell =>
    * a restart with dying children)
    * might well be replaced by ref to a Cancellable in the future (see #2299)
    */
-  private var _failed: ActorRef = null
-  private def isFailed: Boolean = _failed != null
-  private def setFailed(perpetrator: ActorRef): Unit = _failed = perpetrator
-  private def clearFailed(): Unit = _failed = null
-  private def perpetrator: ActorRef = _failed
-  var _failedFatally: Boolean = false
+  private var _failed: FailedInfo = NoFailedInfo
+  private def isFailed: Boolean = _failed.isInstanceOf[FailedRef]
+  private def setFailed(perpetrator: ActorRef): Unit = {
+    _failed = _failed match {
+      case FailedRef(_, fatally) => FailedRef(perpetrator, fatally)
+      case FailedFatally         => FailedRef(perpetrator, fatally = true)
+      case _                     => FailedRef(perpetrator, fatally = false)
+    }
+  }
+  private def clearFailed(): Unit = {
+    _failed = _failed match {
+      case FailedRef(_, false) => NoFailedInfo
+      case FailedRef(_, true)  => FailedFatally
+      case other               => other
+    }
+  }
+  private def perpetrator: ActorRef = _failed match {
+    case FailedRef(ref, _) => ref
+    case _                 => null
+  }
+  protected def setFailedFatally(): Unit = {
+    _failed = _failed match {
+      case FailedRef(ref, _) => FailedRef(ref, fatally = true)
+      case _                 => FailedFatally
+    }
+  }
+  private def isFailedFatally: Boolean = _failed match {
+    case FailedFatally         => true
+    case FailedRef(_, fatally) => fatally
+    case _                     => false
+  }
 
   /**
    * Do re-create the actor in response to a failure.
@@ -73,7 +110,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
         val optionalMessage = if (currentMessage ne null) Some(currentMessage.message) else None
         try {
           // if the actor fails in preRestart, we can do nothing but log it: it’s best-effort
-          if (!_failedFatally) failedActor.aroundPreRestart(cause, optionalMessage)
+          if (!isFailedFatally) failedActor.aroundPreRestart(cause, optionalMessage)
         } catch handleNonFatalOrInterruptedException { e =>
           val ex = PreRestartException(self, e, cause, optionalMessage)
           publish(Error(ex, self.path.toString, clazz(failedActor), e.getMessage))
@@ -109,7 +146,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
       system.eventStream.publish(
         Error(self.path.toString, clazz(actor), "changing Resume into Create after " + causedByFailure))
       faultCreate()
-    } else if (_failedFatally && causedByFailure != null) {
+    } else if (isFailedFatally && causedByFailure != null) {
       system.eventStream.publish(
         Error(self.path.toString, clazz(actor), "changing Resume into Restart after " + causedByFailure))
       faultRecreate(causedByFailure)
@@ -262,7 +299,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
             publish(Error(e, self.path.toString, clazz(freshActor), "restarting " + child))
           })
     } catch handleNonFatalOrInterruptedException { e =>
-      _failedFatally = true
+      setFailedFatally()
       clearActorFields(actor, recreate = false) // in order to prevent preRestart() from happening again
       handleInvokeFailure(survivors, PostRestartException(self, e, cause))
     }

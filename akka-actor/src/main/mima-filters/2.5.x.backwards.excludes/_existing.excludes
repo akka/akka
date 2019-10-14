@@ -89,9 +89,3 @@ ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.ExtendedAc
 ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.ActorSystem.classicSystem")
 ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.AbstractActor#ActorContext.classicActorContext")
 ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.ActorContext.classicActorContext")
-
-# changes to internals
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.setActorFields")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorCell.clearActorCellFields")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.FaultHandling._failedFatally_=")
-ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.dungeon.FaultHandling._failedFatally")

@@ -421,7 +421,7 @@ private[akka] class ActorCell(
     with dungeon.DeathWatch
     with dungeon.FaultHandling {
 
-  var _props = _initialProps
+  private[this] var _props = _initialProps
   def props = _props
 
   import ActorCell._
@@ -630,7 +630,7 @@ private[akka] class ActorCell(
     def clearOutActorIfNonNull(): Unit = {
       if (actor != null) {
         clearActorFields(actor, recreate = false)
-        _failedFatally = true
+        setFailedFatally()
         actor = null // ensure that we know that we failed during creation
       }
     }
