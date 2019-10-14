@@ -18,10 +18,11 @@ import akka.util.JavaDurationConverters._
 import akka.util.ccompat.JavaConverters._
 import akka.util.ccompat._
 import com.typesafe.config.{ Config, ConfigValueType }
-
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{ Failure, Success, Try }
+
+import akka.event.Logging
 
 /** INTERNAL API */
 @InternalApi
@@ -76,8 +77,9 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
       parsed match {
         case Success(value) => Some(value)
         case Failure(exception) =>
-          if (system.log.isWarningEnabled) {
-            system.log.error(exception, "Error parsing /etc/resolv.conf, ignoring.")
+          val log = Logging(system, getClass)
+          if (log.isWarningEnabled) {
+            log.error(exception, "Error parsing /etc/resolv.conf, ignoring.")
           }
           None
       }

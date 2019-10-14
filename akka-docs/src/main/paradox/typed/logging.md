@@ -253,6 +253,9 @@ akka {
 The `stdout-loglevel` is only in effect during system startup and shutdown, and setting
 it to `OFF` as well, ensures that nothing gets logged during system startup or shutdown.
 
+See @ref:[Logger names](#logger-names) for configuration of log level in SLF4J backend for certain
+modules of Akka.
+
 ### Logging to stdout during startup and shutdown
 
 When the actor system is starting up and shutting down the configured `loggers` are not used.
@@ -394,6 +397,36 @@ With Logback the timestamp is available with `%X{akkaTimestamp}` specifier withi
   </encoder>
 ```
 
+### Logger names
+
+It can be useful to enable debug level or other SLF4J backend configuration for certain modules of Akka when
+troubleshooting. Those logger names are typically prefixed with the package name of the classes in that module.
+For example, in Logback the configuration may look like this to enable debug logging for Cluster Sharding: 
+
+```
+   <logger name="akka.cluster.sharding" level="DEBUG" />
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC"/>
+    </root>
+```
+
+Other examples of logger names or prefixes:
+
+```
+akka.cluster
+akka.cluster.Cluster
+akka.cluster.ClusterHeartbeat
+akka.cluster.ClusterGossip
+akka.cluster.ddata
+akka.cluster.pubsub
+akka.cluster.singleton
+akka.cluster.sharding
+akka.coordination.lease
+akka.discovery
+akka.persistence
+akka.remote
+```
 
 ## Logging in tests
 

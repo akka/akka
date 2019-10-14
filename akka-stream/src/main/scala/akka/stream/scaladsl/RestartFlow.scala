@@ -231,6 +231,8 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   // don't want to restart the sub inlet when it finishes, we just finish normally.
   var finishing = false
 
+  override protected def logSource: Class[_] = classOf[RestartWithBackoffLogic[_]]
+
   protected def startGraph(): Unit
   protected def backoff(): Unit
 
@@ -385,6 +387,7 @@ object RestartWithBackoffFlow {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+        override protected def logSource: Class[_] = classOf[DelayCancellationStage[_]]
 
         private var cause: OptionVal[Throwable] = OptionVal.None
 

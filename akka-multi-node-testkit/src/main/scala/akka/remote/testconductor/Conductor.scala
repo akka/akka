@@ -428,7 +428,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     Server,
     controllerPort,
     settings.ServerSocketWorkerPoolSize,
-    new ConductorHandler(settings.QueryTimeout, self, Logging(context.system, classOf[ConductorHandler].getName)))
+    new ConductorHandler(settings.QueryTimeout, self, Logging(context.system, classOf[ConductorHandler])))
 
   /*
    * Supervision of the BarrierCoordinator means to catch all his bad emotions
