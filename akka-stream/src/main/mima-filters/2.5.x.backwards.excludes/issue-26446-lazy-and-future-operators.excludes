@@ -1,2 +1,0 @@
-# #26446 align lazy and future stream operator naming and signatures
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.scaladsl.Source.fromSourceCompletionStage")

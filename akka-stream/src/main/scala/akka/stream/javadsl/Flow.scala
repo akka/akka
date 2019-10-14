@@ -302,7 +302,7 @@ object Flow {
   }
 
   /**
-   * Turn a `Future[Flow]` into a flow that will consume the values of the source when the future completes successfully.
+   * Turn a `CompletionStage<Flow>` into a flow that will consume the values of the source when the future completes successfully.
    * If the `Future` is completed with a failure the stream is failed.
    *
    * The materialized completion stage value is completed with the materialized value of the future flow or failed with a

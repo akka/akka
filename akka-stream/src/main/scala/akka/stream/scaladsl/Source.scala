@@ -367,6 +367,17 @@ object Source {
     fromGraph(new FutureFlattenSource(future))
 
   /**
+   * Streams the elements of an asynchronous source once its given `completion` operator completes.
+   * If the [[CompletionStage]] fails the stream is failed with the exception from the future.
+   * If downstream cancels before the stream completes the materialized `Future` will be failed
+   * with a [[StreamDetachedException]]
+   */
+  @deprecated("Use scala-compat CompletionStage to future converter and 'Source.futureSource' instead", "2.6.0")
+  def fromSourceCompletionStage[T, M](
+      completion: CompletionStage[_ <: Graph[SourceShape[T], M]]): Source[T, CompletionStage[M]] =
+    fromFutureSource(completion.toScala).mapMaterializedValue(_.toJava)
+
+  /**
    * Elements are emitted periodically with the specified interval.
    * The tick element will be delivered to downstream consumers that has requested any elements.
    * If a consumer has not requested any elements at the point in time when the tick
