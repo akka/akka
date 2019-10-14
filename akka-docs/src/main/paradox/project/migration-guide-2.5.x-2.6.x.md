@@ -618,6 +618,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
   The reason is to encourage right usage and detect mistakes like not creating a new instance (via `setup`)
   when the behavior is supervised and restarted.    
 * `LoggingEventFilter` has been renamed to `LoggingTestKit` and its `intercept` method renamed to `assert`
+* Scala `ask` from `AskPattern` now implicitly converts an implicit `ActorSystem[_]` to `Scheduler` to eliminate some boilerplate.
 
 #### Akka Typed Stream API changes
 
