@@ -22,8 +22,6 @@ _parent_ of the newly created _child_ actor. You might ask then, who is the pare
 As illustrated below, all actors have a common parent, the user guardian, which is defined and created when you start the `ActorSystem`.
 As we covered in the @scala[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)]@java[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-java/)], creation of an actor returns a reference that is a valid URL. So, for example, if we create an actor named `someActor` from the user guardian with `context.spawn(someBehavior, "someActor")`, its reference will include the path `/user/someActor`.
 
-FIXME update link to Quickstart to the Typed version, when it's ready, issue https://github.com/akka/akka/issues/25997
-
 ![actor tree diagram](diagrams/actor_top_tree.png)
 
 In fact, before your first actor is started, Akka has already created two actors in the system. The names of these built-in actors contain _guardian_. The guardian actors include:
@@ -32,9 +30,7 @@ In fact, before your first actor is started, Akka has already created two actors
  - `/system` the _system guardian_. Akka or other libraries built on top of Akka may create actors in the _system_ namespace.
  - `/user` the _user guardian_. This is the top level actor that you provide to start all other actors in your application.
  
-The easiest way to see the actor hierarchy in action is to print `ActorRef` instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](http://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-java)].
-
-FIXME update link to Quickstart to the Typed version, when it's ready, issue https://github.com/akka/akka/issues/25997
+The easiest way to see the actor hierarchy in action is to print `ActorRef` instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](https://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](https://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-java)].
 
 In your Hello World project, navigate to the `com.lightbend.akka.sample` package and create a new @scala[Scala file called `ActorHierarchyExperiments.scala`]@java[Java file called `ActorHierarchyExperiments.java`] here. Copy and paste the code from the snippet below to this new source file. Save your file and run `sbt "runMain com.lightbend.akka.sample.ActorHierarchyExperiments"` to observe the output.
 

@@ -31,10 +31,8 @@ efficiently.
 ## How to get started
 
 If this is your first experience with Akka, we recommend that you start by
-running a simple Hello World project. See the @scala[[Quickstart Guide](http://developer.lightbend.com/guides/akka-quickstart-scala)] @java[[Quickstart Guide](http://developer.lightbend.com/guides/akka-quickstart-java)] for
+running a simple Hello World project. See the @scala[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala)] @java[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-java)] for
 instructions on downloading and running the Hello World example. The *Quickstart* guide walks you through example code that introduces how to define actor systems, actors, and messages as well as how to use the test module and logging. Within 30 minutes, you should be able to run the Hello World example and learn how it is constructed.
-
-FIXME update link to Quickstart to the Typed version, when it's ready, issue https://github.com/akka/akka/issues/25997
 
 This *Getting Started* guide provides the next level of information. It covers why the actor model fits the needs of modern distributed systems and includes a tutorial that will help further your knowledge of Akka. Topics include:
 
