@@ -178,7 +178,8 @@ abstract class ClusterSharding {
 
   /**
    * Create an `ActorRef`-like reference to a specific sharded entity.
-   * Currently you have to correctly specify the type of messages the target can handle.
+   *
+   * You have to correctly specify the type of messages the target can handle via the `typeKey`.
    *
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * here provided `entityId`.
@@ -186,6 +187,18 @@ abstract class ClusterSharding {
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
+
+  /**
+   * Create an `ActorRef`-like reference to a specific sharded entity running in another data center.
+   *
+   * You have to correctly specify the type of messages the target can handle via the `typeKey`.
+   *
+   * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
+   * provided `entityId`.
+   *
+   * For in-depth documentation of its semantics, see [[EntityRef]].
+   */
+  def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String, dataCenter: String): EntityRef[M]
 
   /**
    * Actor for querying Cluster Sharding state
@@ -220,6 +233,7 @@ object Entity {
       Optional.empty(),
       Optional.empty(),
       Optional.empty(),
+      Optional.empty(),
       Optional.empty())
   }
 
@@ -236,7 +250,8 @@ final class Entity[M, E] private (
     val settings: Optional[ClusterShardingSettings],
     val messageExtractor: Optional[ShardingMessageExtractor[E, M]],
     val allocationStrategy: Optional[ShardAllocationStrategy],
-    val role: Optional[String]) {
+    val role: Optional[String],
+    val dataCenter: Optional[String]) {
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -276,13 +291,22 @@ final class Entity[M, E] private (
       settings,
       Optional.ofNullable(newExtractor),
       allocationStrategy,
-      role)
+      role,
+      dataCenter)
 
   /**
    *  Run the Entity actors on nodes with the given role.
    */
   def withRole(role: String): Entity[M, E] =
     copy(role = Optional.ofNullable(role))
+
+  /**
+   * The data center of the cluster nodes where the cluster sharding is running.
+   * If the dataCenter is not specified then the same data center as current node. If the given
+   * dataCenter does not match the data center of the current node the `ShardRegion` will be started
+   * in proxy mode.
+   */
+  def withDataCenter(newDataCenter: String): Entity[M, E] = copy(dataCenter = Optional.ofNullable(newDataCenter))
 
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,
@@ -298,8 +322,18 @@ final class Entity[M, E] private (
       entityProps: Props = entityProps,
       settings: Optional[ClusterShardingSettings] = settings,
       allocationStrategy: Optional[ShardAllocationStrategy] = allocationStrategy,
-      role: Optional[String] = role): Entity[M, E] = {
-    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy, role)
+      role: Optional[String] = role,
+      dataCenter: Optional[String] = role): Entity[M, E] = {
+    new Entity(
+      createBehavior,
+      typeKey,
+      stopMessage,
+      entityProps,
+      settings,
+      messageExtractor,
+      allocationStrategy,
+      role,
+      dataCenter)
   }
 
 }

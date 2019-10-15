@@ -61,6 +61,8 @@ public final class ClusterMessages {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -68,6 +70,10 @@ public final class ClusterMessages {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static ReachabilityStatus forNumber(int value) {
       switch (value) {
         case 0: return Reachable;
@@ -197,6 +203,8 @@ public final class ClusterMessages {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -204,6 +212,10 @@ public final class ClusterMessages {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static MemberStatus forNumber(int value) {
       switch (value) {
         case 0: return Joining;
@@ -268,10 +280,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .UniqueAddress node = 1;</code>
+     * @return Whether the node field is set.
      */
     boolean hasNode();
     /**
      * <code>required .UniqueAddress node = 1;</code>
+     * @return The node.
      */
     akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getNode();
     /**
@@ -281,19 +295,25 @@ public final class ClusterMessages {
 
     /**
      * <code>repeated string roles = 2;</code>
+     * @return A list containing the roles.
      */
     java.util.List<java.lang.String>
         getRolesList();
     /**
      * <code>repeated string roles = 2;</code>
+     * @return The count of roles.
      */
     int getRolesCount();
     /**
      * <code>repeated string roles = 2;</code>
+     * @param index The index of the element to return.
+     * @return The roles at the given index.
      */
     java.lang.String getRoles(int index);
     /**
      * <code>repeated string roles = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the roles at the given index.
      */
     akka.protobufv3.internal.ByteString
         getRolesBytes(int index);
@@ -412,12 +432,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress node_;
     /**
      * <code>required .UniqueAddress node = 1;</code>
+     * @return Whether the node field is set.
      */
     public boolean hasNode() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress node = 1;</code>
+     * @return The node.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getNode() {
       return node_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : node_;
@@ -433,6 +455,7 @@ public final class ClusterMessages {
     private akka.protobufv3.internal.LazyStringList roles_;
     /**
      * <code>repeated string roles = 2;</code>
+     * @return A list containing the roles.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getRolesList() {
@@ -440,18 +463,23 @@ public final class ClusterMessages {
     }
     /**
      * <code>repeated string roles = 2;</code>
+     * @return The count of roles.
      */
     public int getRolesCount() {
       return roles_.size();
     }
     /**
      * <code>repeated string roles = 2;</code>
+     * @param index The index of the element to return.
+     * @return The roles at the given index.
      */
     public java.lang.String getRoles(int index) {
       return roles_.get(index);
     }
     /**
      * <code>repeated string roles = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the roles at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getRolesBytes(int index) {
@@ -839,12 +867,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.Builder, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder> nodeBuilder_;
       /**
        * <code>required .UniqueAddress node = 1;</code>
+       * @return Whether the node field is set.
        */
       public boolean hasNode() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress node = 1;</code>
+       * @return The node.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getNode() {
         if (nodeBuilder_ == null) {
@@ -961,6 +991,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string roles = 2;</code>
+       * @return A list containing the roles.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getRolesList() {
@@ -968,18 +999,23 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string roles = 2;</code>
+       * @return The count of roles.
        */
       public int getRolesCount() {
         return roles_.size();
       }
       /**
        * <code>repeated string roles = 2;</code>
+       * @param index The index of the element to return.
+       * @return The roles at the given index.
        */
       public java.lang.String getRoles(int index) {
         return roles_.get(index);
       }
       /**
        * <code>repeated string roles = 2;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the roles at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getRolesBytes(int index) {
@@ -987,6 +1023,9 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string roles = 2;</code>
+       * @param index The index to set the value at.
+       * @param value The roles to set.
+       * @return This builder for chaining.
        */
       public Builder setRoles(
           int index, java.lang.String value) {
@@ -1000,6 +1039,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string roles = 2;</code>
+       * @param value The roles to add.
+       * @return This builder for chaining.
        */
       public Builder addRoles(
           java.lang.String value) {
@@ -1013,6 +1054,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string roles = 2;</code>
+       * @param values The roles to add.
+       * @return This builder for chaining.
        */
       public Builder addAllRoles(
           java.lang.Iterable<java.lang.String> values) {
@@ -1024,6 +1067,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string roles = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRoles() {
         roles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -1033,6 +1077,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string roles = 2;</code>
+       * @param value The bytes of the roles to add.
+       * @return This builder for chaining.
        */
       public Builder addRolesBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -1103,10 +1149,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom();
     /**
@@ -1116,10 +1164,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .Gossip gossip = 2;</code>
+     * @return Whether the gossip field is set.
      */
     boolean hasGossip();
     /**
      * <code>required .Gossip gossip = 2;</code>
+     * @return The gossip.
      */
     akka.cluster.protobuf.msg.ClusterMessages.Gossip getGossip();
     /**
@@ -1241,12 +1291,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
@@ -1262,12 +1314,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.Gossip gossip_;
     /**
      * <code>required .Gossip gossip = 2;</code>
+     * @return Whether the gossip field is set.
      */
     public boolean hasGossip() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .Gossip gossip = 2;</code>
+     * @return The gossip.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.Gossip getGossip() {
       return gossip_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Gossip.getDefaultInstance() : gossip_;
@@ -1674,12 +1728,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.Builder, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return The from.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
@@ -1792,12 +1848,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.Gossip, akka.cluster.protobuf.msg.ClusterMessages.Gossip.Builder, akka.cluster.protobuf.msg.ClusterMessages.GossipOrBuilder> gossipBuilder_;
       /**
        * <code>required .Gossip gossip = 2;</code>
+       * @return Whether the gossip field is set.
        */
       public boolean hasGossip() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .Gossip gossip = 2;</code>
+       * @return The gossip.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.Gossip getGossip() {
         if (gossipBuilder_ == null) {
@@ -1963,14 +2021,17 @@ public final class ClusterMessages {
 
     /**
      * <code>optional string currentConfig = 1;</code>
+     * @return Whether the currentConfig field is set.
      */
     boolean hasCurrentConfig();
     /**
      * <code>optional string currentConfig = 1;</code>
+     * @return The currentConfig.
      */
     java.lang.String getCurrentConfig();
     /**
      * <code>optional string currentConfig = 1;</code>
+     * @return The bytes for currentConfig.
      */
     akka.protobufv3.internal.ByteString
         getCurrentConfigBytes();
@@ -2070,12 +2131,14 @@ public final class ClusterMessages {
     private volatile java.lang.Object currentConfig_;
     /**
      * <code>optional string currentConfig = 1;</code>
+     * @return Whether the currentConfig field is set.
      */
     public boolean hasCurrentConfig() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional string currentConfig = 1;</code>
+     * @return The currentConfig.
      */
     public java.lang.String getCurrentConfig() {
       java.lang.Object ref = currentConfig_;
@@ -2093,6 +2156,7 @@ public final class ClusterMessages {
     }
     /**
      * <code>optional string currentConfig = 1;</code>
+     * @return The bytes for currentConfig.
      */
     public akka.protobufv3.internal.ByteString
         getCurrentConfigBytes() {
@@ -2431,12 +2495,14 @@ public final class ClusterMessages {
       private java.lang.Object currentConfig_ = "";
       /**
        * <code>optional string currentConfig = 1;</code>
+       * @return Whether the currentConfig field is set.
        */
       public boolean hasCurrentConfig() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional string currentConfig = 1;</code>
+       * @return The currentConfig.
        */
       public java.lang.String getCurrentConfig() {
         java.lang.Object ref = currentConfig_;
@@ -2454,6 +2520,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string currentConfig = 1;</code>
+       * @return The bytes for currentConfig.
        */
       public akka.protobufv3.internal.ByteString
           getCurrentConfigBytes() {
@@ -2470,6 +2537,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string currentConfig = 1;</code>
+       * @param value The currentConfig to set.
+       * @return This builder for chaining.
        */
       public Builder setCurrentConfig(
           java.lang.String value) {
@@ -2483,6 +2552,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string currentConfig = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearCurrentConfig() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -2492,6 +2562,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string currentConfig = 1;</code>
+       * @param value The bytes for currentConfig to set.
+       * @return This builder for chaining.
        */
       public Builder setCurrentConfigBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -2562,10 +2634,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .Address address = 1;</code>
+     * @return Whether the address field is set.
      */
     boolean hasAddress();
     /**
      * <code>required .Address address = 1;</code>
+     * @return The address.
      */
     akka.cluster.protobuf.msg.ClusterMessages.Address getAddress();
     /**
@@ -2575,10 +2649,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .ConfigCheck configCheck = 2;</code>
+     * @return Whether the configCheck field is set.
      */
     boolean hasConfigCheck();
     /**
      * <code>required .ConfigCheck configCheck = 2;</code>
+     * @return The configCheck.
      */
     akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck getConfigCheck();
     /**
@@ -2700,12 +2776,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.Address address_;
     /**
      * <code>required .Address address = 1;</code>
+     * @return Whether the address field is set.
      */
     public boolean hasAddress() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Address address = 1;</code>
+     * @return The address.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.Address getAddress() {
       return address_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance() : address_;
@@ -2721,12 +2799,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck configCheck_;
     /**
      * <code>required .ConfigCheck configCheck = 2;</code>
+     * @return Whether the configCheck field is set.
      */
     public boolean hasConfigCheck() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .ConfigCheck configCheck = 2;</code>
+     * @return The configCheck.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck getConfigCheck() {
       return configCheck_ == null ? akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.getDefaultInstance() : configCheck_;
@@ -3133,12 +3213,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.Address, akka.cluster.protobuf.msg.ClusterMessages.Address.Builder, akka.cluster.protobuf.msg.ClusterMessages.AddressOrBuilder> addressBuilder_;
       /**
        * <code>required .Address address = 1;</code>
+       * @return Whether the address field is set.
        */
       public boolean hasAddress() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Address address = 1;</code>
+       * @return The address.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.Address getAddress() {
         if (addressBuilder_ == null) {
@@ -3251,12 +3333,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck, akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Builder, akka.cluster.protobuf.msg.ClusterMessages.ConfigCheckOrBuilder> configCheckBuilder_;
       /**
        * <code>required .ConfigCheck configCheck = 2;</code>
+       * @return Whether the configCheck field is set.
        */
       public boolean hasConfigCheck() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .ConfigCheck configCheck = 2;</code>
+       * @return The configCheck.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck getConfigCheck() {
         if (configCheckBuilder_ == null) {
@@ -3422,23 +3506,28 @@ public final class ClusterMessages {
 
     /**
      * <code>required .ConfigCheck.Type type = 1;</code>
+     * @return Whether the type field is set.
      */
     boolean hasType();
     /**
      * <code>required .ConfigCheck.Type type = 1;</code>
+     * @return The type.
      */
     akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type getType();
 
     /**
      * <code>optional string clusterConfig = 2;</code>
+     * @return Whether the clusterConfig field is set.
      */
     boolean hasClusterConfig();
     /**
      * <code>optional string clusterConfig = 2;</code>
+     * @return The clusterConfig.
      */
     java.lang.String getClusterConfig();
     /**
      * <code>optional string clusterConfig = 2;</code>
+     * @return The bytes for clusterConfig.
      */
     akka.protobufv3.internal.ByteString
         getClusterConfigBytes();
@@ -3579,6 +3668,8 @@ public final class ClusterMessages {
       }
 
       /**
+       * @param value The numeric wire value of the corresponding enum entry.
+       * @return The enum associated with the given numeric wire value.
        * @deprecated Use {@link #forNumber(int)} instead.
        */
       @java.lang.Deprecated
@@ -3586,6 +3677,10 @@ public final class ClusterMessages {
         return forNumber(value);
       }
 
+      /**
+       * @param value The numeric wire value of the corresponding enum entry.
+       * @return The enum associated with the given numeric wire value.
+       */
       public static Type forNumber(int value) {
         switch (value) {
           case 1: return UncheckedConfig;
@@ -3645,12 +3740,14 @@ public final class ClusterMessages {
     private int type_;
     /**
      * <code>required .ConfigCheck.Type type = 1;</code>
+     * @return Whether the type field is set.
      */
     public boolean hasType() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ConfigCheck.Type type = 1;</code>
+     * @return The type.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type getType() {
       @SuppressWarnings("deprecation")
@@ -3662,12 +3759,14 @@ public final class ClusterMessages {
     private volatile java.lang.Object clusterConfig_;
     /**
      * <code>optional string clusterConfig = 2;</code>
+     * @return Whether the clusterConfig field is set.
      */
     public boolean hasClusterConfig() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional string clusterConfig = 2;</code>
+     * @return The clusterConfig.
      */
     public java.lang.String getClusterConfig() {
       java.lang.Object ref = clusterConfig_;
@@ -3685,6 +3784,7 @@ public final class ClusterMessages {
     }
     /**
      * <code>optional string clusterConfig = 2;</code>
+     * @return The bytes for clusterConfig.
      */
     public akka.protobufv3.internal.ByteString
         getClusterConfigBytes() {
@@ -4049,12 +4149,14 @@ public final class ClusterMessages {
       private int type_ = 1;
       /**
        * <code>required .ConfigCheck.Type type = 1;</code>
+       * @return Whether the type field is set.
        */
       public boolean hasType() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ConfigCheck.Type type = 1;</code>
+       * @return The type.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type getType() {
         @SuppressWarnings("deprecation")
@@ -4063,6 +4165,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required .ConfigCheck.Type type = 1;</code>
+       * @param value The type to set.
+       * @return This builder for chaining.
        */
       public Builder setType(akka.cluster.protobuf.msg.ClusterMessages.ConfigCheck.Type value) {
         if (value == null) {
@@ -4075,6 +4179,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required .ConfigCheck.Type type = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -4086,12 +4191,14 @@ public final class ClusterMessages {
       private java.lang.Object clusterConfig_ = "";
       /**
        * <code>optional string clusterConfig = 2;</code>
+       * @return Whether the clusterConfig field is set.
        */
       public boolean hasClusterConfig() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional string clusterConfig = 2;</code>
+       * @return The clusterConfig.
        */
       public java.lang.String getClusterConfig() {
         java.lang.Object ref = clusterConfig_;
@@ -4109,6 +4216,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string clusterConfig = 2;</code>
+       * @return The bytes for clusterConfig.
        */
       public akka.protobufv3.internal.ByteString
           getClusterConfigBytes() {
@@ -4125,6 +4233,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string clusterConfig = 2;</code>
+       * @param value The clusterConfig to set.
+       * @return This builder for chaining.
        */
       public Builder setClusterConfig(
           java.lang.String value) {
@@ -4138,6 +4248,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string clusterConfig = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearClusterConfig() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4147,6 +4258,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string clusterConfig = 2;</code>
+       * @param value The bytes for clusterConfig to set.
+       * @return This builder for chaining.
        */
       public Builder setClusterConfigBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -4217,10 +4330,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .Address from = 1;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .Address from = 1;</code>
+     * @return The from.
      */
     akka.cluster.protobuf.msg.ClusterMessages.Address getFrom();
     /**
@@ -4230,19 +4345,23 @@ public final class ClusterMessages {
 
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return Whether the sequenceNr field is set.
      */
     boolean hasSequenceNr();
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return The sequenceNr.
      */
     long getSequenceNr();
 
     /**
      * <code>optional sint64 creationTime = 3;</code>
+     * @return Whether the creationTime field is set.
      */
     boolean hasCreationTime();
     /**
      * <code>optional sint64 creationTime = 3;</code>
+     * @return The creationTime.
      */
     long getCreationTime();
   }
@@ -4359,12 +4478,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.Address from_;
     /**
      * <code>required .Address from = 1;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Address from = 1;</code>
+     * @return The from.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.Address getFrom() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance() : from_;
@@ -4380,12 +4501,14 @@ public final class ClusterMessages {
     private long sequenceNr_;
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return Whether the sequenceNr field is set.
      */
     public boolean hasSequenceNr() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return The sequenceNr.
      */
     public long getSequenceNr() {
       return sequenceNr_;
@@ -4395,12 +4518,14 @@ public final class ClusterMessages {
     private long creationTime_;
     /**
      * <code>optional sint64 creationTime = 3;</code>
+     * @return Whether the creationTime field is set.
      */
     public boolean hasCreationTime() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional sint64 creationTime = 3;</code>
+     * @return The creationTime.
      */
     public long getCreationTime() {
       return creationTime_;
@@ -4807,12 +4932,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.Address, akka.cluster.protobuf.msg.ClusterMessages.Address.Builder, akka.cluster.protobuf.msg.ClusterMessages.AddressOrBuilder> fromBuilder_;
       /**
        * <code>required .Address from = 1;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Address from = 1;</code>
+       * @return The from.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.Address getFrom() {
         if (fromBuilder_ == null) {
@@ -4923,18 +5050,22 @@ public final class ClusterMessages {
       private long sequenceNr_ ;
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @return Whether the sequenceNr field is set.
        */
       public boolean hasSequenceNr() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @return The sequenceNr.
        */
       public long getSequenceNr() {
         return sequenceNr_;
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @param value The sequenceNr to set.
+       * @return This builder for chaining.
        */
       public Builder setSequenceNr(long value) {
         bitField0_ |= 0x00000002;
@@ -4944,6 +5075,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSequenceNr() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4955,18 +5087,22 @@ public final class ClusterMessages {
       private long creationTime_ ;
       /**
        * <code>optional sint64 creationTime = 3;</code>
+       * @return Whether the creationTime field is set.
        */
       public boolean hasCreationTime() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional sint64 creationTime = 3;</code>
+       * @return The creationTime.
        */
       public long getCreationTime() {
         return creationTime_;
       }
       /**
        * <code>optional sint64 creationTime = 3;</code>
+       * @param value The creationTime to set.
+       * @return This builder for chaining.
        */
       public Builder setCreationTime(long value) {
         bitField0_ |= 0x00000004;
@@ -4976,6 +5112,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional sint64 creationTime = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearCreationTime() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -5042,10 +5179,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom();
     /**
@@ -5055,19 +5194,23 @@ public final class ClusterMessages {
 
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return Whether the sequenceNr field is set.
      */
     boolean hasSequenceNr();
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return The sequenceNr.
      */
     long getSequenceNr();
 
     /**
      * <code>optional int64 creationTime = 3;</code>
+     * @return Whether the creationTime field is set.
      */
     boolean hasCreationTime();
     /**
      * <code>optional int64 creationTime = 3;</code>
+     * @return The creationTime.
      */
     long getCreationTime();
   }
@@ -5184,12 +5327,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
@@ -5205,12 +5350,14 @@ public final class ClusterMessages {
     private long sequenceNr_;
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return Whether the sequenceNr field is set.
      */
     public boolean hasSequenceNr() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return The sequenceNr.
      */
     public long getSequenceNr() {
       return sequenceNr_;
@@ -5220,12 +5367,14 @@ public final class ClusterMessages {
     private long creationTime_;
     /**
      * <code>optional int64 creationTime = 3;</code>
+     * @return Whether the creationTime field is set.
      */
     public boolean hasCreationTime() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional int64 creationTime = 3;</code>
+     * @return The creationTime.
      */
     public long getCreationTime() {
       return creationTime_;
@@ -5632,12 +5781,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.Builder, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return The from.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
@@ -5748,18 +5899,22 @@ public final class ClusterMessages {
       private long sequenceNr_ ;
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @return Whether the sequenceNr field is set.
        */
       public boolean hasSequenceNr() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @return The sequenceNr.
        */
       public long getSequenceNr() {
         return sequenceNr_;
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @param value The sequenceNr to set.
+       * @return This builder for chaining.
        */
       public Builder setSequenceNr(long value) {
         bitField0_ |= 0x00000002;
@@ -5769,6 +5924,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSequenceNr() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -5780,18 +5936,22 @@ public final class ClusterMessages {
       private long creationTime_ ;
       /**
        * <code>optional int64 creationTime = 3;</code>
+       * @return Whether the creationTime field is set.
        */
       public boolean hasCreationTime() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional int64 creationTime = 3;</code>
+       * @return The creationTime.
        */
       public long getCreationTime() {
         return creationTime_;
       }
       /**
        * <code>optional int64 creationTime = 3;</code>
+       * @param value The creationTime to set.
+       * @return This builder for chaining.
        */
       public Builder setCreationTime(long value) {
         bitField0_ |= 0x00000004;
@@ -5801,6 +5961,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional int64 creationTime = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearCreationTime() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -5867,10 +6028,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom();
     /**
@@ -5880,10 +6043,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .UniqueAddress to = 2;</code>
+     * @return Whether the to field is set.
      */
     boolean hasTo();
     /**
      * <code>required .UniqueAddress to = 2;</code>
+     * @return The to.
      */
     akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getTo();
     /**
@@ -5893,10 +6058,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required bytes serializedGossip = 3;</code>
+     * @return Whether the serializedGossip field is set.
      */
     boolean hasSerializedGossip();
     /**
      * <code>required bytes serializedGossip = 3;</code>
+     * @return The serializedGossip.
      */
     akka.protobufv3.internal.ByteString getSerializedGossip();
   }
@@ -6020,12 +6187,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
@@ -6041,12 +6210,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress to_;
     /**
      * <code>required .UniqueAddress to = 2;</code>
+     * @return Whether the to field is set.
      */
     public boolean hasTo() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .UniqueAddress to = 2;</code>
+     * @return The to.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getTo() {
       return to_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : to_;
@@ -6062,12 +6233,14 @@ public final class ClusterMessages {
     private akka.protobufv3.internal.ByteString serializedGossip_;
     /**
      * <code>required bytes serializedGossip = 3;</code>
+     * @return Whether the serializedGossip field is set.
      */
     public boolean hasSerializedGossip() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required bytes serializedGossip = 3;</code>
+     * @return The serializedGossip.
      */
     public akka.protobufv3.internal.ByteString getSerializedGossip() {
       return serializedGossip_;
@@ -6500,12 +6673,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.Builder, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return The from.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
@@ -6618,12 +6793,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.Builder, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder> toBuilder_;
       /**
        * <code>required .UniqueAddress to = 2;</code>
+       * @return Whether the to field is set.
        */
       public boolean hasTo() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .UniqueAddress to = 2;</code>
+       * @return The to.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getTo() {
         if (toBuilder_ == null) {
@@ -6734,18 +6911,22 @@ public final class ClusterMessages {
       private akka.protobufv3.internal.ByteString serializedGossip_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes serializedGossip = 3;</code>
+       * @return Whether the serializedGossip field is set.
        */
       public boolean hasSerializedGossip() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required bytes serializedGossip = 3;</code>
+       * @return The serializedGossip.
        */
       public akka.protobufv3.internal.ByteString getSerializedGossip() {
         return serializedGossip_;
       }
       /**
        * <code>required bytes serializedGossip = 3;</code>
+       * @param value The serializedGossip to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializedGossip(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -6758,6 +6939,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required bytes serializedGossip = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializedGossip() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -6824,10 +7006,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom();
     /**
@@ -6837,29 +7021,37 @@ public final class ClusterMessages {
 
     /**
      * <code>repeated string allHashes = 2;</code>
+     * @return A list containing the allHashes.
      */
     java.util.List<java.lang.String>
         getAllHashesList();
     /**
      * <code>repeated string allHashes = 2;</code>
+     * @return The count of allHashes.
      */
     int getAllHashesCount();
     /**
      * <code>repeated string allHashes = 2;</code>
+     * @param index The index of the element to return.
+     * @return The allHashes at the given index.
      */
     java.lang.String getAllHashes(int index);
     /**
      * <code>repeated string allHashes = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the allHashes at the given index.
      */
     akka.protobufv3.internal.ByteString
         getAllHashesBytes(int index);
 
     /**
      * <code>required .VectorClock version = 3;</code>
+     * @return Whether the version field is set.
      */
     boolean hasVersion();
     /**
      * <code>required .VectorClock version = 3;</code>
+     * @return The version.
      */
     akka.cluster.protobuf.msg.ClusterMessages.VectorClock getVersion();
     /**
@@ -6994,12 +7186,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
       return from_ == null ? akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.getDefaultInstance() : from_;
@@ -7015,6 +7209,7 @@ public final class ClusterMessages {
     private akka.protobufv3.internal.LazyStringList allHashes_;
     /**
      * <code>repeated string allHashes = 2;</code>
+     * @return A list containing the allHashes.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getAllHashesList() {
@@ -7022,18 +7217,23 @@ public final class ClusterMessages {
     }
     /**
      * <code>repeated string allHashes = 2;</code>
+     * @return The count of allHashes.
      */
     public int getAllHashesCount() {
       return allHashes_.size();
     }
     /**
      * <code>repeated string allHashes = 2;</code>
+     * @param index The index of the element to return.
+     * @return The allHashes at the given index.
      */
     public java.lang.String getAllHashes(int index) {
       return allHashes_.get(index);
     }
     /**
      * <code>repeated string allHashes = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the allHashes at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getAllHashesBytes(int index) {
@@ -7044,12 +7244,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.VectorClock version_;
     /**
      * <code>required .VectorClock version = 3;</code>
+     * @return Whether the version field is set.
      */
     public boolean hasVersion() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .VectorClock version = 3;</code>
+     * @return The version.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.VectorClock getVersion() {
       return version_ == null ? akka.cluster.protobuf.msg.ClusterMessages.VectorClock.getDefaultInstance() : version_;
@@ -7490,12 +7692,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress.Builder, akka.cluster.protobuf.msg.ClusterMessages.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return The from.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
@@ -7612,6 +7816,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 2;</code>
+       * @return A list containing the allHashes.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getAllHashesList() {
@@ -7619,18 +7824,23 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 2;</code>
+       * @return The count of allHashes.
        */
       public int getAllHashesCount() {
         return allHashes_.size();
       }
       /**
        * <code>repeated string allHashes = 2;</code>
+       * @param index The index of the element to return.
+       * @return The allHashes at the given index.
        */
       public java.lang.String getAllHashes(int index) {
         return allHashes_.get(index);
       }
       /**
        * <code>repeated string allHashes = 2;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the allHashes at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getAllHashesBytes(int index) {
@@ -7638,6 +7848,9 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 2;</code>
+       * @param index The index to set the value at.
+       * @param value The allHashes to set.
+       * @return This builder for chaining.
        */
       public Builder setAllHashes(
           int index, java.lang.String value) {
@@ -7651,6 +7864,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 2;</code>
+       * @param value The allHashes to add.
+       * @return This builder for chaining.
        */
       public Builder addAllHashes(
           java.lang.String value) {
@@ -7664,6 +7879,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 2;</code>
+       * @param values The allHashes to add.
+       * @return This builder for chaining.
        */
       public Builder addAllAllHashes(
           java.lang.Iterable<java.lang.String> values) {
@@ -7675,6 +7892,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAllHashes() {
         allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -7684,6 +7902,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 2;</code>
+       * @param value The bytes of the allHashes to add.
+       * @return This builder for chaining.
        */
       public Builder addAllHashesBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -7701,12 +7921,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.VectorClock, akka.cluster.protobuf.msg.ClusterMessages.VectorClock.Builder, akka.cluster.protobuf.msg.ClusterMessages.VectorClockOrBuilder> versionBuilder_;
       /**
        * <code>required .VectorClock version = 3;</code>
+       * @return Whether the version field is set.
        */
       public boolean hasVersion() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required .VectorClock version = 3;</code>
+       * @return The version.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.VectorClock getVersion() {
         if (versionBuilder_ == null) {
@@ -7896,38 +8118,50 @@ public final class ClusterMessages {
 
     /**
      * <code>repeated string allRoles = 2;</code>
+     * @return A list containing the allRoles.
      */
     java.util.List<java.lang.String>
         getAllRolesList();
     /**
      * <code>repeated string allRoles = 2;</code>
+     * @return The count of allRoles.
      */
     int getAllRolesCount();
     /**
      * <code>repeated string allRoles = 2;</code>
+     * @param index The index of the element to return.
+     * @return The allRoles at the given index.
      */
     java.lang.String getAllRoles(int index);
     /**
      * <code>repeated string allRoles = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the allRoles at the given index.
      */
     akka.protobufv3.internal.ByteString
         getAllRolesBytes(int index);
 
     /**
      * <code>repeated string allHashes = 3;</code>
+     * @return A list containing the allHashes.
      */
     java.util.List<java.lang.String>
         getAllHashesList();
     /**
      * <code>repeated string allHashes = 3;</code>
+     * @return The count of allHashes.
      */
     int getAllHashesCount();
     /**
      * <code>repeated string allHashes = 3;</code>
+     * @param index The index of the element to return.
+     * @return The allHashes at the given index.
      */
     java.lang.String getAllHashes(int index);
     /**
      * <code>repeated string allHashes = 3;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the allHashes at the given index.
      */
     akka.protobufv3.internal.ByteString
         getAllHashesBytes(int index);
@@ -7958,10 +8192,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .GossipOverview overview = 5;</code>
+     * @return Whether the overview field is set.
      */
     boolean hasOverview();
     /**
      * <code>required .GossipOverview overview = 5;</code>
+     * @return The overview.
      */
     akka.cluster.protobuf.msg.ClusterMessages.GossipOverview getOverview();
     /**
@@ -7971,10 +8207,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .VectorClock version = 6;</code>
+     * @return Whether the version field is set.
      */
     boolean hasVersion();
     /**
      * <code>required .VectorClock version = 6;</code>
+     * @return The version.
      */
     akka.cluster.protobuf.msg.ClusterMessages.VectorClock getVersion();
     /**
@@ -8220,6 +8458,7 @@ public final class ClusterMessages {
     private akka.protobufv3.internal.LazyStringList allRoles_;
     /**
      * <code>repeated string allRoles = 2;</code>
+     * @return A list containing the allRoles.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getAllRolesList() {
@@ -8227,18 +8466,23 @@ public final class ClusterMessages {
     }
     /**
      * <code>repeated string allRoles = 2;</code>
+     * @return The count of allRoles.
      */
     public int getAllRolesCount() {
       return allRoles_.size();
     }
     /**
      * <code>repeated string allRoles = 2;</code>
+     * @param index The index of the element to return.
+     * @return The allRoles at the given index.
      */
     public java.lang.String getAllRoles(int index) {
       return allRoles_.get(index);
     }
     /**
      * <code>repeated string allRoles = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the allRoles at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getAllRolesBytes(int index) {
@@ -8249,6 +8493,7 @@ public final class ClusterMessages {
     private akka.protobufv3.internal.LazyStringList allHashes_;
     /**
      * <code>repeated string allHashes = 3;</code>
+     * @return A list containing the allHashes.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getAllHashesList() {
@@ -8256,18 +8501,23 @@ public final class ClusterMessages {
     }
     /**
      * <code>repeated string allHashes = 3;</code>
+     * @return The count of allHashes.
      */
     public int getAllHashesCount() {
       return allHashes_.size();
     }
     /**
      * <code>repeated string allHashes = 3;</code>
+     * @param index The index of the element to return.
+     * @return The allHashes at the given index.
      */
     public java.lang.String getAllHashes(int index) {
       return allHashes_.get(index);
     }
     /**
      * <code>repeated string allHashes = 3;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the allHashes at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getAllHashesBytes(int index) {
@@ -8313,12 +8563,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.GossipOverview overview_;
     /**
      * <code>required .GossipOverview overview = 5;</code>
+     * @return Whether the overview field is set.
      */
     public boolean hasOverview() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .GossipOverview overview = 5;</code>
+     * @return The overview.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.GossipOverview getOverview() {
       return overview_ == null ? akka.cluster.protobuf.msg.ClusterMessages.GossipOverview.getDefaultInstance() : overview_;
@@ -8334,12 +8586,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.VectorClock version_;
     /**
      * <code>required .VectorClock version = 6;</code>
+     * @return Whether the version field is set.
      */
     public boolean hasVersion() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .VectorClock version = 6;</code>
+     * @return The version.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.VectorClock getVersion() {
       return version_ == null ? akka.cluster.protobuf.msg.ClusterMessages.VectorClock.getDefaultInstance() : version_;
@@ -9291,6 +9545,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allRoles = 2;</code>
+       * @return A list containing the allRoles.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getAllRolesList() {
@@ -9298,18 +9553,23 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allRoles = 2;</code>
+       * @return The count of allRoles.
        */
       public int getAllRolesCount() {
         return allRoles_.size();
       }
       /**
        * <code>repeated string allRoles = 2;</code>
+       * @param index The index of the element to return.
+       * @return The allRoles at the given index.
        */
       public java.lang.String getAllRoles(int index) {
         return allRoles_.get(index);
       }
       /**
        * <code>repeated string allRoles = 2;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the allRoles at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getAllRolesBytes(int index) {
@@ -9317,6 +9577,9 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allRoles = 2;</code>
+       * @param index The index to set the value at.
+       * @param value The allRoles to set.
+       * @return This builder for chaining.
        */
       public Builder setAllRoles(
           int index, java.lang.String value) {
@@ -9330,6 +9593,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allRoles = 2;</code>
+       * @param value The allRoles to add.
+       * @return This builder for chaining.
        */
       public Builder addAllRoles(
           java.lang.String value) {
@@ -9343,6 +9608,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allRoles = 2;</code>
+       * @param values The allRoles to add.
+       * @return This builder for chaining.
        */
       public Builder addAllAllRoles(
           java.lang.Iterable<java.lang.String> values) {
@@ -9354,6 +9621,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allRoles = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAllRoles() {
         allRoles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -9363,6 +9631,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allRoles = 2;</code>
+       * @param value The bytes of the allRoles to add.
+       * @return This builder for chaining.
        */
       public Builder addAllRolesBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -9384,6 +9654,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 3;</code>
+       * @return A list containing the allHashes.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getAllHashesList() {
@@ -9391,18 +9662,23 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 3;</code>
+       * @return The count of allHashes.
        */
       public int getAllHashesCount() {
         return allHashes_.size();
       }
       /**
        * <code>repeated string allHashes = 3;</code>
+       * @param index The index of the element to return.
+       * @return The allHashes at the given index.
        */
       public java.lang.String getAllHashes(int index) {
         return allHashes_.get(index);
       }
       /**
        * <code>repeated string allHashes = 3;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the allHashes at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getAllHashesBytes(int index) {
@@ -9410,6 +9686,9 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 3;</code>
+       * @param index The index to set the value at.
+       * @param value The allHashes to set.
+       * @return This builder for chaining.
        */
       public Builder setAllHashes(
           int index, java.lang.String value) {
@@ -9423,6 +9702,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 3;</code>
+       * @param value The allHashes to add.
+       * @return This builder for chaining.
        */
       public Builder addAllHashes(
           java.lang.String value) {
@@ -9436,6 +9717,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 3;</code>
+       * @param values The allHashes to add.
+       * @return This builder for chaining.
        */
       public Builder addAllAllHashes(
           java.lang.Iterable<java.lang.String> values) {
@@ -9447,6 +9730,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAllHashes() {
         allHashes_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -9456,6 +9740,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string allHashes = 3;</code>
+       * @param value The bytes of the allHashes to add.
+       * @return This builder for chaining.
        */
       public Builder addAllHashesBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -9713,12 +9999,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.GossipOverview, akka.cluster.protobuf.msg.ClusterMessages.GossipOverview.Builder, akka.cluster.protobuf.msg.ClusterMessages.GossipOverviewOrBuilder> overviewBuilder_;
       /**
        * <code>required .GossipOverview overview = 5;</code>
+       * @return Whether the overview field is set.
        */
       public boolean hasOverview() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>required .GossipOverview overview = 5;</code>
+       * @return The overview.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.GossipOverview getOverview() {
         if (overviewBuilder_ == null) {
@@ -9831,12 +10119,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.VectorClock, akka.cluster.protobuf.msg.ClusterMessages.VectorClock.Builder, akka.cluster.protobuf.msg.ClusterMessages.VectorClockOrBuilder> versionBuilder_;
       /**
        * <code>required .VectorClock version = 6;</code>
+       * @return Whether the version field is set.
        */
       public boolean hasVersion() {
         return ((bitField0_ & 0x00000020) != 0);
       }
       /**
        * <code>required .VectorClock version = 6;</code>
+       * @return The version.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.VectorClock getVersion() {
         if (versionBuilder_ == null) {
@@ -10246,6 +10536,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>repeated int32 seen = 1;</code>
+     * @return A list containing the seen.
      */
     java.util.List<java.lang.Integer> getSeenList();
     /**
@@ -10254,6 +10545,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>repeated int32 seen = 1;</code>
+     * @return The count of seen.
      */
     int getSeenCount();
     /**
@@ -10262,6 +10554,8 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>repeated int32 seen = 1;</code>
+     * @param index The index of the element to return.
+     * @return The seen at the given index.
      */
     int getSeen(int index);
 
@@ -10418,6 +10712,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>repeated int32 seen = 1;</code>
+     * @return A list containing the seen.
      */
     public java.util.List<java.lang.Integer>
         getSeenList() {
@@ -10429,6 +10724,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>repeated int32 seen = 1;</code>
+     * @return The count of seen.
      */
     public int getSeenCount() {
       return seen_.size();
@@ -10439,6 +10735,8 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>repeated int32 seen = 1;</code>
+     * @param index The index of the element to return.
+     * @return The seen at the given index.
      */
     public int getSeen(int index) {
       return seen_.getInt(index);
@@ -10885,6 +11183,7 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>repeated int32 seen = 1;</code>
+       * @return A list containing the seen.
        */
       public java.util.List<java.lang.Integer>
           getSeenList() {
@@ -10897,6 +11196,7 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>repeated int32 seen = 1;</code>
+       * @return The count of seen.
        */
       public int getSeenCount() {
         return seen_.size();
@@ -10907,6 +11207,8 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>repeated int32 seen = 1;</code>
+       * @param index The index of the element to return.
+       * @return The seen at the given index.
        */
       public int getSeen(int index) {
         return seen_.getInt(index);
@@ -10917,6 +11219,9 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>repeated int32 seen = 1;</code>
+       * @param index The index to set the value at.
+       * @param value The seen to set.
+       * @return This builder for chaining.
        */
       public Builder setSeen(
           int index, int value) {
@@ -10931,6 +11236,8 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>repeated int32 seen = 1;</code>
+       * @param value The seen to add.
+       * @return This builder for chaining.
        */
       public Builder addSeen(int value) {
         ensureSeenIsMutable();
@@ -10944,6 +11251,8 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>repeated int32 seen = 1;</code>
+       * @param values The seen to add.
+       * @return This builder for chaining.
        */
       public Builder addAllSeen(
           java.lang.Iterable<? extends java.lang.Integer> values) {
@@ -10959,6 +11268,7 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>repeated int32 seen = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSeen() {
         seen_ = emptyIntList();
@@ -11265,19 +11575,23 @@ public final class ClusterMessages {
 
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return Whether the addressIndex field is set.
      */
     boolean hasAddressIndex();
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return The addressIndex.
      */
     int getAddressIndex();
 
     /**
      * <code>required int64 version = 4;</code>
+     * @return Whether the version field is set.
      */
     boolean hasVersion();
     /**
      * <code>required int64 version = 4;</code>
+     * @return The version.
      */
     long getVersion();
 
@@ -11416,12 +11730,14 @@ public final class ClusterMessages {
     private int addressIndex_;
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return Whether the addressIndex field is set.
      */
     public boolean hasAddressIndex() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return The addressIndex.
      */
     public int getAddressIndex() {
       return addressIndex_;
@@ -11431,12 +11747,14 @@ public final class ClusterMessages {
     private long version_;
     /**
      * <code>required int64 version = 4;</code>
+     * @return Whether the version field is set.
      */
     public boolean hasVersion() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int64 version = 4;</code>
+     * @return The version.
      */
     public long getVersion() {
       return version_;
@@ -11905,18 +12223,22 @@ public final class ClusterMessages {
       private int addressIndex_ ;
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return Whether the addressIndex field is set.
        */
       public boolean hasAddressIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return The addressIndex.
        */
       public int getAddressIndex() {
         return addressIndex_;
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @param value The addressIndex to set.
+       * @return This builder for chaining.
        */
       public Builder setAddressIndex(int value) {
         bitField0_ |= 0x00000001;
@@ -11926,6 +12248,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAddressIndex() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -11937,18 +12260,22 @@ public final class ClusterMessages {
       private long version_ ;
       /**
        * <code>required int64 version = 4;</code>
+       * @return Whether the version field is set.
        */
       public boolean hasVersion() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int64 version = 4;</code>
+       * @return The version.
        */
       public long getVersion() {
         return version_;
       }
       /**
        * <code>required int64 version = 4;</code>
+       * @param value The version to set.
+       * @return This builder for chaining.
        */
       public Builder setVersion(long value) {
         bitField0_ |= 0x00000002;
@@ -11958,6 +12285,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required int64 version = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearVersion() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -12264,28 +12592,34 @@ public final class ClusterMessages {
 
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return Whether the addressIndex field is set.
      */
     boolean hasAddressIndex();
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return The addressIndex.
      */
     int getAddressIndex();
 
     /**
      * <code>required .ReachabilityStatus status = 3;</code>
+     * @return Whether the status field is set.
      */
     boolean hasStatus();
     /**
      * <code>required .ReachabilityStatus status = 3;</code>
+     * @return The status.
      */
     akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus getStatus();
 
     /**
      * <code>required int64 version = 4;</code>
+     * @return Whether the version field is set.
      */
     boolean hasVersion();
     /**
      * <code>required int64 version = 4;</code>
+     * @return The version.
      */
     long getVersion();
   }
@@ -12395,12 +12729,14 @@ public final class ClusterMessages {
     private int addressIndex_;
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return Whether the addressIndex field is set.
      */
     public boolean hasAddressIndex() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return The addressIndex.
      */
     public int getAddressIndex() {
       return addressIndex_;
@@ -12410,12 +12746,14 @@ public final class ClusterMessages {
     private int status_;
     /**
      * <code>required .ReachabilityStatus status = 3;</code>
+     * @return Whether the status field is set.
      */
     public boolean hasStatus() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .ReachabilityStatus status = 3;</code>
+     * @return The status.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus getStatus() {
       @SuppressWarnings("deprecation")
@@ -12427,12 +12765,14 @@ public final class ClusterMessages {
     private long version_;
     /**
      * <code>required int64 version = 4;</code>
+     * @return Whether the version field is set.
      */
     public boolean hasVersion() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required int64 version = 4;</code>
+     * @return The version.
      */
     public long getVersion() {
       return version_;
@@ -12826,18 +13166,22 @@ public final class ClusterMessages {
       private int addressIndex_ ;
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return Whether the addressIndex field is set.
        */
       public boolean hasAddressIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return The addressIndex.
        */
       public int getAddressIndex() {
         return addressIndex_;
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @param value The addressIndex to set.
+       * @return This builder for chaining.
        */
       public Builder setAddressIndex(int value) {
         bitField0_ |= 0x00000001;
@@ -12847,6 +13191,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAddressIndex() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -12858,12 +13203,14 @@ public final class ClusterMessages {
       private int status_ = 0;
       /**
        * <code>required .ReachabilityStatus status = 3;</code>
+       * @return Whether the status field is set.
        */
       public boolean hasStatus() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .ReachabilityStatus status = 3;</code>
+       * @return The status.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus getStatus() {
         @SuppressWarnings("deprecation")
@@ -12872,6 +13219,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required .ReachabilityStatus status = 3;</code>
+       * @param value The status to set.
+       * @return This builder for chaining.
        */
       public Builder setStatus(akka.cluster.protobuf.msg.ClusterMessages.ReachabilityStatus value) {
         if (value == null) {
@@ -12884,6 +13233,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required .ReachabilityStatus status = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearStatus() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -12895,18 +13245,22 @@ public final class ClusterMessages {
       private long version_ ;
       /**
        * <code>required int64 version = 4;</code>
+       * @return Whether the version field is set.
        */
       public boolean hasVersion() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required int64 version = 4;</code>
+       * @return The version.
        */
       public long getVersion() {
         return version_;
       }
       /**
        * <code>required int64 version = 4;</code>
+       * @param value The version to set.
+       * @return This builder for chaining.
        */
       public Builder setVersion(long value) {
         bitField0_ |= 0x00000004;
@@ -12916,6 +13270,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required int64 version = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearVersion() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -12982,19 +13337,23 @@ public final class ClusterMessages {
 
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return Whether the addressIndex field is set.
      */
     boolean hasAddressIndex();
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return The addressIndex.
      */
     int getAddressIndex();
 
     /**
      * <code>required int64 timestamp = 2;</code>
+     * @return Whether the timestamp field is set.
      */
     boolean hasTimestamp();
     /**
      * <code>required int64 timestamp = 2;</code>
+     * @return The timestamp.
      */
     long getTimestamp();
   }
@@ -13091,12 +13450,14 @@ public final class ClusterMessages {
     private int addressIndex_;
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return Whether the addressIndex field is set.
      */
     public boolean hasAddressIndex() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return The addressIndex.
      */
     public int getAddressIndex() {
       return addressIndex_;
@@ -13106,12 +13467,14 @@ public final class ClusterMessages {
     private long timestamp_;
     /**
      * <code>required int64 timestamp = 2;</code>
+     * @return Whether the timestamp field is set.
      */
     public boolean hasTimestamp() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int64 timestamp = 2;</code>
+     * @return The timestamp.
      */
     public long getTimestamp() {
       return timestamp_;
@@ -13474,18 +13837,22 @@ public final class ClusterMessages {
       private int addressIndex_ ;
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return Whether the addressIndex field is set.
        */
       public boolean hasAddressIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return The addressIndex.
        */
       public int getAddressIndex() {
         return addressIndex_;
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @param value The addressIndex to set.
+       * @return This builder for chaining.
        */
       public Builder setAddressIndex(int value) {
         bitField0_ |= 0x00000001;
@@ -13495,6 +13862,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAddressIndex() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -13506,18 +13874,22 @@ public final class ClusterMessages {
       private long timestamp_ ;
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return Whether the timestamp field is set.
        */
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return The timestamp.
        */
       public long getTimestamp() {
         return timestamp_;
       }
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @param value The timestamp to set.
+       * @return This builder for chaining.
        */
       public Builder setTimestamp(long value) {
         bitField0_ |= 0x00000002;
@@ -13527,6 +13899,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTimestamp() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -13593,41 +13966,51 @@ public final class ClusterMessages {
 
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return Whether the addressIndex field is set.
      */
     boolean hasAddressIndex();
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return The addressIndex.
      */
     int getAddressIndex();
 
     /**
      * <code>required int32 upNumber = 2;</code>
+     * @return Whether the upNumber field is set.
      */
     boolean hasUpNumber();
     /**
      * <code>required int32 upNumber = 2;</code>
+     * @return The upNumber.
      */
     int getUpNumber();
 
     /**
      * <code>required .MemberStatus status = 3;</code>
+     * @return Whether the status field is set.
      */
     boolean hasStatus();
     /**
      * <code>required .MemberStatus status = 3;</code>
+     * @return The status.
      */
     akka.cluster.protobuf.msg.ClusterMessages.MemberStatus getStatus();
 
     /**
      * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+     * @return A list containing the rolesIndexes.
      */
     java.util.List<java.lang.Integer> getRolesIndexesList();
     /**
      * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+     * @return The count of rolesIndexes.
      */
     int getRolesIndexesCount();
     /**
      * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The rolesIndexes at the given index.
      */
     int getRolesIndexes(int index);
   }
@@ -13767,12 +14150,14 @@ public final class ClusterMessages {
     private int addressIndex_;
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return Whether the addressIndex field is set.
      */
     public boolean hasAddressIndex() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int32 addressIndex = 1;</code>
+     * @return The addressIndex.
      */
     public int getAddressIndex() {
       return addressIndex_;
@@ -13782,12 +14167,14 @@ public final class ClusterMessages {
     private int upNumber_;
     /**
      * <code>required int32 upNumber = 2;</code>
+     * @return Whether the upNumber field is set.
      */
     public boolean hasUpNumber() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int32 upNumber = 2;</code>
+     * @return The upNumber.
      */
     public int getUpNumber() {
       return upNumber_;
@@ -13797,12 +14184,14 @@ public final class ClusterMessages {
     private int status_;
     /**
      * <code>required .MemberStatus status = 3;</code>
+     * @return Whether the status field is set.
      */
     public boolean hasStatus() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required .MemberStatus status = 3;</code>
+     * @return The status.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.MemberStatus getStatus() {
       @SuppressWarnings("deprecation")
@@ -13814,6 +14203,7 @@ public final class ClusterMessages {
     private akka.protobufv3.internal.Internal.IntList rolesIndexes_;
     /**
      * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+     * @return A list containing the rolesIndexes.
      */
     public java.util.List<java.lang.Integer>
         getRolesIndexesList() {
@@ -13821,12 +14211,15 @@ public final class ClusterMessages {
     }
     /**
      * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+     * @return The count of rolesIndexes.
      */
     public int getRolesIndexesCount() {
       return rolesIndexes_.size();
     }
     /**
      * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The rolesIndexes at the given index.
      */
     public int getRolesIndexes(int index) {
       return rolesIndexes_.getInt(index);
@@ -14270,18 +14663,22 @@ public final class ClusterMessages {
       private int addressIndex_ ;
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return Whether the addressIndex field is set.
        */
       public boolean hasAddressIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return The addressIndex.
        */
       public int getAddressIndex() {
         return addressIndex_;
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @param value The addressIndex to set.
+       * @return This builder for chaining.
        */
       public Builder setAddressIndex(int value) {
         bitField0_ |= 0x00000001;
@@ -14291,6 +14688,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required int32 addressIndex = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAddressIndex() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -14302,18 +14700,22 @@ public final class ClusterMessages {
       private int upNumber_ ;
       /**
        * <code>required int32 upNumber = 2;</code>
+       * @return Whether the upNumber field is set.
        */
       public boolean hasUpNumber() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int32 upNumber = 2;</code>
+       * @return The upNumber.
        */
       public int getUpNumber() {
         return upNumber_;
       }
       /**
        * <code>required int32 upNumber = 2;</code>
+       * @param value The upNumber to set.
+       * @return This builder for chaining.
        */
       public Builder setUpNumber(int value) {
         bitField0_ |= 0x00000002;
@@ -14323,6 +14725,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required int32 upNumber = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUpNumber() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -14334,12 +14737,14 @@ public final class ClusterMessages {
       private int status_ = 0;
       /**
        * <code>required .MemberStatus status = 3;</code>
+       * @return Whether the status field is set.
        */
       public boolean hasStatus() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required .MemberStatus status = 3;</code>
+       * @return The status.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.MemberStatus getStatus() {
         @SuppressWarnings("deprecation")
@@ -14348,6 +14753,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required .MemberStatus status = 3;</code>
+       * @param value The status to set.
+       * @return This builder for chaining.
        */
       public Builder setStatus(akka.cluster.protobuf.msg.ClusterMessages.MemberStatus value) {
         if (value == null) {
@@ -14360,6 +14767,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required .MemberStatus status = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearStatus() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -14377,6 +14785,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+       * @return A list containing the rolesIndexes.
        */
       public java.util.List<java.lang.Integer>
           getRolesIndexesList() {
@@ -14385,18 +14794,24 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+       * @return The count of rolesIndexes.
        */
       public int getRolesIndexesCount() {
         return rolesIndexes_.size();
       }
       /**
        * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The rolesIndexes at the given index.
        */
       public int getRolesIndexes(int index) {
         return rolesIndexes_.getInt(index);
       }
       /**
        * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The rolesIndexes to set.
+       * @return This builder for chaining.
        */
       public Builder setRolesIndexes(
           int index, int value) {
@@ -14407,6 +14822,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+       * @param value The rolesIndexes to add.
+       * @return This builder for chaining.
        */
       public Builder addRolesIndexes(int value) {
         ensureRolesIndexesIsMutable();
@@ -14416,6 +14833,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+       * @param values The rolesIndexes to add.
+       * @return This builder for chaining.
        */
       public Builder addAllRolesIndexes(
           java.lang.Iterable<? extends java.lang.Integer> values) {
@@ -14427,6 +14846,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated int32 rolesIndexes = 4 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearRolesIndexes() {
         rolesIndexes_ = emptyIntList();
@@ -14497,6 +14917,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>optional int64 timestamp = 1;</code>
+     * @return Whether the timestamp field is set.
      */
     boolean hasTimestamp();
     /**
@@ -14505,6 +14926,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>optional int64 timestamp = 1;</code>
+     * @return The timestamp.
      */
     long getTimestamp();
 
@@ -14639,19 +15061,23 @@ public final class ClusterMessages {
 
       /**
        * <code>required int32 hashIndex = 1;</code>
+       * @return Whether the hashIndex field is set.
        */
       boolean hasHashIndex();
       /**
        * <code>required int32 hashIndex = 1;</code>
+       * @return The hashIndex.
        */
       int getHashIndex();
 
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return Whether the timestamp field is set.
        */
       boolean hasTimestamp();
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return The timestamp.
        */
       long getTimestamp();
     }
@@ -14748,12 +15174,14 @@ public final class ClusterMessages {
       private int hashIndex_;
       /**
        * <code>required int32 hashIndex = 1;</code>
+       * @return Whether the hashIndex field is set.
        */
       public boolean hasHashIndex() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int32 hashIndex = 1;</code>
+       * @return The hashIndex.
        */
       public int getHashIndex() {
         return hashIndex_;
@@ -14763,12 +15191,14 @@ public final class ClusterMessages {
       private long timestamp_;
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return Whether the timestamp field is set.
        */
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return The timestamp.
        */
       public long getTimestamp() {
         return timestamp_;
@@ -15131,18 +15561,22 @@ public final class ClusterMessages {
         private int hashIndex_ ;
         /**
          * <code>required int32 hashIndex = 1;</code>
+         * @return Whether the hashIndex field is set.
          */
         public boolean hasHashIndex() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required int32 hashIndex = 1;</code>
+         * @return The hashIndex.
          */
         public int getHashIndex() {
           return hashIndex_;
         }
         /**
          * <code>required int32 hashIndex = 1;</code>
+         * @param value The hashIndex to set.
+         * @return This builder for chaining.
          */
         public Builder setHashIndex(int value) {
           bitField0_ |= 0x00000001;
@@ -15152,6 +15586,7 @@ public final class ClusterMessages {
         }
         /**
          * <code>required int32 hashIndex = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearHashIndex() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -15163,18 +15598,22 @@ public final class ClusterMessages {
         private long timestamp_ ;
         /**
          * <code>required int64 timestamp = 2;</code>
+         * @return Whether the timestamp field is set.
          */
         public boolean hasTimestamp() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required int64 timestamp = 2;</code>
+         * @return The timestamp.
          */
         public long getTimestamp() {
           return timestamp_;
         }
         /**
          * <code>required int64 timestamp = 2;</code>
+         * @param value The timestamp to set.
+         * @return This builder for chaining.
          */
         public Builder setTimestamp(long value) {
           bitField0_ |= 0x00000002;
@@ -15184,6 +15623,7 @@ public final class ClusterMessages {
         }
         /**
          * <code>required int64 timestamp = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearTimestamp() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -15253,6 +15693,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>optional int64 timestamp = 1;</code>
+     * @return Whether the timestamp field is set.
      */
     public boolean hasTimestamp() {
       return ((bitField0_ & 0x00000001) != 0);
@@ -15263,6 +15704,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>optional int64 timestamp = 1;</code>
+     * @return The timestamp.
      */
     public long getTimestamp() {
       return timestamp_;
@@ -15696,6 +16138,7 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>optional int64 timestamp = 1;</code>
+       * @return Whether the timestamp field is set.
        */
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000001) != 0);
@@ -15706,6 +16149,7 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>optional int64 timestamp = 1;</code>
+       * @return The timestamp.
        */
       public long getTimestamp() {
         return timestamp_;
@@ -15716,6 +16160,8 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>optional int64 timestamp = 1;</code>
+       * @param value The timestamp to set.
+       * @return This builder for chaining.
        */
       public Builder setTimestamp(long value) {
         bitField0_ |= 0x00000001;
@@ -15729,6 +16175,7 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>optional int64 timestamp = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTimestamp() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -16463,51 +16910,62 @@ public final class ClusterMessages {
 
     /**
      * <code>required string system = 1;</code>
+     * @return Whether the system field is set.
      */
     boolean hasSystem();
     /**
      * <code>required string system = 1;</code>
+     * @return The system.
      */
     java.lang.String getSystem();
     /**
      * <code>required string system = 1;</code>
+     * @return The bytes for system.
      */
     akka.protobufv3.internal.ByteString
         getSystemBytes();
 
     /**
      * <code>required string hostname = 2;</code>
+     * @return Whether the hostname field is set.
      */
     boolean hasHostname();
     /**
      * <code>required string hostname = 2;</code>
+     * @return The hostname.
      */
     java.lang.String getHostname();
     /**
      * <code>required string hostname = 2;</code>
+     * @return The bytes for hostname.
      */
     akka.protobufv3.internal.ByteString
         getHostnameBytes();
 
     /**
      * <code>required uint32 port = 3;</code>
+     * @return Whether the port field is set.
      */
     boolean hasPort();
     /**
      * <code>required uint32 port = 3;</code>
+     * @return The port.
      */
     int getPort();
 
     /**
      * <code>optional string protocol = 4;</code>
+     * @return Whether the protocol field is set.
      */
     boolean hasProtocol();
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The protocol.
      */
     java.lang.String getProtocol();
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The bytes for protocol.
      */
     akka.protobufv3.internal.ByteString
         getProtocolBytes();
@@ -16626,12 +17084,14 @@ public final class ClusterMessages {
     private volatile java.lang.Object system_;
     /**
      * <code>required string system = 1;</code>
+     * @return Whether the system field is set.
      */
     public boolean hasSystem() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string system = 1;</code>
+     * @return The system.
      */
     public java.lang.String getSystem() {
       java.lang.Object ref = system_;
@@ -16649,6 +17109,7 @@ public final class ClusterMessages {
     }
     /**
      * <code>required string system = 1;</code>
+     * @return The bytes for system.
      */
     public akka.protobufv3.internal.ByteString
         getSystemBytes() {
@@ -16668,12 +17129,14 @@ public final class ClusterMessages {
     private volatile java.lang.Object hostname_;
     /**
      * <code>required string hostname = 2;</code>
+     * @return Whether the hostname field is set.
      */
     public boolean hasHostname() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string hostname = 2;</code>
+     * @return The hostname.
      */
     public java.lang.String getHostname() {
       java.lang.Object ref = hostname_;
@@ -16691,6 +17154,7 @@ public final class ClusterMessages {
     }
     /**
      * <code>required string hostname = 2;</code>
+     * @return The bytes for hostname.
      */
     public akka.protobufv3.internal.ByteString
         getHostnameBytes() {
@@ -16710,12 +17174,14 @@ public final class ClusterMessages {
     private int port_;
     /**
      * <code>required uint32 port = 3;</code>
+     * @return Whether the port field is set.
      */
     public boolean hasPort() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required uint32 port = 3;</code>
+     * @return The port.
      */
     public int getPort() {
       return port_;
@@ -16725,12 +17191,14 @@ public final class ClusterMessages {
     private volatile java.lang.Object protocol_;
     /**
      * <code>optional string protocol = 4;</code>
+     * @return Whether the protocol field is set.
      */
     public boolean hasProtocol() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The protocol.
      */
     public java.lang.String getProtocol() {
       java.lang.Object ref = protocol_;
@@ -16748,6 +17216,7 @@ public final class ClusterMessages {
     }
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The bytes for protocol.
      */
     public akka.protobufv3.internal.ByteString
         getProtocolBytes() {
@@ -17184,12 +17653,14 @@ public final class ClusterMessages {
       private java.lang.Object system_ = "";
       /**
        * <code>required string system = 1;</code>
+       * @return Whether the system field is set.
        */
       public boolean hasSystem() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string system = 1;</code>
+       * @return The system.
        */
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
@@ -17207,6 +17678,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @return The bytes for system.
        */
       public akka.protobufv3.internal.ByteString
           getSystemBytes() {
@@ -17223,6 +17695,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @param value The system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystem(
           java.lang.String value) {
@@ -17236,6 +17710,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSystem() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -17245,6 +17720,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @param value The bytes for system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystemBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -17260,12 +17737,14 @@ public final class ClusterMessages {
       private java.lang.Object hostname_ = "";
       /**
        * <code>required string hostname = 2;</code>
+       * @return Whether the hostname field is set.
        */
       public boolean hasHostname() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return The hostname.
        */
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
@@ -17283,6 +17762,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return The bytes for hostname.
        */
       public akka.protobufv3.internal.ByteString
           getHostnameBytes() {
@@ -17299,6 +17779,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @param value The hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostname(
           java.lang.String value) {
@@ -17312,6 +17794,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearHostname() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -17321,6 +17804,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @param value The bytes for hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostnameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -17336,18 +17821,22 @@ public final class ClusterMessages {
       private int port_ ;
       /**
        * <code>required uint32 port = 3;</code>
+       * @return Whether the port field is set.
        */
       public boolean hasPort() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @return The port.
        */
       public int getPort() {
         return port_;
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @param value The port to set.
+       * @return This builder for chaining.
        */
       public Builder setPort(int value) {
         bitField0_ |= 0x00000004;
@@ -17357,6 +17846,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPort() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -17368,12 +17858,14 @@ public final class ClusterMessages {
       private java.lang.Object protocol_ = "";
       /**
        * <code>optional string protocol = 4;</code>
+       * @return Whether the protocol field is set.
        */
       public boolean hasProtocol() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return The protocol.
        */
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
@@ -17391,6 +17883,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return The bytes for protocol.
        */
       public akka.protobufv3.internal.ByteString
           getProtocolBytes() {
@@ -17407,6 +17900,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @param value The protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocol(
           java.lang.String value) {
@@ -17420,6 +17915,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearProtocol() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -17429,6 +17925,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @param value The bytes for protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocolBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -17499,10 +17997,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .Address address = 1;</code>
+     * @return Whether the address field is set.
      */
     boolean hasAddress();
     /**
      * <code>required .Address address = 1;</code>
+     * @return The address.
      */
     akka.cluster.protobuf.msg.ClusterMessages.Address getAddress();
     /**
@@ -17512,10 +18012,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required uint32 uid = 2;</code>
+     * @return Whether the uid field is set.
      */
     boolean hasUid();
     /**
      * <code>required uint32 uid = 2;</code>
+     * @return The uid.
      */
     int getUid();
 
@@ -17525,6 +18027,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>optional uint32 uid2 = 3;</code>
+     * @return Whether the uid2 field is set.
      */
     boolean hasUid2();
     /**
@@ -17533,6 +18036,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>optional uint32 uid2 = 3;</code>
+     * @return The uid2.
      */
     int getUid2();
   }
@@ -17647,12 +18151,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.Address address_;
     /**
      * <code>required .Address address = 1;</code>
+     * @return Whether the address field is set.
      */
     public boolean hasAddress() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Address address = 1;</code>
+     * @return The address.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.Address getAddress() {
       return address_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Address.getDefaultInstance() : address_;
@@ -17668,12 +18174,14 @@ public final class ClusterMessages {
     private int uid_;
     /**
      * <code>required uint32 uid = 2;</code>
+     * @return Whether the uid field is set.
      */
     public boolean hasUid() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint32 uid = 2;</code>
+     * @return The uid.
      */
     public int getUid() {
       return uid_;
@@ -17687,6 +18195,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>optional uint32 uid2 = 3;</code>
+     * @return Whether the uid2 field is set.
      */
     public boolean hasUid2() {
       return ((bitField0_ & 0x00000004) != 0);
@@ -17697,6 +18206,7 @@ public final class ClusterMessages {
      * </pre>
      *
      * <code>optional uint32 uid2 = 3;</code>
+     * @return The uid2.
      */
     public int getUid2() {
       return uid2_;
@@ -18106,12 +18616,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.Address, akka.cluster.protobuf.msg.ClusterMessages.Address.Builder, akka.cluster.protobuf.msg.ClusterMessages.AddressOrBuilder> addressBuilder_;
       /**
        * <code>required .Address address = 1;</code>
+       * @return Whether the address field is set.
        */
       public boolean hasAddress() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Address address = 1;</code>
+       * @return The address.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.Address getAddress() {
         if (addressBuilder_ == null) {
@@ -18222,18 +18734,22 @@ public final class ClusterMessages {
       private int uid_ ;
       /**
        * <code>required uint32 uid = 2;</code>
+       * @return Whether the uid field is set.
        */
       public boolean hasUid() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint32 uid = 2;</code>
+       * @return The uid.
        */
       public int getUid() {
         return uid_;
       }
       /**
        * <code>required uint32 uid = 2;</code>
+       * @param value The uid to set.
+       * @return This builder for chaining.
        */
       public Builder setUid(int value) {
         bitField0_ |= 0x00000002;
@@ -18243,6 +18759,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required uint32 uid = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUid() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -18258,6 +18775,7 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>optional uint32 uid2 = 3;</code>
+       * @return Whether the uid2 field is set.
        */
       public boolean hasUid2() {
         return ((bitField0_ & 0x00000004) != 0);
@@ -18268,6 +18786,7 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>optional uint32 uid2 = 3;</code>
+       * @return The uid2.
        */
       public int getUid2() {
         return uid2_;
@@ -18278,6 +18797,8 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>optional uint32 uid2 = 3;</code>
+       * @param value The uid2 to set.
+       * @return This builder for chaining.
        */
       public Builder setUid2(int value) {
         bitField0_ |= 0x00000004;
@@ -18291,6 +18812,7 @@ public final class ClusterMessages {
        * </pre>
        *
        * <code>optional uint32 uid2 = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUid2() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -18357,10 +18879,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .Pool pool = 1;</code>
+     * @return Whether the pool field is set.
      */
     boolean hasPool();
     /**
      * <code>required .Pool pool = 1;</code>
+     * @return The pool.
      */
     akka.cluster.protobuf.msg.ClusterMessages.Pool getPool();
     /**
@@ -18370,10 +18894,12 @@ public final class ClusterMessages {
 
     /**
      * <code>required .ClusterRouterPoolSettings settings = 2;</code>
+     * @return Whether the settings field is set.
      */
     boolean hasSettings();
     /**
      * <code>required .ClusterRouterPoolSettings settings = 2;</code>
+     * @return The settings.
      */
     akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings getSettings();
     /**
@@ -18490,12 +19016,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.Pool pool_;
     /**
      * <code>required .Pool pool = 1;</code>
+     * @return Whether the pool field is set.
      */
     public boolean hasPool() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Pool pool = 1;</code>
+     * @return The pool.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.Pool getPool() {
       return pool_ == null ? akka.cluster.protobuf.msg.ClusterMessages.Pool.getDefaultInstance() : pool_;
@@ -18511,12 +19039,14 @@ public final class ClusterMessages {
     private akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings settings_;
     /**
      * <code>required .ClusterRouterPoolSettings settings = 2;</code>
+     * @return Whether the settings field is set.
      */
     public boolean hasSettings() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .ClusterRouterPoolSettings settings = 2;</code>
+     * @return The settings.
      */
     public akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings getSettings() {
       return settings_ == null ? akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings.getDefaultInstance() : settings_;
@@ -18918,12 +19448,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.Pool, akka.cluster.protobuf.msg.ClusterMessages.Pool.Builder, akka.cluster.protobuf.msg.ClusterMessages.PoolOrBuilder> poolBuilder_;
       /**
        * <code>required .Pool pool = 1;</code>
+       * @return Whether the pool field is set.
        */
       public boolean hasPool() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Pool pool = 1;</code>
+       * @return The pool.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.Pool getPool() {
         if (poolBuilder_ == null) {
@@ -19036,12 +19568,14 @@ public final class ClusterMessages {
           akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings, akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings.Builder, akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettingsOrBuilder> settingsBuilder_;
       /**
        * <code>required .ClusterRouterPoolSettings settings = 2;</code>
+       * @return Whether the settings field is set.
        */
       public boolean hasSettings() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .ClusterRouterPoolSettings settings = 2;</code>
+       * @return The settings.
        */
       public akka.cluster.protobuf.msg.ClusterMessages.ClusterRouterPoolSettings getSettings() {
         if (settingsBuilder_ == null) {
@@ -19207,33 +19741,40 @@ public final class ClusterMessages {
 
     /**
      * <code>required uint32 serializerId = 1;</code>
+     * @return Whether the serializerId field is set.
      */
     boolean hasSerializerId();
     /**
      * <code>required uint32 serializerId = 1;</code>
+     * @return The serializerId.
      */
     int getSerializerId();
 
     /**
      * <code>required string manifest = 2;</code>
+     * @return Whether the manifest field is set.
      */
     boolean hasManifest();
     /**
      * <code>required string manifest = 2;</code>
+     * @return The manifest.
      */
     java.lang.String getManifest();
     /**
      * <code>required string manifest = 2;</code>
+     * @return The bytes for manifest.
      */
     akka.protobufv3.internal.ByteString
         getManifestBytes();
 
     /**
      * <code>required bytes data = 3;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>required bytes data = 3;</code>
+     * @return The data.
      */
     akka.protobufv3.internal.ByteString getData();
   }
@@ -19338,12 +19879,14 @@ public final class ClusterMessages {
     private int serializerId_;
     /**
      * <code>required uint32 serializerId = 1;</code>
+     * @return Whether the serializerId field is set.
      */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint32 serializerId = 1;</code>
+     * @return The serializerId.
      */
     public int getSerializerId() {
       return serializerId_;
@@ -19353,12 +19896,14 @@ public final class ClusterMessages {
     private volatile java.lang.Object manifest_;
     /**
      * <code>required string manifest = 2;</code>
+     * @return Whether the manifest field is set.
      */
     public boolean hasManifest() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string manifest = 2;</code>
+     * @return The manifest.
      */
     public java.lang.String getManifest() {
       java.lang.Object ref = manifest_;
@@ -19376,6 +19921,7 @@ public final class ClusterMessages {
     }
     /**
      * <code>required string manifest = 2;</code>
+     * @return The bytes for manifest.
      */
     public akka.protobufv3.internal.ByteString
         getManifestBytes() {
@@ -19395,12 +19941,14 @@ public final class ClusterMessages {
     private akka.protobufv3.internal.ByteString data_;
     /**
      * <code>required bytes data = 3;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required bytes data = 3;</code>
+     * @return The data.
      */
     public akka.protobufv3.internal.ByteString getData() {
       return data_;
@@ -19795,18 +20343,22 @@ public final class ClusterMessages {
       private int serializerId_ ;
       /**
        * <code>required uint32 serializerId = 1;</code>
+       * @return Whether the serializerId field is set.
        */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint32 serializerId = 1;</code>
+       * @return The serializerId.
        */
       public int getSerializerId() {
         return serializerId_;
       }
       /**
        * <code>required uint32 serializerId = 1;</code>
+       * @param value The serializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000001;
@@ -19816,6 +20368,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required uint32 serializerId = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -19827,12 +20380,14 @@ public final class ClusterMessages {
       private java.lang.Object manifest_ = "";
       /**
        * <code>required string manifest = 2;</code>
+       * @return Whether the manifest field is set.
        */
       public boolean hasManifest() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string manifest = 2;</code>
+       * @return The manifest.
        */
       public java.lang.String getManifest() {
         java.lang.Object ref = manifest_;
@@ -19850,6 +20405,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string manifest = 2;</code>
+       * @return The bytes for manifest.
        */
       public akka.protobufv3.internal.ByteString
           getManifestBytes() {
@@ -19866,6 +20422,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string manifest = 2;</code>
+       * @param value The manifest to set.
+       * @return This builder for chaining.
        */
       public Builder setManifest(
           java.lang.String value) {
@@ -19879,6 +20437,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string manifest = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearManifest() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -19888,6 +20447,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string manifest = 2;</code>
+       * @param value The bytes for manifest to set.
+       * @return This builder for chaining.
        */
       public Builder setManifestBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -19903,18 +20464,22 @@ public final class ClusterMessages {
       private akka.protobufv3.internal.ByteString data_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes data = 3;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required bytes data = 3;</code>
+       * @return The data.
        */
       public akka.protobufv3.internal.ByteString getData() {
         return data_;
       }
       /**
        * <code>required bytes data = 3;</code>
+       * @param value The data to set.
+       * @return This builder for chaining.
        */
       public Builder setData(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -19927,6 +20492,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required bytes data = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearData() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -19993,60 +20559,75 @@ public final class ClusterMessages {
 
     /**
      * <code>required uint32 totalInstances = 1;</code>
+     * @return Whether the totalInstances field is set.
      */
     boolean hasTotalInstances();
     /**
      * <code>required uint32 totalInstances = 1;</code>
+     * @return The totalInstances.
      */
     int getTotalInstances();
 
     /**
      * <code>required uint32 maxInstancesPerNode = 2;</code>
+     * @return Whether the maxInstancesPerNode field is set.
      */
     boolean hasMaxInstancesPerNode();
     /**
      * <code>required uint32 maxInstancesPerNode = 2;</code>
+     * @return The maxInstancesPerNode.
      */
     int getMaxInstancesPerNode();
 
     /**
      * <code>required bool allowLocalRoutees = 3;</code>
+     * @return Whether the allowLocalRoutees field is set.
      */
     boolean hasAllowLocalRoutees();
     /**
      * <code>required bool allowLocalRoutees = 3;</code>
+     * @return The allowLocalRoutees.
      */
     boolean getAllowLocalRoutees();
 
     /**
      * <code>optional string useRole = 4;</code>
+     * @return Whether the useRole field is set.
      */
     boolean hasUseRole();
     /**
      * <code>optional string useRole = 4;</code>
+     * @return The useRole.
      */
     java.lang.String getUseRole();
     /**
      * <code>optional string useRole = 4;</code>
+     * @return The bytes for useRole.
      */
     akka.protobufv3.internal.ByteString
         getUseRoleBytes();
 
     /**
      * <code>repeated string useRoles = 5;</code>
+     * @return A list containing the useRoles.
      */
     java.util.List<java.lang.String>
         getUseRolesList();
     /**
      * <code>repeated string useRoles = 5;</code>
+     * @return The count of useRoles.
      */
     int getUseRolesCount();
     /**
      * <code>repeated string useRoles = 5;</code>
+     * @param index The index of the element to return.
+     * @return The useRoles at the given index.
      */
     java.lang.String getUseRoles(int index);
     /**
      * <code>repeated string useRoles = 5;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the useRoles at the given index.
      */
     akka.protobufv3.internal.ByteString
         getUseRolesBytes(int index);
@@ -20169,12 +20750,14 @@ public final class ClusterMessages {
     private int totalInstances_;
     /**
      * <code>required uint32 totalInstances = 1;</code>
+     * @return Whether the totalInstances field is set.
      */
     public boolean hasTotalInstances() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint32 totalInstances = 1;</code>
+     * @return The totalInstances.
      */
     public int getTotalInstances() {
       return totalInstances_;
@@ -20184,12 +20767,14 @@ public final class ClusterMessages {
     private int maxInstancesPerNode_;
     /**
      * <code>required uint32 maxInstancesPerNode = 2;</code>
+     * @return Whether the maxInstancesPerNode field is set.
      */
     public boolean hasMaxInstancesPerNode() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint32 maxInstancesPerNode = 2;</code>
+     * @return The maxInstancesPerNode.
      */
     public int getMaxInstancesPerNode() {
       return maxInstancesPerNode_;
@@ -20199,12 +20784,14 @@ public final class ClusterMessages {
     private boolean allowLocalRoutees_;
     /**
      * <code>required bool allowLocalRoutees = 3;</code>
+     * @return Whether the allowLocalRoutees field is set.
      */
     public boolean hasAllowLocalRoutees() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required bool allowLocalRoutees = 3;</code>
+     * @return The allowLocalRoutees.
      */
     public boolean getAllowLocalRoutees() {
       return allowLocalRoutees_;
@@ -20214,12 +20801,14 @@ public final class ClusterMessages {
     private volatile java.lang.Object useRole_;
     /**
      * <code>optional string useRole = 4;</code>
+     * @return Whether the useRole field is set.
      */
     public boolean hasUseRole() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional string useRole = 4;</code>
+     * @return The useRole.
      */
     public java.lang.String getUseRole() {
       java.lang.Object ref = useRole_;
@@ -20237,6 +20826,7 @@ public final class ClusterMessages {
     }
     /**
      * <code>optional string useRole = 4;</code>
+     * @return The bytes for useRole.
      */
     public akka.protobufv3.internal.ByteString
         getUseRoleBytes() {
@@ -20256,6 +20846,7 @@ public final class ClusterMessages {
     private akka.protobufv3.internal.LazyStringList useRoles_;
     /**
      * <code>repeated string useRoles = 5;</code>
+     * @return A list containing the useRoles.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getUseRolesList() {
@@ -20263,18 +20854,23 @@ public final class ClusterMessages {
     }
     /**
      * <code>repeated string useRoles = 5;</code>
+     * @return The count of useRoles.
      */
     public int getUseRolesCount() {
       return useRoles_.size();
     }
     /**
      * <code>repeated string useRoles = 5;</code>
+     * @param index The index of the element to return.
+     * @return The useRoles at the given index.
      */
     public java.lang.String getUseRoles(int index) {
       return useRoles_.get(index);
     }
     /**
      * <code>repeated string useRoles = 5;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the useRoles at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getUseRolesBytes(int index) {
@@ -20730,18 +21326,22 @@ public final class ClusterMessages {
       private int totalInstances_ ;
       /**
        * <code>required uint32 totalInstances = 1;</code>
+       * @return Whether the totalInstances field is set.
        */
       public boolean hasTotalInstances() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint32 totalInstances = 1;</code>
+       * @return The totalInstances.
        */
       public int getTotalInstances() {
         return totalInstances_;
       }
       /**
        * <code>required uint32 totalInstances = 1;</code>
+       * @param value The totalInstances to set.
+       * @return This builder for chaining.
        */
       public Builder setTotalInstances(int value) {
         bitField0_ |= 0x00000001;
@@ -20751,6 +21351,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required uint32 totalInstances = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTotalInstances() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -20762,18 +21363,22 @@ public final class ClusterMessages {
       private int maxInstancesPerNode_ ;
       /**
        * <code>required uint32 maxInstancesPerNode = 2;</code>
+       * @return Whether the maxInstancesPerNode field is set.
        */
       public boolean hasMaxInstancesPerNode() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint32 maxInstancesPerNode = 2;</code>
+       * @return The maxInstancesPerNode.
        */
       public int getMaxInstancesPerNode() {
         return maxInstancesPerNode_;
       }
       /**
        * <code>required uint32 maxInstancesPerNode = 2;</code>
+       * @param value The maxInstancesPerNode to set.
+       * @return This builder for chaining.
        */
       public Builder setMaxInstancesPerNode(int value) {
         bitField0_ |= 0x00000002;
@@ -20783,6 +21388,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required uint32 maxInstancesPerNode = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMaxInstancesPerNode() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -20794,18 +21400,22 @@ public final class ClusterMessages {
       private boolean allowLocalRoutees_ ;
       /**
        * <code>required bool allowLocalRoutees = 3;</code>
+       * @return Whether the allowLocalRoutees field is set.
        */
       public boolean hasAllowLocalRoutees() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required bool allowLocalRoutees = 3;</code>
+       * @return The allowLocalRoutees.
        */
       public boolean getAllowLocalRoutees() {
         return allowLocalRoutees_;
       }
       /**
        * <code>required bool allowLocalRoutees = 3;</code>
+       * @param value The allowLocalRoutees to set.
+       * @return This builder for chaining.
        */
       public Builder setAllowLocalRoutees(boolean value) {
         bitField0_ |= 0x00000004;
@@ -20815,6 +21425,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required bool allowLocalRoutees = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAllowLocalRoutees() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -20826,12 +21437,14 @@ public final class ClusterMessages {
       private java.lang.Object useRole_ = "";
       /**
        * <code>optional string useRole = 4;</code>
+       * @return Whether the useRole field is set.
        */
       public boolean hasUseRole() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional string useRole = 4;</code>
+       * @return The useRole.
        */
       public java.lang.String getUseRole() {
         java.lang.Object ref = useRole_;
@@ -20849,6 +21462,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string useRole = 4;</code>
+       * @return The bytes for useRole.
        */
       public akka.protobufv3.internal.ByteString
           getUseRoleBytes() {
@@ -20865,6 +21479,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string useRole = 4;</code>
+       * @param value The useRole to set.
+       * @return This builder for chaining.
        */
       public Builder setUseRole(
           java.lang.String value) {
@@ -20878,6 +21494,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string useRole = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUseRole() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -20887,6 +21504,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>optional string useRole = 4;</code>
+       * @param value The bytes for useRole to set.
+       * @return This builder for chaining.
        */
       public Builder setUseRoleBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -20908,6 +21527,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string useRoles = 5;</code>
+       * @return A list containing the useRoles.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getUseRolesList() {
@@ -20915,18 +21535,23 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string useRoles = 5;</code>
+       * @return The count of useRoles.
        */
       public int getUseRolesCount() {
         return useRoles_.size();
       }
       /**
        * <code>repeated string useRoles = 5;</code>
+       * @param index The index of the element to return.
+       * @return The useRoles at the given index.
        */
       public java.lang.String getUseRoles(int index) {
         return useRoles_.get(index);
       }
       /**
        * <code>repeated string useRoles = 5;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the useRoles at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getUseRolesBytes(int index) {
@@ -20934,6 +21559,9 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string useRoles = 5;</code>
+       * @param index The index to set the value at.
+       * @param value The useRoles to set.
+       * @return This builder for chaining.
        */
       public Builder setUseRoles(
           int index, java.lang.String value) {
@@ -20947,6 +21575,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string useRoles = 5;</code>
+       * @param value The useRoles to add.
+       * @return This builder for chaining.
        */
       public Builder addUseRoles(
           java.lang.String value) {
@@ -20960,6 +21590,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string useRoles = 5;</code>
+       * @param values The useRoles to add.
+       * @return This builder for chaining.
        */
       public Builder addAllUseRoles(
           java.lang.Iterable<java.lang.String> values) {
@@ -20971,6 +21603,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string useRoles = 5;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUseRoles() {
         useRoles_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -20980,6 +21613,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>repeated string useRoles = 5;</code>
+       * @param value The bytes of the useRoles to add.
+       * @return This builder for chaining.
        */
       public Builder addUseRolesBytes(
           akka.protobufv3.internal.ByteString value) {

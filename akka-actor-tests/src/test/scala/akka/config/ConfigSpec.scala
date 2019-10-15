@@ -48,6 +48,9 @@ class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.fin
         settings.JvmExitOnFatalError should ===(true)
         settings.JvmShutdownHooks should ===(true)
 
+        getBoolean("akka.fail-mixed-versions") should ===(true)
+        settings.FailMixedVersions should ===(true)
+
         getInt("akka.actor.deployment.default.virtual-nodes-factor") should ===(10)
         settings.DefaultVirtualNodesFactor should ===(10)
 

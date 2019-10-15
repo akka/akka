@@ -6,5 +6,6 @@
 
 * [logging](typed/logging.md)
 * [common/circuitbreaker](common/circuitbreaker.md)
+* [extensions](typed/extending.md) 
 
 @@@

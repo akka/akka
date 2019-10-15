@@ -96,7 +96,7 @@ the `PingManager` understands.
 The `Receptionist` also works in a cluster, an actor registered to the receptionist will appear in the receptionist 
 of the other nodes of the cluster.
 
-The state for the receptionist is propagated via @ref:[distributed data](../distributed-data.md) which means that each node 
+The state for the receptionist is propagated via @ref:[distributed data](distributed-data.md) which means that each node
 will eventually reach the same set of actors per `ServiceKey`.
 
 `Subscription`s and `Find` queries to a clustered receptionist will keep track of cluster reachability and only list 

@@ -20,7 +20,7 @@ import scala.concurrent.Future
 
 import akka.actor.DeadLetter
 import akka.actor.UnhandledMessage
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
 
@@ -130,7 +130,6 @@ class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCaptur
         import scaladsl.AskPattern._
         import akka.actor.typed.scaladsl.adapter._
         implicit val timeout: Timeout = 3.seconds
-        implicit val scheduler = classicSystem.toTyped.scheduler
         val typedLegacy: ActorRef[AnyRef] = legacyActor
         (typedLegacy.ask(Ping)).failed.futureValue should ===(ex)
       } finally {
@@ -174,7 +173,7 @@ class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCaptur
       ref ! "start-ask"
       val Question(replyRef2) = probe.expectMessageType[Question]
 
-      LoggingEventFilter
+      LoggingTestKit
         .error("Exception thrown out of adapter. Stopping myself.")
         .intercept {
           replyRef2 ! 42L

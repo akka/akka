@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
@@ -104,7 +104,7 @@ class ActorContextAskSpec
           }
       }
 
-      LoggingEventFilter.error[NotImplementedError].withMessageContains("Pong").intercept {
+      LoggingTestKit.error[NotImplementedError].withMessageContains("Pong").intercept {
         spawn(snitch)
       }
 

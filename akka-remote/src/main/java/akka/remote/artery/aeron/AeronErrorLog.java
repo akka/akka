@@ -31,8 +31,10 @@ import java.nio.MappedByteBuffer;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * Application to print out errors recorded in the command-and-control (cnc) file is maintained by
- * media driver in shared memory. This application reads the cnc file and prints the distinct
+ * INTERNAL API
+ *
+ * <p>Application to print out errors recorded in the command-and-control (cnc) file is maintained
+ * by media driver in shared memory. This application reads the cnc file and prints the distinct
  * errors. Layout of the cnc file is described in {@link CncFileDescriptor}.
  */
 public class AeronErrorLog {

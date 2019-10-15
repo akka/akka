@@ -473,7 +473,7 @@ object TestSubscriber {
      * Depending on the `signalDemand` parameter demand may be signalled immediately after obtaining the subscription
      * in order to wake up a possibly lazy upstream. You can disable this by setting the `signalDemand` parameter to `false`.
      *
-     * See also [[#expectSubscriptionAndError()]].
+     * See also [[#expectSubscriptionAndError]].
      */
     def expectSubscriptionAndError(signalDemand: Boolean): Throwable = {
       val sub = expectSubscription()

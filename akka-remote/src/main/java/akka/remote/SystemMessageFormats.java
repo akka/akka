@@ -24,19 +24,23 @@ public final class SystemMessageFormats {
 
     /**
      * <code>required .SystemMessage.Type type = 1;</code>
+     * @return Whether the type field is set.
      */
     boolean hasType();
     /**
      * <code>required .SystemMessage.Type type = 1;</code>
+     * @return The type.
      */
     akka.remote.SystemMessageFormats.SystemMessage.Type getType();
 
     /**
      * <code>optional .WatchData watchData = 2;</code>
+     * @return Whether the watchData field is set.
      */
     boolean hasWatchData();
     /**
      * <code>optional .WatchData watchData = 2;</code>
+     * @return The watchData.
      */
     akka.remote.SystemMessageFormats.WatchData getWatchData();
     /**
@@ -46,10 +50,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>optional .Payload causeData = 3;</code>
+     * @return Whether the causeData field is set.
      */
     boolean hasCauseData();
     /**
      * <code>optional .Payload causeData = 3;</code>
+     * @return The causeData.
      */
     akka.remote.ContainerFormats.Payload getCauseData();
     /**
@@ -59,10 +65,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>optional .SuperviseData superviseData = 5;</code>
+     * @return Whether the superviseData field is set.
      */
     boolean hasSuperviseData();
     /**
      * <code>optional .SuperviseData superviseData = 5;</code>
+     * @return The superviseData.
      */
     akka.remote.SystemMessageFormats.SuperviseData getSuperviseData();
     /**
@@ -72,10 +80,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>optional .FailedData failedData = 6;</code>
+     * @return Whether the failedData field is set.
      */
     boolean hasFailedData();
     /**
      * <code>optional .FailedData failedData = 6;</code>
+     * @return The failedData.
      */
     akka.remote.SystemMessageFormats.FailedData getFailedData();
     /**
@@ -85,10 +95,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
+     * @return Whether the dwNotificationData field is set.
      */
     boolean hasDwNotificationData();
     /**
      * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
+     * @return The dwNotificationData.
      */
     akka.remote.SystemMessageFormats.DeathWatchNotificationData getDwNotificationData();
     /**
@@ -346,6 +358,8 @@ public final class SystemMessageFormats {
       }
 
       /**
+       * @param value The numeric wire value of the corresponding enum entry.
+       * @return The enum associated with the given numeric wire value.
        * @deprecated Use {@link #forNumber(int)} instead.
        */
       @java.lang.Deprecated
@@ -353,6 +367,10 @@ public final class SystemMessageFormats {
         return forNumber(value);
       }
 
+      /**
+       * @param value The numeric wire value of the corresponding enum entry.
+       * @return The enum associated with the given numeric wire value.
+       */
       public static Type forNumber(int value) {
         switch (value) {
           case 0: return CREATE;
@@ -419,12 +437,14 @@ public final class SystemMessageFormats {
     private int type_;
     /**
      * <code>required .SystemMessage.Type type = 1;</code>
+     * @return Whether the type field is set.
      */
     public boolean hasType() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .SystemMessage.Type type = 1;</code>
+     * @return The type.
      */
     public akka.remote.SystemMessageFormats.SystemMessage.Type getType() {
       @SuppressWarnings("deprecation")
@@ -436,12 +456,14 @@ public final class SystemMessageFormats {
     private akka.remote.SystemMessageFormats.WatchData watchData_;
     /**
      * <code>optional .WatchData watchData = 2;</code>
+     * @return Whether the watchData field is set.
      */
     public boolean hasWatchData() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .WatchData watchData = 2;</code>
+     * @return The watchData.
      */
     public akka.remote.SystemMessageFormats.WatchData getWatchData() {
       return watchData_ == null ? akka.remote.SystemMessageFormats.WatchData.getDefaultInstance() : watchData_;
@@ -457,12 +479,14 @@ public final class SystemMessageFormats {
     private akka.remote.ContainerFormats.Payload causeData_;
     /**
      * <code>optional .Payload causeData = 3;</code>
+     * @return Whether the causeData field is set.
      */
     public boolean hasCauseData() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional .Payload causeData = 3;</code>
+     * @return The causeData.
      */
     public akka.remote.ContainerFormats.Payload getCauseData() {
       return causeData_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : causeData_;
@@ -478,12 +502,14 @@ public final class SystemMessageFormats {
     private akka.remote.SystemMessageFormats.SuperviseData superviseData_;
     /**
      * <code>optional .SuperviseData superviseData = 5;</code>
+     * @return Whether the superviseData field is set.
      */
     public boolean hasSuperviseData() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional .SuperviseData superviseData = 5;</code>
+     * @return The superviseData.
      */
     public akka.remote.SystemMessageFormats.SuperviseData getSuperviseData() {
       return superviseData_ == null ? akka.remote.SystemMessageFormats.SuperviseData.getDefaultInstance() : superviseData_;
@@ -499,12 +525,14 @@ public final class SystemMessageFormats {
     private akka.remote.SystemMessageFormats.FailedData failedData_;
     /**
      * <code>optional .FailedData failedData = 6;</code>
+     * @return Whether the failedData field is set.
      */
     public boolean hasFailedData() {
       return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>optional .FailedData failedData = 6;</code>
+     * @return The failedData.
      */
     public akka.remote.SystemMessageFormats.FailedData getFailedData() {
       return failedData_ == null ? akka.remote.SystemMessageFormats.FailedData.getDefaultInstance() : failedData_;
@@ -520,12 +548,14 @@ public final class SystemMessageFormats {
     private akka.remote.SystemMessageFormats.DeathWatchNotificationData dwNotificationData_;
     /**
      * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
+     * @return Whether the dwNotificationData field is set.
      */
     public boolean hasDwNotificationData() {
       return ((bitField0_ & 0x00000020) != 0);
     }
     /**
      * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
+     * @return The dwNotificationData.
      */
     public akka.remote.SystemMessageFormats.DeathWatchNotificationData getDwNotificationData() {
       return dwNotificationData_ == null ? akka.remote.SystemMessageFormats.DeathWatchNotificationData.getDefaultInstance() : dwNotificationData_;
@@ -1085,12 +1115,14 @@ public final class SystemMessageFormats {
       private int type_ = 0;
       /**
        * <code>required .SystemMessage.Type type = 1;</code>
+       * @return Whether the type field is set.
        */
       public boolean hasType() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .SystemMessage.Type type = 1;</code>
+       * @return The type.
        */
       public akka.remote.SystemMessageFormats.SystemMessage.Type getType() {
         @SuppressWarnings("deprecation")
@@ -1099,6 +1131,8 @@ public final class SystemMessageFormats {
       }
       /**
        * <code>required .SystemMessage.Type type = 1;</code>
+       * @param value The type to set.
+       * @return This builder for chaining.
        */
       public Builder setType(akka.remote.SystemMessageFormats.SystemMessage.Type value) {
         if (value == null) {
@@ -1111,6 +1145,7 @@ public final class SystemMessageFormats {
       }
       /**
        * <code>required .SystemMessage.Type type = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -1124,12 +1159,14 @@ public final class SystemMessageFormats {
           akka.remote.SystemMessageFormats.WatchData, akka.remote.SystemMessageFormats.WatchData.Builder, akka.remote.SystemMessageFormats.WatchDataOrBuilder> watchDataBuilder_;
       /**
        * <code>optional .WatchData watchData = 2;</code>
+       * @return Whether the watchData field is set.
        */
       public boolean hasWatchData() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .WatchData watchData = 2;</code>
+       * @return The watchData.
        */
       public akka.remote.SystemMessageFormats.WatchData getWatchData() {
         if (watchDataBuilder_ == null) {
@@ -1242,12 +1279,14 @@ public final class SystemMessageFormats {
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> causeDataBuilder_;
       /**
        * <code>optional .Payload causeData = 3;</code>
+       * @return Whether the causeData field is set.
        */
       public boolean hasCauseData() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .Payload causeData = 3;</code>
+       * @return The causeData.
        */
       public akka.remote.ContainerFormats.Payload getCauseData() {
         if (causeDataBuilder_ == null) {
@@ -1360,12 +1399,14 @@ public final class SystemMessageFormats {
           akka.remote.SystemMessageFormats.SuperviseData, akka.remote.SystemMessageFormats.SuperviseData.Builder, akka.remote.SystemMessageFormats.SuperviseDataOrBuilder> superviseDataBuilder_;
       /**
        * <code>optional .SuperviseData superviseData = 5;</code>
+       * @return Whether the superviseData field is set.
        */
       public boolean hasSuperviseData() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional .SuperviseData superviseData = 5;</code>
+       * @return The superviseData.
        */
       public akka.remote.SystemMessageFormats.SuperviseData getSuperviseData() {
         if (superviseDataBuilder_ == null) {
@@ -1478,12 +1519,14 @@ public final class SystemMessageFormats {
           akka.remote.SystemMessageFormats.FailedData, akka.remote.SystemMessageFormats.FailedData.Builder, akka.remote.SystemMessageFormats.FailedDataOrBuilder> failedDataBuilder_;
       /**
        * <code>optional .FailedData failedData = 6;</code>
+       * @return Whether the failedData field is set.
        */
       public boolean hasFailedData() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional .FailedData failedData = 6;</code>
+       * @return The failedData.
        */
       public akka.remote.SystemMessageFormats.FailedData getFailedData() {
         if (failedDataBuilder_ == null) {
@@ -1596,12 +1639,14 @@ public final class SystemMessageFormats {
           akka.remote.SystemMessageFormats.DeathWatchNotificationData, akka.remote.SystemMessageFormats.DeathWatchNotificationData.Builder, akka.remote.SystemMessageFormats.DeathWatchNotificationDataOrBuilder> dwNotificationDataBuilder_;
       /**
        * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
+       * @return Whether the dwNotificationData field is set.
        */
       public boolean hasDwNotificationData() {
         return ((bitField0_ & 0x00000020) != 0);
       }
       /**
        * <code>optional .DeathWatchNotificationData dwNotificationData = 7;</code>
+       * @return The dwNotificationData.
        */
       public akka.remote.SystemMessageFormats.DeathWatchNotificationData getDwNotificationData() {
         if (dwNotificationDataBuilder_ == null) {
@@ -1767,10 +1812,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>required .ActorRef watchee = 1;</code>
+     * @return Whether the watchee field is set.
      */
     boolean hasWatchee();
     /**
      * <code>required .ActorRef watchee = 1;</code>
+     * @return The watchee.
      */
     akka.remote.ContainerFormats.ActorRef getWatchee();
     /**
@@ -1780,10 +1827,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>required .ActorRef watcher = 2;</code>
+     * @return Whether the watcher field is set.
      */
     boolean hasWatcher();
     /**
      * <code>required .ActorRef watcher = 2;</code>
+     * @return The watcher.
      */
     akka.remote.ContainerFormats.ActorRef getWatcher();
     /**
@@ -1900,12 +1949,14 @@ public final class SystemMessageFormats {
     private akka.remote.ContainerFormats.ActorRef watchee_;
     /**
      * <code>required .ActorRef watchee = 1;</code>
+     * @return Whether the watchee field is set.
      */
     public boolean hasWatchee() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef watchee = 1;</code>
+     * @return The watchee.
      */
     public akka.remote.ContainerFormats.ActorRef getWatchee() {
       return watchee_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : watchee_;
@@ -1921,12 +1972,14 @@ public final class SystemMessageFormats {
     private akka.remote.ContainerFormats.ActorRef watcher_;
     /**
      * <code>required .ActorRef watcher = 2;</code>
+     * @return Whether the watcher field is set.
      */
     public boolean hasWatcher() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .ActorRef watcher = 2;</code>
+     * @return The watcher.
      */
     public akka.remote.ContainerFormats.ActorRef getWatcher() {
       return watcher_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : watcher_;
@@ -2328,12 +2381,14 @@ public final class SystemMessageFormats {
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> watcheeBuilder_;
       /**
        * <code>required .ActorRef watchee = 1;</code>
+       * @return Whether the watchee field is set.
        */
       public boolean hasWatchee() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef watchee = 1;</code>
+       * @return The watchee.
        */
       public akka.remote.ContainerFormats.ActorRef getWatchee() {
         if (watcheeBuilder_ == null) {
@@ -2446,12 +2501,14 @@ public final class SystemMessageFormats {
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> watcherBuilder_;
       /**
        * <code>required .ActorRef watcher = 2;</code>
+       * @return Whether the watcher field is set.
        */
       public boolean hasWatcher() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .ActorRef watcher = 2;</code>
+       * @return The watcher.
        */
       public akka.remote.ContainerFormats.ActorRef getWatcher() {
         if (watcherBuilder_ == null) {
@@ -2617,10 +2674,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>required .ActorRef child = 1;</code>
+     * @return Whether the child field is set.
      */
     boolean hasChild();
     /**
      * <code>required .ActorRef child = 1;</code>
+     * @return The child.
      */
     akka.remote.ContainerFormats.ActorRef getChild();
     /**
@@ -2630,10 +2689,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>required bool async = 2;</code>
+     * @return Whether the async field is set.
      */
     boolean hasAsync();
     /**
      * <code>required bool async = 2;</code>
+     * @return The async.
      */
     boolean getAsync();
   }
@@ -2738,12 +2799,14 @@ public final class SystemMessageFormats {
     private akka.remote.ContainerFormats.ActorRef child_;
     /**
      * <code>required .ActorRef child = 1;</code>
+     * @return Whether the child field is set.
      */
     public boolean hasChild() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef child = 1;</code>
+     * @return The child.
      */
     public akka.remote.ContainerFormats.ActorRef getChild() {
       return child_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : child_;
@@ -2759,12 +2822,14 @@ public final class SystemMessageFormats {
     private boolean async_;
     /**
      * <code>required bool async = 2;</code>
+     * @return Whether the async field is set.
      */
     public boolean hasAsync() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required bool async = 2;</code>
+     * @return The async.
      */
     public boolean getAsync() {
       return async_;
@@ -3145,12 +3210,14 @@ public final class SystemMessageFormats {
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> childBuilder_;
       /**
        * <code>required .ActorRef child = 1;</code>
+       * @return Whether the child field is set.
        */
       public boolean hasChild() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef child = 1;</code>
+       * @return The child.
        */
       public akka.remote.ContainerFormats.ActorRef getChild() {
         if (childBuilder_ == null) {
@@ -3261,18 +3328,22 @@ public final class SystemMessageFormats {
       private boolean async_ ;
       /**
        * <code>required bool async = 2;</code>
+       * @return Whether the async field is set.
        */
       public boolean hasAsync() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required bool async = 2;</code>
+       * @return The async.
        */
       public boolean getAsync() {
         return async_;
       }
       /**
        * <code>required bool async = 2;</code>
+       * @param value The async to set.
+       * @return This builder for chaining.
        */
       public Builder setAsync(boolean value) {
         bitField0_ |= 0x00000002;
@@ -3282,6 +3353,7 @@ public final class SystemMessageFormats {
       }
       /**
        * <code>required bool async = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAsync() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -3348,10 +3420,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>required .ActorRef child = 1;</code>
+     * @return Whether the child field is set.
      */
     boolean hasChild();
     /**
      * <code>required .ActorRef child = 1;</code>
+     * @return The child.
      */
     akka.remote.ContainerFormats.ActorRef getChild();
     /**
@@ -3361,10 +3435,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>required uint64 uid = 2;</code>
+     * @return Whether the uid field is set.
      */
     boolean hasUid();
     /**
      * <code>required uint64 uid = 2;</code>
+     * @return The uid.
      */
     long getUid();
   }
@@ -3469,12 +3545,14 @@ public final class SystemMessageFormats {
     private akka.remote.ContainerFormats.ActorRef child_;
     /**
      * <code>required .ActorRef child = 1;</code>
+     * @return Whether the child field is set.
      */
     public boolean hasChild() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef child = 1;</code>
+     * @return The child.
      */
     public akka.remote.ContainerFormats.ActorRef getChild() {
       return child_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : child_;
@@ -3490,12 +3568,14 @@ public final class SystemMessageFormats {
     private long uid_;
     /**
      * <code>required uint64 uid = 2;</code>
+     * @return Whether the uid field is set.
      */
     public boolean hasUid() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint64 uid = 2;</code>
+     * @return The uid.
      */
     public long getUid() {
       return uid_;
@@ -3876,12 +3956,14 @@ public final class SystemMessageFormats {
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> childBuilder_;
       /**
        * <code>required .ActorRef child = 1;</code>
+       * @return Whether the child field is set.
        */
       public boolean hasChild() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef child = 1;</code>
+       * @return The child.
        */
       public akka.remote.ContainerFormats.ActorRef getChild() {
         if (childBuilder_ == null) {
@@ -3992,18 +4074,22 @@ public final class SystemMessageFormats {
       private long uid_ ;
       /**
        * <code>required uint64 uid = 2;</code>
+       * @return Whether the uid field is set.
        */
       public boolean hasUid() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint64 uid = 2;</code>
+       * @return The uid.
        */
       public long getUid() {
         return uid_;
       }
       /**
        * <code>required uint64 uid = 2;</code>
+       * @param value The uid to set.
+       * @return This builder for chaining.
        */
       public Builder setUid(long value) {
         bitField0_ |= 0x00000002;
@@ -4013,6 +4099,7 @@ public final class SystemMessageFormats {
       }
       /**
        * <code>required uint64 uid = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUid() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4079,10 +4166,12 @@ public final class SystemMessageFormats {
 
     /**
      * <code>required .ActorRef actor = 1;</code>
+     * @return Whether the actor field is set.
      */
     boolean hasActor();
     /**
      * <code>required .ActorRef actor = 1;</code>
+     * @return The actor.
      */
     akka.remote.ContainerFormats.ActorRef getActor();
     /**
@@ -4092,19 +4181,23 @@ public final class SystemMessageFormats {
 
     /**
      * <code>required bool existenceConfirmed = 2;</code>
+     * @return Whether the existenceConfirmed field is set.
      */
     boolean hasExistenceConfirmed();
     /**
      * <code>required bool existenceConfirmed = 2;</code>
+     * @return The existenceConfirmed.
      */
     boolean getExistenceConfirmed();
 
     /**
      * <code>required bool addressTerminated = 3;</code>
+     * @return Whether the addressTerminated field is set.
      */
     boolean hasAddressTerminated();
     /**
      * <code>required bool addressTerminated = 3;</code>
+     * @return The addressTerminated.
      */
     boolean getAddressTerminated();
   }
@@ -4214,12 +4307,14 @@ public final class SystemMessageFormats {
     private akka.remote.ContainerFormats.ActorRef actor_;
     /**
      * <code>required .ActorRef actor = 1;</code>
+     * @return Whether the actor field is set.
      */
     public boolean hasActor() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRef actor = 1;</code>
+     * @return The actor.
      */
     public akka.remote.ContainerFormats.ActorRef getActor() {
       return actor_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : actor_;
@@ -4235,12 +4330,14 @@ public final class SystemMessageFormats {
     private boolean existenceConfirmed_;
     /**
      * <code>required bool existenceConfirmed = 2;</code>
+     * @return Whether the existenceConfirmed field is set.
      */
     public boolean hasExistenceConfirmed() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required bool existenceConfirmed = 2;</code>
+     * @return The existenceConfirmed.
      */
     public boolean getExistenceConfirmed() {
       return existenceConfirmed_;
@@ -4250,12 +4347,14 @@ public final class SystemMessageFormats {
     private boolean addressTerminated_;
     /**
      * <code>required bool addressTerminated = 3;</code>
+     * @return Whether the addressTerminated field is set.
      */
     public boolean hasAddressTerminated() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required bool addressTerminated = 3;</code>
+     * @return The addressTerminated.
      */
     public boolean getAddressTerminated() {
       return addressTerminated_;
@@ -4669,12 +4768,14 @@ public final class SystemMessageFormats {
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> actorBuilder_;
       /**
        * <code>required .ActorRef actor = 1;</code>
+       * @return Whether the actor field is set.
        */
       public boolean hasActor() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRef actor = 1;</code>
+       * @return The actor.
        */
       public akka.remote.ContainerFormats.ActorRef getActor() {
         if (actorBuilder_ == null) {
@@ -4785,18 +4886,22 @@ public final class SystemMessageFormats {
       private boolean existenceConfirmed_ ;
       /**
        * <code>required bool existenceConfirmed = 2;</code>
+       * @return Whether the existenceConfirmed field is set.
        */
       public boolean hasExistenceConfirmed() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required bool existenceConfirmed = 2;</code>
+       * @return The existenceConfirmed.
        */
       public boolean getExistenceConfirmed() {
         return existenceConfirmed_;
       }
       /**
        * <code>required bool existenceConfirmed = 2;</code>
+       * @param value The existenceConfirmed to set.
+       * @return This builder for chaining.
        */
       public Builder setExistenceConfirmed(boolean value) {
         bitField0_ |= 0x00000002;
@@ -4806,6 +4911,7 @@ public final class SystemMessageFormats {
       }
       /**
        * <code>required bool existenceConfirmed = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearExistenceConfirmed() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4817,18 +4923,22 @@ public final class SystemMessageFormats {
       private boolean addressTerminated_ ;
       /**
        * <code>required bool addressTerminated = 3;</code>
+       * @return Whether the addressTerminated field is set.
        */
       public boolean hasAddressTerminated() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required bool addressTerminated = 3;</code>
+       * @return The addressTerminated.
        */
       public boolean getAddressTerminated() {
         return addressTerminated_;
       }
       /**
        * <code>required bool addressTerminated = 3;</code>
+       * @param value The addressTerminated to set.
+       * @return This builder for chaining.
        */
       public Builder setAddressTerminated(boolean value) {
         bitField0_ |= 0x00000004;
@@ -4838,6 +4948,7 @@ public final class SystemMessageFormats {
       }
       /**
        * <code>required bool addressTerminated = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAddressTerminated() {
         bitField0_ = (bitField0_ & ~0x00000004);

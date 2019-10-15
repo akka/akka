@@ -56,6 +56,8 @@ public final class ReplicatedDataMessages {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -63,6 +65,10 @@ public final class ReplicatedDataMessages {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static ORSetDeltaOp forNumber(int value) {
       switch (value) {
         case 0: return Add;
@@ -163,6 +169,8 @@ public final class ReplicatedDataMessages {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -170,6 +178,10 @@ public final class ReplicatedDataMessages {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static ORMapDeltaOp forNumber(int value) {
       switch (value) {
         case 0: return ORMapPut;
@@ -231,46 +243,60 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>repeated string stringElements = 1;</code>
+     * @return A list containing the stringElements.
      */
     java.util.List<java.lang.String>
         getStringElementsList();
     /**
      * <code>repeated string stringElements = 1;</code>
+     * @return The count of stringElements.
      */
     int getStringElementsCount();
     /**
      * <code>repeated string stringElements = 1;</code>
+     * @param index The index of the element to return.
+     * @return The stringElements at the given index.
      */
     java.lang.String getStringElements(int index);
     /**
      * <code>repeated string stringElements = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the stringElements at the given index.
      */
     akka.protobufv3.internal.ByteString
         getStringElementsBytes(int index);
 
     /**
      * <code>repeated sint32 intElements = 2 [packed = true];</code>
+     * @return A list containing the intElements.
      */
     java.util.List<java.lang.Integer> getIntElementsList();
     /**
      * <code>repeated sint32 intElements = 2 [packed = true];</code>
+     * @return The count of intElements.
      */
     int getIntElementsCount();
     /**
      * <code>repeated sint32 intElements = 2 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The intElements at the given index.
      */
     int getIntElements(int index);
 
     /**
      * <code>repeated sint64 longElements = 3 [packed = true];</code>
+     * @return A list containing the longElements.
      */
     java.util.List<java.lang.Long> getLongElementsList();
     /**
      * <code>repeated sint64 longElements = 3 [packed = true];</code>
+     * @return The count of longElements.
      */
     int getLongElementsCount();
     /**
      * <code>repeated sint64 longElements = 3 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The longElements at the given index.
      */
     long getLongElements(int index);
 
@@ -304,6 +330,7 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 5;</code>
+     * @return A list containing the actorRefElements.
      */
     java.util.List<java.lang.String>
         getActorRefElementsList();
@@ -313,6 +340,7 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 5;</code>
+     * @return The count of actorRefElements.
      */
     int getActorRefElementsCount();
     /**
@@ -321,6 +349,8 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 5;</code>
+     * @param index The index of the element to return.
+     * @return The actorRefElements at the given index.
      */
     java.lang.String getActorRefElements(int index);
     /**
@@ -329,6 +359,8 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 5;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the actorRefElements at the given index.
      */
     akka.protobufv3.internal.ByteString
         getActorRefElementsBytes(int index);
@@ -504,6 +536,7 @@ public final class ReplicatedDataMessages {
     private akka.protobufv3.internal.LazyStringList stringElements_;
     /**
      * <code>repeated string stringElements = 1;</code>
+     * @return A list containing the stringElements.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getStringElementsList() {
@@ -511,18 +544,23 @@ public final class ReplicatedDataMessages {
     }
     /**
      * <code>repeated string stringElements = 1;</code>
+     * @return The count of stringElements.
      */
     public int getStringElementsCount() {
       return stringElements_.size();
     }
     /**
      * <code>repeated string stringElements = 1;</code>
+     * @param index The index of the element to return.
+     * @return The stringElements at the given index.
      */
     public java.lang.String getStringElements(int index) {
       return stringElements_.get(index);
     }
     /**
      * <code>repeated string stringElements = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the stringElements at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getStringElementsBytes(int index) {
@@ -533,6 +571,7 @@ public final class ReplicatedDataMessages {
     private akka.protobufv3.internal.Internal.IntList intElements_;
     /**
      * <code>repeated sint32 intElements = 2 [packed = true];</code>
+     * @return A list containing the intElements.
      */
     public java.util.List<java.lang.Integer>
         getIntElementsList() {
@@ -540,12 +579,15 @@ public final class ReplicatedDataMessages {
     }
     /**
      * <code>repeated sint32 intElements = 2 [packed = true];</code>
+     * @return The count of intElements.
      */
     public int getIntElementsCount() {
       return intElements_.size();
     }
     /**
      * <code>repeated sint32 intElements = 2 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The intElements at the given index.
      */
     public int getIntElements(int index) {
       return intElements_.getInt(index);
@@ -556,6 +598,7 @@ public final class ReplicatedDataMessages {
     private akka.protobufv3.internal.Internal.LongList longElements_;
     /**
      * <code>repeated sint64 longElements = 3 [packed = true];</code>
+     * @return A list containing the longElements.
      */
     public java.util.List<java.lang.Long>
         getLongElementsList() {
@@ -563,12 +606,15 @@ public final class ReplicatedDataMessages {
     }
     /**
      * <code>repeated sint64 longElements = 3 [packed = true];</code>
+     * @return The count of longElements.
      */
     public int getLongElementsCount() {
       return longElements_.size();
     }
     /**
      * <code>repeated sint64 longElements = 3 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The longElements at the given index.
      */
     public long getLongElements(int index) {
       return longElements_.getLong(index);
@@ -618,6 +664,7 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 5;</code>
+     * @return A list containing the actorRefElements.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getActorRefElementsList() {
@@ -629,6 +676,7 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 5;</code>
+     * @return The count of actorRefElements.
      */
     public int getActorRefElementsCount() {
       return actorRefElements_.size();
@@ -639,6 +687,8 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 5;</code>
+     * @param index The index of the element to return.
+     * @return The actorRefElements at the given index.
      */
     public java.lang.String getActorRefElements(int index) {
       return actorRefElements_.get(index);
@@ -649,6 +699,8 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 5;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the actorRefElements at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getActorRefElementsBytes(int index) {
@@ -1174,6 +1226,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 1;</code>
+       * @return A list containing the stringElements.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getStringElementsList() {
@@ -1181,18 +1234,23 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 1;</code>
+       * @return The count of stringElements.
        */
       public int getStringElementsCount() {
         return stringElements_.size();
       }
       /**
        * <code>repeated string stringElements = 1;</code>
+       * @param index The index of the element to return.
+       * @return The stringElements at the given index.
        */
       public java.lang.String getStringElements(int index) {
         return stringElements_.get(index);
       }
       /**
        * <code>repeated string stringElements = 1;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the stringElements at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getStringElementsBytes(int index) {
@@ -1200,6 +1258,9 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 1;</code>
+       * @param index The index to set the value at.
+       * @param value The stringElements to set.
+       * @return This builder for chaining.
        */
       public Builder setStringElements(
           int index, java.lang.String value) {
@@ -1213,6 +1274,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 1;</code>
+       * @param value The stringElements to add.
+       * @return This builder for chaining.
        */
       public Builder addStringElements(
           java.lang.String value) {
@@ -1226,6 +1289,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 1;</code>
+       * @param values The stringElements to add.
+       * @return This builder for chaining.
        */
       public Builder addAllStringElements(
           java.lang.Iterable<java.lang.String> values) {
@@ -1237,6 +1302,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearStringElements() {
         stringElements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -1246,6 +1312,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 1;</code>
+       * @param value The bytes of the stringElements to add.
+       * @return This builder for chaining.
        */
       public Builder addStringElementsBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -1267,6 +1335,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint32 intElements = 2 [packed = true];</code>
+       * @return A list containing the intElements.
        */
       public java.util.List<java.lang.Integer>
           getIntElementsList() {
@@ -1275,18 +1344,24 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint32 intElements = 2 [packed = true];</code>
+       * @return The count of intElements.
        */
       public int getIntElementsCount() {
         return intElements_.size();
       }
       /**
        * <code>repeated sint32 intElements = 2 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The intElements at the given index.
        */
       public int getIntElements(int index) {
         return intElements_.getInt(index);
       }
       /**
        * <code>repeated sint32 intElements = 2 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The intElements to set.
+       * @return This builder for chaining.
        */
       public Builder setIntElements(
           int index, int value) {
@@ -1297,6 +1372,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint32 intElements = 2 [packed = true];</code>
+       * @param value The intElements to add.
+       * @return This builder for chaining.
        */
       public Builder addIntElements(int value) {
         ensureIntElementsIsMutable();
@@ -1306,6 +1383,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint32 intElements = 2 [packed = true];</code>
+       * @param values The intElements to add.
+       * @return This builder for chaining.
        */
       public Builder addAllIntElements(
           java.lang.Iterable<? extends java.lang.Integer> values) {
@@ -1317,6 +1396,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint32 intElements = 2 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearIntElements() {
         intElements_ = emptyIntList();
@@ -1334,6 +1414,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint64 longElements = 3 [packed = true];</code>
+       * @return A list containing the longElements.
        */
       public java.util.List<java.lang.Long>
           getLongElementsList() {
@@ -1342,18 +1423,24 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint64 longElements = 3 [packed = true];</code>
+       * @return The count of longElements.
        */
       public int getLongElementsCount() {
         return longElements_.size();
       }
       /**
        * <code>repeated sint64 longElements = 3 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The longElements at the given index.
        */
       public long getLongElements(int index) {
         return longElements_.getLong(index);
       }
       /**
        * <code>repeated sint64 longElements = 3 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The longElements to set.
+       * @return This builder for chaining.
        */
       public Builder setLongElements(
           int index, long value) {
@@ -1364,6 +1451,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint64 longElements = 3 [packed = true];</code>
+       * @param value The longElements to add.
+       * @return This builder for chaining.
        */
       public Builder addLongElements(long value) {
         ensureLongElementsIsMutable();
@@ -1373,6 +1462,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint64 longElements = 3 [packed = true];</code>
+       * @param values The longElements to add.
+       * @return This builder for chaining.
        */
       public Builder addAllLongElements(
           java.lang.Iterable<? extends java.lang.Long> values) {
@@ -1384,6 +1475,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint64 longElements = 3 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearLongElements() {
         longElements_ = emptyLongList();
@@ -1645,6 +1737,7 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 5;</code>
+       * @return A list containing the actorRefElements.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getActorRefElementsList() {
@@ -1656,6 +1749,7 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 5;</code>
+       * @return The count of actorRefElements.
        */
       public int getActorRefElementsCount() {
         return actorRefElements_.size();
@@ -1666,6 +1760,8 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 5;</code>
+       * @param index The index of the element to return.
+       * @return The actorRefElements at the given index.
        */
       public java.lang.String getActorRefElements(int index) {
         return actorRefElements_.get(index);
@@ -1676,6 +1772,8 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 5;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the actorRefElements at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getActorRefElementsBytes(int index) {
@@ -1687,6 +1785,9 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 5;</code>
+       * @param index The index to set the value at.
+       * @param value The actorRefElements to set.
+       * @return This builder for chaining.
        */
       public Builder setActorRefElements(
           int index, java.lang.String value) {
@@ -1704,6 +1805,8 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 5;</code>
+       * @param value The actorRefElements to add.
+       * @return This builder for chaining.
        */
       public Builder addActorRefElements(
           java.lang.String value) {
@@ -1721,6 +1824,8 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 5;</code>
+       * @param values The actorRefElements to add.
+       * @return This builder for chaining.
        */
       public Builder addAllActorRefElements(
           java.lang.Iterable<java.lang.String> values) {
@@ -1736,6 +1841,7 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 5;</code>
+       * @return This builder for chaining.
        */
       public Builder clearActorRefElements() {
         actorRefElements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -1749,6 +1855,8 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 5;</code>
+       * @param value The bytes of the actorRefElements to add.
+       * @return This builder for chaining.
        */
       public Builder addActorRefElementsBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -1819,10 +1927,12 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>required .akka.cluster.ddata.VersionVector vvector = 1;</code>
+     * @return Whether the vvector field is set.
      */
     boolean hasVvector();
     /**
      * <code>required .akka.cluster.ddata.VersionVector vvector = 1;</code>
+     * @return The vvector.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector getVvector();
     /**
@@ -1856,46 +1966,60 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>repeated string stringElements = 3;</code>
+     * @return A list containing the stringElements.
      */
     java.util.List<java.lang.String>
         getStringElementsList();
     /**
      * <code>repeated string stringElements = 3;</code>
+     * @return The count of stringElements.
      */
     int getStringElementsCount();
     /**
      * <code>repeated string stringElements = 3;</code>
+     * @param index The index of the element to return.
+     * @return The stringElements at the given index.
      */
     java.lang.String getStringElements(int index);
     /**
      * <code>repeated string stringElements = 3;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the stringElements at the given index.
      */
     akka.protobufv3.internal.ByteString
         getStringElementsBytes(int index);
 
     /**
      * <code>repeated sint32 intElements = 4 [packed = true];</code>
+     * @return A list containing the intElements.
      */
     java.util.List<java.lang.Integer> getIntElementsList();
     /**
      * <code>repeated sint32 intElements = 4 [packed = true];</code>
+     * @return The count of intElements.
      */
     int getIntElementsCount();
     /**
      * <code>repeated sint32 intElements = 4 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The intElements at the given index.
      */
     int getIntElements(int index);
 
     /**
      * <code>repeated sint64 longElements = 5 [packed = true];</code>
+     * @return A list containing the longElements.
      */
     java.util.List<java.lang.Long> getLongElementsList();
     /**
      * <code>repeated sint64 longElements = 5 [packed = true];</code>
+     * @return The count of longElements.
      */
     int getLongElementsCount();
     /**
      * <code>repeated sint64 longElements = 5 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The longElements at the given index.
      */
     long getLongElements(int index);
 
@@ -1929,6 +2053,7 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 7;</code>
+     * @return A list containing the actorRefElements.
      */
     java.util.List<java.lang.String>
         getActorRefElementsList();
@@ -1938,6 +2063,7 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 7;</code>
+     * @return The count of actorRefElements.
      */
     int getActorRefElementsCount();
     /**
@@ -1946,6 +2072,8 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 7;</code>
+     * @param index The index of the element to return.
+     * @return The actorRefElements at the given index.
      */
     java.lang.String getActorRefElements(int index);
     /**
@@ -1954,6 +2082,8 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 7;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the actorRefElements at the given index.
      */
     akka.protobufv3.internal.ByteString
         getActorRefElementsBytes(int index);
@@ -2156,12 +2286,14 @@ public final class ReplicatedDataMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector vvector_;
     /**
      * <code>required .akka.cluster.ddata.VersionVector vvector = 1;</code>
+     * @return Whether the vvector field is set.
      */
     public boolean hasVvector() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.VersionVector vvector = 1;</code>
+     * @return The vvector.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector getVvector() {
       return vvector_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector.getDefaultInstance() : vvector_;
@@ -2212,6 +2344,7 @@ public final class ReplicatedDataMessages {
     private akka.protobufv3.internal.LazyStringList stringElements_;
     /**
      * <code>repeated string stringElements = 3;</code>
+     * @return A list containing the stringElements.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getStringElementsList() {
@@ -2219,18 +2352,23 @@ public final class ReplicatedDataMessages {
     }
     /**
      * <code>repeated string stringElements = 3;</code>
+     * @return The count of stringElements.
      */
     public int getStringElementsCount() {
       return stringElements_.size();
     }
     /**
      * <code>repeated string stringElements = 3;</code>
+     * @param index The index of the element to return.
+     * @return The stringElements at the given index.
      */
     public java.lang.String getStringElements(int index) {
       return stringElements_.get(index);
     }
     /**
      * <code>repeated string stringElements = 3;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the stringElements at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getStringElementsBytes(int index) {
@@ -2241,6 +2379,7 @@ public final class ReplicatedDataMessages {
     private akka.protobufv3.internal.Internal.IntList intElements_;
     /**
      * <code>repeated sint32 intElements = 4 [packed = true];</code>
+     * @return A list containing the intElements.
      */
     public java.util.List<java.lang.Integer>
         getIntElementsList() {
@@ -2248,12 +2387,15 @@ public final class ReplicatedDataMessages {
     }
     /**
      * <code>repeated sint32 intElements = 4 [packed = true];</code>
+     * @return The count of intElements.
      */
     public int getIntElementsCount() {
       return intElements_.size();
     }
     /**
      * <code>repeated sint32 intElements = 4 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The intElements at the given index.
      */
     public int getIntElements(int index) {
       return intElements_.getInt(index);
@@ -2264,6 +2406,7 @@ public final class ReplicatedDataMessages {
     private akka.protobufv3.internal.Internal.LongList longElements_;
     /**
      * <code>repeated sint64 longElements = 5 [packed = true];</code>
+     * @return A list containing the longElements.
      */
     public java.util.List<java.lang.Long>
         getLongElementsList() {
@@ -2271,12 +2414,15 @@ public final class ReplicatedDataMessages {
     }
     /**
      * <code>repeated sint64 longElements = 5 [packed = true];</code>
+     * @return The count of longElements.
      */
     public int getLongElementsCount() {
       return longElements_.size();
     }
     /**
      * <code>repeated sint64 longElements = 5 [packed = true];</code>
+     * @param index The index of the element to return.
+     * @return The longElements at the given index.
      */
     public long getLongElements(int index) {
       return longElements_.getLong(index);
@@ -2326,6 +2472,7 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 7;</code>
+     * @return A list containing the actorRefElements.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getActorRefElementsList() {
@@ -2337,6 +2484,7 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 7;</code>
+     * @return The count of actorRefElements.
      */
     public int getActorRefElementsCount() {
       return actorRefElements_.size();
@@ -2347,6 +2495,8 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 7;</code>
+     * @param index The index of the element to return.
+     * @return The actorRefElements at the given index.
      */
     public java.lang.String getActorRefElements(int index) {
       return actorRefElements_.get(index);
@@ -2357,6 +2507,8 @@ public final class ReplicatedDataMessages {
      * </pre>
      *
      * <code>repeated string actorRefElements = 7;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the actorRefElements at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getActorRefElementsBytes(int index) {
@@ -2994,12 +3146,14 @@ public final class ReplicatedDataMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVectorOrBuilder> vvectorBuilder_;
       /**
        * <code>required .akka.cluster.ddata.VersionVector vvector = 1;</code>
+       * @return Whether the vvector field is set.
        */
       public boolean hasVvector() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.VersionVector vvector = 1;</code>
+       * @return The vvector.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector getVvector() {
         if (vvectorBuilder_ == null) {
@@ -3356,6 +3510,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 3;</code>
+       * @return A list containing the stringElements.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getStringElementsList() {
@@ -3363,18 +3518,23 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 3;</code>
+       * @return The count of stringElements.
        */
       public int getStringElementsCount() {
         return stringElements_.size();
       }
       /**
        * <code>repeated string stringElements = 3;</code>
+       * @param index The index of the element to return.
+       * @return The stringElements at the given index.
        */
       public java.lang.String getStringElements(int index) {
         return stringElements_.get(index);
       }
       /**
        * <code>repeated string stringElements = 3;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the stringElements at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getStringElementsBytes(int index) {
@@ -3382,6 +3542,9 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 3;</code>
+       * @param index The index to set the value at.
+       * @param value The stringElements to set.
+       * @return This builder for chaining.
        */
       public Builder setStringElements(
           int index, java.lang.String value) {
@@ -3395,6 +3558,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 3;</code>
+       * @param value The stringElements to add.
+       * @return This builder for chaining.
        */
       public Builder addStringElements(
           java.lang.String value) {
@@ -3408,6 +3573,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 3;</code>
+       * @param values The stringElements to add.
+       * @return This builder for chaining.
        */
       public Builder addAllStringElements(
           java.lang.Iterable<java.lang.String> values) {
@@ -3419,6 +3586,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearStringElements() {
         stringElements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -3428,6 +3596,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated string stringElements = 3;</code>
+       * @param value The bytes of the stringElements to add.
+       * @return This builder for chaining.
        */
       public Builder addStringElementsBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -3449,6 +3619,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint32 intElements = 4 [packed = true];</code>
+       * @return A list containing the intElements.
        */
       public java.util.List<java.lang.Integer>
           getIntElementsList() {
@@ -3457,18 +3628,24 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint32 intElements = 4 [packed = true];</code>
+       * @return The count of intElements.
        */
       public int getIntElementsCount() {
         return intElements_.size();
       }
       /**
        * <code>repeated sint32 intElements = 4 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The intElements at the given index.
        */
       public int getIntElements(int index) {
         return intElements_.getInt(index);
       }
       /**
        * <code>repeated sint32 intElements = 4 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The intElements to set.
+       * @return This builder for chaining.
        */
       public Builder setIntElements(
           int index, int value) {
@@ -3479,6 +3656,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint32 intElements = 4 [packed = true];</code>
+       * @param value The intElements to add.
+       * @return This builder for chaining.
        */
       public Builder addIntElements(int value) {
         ensureIntElementsIsMutable();
@@ -3488,6 +3667,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint32 intElements = 4 [packed = true];</code>
+       * @param values The intElements to add.
+       * @return This builder for chaining.
        */
       public Builder addAllIntElements(
           java.lang.Iterable<? extends java.lang.Integer> values) {
@@ -3499,6 +3680,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint32 intElements = 4 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearIntElements() {
         intElements_ = emptyIntList();
@@ -3516,6 +3698,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint64 longElements = 5 [packed = true];</code>
+       * @return A list containing the longElements.
        */
       public java.util.List<java.lang.Long>
           getLongElementsList() {
@@ -3524,18 +3707,24 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint64 longElements = 5 [packed = true];</code>
+       * @return The count of longElements.
        */
       public int getLongElementsCount() {
         return longElements_.size();
       }
       /**
        * <code>repeated sint64 longElements = 5 [packed = true];</code>
+       * @param index The index of the element to return.
+       * @return The longElements at the given index.
        */
       public long getLongElements(int index) {
         return longElements_.getLong(index);
       }
       /**
        * <code>repeated sint64 longElements = 5 [packed = true];</code>
+       * @param index The index to set the value at.
+       * @param value The longElements to set.
+       * @return This builder for chaining.
        */
       public Builder setLongElements(
           int index, long value) {
@@ -3546,6 +3735,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint64 longElements = 5 [packed = true];</code>
+       * @param value The longElements to add.
+       * @return This builder for chaining.
        */
       public Builder addLongElements(long value) {
         ensureLongElementsIsMutable();
@@ -3555,6 +3746,8 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint64 longElements = 5 [packed = true];</code>
+       * @param values The longElements to add.
+       * @return This builder for chaining.
        */
       public Builder addAllLongElements(
           java.lang.Iterable<? extends java.lang.Long> values) {
@@ -3566,6 +3759,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>repeated sint64 longElements = 5 [packed = true];</code>
+       * @return This builder for chaining.
        */
       public Builder clearLongElements() {
         longElements_ = emptyLongList();
@@ -3827,6 +4021,7 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 7;</code>
+       * @return A list containing the actorRefElements.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getActorRefElementsList() {
@@ -3838,6 +4033,7 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 7;</code>
+       * @return The count of actorRefElements.
        */
       public int getActorRefElementsCount() {
         return actorRefElements_.size();
@@ -3848,6 +4044,8 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 7;</code>
+       * @param index The index of the element to return.
+       * @return The actorRefElements at the given index.
        */
       public java.lang.String getActorRefElements(int index) {
         return actorRefElements_.get(index);
@@ -3858,6 +4056,8 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 7;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the actorRefElements at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getActorRefElementsBytes(int index) {
@@ -3869,6 +4069,9 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 7;</code>
+       * @param index The index to set the value at.
+       * @param value The actorRefElements to set.
+       * @return This builder for chaining.
        */
       public Builder setActorRefElements(
           int index, java.lang.String value) {
@@ -3886,6 +4089,8 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 7;</code>
+       * @param value The actorRefElements to add.
+       * @return This builder for chaining.
        */
       public Builder addActorRefElements(
           java.lang.String value) {
@@ -3903,6 +4108,8 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 7;</code>
+       * @param values The actorRefElements to add.
+       * @return This builder for chaining.
        */
       public Builder addAllActorRefElements(
           java.lang.Iterable<java.lang.String> values) {
@@ -3918,6 +4125,7 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 7;</code>
+       * @return This builder for chaining.
        */
       public Builder clearActorRefElements() {
         actorRefElements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -3931,6 +4139,8 @@ public final class ReplicatedDataMessages {
        * </pre>
        *
        * <code>repeated string actorRefElements = 7;</code>
+       * @param value The bytes of the actorRefElements to add.
+       * @return This builder for chaining.
        */
       public Builder addActorRefElementsBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -4120,19 +4330,23 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>required .akka.cluster.ddata.ORSetDeltaOp operation = 1;</code>
+       * @return Whether the operation field is set.
        */
       boolean hasOperation();
       /**
        * <code>required .akka.cluster.ddata.ORSetDeltaOp operation = 1;</code>
+       * @return The operation.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetDeltaOp getOperation();
 
       /**
        * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+       * @return Whether the underlying field is set.
        */
       boolean hasUnderlying();
       /**
        * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+       * @return The underlying.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getUnderlying();
       /**
@@ -4249,12 +4463,14 @@ public final class ReplicatedDataMessages {
       private int operation_;
       /**
        * <code>required .akka.cluster.ddata.ORSetDeltaOp operation = 1;</code>
+       * @return Whether the operation field is set.
        */
       public boolean hasOperation() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.ORSetDeltaOp operation = 1;</code>
+       * @return The operation.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetDeltaOp getOperation() {
         @SuppressWarnings("deprecation")
@@ -4266,12 +4482,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet underlying_;
       /**
        * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+       * @return Whether the underlying field is set.
        */
       public boolean hasUnderlying() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+       * @return The underlying.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getUnderlying() {
         return underlying_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.getDefaultInstance() : underlying_;
@@ -4654,12 +4872,14 @@ public final class ReplicatedDataMessages {
         private int operation_ = 0;
         /**
          * <code>required .akka.cluster.ddata.ORSetDeltaOp operation = 1;</code>
+         * @return Whether the operation field is set.
          */
         public boolean hasOperation() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.ORSetDeltaOp operation = 1;</code>
+         * @return The operation.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetDeltaOp getOperation() {
           @SuppressWarnings("deprecation")
@@ -4668,6 +4888,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>required .akka.cluster.ddata.ORSetDeltaOp operation = 1;</code>
+         * @param value The operation to set.
+         * @return This builder for chaining.
          */
         public Builder setOperation(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetDeltaOp value) {
           if (value == null) {
@@ -4680,6 +4902,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>required .akka.cluster.ddata.ORSetDeltaOp operation = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearOperation() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -4693,12 +4916,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetOrBuilder> underlyingBuilder_;
         /**
          * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+         * @return Whether the underlying field is set.
          */
         public boolean hasUnderlying() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+         * @return The underlying.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getUnderlying() {
           if (underlyingBuilder_ == null) {
@@ -5544,10 +5769,12 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>required bool enabled = 1;</code>
+     * @return Whether the enabled field is set.
      */
     boolean hasEnabled();
     /**
      * <code>required bool enabled = 1;</code>
+     * @return The enabled.
      */
     boolean getEnabled();
   }
@@ -5639,12 +5866,14 @@ public final class ReplicatedDataMessages {
     private boolean enabled_;
     /**
      * <code>required bool enabled = 1;</code>
+     * @return Whether the enabled field is set.
      */
     public boolean hasEnabled() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required bool enabled = 1;</code>
+     * @return The enabled.
      */
     public boolean getEnabled() {
       return enabled_;
@@ -5975,18 +6204,22 @@ public final class ReplicatedDataMessages {
       private boolean enabled_ ;
       /**
        * <code>required bool enabled = 1;</code>
+       * @return Whether the enabled field is set.
        */
       public boolean hasEnabled() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required bool enabled = 1;</code>
+       * @return The enabled.
        */
       public boolean getEnabled() {
         return enabled_;
       }
       /**
        * <code>required bool enabled = 1;</code>
+       * @param value The enabled to set.
+       * @return This builder for chaining.
        */
       public Builder setEnabled(boolean value) {
         bitField0_ |= 0x00000001;
@@ -5996,6 +6229,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>required bool enabled = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEnabled() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -6062,19 +6296,23 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>required sint64 timestamp = 1;</code>
+     * @return Whether the timestamp field is set.
      */
     boolean hasTimestamp();
     /**
      * <code>required sint64 timestamp = 1;</code>
+     * @return The timestamp.
      */
     long getTimestamp();
 
     /**
      * <code>required .akka.cluster.ddata.UniqueAddress node = 2;</code>
+     * @return Whether the node field is set.
      */
     boolean hasNode();
     /**
      * <code>required .akka.cluster.ddata.UniqueAddress node = 2;</code>
+     * @return The node.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getNode();
     /**
@@ -6084,10 +6322,12 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage state = 3;</code>
+     * @return Whether the state field is set.
      */
     boolean hasState();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage state = 3;</code>
+     * @return The state.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getState();
     /**
@@ -6209,12 +6449,14 @@ public final class ReplicatedDataMessages {
     private long timestamp_;
     /**
      * <code>required sint64 timestamp = 1;</code>
+     * @return Whether the timestamp field is set.
      */
     public boolean hasTimestamp() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required sint64 timestamp = 1;</code>
+     * @return The timestamp.
      */
     public long getTimestamp() {
       return timestamp_;
@@ -6224,12 +6466,14 @@ public final class ReplicatedDataMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress node_;
     /**
      * <code>required .akka.cluster.ddata.UniqueAddress node = 2;</code>
+     * @return Whether the node field is set.
      */
     public boolean hasNode() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.UniqueAddress node = 2;</code>
+     * @return The node.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getNode() {
       return node_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance() : node_;
@@ -6245,12 +6489,14 @@ public final class ReplicatedDataMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage state_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage state = 3;</code>
+     * @return Whether the state field is set.
      */
     public boolean hasState() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage state = 3;</code>
+     * @return The state.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getState() {
       return state_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : state_;
@@ -6683,18 +6929,22 @@ public final class ReplicatedDataMessages {
       private long timestamp_ ;
       /**
        * <code>required sint64 timestamp = 1;</code>
+       * @return Whether the timestamp field is set.
        */
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required sint64 timestamp = 1;</code>
+       * @return The timestamp.
        */
       public long getTimestamp() {
         return timestamp_;
       }
       /**
        * <code>required sint64 timestamp = 1;</code>
+       * @param value The timestamp to set.
+       * @return This builder for chaining.
        */
       public Builder setTimestamp(long value) {
         bitField0_ |= 0x00000001;
@@ -6704,6 +6954,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>required sint64 timestamp = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTimestamp() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -6717,12 +6968,14 @@ public final class ReplicatedDataMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> nodeBuilder_;
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress node = 2;</code>
+       * @return Whether the node field is set.
        */
       public boolean hasNode() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress node = 2;</code>
+       * @return The node.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getNode() {
         if (nodeBuilder_ == null) {
@@ -6835,12 +7088,14 @@ public final class ReplicatedDataMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> stateBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage state = 3;</code>
+       * @return Whether the state field is set.
        */
       public boolean hasState() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage state = 3;</code>
+       * @return The state.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getState() {
         if (stateBuilder_ == null) {
@@ -7125,10 +7380,12 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+       * @return Whether the node field is set.
        */
       boolean hasNode();
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+       * @return The node.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getNode();
       /**
@@ -7138,10 +7395,12 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>required bytes value = 2;</code>
+       * @return Whether the value field is set.
        */
       boolean hasValue();
       /**
        * <code>required bytes value = 2;</code>
+       * @return The value.
        */
       akka.protobufv3.internal.ByteString getValue();
     }
@@ -7247,12 +7506,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress node_;
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+       * @return Whether the node field is set.
        */
       public boolean hasNode() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+       * @return The node.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getNode() {
         return node_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance() : node_;
@@ -7268,12 +7529,14 @@ public final class ReplicatedDataMessages {
       private akka.protobufv3.internal.ByteString value_;
       /**
        * <code>required bytes value = 2;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required bytes value = 2;</code>
+       * @return The value.
        */
       public akka.protobufv3.internal.ByteString getValue() {
         return value_;
@@ -7653,12 +7916,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> nodeBuilder_;
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+         * @return Whether the node field is set.
          */
         public boolean hasNode() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+         * @return The node.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getNode() {
           if (nodeBuilder_ == null) {
@@ -7769,18 +8034,22 @@ public final class ReplicatedDataMessages {
         private akka.protobufv3.internal.ByteString value_ = akka.protobufv3.internal.ByteString.EMPTY;
         /**
          * <code>required bytes value = 2;</code>
+         * @return Whether the value field is set.
          */
         public boolean hasValue() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required bytes value = 2;</code>
+         * @return The value.
          */
         public akka.protobufv3.internal.ByteString getValue() {
           return value_;
         }
         /**
          * <code>required bytes value = 2;</code>
+         * @param value The value to set.
+         * @return This builder for chaining.
          */
         public Builder setValue(akka.protobufv3.internal.ByteString value) {
           if (value == null) {
@@ -7793,6 +8062,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>required bytes value = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearValue() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -8539,10 +8809,12 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>required .akka.cluster.ddata.GCounter increments = 1;</code>
+     * @return Whether the increments field is set.
      */
     boolean hasIncrements();
     /**
      * <code>required .akka.cluster.ddata.GCounter increments = 1;</code>
+     * @return The increments.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter getIncrements();
     /**
@@ -8552,10 +8824,12 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>required .akka.cluster.ddata.GCounter decrements = 2;</code>
+     * @return Whether the decrements field is set.
      */
     boolean hasDecrements();
     /**
      * <code>required .akka.cluster.ddata.GCounter decrements = 2;</code>
+     * @return The decrements.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter getDecrements();
     /**
@@ -8672,12 +8946,14 @@ public final class ReplicatedDataMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter increments_;
     /**
      * <code>required .akka.cluster.ddata.GCounter increments = 1;</code>
+     * @return Whether the increments field is set.
      */
     public boolean hasIncrements() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.GCounter increments = 1;</code>
+     * @return The increments.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter getIncrements() {
       return increments_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter.getDefaultInstance() : increments_;
@@ -8693,12 +8969,14 @@ public final class ReplicatedDataMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter decrements_;
     /**
      * <code>required .akka.cluster.ddata.GCounter decrements = 2;</code>
+     * @return Whether the decrements field is set.
      */
     public boolean hasDecrements() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.GCounter decrements = 2;</code>
+     * @return The decrements.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter getDecrements() {
       return decrements_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter.getDefaultInstance() : decrements_;
@@ -9100,12 +9378,14 @@ public final class ReplicatedDataMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounterOrBuilder> incrementsBuilder_;
       /**
        * <code>required .akka.cluster.ddata.GCounter increments = 1;</code>
+       * @return Whether the increments field is set.
        */
       public boolean hasIncrements() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.GCounter increments = 1;</code>
+       * @return The increments.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter getIncrements() {
         if (incrementsBuilder_ == null) {
@@ -9218,12 +9498,14 @@ public final class ReplicatedDataMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounterOrBuilder> decrementsBuilder_;
       /**
        * <code>required .akka.cluster.ddata.GCounter decrements = 2;</code>
+       * @return Whether the decrements field is set.
        */
       public boolean hasDecrements() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.GCounter decrements = 2;</code>
+       * @return The decrements.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.GCounter getDecrements() {
         if (decrementsBuilder_ == null) {
@@ -9389,10 +9671,12 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return Whether the keys field is set.
      */
     boolean hasKeys();
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return The keys.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys();
     /**
@@ -9534,24 +9818,29 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return Whether the stringKey field is set.
        */
       boolean hasStringKey();
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The stringKey.
        */
       java.lang.String getStringKey();
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The bytes for stringKey.
        */
       akka.protobufv3.internal.ByteString
           getStringKeyBytes();
 
       /**
        * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * @return Whether the value field is set.
        */
       boolean hasValue();
       /**
        * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * @return The value.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getValue();
       /**
@@ -9561,28 +9850,34 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return Whether the intKey field is set.
        */
       boolean hasIntKey();
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return The intKey.
        */
       int getIntKey();
 
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return Whether the longKey field is set.
        */
       boolean hasLongKey();
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return The longKey.
        */
       long getLongKey();
 
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return Whether the otherKey field is set.
        */
       boolean hasOtherKey();
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return The otherKey.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey();
       /**
@@ -9716,12 +10011,14 @@ public final class ReplicatedDataMessages {
       private volatile java.lang.Object stringKey_;
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return Whether the stringKey field is set.
        */
       public boolean hasStringKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The stringKey.
        */
       public java.lang.String getStringKey() {
         java.lang.Object ref = stringKey_;
@@ -9739,6 +10036,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The bytes for stringKey.
        */
       public akka.protobufv3.internal.ByteString
           getStringKeyBytes() {
@@ -9758,12 +10056,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * @return The value.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getValue() {
         return value_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : value_;
@@ -9779,12 +10079,14 @@ public final class ReplicatedDataMessages {
       private int intKey_;
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return Whether the intKey field is set.
        */
       public boolean hasIntKey() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return The intKey.
        */
       public int getIntKey() {
         return intKey_;
@@ -9794,12 +10096,14 @@ public final class ReplicatedDataMessages {
       private long longKey_;
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return Whether the longKey field is set.
        */
       public boolean hasLongKey() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return The longKey.
        */
       public long getLongKey() {
         return longKey_;
@@ -9809,12 +10113,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return Whether the otherKey field is set.
        */
       public boolean hasOtherKey() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return The otherKey.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
         return otherKey_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : otherKey_;
@@ -10288,12 +10594,14 @@ public final class ReplicatedDataMessages {
         private java.lang.Object stringKey_ = "";
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return Whether the stringKey field is set.
          */
         public boolean hasStringKey() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return The stringKey.
          */
         public java.lang.String getStringKey() {
           java.lang.Object ref = stringKey_;
@@ -10311,6 +10619,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return The bytes for stringKey.
          */
         public akka.protobufv3.internal.ByteString
             getStringKeyBytes() {
@@ -10327,6 +10636,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @param value The stringKey to set.
+         * @return This builder for chaining.
          */
         public Builder setStringKey(
             java.lang.String value) {
@@ -10340,6 +10651,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearStringKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -10349,6 +10661,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @param value The bytes for stringKey to set.
+         * @return This builder for chaining.
          */
         public Builder setStringKeyBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -10366,12 +10680,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> valueBuilder_;
         /**
          * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * @return Whether the value field is set.
          */
         public boolean hasValue() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * @return The value.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getValue() {
           if (valueBuilder_ == null) {
@@ -10482,18 +10798,22 @@ public final class ReplicatedDataMessages {
         private int intKey_ ;
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return Whether the intKey field is set.
          */
         public boolean hasIntKey() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return The intKey.
          */
         public int getIntKey() {
           return intKey_;
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @param value The intKey to set.
+         * @return This builder for chaining.
          */
         public Builder setIntKey(int value) {
           bitField0_ |= 0x00000004;
@@ -10503,6 +10823,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return This builder for chaining.
          */
         public Builder clearIntKey() {
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -10514,18 +10835,22 @@ public final class ReplicatedDataMessages {
         private long longKey_ ;
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return Whether the longKey field is set.
          */
         public boolean hasLongKey() {
           return ((bitField0_ & 0x00000008) != 0);
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return The longKey.
          */
         public long getLongKey() {
           return longKey_;
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @param value The longKey to set.
+         * @return This builder for chaining.
          */
         public Builder setLongKey(long value) {
           bitField0_ |= 0x00000008;
@@ -10535,6 +10860,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return This builder for chaining.
          */
         public Builder clearLongKey() {
           bitField0_ = (bitField0_ & ~0x00000008);
@@ -10548,12 +10874,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> otherKeyBuilder_;
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         * @return Whether the otherKey field is set.
          */
         public boolean hasOtherKey() {
           return ((bitField0_ & 0x00000010) != 0);
         }
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         * @return The otherKey.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
           if (otherKeyBuilder_ == null) {
@@ -10718,12 +11046,14 @@ public final class ReplicatedDataMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet keys_;
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return Whether the keys field is set.
      */
     public boolean hasKeys() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return The keys.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys() {
       return keys_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.getDefaultInstance() : keys_;
@@ -11178,12 +11508,14 @@ public final class ReplicatedDataMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetOrBuilder> keysBuilder_;
       /**
        * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+       * @return Whether the keys field is set.
        */
       public boolean hasKeys() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+       * @return The keys.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys() {
         if (keysBuilder_ == null) {
@@ -11708,24 +12040,29 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return Whether the stringKey field is set.
        */
       boolean hasStringKey();
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The stringKey.
        */
       java.lang.String getStringKey();
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The bytes for stringKey.
        */
       akka.protobufv3.internal.ByteString
           getStringKeyBytes();
 
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * @return Whether the value field is set.
        */
       boolean hasValue();
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * @return The value.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getValue();
       /**
@@ -11735,28 +12072,34 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return Whether the intKey field is set.
        */
       boolean hasIntKey();
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return The intKey.
        */
       int getIntKey();
 
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return Whether the longKey field is set.
        */
       boolean hasLongKey();
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return The longKey.
        */
       long getLongKey();
 
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return Whether the otherKey field is set.
        */
       boolean hasOtherKey();
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return The otherKey.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey();
       /**
@@ -11890,12 +12233,14 @@ public final class ReplicatedDataMessages {
       private volatile java.lang.Object stringKey_;
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return Whether the stringKey field is set.
        */
       public boolean hasStringKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The stringKey.
        */
       public java.lang.String getStringKey() {
         java.lang.Object ref = stringKey_;
@@ -11913,6 +12258,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The bytes for stringKey.
        */
       public akka.protobufv3.internal.ByteString
           getStringKeyBytes() {
@@ -11932,12 +12278,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage value_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
+       * @return The value.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getValue() {
         return value_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : value_;
@@ -11953,12 +12301,14 @@ public final class ReplicatedDataMessages {
       private int intKey_;
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return Whether the intKey field is set.
        */
       public boolean hasIntKey() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return The intKey.
        */
       public int getIntKey() {
         return intKey_;
@@ -11968,12 +12318,14 @@ public final class ReplicatedDataMessages {
       private long longKey_;
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return Whether the longKey field is set.
        */
       public boolean hasLongKey() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return The longKey.
        */
       public long getLongKey() {
         return longKey_;
@@ -11983,12 +12335,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return Whether the otherKey field is set.
        */
       public boolean hasOtherKey() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return The otherKey.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
         return otherKey_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : otherKey_;
@@ -12459,12 +12813,14 @@ public final class ReplicatedDataMessages {
         private java.lang.Object stringKey_ = "";
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return Whether the stringKey field is set.
          */
         public boolean hasStringKey() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return The stringKey.
          */
         public java.lang.String getStringKey() {
           java.lang.Object ref = stringKey_;
@@ -12482,6 +12838,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return The bytes for stringKey.
          */
         public akka.protobufv3.internal.ByteString
             getStringKeyBytes() {
@@ -12498,6 +12855,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @param value The stringKey to set.
+         * @return This builder for chaining.
          */
         public Builder setStringKey(
             java.lang.String value) {
@@ -12511,6 +12870,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearStringKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -12520,6 +12880,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @param value The bytes for stringKey to set.
+         * @return This builder for chaining.
          */
         public Builder setStringKeyBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -12537,12 +12899,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> valueBuilder_;
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * @return Whether the value field is set.
          */
         public boolean hasValue() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage value = 2;</code>
+         * @return The value.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getValue() {
           if (valueBuilder_ == null) {
@@ -12653,18 +13017,22 @@ public final class ReplicatedDataMessages {
         private int intKey_ ;
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return Whether the intKey field is set.
          */
         public boolean hasIntKey() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return The intKey.
          */
         public int getIntKey() {
           return intKey_;
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @param value The intKey to set.
+         * @return This builder for chaining.
          */
         public Builder setIntKey(int value) {
           bitField0_ |= 0x00000004;
@@ -12674,6 +13042,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return This builder for chaining.
          */
         public Builder clearIntKey() {
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -12685,18 +13054,22 @@ public final class ReplicatedDataMessages {
         private long longKey_ ;
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return Whether the longKey field is set.
          */
         public boolean hasLongKey() {
           return ((bitField0_ & 0x00000008) != 0);
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return The longKey.
          */
         public long getLongKey() {
           return longKey_;
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @param value The longKey to set.
+         * @return This builder for chaining.
          */
         public Builder setLongKey(long value) {
           bitField0_ |= 0x00000008;
@@ -12706,6 +13079,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return This builder for chaining.
          */
         public Builder clearLongKey() {
           bitField0_ = (bitField0_ & ~0x00000008);
@@ -12719,12 +13093,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> otherKeyBuilder_;
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         * @return Whether the otherKey field is set.
          */
         public boolean hasOtherKey() {
           return ((bitField0_ & 0x00000010) != 0);
         }
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         * @return The otherKey.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
           if (otherKeyBuilder_ == null) {
@@ -12890,19 +13266,23 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>required .akka.cluster.ddata.ORMapDeltaOp operation = 1;</code>
+       * @return Whether the operation field is set.
        */
       boolean hasOperation();
       /**
        * <code>required .akka.cluster.ddata.ORMapDeltaOp operation = 1;</code>
+       * @return The operation.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaOp getOperation();
 
       /**
        * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+       * @return Whether the underlying field is set.
        */
       boolean hasUnderlying();
       /**
        * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+       * @return The underlying.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getUnderlying();
       /**
@@ -12912,10 +13292,12 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>required sint32 zeroTag = 3;</code>
+       * @return Whether the zeroTag field is set.
        */
       boolean hasZeroTag();
       /**
        * <code>required sint32 zeroTag = 3;</code>
+       * @return The zeroTag.
        */
       int getZeroTag();
 
@@ -13070,12 +13452,14 @@ public final class ReplicatedDataMessages {
       private int operation_;
       /**
        * <code>required .akka.cluster.ddata.ORMapDeltaOp operation = 1;</code>
+       * @return Whether the operation field is set.
        */
       public boolean hasOperation() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.ORMapDeltaOp operation = 1;</code>
+       * @return The operation.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaOp getOperation() {
         @SuppressWarnings("deprecation")
@@ -13087,12 +13471,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet underlying_;
       /**
        * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+       * @return Whether the underlying field is set.
        */
       public boolean hasUnderlying() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+       * @return The underlying.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getUnderlying() {
         return underlying_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.getDefaultInstance() : underlying_;
@@ -13108,12 +13494,14 @@ public final class ReplicatedDataMessages {
       private int zeroTag_;
       /**
        * <code>required sint32 zeroTag = 3;</code>
+       * @return Whether the zeroTag field is set.
        */
       public boolean hasZeroTag() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required sint32 zeroTag = 3;</code>
+       * @return The zeroTag.
        */
       public int getZeroTag() {
         return zeroTag_;
@@ -13623,12 +14011,14 @@ public final class ReplicatedDataMessages {
         private int operation_ = 0;
         /**
          * <code>required .akka.cluster.ddata.ORMapDeltaOp operation = 1;</code>
+         * @return Whether the operation field is set.
          */
         public boolean hasOperation() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.ORMapDeltaOp operation = 1;</code>
+         * @return The operation.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaOp getOperation() {
           @SuppressWarnings("deprecation")
@@ -13637,6 +14027,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>required .akka.cluster.ddata.ORMapDeltaOp operation = 1;</code>
+         * @param value The operation to set.
+         * @return This builder for chaining.
          */
         public Builder setOperation(akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORMapDeltaOp value) {
           if (value == null) {
@@ -13649,6 +14041,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>required .akka.cluster.ddata.ORMapDeltaOp operation = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearOperation() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -13662,12 +14055,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetOrBuilder> underlyingBuilder_;
         /**
          * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+         * @return Whether the underlying field is set.
          */
         public boolean hasUnderlying() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.ORSet underlying = 2;</code>
+         * @return The underlying.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getUnderlying() {
           if (underlyingBuilder_ == null) {
@@ -13778,18 +14173,22 @@ public final class ReplicatedDataMessages {
         private int zeroTag_ ;
         /**
          * <code>required sint32 zeroTag = 3;</code>
+         * @return Whether the zeroTag field is set.
          */
         public boolean hasZeroTag() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>required sint32 zeroTag = 3;</code>
+         * @return The zeroTag.
          */
         public int getZeroTag() {
           return zeroTag_;
         }
         /**
          * <code>required sint32 zeroTag = 3;</code>
+         * @param value The zeroTag to set.
+         * @return This builder for chaining.
          */
         public Builder setZeroTag(int value) {
           bitField0_ |= 0x00000004;
@@ -13799,6 +14198,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>required sint32 zeroTag = 3;</code>
+         * @return This builder for chaining.
          */
         public Builder clearZeroTag() {
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -14785,10 +15185,12 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return Whether the keys field is set.
      */
     boolean hasKeys();
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return The keys.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys();
     /**
@@ -14930,24 +15332,29 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return Whether the stringKey field is set.
        */
       boolean hasStringKey();
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The stringKey.
        */
       java.lang.String getStringKey();
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The bytes for stringKey.
        */
       akka.protobufv3.internal.ByteString
           getStringKeyBytes();
 
       /**
        * <code>required .akka.cluster.ddata.LWWRegister value = 2;</code>
+       * @return Whether the value field is set.
        */
       boolean hasValue();
       /**
        * <code>required .akka.cluster.ddata.LWWRegister value = 2;</code>
+       * @return The value.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegister getValue();
       /**
@@ -14957,28 +15364,34 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return Whether the intKey field is set.
        */
       boolean hasIntKey();
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return The intKey.
        */
       int getIntKey();
 
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return Whether the longKey field is set.
        */
       boolean hasLongKey();
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return The longKey.
        */
       long getLongKey();
 
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return Whether the otherKey field is set.
        */
       boolean hasOtherKey();
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return The otherKey.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey();
       /**
@@ -15112,12 +15525,14 @@ public final class ReplicatedDataMessages {
       private volatile java.lang.Object stringKey_;
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return Whether the stringKey field is set.
        */
       public boolean hasStringKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The stringKey.
        */
       public java.lang.String getStringKey() {
         java.lang.Object ref = stringKey_;
@@ -15135,6 +15550,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The bytes for stringKey.
        */
       public akka.protobufv3.internal.ByteString
           getStringKeyBytes() {
@@ -15154,12 +15570,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegister value_;
       /**
        * <code>required .akka.cluster.ddata.LWWRegister value = 2;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.LWWRegister value = 2;</code>
+       * @return The value.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegister getValue() {
         return value_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegister.getDefaultInstance() : value_;
@@ -15175,12 +15593,14 @@ public final class ReplicatedDataMessages {
       private int intKey_;
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return Whether the intKey field is set.
        */
       public boolean hasIntKey() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return The intKey.
        */
       public int getIntKey() {
         return intKey_;
@@ -15190,12 +15610,14 @@ public final class ReplicatedDataMessages {
       private long longKey_;
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return Whether the longKey field is set.
        */
       public boolean hasLongKey() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return The longKey.
        */
       public long getLongKey() {
         return longKey_;
@@ -15205,12 +15627,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return Whether the otherKey field is set.
        */
       public boolean hasOtherKey() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return The otherKey.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
         return otherKey_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : otherKey_;
@@ -15684,12 +16108,14 @@ public final class ReplicatedDataMessages {
         private java.lang.Object stringKey_ = "";
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return Whether the stringKey field is set.
          */
         public boolean hasStringKey() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return The stringKey.
          */
         public java.lang.String getStringKey() {
           java.lang.Object ref = stringKey_;
@@ -15707,6 +16133,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return The bytes for stringKey.
          */
         public akka.protobufv3.internal.ByteString
             getStringKeyBytes() {
@@ -15723,6 +16150,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @param value The stringKey to set.
+         * @return This builder for chaining.
          */
         public Builder setStringKey(
             java.lang.String value) {
@@ -15736,6 +16165,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearStringKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -15745,6 +16175,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @param value The bytes for stringKey to set.
+         * @return This builder for chaining.
          */
         public Builder setStringKeyBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -15762,12 +16194,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegister, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegister.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegisterOrBuilder> valueBuilder_;
         /**
          * <code>required .akka.cluster.ddata.LWWRegister value = 2;</code>
+         * @return Whether the value field is set.
          */
         public boolean hasValue() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.LWWRegister value = 2;</code>
+         * @return The value.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.LWWRegister getValue() {
           if (valueBuilder_ == null) {
@@ -15878,18 +16312,22 @@ public final class ReplicatedDataMessages {
         private int intKey_ ;
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return Whether the intKey field is set.
          */
         public boolean hasIntKey() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return The intKey.
          */
         public int getIntKey() {
           return intKey_;
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @param value The intKey to set.
+         * @return This builder for chaining.
          */
         public Builder setIntKey(int value) {
           bitField0_ |= 0x00000004;
@@ -15899,6 +16337,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return This builder for chaining.
          */
         public Builder clearIntKey() {
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -15910,18 +16349,22 @@ public final class ReplicatedDataMessages {
         private long longKey_ ;
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return Whether the longKey field is set.
          */
         public boolean hasLongKey() {
           return ((bitField0_ & 0x00000008) != 0);
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return The longKey.
          */
         public long getLongKey() {
           return longKey_;
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @param value The longKey to set.
+         * @return This builder for chaining.
          */
         public Builder setLongKey(long value) {
           bitField0_ |= 0x00000008;
@@ -15931,6 +16374,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return This builder for chaining.
          */
         public Builder clearLongKey() {
           bitField0_ = (bitField0_ & ~0x00000008);
@@ -15944,12 +16388,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> otherKeyBuilder_;
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         * @return Whether the otherKey field is set.
          */
         public boolean hasOtherKey() {
           return ((bitField0_ & 0x00000010) != 0);
         }
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         * @return The otherKey.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
           if (otherKeyBuilder_ == null) {
@@ -16114,12 +16560,14 @@ public final class ReplicatedDataMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet keys_;
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return Whether the keys field is set.
      */
     public boolean hasKeys() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return The keys.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys() {
       return keys_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.getDefaultInstance() : keys_;
@@ -16574,12 +17022,14 @@ public final class ReplicatedDataMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetOrBuilder> keysBuilder_;
       /**
        * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+       * @return Whether the keys field is set.
        */
       public boolean hasKeys() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+       * @return The keys.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys() {
         if (keysBuilder_ == null) {
@@ -16985,10 +17435,12 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return Whether the keys field is set.
      */
     boolean hasKeys();
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return The keys.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys();
     /**
@@ -17130,24 +17582,29 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return Whether the stringKey field is set.
        */
       boolean hasStringKey();
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The stringKey.
        */
       java.lang.String getStringKey();
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The bytes for stringKey.
        */
       akka.protobufv3.internal.ByteString
           getStringKeyBytes();
 
       /**
        * <code>required .akka.cluster.ddata.PNCounter value = 2;</code>
+       * @return Whether the value field is set.
        */
       boolean hasValue();
       /**
        * <code>required .akka.cluster.ddata.PNCounter value = 2;</code>
+       * @return The value.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounter getValue();
       /**
@@ -17157,28 +17614,34 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return Whether the intKey field is set.
        */
       boolean hasIntKey();
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return The intKey.
        */
       int getIntKey();
 
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return Whether the longKey field is set.
        */
       boolean hasLongKey();
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return The longKey.
        */
       long getLongKey();
 
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return Whether the otherKey field is set.
        */
       boolean hasOtherKey();
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return The otherKey.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey();
       /**
@@ -17312,12 +17775,14 @@ public final class ReplicatedDataMessages {
       private volatile java.lang.Object stringKey_;
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return Whether the stringKey field is set.
        */
       public boolean hasStringKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The stringKey.
        */
       public java.lang.String getStringKey() {
         java.lang.Object ref = stringKey_;
@@ -17335,6 +17800,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The bytes for stringKey.
        */
       public akka.protobufv3.internal.ByteString
           getStringKeyBytes() {
@@ -17354,12 +17820,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounter value_;
       /**
        * <code>required .akka.cluster.ddata.PNCounter value = 2;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.PNCounter value = 2;</code>
+       * @return The value.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounter getValue() {
         return value_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounter.getDefaultInstance() : value_;
@@ -17375,12 +17843,14 @@ public final class ReplicatedDataMessages {
       private int intKey_;
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return Whether the intKey field is set.
        */
       public boolean hasIntKey() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return The intKey.
        */
       public int getIntKey() {
         return intKey_;
@@ -17390,12 +17860,14 @@ public final class ReplicatedDataMessages {
       private long longKey_;
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return Whether the longKey field is set.
        */
       public boolean hasLongKey() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return The longKey.
        */
       public long getLongKey() {
         return longKey_;
@@ -17405,12 +17877,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return Whether the otherKey field is set.
        */
       public boolean hasOtherKey() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return The otherKey.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
         return otherKey_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : otherKey_;
@@ -17884,12 +18358,14 @@ public final class ReplicatedDataMessages {
         private java.lang.Object stringKey_ = "";
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return Whether the stringKey field is set.
          */
         public boolean hasStringKey() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return The stringKey.
          */
         public java.lang.String getStringKey() {
           java.lang.Object ref = stringKey_;
@@ -17907,6 +18383,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return The bytes for stringKey.
          */
         public akka.protobufv3.internal.ByteString
             getStringKeyBytes() {
@@ -17923,6 +18400,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @param value The stringKey to set.
+         * @return This builder for chaining.
          */
         public Builder setStringKey(
             java.lang.String value) {
@@ -17936,6 +18415,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearStringKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -17945,6 +18425,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @param value The bytes for stringKey to set.
+         * @return This builder for chaining.
          */
         public Builder setStringKeyBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -17962,12 +18444,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounter, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounter.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounterOrBuilder> valueBuilder_;
         /**
          * <code>required .akka.cluster.ddata.PNCounter value = 2;</code>
+         * @return Whether the value field is set.
          */
         public boolean hasValue() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.PNCounter value = 2;</code>
+         * @return The value.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.PNCounter getValue() {
           if (valueBuilder_ == null) {
@@ -18078,18 +18562,22 @@ public final class ReplicatedDataMessages {
         private int intKey_ ;
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return Whether the intKey field is set.
          */
         public boolean hasIntKey() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return The intKey.
          */
         public int getIntKey() {
           return intKey_;
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @param value The intKey to set.
+         * @return This builder for chaining.
          */
         public Builder setIntKey(int value) {
           bitField0_ |= 0x00000004;
@@ -18099,6 +18587,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return This builder for chaining.
          */
         public Builder clearIntKey() {
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -18110,18 +18599,22 @@ public final class ReplicatedDataMessages {
         private long longKey_ ;
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return Whether the longKey field is set.
          */
         public boolean hasLongKey() {
           return ((bitField0_ & 0x00000008) != 0);
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return The longKey.
          */
         public long getLongKey() {
           return longKey_;
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @param value The longKey to set.
+         * @return This builder for chaining.
          */
         public Builder setLongKey(long value) {
           bitField0_ |= 0x00000008;
@@ -18131,6 +18624,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return This builder for chaining.
          */
         public Builder clearLongKey() {
           bitField0_ = (bitField0_ & ~0x00000008);
@@ -18144,12 +18638,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> otherKeyBuilder_;
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         * @return Whether the otherKey field is set.
          */
         public boolean hasOtherKey() {
           return ((bitField0_ & 0x00000010) != 0);
         }
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         * @return The otherKey.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
           if (otherKeyBuilder_ == null) {
@@ -18314,12 +18810,14 @@ public final class ReplicatedDataMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet keys_;
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return Whether the keys field is set.
      */
     public boolean hasKeys() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return The keys.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys() {
       return keys_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.getDefaultInstance() : keys_;
@@ -18774,12 +19272,14 @@ public final class ReplicatedDataMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetOrBuilder> keysBuilder_;
       /**
        * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+       * @return Whether the keys field is set.
        */
       public boolean hasKeys() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+       * @return The keys.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys() {
         if (keysBuilder_ == null) {
@@ -19185,10 +19685,12 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return Whether the keys field is set.
      */
     boolean hasKeys();
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return The keys.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys();
     /**
@@ -19222,10 +19724,12 @@ public final class ReplicatedDataMessages {
 
     /**
      * <code>optional bool withValueDeltas = 3;</code>
+     * @return Whether the withValueDeltas field is set.
      */
     boolean hasWithValueDeltas();
     /**
      * <code>optional bool withValueDeltas = 3;</code>
+     * @return The withValueDeltas.
      */
     boolean getWithValueDeltas();
   }
@@ -19344,24 +19848,29 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return Whether the stringKey field is set.
        */
       boolean hasStringKey();
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The stringKey.
        */
       java.lang.String getStringKey();
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The bytes for stringKey.
        */
       akka.protobufv3.internal.ByteString
           getStringKeyBytes();
 
       /**
        * <code>required .akka.cluster.ddata.ORSet value = 2;</code>
+       * @return Whether the value field is set.
        */
       boolean hasValue();
       /**
        * <code>required .akka.cluster.ddata.ORSet value = 2;</code>
+       * @return The value.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getValue();
       /**
@@ -19371,28 +19880,34 @@ public final class ReplicatedDataMessages {
 
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return Whether the intKey field is set.
        */
       boolean hasIntKey();
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return The intKey.
        */
       int getIntKey();
 
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return Whether the longKey field is set.
        */
       boolean hasLongKey();
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return The longKey.
        */
       long getLongKey();
 
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return Whether the otherKey field is set.
        */
       boolean hasOtherKey();
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return The otherKey.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey();
       /**
@@ -19526,12 +20041,14 @@ public final class ReplicatedDataMessages {
       private volatile java.lang.Object stringKey_;
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return Whether the stringKey field is set.
        */
       public boolean hasStringKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The stringKey.
        */
       public java.lang.String getStringKey() {
         java.lang.Object ref = stringKey_;
@@ -19549,6 +20066,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>optional string stringKey = 1;</code>
+       * @return The bytes for stringKey.
        */
       public akka.protobufv3.internal.ByteString
           getStringKeyBytes() {
@@ -19568,12 +20086,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet value_;
       /**
        * <code>required .akka.cluster.ddata.ORSet value = 2;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.ORSet value = 2;</code>
+       * @return The value.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getValue() {
         return value_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.getDefaultInstance() : value_;
@@ -19589,12 +20109,14 @@ public final class ReplicatedDataMessages {
       private int intKey_;
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return Whether the intKey field is set.
        */
       public boolean hasIntKey() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional sint32 intKey = 3;</code>
+       * @return The intKey.
        */
       public int getIntKey() {
         return intKey_;
@@ -19604,12 +20126,14 @@ public final class ReplicatedDataMessages {
       private long longKey_;
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return Whether the longKey field is set.
        */
       public boolean hasLongKey() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional sint64 longKey = 4;</code>
+       * @return The longKey.
        */
       public long getLongKey() {
         return longKey_;
@@ -19619,12 +20143,14 @@ public final class ReplicatedDataMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage otherKey_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return Whether the otherKey field is set.
        */
       public boolean hasOtherKey() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+       * @return The otherKey.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
         return otherKey_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : otherKey_;
@@ -20098,12 +20624,14 @@ public final class ReplicatedDataMessages {
         private java.lang.Object stringKey_ = "";
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return Whether the stringKey field is set.
          */
         public boolean hasStringKey() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return The stringKey.
          */
         public java.lang.String getStringKey() {
           java.lang.Object ref = stringKey_;
@@ -20121,6 +20649,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return The bytes for stringKey.
          */
         public akka.protobufv3.internal.ByteString
             getStringKeyBytes() {
@@ -20137,6 +20666,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @param value The stringKey to set.
+         * @return This builder for chaining.
          */
         public Builder setStringKey(
             java.lang.String value) {
@@ -20150,6 +20681,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearStringKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -20159,6 +20691,8 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional string stringKey = 1;</code>
+         * @param value The bytes for stringKey to set.
+         * @return This builder for chaining.
          */
         public Builder setStringKeyBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -20176,12 +20710,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetOrBuilder> valueBuilder_;
         /**
          * <code>required .akka.cluster.ddata.ORSet value = 2;</code>
+         * @return Whether the value field is set.
          */
         public boolean hasValue() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.ORSet value = 2;</code>
+         * @return The value.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getValue() {
           if (valueBuilder_ == null) {
@@ -20292,18 +20828,22 @@ public final class ReplicatedDataMessages {
         private int intKey_ ;
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return Whether the intKey field is set.
          */
         public boolean hasIntKey() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return The intKey.
          */
         public int getIntKey() {
           return intKey_;
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @param value The intKey to set.
+         * @return This builder for chaining.
          */
         public Builder setIntKey(int value) {
           bitField0_ |= 0x00000004;
@@ -20313,6 +20853,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional sint32 intKey = 3;</code>
+         * @return This builder for chaining.
          */
         public Builder clearIntKey() {
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -20324,18 +20865,22 @@ public final class ReplicatedDataMessages {
         private long longKey_ ;
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return Whether the longKey field is set.
          */
         public boolean hasLongKey() {
           return ((bitField0_ & 0x00000008) != 0);
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return The longKey.
          */
         public long getLongKey() {
           return longKey_;
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @param value The longKey to set.
+         * @return This builder for chaining.
          */
         public Builder setLongKey(long value) {
           bitField0_ |= 0x00000008;
@@ -20345,6 +20890,7 @@ public final class ReplicatedDataMessages {
         }
         /**
          * <code>optional sint64 longKey = 4;</code>
+         * @return This builder for chaining.
          */
         public Builder clearLongKey() {
           bitField0_ = (bitField0_ & ~0x00000008);
@@ -20358,12 +20904,14 @@ public final class ReplicatedDataMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> otherKeyBuilder_;
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         * @return Whether the otherKey field is set.
          */
         public boolean hasOtherKey() {
           return ((bitField0_ & 0x00000010) != 0);
         }
         /**
          * <code>optional .akka.cluster.ddata.OtherMessage otherKey = 5;</code>
+         * @return The otherKey.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getOtherKey() {
           if (otherKeyBuilder_ == null) {
@@ -20528,12 +21076,14 @@ public final class ReplicatedDataMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet keys_;
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return Whether the keys field is set.
      */
     public boolean hasKeys() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+     * @return The keys.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys() {
       return keys_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.getDefaultInstance() : keys_;
@@ -20584,12 +21134,14 @@ public final class ReplicatedDataMessages {
     private boolean withValueDeltas_;
     /**
      * <code>optional bool withValueDeltas = 3;</code>
+     * @return Whether the withValueDeltas field is set.
      */
     public boolean hasWithValueDeltas() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional bool withValueDeltas = 3;</code>
+     * @return The withValueDeltas.
      */
     public boolean getWithValueDeltas() {
       return withValueDeltas_;
@@ -21029,12 +21581,14 @@ public final class ReplicatedDataMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet.Builder, akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSetOrBuilder> keysBuilder_;
       /**
        * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+       * @return Whether the keys field is set.
        */
       public boolean hasKeys() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.ORSet keys = 1;</code>
+       * @return The keys.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatedDataMessages.ORSet getKeys() {
         if (keysBuilder_ == null) {
@@ -21385,18 +21939,22 @@ public final class ReplicatedDataMessages {
       private boolean withValueDeltas_ ;
       /**
        * <code>optional bool withValueDeltas = 3;</code>
+       * @return Whether the withValueDeltas field is set.
        */
       public boolean hasWithValueDeltas() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bool withValueDeltas = 3;</code>
+       * @return The withValueDeltas.
        */
       public boolean getWithValueDeltas() {
         return withValueDeltas_;
       }
       /**
        * <code>optional bool withValueDeltas = 3;</code>
+       * @param value The withValueDeltas to set.
+       * @return This builder for chaining.
        */
       public Builder setWithValueDeltas(boolean value) {
         bitField0_ |= 0x00000004;
@@ -21406,6 +21964,7 @@ public final class ReplicatedDataMessages {
       }
       /**
        * <code>optional bool withValueDeltas = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearWithValueDeltas() {
         bitField0_ = (bitField0_ & ~0x00000004);

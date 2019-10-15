@@ -70,7 +70,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
           Behaviors.receiveMessage[Request] {
             case Request(query, replyTo) =>
               // ... process query ...
-              replyTo ! Response(s"Here's the cookies for [$query]!")
+              replyTo ! Response(s"Here are the cookies for [$query]!")
               Behaviors.same
           }
         // #request-response-respond
@@ -410,10 +410,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     import akka.actor.typed.scaladsl.AskPattern._
     import akka.util.Timeout
 
-    // asking someone requires a timeout and a scheduler, if the timeout hits without response
+    // asking someone requires a timeout if the timeout hits without response
     // the ask is failed with a TimeoutException
     implicit val timeout: Timeout = 3.seconds
-    implicit val scheduler = system.scheduler
 
     val result: Future[CookieFabric.Cookies] = cookieFabric.ask(ref => CookieFabric.GiveMeCookies(ref))
 

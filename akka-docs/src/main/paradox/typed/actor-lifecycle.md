@@ -80,7 +80,7 @@ Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
 
 For very simple applications the guardian may contain the actual application logic and handle messages. As soon as the application
-handles more than one concern the the guardian should instead just bootstrap the application, spawn the various subsystems as 
+handles more than one concern the guardian should instead just bootstrap the application, spawn the various subsystems as
 children and monitor their lifecycles.
 
 When the guardian actor stops this will stop the `ActorSystem`.
@@ -159,14 +159,14 @@ A way to find running actors is described in @ref:[Actor discovery](actor-discov
 
 An actor can stop itself by returning `Behaviors.stopped` as the next behavior.
 
-Child actors can be forced to be stopped after it finishes processing its current message by using the
+A child actor can be forced to stop after it finishes processing its current message by using the
 `stop` method of the `ActorContext` from the parent actor. Only child actors can be stopped in that way.
 
-The child actors will be stopped as part of the shutdown procedure of the parent.
+All child actors will be stopped when their parent is stopped.
 
-The `PostStop` signal that results from stopping an actor can be used for cleaning up resources. Note that
-a behavior that handles such `PostStop` signal can optionally be defined as a parameter to `Behaviors.stopped`
-if different actions is needed when the actor gracefully stops itself from when it is stopped abruptly.
+When an actor is stopped, it receives the `PostStop` signal that can be used for cleaning up resources.
+A callback function may be specified as parameter to `Behaviors.stopped` to handle the `PostStop` signal 
+when stopping gracefully. This allows to apply different actions from when it is stopped abruptly.
 
 Here is an illustrating example:
 

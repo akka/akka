@@ -171,7 +171,7 @@ class EventSourcedBehaviorStashSpec
   import EventSourcedBehaviorStashSpec._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   "A typed persistent actor that is stashing commands" must {
 
@@ -447,7 +447,7 @@ class EventSourcedBehaviorStashSpec
     }
 
     "preserve internal stash when persist failed" in {
-      val c = spawn(counter(PersistenceId("fail-fifth-a")))
+      val c = spawn(counter(PersistenceId.ofUniqueId("fail-fifth-a")))
       val ackProbe = TestProbe[Ack]
       val stateProbe = TestProbe[State]
 
@@ -465,7 +465,7 @@ class EventSourcedBehaviorStashSpec
     }
 
     "preserve user stash when persist failed" in {
-      val c = spawn(counter(PersistenceId("fail-fifth-b")))
+      val c = spawn(counter(PersistenceId.ofUniqueId("fail-fifth-b")))
       val ackProbe = TestProbe[Ack]
       val stateProbe = TestProbe[State]
 
@@ -502,7 +502,7 @@ class EventSourcedBehaviorStashSpec
       system.toClassic.eventStream.subscribe(probe.ref.toClassic, classOf[Dropped])
       val behavior = Behaviors.setup[String] { context =>
         EventSourcedBehavior[String, String, Boolean](
-          persistenceId = PersistenceId("stash-is-full-drop"),
+          persistenceId = PersistenceId.ofUniqueId("stash-is-full-drop"),
           emptyState = false,
           commandHandler = { (state, command) =>
             state match {
@@ -542,7 +542,7 @@ class EventSourcedBehaviorStashSpec
       c ! "start-stashing"
 
       val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
-      LoggingEventFilter.warn("Stash buffer is full, dropping message").intercept {
+      LoggingTestKit.warn("Stash buffer is full, dropping message").intercept {
         (0 to limit).foreach { n =>
           c ! s"cmd-$n" // limit triggers overflow
         }
@@ -570,13 +570,17 @@ class EventSourcedBehaviorStashSpec
       try {
         val probe = failStashTestKit.createTestProbe[AnyRef]()
         val behavior =
-          EventSourcedBehavior[String, String, String](PersistenceId("stash-is-full-fail"), "", commandHandler = {
-            case (_, "ping") =>
-              probe.ref ! "pong"
-              Effect.none
-            case (_, _) =>
-              Effect.stash()
-          }, (state, _) => state)
+          EventSourcedBehavior[String, String, String](
+            PersistenceId.ofUniqueId("stash-is-full-fail"),
+            "",
+            commandHandler = {
+              case (_, "ping") =>
+                probe.ref ! "pong"
+                Effect.none
+              case (_, _) =>
+                Effect.stash()
+            },
+            (state, _) => state)
 
         val c = failStashTestKit.spawn(behavior)
 
@@ -584,7 +588,7 @@ class EventSourcedBehaviorStashSpec
         c ! "ping"
         probe.expectMessage("pong")
 
-        LoggingEventFilter
+        LoggingTestKit
           .error[StashOverflowException]
           .intercept {
             val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")

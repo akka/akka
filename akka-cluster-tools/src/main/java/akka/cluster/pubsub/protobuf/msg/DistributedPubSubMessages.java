@@ -48,10 +48,12 @@ public final class DistributedPubSubMessages {
 
     /**
      * <code>optional bool replyToStatus = 2;</code>
+     * @return Whether the replyToStatus field is set.
      */
     boolean hasReplyToStatus();
     /**
      * <code>optional bool replyToStatus = 2;</code>
+     * @return The replyToStatus.
      */
     boolean getReplyToStatus();
   }
@@ -157,10 +159,12 @@ public final class DistributedPubSubMessages {
 
       /**
        * <code>required .Address address = 1;</code>
+       * @return Whether the address field is set.
        */
       boolean hasAddress();
       /**
        * <code>required .Address address = 1;</code>
+       * @return The address.
        */
       akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address getAddress();
       /**
@@ -170,10 +174,12 @@ public final class DistributedPubSubMessages {
 
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return Whether the timestamp field is set.
        */
       boolean hasTimestamp();
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return The timestamp.
        */
       long getTimestamp();
     }
@@ -278,12 +284,14 @@ public final class DistributedPubSubMessages {
       private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address address_;
       /**
        * <code>required .Address address = 1;</code>
+       * @return Whether the address field is set.
        */
       public boolean hasAddress() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Address address = 1;</code>
+       * @return The address.
        */
       public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address getAddress() {
         return address_ == null ? akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.getDefaultInstance() : address_;
@@ -299,12 +307,14 @@ public final class DistributedPubSubMessages {
       private long timestamp_;
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return Whether the timestamp field is set.
        */
       public boolean hasTimestamp() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int64 timestamp = 2;</code>
+       * @return The timestamp.
        */
       public long getTimestamp() {
         return timestamp_;
@@ -685,12 +695,14 @@ public final class DistributedPubSubMessages {
             akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.AddressOrBuilder> addressBuilder_;
         /**
          * <code>required .Address address = 1;</code>
+         * @return Whether the address field is set.
          */
         public boolean hasAddress() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required .Address address = 1;</code>
+         * @return The address.
          */
         public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address getAddress() {
           if (addressBuilder_ == null) {
@@ -801,18 +813,22 @@ public final class DistributedPubSubMessages {
         private long timestamp_ ;
         /**
          * <code>required int64 timestamp = 2;</code>
+         * @return Whether the timestamp field is set.
          */
         public boolean hasTimestamp() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required int64 timestamp = 2;</code>
+         * @return The timestamp.
          */
         public long getTimestamp() {
           return timestamp_;
         }
         /**
          * <code>required int64 timestamp = 2;</code>
+         * @param value The timestamp to set.
+         * @return This builder for chaining.
          */
         public Builder setTimestamp(long value) {
           bitField0_ |= 0x00000002;
@@ -822,6 +838,7 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>required int64 timestamp = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearTimestamp() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -922,12 +939,14 @@ public final class DistributedPubSubMessages {
     private boolean replyToStatus_;
     /**
      * <code>optional bool replyToStatus = 2;</code>
+     * @return Whether the replyToStatus field is set.
      */
     public boolean hasReplyToStatus() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional bool replyToStatus = 2;</code>
+     * @return The replyToStatus.
      */
     public boolean getReplyToStatus() {
       return replyToStatus_;
@@ -1557,18 +1576,22 @@ public final class DistributedPubSubMessages {
       private boolean replyToStatus_ ;
       /**
        * <code>optional bool replyToStatus = 2;</code>
+       * @return Whether the replyToStatus field is set.
        */
       public boolean hasReplyToStatus() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional bool replyToStatus = 2;</code>
+       * @return The replyToStatus.
        */
       public boolean getReplyToStatus() {
         return replyToStatus_;
       }
       /**
        * <code>optional bool replyToStatus = 2;</code>
+       * @param value The replyToStatus to set.
+       * @return This builder for chaining.
        */
       public Builder setReplyToStatus(boolean value) {
         bitField0_ |= 0x00000002;
@@ -1578,6 +1601,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>optional bool replyToStatus = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearReplyToStatus() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -1763,37 +1787,45 @@ public final class DistributedPubSubMessages {
 
       /**
        * <code>required string key = 1;</code>
+       * @return Whether the key field is set.
        */
       boolean hasKey();
       /**
        * <code>required string key = 1;</code>
+       * @return The key.
        */
       java.lang.String getKey();
       /**
        * <code>required string key = 1;</code>
+       * @return The bytes for key.
        */
       akka.protobufv3.internal.ByteString
           getKeyBytes();
 
       /**
        * <code>required int64 version = 2;</code>
+       * @return Whether the version field is set.
        */
       boolean hasVersion();
       /**
        * <code>required int64 version = 2;</code>
+       * @return The version.
        */
       long getVersion();
 
       /**
        * <code>optional string ref = 3;</code>
+       * @return Whether the ref field is set.
        */
       boolean hasRef();
       /**
        * <code>optional string ref = 3;</code>
+       * @return The ref.
        */
       java.lang.String getRef();
       /**
        * <code>optional string ref = 3;</code>
+       * @return The bytes for ref.
        */
       akka.protobufv3.internal.ByteString
           getRefBytes();
@@ -1900,12 +1932,14 @@ public final class DistributedPubSubMessages {
       private volatile java.lang.Object key_;
       /**
        * <code>required string key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The key.
        */
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
@@ -1923,6 +1957,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The bytes for key.
        */
       public akka.protobufv3.internal.ByteString
           getKeyBytes() {
@@ -1942,12 +1977,14 @@ public final class DistributedPubSubMessages {
       private long version_;
       /**
        * <code>required int64 version = 2;</code>
+       * @return Whether the version field is set.
        */
       public boolean hasVersion() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int64 version = 2;</code>
+       * @return The version.
        */
       public long getVersion() {
         return version_;
@@ -1957,12 +1994,14 @@ public final class DistributedPubSubMessages {
       private volatile java.lang.Object ref_;
       /**
        * <code>optional string ref = 3;</code>
+       * @return Whether the ref field is set.
        */
       public boolean hasRef() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional string ref = 3;</code>
+       * @return The ref.
        */
       public java.lang.String getRef() {
         java.lang.Object ref = ref_;
@@ -1980,6 +2019,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>optional string ref = 3;</code>
+       * @return The bytes for ref.
        */
       public akka.protobufv3.internal.ByteString
           getRefBytes() {
@@ -2379,12 +2419,14 @@ public final class DistributedPubSubMessages {
         private java.lang.Object key_ = "";
         /**
          * <code>required string key = 1;</code>
+         * @return Whether the key field is set.
          */
         public boolean hasKey() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required string key = 1;</code>
+         * @return The key.
          */
         public java.lang.String getKey() {
           java.lang.Object ref = key_;
@@ -2402,6 +2444,7 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @return The bytes for key.
          */
         public akka.protobufv3.internal.ByteString
             getKeyBytes() {
@@ -2418,6 +2461,8 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @param value The key to set.
+         * @return This builder for chaining.
          */
         public Builder setKey(
             java.lang.String value) {
@@ -2431,6 +2476,7 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -2440,6 +2486,8 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @param value The bytes for key to set.
+         * @return This builder for chaining.
          */
         public Builder setKeyBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -2455,18 +2503,22 @@ public final class DistributedPubSubMessages {
         private long version_ ;
         /**
          * <code>required int64 version = 2;</code>
+         * @return Whether the version field is set.
          */
         public boolean hasVersion() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required int64 version = 2;</code>
+         * @return The version.
          */
         public long getVersion() {
           return version_;
         }
         /**
          * <code>required int64 version = 2;</code>
+         * @param value The version to set.
+         * @return This builder for chaining.
          */
         public Builder setVersion(long value) {
           bitField0_ |= 0x00000002;
@@ -2476,6 +2528,7 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>required int64 version = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearVersion() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -2487,12 +2540,14 @@ public final class DistributedPubSubMessages {
         private java.lang.Object ref_ = "";
         /**
          * <code>optional string ref = 3;</code>
+         * @return Whether the ref field is set.
          */
         public boolean hasRef() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>optional string ref = 3;</code>
+         * @return The ref.
          */
         public java.lang.String getRef() {
           java.lang.Object ref = ref_;
@@ -2510,6 +2565,7 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>optional string ref = 3;</code>
+         * @return The bytes for ref.
          */
         public akka.protobufv3.internal.ByteString
             getRefBytes() {
@@ -2526,6 +2582,8 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>optional string ref = 3;</code>
+         * @param value The ref to set.
+         * @return This builder for chaining.
          */
         public Builder setRef(
             java.lang.String value) {
@@ -2539,6 +2597,7 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>optional string ref = 3;</code>
+         * @return This builder for chaining.
          */
         public Builder clearRef() {
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -2548,6 +2607,8 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>optional string ref = 3;</code>
+         * @param value The bytes for ref to set.
+         * @return This builder for chaining.
          */
         public Builder setRefBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -2618,10 +2679,12 @@ public final class DistributedPubSubMessages {
 
       /**
        * <code>required .Address owner = 1;</code>
+       * @return Whether the owner field is set.
        */
       boolean hasOwner();
       /**
        * <code>required .Address owner = 1;</code>
+       * @return The owner.
        */
       akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address getOwner();
       /**
@@ -2631,10 +2694,12 @@ public final class DistributedPubSubMessages {
 
       /**
        * <code>required int64 version = 2;</code>
+       * @return Whether the version field is set.
        */
       boolean hasVersion();
       /**
        * <code>required int64 version = 2;</code>
+       * @return The version.
        */
       long getVersion();
 
@@ -2776,12 +2841,14 @@ public final class DistributedPubSubMessages {
       private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address owner_;
       /**
        * <code>required .Address owner = 1;</code>
+       * @return Whether the owner field is set.
        */
       public boolean hasOwner() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Address owner = 1;</code>
+       * @return The owner.
        */
       public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address getOwner() {
         return owner_ == null ? akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.getDefaultInstance() : owner_;
@@ -2797,12 +2864,14 @@ public final class DistributedPubSubMessages {
       private long version_;
       /**
        * <code>required int64 version = 2;</code>
+       * @return Whether the version field is set.
        */
       public boolean hasVersion() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int64 version = 2;</code>
+       * @return The version.
        */
       public long getVersion() {
         return version_;
@@ -3284,12 +3353,14 @@ public final class DistributedPubSubMessages {
             akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.AddressOrBuilder> ownerBuilder_;
         /**
          * <code>required .Address owner = 1;</code>
+         * @return Whether the owner field is set.
          */
         public boolean hasOwner() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required .Address owner = 1;</code>
+         * @return The owner.
          */
         public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Address getOwner() {
           if (ownerBuilder_ == null) {
@@ -3400,18 +3471,22 @@ public final class DistributedPubSubMessages {
         private long version_ ;
         /**
          * <code>required int64 version = 2;</code>
+         * @return Whether the version field is set.
          */
         public boolean hasVersion() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required int64 version = 2;</code>
+         * @return The version.
          */
         public long getVersion() {
           return version_;
         }
         /**
          * <code>required int64 version = 2;</code>
+         * @param value The version to set.
+         * @return This builder for chaining.
          */
         public Builder setVersion(long value) {
           bitField0_ |= 0x00000002;
@@ -3421,6 +3496,7 @@ public final class DistributedPubSubMessages {
         }
         /**
          * <code>required int64 version = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearVersion() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -4407,51 +4483,62 @@ public final class DistributedPubSubMessages {
 
     /**
      * <code>required string system = 1;</code>
+     * @return Whether the system field is set.
      */
     boolean hasSystem();
     /**
      * <code>required string system = 1;</code>
+     * @return The system.
      */
     java.lang.String getSystem();
     /**
      * <code>required string system = 1;</code>
+     * @return The bytes for system.
      */
     akka.protobufv3.internal.ByteString
         getSystemBytes();
 
     /**
      * <code>required string hostname = 2;</code>
+     * @return Whether the hostname field is set.
      */
     boolean hasHostname();
     /**
      * <code>required string hostname = 2;</code>
+     * @return The hostname.
      */
     java.lang.String getHostname();
     /**
      * <code>required string hostname = 2;</code>
+     * @return The bytes for hostname.
      */
     akka.protobufv3.internal.ByteString
         getHostnameBytes();
 
     /**
      * <code>required uint32 port = 3;</code>
+     * @return Whether the port field is set.
      */
     boolean hasPort();
     /**
      * <code>required uint32 port = 3;</code>
+     * @return The port.
      */
     int getPort();
 
     /**
      * <code>optional string protocol = 4;</code>
+     * @return Whether the protocol field is set.
      */
     boolean hasProtocol();
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The protocol.
      */
     java.lang.String getProtocol();
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The bytes for protocol.
      */
     akka.protobufv3.internal.ByteString
         getProtocolBytes();
@@ -4570,12 +4657,14 @@ public final class DistributedPubSubMessages {
     private volatile java.lang.Object system_;
     /**
      * <code>required string system = 1;</code>
+     * @return Whether the system field is set.
      */
     public boolean hasSystem() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string system = 1;</code>
+     * @return The system.
      */
     public java.lang.String getSystem() {
       java.lang.Object ref = system_;
@@ -4593,6 +4682,7 @@ public final class DistributedPubSubMessages {
     }
     /**
      * <code>required string system = 1;</code>
+     * @return The bytes for system.
      */
     public akka.protobufv3.internal.ByteString
         getSystemBytes() {
@@ -4612,12 +4702,14 @@ public final class DistributedPubSubMessages {
     private volatile java.lang.Object hostname_;
     /**
      * <code>required string hostname = 2;</code>
+     * @return Whether the hostname field is set.
      */
     public boolean hasHostname() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string hostname = 2;</code>
+     * @return The hostname.
      */
     public java.lang.String getHostname() {
       java.lang.Object ref = hostname_;
@@ -4635,6 +4727,7 @@ public final class DistributedPubSubMessages {
     }
     /**
      * <code>required string hostname = 2;</code>
+     * @return The bytes for hostname.
      */
     public akka.protobufv3.internal.ByteString
         getHostnameBytes() {
@@ -4654,12 +4747,14 @@ public final class DistributedPubSubMessages {
     private int port_;
     /**
      * <code>required uint32 port = 3;</code>
+     * @return Whether the port field is set.
      */
     public boolean hasPort() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required uint32 port = 3;</code>
+     * @return The port.
      */
     public int getPort() {
       return port_;
@@ -4669,12 +4764,14 @@ public final class DistributedPubSubMessages {
     private volatile java.lang.Object protocol_;
     /**
      * <code>optional string protocol = 4;</code>
+     * @return Whether the protocol field is set.
      */
     public boolean hasProtocol() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The protocol.
      */
     public java.lang.String getProtocol() {
       java.lang.Object ref = protocol_;
@@ -4692,6 +4789,7 @@ public final class DistributedPubSubMessages {
     }
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The bytes for protocol.
      */
     public akka.protobufv3.internal.ByteString
         getProtocolBytes() {
@@ -5128,12 +5226,14 @@ public final class DistributedPubSubMessages {
       private java.lang.Object system_ = "";
       /**
        * <code>required string system = 1;</code>
+       * @return Whether the system field is set.
        */
       public boolean hasSystem() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string system = 1;</code>
+       * @return The system.
        */
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
@@ -5151,6 +5251,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @return The bytes for system.
        */
       public akka.protobufv3.internal.ByteString
           getSystemBytes() {
@@ -5167,6 +5268,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @param value The system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystem(
           java.lang.String value) {
@@ -5180,6 +5283,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSystem() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -5189,6 +5293,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string system = 1;</code>
+       * @param value The bytes for system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystemBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -5204,12 +5310,14 @@ public final class DistributedPubSubMessages {
       private java.lang.Object hostname_ = "";
       /**
        * <code>required string hostname = 2;</code>
+       * @return Whether the hostname field is set.
        */
       public boolean hasHostname() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return The hostname.
        */
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
@@ -5227,6 +5335,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return The bytes for hostname.
        */
       public akka.protobufv3.internal.ByteString
           getHostnameBytes() {
@@ -5243,6 +5352,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @param value The hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostname(
           java.lang.String value) {
@@ -5256,6 +5367,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearHostname() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -5265,6 +5377,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @param value The bytes for hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostnameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -5280,18 +5394,22 @@ public final class DistributedPubSubMessages {
       private int port_ ;
       /**
        * <code>required uint32 port = 3;</code>
+       * @return Whether the port field is set.
        */
       public boolean hasPort() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @return The port.
        */
       public int getPort() {
         return port_;
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @param value The port to set.
+       * @return This builder for chaining.
        */
       public Builder setPort(int value) {
         bitField0_ |= 0x00000004;
@@ -5301,6 +5419,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPort() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -5312,12 +5431,14 @@ public final class DistributedPubSubMessages {
       private java.lang.Object protocol_ = "";
       /**
        * <code>optional string protocol = 4;</code>
+       * @return Whether the protocol field is set.
        */
       public boolean hasProtocol() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return The protocol.
        */
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
@@ -5335,6 +5456,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return The bytes for protocol.
        */
       public akka.protobufv3.internal.ByteString
           getProtocolBytes() {
@@ -5351,6 +5473,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @param value The protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocol(
           java.lang.String value) {
@@ -5364,6 +5488,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearProtocol() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -5373,6 +5498,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @param value The bytes for protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocolBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -5443,33 +5570,40 @@ public final class DistributedPubSubMessages {
 
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     boolean hasPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     java.lang.String getPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     akka.protobufv3.internal.ByteString
         getPathBytes();
 
     /**
      * <code>required bool localAffinity = 2;</code>
+     * @return Whether the localAffinity field is set.
      */
     boolean hasLocalAffinity();
     /**
      * <code>required bool localAffinity = 2;</code>
+     * @return The localAffinity.
      */
     boolean getLocalAffinity();
 
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return Whether the payload field is set.
      */
     boolean hasPayload();
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return The payload.
      */
     akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload();
     /**
@@ -5590,12 +5724,14 @@ public final class DistributedPubSubMessages {
     private volatile java.lang.Object path_;
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     public boolean hasPath() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
@@ -5613,6 +5749,7 @@ public final class DistributedPubSubMessages {
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     public akka.protobufv3.internal.ByteString
         getPathBytes() {
@@ -5632,12 +5769,14 @@ public final class DistributedPubSubMessages {
     private boolean localAffinity_;
     /**
      * <code>required bool localAffinity = 2;</code>
+     * @return Whether the localAffinity field is set.
      */
     public boolean hasLocalAffinity() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required bool localAffinity = 2;</code>
+     * @return The localAffinity.
      */
     public boolean getLocalAffinity() {
       return localAffinity_;
@@ -5647,12 +5786,14 @@ public final class DistributedPubSubMessages {
     private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload payload_;
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return Whether the payload field is set.
      */
     public boolean hasPayload() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return The payload.
      */
     public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload() {
       return payload_ == null ? akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.getDefaultInstance() : payload_;
@@ -6075,12 +6216,14 @@ public final class DistributedPubSubMessages {
       private java.lang.Object path_ = "";
       /**
        * <code>required string path = 1;</code>
+       * @return Whether the path field is set.
        */
       public boolean hasPath() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The path.
        */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
@@ -6098,6 +6241,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The bytes for path.
        */
       public akka.protobufv3.internal.ByteString
           getPathBytes() {
@@ -6114,6 +6258,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The path to set.
+       * @return This builder for chaining.
        */
       public Builder setPath(
           java.lang.String value) {
@@ -6127,6 +6273,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPath() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -6136,6 +6283,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The bytes for path to set.
+       * @return This builder for chaining.
        */
       public Builder setPathBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6151,18 +6300,22 @@ public final class DistributedPubSubMessages {
       private boolean localAffinity_ ;
       /**
        * <code>required bool localAffinity = 2;</code>
+       * @return Whether the localAffinity field is set.
        */
       public boolean hasLocalAffinity() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required bool localAffinity = 2;</code>
+       * @return The localAffinity.
        */
       public boolean getLocalAffinity() {
         return localAffinity_;
       }
       /**
        * <code>required bool localAffinity = 2;</code>
+       * @param value The localAffinity to set.
+       * @return This builder for chaining.
        */
       public Builder setLocalAffinity(boolean value) {
         bitField0_ |= 0x00000002;
@@ -6172,6 +6325,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required bool localAffinity = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearLocalAffinity() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -6185,12 +6339,14 @@ public final class DistributedPubSubMessages {
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder> payloadBuilder_;
       /**
        * <code>required .Payload payload = 3;</code>
+       * @return Whether the payload field is set.
        */
       public boolean hasPayload() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required .Payload payload = 3;</code>
+       * @return The payload.
        */
       public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload() {
         if (payloadBuilder_ == null) {
@@ -6356,33 +6512,40 @@ public final class DistributedPubSubMessages {
 
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     boolean hasPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     java.lang.String getPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     akka.protobufv3.internal.ByteString
         getPathBytes();
 
     /**
      * <code>required bool allButSelf = 2;</code>
+     * @return Whether the allButSelf field is set.
      */
     boolean hasAllButSelf();
     /**
      * <code>required bool allButSelf = 2;</code>
+     * @return The allButSelf.
      */
     boolean getAllButSelf();
 
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return Whether the payload field is set.
      */
     boolean hasPayload();
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return The payload.
      */
     akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload();
     /**
@@ -6503,12 +6666,14 @@ public final class DistributedPubSubMessages {
     private volatile java.lang.Object path_;
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     public boolean hasPath() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
@@ -6526,6 +6691,7 @@ public final class DistributedPubSubMessages {
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     public akka.protobufv3.internal.ByteString
         getPathBytes() {
@@ -6545,12 +6711,14 @@ public final class DistributedPubSubMessages {
     private boolean allButSelf_;
     /**
      * <code>required bool allButSelf = 2;</code>
+     * @return Whether the allButSelf field is set.
      */
     public boolean hasAllButSelf() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required bool allButSelf = 2;</code>
+     * @return The allButSelf.
      */
     public boolean getAllButSelf() {
       return allButSelf_;
@@ -6560,12 +6728,14 @@ public final class DistributedPubSubMessages {
     private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload payload_;
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return Whether the payload field is set.
      */
     public boolean hasPayload() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return The payload.
      */
     public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload() {
       return payload_ == null ? akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.getDefaultInstance() : payload_;
@@ -6988,12 +7158,14 @@ public final class DistributedPubSubMessages {
       private java.lang.Object path_ = "";
       /**
        * <code>required string path = 1;</code>
+       * @return Whether the path field is set.
        */
       public boolean hasPath() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The path.
        */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
@@ -7011,6 +7183,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The bytes for path.
        */
       public akka.protobufv3.internal.ByteString
           getPathBytes() {
@@ -7027,6 +7200,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The path to set.
+       * @return This builder for chaining.
        */
       public Builder setPath(
           java.lang.String value) {
@@ -7040,6 +7215,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPath() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -7049,6 +7225,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The bytes for path to set.
+       * @return This builder for chaining.
        */
       public Builder setPathBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -7064,18 +7242,22 @@ public final class DistributedPubSubMessages {
       private boolean allButSelf_ ;
       /**
        * <code>required bool allButSelf = 2;</code>
+       * @return Whether the allButSelf field is set.
        */
       public boolean hasAllButSelf() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required bool allButSelf = 2;</code>
+       * @return The allButSelf.
        */
       public boolean getAllButSelf() {
         return allButSelf_;
       }
       /**
        * <code>required bool allButSelf = 2;</code>
+       * @param value The allButSelf to set.
+       * @return This builder for chaining.
        */
       public Builder setAllButSelf(boolean value) {
         bitField0_ |= 0x00000002;
@@ -7085,6 +7267,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required bool allButSelf = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAllButSelf() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -7098,12 +7281,14 @@ public final class DistributedPubSubMessages {
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder> payloadBuilder_;
       /**
        * <code>required .Payload payload = 3;</code>
+       * @return Whether the payload field is set.
        */
       public boolean hasPayload() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required .Payload payload = 3;</code>
+       * @return The payload.
        */
       public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload() {
         if (payloadBuilder_ == null) {
@@ -7269,24 +7454,29 @@ public final class DistributedPubSubMessages {
 
     /**
      * <code>required string topic = 1;</code>
+     * @return Whether the topic field is set.
      */
     boolean hasTopic();
     /**
      * <code>required string topic = 1;</code>
+     * @return The topic.
      */
     java.lang.String getTopic();
     /**
      * <code>required string topic = 1;</code>
+     * @return The bytes for topic.
      */
     akka.protobufv3.internal.ByteString
         getTopicBytes();
 
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return Whether the payload field is set.
      */
     boolean hasPayload();
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return The payload.
      */
     akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload();
     /**
@@ -7402,12 +7592,14 @@ public final class DistributedPubSubMessages {
     private volatile java.lang.Object topic_;
     /**
      * <code>required string topic = 1;</code>
+     * @return Whether the topic field is set.
      */
     public boolean hasTopic() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string topic = 1;</code>
+     * @return The topic.
      */
     public java.lang.String getTopic() {
       java.lang.Object ref = topic_;
@@ -7425,6 +7617,7 @@ public final class DistributedPubSubMessages {
     }
     /**
      * <code>required string topic = 1;</code>
+     * @return The bytes for topic.
      */
     public akka.protobufv3.internal.ByteString
         getTopicBytes() {
@@ -7444,12 +7637,14 @@ public final class DistributedPubSubMessages {
     private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload payload_;
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return Whether the payload field is set.
      */
     public boolean hasPayload() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .Payload payload = 3;</code>
+     * @return The payload.
      */
     public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload() {
       return payload_ == null ? akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.getDefaultInstance() : payload_;
@@ -7839,12 +8034,14 @@ public final class DistributedPubSubMessages {
       private java.lang.Object topic_ = "";
       /**
        * <code>required string topic = 1;</code>
+       * @return Whether the topic field is set.
        */
       public boolean hasTopic() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string topic = 1;</code>
+       * @return The topic.
        */
       public java.lang.String getTopic() {
         java.lang.Object ref = topic_;
@@ -7862,6 +8059,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string topic = 1;</code>
+       * @return The bytes for topic.
        */
       public akka.protobufv3.internal.ByteString
           getTopicBytes() {
@@ -7878,6 +8076,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string topic = 1;</code>
+       * @param value The topic to set.
+       * @return This builder for chaining.
        */
       public Builder setTopic(
           java.lang.String value) {
@@ -7891,6 +8091,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string topic = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTopic() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -7900,6 +8101,8 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required string topic = 1;</code>
+       * @param value The bytes for topic to set.
+       * @return This builder for chaining.
        */
       public Builder setTopicBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -7917,12 +8120,14 @@ public final class DistributedPubSubMessages {
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder> payloadBuilder_;
       /**
        * <code>required .Payload payload = 3;</code>
+       * @return Whether the payload field is set.
        */
       public boolean hasPayload() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .Payload payload = 3;</code>
+       * @return The payload.
        */
       public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload() {
         if (payloadBuilder_ == null) {
@@ -8088,10 +8293,12 @@ public final class DistributedPubSubMessages {
 
     /**
      * <code>required .Payload payload = 1;</code>
+     * @return Whether the payload field is set.
      */
     boolean hasPayload();
     /**
      * <code>required .Payload payload = 1;</code>
+     * @return The payload.
      */
     akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload();
     /**
@@ -8200,12 +8407,14 @@ public final class DistributedPubSubMessages {
     private akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload payload_;
     /**
      * <code>required .Payload payload = 1;</code>
+     * @return Whether the payload field is set.
      */
     public boolean hasPayload() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Payload payload = 1;</code>
+     * @return The payload.
      */
     public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload() {
       return payload_ == null ? akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.getDefaultInstance() : payload_;
@@ -8564,12 +8773,14 @@ public final class DistributedPubSubMessages {
           akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload.Builder, akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.PayloadOrBuilder> payloadBuilder_;
       /**
        * <code>required .Payload payload = 1;</code>
+       * @return Whether the payload field is set.
        */
       public boolean hasPayload() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Payload payload = 1;</code>
+       * @return The payload.
        */
       public akka.cluster.pubsub.protobuf.msg.DistributedPubSubMessages.Payload getPayload() {
         if (payloadBuilder_ == null) {
@@ -8735,28 +8946,34 @@ public final class DistributedPubSubMessages {
 
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return Whether the enclosedMessage field is set.
      */
     boolean hasEnclosedMessage();
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return The enclosedMessage.
      */
     akka.protobufv3.internal.ByteString getEnclosedMessage();
 
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     boolean hasSerializerId();
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     int getSerializerId();
 
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return Whether the messageManifest field is set.
      */
     boolean hasMessageManifest();
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return The messageManifest.
      */
     akka.protobufv3.internal.ByteString getMessageManifest();
   }
@@ -8860,12 +9077,14 @@ public final class DistributedPubSubMessages {
     private akka.protobufv3.internal.ByteString enclosedMessage_;
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return Whether the enclosedMessage field is set.
      */
     public boolean hasEnclosedMessage() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return The enclosedMessage.
      */
     public akka.protobufv3.internal.ByteString getEnclosedMessage() {
       return enclosedMessage_;
@@ -8875,12 +9094,14 @@ public final class DistributedPubSubMessages {
     private int serializerId_;
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     public int getSerializerId() {
       return serializerId_;
@@ -8890,12 +9111,14 @@ public final class DistributedPubSubMessages {
     private akka.protobufv3.internal.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return Whether the messageManifest field is set.
      */
     public boolean hasMessageManifest() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return The messageManifest.
      */
     public akka.protobufv3.internal.ByteString getMessageManifest() {
       return messageManifest_;
@@ -9282,18 +9505,22 @@ public final class DistributedPubSubMessages {
       private akka.protobufv3.internal.ByteString enclosedMessage_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return Whether the enclosedMessage field is set.
        */
       public boolean hasEnclosedMessage() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return The enclosedMessage.
        */
       public akka.protobufv3.internal.ByteString getEnclosedMessage() {
         return enclosedMessage_;
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @param value The enclosedMessage to set.
+       * @return This builder for chaining.
        */
       public Builder setEnclosedMessage(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -9306,6 +9533,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEnclosedMessage() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -9317,18 +9545,22 @@ public final class DistributedPubSubMessages {
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return Whether the serializerId field is set.
        */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return The serializerId.
        */
       public int getSerializerId() {
         return serializerId_;
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @param value The serializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000002;
@@ -9338,6 +9570,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -9349,18 +9582,22 @@ public final class DistributedPubSubMessages {
       private akka.protobufv3.internal.ByteString messageManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return Whether the messageManifest field is set.
        */
       public boolean hasMessageManifest() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return The messageManifest.
        */
       public akka.protobufv3.internal.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @param value The messageManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setMessageManifest(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -9373,6 +9610,7 @@ public final class DistributedPubSubMessages {
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessageManifest() {
         bitField0_ = (bitField0_ & ~0x00000004);

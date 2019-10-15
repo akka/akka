@@ -126,10 +126,23 @@ Java
 :  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #logMessages }
 
 
-## Behaviors.withMdc
+## MDC
 
-To include [MDC](http://logback.qos.ch/manual/mdc.html) attributes in logging events from an actor
-you can decorate a `Behavior` with `Behaviors.withMdc` or use the `org.slf4j.MDC` API directly.
+[MDC](http://logback.qos.ch/manual/mdc.html) allows for adding additional context dependent attributes to log entries.
+Out of the box Akka will place the path of the actor in the the MDC attribute `akkaSource`.
+
+One or more tags can also be added to the MDC using the `ActorTags` props. The tags will be rendered as a comma separated
+list and be put in the MDC attribute `akkaTags`. This can be used to categorize log entries from a set of different actors
+to allow easier filtering of logs:
+
+Scala
+:  @@snip [LoggingDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/LoggingDocExamples.scala) { #tags }
+
+Java
+:  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #tags }
+
+In addition to these two built in MDC attributes you can also decorate a `Behavior` with `Behaviors.withMdc` or 
+use the `org.slf4j.MDC` API directly.
 
 The `Behaviors.withMdc` decorator has two parts. A static `Map` of MDC attributes that are not changed,
 and a dynamic `Map` that can be constructed for each message.
@@ -252,6 +265,9 @@ akka {
 
 The `stdout-loglevel` is only in effect during system startup and shutdown, and setting
 it to `OFF` as well, ensures that nothing gets logged during system startup or shutdown.
+
+See @ref:[Logger names](#logger-names) for configuration of log level in SLF4J backend for certain
+modules of Akka.
 
 ### Logging to stdout during startup and shutdown
 
@@ -394,6 +410,36 @@ With Logback the timestamp is available with `%X{akkaTimestamp}` specifier withi
   </encoder>
 ```
 
+### Logger names
+
+It can be useful to enable debug level or other SLF4J backend configuration for certain modules of Akka when
+troubleshooting. Those logger names are typically prefixed with the package name of the classes in that module.
+For example, in Logback the configuration may look like this to enable debug logging for Cluster Sharding: 
+
+```
+   <logger name="akka.cluster.sharding" level="DEBUG" />
+
+    <root level="INFO">
+        <appender-ref ref="ASYNC"/>
+    </root>
+```
+
+Other examples of logger names or prefixes:
+
+```
+akka.cluster
+akka.cluster.Cluster
+akka.cluster.ClusterHeartbeat
+akka.cluster.ClusterGossip
+akka.cluster.ddata
+akka.cluster.pubsub
+akka.cluster.singleton
+akka.cluster.sharding
+akka.coordination.lease
+akka.discovery
+akka.persistence
+akka.remote
+```
 
 ## Logging in tests
 

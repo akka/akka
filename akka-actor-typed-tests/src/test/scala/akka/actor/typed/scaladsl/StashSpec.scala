@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 
 import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestException
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -419,7 +419,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike with Lo
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      LoggingEventFilter
+      LoggingTestKit
         .error[TestException]
         .withMessageContains("unstash-fail")
         .intercept {
@@ -449,7 +449,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike with Lo
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      LoggingEventFilter
+      LoggingTestKit
         .error[TestException]
         .withMessageContains("Supervisor RestartSupervisor saw failure: unstash-fail")
         .intercept {
@@ -532,7 +532,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike with Lo
       ref ! "stash"
       ref ! "stash-fail"
       ref ! "stash"
-      LoggingEventFilter
+      LoggingTestKit
         .error[TestException]
         .withMessageContains("Supervisor ResumeSupervisor saw failure: unstash-fail")
         .intercept {

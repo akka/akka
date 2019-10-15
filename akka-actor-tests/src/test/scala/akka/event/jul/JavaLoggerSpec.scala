@@ -10,6 +10,7 @@ import akka.testkit.AkkaSpec
 import java.util.logging
 import scala.util.control.NoStackTrace
 
+@deprecated("Use SLF4J instead.", "2.6.0")
 object JavaLoggerSpec {
 
   val config = ConfigFactory.parseString("""
@@ -31,6 +32,7 @@ object JavaLoggerSpec {
   class SimulatedExc extends RuntimeException("Simulated error") with NoStackTrace
 }
 
+@deprecated("Use SLF4J instead.", "2.6.0")
 class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
 
   val logger = logging.Logger.getLogger(classOf[JavaLoggerSpec.LogProducer].getName)

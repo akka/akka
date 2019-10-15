@@ -80,7 +80,7 @@ class EventSourcedBehaviorTimersSpec
   import EventSourcedBehaviorTimersSpec._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   "EventSourcedBehavior withTimers" must {
 

@@ -15,8 +15,8 @@ import org.slf4j.event.Level
 
 /**
  * Representation of a Log Event issued by a [[akka.actor.typed.Behavior]]
- * when testing with [[akka.actor.testkit.typed.scaladsl.BehaviorTestKit`]]
- * or [[akka.actor.testkit.typed.javadsl.BehaviorTestKit`]].
+ * when testing with [[akka.actor.testkit.typed.scaladsl.BehaviorTestKit]]
+ * or [[akka.actor.testkit.typed.javadsl.BehaviorTestKit]].
  */
 final case class CapturedLogEvent(level: Level, message: String, cause: Option[Throwable], marker: Option[Marker]) {
 

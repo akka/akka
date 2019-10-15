@@ -86,7 +86,7 @@ abstract class BehaviorInterceptor[Outer, Inner](val interceptMessageClass: Clas
 object BehaviorInterceptor {
 
   /**
-   * Abstraction of passing the on further in the behavior stack in [[BehaviorInterceptor#preStart]].
+   * Abstraction of passing the on further in the behavior stack in [[BehaviorInterceptor#aroundStart]].
    *
    * Not for user extension
    */

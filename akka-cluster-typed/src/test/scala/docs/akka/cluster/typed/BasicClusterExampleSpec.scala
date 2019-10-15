@@ -6,6 +6,7 @@ package docs.akka.cluster.typed
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.testkit.SocketUtil
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ Matchers, WordSpec }
 //#cluster-imports
@@ -82,6 +83,22 @@ akka {
       context.spawn(Frontend(), "front")
     }
     //#hasRole
+  }
+
+  @silent("never used")
+  def illustrateDcAccess(): Unit = {
+    val system: ActorSystem[_] = ???
+
+    //#dcAccess
+    val cluster = Cluster(system)
+    // this node's data center
+    val dc = cluster.selfMember.dataCenter
+    // all known data centers
+    val allDc = cluster.state.allDataCenters
+    // a specific member's data center
+    val aMember = cluster.state.members.head
+    val aDc = aMember.dataCenter
+    //#dcAccess
   }
 }
 

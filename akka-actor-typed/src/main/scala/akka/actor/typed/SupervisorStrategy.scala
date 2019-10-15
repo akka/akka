@@ -57,7 +57,7 @@ object SupervisorStrategy {
    * The strategy is applied also if the actor behavior is deferred and throws an exception during
    * startup.
    *
-   * A maximum number of restarts can be specified with [[Backoff#withMaxRestarts]]
+   * A maximum number of restarts can be specified with [[BackoffSupervisorStrategy#withMaxRestarts]]
    *
    * @param minBackoff minimum (initial) duration until the child actor will
    *   started again, if it is terminated

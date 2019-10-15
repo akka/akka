@@ -308,7 +308,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
 
-  override val log: LoggingAdapter = Logging(system, getClass.getName)
+  override val log: LoggingAdapter = Logging(system, getClass)
 
   /**
    * Compression tables must be created once, such that inbound lane restarts don't cause dropping of the tables.

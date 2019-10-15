@@ -197,9 +197,9 @@ abstract class TestProbe[M] {
    * Java API: Allows for flexible matching of multiple messages within a timeout, the fisher function is fed each incoming
    * message, and returns one of the following effects to decide on what happens next:
    *
-   *  * [[FishingOutcomes.continue()]] - continue with the next message given that the timeout has not been reached
-   *  * [[FishingOutcomes.complete()]] - successfully complete and return the message
-   *  * [[FishingOutcomes.fail(errorMsg)]] - fail the test with a custom message
+   *  * [[FishingOutcomes.continue]] - continue with the next message given that the timeout has not been reached
+   *  * [[FishingOutcomes.complete]] - successfully complete and return the message
+   *  * [[FishingOutcomes.fail]] - fail the test with a custom message
    *
    * Additionally failures includes the list of messages consumed. If a message of type `M` but not of type `T` is
    * received this will also fail the test, additionally if the `fisher` function throws a match error the error

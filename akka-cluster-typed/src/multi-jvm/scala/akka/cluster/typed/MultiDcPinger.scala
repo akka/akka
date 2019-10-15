@@ -5,18 +5,20 @@
 package akka.cluster.typed
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.serialization.jackson.CborSerializable
 
-object MultiDcClusterActors {
-  case class Pong(dc: String) extends CborSerializable
-  sealed trait PingProtocol extends CborSerializable
-  case class Ping(ref: ActorRef[Pong]) extends PingProtocol
-  case object NoMore extends PingProtocol
+object MultiDcPinger {
 
-  val multiDcPinger = Behaviors.setup[PingProtocol] { ctx =>
+  sealed trait Command extends CborSerializable
+  case class Ping(ref: ActorRef[Pong]) extends Command
+  case object NoMore extends Command
+  case class Pong(dc: String) extends CborSerializable
+
+  def apply(): Behavior[Command] = Behaviors.setup[Command] { ctx =>
     val cluster = Cluster(ctx.system)
-    Behaviors.receiveMessage[PingProtocol] {
+    Behaviors.receiveMessage[Command] {
       case Ping(ref) =>
         ref ! Pong(cluster.selfMember.dataCenter)
         Behaviors.same

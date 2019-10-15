@@ -8,6 +8,7 @@ import akka.actor.Deploy.{ NoDispatcherGiven, NoMailboxGiven }
 import akka.dispatch._
 import akka.routing._
 
+import scala.annotation.varargs
 import scala.collection.immutable
 import scala.reflect.ClassTag
 
@@ -191,6 +192,19 @@ final case class Props(deploy: Deploy, clazz: Class[_], args: immutable.Seq[Any]
    * Returns a new Props with the specified deployment configuration.
    */
   def withDeploy(d: Deploy): Props = copy(deploy = d.withFallback(deploy))
+
+  /**
+   * Returns a new Props with the specified set of tags.
+   */
+  @varargs
+  def withActorTags(tags: String*): Props =
+    withActorTags(tags.toSet)
+
+  /**
+   * Scala API: Returns a new Props with the specified set of tags.
+   */
+  def withActorTags(tags: Set[String]): Props =
+    copy(deploy = deploy.withTags(tags))
 
   /**
    * Obtain an upper-bound approximation of the actor class which is going to

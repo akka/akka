@@ -467,6 +467,7 @@ object ActorSystem {
     final val Daemonicity: Boolean = getBoolean("akka.daemonic")
     final val JvmExitOnFatalError: Boolean = getBoolean("akka.jvm-exit-on-fatal-error")
     final val JvmShutdownHooks: Boolean = getBoolean("akka.jvm-shutdown-hooks")
+    final val FailMixedVersions: Boolean = getBoolean("akka.fail-mixed-versions")
 
     final val CoordinatedShutdownTerminateActorSystem: Boolean = getBoolean(
       "akka.coordinated-shutdown.terminate-actor-system")

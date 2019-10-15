@@ -289,7 +289,7 @@ class EventSourcedBehaviorSpec
     PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   "A typed persistent actor" must {
 
@@ -496,7 +496,7 @@ class EventSourcedBehaviorSpec
     }
 
     "fail after recovery timeout" in {
-      LoggingEventFilter.error("Exception during recovery from snapshot").intercept {
+      LoggingTestKit.error("Exception during recovery from snapshot").intercept {
         val c = spawn(
           Behaviors.setup[Command](ctx =>
             counter(ctx, nextPid)
@@ -522,7 +522,7 @@ class EventSourcedBehaviorSpec
       c ! StopIt
       probe.expectTerminated(c)
 
-      LoggingEventFilter.error[TestException].intercept {
+      LoggingTestKit.error[TestException].intercept {
         val c2 = spawn(Behaviors.setup[Command](counter(_, pid)))
         c2 ! Fail
         probe.expectTerminated(c2) // should fail
@@ -531,17 +531,17 @@ class EventSourcedBehaviorSpec
 
     "fail fast if persistenceId is null" in {
       intercept[IllegalArgumentException] {
-        PersistenceId(null)
+        PersistenceId.ofUniqueId(null)
       }
       val probe = TestProbe[AnyRef]
-      LoggingEventFilter
+      LoggingTestKit
         .error[ActorInitializationException]
         .withMessageContains("persistenceId must not be null")
         .intercept {
-          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId(null))))
+          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId.ofUniqueId(null))))
           probe.expectTerminated(ref)
         }
-      LoggingEventFilter
+      LoggingTestKit
         .error[ActorInitializationException]
         .withMessageContains("persistenceId must not be null")
         .intercept {
@@ -552,14 +552,14 @@ class EventSourcedBehaviorSpec
 
     "fail fast if persistenceId is empty" in {
       intercept[IllegalArgumentException] {
-        PersistenceId("")
+        PersistenceId.ofUniqueId("")
       }
       val probe = TestProbe[AnyRef]
-      LoggingEventFilter
+      LoggingTestKit
         .error[ActorInitializationException]
         .withMessageContains("persistenceId must not be empty")
         .intercept {
-          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId(""))))
+          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId.ofUniqueId(""))))
           probe.expectTerminated(ref)
         }
     }
@@ -568,7 +568,7 @@ class EventSourcedBehaviorSpec
       // new ActorSystem without persistence config
       val testkit2 = ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(""))
       try {
-        LoggingEventFilter
+        LoggingTestKit
           .error[ActorInitializationException]
           .withMessageContains("Default journal plugin is not configured")
           .intercept {
@@ -585,7 +585,7 @@ class EventSourcedBehaviorSpec
       // new ActorSystem without persistence config
       val testkit2 = ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(""))
       try {
-        LoggingEventFilter
+        LoggingTestKit
           .error[ActorInitializationException]
           .withMessageContains("Journal plugin [missing] configuration doesn't exist")
           .intercept {
@@ -607,7 +607,7 @@ class EventSourcedBehaviorSpec
           akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
           """))
       try {
-        LoggingEventFilter
+        LoggingTestKit
           .warn("No default snapshot store configured")
           .intercept {
             val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
@@ -630,7 +630,7 @@ class EventSourcedBehaviorSpec
           akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
           """))
       try {
-        LoggingEventFilter
+        LoggingTestKit
           .error[ActorInitializationException]
           .withMessageContains("Snapshot store plugin [missing] configuration doesn't exist")
           .intercept {

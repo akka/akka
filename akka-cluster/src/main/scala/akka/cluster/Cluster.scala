@@ -101,7 +101,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
 
   private val _isTerminated = new AtomicBoolean(false)
-  private val log = Logging(system, getClass.getName)
+  private val log = Logging(system, ClusterLogClass.ClusterCore)
   // ClusterJmx is initialized as the last thing in the constructor
   private var clusterJmx: Option[ClusterJmx] = None
 
@@ -463,7 +463,12 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * INTERNAL API
    */
-  private[cluster] object ClusterLogger {
+  private[cluster] object ClusterLogger extends ClusterLogger(log)
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] class ClusterLogger(log: LoggingAdapter) {
     def isDebugEnabled: Boolean =
       log.isDebugEnabled
 

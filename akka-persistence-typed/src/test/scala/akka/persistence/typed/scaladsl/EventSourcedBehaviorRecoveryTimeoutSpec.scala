@@ -57,7 +57,7 @@ class EventSourcedBehaviorRecoveryTimeoutSpec
   import EventSourcedBehaviorRecoveryTimeoutSpec._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   import akka.actor.typed.scaladsl.adapter._
   // needed for SteppingInmemJournal.step
@@ -85,7 +85,7 @@ class EventSourcedBehaviorRecoveryTimeoutSpec
 
       // now replay, but don't give the journal any tokens to replay events
       // so that we cause the timeout to trigger
-      LoggingEventFilter
+      LoggingTestKit
         .error[JournalFailureException]
         .withMessageRegex("Exception during recovery.*Replay timed out")
         .intercept {

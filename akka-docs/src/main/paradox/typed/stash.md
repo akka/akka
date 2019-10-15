@@ -21,9 +21,9 @@ be handled using the actor's current behavior.
 
 A typical example when this is useful is if the actor has to load some initial state or initialize
 some resources before it can accept the first real message. Another example is when the actor
-is waiting for something to complete before processing next message.
+is waiting for something to complete before processing the next message.
 
-Let's illustrate these two with an example. It's an actor that is used like a single access point
+Let's illustrate these two with an example. The `DataAccess` actor below is used like a single access point
 to a value stored in a database. When it's started it loads current state from the database, and
 while waiting for that initial value all incoming messages are stashed.
 

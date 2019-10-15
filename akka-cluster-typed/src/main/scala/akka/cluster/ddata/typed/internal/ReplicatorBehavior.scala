@@ -33,7 +33,7 @@ import akka.actor.typed.Terminated
   val localAskTimeout = 60.seconds // ReadLocal, WriteLocal shouldn't timeout
   val additionalAskTimeout = 1.second
 
-  def behavior(
+  def apply(
       settings: dd.ReplicatorSettings,
       underlyingReplicator: Option[akka.actor.ActorRef]): Behavior[SReplicator.Command] = {
 

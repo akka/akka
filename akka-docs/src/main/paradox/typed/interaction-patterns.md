@@ -61,7 +61,7 @@ Java
 
 ## Request-Response
 
-Many interactions between actors requires one or more response message being sent back from the receiving actor. A response message can be a result of a query, some form of acknowledgment that the message was received and processed or events that the request subscribed to. 
+Many interactions between actors require one or more response message being sent back from the receiving actor. A response message can be a result of a query, some form of acknowledgment that the message was received and processed or events that the request subscribed to.
 
 In Akka the recipient of responses has to be encoded as a field in the message itself, which the recipient can then use to send (tell) a response back.
 
@@ -106,7 +106,7 @@ Java
  * It is hard to detect that a message request was not delivered or processed (see @ref:[ask](#request-response-with-ask-between-two-actors))
  * Unless the protocol already includes a way to provide context, for example a request id that is also sent in the
    response, it is not possible to tie an interaction to some specific context without introducing a new,
-   separate, actor (see ask or per session child actor)
+   separate, actor (see @ref:[ask](#request-response-with-ask-between-two-actors) or @ref:[per session child actor](#per-session-child-actor))
 
 
 ## Adapted Response
@@ -136,9 +136,9 @@ their registration order, i.e. the last registered first.
 A message adapter (and the returned `ActorRef`) has the same lifecycle as
 the receiving actor. It's recommended to register the adapters in a top level
 `Behaviors.setup` or constructor of `AbstractBehavior` but it's possible to
-register them later also if needed.
+register them later if needed.
 
-The adapter function is running in the receiving actor and can safely access state of it, but if it throws an exception the actor is stopped.
+The adapter function is running in the receiving actor and can safely access its state, but if it throws an exception the actor is stopped.
 
 **Useful when:**
 
@@ -173,7 +173,7 @@ Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #actor-ask }
 
 
-The response adapting function is running in the receiving actor and can safely access state of it, but if it throws an exception the actor is stopped.
+The response adapting function is running in the receiving actor and can safely access its state, but if it throws an exception the actor is stopped.
 
 **Useful when:**
 
@@ -187,12 +187,12 @@ The response adapting function is running in the receiving actor and can safely 
 
  * There can only be a single response to one `ask` (see @ref:[per session child Actor](#per-session-child-actor))
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
- * Finding a good value for the timeout, especially when `ask` is triggers chained `ask`s in the receiving actor. You want a short timeout to be responsive and answer back to the requester, but at the same time you do not want to have many false positives 
+ * Finding a good value for the timeout, especially when `ask` triggers chained `ask`s in the receiving actor. You want a short timeout to be responsive and answer back to the requester, but at the same time you do not want to have many false positives
 
 <a id="outside-ask"></a>
 ## Request-Response with ask from outside an Actor
 
-Some times you need to interact with actors from outside of the actor system, this can be done with fire-and-forget as described above or through another version of `ask` that returns a @scala[`Future[Response]`]@java[`CompletionStage<Response>`] that is either completed with a successful response or failed with a `TimeoutException` if there was no response within the specified timeout.
+Sometimes you need to interact with actors from the outside of the actor system, this can be done with fire-and-forget as described above or through another version of `ask` that returns a @scala[`Future[Response]`]@java[`CompletionStage<Response>`] that is either completed with a successful response or failed with a `TimeoutException` if there was no response within the specified timeout.
  
 To do this we use @scala[`ActorRef.ask` (or the symbolic `ActorRef.?`) implicitly provided by `akka.actor.typed.scaladsl.AskPattern`]@java[`akka.actor.typed.javadsl.AskPattern.ask`] to send a message to an actor and get a @scala[`Future[Response]`]@java[`CompletionState[Response]`] back.
 
@@ -255,7 +255,7 @@ Therefore it is better to map the result to a message and perform further proces
 
 In some cases a complete response to a request can only be created and sent back after collecting multiple answers from other actors. For these kinds of interaction it can be good to delegate the work to a per "session" child actor. The child could also contain arbitrary logic to implement retrying, failing on timeout, tail chopping, progress inspection etc.
 
-Note that this in fact essentially how `ask` is implemented, if all you need is a single response with a timeout it is better to use `ask`.
+Note that this is essentially how `ask` is implemented, if all you need is a single response with a timeout it is better to use `ask`.
 
 The child is created with the context it needs to do the work, including an `ActorRef` that it can respond to. When the complete result is there the child responds with the result and stops itself.
 
@@ -363,7 +363,7 @@ Java
 **Problems:**
 
  * Increased load since more messages are sent and "work" is performed more than once
- * Can't be used when the "work" is not idempotent and must only performed once
+ * Can't be used when the "work" is not idempotent and must only be performed once
  * Message protocols with generic types are difficult since the generic types are erased in runtime
  * Children have life cycles that must be managed to not create a resource leak, it can be easy to miss a scenario where the session actor is not stopped
 
@@ -389,11 +389,11 @@ There are a few things worth noting here:
 
 * To get access to the timers you start with `Behaviors.withTimers` that will pass a `TimerScheduler` instance to the function. 
 This can be used with any type of `Behavior`, including `receive`, `receiveMessage`, but also `setup` or any other behavior.
-* Each timer has a key and if a new timer with same key is started the previous is cancelled and it's guaranteed that a message from the previous timer is not received, even though it might already be enqueued in the mailbox when the new timer is started.
+* Each timer has a key and if a new timer with the same key is started, the previous is cancelled and it's guaranteed that a message from the previous timer is not received, even though it might already be enqueued in the mailbox when the new timer is started.
 * Both periodic and single message timers are supported. 
 * The `TimerScheduler` is mutable in itself, because it performs and manages the side effects of registering the scheduled tasks.
 * The `TimerScheduler` is bound to the lifecycle of the actor that owns it and it's cancelled automatically when the actor is stopped.
-* `Behaviors.withTimers` can also be used inside `Behaviors.supervise` and it will automatically cancel the started timers correctly when the actor is restarted, so that the new incarnation will not receive scheduled messages from previous incarnation.
+* `Behaviors.withTimers` can also be used inside `Behaviors.supervise` and it will automatically cancel the started timers correctly when the actor is restarted, so that the new incarnation will not receive scheduled messages from a previous incarnation.
 
 ### Schedule periodically
 
@@ -437,6 +437,9 @@ which may in worst case cause undesired load on the system. `scheduleWithFixedDe
 @@@
 
 ## Responding to a sharded actor
+
+When @ref:[Akka Cluster](cluster.md) is used to @ref:[shard actors](cluster-sharding.md) you need to
+take into account that an actor may move or get passivated.
 
 The normal pattern for expecting a reply is to include an @apidoc[akka.actor.typed.ActorRef] in the message, typically a message adapter. This can be used
 for a sharded actor but if @scala[`ctx.self`]@java[`ctx.getSelf()`] is sent and the sharded actor is moved or passivated then the reply

@@ -10,7 +10,7 @@ import akka.actor.typed.internal.adapter.{ PropsAdapter => _, _ }
 import akka.annotation.InternalApi
 
 /**
- * Scala API: Adapters between typed and classic actors and actor systems.
+ * Adapters between typed and classic actors and actor systems.
  * The underlying `ActorSystem` is the classic [[akka.actor.ActorSystem]]
  * which runs Akka Typed [[akka.actor.typed.Behavior]] on an emulation layer. In this
  * system typed and classic actors can coexist.

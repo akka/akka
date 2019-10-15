@@ -17,6 +17,7 @@ import akka.util.ccompat._
 
 import scala.reflect.ClassTag
 import util.{ Failure, Success }
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Serializes Akka's internal DaemonMsgCreate using protobuf
@@ -65,6 +66,9 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
 
         if (d.dispatcher != NoDispatcherGiven) {
           builder.setDispatcher(d.dispatcher)
+        }
+        if (d.tags.nonEmpty) {
+          builder.addAllTags(d.tags.asJava)
         }
         builder.build
       }
@@ -149,7 +153,13 @@ private[akka] final class DaemonMsgCreateSerializer(val system: ExtendedActorSys
       val dispatcher =
         if (protoDeploy.hasDispatcher) protoDeploy.getDispatcher
         else NoDispatcherGiven
-      Deploy(protoDeploy.getPath, config, routerConfig, scope, dispatcher)
+
+      val tags: Set[String] =
+        if (protoDeploy.getTagsCount == 0) Set.empty
+        else protoDeploy.getTagsList.iterator().asScala.toSet
+      val deploy = Deploy(protoDeploy.getPath, config, routerConfig, scope, dispatcher)
+      if (tags.isEmpty) deploy
+      else deploy.withTags(tags)
     }
 
     def props = {

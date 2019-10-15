@@ -24,38 +24,50 @@ public final class TwoPhaseSetMessages {
 
     /**
      * <code>repeated string adds = 1;</code>
+     * @return A list containing the adds.
      */
     java.util.List<java.lang.String>
         getAddsList();
     /**
      * <code>repeated string adds = 1;</code>
+     * @return The count of adds.
      */
     int getAddsCount();
     /**
      * <code>repeated string adds = 1;</code>
+     * @param index The index of the element to return.
+     * @return The adds at the given index.
      */
     java.lang.String getAdds(int index);
     /**
      * <code>repeated string adds = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the adds at the given index.
      */
     akka.protobufv3.internal.ByteString
         getAddsBytes(int index);
 
     /**
      * <code>repeated string removals = 2;</code>
+     * @return A list containing the removals.
      */
     java.util.List<java.lang.String>
         getRemovalsList();
     /**
      * <code>repeated string removals = 2;</code>
+     * @return The count of removals.
      */
     int getRemovalsCount();
     /**
      * <code>repeated string removals = 2;</code>
+     * @param index The index of the element to return.
+     * @return The removals at the given index.
      */
     java.lang.String getRemovals(int index);
     /**
      * <code>repeated string removals = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the removals at the given index.
      */
     akka.protobufv3.internal.ByteString
         getRemovalsBytes(int index);
@@ -168,6 +180,7 @@ public final class TwoPhaseSetMessages {
     private akka.protobufv3.internal.LazyStringList adds_;
     /**
      * <code>repeated string adds = 1;</code>
+     * @return A list containing the adds.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getAddsList() {
@@ -175,18 +188,23 @@ public final class TwoPhaseSetMessages {
     }
     /**
      * <code>repeated string adds = 1;</code>
+     * @return The count of adds.
      */
     public int getAddsCount() {
       return adds_.size();
     }
     /**
      * <code>repeated string adds = 1;</code>
+     * @param index The index of the element to return.
+     * @return The adds at the given index.
      */
     public java.lang.String getAdds(int index) {
       return adds_.get(index);
     }
     /**
      * <code>repeated string adds = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the adds at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getAddsBytes(int index) {
@@ -197,6 +215,7 @@ public final class TwoPhaseSetMessages {
     private akka.protobufv3.internal.LazyStringList removals_;
     /**
      * <code>repeated string removals = 2;</code>
+     * @return A list containing the removals.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getRemovalsList() {
@@ -204,18 +223,23 @@ public final class TwoPhaseSetMessages {
     }
     /**
      * <code>repeated string removals = 2;</code>
+     * @return The count of removals.
      */
     public int getRemovalsCount() {
       return removals_.size();
     }
     /**
      * <code>repeated string removals = 2;</code>
+     * @param index The index of the element to return.
+     * @return The removals at the given index.
      */
     public java.lang.String getRemovals(int index) {
       return removals_.get(index);
     }
     /**
      * <code>repeated string removals = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the removals at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getRemovalsBytes(int index) {
@@ -586,6 +610,7 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string adds = 1;</code>
+       * @return A list containing the adds.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getAddsList() {
@@ -593,18 +618,23 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string adds = 1;</code>
+       * @return The count of adds.
        */
       public int getAddsCount() {
         return adds_.size();
       }
       /**
        * <code>repeated string adds = 1;</code>
+       * @param index The index of the element to return.
+       * @return The adds at the given index.
        */
       public java.lang.String getAdds(int index) {
         return adds_.get(index);
       }
       /**
        * <code>repeated string adds = 1;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the adds at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getAddsBytes(int index) {
@@ -612,6 +642,9 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string adds = 1;</code>
+       * @param index The index to set the value at.
+       * @param value The adds to set.
+       * @return This builder for chaining.
        */
       public Builder setAdds(
           int index, java.lang.String value) {
@@ -625,6 +658,8 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string adds = 1;</code>
+       * @param value The adds to add.
+       * @return This builder for chaining.
        */
       public Builder addAdds(
           java.lang.String value) {
@@ -638,6 +673,8 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string adds = 1;</code>
+       * @param values The adds to add.
+       * @return This builder for chaining.
        */
       public Builder addAllAdds(
           java.lang.Iterable<java.lang.String> values) {
@@ -649,6 +686,7 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string adds = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAdds() {
         adds_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -658,6 +696,8 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string adds = 1;</code>
+       * @param value The bytes of the adds to add.
+       * @return This builder for chaining.
        */
       public Builder addAddsBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -679,6 +719,7 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string removals = 2;</code>
+       * @return A list containing the removals.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getRemovalsList() {
@@ -686,18 +727,23 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string removals = 2;</code>
+       * @return The count of removals.
        */
       public int getRemovalsCount() {
         return removals_.size();
       }
       /**
        * <code>repeated string removals = 2;</code>
+       * @param index The index of the element to return.
+       * @return The removals at the given index.
        */
       public java.lang.String getRemovals(int index) {
         return removals_.get(index);
       }
       /**
        * <code>repeated string removals = 2;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the removals at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getRemovalsBytes(int index) {
@@ -705,6 +751,9 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string removals = 2;</code>
+       * @param index The index to set the value at.
+       * @param value The removals to set.
+       * @return This builder for chaining.
        */
       public Builder setRemovals(
           int index, java.lang.String value) {
@@ -718,6 +767,8 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string removals = 2;</code>
+       * @param value The removals to add.
+       * @return This builder for chaining.
        */
       public Builder addRemovals(
           java.lang.String value) {
@@ -731,6 +782,8 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string removals = 2;</code>
+       * @param values The removals to add.
+       * @return This builder for chaining.
        */
       public Builder addAllRemovals(
           java.lang.Iterable<java.lang.String> values) {
@@ -742,6 +795,7 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string removals = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRemovals() {
         removals_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -751,6 +805,8 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>repeated string removals = 2;</code>
+       * @param value The bytes of the removals to add.
+       * @return This builder for chaining.
        */
       public Builder addRemovalsBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -821,19 +877,23 @@ public final class TwoPhaseSetMessages {
 
     /**
      * <code>optional bytes adds = 1;</code>
+     * @return Whether the adds field is set.
      */
     boolean hasAdds();
     /**
      * <code>optional bytes adds = 1;</code>
+     * @return The adds.
      */
     akka.protobufv3.internal.ByteString getAdds();
 
     /**
      * <code>optional bytes removals = 2;</code>
+     * @return Whether the removals field is set.
      */
     boolean hasRemovals();
     /**
      * <code>optional bytes removals = 2;</code>
+     * @return The removals.
      */
     akka.protobufv3.internal.ByteString getRemovals();
   }
@@ -936,12 +996,14 @@ public final class TwoPhaseSetMessages {
     private akka.protobufv3.internal.ByteString adds_;
     /**
      * <code>optional bytes adds = 1;</code>
+     * @return Whether the adds field is set.
      */
     public boolean hasAdds() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional bytes adds = 1;</code>
+     * @return The adds.
      */
     public akka.protobufv3.internal.ByteString getAdds() {
       return adds_;
@@ -951,12 +1013,14 @@ public final class TwoPhaseSetMessages {
     private akka.protobufv3.internal.ByteString removals_;
     /**
      * <code>optional bytes removals = 2;</code>
+     * @return Whether the removals field is set.
      */
     public boolean hasRemovals() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional bytes removals = 2;</code>
+     * @return The removals.
      */
     public akka.protobufv3.internal.ByteString getRemovals() {
       return removals_;
@@ -1308,18 +1372,22 @@ public final class TwoPhaseSetMessages {
       private akka.protobufv3.internal.ByteString adds_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes adds = 1;</code>
+       * @return Whether the adds field is set.
        */
       public boolean hasAdds() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional bytes adds = 1;</code>
+       * @return The adds.
        */
       public akka.protobufv3.internal.ByteString getAdds() {
         return adds_;
       }
       /**
        * <code>optional bytes adds = 1;</code>
+       * @param value The adds to set.
+       * @return This builder for chaining.
        */
       public Builder setAdds(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -1332,6 +1400,7 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>optional bytes adds = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearAdds() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -1343,18 +1412,22 @@ public final class TwoPhaseSetMessages {
       private akka.protobufv3.internal.ByteString removals_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes removals = 2;</code>
+       * @return Whether the removals field is set.
        */
       public boolean hasRemovals() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional bytes removals = 2;</code>
+       * @return The removals.
        */
       public akka.protobufv3.internal.ByteString getRemovals() {
         return removals_;
       }
       /**
        * <code>optional bytes removals = 2;</code>
+       * @param value The removals to set.
+       * @return This builder for chaining.
        */
       public Builder setRemovals(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -1367,6 +1440,7 @@ public final class TwoPhaseSetMessages {
       }
       /**
        * <code>optional bytes removals = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRemovals() {
         bitField0_ = (bitField0_ & ~0x00000002);

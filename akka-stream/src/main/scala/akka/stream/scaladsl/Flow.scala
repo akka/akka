@@ -2334,8 +2334,8 @@ trait FlowOps[+Out, +Mat] {
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use
-   * [[throttle()]] with maximumBurst attribute.
-   * @see [[#throttle]]
+   * [[throttle]] with maximumBurst attribute.
+   * @see [[throttle]]
    */
   @Deprecated
   @deprecated("Use throttle without `maximumBurst` parameter instead.", "2.5.12")
@@ -2349,8 +2349,8 @@ trait FlowOps[+Out, +Mat] {
    * of time between events.
    *
    * If you want to be sure that no time interval has no more than specified number of events you need to use
-   * [[throttle()]] with maximumBurst attribute.
-   * @see [[#throttle]]
+   * [[throttle]] with maximumBurst attribute.
+   * @see [[throttle]]
    */
   @Deprecated
   @deprecated("Use throttle without `maximumBurst` parameter instead.", "2.5.12")

@@ -24,10 +24,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     akka.remote.ArteryControlFormats.UniqueAddress getFrom();
     /**
@@ -37,10 +39,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required .UniqueAddress to = 2;</code>
+     * @return Whether the to field is set.
      */
     boolean hasTo();
     /**
      * <code>required .UniqueAddress to = 2;</code>
+     * @return The to.
      */
     akka.remote.ArteryControlFormats.UniqueAddress getTo();
     /**
@@ -157,12 +161,14 @@ public final class ArteryControlFormats {
     private akka.remote.ArteryControlFormats.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
       return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
@@ -178,12 +184,14 @@ public final class ArteryControlFormats {
     private akka.remote.ArteryControlFormats.UniqueAddress to_;
     /**
      * <code>required .UniqueAddress to = 2;</code>
+     * @return Whether the to field is set.
      */
     public boolean hasTo() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .UniqueAddress to = 2;</code>
+     * @return The to.
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getTo() {
       return to_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : to_;
@@ -585,12 +593,14 @@ public final class ArteryControlFormats {
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return The from.
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
@@ -703,12 +713,14 @@ public final class ArteryControlFormats {
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> toBuilder_;
       /**
        * <code>required .UniqueAddress to = 2;</code>
+       * @return Whether the to field is set.
        */
       public boolean hasTo() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .UniqueAddress to = 2;</code>
+       * @return The to.
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getTo() {
         if (toBuilder_ == null) {
@@ -874,10 +886,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required .UniqueAddress address = 1;</code>
+     * @return Whether the address field is set.
      */
     boolean hasAddress();
     /**
      * <code>required .UniqueAddress address = 1;</code>
+     * @return The address.
      */
     akka.remote.ArteryControlFormats.UniqueAddress getAddress();
     /**
@@ -989,12 +1003,14 @@ public final class ArteryControlFormats {
     private akka.remote.ArteryControlFormats.UniqueAddress address_;
     /**
      * <code>required .UniqueAddress address = 1;</code>
+     * @return Whether the address field is set.
      */
     public boolean hasAddress() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress address = 1;</code>
+     * @return The address.
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getAddress() {
       return address_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : address_;
@@ -1356,12 +1372,14 @@ public final class ArteryControlFormats {
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> addressBuilder_;
       /**
        * <code>required .UniqueAddress address = 1;</code>
+       * @return Whether the address field is set.
        */
       public boolean hasAddress() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress address = 1;</code>
+       * @return The address.
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getAddress() {
         if (addressBuilder_ == null) {
@@ -1527,10 +1545,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     akka.remote.ArteryControlFormats.UniqueAddress getFrom();
     /**
@@ -1540,10 +1560,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required .Address to = 2;</code>
+     * @return Whether the to field is set.
      */
     boolean hasTo();
     /**
      * <code>required .Address to = 2;</code>
+     * @return The to.
      */
     akka.remote.ArteryControlFormats.Address getTo();
     /**
@@ -1660,12 +1682,14 @@ public final class ArteryControlFormats {
     private akka.remote.ArteryControlFormats.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
       return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
@@ -1681,12 +1705,14 @@ public final class ArteryControlFormats {
     private akka.remote.ArteryControlFormats.Address to_;
     /**
      * <code>required .Address to = 2;</code>
+     * @return Whether the to field is set.
      */
     public boolean hasTo() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .Address to = 2;</code>
+     * @return The to.
      */
     public akka.remote.ArteryControlFormats.Address getTo() {
       return to_ == null ? akka.remote.ArteryControlFormats.Address.getDefaultInstance() : to_;
@@ -2088,12 +2114,14 @@ public final class ArteryControlFormats {
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return The from.
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
@@ -2206,12 +2234,14 @@ public final class ArteryControlFormats {
           akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder> toBuilder_;
       /**
        * <code>required .Address to = 2;</code>
+       * @return Whether the to field is set.
        */
       public boolean hasTo() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .Address to = 2;</code>
+       * @return The to.
        */
       public akka.remote.ArteryControlFormats.Address getTo() {
         if (toBuilder_ == null) {
@@ -2377,10 +2407,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     akka.remote.ArteryControlFormats.UniqueAddress getFrom();
     /**
@@ -2390,19 +2422,23 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required uint64 originUid = 2;</code>
+     * @return Whether the originUid field is set.
      */
     boolean hasOriginUid();
     /**
      * <code>required uint64 originUid = 2;</code>
+     * @return The originUid.
      */
     long getOriginUid();
 
     /**
      * <code>required uint32 tableVersion = 3;</code>
+     * @return Whether the tableVersion field is set.
      */
     boolean hasTableVersion();
     /**
      * <code>required uint32 tableVersion = 3;</code>
+     * @return The tableVersion.
      */
     int getTableVersion();
 
@@ -2414,6 +2450,7 @@ public final class ArteryControlFormats {
      * </pre>
      *
      * <code>repeated string keys = 4;</code>
+     * @return A list containing the keys.
      */
     java.util.List<java.lang.String>
         getKeysList();
@@ -2425,6 +2462,7 @@ public final class ArteryControlFormats {
      * </pre>
      *
      * <code>repeated string keys = 4;</code>
+     * @return The count of keys.
      */
     int getKeysCount();
     /**
@@ -2435,6 +2473,8 @@ public final class ArteryControlFormats {
      * </pre>
      *
      * <code>repeated string keys = 4;</code>
+     * @param index The index of the element to return.
+     * @return The keys at the given index.
      */
     java.lang.String getKeys(int index);
     /**
@@ -2445,20 +2485,26 @@ public final class ArteryControlFormats {
      * </pre>
      *
      * <code>repeated string keys = 4;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the keys at the given index.
      */
     akka.protobufv3.internal.ByteString
         getKeysBytes(int index);
 
     /**
      * <code>repeated uint32 values = 5;</code>
+     * @return A list containing the values.
      */
     java.util.List<java.lang.Integer> getValuesList();
     /**
      * <code>repeated uint32 values = 5;</code>
+     * @return The count of values.
      */
     int getValuesCount();
     /**
      * <code>repeated uint32 values = 5;</code>
+     * @param index The index of the element to return.
+     * @return The values at the given index.
      */
     int getValues(int index);
   }
@@ -2611,12 +2657,14 @@ public final class ArteryControlFormats {
     private akka.remote.ArteryControlFormats.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
       return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
@@ -2632,12 +2680,14 @@ public final class ArteryControlFormats {
     private long originUid_;
     /**
      * <code>required uint64 originUid = 2;</code>
+     * @return Whether the originUid field is set.
      */
     public boolean hasOriginUid() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint64 originUid = 2;</code>
+     * @return The originUid.
      */
     public long getOriginUid() {
       return originUid_;
@@ -2647,12 +2697,14 @@ public final class ArteryControlFormats {
     private int tableVersion_;
     /**
      * <code>required uint32 tableVersion = 3;</code>
+     * @return Whether the tableVersion field is set.
      */
     public boolean hasTableVersion() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required uint32 tableVersion = 3;</code>
+     * @return The tableVersion.
      */
     public int getTableVersion() {
       return tableVersion_;
@@ -2668,6 +2720,7 @@ public final class ArteryControlFormats {
      * </pre>
      *
      * <code>repeated string keys = 4;</code>
+     * @return A list containing the keys.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getKeysList() {
@@ -2681,6 +2734,7 @@ public final class ArteryControlFormats {
      * </pre>
      *
      * <code>repeated string keys = 4;</code>
+     * @return The count of keys.
      */
     public int getKeysCount() {
       return keys_.size();
@@ -2693,6 +2747,8 @@ public final class ArteryControlFormats {
      * </pre>
      *
      * <code>repeated string keys = 4;</code>
+     * @param index The index of the element to return.
+     * @return The keys at the given index.
      */
     public java.lang.String getKeys(int index) {
       return keys_.get(index);
@@ -2705,6 +2761,8 @@ public final class ArteryControlFormats {
      * </pre>
      *
      * <code>repeated string keys = 4;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the keys at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getKeysBytes(int index) {
@@ -2715,6 +2773,7 @@ public final class ArteryControlFormats {
     private akka.protobufv3.internal.Internal.IntList values_;
     /**
      * <code>repeated uint32 values = 5;</code>
+     * @return A list containing the values.
      */
     public java.util.List<java.lang.Integer>
         getValuesList() {
@@ -2722,12 +2781,15 @@ public final class ArteryControlFormats {
     }
     /**
      * <code>repeated uint32 values = 5;</code>
+     * @return The count of values.
      */
     public int getValuesCount() {
       return values_.size();
     }
     /**
      * <code>repeated uint32 values = 5;</code>
+     * @param index The index of the element to return.
+     * @return The values at the given index.
      */
     public int getValues(int index) {
       return values_.getInt(index);
@@ -3214,12 +3276,14 @@ public final class ArteryControlFormats {
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return The from.
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
@@ -3330,18 +3394,22 @@ public final class ArteryControlFormats {
       private long originUid_ ;
       /**
        * <code>required uint64 originUid = 2;</code>
+       * @return Whether the originUid field is set.
        */
       public boolean hasOriginUid() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint64 originUid = 2;</code>
+       * @return The originUid.
        */
       public long getOriginUid() {
         return originUid_;
       }
       /**
        * <code>required uint64 originUid = 2;</code>
+       * @param value The originUid to set.
+       * @return This builder for chaining.
        */
       public Builder setOriginUid(long value) {
         bitField0_ |= 0x00000002;
@@ -3351,6 +3419,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required uint64 originUid = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearOriginUid() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -3362,18 +3431,22 @@ public final class ArteryControlFormats {
       private int tableVersion_ ;
       /**
        * <code>required uint32 tableVersion = 3;</code>
+       * @return Whether the tableVersion field is set.
        */
       public boolean hasTableVersion() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required uint32 tableVersion = 3;</code>
+       * @return The tableVersion.
        */
       public int getTableVersion() {
         return tableVersion_;
       }
       /**
        * <code>required uint32 tableVersion = 3;</code>
+       * @param value The tableVersion to set.
+       * @return This builder for chaining.
        */
       public Builder setTableVersion(int value) {
         bitField0_ |= 0x00000004;
@@ -3383,6 +3456,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required uint32 tableVersion = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTableVersion() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -3406,6 +3480,7 @@ public final class ArteryControlFormats {
        * </pre>
        *
        * <code>repeated string keys = 4;</code>
+       * @return A list containing the keys.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getKeysList() {
@@ -3419,6 +3494,7 @@ public final class ArteryControlFormats {
        * </pre>
        *
        * <code>repeated string keys = 4;</code>
+       * @return The count of keys.
        */
       public int getKeysCount() {
         return keys_.size();
@@ -3431,6 +3507,8 @@ public final class ArteryControlFormats {
        * </pre>
        *
        * <code>repeated string keys = 4;</code>
+       * @param index The index of the element to return.
+       * @return The keys at the given index.
        */
       public java.lang.String getKeys(int index) {
         return keys_.get(index);
@@ -3443,6 +3521,8 @@ public final class ArteryControlFormats {
        * </pre>
        *
        * <code>repeated string keys = 4;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the keys at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getKeysBytes(int index) {
@@ -3456,6 +3536,9 @@ public final class ArteryControlFormats {
        * </pre>
        *
        * <code>repeated string keys = 4;</code>
+       * @param index The index to set the value at.
+       * @param value The keys to set.
+       * @return This builder for chaining.
        */
       public Builder setKeys(
           int index, java.lang.String value) {
@@ -3475,6 +3558,8 @@ public final class ArteryControlFormats {
        * </pre>
        *
        * <code>repeated string keys = 4;</code>
+       * @param value The keys to add.
+       * @return This builder for chaining.
        */
       public Builder addKeys(
           java.lang.String value) {
@@ -3494,6 +3579,8 @@ public final class ArteryControlFormats {
        * </pre>
        *
        * <code>repeated string keys = 4;</code>
+       * @param values The keys to add.
+       * @return This builder for chaining.
        */
       public Builder addAllKeys(
           java.lang.Iterable<java.lang.String> values) {
@@ -3511,6 +3598,7 @@ public final class ArteryControlFormats {
        * </pre>
        *
        * <code>repeated string keys = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearKeys() {
         keys_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -3526,6 +3614,8 @@ public final class ArteryControlFormats {
        * </pre>
        *
        * <code>repeated string keys = 4;</code>
+       * @param value The bytes of the keys to add.
+       * @return This builder for chaining.
        */
       public Builder addKeysBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -3547,6 +3637,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>repeated uint32 values = 5;</code>
+       * @return A list containing the values.
        */
       public java.util.List<java.lang.Integer>
           getValuesList() {
@@ -3555,18 +3646,24 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>repeated uint32 values = 5;</code>
+       * @return The count of values.
        */
       public int getValuesCount() {
         return values_.size();
       }
       /**
        * <code>repeated uint32 values = 5;</code>
+       * @param index The index of the element to return.
+       * @return The values at the given index.
        */
       public int getValues(int index) {
         return values_.getInt(index);
       }
       /**
        * <code>repeated uint32 values = 5;</code>
+       * @param index The index to set the value at.
+       * @param value The values to set.
+       * @return This builder for chaining.
        */
       public Builder setValues(
           int index, int value) {
@@ -3577,6 +3674,8 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>repeated uint32 values = 5;</code>
+       * @param value The values to add.
+       * @return This builder for chaining.
        */
       public Builder addValues(int value) {
         ensureValuesIsMutable();
@@ -3586,6 +3685,8 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>repeated uint32 values = 5;</code>
+       * @param values The values to add.
+       * @return This builder for chaining.
        */
       public Builder addAllValues(
           java.lang.Iterable<? extends java.lang.Integer> values) {
@@ -3597,6 +3698,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>repeated uint32 values = 5;</code>
+       * @return This builder for chaining.
        */
       public Builder clearValues() {
         values_ = emptyIntList();
@@ -3663,10 +3765,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     akka.remote.ArteryControlFormats.UniqueAddress getFrom();
     /**
@@ -3676,10 +3780,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required uint32 version = 2;</code>
+     * @return Whether the version field is set.
      */
     boolean hasVersion();
     /**
      * <code>required uint32 version = 2;</code>
+     * @return The version.
      */
     int getVersion();
   }
@@ -3789,12 +3895,14 @@ public final class ArteryControlFormats {
     private akka.remote.ArteryControlFormats.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 1;</code>
+     * @return The from.
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
       return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
@@ -3810,12 +3918,14 @@ public final class ArteryControlFormats {
     private int version_;
     /**
      * <code>required uint32 version = 2;</code>
+     * @return Whether the version field is set.
      */
     public boolean hasVersion() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint32 version = 2;</code>
+     * @return The version.
      */
     public int getVersion() {
       return version_;
@@ -4200,12 +4310,14 @@ public final class ArteryControlFormats {
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 1;</code>
+       * @return The from.
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
@@ -4316,18 +4428,22 @@ public final class ArteryControlFormats {
       private int version_ ;
       /**
        * <code>required uint32 version = 2;</code>
+       * @return Whether the version field is set.
        */
       public boolean hasVersion() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint32 version = 2;</code>
+       * @return The version.
        */
       public int getVersion() {
         return version_;
       }
       /**
        * <code>required uint32 version = 2;</code>
+       * @param value The version to set.
+       * @return This builder for chaining.
        */
       public Builder setVersion(int value) {
         bitField0_ |= 0x00000002;
@@ -4337,6 +4453,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required uint32 version = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearVersion() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4403,46 +4520,56 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required bytes message = 1;</code>
+     * @return Whether the message field is set.
      */
     boolean hasMessage();
     /**
      * <code>required bytes message = 1;</code>
+     * @return The message.
      */
     akka.protobufv3.internal.ByteString getMessage();
 
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     boolean hasSerializerId();
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     int getSerializerId();
 
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return Whether the messageManifest field is set.
      */
     boolean hasMessageManifest();
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return The messageManifest.
      */
     akka.protobufv3.internal.ByteString getMessageManifest();
 
     /**
      * <code>required uint64 seqNo = 4;</code>
+     * @return Whether the seqNo field is set.
      */
     boolean hasSeqNo();
     /**
      * <code>required uint64 seqNo = 4;</code>
+     * @return The seqNo.
      */
     long getSeqNo();
 
     /**
      * <code>required .UniqueAddress ackReplyTo = 5;</code>
+     * @return Whether the ackReplyTo field is set.
      */
     boolean hasAckReplyTo();
     /**
      * <code>required .UniqueAddress ackReplyTo = 5;</code>
+     * @return The ackReplyTo.
      */
     akka.remote.ArteryControlFormats.UniqueAddress getAckReplyTo();
     /**
@@ -4572,12 +4699,14 @@ public final class ArteryControlFormats {
     private akka.protobufv3.internal.ByteString message_;
     /**
      * <code>required bytes message = 1;</code>
+     * @return Whether the message field is set.
      */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required bytes message = 1;</code>
+     * @return The message.
      */
     public akka.protobufv3.internal.ByteString getMessage() {
       return message_;
@@ -4587,12 +4716,14 @@ public final class ArteryControlFormats {
     private int serializerId_;
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     public int getSerializerId() {
       return serializerId_;
@@ -4602,12 +4733,14 @@ public final class ArteryControlFormats {
     private akka.protobufv3.internal.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return Whether the messageManifest field is set.
      */
     public boolean hasMessageManifest() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return The messageManifest.
      */
     public akka.protobufv3.internal.ByteString getMessageManifest() {
       return messageManifest_;
@@ -4617,12 +4750,14 @@ public final class ArteryControlFormats {
     private long seqNo_;
     /**
      * <code>required uint64 seqNo = 4;</code>
+     * @return Whether the seqNo field is set.
      */
     public boolean hasSeqNo() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required uint64 seqNo = 4;</code>
+     * @return The seqNo.
      */
     public long getSeqNo() {
       return seqNo_;
@@ -4632,12 +4767,14 @@ public final class ArteryControlFormats {
     private akka.remote.ArteryControlFormats.UniqueAddress ackReplyTo_;
     /**
      * <code>required .UniqueAddress ackReplyTo = 5;</code>
+     * @return Whether the ackReplyTo field is set.
      */
     public boolean hasAckReplyTo() {
       return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>required .UniqueAddress ackReplyTo = 5;</code>
+     * @return The ackReplyTo.
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getAckReplyTo() {
       return ackReplyTo_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : ackReplyTo_;
@@ -5115,18 +5252,22 @@ public final class ArteryControlFormats {
       private akka.protobufv3.internal.ByteString message_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes message = 1;</code>
+       * @return Whether the message field is set.
        */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required bytes message = 1;</code>
+       * @return The message.
        */
       public akka.protobufv3.internal.ByteString getMessage() {
         return message_;
       }
       /**
        * <code>required bytes message = 1;</code>
+       * @param value The message to set.
+       * @return This builder for chaining.
        */
       public Builder setMessage(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -5139,6 +5280,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required bytes message = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessage() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -5150,18 +5292,22 @@ public final class ArteryControlFormats {
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return Whether the serializerId field is set.
        */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return The serializerId.
        */
       public int getSerializerId() {
         return serializerId_;
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @param value The serializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000002;
@@ -5171,6 +5317,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -5182,18 +5329,22 @@ public final class ArteryControlFormats {
       private akka.protobufv3.internal.ByteString messageManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @return Whether the messageManifest field is set.
        */
       public boolean hasMessageManifest() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @return The messageManifest.
        */
       public akka.protobufv3.internal.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @param value The messageManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setMessageManifest(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -5206,6 +5357,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessageManifest() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -5217,18 +5369,22 @@ public final class ArteryControlFormats {
       private long seqNo_ ;
       /**
        * <code>required uint64 seqNo = 4;</code>
+       * @return Whether the seqNo field is set.
        */
       public boolean hasSeqNo() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required uint64 seqNo = 4;</code>
+       * @return The seqNo.
        */
       public long getSeqNo() {
         return seqNo_;
       }
       /**
        * <code>required uint64 seqNo = 4;</code>
+       * @param value The seqNo to set.
+       * @return This builder for chaining.
        */
       public Builder setSeqNo(long value) {
         bitField0_ |= 0x00000008;
@@ -5238,6 +5394,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required uint64 seqNo = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSeqNo() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -5251,12 +5408,14 @@ public final class ArteryControlFormats {
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> ackReplyToBuilder_;
       /**
        * <code>required .UniqueAddress ackReplyTo = 5;</code>
+       * @return Whether the ackReplyTo field is set.
        */
       public boolean hasAckReplyTo() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>required .UniqueAddress ackReplyTo = 5;</code>
+       * @return The ackReplyTo.
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getAckReplyTo() {
         if (ackReplyToBuilder_ == null) {
@@ -5422,19 +5581,23 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required uint64 seqNo = 1;</code>
+     * @return Whether the seqNo field is set.
      */
     boolean hasSeqNo();
     /**
      * <code>required uint64 seqNo = 1;</code>
+     * @return The seqNo.
      */
     long getSeqNo();
 
     /**
      * <code>required .UniqueAddress from = 2;</code>
+     * @return Whether the from field is set.
      */
     boolean hasFrom();
     /**
      * <code>required .UniqueAddress from = 2;</code>
+     * @return The from.
      */
     akka.remote.ArteryControlFormats.UniqueAddress getFrom();
     /**
@@ -5548,12 +5711,14 @@ public final class ArteryControlFormats {
     private long seqNo_;
     /**
      * <code>required uint64 seqNo = 1;</code>
+     * @return Whether the seqNo field is set.
      */
     public boolean hasSeqNo() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint64 seqNo = 1;</code>
+     * @return The seqNo.
      */
     public long getSeqNo() {
       return seqNo_;
@@ -5563,12 +5728,14 @@ public final class ArteryControlFormats {
     private akka.remote.ArteryControlFormats.UniqueAddress from_;
     /**
      * <code>required .UniqueAddress from = 2;</code>
+     * @return Whether the from field is set.
      */
     public boolean hasFrom() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .UniqueAddress from = 2;</code>
+     * @return The from.
      */
     public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
       return from_ == null ? akka.remote.ArteryControlFormats.UniqueAddress.getDefaultInstance() : from_;
@@ -5958,18 +6125,22 @@ public final class ArteryControlFormats {
       private long seqNo_ ;
       /**
        * <code>required uint64 seqNo = 1;</code>
+       * @return Whether the seqNo field is set.
        */
       public boolean hasSeqNo() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint64 seqNo = 1;</code>
+       * @return The seqNo.
        */
       public long getSeqNo() {
         return seqNo_;
       }
       /**
        * <code>required uint64 seqNo = 1;</code>
+       * @param value The seqNo to set.
+       * @return This builder for chaining.
        */
       public Builder setSeqNo(long value) {
         bitField0_ |= 0x00000001;
@@ -5979,6 +6150,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required uint64 seqNo = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSeqNo() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -5992,12 +6164,14 @@ public final class ArteryControlFormats {
           akka.remote.ArteryControlFormats.UniqueAddress, akka.remote.ArteryControlFormats.UniqueAddress.Builder, akka.remote.ArteryControlFormats.UniqueAddressOrBuilder> fromBuilder_;
       /**
        * <code>required .UniqueAddress from = 2;</code>
+       * @return Whether the from field is set.
        */
       public boolean hasFrom() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .UniqueAddress from = 2;</code>
+       * @return The from.
        */
       public akka.remote.ArteryControlFormats.UniqueAddress getFrom() {
         if (fromBuilder_ == null) {
@@ -6163,52 +6337,63 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required string protocol = 1;</code>
+     * @return Whether the protocol field is set.
      */
     boolean hasProtocol();
     /**
      * <code>required string protocol = 1;</code>
+     * @return The protocol.
      */
     java.lang.String getProtocol();
     /**
      * <code>required string protocol = 1;</code>
+     * @return The bytes for protocol.
      */
     akka.protobufv3.internal.ByteString
         getProtocolBytes();
 
     /**
      * <code>required string system = 2;</code>
+     * @return Whether the system field is set.
      */
     boolean hasSystem();
     /**
      * <code>required string system = 2;</code>
+     * @return The system.
      */
     java.lang.String getSystem();
     /**
      * <code>required string system = 2;</code>
+     * @return The bytes for system.
      */
     akka.protobufv3.internal.ByteString
         getSystemBytes();
 
     /**
      * <code>required string hostname = 3;</code>
+     * @return Whether the hostname field is set.
      */
     boolean hasHostname();
     /**
      * <code>required string hostname = 3;</code>
+     * @return The hostname.
      */
     java.lang.String getHostname();
     /**
      * <code>required string hostname = 3;</code>
+     * @return The bytes for hostname.
      */
     akka.protobufv3.internal.ByteString
         getHostnameBytes();
 
     /**
      * <code>required uint32 port = 4;</code>
+     * @return Whether the port field is set.
      */
     boolean hasPort();
     /**
      * <code>required uint32 port = 4;</code>
+     * @return The port.
      */
     int getPort();
   }
@@ -6326,12 +6511,14 @@ public final class ArteryControlFormats {
     private volatile java.lang.Object protocol_;
     /**
      * <code>required string protocol = 1;</code>
+     * @return Whether the protocol field is set.
      */
     public boolean hasProtocol() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string protocol = 1;</code>
+     * @return The protocol.
      */
     public java.lang.String getProtocol() {
       java.lang.Object ref = protocol_;
@@ -6349,6 +6536,7 @@ public final class ArteryControlFormats {
     }
     /**
      * <code>required string protocol = 1;</code>
+     * @return The bytes for protocol.
      */
     public akka.protobufv3.internal.ByteString
         getProtocolBytes() {
@@ -6368,12 +6556,14 @@ public final class ArteryControlFormats {
     private volatile java.lang.Object system_;
     /**
      * <code>required string system = 2;</code>
+     * @return Whether the system field is set.
      */
     public boolean hasSystem() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string system = 2;</code>
+     * @return The system.
      */
     public java.lang.String getSystem() {
       java.lang.Object ref = system_;
@@ -6391,6 +6581,7 @@ public final class ArteryControlFormats {
     }
     /**
      * <code>required string system = 2;</code>
+     * @return The bytes for system.
      */
     public akka.protobufv3.internal.ByteString
         getSystemBytes() {
@@ -6410,12 +6601,14 @@ public final class ArteryControlFormats {
     private volatile java.lang.Object hostname_;
     /**
      * <code>required string hostname = 3;</code>
+     * @return Whether the hostname field is set.
      */
     public boolean hasHostname() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required string hostname = 3;</code>
+     * @return The hostname.
      */
     public java.lang.String getHostname() {
       java.lang.Object ref = hostname_;
@@ -6433,6 +6626,7 @@ public final class ArteryControlFormats {
     }
     /**
      * <code>required string hostname = 3;</code>
+     * @return The bytes for hostname.
      */
     public akka.protobufv3.internal.ByteString
         getHostnameBytes() {
@@ -6452,12 +6646,14 @@ public final class ArteryControlFormats {
     private int port_;
     /**
      * <code>required uint32 port = 4;</code>
+     * @return Whether the port field is set.
      */
     public boolean hasPort() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required uint32 port = 4;</code>
+     * @return The port.
      */
     public int getPort() {
       return port_;
@@ -6891,12 +7087,14 @@ public final class ArteryControlFormats {
       private java.lang.Object protocol_ = "";
       /**
        * <code>required string protocol = 1;</code>
+       * @return Whether the protocol field is set.
        */
       public boolean hasProtocol() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @return The protocol.
        */
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
@@ -6914,6 +7112,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @return The bytes for protocol.
        */
       public akka.protobufv3.internal.ByteString
           getProtocolBytes() {
@@ -6930,6 +7129,8 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @param value The protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocol(
           java.lang.String value) {
@@ -6943,6 +7144,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearProtocol() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -6952,6 +7154,8 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @param value The bytes for protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocolBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6967,12 +7171,14 @@ public final class ArteryControlFormats {
       private java.lang.Object system_ = "";
       /**
        * <code>required string system = 2;</code>
+       * @return Whether the system field is set.
        */
       public boolean hasSystem() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string system = 2;</code>
+       * @return The system.
        */
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
@@ -6990,6 +7196,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string system = 2;</code>
+       * @return The bytes for system.
        */
       public akka.protobufv3.internal.ByteString
           getSystemBytes() {
@@ -7006,6 +7213,8 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string system = 2;</code>
+       * @param value The system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystem(
           java.lang.String value) {
@@ -7019,6 +7228,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string system = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSystem() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -7028,6 +7238,8 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string system = 2;</code>
+       * @param value The bytes for system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystemBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -7043,12 +7255,14 @@ public final class ArteryControlFormats {
       private java.lang.Object hostname_ = "";
       /**
        * <code>required string hostname = 3;</code>
+       * @return Whether the hostname field is set.
        */
       public boolean hasHostname() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required string hostname = 3;</code>
+       * @return The hostname.
        */
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
@@ -7066,6 +7280,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string hostname = 3;</code>
+       * @return The bytes for hostname.
        */
       public akka.protobufv3.internal.ByteString
           getHostnameBytes() {
@@ -7082,6 +7297,8 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string hostname = 3;</code>
+       * @param value The hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostname(
           java.lang.String value) {
@@ -7095,6 +7312,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string hostname = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearHostname() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -7104,6 +7322,8 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required string hostname = 3;</code>
+       * @param value The bytes for hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostnameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -7119,18 +7339,22 @@ public final class ArteryControlFormats {
       private int port_ ;
       /**
        * <code>required uint32 port = 4;</code>
+       * @return Whether the port field is set.
        */
       public boolean hasPort() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required uint32 port = 4;</code>
+       * @return The port.
        */
       public int getPort() {
         return port_;
       }
       /**
        * <code>required uint32 port = 4;</code>
+       * @param value The port to set.
+       * @return This builder for chaining.
        */
       public Builder setPort(int value) {
         bitField0_ |= 0x00000008;
@@ -7140,6 +7364,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required uint32 port = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPort() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -7206,10 +7431,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required .Address address = 1;</code>
+     * @return Whether the address field is set.
      */
     boolean hasAddress();
     /**
      * <code>required .Address address = 1;</code>
+     * @return The address.
      */
     akka.remote.ArteryControlFormats.Address getAddress();
     /**
@@ -7219,10 +7446,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required uint64 uid = 2;</code>
+     * @return Whether the uid field is set.
      */
     boolean hasUid();
     /**
      * <code>required uint64 uid = 2;</code>
+     * @return The uid.
      */
     long getUid();
   }
@@ -7332,12 +7561,14 @@ public final class ArteryControlFormats {
     private akka.remote.ArteryControlFormats.Address address_;
     /**
      * <code>required .Address address = 1;</code>
+     * @return Whether the address field is set.
      */
     public boolean hasAddress() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Address address = 1;</code>
+     * @return The address.
      */
     public akka.remote.ArteryControlFormats.Address getAddress() {
       return address_ == null ? akka.remote.ArteryControlFormats.Address.getDefaultInstance() : address_;
@@ -7353,12 +7584,14 @@ public final class ArteryControlFormats {
     private long uid_;
     /**
      * <code>required uint64 uid = 2;</code>
+     * @return Whether the uid field is set.
      */
     public boolean hasUid() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint64 uid = 2;</code>
+     * @return The uid.
      */
     public long getUid() {
       return uid_;
@@ -7744,12 +7977,14 @@ public final class ArteryControlFormats {
           akka.remote.ArteryControlFormats.Address, akka.remote.ArteryControlFormats.Address.Builder, akka.remote.ArteryControlFormats.AddressOrBuilder> addressBuilder_;
       /**
        * <code>required .Address address = 1;</code>
+       * @return Whether the address field is set.
        */
       public boolean hasAddress() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Address address = 1;</code>
+       * @return The address.
        */
       public akka.remote.ArteryControlFormats.Address getAddress() {
         if (addressBuilder_ == null) {
@@ -7860,18 +8095,22 @@ public final class ArteryControlFormats {
       private long uid_ ;
       /**
        * <code>required uint64 uid = 2;</code>
+       * @return Whether the uid field is set.
        */
       public boolean hasUid() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint64 uid = 2;</code>
+       * @return The uid.
        */
       public long getUid() {
         return uid_;
       }
       /**
        * <code>required uint64 uid = 2;</code>
+       * @param value The uid to set.
+       * @return This builder for chaining.
        */
       public Builder setUid(long value) {
         bitField0_ |= 0x00000002;
@@ -7881,6 +8120,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required uint64 uid = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUid() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -7947,10 +8187,12 @@ public final class ArteryControlFormats {
 
     /**
      * <code>required uint64 uid = 1;</code>
+     * @return Whether the uid field is set.
      */
     boolean hasUid();
     /**
      * <code>required uint64 uid = 1;</code>
+     * @return The uid.
      */
     long getUid();
   }
@@ -8047,12 +8289,14 @@ public final class ArteryControlFormats {
     private long uid_;
     /**
      * <code>required uint64 uid = 1;</code>
+     * @return Whether the uid field is set.
      */
     public boolean hasUid() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint64 uid = 1;</code>
+     * @return The uid.
      */
     public long getUid() {
       return uid_;
@@ -8388,18 +8632,22 @@ public final class ArteryControlFormats {
       private long uid_ ;
       /**
        * <code>required uint64 uid = 1;</code>
+       * @return Whether the uid field is set.
        */
       public boolean hasUid() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint64 uid = 1;</code>
+       * @return The uid.
        */
       public long getUid() {
         return uid_;
       }
       /**
        * <code>required uint64 uid = 1;</code>
+       * @param value The uid to set.
+       * @return This builder for chaining.
        */
       public Builder setUid(long value) {
         bitField0_ |= 0x00000001;
@@ -8409,6 +8657,7 @@ public final class ArteryControlFormats {
       }
       /**
        * <code>required uint64 uid = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUid() {
         bitField0_ = (bitField0_ & ~0x00000001);

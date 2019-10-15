@@ -17,13 +17,13 @@ object Dependencies {
   val junitVersion = "4.12"
   val slf4jVersion = "1.7.28"
   // check agrona version when updating this
-  val aeronVersion = "1.21.2"
+  val aeronVersion = "1.22.1"
   // needs to be inline with the aeron version
-  val agronaVersion = "1.0.7"
+  val agronaVersion = "1.0.8"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.10.0"
   val jacksonDatabindVersion = "2.10.0"
-  val protobufJavaVersion = "3.9.2"
+  val protobufJavaVersion = "3.10.0"
   val logbackVersion = "1.2.3"
 
   val scala212Version = "2.12.10"
@@ -55,7 +55,7 @@ object Dependencies {
   object Compile {
     // Compile
 
-    val config = "com.typesafe" % "config" % "1.3.5-RC1" // ApacheV2
+    val config = "com.typesafe" % "config" % "1.4.0" // ApacheV2
     val netty = "io.netty" % "netty" % nettyVersion // ApacheV2
 
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
@@ -208,8 +208,7 @@ object Dependencies {
         Provided.levelDBNative,
         Test.junit,
         Test.scalatest.value,
-        Test.commonsIo,
-        Test.mockito)
+        Test.commonsIo)
 
   val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito)
 

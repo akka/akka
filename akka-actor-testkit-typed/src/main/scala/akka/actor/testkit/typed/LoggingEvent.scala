@@ -42,8 +42,8 @@ object LoggingEvent {
 }
 
 /**
- * Representation of logging event when testing with [[akka.actor.testkit.typed.scaladsl.LoggingEventFilter]]
- * or [[akka.actor.testkit.typed.javadsl.LoggingEventFilter]].
+ * Representation of logging event when testing with [[akka.actor.testkit.typed.scaladsl.LoggingTestKit]]
+ * or [[akka.actor.testkit.typed.javadsl.LoggingTestKit]].
  */
 final case class LoggingEvent(
     level: Level,

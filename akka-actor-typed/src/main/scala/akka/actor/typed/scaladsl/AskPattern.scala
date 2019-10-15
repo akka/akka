@@ -9,6 +9,7 @@ import java.util.concurrent.TimeoutException
 import scala.concurrent.Future
 import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
 import akka.actor.typed.Scheduler
 import akka.actor.typed.internal.{ adapter => adapt }
 import akka.annotation.InternalApi
@@ -24,6 +25,12 @@ import com.github.ghik.silencer.silent
  * See [[AskPattern.Askable.ask]] for details
  */
 object AskPattern {
+
+  /**
+   * Provides a scheduler from an actor system (that will likely already be implicit in the scope) to minimize ask
+   * boilerplate.
+   */
+  implicit def schedulerFromActorSystem(implicit system: ActorSystem[_]): Scheduler = system.scheduler
 
   /**
    * See [[ask]]
@@ -53,7 +60,7 @@ object AskPattern {
      * case class Request(msg: String, replyTo: ActorRef[Reply])
      * case class Reply(msg: String)
      *
-     * implicit val scheduler = system.scheduler
+     * implicit val system = ...
      * implicit val timeout = Timeout(3.seconds)
      * val target: ActorRef[Request] = ...
      * val f: Future[Reply] = target ? (replyTo => Request("hello", replyTo))
@@ -86,7 +93,7 @@ object AskPattern {
      * case class Request(msg: String, replyTo: ActorRef[Reply])
      * case class Reply(msg: String)
      *
-     * implicit val scheduler = system.scheduler
+     * implicit val system = ...
      * implicit val timeout = Timeout(3.seconds)
      * val target: ActorRef[Request] = ...
      * val f: Future[Reply] = target.ask(replyTo => Request("hello", replyTo))
