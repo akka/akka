@@ -139,7 +139,6 @@ object RetryFlow {
 
     private var elementInProgress: OptionVal[In] = OptionVal.none
     private var retryNo = 0
-    private var moreInternalDemand = false
 
     setHandler(
       externalIn,
@@ -166,7 +165,7 @@ object RetryFlow {
             if (!hasBeenPulled(externalIn) && !isClosed(externalIn)) {
               pull(externalIn)
             }
-          } else moreInternalDemand = true
+          }
         }
 
         override def onDownstreamFinish(cause: Throwable): Unit = {
@@ -206,7 +205,6 @@ object RetryFlow {
     })
 
     private def pushInternal(element: In): Unit = {
-      moreInternalDemand = false
       push(internalOut, element)
     }
 
@@ -215,7 +213,7 @@ object RetryFlow {
       push(externalOut, result)
       if (isClosed(externalIn)) {
         completeStage()
-      } else if (moreInternalDemand) {
+      } else if (isAvailable(internalOut)) {
         pull(externalIn)
       }
     }
