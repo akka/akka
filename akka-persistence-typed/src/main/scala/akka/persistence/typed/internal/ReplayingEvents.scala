@@ -133,7 +133,9 @@ private[akka] final class ReplayingEvents[C, E, S](
               onRecoveryFailure(ex, eventForErrorReporting.toOption)
           }
 
-        case RecoverySuccess(highestSeqNr) =>
+        case RecoverySuccess(highestJournalSeqNr) =>
+          val highestSeqNr = Math.max(highestJournalSeqNr, state.seqNr)
+          state = state.copy(seqNr = highestSeqNr)
           setup.log.debug("Recovery successful, recovered until sequenceNr: [{}]", highestSeqNr)
           onRecoveryCompleted(state)
 
