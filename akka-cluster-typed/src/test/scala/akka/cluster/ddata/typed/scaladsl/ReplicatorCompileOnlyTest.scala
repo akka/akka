@@ -114,4 +114,16 @@ object ReplicatorCompileOnlyTest {
       case ReplicaCount(_) =>
     }
   }
+
+  def shouldHaveApplyForConsistencies(): Unit = {
+    Replicator.ReadFrom(3, 3.seconds)
+    Replicator.ReadMajority(3.seconds)
+    Replicator.ReadMajority(3.seconds, minCap = 5)
+    Replicator.ReadAll(3.seconds)
+
+    Replicator.WriteTo(3, 3.seconds)
+    Replicator.WriteMajority(3.seconds)
+    Replicator.WriteMajority(3.seconds, minCap = 5)
+    Replicator.WriteAll(3.seconds)
+  }
 }

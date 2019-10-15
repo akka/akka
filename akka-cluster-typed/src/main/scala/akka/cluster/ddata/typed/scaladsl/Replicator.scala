@@ -4,6 +4,8 @@
 
 package akka.cluster.ddata.typed.scaladsl
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.cluster.{ ddata => dd }
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
@@ -31,14 +33,42 @@ object Replicator {
 
   type ReadConsistency = dd.Replicator.ReadConsistency
   val ReadLocal = dd.Replicator.ReadLocal
+  object ReadFrom {
+    def apply(n: Int, timeout: FiniteDuration): ReadFrom =
+      dd.Replicator.ReadFrom(n, timeout)
+  }
   type ReadFrom = dd.Replicator.ReadFrom
+  object ReadMajority {
+    def apply(timeout: FiniteDuration): ReadMajority =
+      dd.Replicator.ReadMajority(timeout: FiniteDuration)
+    def apply(timeout: FiniteDuration, minCap: Int): ReadMajority =
+      dd.Replicator.ReadMajority(timeout: FiniteDuration, minCap)
+  }
   type ReadMajority = dd.Replicator.ReadMajority
+  object ReadAll {
+    def apply(timeout: FiniteDuration): ReadAll =
+      dd.Replicator.ReadAll(timeout: FiniteDuration)
+  }
   type ReadAll = dd.Replicator.ReadAll
 
   type WriteConsistency = dd.Replicator.WriteConsistency
   val WriteLocal = dd.Replicator.WriteLocal
+  object WriteTo {
+    def apply(n: Int, timeout: FiniteDuration): WriteTo =
+      dd.Replicator.WriteTo(n, timeout: FiniteDuration)
+  }
   type WriteTo = dd.Replicator.WriteTo
+  object WriteMajority {
+    def apply(timeout: FiniteDuration): WriteMajority =
+      dd.Replicator.WriteMajority(timeout: FiniteDuration)
+    def apply(timeout: FiniteDuration, minCap: Int): WriteMajority =
+      dd.Replicator.WriteMajority(timeout: FiniteDuration, minCap)
+  }
   type WriteMajority = dd.Replicator.WriteMajority
+  object WriteAll {
+    def apply(timeout: FiniteDuration): WriteAll =
+      dd.Replicator.WriteAll(timeout: FiniteDuration)
+  }
   type WriteAll = dd.Replicator.WriteAll
 
   trait Command
