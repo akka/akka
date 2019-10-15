@@ -64,6 +64,8 @@ public final class TestConductorProtocol {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -71,6 +73,10 @@ public final class TestConductorProtocol {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static BarrierOp forNumber(int value) {
       switch (value) {
         case 1: return Enter;
@@ -188,6 +194,8 @@ public final class TestConductorProtocol {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -195,6 +203,10 @@ public final class TestConductorProtocol {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static FailType forNumber(int value) {
       switch (value) {
         case 1: return Throttle;
@@ -290,6 +302,8 @@ public final class TestConductorProtocol {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -297,6 +311,10 @@ public final class TestConductorProtocol {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static Direction forNumber(int value) {
       switch (value) {
         case 1: return Send;
@@ -357,10 +375,12 @@ public final class TestConductorProtocol {
 
     /**
      * <code>optional .Hello hello = 1;</code>
+     * @return Whether the hello field is set.
      */
     boolean hasHello();
     /**
      * <code>optional .Hello hello = 1;</code>
+     * @return The hello.
      */
     akka.remote.testconductor.TestConductorProtocol.Hello getHello();
     /**
@@ -370,10 +390,12 @@ public final class TestConductorProtocol {
 
     /**
      * <code>optional .EnterBarrier barrier = 2;</code>
+     * @return Whether the barrier field is set.
      */
     boolean hasBarrier();
     /**
      * <code>optional .EnterBarrier barrier = 2;</code>
+     * @return The barrier.
      */
     akka.remote.testconductor.TestConductorProtocol.EnterBarrier getBarrier();
     /**
@@ -383,10 +405,12 @@ public final class TestConductorProtocol {
 
     /**
      * <code>optional .InjectFailure failure = 3;</code>
+     * @return Whether the failure field is set.
      */
     boolean hasFailure();
     /**
      * <code>optional .InjectFailure failure = 3;</code>
+     * @return The failure.
      */
     akka.remote.testconductor.TestConductorProtocol.InjectFailure getFailure();
     /**
@@ -396,24 +420,29 @@ public final class TestConductorProtocol {
 
     /**
      * <code>optional string done = 4;</code>
+     * @return Whether the done field is set.
      */
     boolean hasDone();
     /**
      * <code>optional string done = 4;</code>
+     * @return The done.
      */
     java.lang.String getDone();
     /**
      * <code>optional string done = 4;</code>
+     * @return The bytes for done.
      */
     akka.protobufv3.internal.ByteString
         getDoneBytes();
 
     /**
      * <code>optional .AddressRequest addr = 5;</code>
+     * @return Whether the addr field is set.
      */
     boolean hasAddr();
     /**
      * <code>optional .AddressRequest addr = 5;</code>
+     * @return The addr.
      */
     akka.remote.testconductor.TestConductorProtocol.AddressRequest getAddr();
     /**
@@ -563,12 +592,14 @@ public final class TestConductorProtocol {
     private akka.remote.testconductor.TestConductorProtocol.Hello hello_;
     /**
      * <code>optional .Hello hello = 1;</code>
+     * @return Whether the hello field is set.
      */
     public boolean hasHello() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional .Hello hello = 1;</code>
+     * @return The hello.
      */
     public akka.remote.testconductor.TestConductorProtocol.Hello getHello() {
       return hello_ == null ? akka.remote.testconductor.TestConductorProtocol.Hello.getDefaultInstance() : hello_;
@@ -584,12 +615,14 @@ public final class TestConductorProtocol {
     private akka.remote.testconductor.TestConductorProtocol.EnterBarrier barrier_;
     /**
      * <code>optional .EnterBarrier barrier = 2;</code>
+     * @return Whether the barrier field is set.
      */
     public boolean hasBarrier() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .EnterBarrier barrier = 2;</code>
+     * @return The barrier.
      */
     public akka.remote.testconductor.TestConductorProtocol.EnterBarrier getBarrier() {
       return barrier_ == null ? akka.remote.testconductor.TestConductorProtocol.EnterBarrier.getDefaultInstance() : barrier_;
@@ -605,12 +638,14 @@ public final class TestConductorProtocol {
     private akka.remote.testconductor.TestConductorProtocol.InjectFailure failure_;
     /**
      * <code>optional .InjectFailure failure = 3;</code>
+     * @return Whether the failure field is set.
      */
     public boolean hasFailure() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional .InjectFailure failure = 3;</code>
+     * @return The failure.
      */
     public akka.remote.testconductor.TestConductorProtocol.InjectFailure getFailure() {
       return failure_ == null ? akka.remote.testconductor.TestConductorProtocol.InjectFailure.getDefaultInstance() : failure_;
@@ -626,12 +661,14 @@ public final class TestConductorProtocol {
     private volatile java.lang.Object done_;
     /**
      * <code>optional string done = 4;</code>
+     * @return Whether the done field is set.
      */
     public boolean hasDone() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional string done = 4;</code>
+     * @return The done.
      */
     public java.lang.String getDone() {
       java.lang.Object ref = done_;
@@ -649,6 +686,7 @@ public final class TestConductorProtocol {
     }
     /**
      * <code>optional string done = 4;</code>
+     * @return The bytes for done.
      */
     public akka.protobufv3.internal.ByteString
         getDoneBytes() {
@@ -668,12 +706,14 @@ public final class TestConductorProtocol {
     private akka.remote.testconductor.TestConductorProtocol.AddressRequest addr_;
     /**
      * <code>optional .AddressRequest addr = 5;</code>
+     * @return Whether the addr field is set.
      */
     public boolean hasAddr() {
       return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>optional .AddressRequest addr = 5;</code>
+     * @return The addr.
      */
     public akka.remote.testconductor.TestConductorProtocol.AddressRequest getAddr() {
       return addr_ == null ? akka.remote.testconductor.TestConductorProtocol.AddressRequest.getDefaultInstance() : addr_;
@@ -1185,12 +1225,14 @@ public final class TestConductorProtocol {
           akka.remote.testconductor.TestConductorProtocol.Hello, akka.remote.testconductor.TestConductorProtocol.Hello.Builder, akka.remote.testconductor.TestConductorProtocol.HelloOrBuilder> helloBuilder_;
       /**
        * <code>optional .Hello hello = 1;</code>
+       * @return Whether the hello field is set.
        */
       public boolean hasHello() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional .Hello hello = 1;</code>
+       * @return The hello.
        */
       public akka.remote.testconductor.TestConductorProtocol.Hello getHello() {
         if (helloBuilder_ == null) {
@@ -1303,12 +1345,14 @@ public final class TestConductorProtocol {
           akka.remote.testconductor.TestConductorProtocol.EnterBarrier, akka.remote.testconductor.TestConductorProtocol.EnterBarrier.Builder, akka.remote.testconductor.TestConductorProtocol.EnterBarrierOrBuilder> barrierBuilder_;
       /**
        * <code>optional .EnterBarrier barrier = 2;</code>
+       * @return Whether the barrier field is set.
        */
       public boolean hasBarrier() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .EnterBarrier barrier = 2;</code>
+       * @return The barrier.
        */
       public akka.remote.testconductor.TestConductorProtocol.EnterBarrier getBarrier() {
         if (barrierBuilder_ == null) {
@@ -1421,12 +1465,14 @@ public final class TestConductorProtocol {
           akka.remote.testconductor.TestConductorProtocol.InjectFailure, akka.remote.testconductor.TestConductorProtocol.InjectFailure.Builder, akka.remote.testconductor.TestConductorProtocol.InjectFailureOrBuilder> failureBuilder_;
       /**
        * <code>optional .InjectFailure failure = 3;</code>
+       * @return Whether the failure field is set.
        */
       public boolean hasFailure() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .InjectFailure failure = 3;</code>
+       * @return The failure.
        */
       public akka.remote.testconductor.TestConductorProtocol.InjectFailure getFailure() {
         if (failureBuilder_ == null) {
@@ -1537,12 +1583,14 @@ public final class TestConductorProtocol {
       private java.lang.Object done_ = "";
       /**
        * <code>optional string done = 4;</code>
+       * @return Whether the done field is set.
        */
       public boolean hasDone() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional string done = 4;</code>
+       * @return The done.
        */
       public java.lang.String getDone() {
         java.lang.Object ref = done_;
@@ -1560,6 +1608,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>optional string done = 4;</code>
+       * @return The bytes for done.
        */
       public akka.protobufv3.internal.ByteString
           getDoneBytes() {
@@ -1576,6 +1625,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>optional string done = 4;</code>
+       * @param value The done to set.
+       * @return This builder for chaining.
        */
       public Builder setDone(
           java.lang.String value) {
@@ -1589,6 +1640,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>optional string done = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearDone() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -1598,6 +1650,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>optional string done = 4;</code>
+       * @param value The bytes for done to set.
+       * @return This builder for chaining.
        */
       public Builder setDoneBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -1615,12 +1669,14 @@ public final class TestConductorProtocol {
           akka.remote.testconductor.TestConductorProtocol.AddressRequest, akka.remote.testconductor.TestConductorProtocol.AddressRequest.Builder, akka.remote.testconductor.TestConductorProtocol.AddressRequestOrBuilder> addrBuilder_;
       /**
        * <code>optional .AddressRequest addr = 5;</code>
+       * @return Whether the addr field is set.
        */
       public boolean hasAddr() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional .AddressRequest addr = 5;</code>
+       * @return The addr.
        */
       public akka.remote.testconductor.TestConductorProtocol.AddressRequest getAddr() {
         if (addrBuilder_ == null) {
@@ -1786,24 +1842,29 @@ public final class TestConductorProtocol {
 
     /**
      * <code>required string name = 1;</code>
+     * @return Whether the name field is set.
      */
     boolean hasName();
     /**
      * <code>required string name = 1;</code>
+     * @return The name.
      */
     java.lang.String getName();
     /**
      * <code>required string name = 1;</code>
+     * @return The bytes for name.
      */
     akka.protobufv3.internal.ByteString
         getNameBytes();
 
     /**
      * <code>required .Address address = 2;</code>
+     * @return Whether the address field is set.
      */
     boolean hasAddress();
     /**
      * <code>required .Address address = 2;</code>
+     * @return The address.
      */
     akka.remote.testconductor.TestConductorProtocol.Address getAddress();
     /**
@@ -1914,12 +1975,14 @@ public final class TestConductorProtocol {
     private volatile java.lang.Object name_;
     /**
      * <code>required string name = 1;</code>
+     * @return Whether the name field is set.
      */
     public boolean hasName() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string name = 1;</code>
+     * @return The name.
      */
     public java.lang.String getName() {
       java.lang.Object ref = name_;
@@ -1937,6 +2000,7 @@ public final class TestConductorProtocol {
     }
     /**
      * <code>required string name = 1;</code>
+     * @return The bytes for name.
      */
     public akka.protobufv3.internal.ByteString
         getNameBytes() {
@@ -1956,12 +2020,14 @@ public final class TestConductorProtocol {
     private akka.remote.testconductor.TestConductorProtocol.Address address_;
     /**
      * <code>required .Address address = 2;</code>
+     * @return Whether the address field is set.
      */
     public boolean hasAddress() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .Address address = 2;</code>
+     * @return The address.
      */
     public akka.remote.testconductor.TestConductorProtocol.Address getAddress() {
       return address_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : address_;
@@ -2346,12 +2412,14 @@ public final class TestConductorProtocol {
       private java.lang.Object name_ = "";
       /**
        * <code>required string name = 1;</code>
+       * @return Whether the name field is set.
        */
       public boolean hasName() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string name = 1;</code>
+       * @return The name.
        */
       public java.lang.String getName() {
         java.lang.Object ref = name_;
@@ -2369,6 +2437,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string name = 1;</code>
+       * @return The bytes for name.
        */
       public akka.protobufv3.internal.ByteString
           getNameBytes() {
@@ -2385,6 +2454,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string name = 1;</code>
+       * @param value The name to set.
+       * @return This builder for chaining.
        */
       public Builder setName(
           java.lang.String value) {
@@ -2398,6 +2469,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string name = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearName() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -2407,6 +2479,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string name = 1;</code>
+       * @param value The bytes for name to set.
+       * @return This builder for chaining.
        */
       public Builder setNameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -2424,12 +2498,14 @@ public final class TestConductorProtocol {
           akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> addressBuilder_;
       /**
        * <code>required .Address address = 2;</code>
+       * @return Whether the address field is set.
        */
       public boolean hasAddress() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .Address address = 2;</code>
+       * @return The address.
        */
       public akka.remote.testconductor.TestConductorProtocol.Address getAddress() {
         if (addressBuilder_ == null) {
@@ -2595,33 +2671,40 @@ public final class TestConductorProtocol {
 
     /**
      * <code>required string name = 1;</code>
+     * @return Whether the name field is set.
      */
     boolean hasName();
     /**
      * <code>required string name = 1;</code>
+     * @return The name.
      */
     java.lang.String getName();
     /**
      * <code>required string name = 1;</code>
+     * @return The bytes for name.
      */
     akka.protobufv3.internal.ByteString
         getNameBytes();
 
     /**
      * <code>required .BarrierOp op = 2;</code>
+     * @return Whether the op field is set.
      */
     boolean hasOp();
     /**
      * <code>required .BarrierOp op = 2;</code>
+     * @return The op.
      */
     akka.remote.testconductor.TestConductorProtocol.BarrierOp getOp();
 
     /**
      * <code>optional int64 timeout = 3;</code>
+     * @return Whether the timeout field is set.
      */
     boolean hasTimeout();
     /**
      * <code>optional int64 timeout = 3;</code>
+     * @return The timeout.
      */
     long getTimeout();
   }
@@ -2733,12 +2816,14 @@ public final class TestConductorProtocol {
     private volatile java.lang.Object name_;
     /**
      * <code>required string name = 1;</code>
+     * @return Whether the name field is set.
      */
     public boolean hasName() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string name = 1;</code>
+     * @return The name.
      */
     public java.lang.String getName() {
       java.lang.Object ref = name_;
@@ -2756,6 +2841,7 @@ public final class TestConductorProtocol {
     }
     /**
      * <code>required string name = 1;</code>
+     * @return The bytes for name.
      */
     public akka.protobufv3.internal.ByteString
         getNameBytes() {
@@ -2775,12 +2861,14 @@ public final class TestConductorProtocol {
     private int op_;
     /**
      * <code>required .BarrierOp op = 2;</code>
+     * @return Whether the op field is set.
      */
     public boolean hasOp() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .BarrierOp op = 2;</code>
+     * @return The op.
      */
     public akka.remote.testconductor.TestConductorProtocol.BarrierOp getOp() {
       @SuppressWarnings("deprecation")
@@ -2792,12 +2880,14 @@ public final class TestConductorProtocol {
     private long timeout_;
     /**
      * <code>optional int64 timeout = 3;</code>
+     * @return Whether the timeout field is set.
      */
     public boolean hasTimeout() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional int64 timeout = 3;</code>
+     * @return The timeout.
      */
     public long getTimeout() {
       return timeout_;
@@ -3185,12 +3275,14 @@ public final class TestConductorProtocol {
       private java.lang.Object name_ = "";
       /**
        * <code>required string name = 1;</code>
+       * @return Whether the name field is set.
        */
       public boolean hasName() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string name = 1;</code>
+       * @return The name.
        */
       public java.lang.String getName() {
         java.lang.Object ref = name_;
@@ -3208,6 +3300,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string name = 1;</code>
+       * @return The bytes for name.
        */
       public akka.protobufv3.internal.ByteString
           getNameBytes() {
@@ -3224,6 +3317,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string name = 1;</code>
+       * @param value The name to set.
+       * @return This builder for chaining.
        */
       public Builder setName(
           java.lang.String value) {
@@ -3237,6 +3332,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string name = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearName() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -3246,6 +3342,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string name = 1;</code>
+       * @param value The bytes for name to set.
+       * @return This builder for chaining.
        */
       public Builder setNameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -3261,12 +3359,14 @@ public final class TestConductorProtocol {
       private int op_ = 1;
       /**
        * <code>required .BarrierOp op = 2;</code>
+       * @return Whether the op field is set.
        */
       public boolean hasOp() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .BarrierOp op = 2;</code>
+       * @return The op.
        */
       public akka.remote.testconductor.TestConductorProtocol.BarrierOp getOp() {
         @SuppressWarnings("deprecation")
@@ -3275,6 +3375,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required .BarrierOp op = 2;</code>
+       * @param value The op to set.
+       * @return This builder for chaining.
        */
       public Builder setOp(akka.remote.testconductor.TestConductorProtocol.BarrierOp value) {
         if (value == null) {
@@ -3287,6 +3389,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required .BarrierOp op = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearOp() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -3298,18 +3401,22 @@ public final class TestConductorProtocol {
       private long timeout_ ;
       /**
        * <code>optional int64 timeout = 3;</code>
+       * @return Whether the timeout field is set.
        */
       public boolean hasTimeout() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional int64 timeout = 3;</code>
+       * @return The timeout.
        */
       public long getTimeout() {
         return timeout_;
       }
       /**
        * <code>optional int64 timeout = 3;</code>
+       * @param value The timeout to set.
+       * @return This builder for chaining.
        */
       public Builder setTimeout(long value) {
         bitField0_ |= 0x00000004;
@@ -3319,6 +3426,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>optional int64 timeout = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTimeout() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -3385,24 +3493,29 @@ public final class TestConductorProtocol {
 
     /**
      * <code>required string node = 1;</code>
+     * @return Whether the node field is set.
      */
     boolean hasNode();
     /**
      * <code>required string node = 1;</code>
+     * @return The node.
      */
     java.lang.String getNode();
     /**
      * <code>required string node = 1;</code>
+     * @return The bytes for node.
      */
     akka.protobufv3.internal.ByteString
         getNodeBytes();
 
     /**
      * <code>optional .Address addr = 2;</code>
+     * @return Whether the addr field is set.
      */
     boolean hasAddr();
     /**
      * <code>optional .Address addr = 2;</code>
+     * @return The addr.
      */
     akka.remote.testconductor.TestConductorProtocol.Address getAddr();
     /**
@@ -3513,12 +3626,14 @@ public final class TestConductorProtocol {
     private volatile java.lang.Object node_;
     /**
      * <code>required string node = 1;</code>
+     * @return Whether the node field is set.
      */
     public boolean hasNode() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string node = 1;</code>
+     * @return The node.
      */
     public java.lang.String getNode() {
       java.lang.Object ref = node_;
@@ -3536,6 +3651,7 @@ public final class TestConductorProtocol {
     }
     /**
      * <code>required string node = 1;</code>
+     * @return The bytes for node.
      */
     public akka.protobufv3.internal.ByteString
         getNodeBytes() {
@@ -3555,12 +3671,14 @@ public final class TestConductorProtocol {
     private akka.remote.testconductor.TestConductorProtocol.Address addr_;
     /**
      * <code>optional .Address addr = 2;</code>
+     * @return Whether the addr field is set.
      */
     public boolean hasAddr() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .Address addr = 2;</code>
+     * @return The addr.
      */
     public akka.remote.testconductor.TestConductorProtocol.Address getAddr() {
       return addr_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : addr_;
@@ -3942,12 +4060,14 @@ public final class TestConductorProtocol {
       private java.lang.Object node_ = "";
       /**
        * <code>required string node = 1;</code>
+       * @return Whether the node field is set.
        */
       public boolean hasNode() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string node = 1;</code>
+       * @return The node.
        */
       public java.lang.String getNode() {
         java.lang.Object ref = node_;
@@ -3965,6 +4085,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string node = 1;</code>
+       * @return The bytes for node.
        */
       public akka.protobufv3.internal.ByteString
           getNodeBytes() {
@@ -3981,6 +4102,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string node = 1;</code>
+       * @param value The node to set.
+       * @return This builder for chaining.
        */
       public Builder setNode(
           java.lang.String value) {
@@ -3994,6 +4117,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string node = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearNode() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -4003,6 +4127,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string node = 1;</code>
+       * @param value The bytes for node to set.
+       * @return This builder for chaining.
        */
       public Builder setNodeBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -4020,12 +4146,14 @@ public final class TestConductorProtocol {
           akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> addrBuilder_;
       /**
        * <code>optional .Address addr = 2;</code>
+       * @return Whether the addr field is set.
        */
       public boolean hasAddr() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .Address addr = 2;</code>
+       * @return The addr.
        */
       public akka.remote.testconductor.TestConductorProtocol.Address getAddr() {
         if (addrBuilder_ == null) {
@@ -4191,52 +4319,63 @@ public final class TestConductorProtocol {
 
     /**
      * <code>required string protocol = 1;</code>
+     * @return Whether the protocol field is set.
      */
     boolean hasProtocol();
     /**
      * <code>required string protocol = 1;</code>
+     * @return The protocol.
      */
     java.lang.String getProtocol();
     /**
      * <code>required string protocol = 1;</code>
+     * @return The bytes for protocol.
      */
     akka.protobufv3.internal.ByteString
         getProtocolBytes();
 
     /**
      * <code>required string system = 2;</code>
+     * @return Whether the system field is set.
      */
     boolean hasSystem();
     /**
      * <code>required string system = 2;</code>
+     * @return The system.
      */
     java.lang.String getSystem();
     /**
      * <code>required string system = 2;</code>
+     * @return The bytes for system.
      */
     akka.protobufv3.internal.ByteString
         getSystemBytes();
 
     /**
      * <code>required string host = 3;</code>
+     * @return Whether the host field is set.
      */
     boolean hasHost();
     /**
      * <code>required string host = 3;</code>
+     * @return The host.
      */
     java.lang.String getHost();
     /**
      * <code>required string host = 3;</code>
+     * @return The bytes for host.
      */
     akka.protobufv3.internal.ByteString
         getHostBytes();
 
     /**
      * <code>required int32 port = 4;</code>
+     * @return Whether the port field is set.
      */
     boolean hasPort();
     /**
      * <code>required int32 port = 4;</code>
+     * @return The port.
      */
     int getPort();
   }
@@ -4349,12 +4488,14 @@ public final class TestConductorProtocol {
     private volatile java.lang.Object protocol_;
     /**
      * <code>required string protocol = 1;</code>
+     * @return Whether the protocol field is set.
      */
     public boolean hasProtocol() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string protocol = 1;</code>
+     * @return The protocol.
      */
     public java.lang.String getProtocol() {
       java.lang.Object ref = protocol_;
@@ -4372,6 +4513,7 @@ public final class TestConductorProtocol {
     }
     /**
      * <code>required string protocol = 1;</code>
+     * @return The bytes for protocol.
      */
     public akka.protobufv3.internal.ByteString
         getProtocolBytes() {
@@ -4391,12 +4533,14 @@ public final class TestConductorProtocol {
     private volatile java.lang.Object system_;
     /**
      * <code>required string system = 2;</code>
+     * @return Whether the system field is set.
      */
     public boolean hasSystem() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string system = 2;</code>
+     * @return The system.
      */
     public java.lang.String getSystem() {
       java.lang.Object ref = system_;
@@ -4414,6 +4558,7 @@ public final class TestConductorProtocol {
     }
     /**
      * <code>required string system = 2;</code>
+     * @return The bytes for system.
      */
     public akka.protobufv3.internal.ByteString
         getSystemBytes() {
@@ -4433,12 +4578,14 @@ public final class TestConductorProtocol {
     private volatile java.lang.Object host_;
     /**
      * <code>required string host = 3;</code>
+     * @return Whether the host field is set.
      */
     public boolean hasHost() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required string host = 3;</code>
+     * @return The host.
      */
     public java.lang.String getHost() {
       java.lang.Object ref = host_;
@@ -4456,6 +4603,7 @@ public final class TestConductorProtocol {
     }
     /**
      * <code>required string host = 3;</code>
+     * @return The bytes for host.
      */
     public akka.protobufv3.internal.ByteString
         getHostBytes() {
@@ -4475,12 +4623,14 @@ public final class TestConductorProtocol {
     private int port_;
     /**
      * <code>required int32 port = 4;</code>
+     * @return Whether the port field is set.
      */
     public boolean hasPort() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required int32 port = 4;</code>
+     * @return The port.
      */
     public int getPort() {
       return port_;
@@ -4909,12 +5059,14 @@ public final class TestConductorProtocol {
       private java.lang.Object protocol_ = "";
       /**
        * <code>required string protocol = 1;</code>
+       * @return Whether the protocol field is set.
        */
       public boolean hasProtocol() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @return The protocol.
        */
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
@@ -4932,6 +5084,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @return The bytes for protocol.
        */
       public akka.protobufv3.internal.ByteString
           getProtocolBytes() {
@@ -4948,6 +5101,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @param value The protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocol(
           java.lang.String value) {
@@ -4961,6 +5116,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearProtocol() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -4970,6 +5126,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @param value The bytes for protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocolBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -4985,12 +5143,14 @@ public final class TestConductorProtocol {
       private java.lang.Object system_ = "";
       /**
        * <code>required string system = 2;</code>
+       * @return Whether the system field is set.
        */
       public boolean hasSystem() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string system = 2;</code>
+       * @return The system.
        */
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
@@ -5008,6 +5168,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string system = 2;</code>
+       * @return The bytes for system.
        */
       public akka.protobufv3.internal.ByteString
           getSystemBytes() {
@@ -5024,6 +5185,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string system = 2;</code>
+       * @param value The system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystem(
           java.lang.String value) {
@@ -5037,6 +5200,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string system = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSystem() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -5046,6 +5210,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string system = 2;</code>
+       * @param value The bytes for system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystemBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -5061,12 +5227,14 @@ public final class TestConductorProtocol {
       private java.lang.Object host_ = "";
       /**
        * <code>required string host = 3;</code>
+       * @return Whether the host field is set.
        */
       public boolean hasHost() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required string host = 3;</code>
+       * @return The host.
        */
       public java.lang.String getHost() {
         java.lang.Object ref = host_;
@@ -5084,6 +5252,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string host = 3;</code>
+       * @return The bytes for host.
        */
       public akka.protobufv3.internal.ByteString
           getHostBytes() {
@@ -5100,6 +5269,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string host = 3;</code>
+       * @param value The host to set.
+       * @return This builder for chaining.
        */
       public Builder setHost(
           java.lang.String value) {
@@ -5113,6 +5284,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string host = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearHost() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -5122,6 +5294,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required string host = 3;</code>
+       * @param value The bytes for host to set.
+       * @return This builder for chaining.
        */
       public Builder setHostBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -5137,18 +5311,22 @@ public final class TestConductorProtocol {
       private int port_ ;
       /**
        * <code>required int32 port = 4;</code>
+       * @return Whether the port field is set.
        */
       public boolean hasPort() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required int32 port = 4;</code>
+       * @return The port.
        */
       public int getPort() {
         return port_;
       }
       /**
        * <code>required int32 port = 4;</code>
+       * @param value The port to set.
+       * @return This builder for chaining.
        */
       public Builder setPort(int value) {
         bitField0_ |= 0x00000008;
@@ -5158,6 +5336,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required int32 port = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPort() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -5224,28 +5403,34 @@ public final class TestConductorProtocol {
 
     /**
      * <code>required .FailType failure = 1;</code>
+     * @return Whether the failure field is set.
      */
     boolean hasFailure();
     /**
      * <code>required .FailType failure = 1;</code>
+     * @return The failure.
      */
     akka.remote.testconductor.TestConductorProtocol.FailType getFailure();
 
     /**
      * <code>optional .Direction direction = 2;</code>
+     * @return Whether the direction field is set.
      */
     boolean hasDirection();
     /**
      * <code>optional .Direction direction = 2;</code>
+     * @return The direction.
      */
     akka.remote.testconductor.TestConductorProtocol.Direction getDirection();
 
     /**
      * <code>optional .Address address = 3;</code>
+     * @return Whether the address field is set.
      */
     boolean hasAddress();
     /**
      * <code>optional .Address address = 3;</code>
+     * @return The address.
      */
     akka.remote.testconductor.TestConductorProtocol.Address getAddress();
     /**
@@ -5255,19 +5440,23 @@ public final class TestConductorProtocol {
 
     /**
      * <code>optional float rateMBit = 6;</code>
+     * @return Whether the rateMBit field is set.
      */
     boolean hasRateMBit();
     /**
      * <code>optional float rateMBit = 6;</code>
+     * @return The rateMBit.
      */
     float getRateMBit();
 
     /**
      * <code>optional int32 exitValue = 7;</code>
+     * @return Whether the exitValue field is set.
      */
     boolean hasExitValue();
     /**
      * <code>optional int32 exitValue = 7;</code>
+     * @return The exitValue.
      */
     int getExitValue();
   }
@@ -5403,12 +5592,14 @@ public final class TestConductorProtocol {
     private int failure_;
     /**
      * <code>required .FailType failure = 1;</code>
+     * @return Whether the failure field is set.
      */
     public boolean hasFailure() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .FailType failure = 1;</code>
+     * @return The failure.
      */
     public akka.remote.testconductor.TestConductorProtocol.FailType getFailure() {
       @SuppressWarnings("deprecation")
@@ -5420,12 +5611,14 @@ public final class TestConductorProtocol {
     private int direction_;
     /**
      * <code>optional .Direction direction = 2;</code>
+     * @return Whether the direction field is set.
      */
     public boolean hasDirection() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .Direction direction = 2;</code>
+     * @return The direction.
      */
     public akka.remote.testconductor.TestConductorProtocol.Direction getDirection() {
       @SuppressWarnings("deprecation")
@@ -5437,12 +5630,14 @@ public final class TestConductorProtocol {
     private akka.remote.testconductor.TestConductorProtocol.Address address_;
     /**
      * <code>optional .Address address = 3;</code>
+     * @return Whether the address field is set.
      */
     public boolean hasAddress() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional .Address address = 3;</code>
+     * @return The address.
      */
     public akka.remote.testconductor.TestConductorProtocol.Address getAddress() {
       return address_ == null ? akka.remote.testconductor.TestConductorProtocol.Address.getDefaultInstance() : address_;
@@ -5458,12 +5653,14 @@ public final class TestConductorProtocol {
     private float rateMBit_;
     /**
      * <code>optional float rateMBit = 6;</code>
+     * @return Whether the rateMBit field is set.
      */
     public boolean hasRateMBit() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional float rateMBit = 6;</code>
+     * @return The rateMBit.
      */
     public float getRateMBit() {
       return rateMBit_;
@@ -5473,12 +5670,14 @@ public final class TestConductorProtocol {
     private int exitValue_;
     /**
      * <code>optional int32 exitValue = 7;</code>
+     * @return Whether the exitValue field is set.
      */
     public boolean hasExitValue() {
       return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>optional int32 exitValue = 7;</code>
+     * @return The exitValue.
      */
     public int getExitValue() {
       return exitValue_;
@@ -5928,12 +6127,14 @@ public final class TestConductorProtocol {
       private int failure_ = 1;
       /**
        * <code>required .FailType failure = 1;</code>
+       * @return Whether the failure field is set.
        */
       public boolean hasFailure() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .FailType failure = 1;</code>
+       * @return The failure.
        */
       public akka.remote.testconductor.TestConductorProtocol.FailType getFailure() {
         @SuppressWarnings("deprecation")
@@ -5942,6 +6143,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required .FailType failure = 1;</code>
+       * @param value The failure to set.
+       * @return This builder for chaining.
        */
       public Builder setFailure(akka.remote.testconductor.TestConductorProtocol.FailType value) {
         if (value == null) {
@@ -5954,6 +6157,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>required .FailType failure = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearFailure() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -5965,12 +6169,14 @@ public final class TestConductorProtocol {
       private int direction_ = 1;
       /**
        * <code>optional .Direction direction = 2;</code>
+       * @return Whether the direction field is set.
        */
       public boolean hasDirection() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .Direction direction = 2;</code>
+       * @return The direction.
        */
       public akka.remote.testconductor.TestConductorProtocol.Direction getDirection() {
         @SuppressWarnings("deprecation")
@@ -5979,6 +6185,8 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>optional .Direction direction = 2;</code>
+       * @param value The direction to set.
+       * @return This builder for chaining.
        */
       public Builder setDirection(akka.remote.testconductor.TestConductorProtocol.Direction value) {
         if (value == null) {
@@ -5991,6 +6199,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>optional .Direction direction = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearDirection() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -6004,12 +6213,14 @@ public final class TestConductorProtocol {
           akka.remote.testconductor.TestConductorProtocol.Address, akka.remote.testconductor.TestConductorProtocol.Address.Builder, akka.remote.testconductor.TestConductorProtocol.AddressOrBuilder> addressBuilder_;
       /**
        * <code>optional .Address address = 3;</code>
+       * @return Whether the address field is set.
        */
       public boolean hasAddress() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .Address address = 3;</code>
+       * @return The address.
        */
       public akka.remote.testconductor.TestConductorProtocol.Address getAddress() {
         if (addressBuilder_ == null) {
@@ -6120,18 +6331,22 @@ public final class TestConductorProtocol {
       private float rateMBit_ ;
       /**
        * <code>optional float rateMBit = 6;</code>
+       * @return Whether the rateMBit field is set.
        */
       public boolean hasRateMBit() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional float rateMBit = 6;</code>
+       * @return The rateMBit.
        */
       public float getRateMBit() {
         return rateMBit_;
       }
       /**
        * <code>optional float rateMBit = 6;</code>
+       * @param value The rateMBit to set.
+       * @return This builder for chaining.
        */
       public Builder setRateMBit(float value) {
         bitField0_ |= 0x00000008;
@@ -6141,6 +6356,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>optional float rateMBit = 6;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRateMBit() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -6152,18 +6368,22 @@ public final class TestConductorProtocol {
       private int exitValue_ ;
       /**
        * <code>optional int32 exitValue = 7;</code>
+       * @return Whether the exitValue field is set.
        */
       public boolean hasExitValue() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional int32 exitValue = 7;</code>
+       * @return The exitValue.
        */
       public int getExitValue() {
         return exitValue_;
       }
       /**
        * <code>optional int32 exitValue = 7;</code>
+       * @param value The exitValue to set.
+       * @return This builder for chaining.
        */
       public Builder setExitValue(int value) {
         bitField0_ |= 0x00000010;
@@ -6173,6 +6393,7 @@ public final class TestConductorProtocol {
       }
       /**
        * <code>optional int32 exitValue = 7;</code>
+       * @return This builder for chaining.
        */
       public Builder clearExitValue() {
         bitField0_ = (bitField0_ & ~0x00000010);

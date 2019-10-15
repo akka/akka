@@ -24,10 +24,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     boolean hasKey();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey();
     /**
@@ -37,28 +39,34 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required sint32 consistency = 2;</code>
+     * @return Whether the consistency field is set.
      */
     boolean hasConsistency();
     /**
      * <code>required sint32 consistency = 2;</code>
+     * @return The consistency.
      */
     int getConsistency();
 
     /**
      * <code>required uint32 timeout = 3;</code>
+     * @return Whether the timeout field is set.
      */
     boolean hasTimeout();
     /**
      * <code>required uint32 timeout = 3;</code>
+     * @return The timeout.
      */
     int getTimeout();
 
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+     * @return Whether the request field is set.
      */
     boolean hasRequest();
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+     * @return The request.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest();
     /**
@@ -185,12 +193,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     public boolean hasKey() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
       return key_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : key_;
@@ -206,12 +216,14 @@ public final class ReplicatorMessages {
     private int consistency_;
     /**
      * <code>required sint32 consistency = 2;</code>
+     * @return Whether the consistency field is set.
      */
     public boolean hasConsistency() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required sint32 consistency = 2;</code>
+     * @return The consistency.
      */
     public int getConsistency() {
       return consistency_;
@@ -221,12 +233,14 @@ public final class ReplicatorMessages {
     private int timeout_;
     /**
      * <code>required uint32 timeout = 3;</code>
+     * @return Whether the timeout field is set.
      */
     public boolean hasTimeout() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required uint32 timeout = 3;</code>
+     * @return The timeout.
      */
     public int getTimeout() {
       return timeout_;
@@ -236,12 +250,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage request_;
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+     * @return Whether the request field is set.
      */
     public boolean hasRequest() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+     * @return The request.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest() {
       return request_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : request_;
@@ -704,12 +720,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return The key.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
         if (keyBuilder_ == null) {
@@ -820,18 +838,22 @@ public final class ReplicatorMessages {
       private int consistency_ ;
       /**
        * <code>required sint32 consistency = 2;</code>
+       * @return Whether the consistency field is set.
        */
       public boolean hasConsistency() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required sint32 consistency = 2;</code>
+       * @return The consistency.
        */
       public int getConsistency() {
         return consistency_;
       }
       /**
        * <code>required sint32 consistency = 2;</code>
+       * @param value The consistency to set.
+       * @return This builder for chaining.
        */
       public Builder setConsistency(int value) {
         bitField0_ |= 0x00000002;
@@ -841,6 +863,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required sint32 consistency = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearConsistency() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -852,18 +875,22 @@ public final class ReplicatorMessages {
       private int timeout_ ;
       /**
        * <code>required uint32 timeout = 3;</code>
+       * @return Whether the timeout field is set.
        */
       public boolean hasTimeout() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required uint32 timeout = 3;</code>
+       * @return The timeout.
        */
       public int getTimeout() {
         return timeout_;
       }
       /**
        * <code>required uint32 timeout = 3;</code>
+       * @param value The timeout to set.
+       * @return This builder for chaining.
        */
       public Builder setTimeout(int value) {
         bitField0_ |= 0x00000004;
@@ -873,6 +900,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required uint32 timeout = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTimeout() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -886,12 +914,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> requestBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+       * @return Whether the request field is set.
        */
       public boolean hasRequest() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+       * @return The request.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest() {
         if (requestBuilder_ == null) {
@@ -1057,10 +1087,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     boolean hasKey();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey();
     /**
@@ -1070,10 +1102,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+     * @return The data.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData();
     /**
@@ -1083,10 +1117,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+     * @return Whether the request field is set.
      */
     boolean hasRequest();
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+     * @return The request.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest();
     /**
@@ -1216,12 +1252,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     public boolean hasKey() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
       return key_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : key_;
@@ -1237,12 +1275,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage data_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+     * @return The data.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData() {
       return data_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : data_;
@@ -1258,12 +1298,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage request_;
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+     * @return Whether the request field is set.
      */
     public boolean hasRequest() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+     * @return The request.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest() {
       return request_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : request_;
@@ -1710,12 +1752,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return The key.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
         if (keyBuilder_ == null) {
@@ -1828,12 +1872,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> dataBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+       * @return The data.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData() {
         if (dataBuilder_ == null) {
@@ -1946,12 +1992,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> requestBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+       * @return Whether the request field is set.
        */
       public boolean hasRequest() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 4;</code>
+       * @return The request.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest() {
         if (requestBuilder_ == null) {
@@ -2117,10 +2165,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     boolean hasKey();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey();
     /**
@@ -2130,10 +2180,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+     * @return Whether the request field is set.
      */
     boolean hasRequest();
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+     * @return The request.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest();
     /**
@@ -2250,12 +2302,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     public boolean hasKey() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
       return key_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : key_;
@@ -2271,12 +2325,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage request_;
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+     * @return Whether the request field is set.
      */
     public boolean hasRequest() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+     * @return The request.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest() {
       return request_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : request_;
@@ -2675,12 +2731,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return The key.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
         if (keyBuilder_ == null) {
@@ -2793,12 +2851,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> requestBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+       * @return Whether the request field is set.
        */
       public boolean hasRequest() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+       * @return The request.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest() {
         if (requestBuilder_ == null) {
@@ -2964,10 +3024,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     boolean hasKey();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey();
     /**
@@ -2977,10 +3039,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+     * @return Whether the request field is set.
      */
     boolean hasRequest();
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+     * @return The request.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest();
     /**
@@ -3097,12 +3161,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     public boolean hasKey() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
       return key_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : key_;
@@ -3118,12 +3184,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage request_;
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+     * @return Whether the request field is set.
      */
     public boolean hasRequest() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+     * @return The request.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest() {
       return request_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : request_;
@@ -3522,12 +3590,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return The key.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
         if (keyBuilder_ == null) {
@@ -3640,12 +3710,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> requestBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+       * @return Whether the request field is set.
        */
       public boolean hasRequest() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.OtherMessage request = 2;</code>
+       * @return The request.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getRequest() {
         if (requestBuilder_ == null) {
@@ -3811,10 +3883,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     boolean hasKey();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey();
     /**
@@ -3824,14 +3898,17 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required string ref = 2;</code>
+     * @return Whether the ref field is set.
      */
     boolean hasRef();
     /**
      * <code>required string ref = 2;</code>
+     * @return The ref.
      */
     java.lang.String getRef();
     /**
      * <code>required string ref = 2;</code>
+     * @return The bytes for ref.
      */
     akka.protobufv3.internal.ByteString
         getRefBytes();
@@ -3939,12 +4016,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     public boolean hasKey() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
       return key_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : key_;
@@ -3960,12 +4039,14 @@ public final class ReplicatorMessages {
     private volatile java.lang.Object ref_;
     /**
      * <code>required string ref = 2;</code>
+     * @return Whether the ref field is set.
      */
     public boolean hasRef() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string ref = 2;</code>
+     * @return The ref.
      */
     public java.lang.String getRef() {
       java.lang.Object ref = ref_;
@@ -3983,6 +4064,7 @@ public final class ReplicatorMessages {
     }
     /**
      * <code>required string ref = 2;</code>
+     * @return The bytes for ref.
      */
     public akka.protobufv3.internal.ByteString
         getRefBytes() {
@@ -4373,12 +4455,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return The key.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
         if (keyBuilder_ == null) {
@@ -4489,12 +4573,14 @@ public final class ReplicatorMessages {
       private java.lang.Object ref_ = "";
       /**
        * <code>required string ref = 2;</code>
+       * @return Whether the ref field is set.
        */
       public boolean hasRef() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string ref = 2;</code>
+       * @return The ref.
        */
       public java.lang.String getRef() {
         java.lang.Object ref = ref_;
@@ -4512,6 +4598,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string ref = 2;</code>
+       * @return The bytes for ref.
        */
       public akka.protobufv3.internal.ByteString
           getRefBytes() {
@@ -4528,6 +4615,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string ref = 2;</code>
+       * @param value The ref to set.
+       * @return This builder for chaining.
        */
       public Builder setRef(
           java.lang.String value) {
@@ -4541,6 +4630,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string ref = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRef() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4550,6 +4640,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string ref = 2;</code>
+       * @param value The bytes for ref to set.
+       * @return This builder for chaining.
        */
       public Builder setRefBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -4620,10 +4712,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     boolean hasKey();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey();
     /**
@@ -4633,14 +4727,17 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required string ref = 2;</code>
+     * @return Whether the ref field is set.
      */
     boolean hasRef();
     /**
      * <code>required string ref = 2;</code>
+     * @return The ref.
      */
     java.lang.String getRef();
     /**
      * <code>required string ref = 2;</code>
+     * @return The bytes for ref.
      */
     akka.protobufv3.internal.ByteString
         getRefBytes();
@@ -4748,12 +4845,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     public boolean hasKey() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
       return key_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : key_;
@@ -4769,12 +4868,14 @@ public final class ReplicatorMessages {
     private volatile java.lang.Object ref_;
     /**
      * <code>required string ref = 2;</code>
+     * @return Whether the ref field is set.
      */
     public boolean hasRef() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string ref = 2;</code>
+     * @return The ref.
      */
     public java.lang.String getRef() {
       java.lang.Object ref = ref_;
@@ -4792,6 +4893,7 @@ public final class ReplicatorMessages {
     }
     /**
      * <code>required string ref = 2;</code>
+     * @return The bytes for ref.
      */
     public akka.protobufv3.internal.ByteString
         getRefBytes() {
@@ -5182,12 +5284,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return The key.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
         if (keyBuilder_ == null) {
@@ -5298,12 +5402,14 @@ public final class ReplicatorMessages {
       private java.lang.Object ref_ = "";
       /**
        * <code>required string ref = 2;</code>
+       * @return Whether the ref field is set.
        */
       public boolean hasRef() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string ref = 2;</code>
+       * @return The ref.
        */
       public java.lang.String getRef() {
         java.lang.Object ref = ref_;
@@ -5321,6 +5427,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string ref = 2;</code>
+       * @return The bytes for ref.
        */
       public akka.protobufv3.internal.ByteString
           getRefBytes() {
@@ -5337,6 +5444,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string ref = 2;</code>
+       * @param value The ref to set.
+       * @return This builder for chaining.
        */
       public Builder setRef(
           java.lang.String value) {
@@ -5350,6 +5459,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string ref = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRef() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -5359,6 +5469,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string ref = 2;</code>
+       * @param value The bytes for ref to set.
+       * @return This builder for chaining.
        */
       public Builder setRefBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -5429,10 +5541,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     boolean hasKey();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey();
     /**
@@ -5442,10 +5556,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+     * @return The data.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData();
     /**
@@ -5562,12 +5678,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage key_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return Whether the key field is set.
      */
     public boolean hasKey() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+     * @return The key.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
       return key_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : key_;
@@ -5583,12 +5701,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage data_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+     * @return The data.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData() {
       return data_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : data_;
@@ -5990,12 +6110,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> keyBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage key = 1;</code>
+       * @return The key.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getKey() {
         if (keyBuilder_ == null) {
@@ -6108,12 +6230,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> dataBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 2;</code>
+       * @return The data.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData() {
         if (dataBuilder_ == null) {
@@ -6279,24 +6403,29 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required string key = 1;</code>
+     * @return Whether the key field is set.
      */
     boolean hasKey();
     /**
      * <code>required string key = 1;</code>
+     * @return The key.
      */
     java.lang.String getKey();
     /**
      * <code>required string key = 1;</code>
+     * @return The bytes for key.
      */
     akka.protobufv3.internal.ByteString
         getKeyBytes();
 
     /**
      * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+     * @return Whether the envelope field is set.
      */
     boolean hasEnvelope();
     /**
      * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+     * @return The envelope.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope();
     /**
@@ -6306,10 +6435,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 3;</code>
+     * @return Whether the fromNode field is set.
      */
     boolean hasFromNode();
     /**
      * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 3;</code>
+     * @return The fromNode.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getFromNode();
     /**
@@ -6433,12 +6564,14 @@ public final class ReplicatorMessages {
     private volatile java.lang.Object key_;
     /**
      * <code>required string key = 1;</code>
+     * @return Whether the key field is set.
      */
     public boolean hasKey() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string key = 1;</code>
+     * @return The key.
      */
     public java.lang.String getKey() {
       java.lang.Object ref = key_;
@@ -6456,6 +6589,7 @@ public final class ReplicatorMessages {
     }
     /**
      * <code>required string key = 1;</code>
+     * @return The bytes for key.
      */
     public akka.protobufv3.internal.ByteString
         getKeyBytes() {
@@ -6475,12 +6609,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope envelope_;
     /**
      * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+     * @return Whether the envelope field is set.
      */
     public boolean hasEnvelope() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+     * @return The envelope.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope() {
       return envelope_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.getDefaultInstance() : envelope_;
@@ -6496,12 +6632,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress fromNode_;
     /**
      * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 3;</code>
+     * @return Whether the fromNode field is set.
      */
     public boolean hasFromNode() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 3;</code>
+     * @return The fromNode.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getFromNode() {
       return fromNode_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance() : fromNode_;
@@ -6931,12 +7069,14 @@ public final class ReplicatorMessages {
       private java.lang.Object key_ = "";
       /**
        * <code>required string key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The key.
        */
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
@@ -6954,6 +7094,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The bytes for key.
        */
       public akka.protobufv3.internal.ByteString
           getKeyBytes() {
@@ -6970,6 +7111,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @param value The key to set.
+       * @return This builder for chaining.
        */
       public Builder setKey(
           java.lang.String value) {
@@ -6983,6 +7126,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearKey() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -6992,6 +7136,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @param value The bytes for key to set.
+       * @return This builder for chaining.
        */
       public Builder setKeyBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -7009,12 +7155,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder> envelopeBuilder_;
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+       * @return Whether the envelope field is set.
        */
       public boolean hasEnvelope() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+       * @return The envelope.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope() {
         if (envelopeBuilder_ == null) {
@@ -7127,12 +7275,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> fromNodeBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 3;</code>
+       * @return Whether the fromNode field is set.
        */
       public boolean hasFromNode() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 3;</code>
+       * @return The fromNode.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getFromNode() {
         if (fromNodeBuilder_ == null) {
@@ -7716,24 +7866,29 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required string key = 1;</code>
+     * @return Whether the key field is set.
      */
     boolean hasKey();
     /**
      * <code>required string key = 1;</code>
+     * @return The key.
      */
     java.lang.String getKey();
     /**
      * <code>required string key = 1;</code>
+     * @return The bytes for key.
      */
     akka.protobufv3.internal.ByteString
         getKeyBytes();
 
     /**
      * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 2;</code>
+     * @return Whether the fromNode field is set.
      */
     boolean hasFromNode();
     /**
      * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 2;</code>
+     * @return The fromNode.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getFromNode();
     /**
@@ -7844,12 +7999,14 @@ public final class ReplicatorMessages {
     private volatile java.lang.Object key_;
     /**
      * <code>required string key = 1;</code>
+     * @return Whether the key field is set.
      */
     public boolean hasKey() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string key = 1;</code>
+     * @return The key.
      */
     public java.lang.String getKey() {
       java.lang.Object ref = key_;
@@ -7867,6 +8024,7 @@ public final class ReplicatorMessages {
     }
     /**
      * <code>required string key = 1;</code>
+     * @return The bytes for key.
      */
     public akka.protobufv3.internal.ByteString
         getKeyBytes() {
@@ -7886,12 +8044,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress fromNode_;
     /**
      * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 2;</code>
+     * @return Whether the fromNode field is set.
      */
     public boolean hasFromNode() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 2;</code>
+     * @return The fromNode.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getFromNode() {
       return fromNode_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance() : fromNode_;
@@ -8273,12 +8433,14 @@ public final class ReplicatorMessages {
       private java.lang.Object key_ = "";
       /**
        * <code>required string key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The key.
        */
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
@@ -8296,6 +8458,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The bytes for key.
        */
       public akka.protobufv3.internal.ByteString
           getKeyBytes() {
@@ -8312,6 +8475,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @param value The key to set.
+       * @return This builder for chaining.
        */
       public Builder setKey(
           java.lang.String value) {
@@ -8325,6 +8490,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearKey() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -8334,6 +8500,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @param value The bytes for key to set.
+       * @return This builder for chaining.
        */
       public Builder setKeyBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8351,12 +8519,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> fromNodeBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 2;</code>
+       * @return Whether the fromNode field is set.
        */
       public boolean hasFromNode() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.UniqueAddress fromNode = 2;</code>
+       * @return The fromNode.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getFromNode() {
         if (fromNodeBuilder_ == null) {
@@ -8522,10 +8692,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>optional .akka.cluster.ddata.DataEnvelope envelope = 1;</code>
+     * @return Whether the envelope field is set.
      */
     boolean hasEnvelope();
     /**
      * <code>optional .akka.cluster.ddata.DataEnvelope envelope = 1;</code>
+     * @return The envelope.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope();
     /**
@@ -8629,12 +8801,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope envelope_;
     /**
      * <code>optional .akka.cluster.ddata.DataEnvelope envelope = 1;</code>
+     * @return Whether the envelope field is set.
      */
     public boolean hasEnvelope() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional .akka.cluster.ddata.DataEnvelope envelope = 1;</code>
+     * @return The envelope.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope() {
       return envelope_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.getDefaultInstance() : envelope_;
@@ -8985,12 +9159,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder> envelopeBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.DataEnvelope envelope = 1;</code>
+       * @return Whether the envelope field is set.
        */
       public boolean hasEnvelope() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.DataEnvelope envelope = 1;</code>
+       * @return The envelope.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope() {
         if (envelopeBuilder_ == null) {
@@ -9156,10 +9332,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+     * @return The data.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData();
     /**
@@ -9193,10 +9371,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>optional .akka.cluster.ddata.VersionVector deltaVersions = 3;</code>
+     * @return Whether the deltaVersions field is set.
      */
     boolean hasDeltaVersions();
     /**
      * <code>optional .akka.cluster.ddata.VersionVector deltaVersions = 3;</code>
+     * @return The deltaVersions.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector getDeltaVersions();
     /**
@@ -9327,10 +9507,12 @@ public final class ReplicatorMessages {
 
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress removedAddress = 1;</code>
+       * @return Whether the removedAddress field is set.
        */
       boolean hasRemovedAddress();
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress removedAddress = 1;</code>
+       * @return The removedAddress.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getRemovedAddress();
       /**
@@ -9340,10 +9522,12 @@ public final class ReplicatorMessages {
 
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress ownerAddress = 2;</code>
+       * @return Whether the ownerAddress field is set.
        */
       boolean hasOwnerAddress();
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress ownerAddress = 2;</code>
+       * @return The ownerAddress.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getOwnerAddress();
       /**
@@ -9353,10 +9537,12 @@ public final class ReplicatorMessages {
 
       /**
        * <code>required bool performed = 3;</code>
+       * @return Whether the performed field is set.
        */
       boolean hasPerformed();
       /**
        * <code>required bool performed = 3;</code>
+       * @return The performed.
        */
       boolean getPerformed();
 
@@ -9386,10 +9572,12 @@ public final class ReplicatorMessages {
 
       /**
        * <code>optional sint64 obsoleteTime = 5;</code>
+       * @return Whether the obsoleteTime field is set.
        */
       boolean hasObsoleteTime();
       /**
        * <code>optional sint64 obsoleteTime = 5;</code>
+       * @return The obsoleteTime.
        */
       long getObsoleteTime();
     }
@@ -9525,12 +9713,14 @@ public final class ReplicatorMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress removedAddress_;
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress removedAddress = 1;</code>
+       * @return Whether the removedAddress field is set.
        */
       public boolean hasRemovedAddress() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress removedAddress = 1;</code>
+       * @return The removedAddress.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getRemovedAddress() {
         return removedAddress_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance() : removedAddress_;
@@ -9546,12 +9736,14 @@ public final class ReplicatorMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress ownerAddress_;
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress ownerAddress = 2;</code>
+       * @return Whether the ownerAddress field is set.
        */
       public boolean hasOwnerAddress() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress ownerAddress = 2;</code>
+       * @return The ownerAddress.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getOwnerAddress() {
         return ownerAddress_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance() : ownerAddress_;
@@ -9567,12 +9759,14 @@ public final class ReplicatorMessages {
       private boolean performed_;
       /**
        * <code>required bool performed = 3;</code>
+       * @return Whether the performed field is set.
        */
       public boolean hasPerformed() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required bool performed = 3;</code>
+       * @return The performed.
        */
       public boolean getPerformed() {
         return performed_;
@@ -9617,12 +9811,14 @@ public final class ReplicatorMessages {
       private long obsoleteTime_;
       /**
        * <code>optional sint64 obsoleteTime = 5;</code>
+       * @return Whether the obsoleteTime field is set.
        */
       public boolean hasObsoleteTime() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional sint64 obsoleteTime = 5;</code>
+       * @return The obsoleteTime.
        */
       public long getObsoleteTime() {
         return obsoleteTime_;
@@ -10143,12 +10339,14 @@ public final class ReplicatorMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> removedAddressBuilder_;
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress removedAddress = 1;</code>
+         * @return Whether the removedAddress field is set.
          */
         public boolean hasRemovedAddress() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress removedAddress = 1;</code>
+         * @return The removedAddress.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getRemovedAddress() {
           if (removedAddressBuilder_ == null) {
@@ -10261,12 +10459,14 @@ public final class ReplicatorMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> ownerAddressBuilder_;
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress ownerAddress = 2;</code>
+         * @return Whether the ownerAddress field is set.
          */
         public boolean hasOwnerAddress() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress ownerAddress = 2;</code>
+         * @return The ownerAddress.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getOwnerAddress() {
           if (ownerAddressBuilder_ == null) {
@@ -10377,18 +10577,22 @@ public final class ReplicatorMessages {
         private boolean performed_ ;
         /**
          * <code>required bool performed = 3;</code>
+         * @return Whether the performed field is set.
          */
         public boolean hasPerformed() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>required bool performed = 3;</code>
+         * @return The performed.
          */
         public boolean getPerformed() {
           return performed_;
         }
         /**
          * <code>required bool performed = 3;</code>
+         * @param value The performed to set.
+         * @return This builder for chaining.
          */
         public Builder setPerformed(boolean value) {
           bitField0_ |= 0x00000004;
@@ -10398,6 +10602,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required bool performed = 3;</code>
+         * @return This builder for chaining.
          */
         public Builder clearPerformed() {
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -10649,18 +10854,22 @@ public final class ReplicatorMessages {
         private long obsoleteTime_ ;
         /**
          * <code>optional sint64 obsoleteTime = 5;</code>
+         * @return Whether the obsoleteTime field is set.
          */
         public boolean hasObsoleteTime() {
           return ((bitField0_ & 0x00000010) != 0);
         }
         /**
          * <code>optional sint64 obsoleteTime = 5;</code>
+         * @return The obsoleteTime.
          */
         public long getObsoleteTime() {
           return obsoleteTime_;
         }
         /**
          * <code>optional sint64 obsoleteTime = 5;</code>
+         * @param value The obsoleteTime to set.
+         * @return This builder for chaining.
          */
         public Builder setObsoleteTime(long value) {
           bitField0_ |= 0x00000010;
@@ -10670,6 +10879,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>optional sint64 obsoleteTime = 5;</code>
+         * @return This builder for chaining.
          */
         public Builder clearObsoleteTime() {
           bitField0_ = (bitField0_ & ~0x00000010);
@@ -10735,12 +10945,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage data_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+     * @return The data.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData() {
       return data_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : data_;
@@ -10791,12 +11003,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector deltaVersions_;
     /**
      * <code>optional .akka.cluster.ddata.VersionVector deltaVersions = 3;</code>
+     * @return Whether the deltaVersions field is set.
      */
     public boolean hasDeltaVersions() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .akka.cluster.ddata.VersionVector deltaVersions = 3;</code>
+     * @return The deltaVersions.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector getDeltaVersions() {
       return deltaVersions_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector.getDefaultInstance() : deltaVersions_;
@@ -11261,12 +11475,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> dataBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+       * @return The data.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData() {
         if (dataBuilder_ == null) {
@@ -11619,12 +11835,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVectorOrBuilder> deltaVersionsBuilder_;
       /**
        * <code>optional .akka.cluster.ddata.VersionVector deltaVersions = 3;</code>
+       * @return Whether the deltaVersions field is set.
        */
       public boolean hasDeltaVersions() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .akka.cluster.ddata.VersionVector deltaVersions = 3;</code>
+       * @return The deltaVersions.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.VersionVector getDeltaVersions() {
         if (deltaVersionsBuilder_ == null) {
@@ -11790,19 +12008,23 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required uint32 chunk = 1;</code>
+     * @return Whether the chunk field is set.
      */
     boolean hasChunk();
     /**
      * <code>required uint32 chunk = 1;</code>
+     * @return The chunk.
      */
     int getChunk();
 
     /**
      * <code>required uint32 totChunks = 2;</code>
+     * @return Whether the totChunks field is set.
      */
     boolean hasTotChunks();
     /**
      * <code>required uint32 totChunks = 2;</code>
+     * @return The totChunks.
      */
     int getTotChunks();
 
@@ -11832,19 +12054,23 @@ public final class ReplicatorMessages {
 
     /**
      * <code>optional sfixed64 toSystemUid = 4;</code>
+     * @return Whether the toSystemUid field is set.
      */
     boolean hasToSystemUid();
     /**
      * <code>optional sfixed64 toSystemUid = 4;</code>
+     * @return The toSystemUid.
      */
     long getToSystemUid();
 
     /**
      * <code>optional sfixed64 fromSystemUid = 5;</code>
+     * @return Whether the fromSystemUid field is set.
      */
     boolean hasFromSystemUid();
     /**
      * <code>optional sfixed64 fromSystemUid = 5;</code>
+     * @return The fromSystemUid.
      */
     long getFromSystemUid();
   }
@@ -11965,24 +12191,29 @@ public final class ReplicatorMessages {
 
       /**
        * <code>required string key = 1;</code>
+       * @return Whether the key field is set.
        */
       boolean hasKey();
       /**
        * <code>required string key = 1;</code>
+       * @return The key.
        */
       java.lang.String getKey();
       /**
        * <code>required string key = 1;</code>
+       * @return The bytes for key.
        */
       akka.protobufv3.internal.ByteString
           getKeyBytes();
 
       /**
        * <code>required bytes digest = 2;</code>
+       * @return Whether the digest field is set.
        */
       boolean hasDigest();
       /**
        * <code>required bytes digest = 2;</code>
+       * @return The digest.
        */
       akka.protobufv3.internal.ByteString getDigest();
     }
@@ -12082,12 +12313,14 @@ public final class ReplicatorMessages {
       private volatile java.lang.Object key_;
       /**
        * <code>required string key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The key.
        */
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
@@ -12105,6 +12338,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The bytes for key.
        */
       public akka.protobufv3.internal.ByteString
           getKeyBytes() {
@@ -12124,12 +12358,14 @@ public final class ReplicatorMessages {
       private akka.protobufv3.internal.ByteString digest_;
       /**
        * <code>required bytes digest = 2;</code>
+       * @return Whether the digest field is set.
        */
       public boolean hasDigest() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required bytes digest = 2;</code>
+       * @return The digest.
        */
       public akka.protobufv3.internal.ByteString getDigest() {
         return digest_;
@@ -12492,12 +12728,14 @@ public final class ReplicatorMessages {
         private java.lang.Object key_ = "";
         /**
          * <code>required string key = 1;</code>
+         * @return Whether the key field is set.
          */
         public boolean hasKey() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required string key = 1;</code>
+         * @return The key.
          */
         public java.lang.String getKey() {
           java.lang.Object ref = key_;
@@ -12515,6 +12753,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @return The bytes for key.
          */
         public akka.protobufv3.internal.ByteString
             getKeyBytes() {
@@ -12531,6 +12770,8 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @param value The key to set.
+         * @return This builder for chaining.
          */
         public Builder setKey(
             java.lang.String value) {
@@ -12544,6 +12785,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -12553,6 +12795,8 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @param value The bytes for key to set.
+         * @return This builder for chaining.
          */
         public Builder setKeyBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -12568,18 +12812,22 @@ public final class ReplicatorMessages {
         private akka.protobufv3.internal.ByteString digest_ = akka.protobufv3.internal.ByteString.EMPTY;
         /**
          * <code>required bytes digest = 2;</code>
+         * @return Whether the digest field is set.
          */
         public boolean hasDigest() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required bytes digest = 2;</code>
+         * @return The digest.
          */
         public akka.protobufv3.internal.ByteString getDigest() {
           return digest_;
         }
         /**
          * <code>required bytes digest = 2;</code>
+         * @param value The digest to set.
+         * @return This builder for chaining.
          */
         public Builder setDigest(akka.protobufv3.internal.ByteString value) {
           if (value == null) {
@@ -12592,6 +12840,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required bytes digest = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearDigest() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -12657,12 +12906,14 @@ public final class ReplicatorMessages {
     private int chunk_;
     /**
      * <code>required uint32 chunk = 1;</code>
+     * @return Whether the chunk field is set.
      */
     public boolean hasChunk() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint32 chunk = 1;</code>
+     * @return The chunk.
      */
     public int getChunk() {
       return chunk_;
@@ -12672,12 +12923,14 @@ public final class ReplicatorMessages {
     private int totChunks_;
     /**
      * <code>required uint32 totChunks = 2;</code>
+     * @return Whether the totChunks field is set.
      */
     public boolean hasTotChunks() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint32 totChunks = 2;</code>
+     * @return The totChunks.
      */
     public int getTotChunks() {
       return totChunks_;
@@ -12722,12 +12975,14 @@ public final class ReplicatorMessages {
     private long toSystemUid_;
     /**
      * <code>optional sfixed64 toSystemUid = 4;</code>
+     * @return Whether the toSystemUid field is set.
      */
     public boolean hasToSystemUid() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional sfixed64 toSystemUid = 4;</code>
+     * @return The toSystemUid.
      */
     public long getToSystemUid() {
       return toSystemUid_;
@@ -12737,12 +12992,14 @@ public final class ReplicatorMessages {
     private long fromSystemUid_;
     /**
      * <code>optional sfixed64 fromSystemUid = 5;</code>
+     * @return Whether the fromSystemUid field is set.
      */
     public boolean hasFromSystemUid() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional sfixed64 fromSystemUid = 5;</code>
+     * @return The fromSystemUid.
      */
     public long getFromSystemUid() {
       return fromSystemUid_;
@@ -13222,18 +13479,22 @@ public final class ReplicatorMessages {
       private int chunk_ ;
       /**
        * <code>required uint32 chunk = 1;</code>
+       * @return Whether the chunk field is set.
        */
       public boolean hasChunk() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint32 chunk = 1;</code>
+       * @return The chunk.
        */
       public int getChunk() {
         return chunk_;
       }
       /**
        * <code>required uint32 chunk = 1;</code>
+       * @param value The chunk to set.
+       * @return This builder for chaining.
        */
       public Builder setChunk(int value) {
         bitField0_ |= 0x00000001;
@@ -13243,6 +13504,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required uint32 chunk = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearChunk() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -13254,18 +13516,22 @@ public final class ReplicatorMessages {
       private int totChunks_ ;
       /**
        * <code>required uint32 totChunks = 2;</code>
+       * @return Whether the totChunks field is set.
        */
       public boolean hasTotChunks() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint32 totChunks = 2;</code>
+       * @return The totChunks.
        */
       public int getTotChunks() {
         return totChunks_;
       }
       /**
        * <code>required uint32 totChunks = 2;</code>
+       * @param value The totChunks to set.
+       * @return This builder for chaining.
        */
       public Builder setTotChunks(int value) {
         bitField0_ |= 0x00000002;
@@ -13275,6 +13541,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required uint32 totChunks = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTotChunks() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -13526,18 +13793,22 @@ public final class ReplicatorMessages {
       private long toSystemUid_ ;
       /**
        * <code>optional sfixed64 toSystemUid = 4;</code>
+       * @return Whether the toSystemUid field is set.
        */
       public boolean hasToSystemUid() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional sfixed64 toSystemUid = 4;</code>
+       * @return The toSystemUid.
        */
       public long getToSystemUid() {
         return toSystemUid_;
       }
       /**
        * <code>optional sfixed64 toSystemUid = 4;</code>
+       * @param value The toSystemUid to set.
+       * @return This builder for chaining.
        */
       public Builder setToSystemUid(long value) {
         bitField0_ |= 0x00000008;
@@ -13547,6 +13818,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>optional sfixed64 toSystemUid = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearToSystemUid() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -13558,18 +13830,22 @@ public final class ReplicatorMessages {
       private long fromSystemUid_ ;
       /**
        * <code>optional sfixed64 fromSystemUid = 5;</code>
+       * @return Whether the fromSystemUid field is set.
        */
       public boolean hasFromSystemUid() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional sfixed64 fromSystemUid = 5;</code>
+       * @return The fromSystemUid.
        */
       public long getFromSystemUid() {
         return fromSystemUid_;
       }
       /**
        * <code>optional sfixed64 fromSystemUid = 5;</code>
+       * @param value The fromSystemUid to set.
+       * @return This builder for chaining.
        */
       public Builder setFromSystemUid(long value) {
         bitField0_ |= 0x00000010;
@@ -13579,6 +13855,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>optional sfixed64 fromSystemUid = 5;</code>
+       * @return This builder for chaining.
        */
       public Builder clearFromSystemUid() {
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -13645,10 +13922,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required bool sendBack = 1;</code>
+     * @return Whether the sendBack field is set.
      */
     boolean hasSendBack();
     /**
      * <code>required bool sendBack = 1;</code>
+     * @return The sendBack.
      */
     boolean getSendBack();
 
@@ -13678,19 +13957,23 @@ public final class ReplicatorMessages {
 
     /**
      * <code>optional sfixed64 toSystemUid = 3;</code>
+     * @return Whether the toSystemUid field is set.
      */
     boolean hasToSystemUid();
     /**
      * <code>optional sfixed64 toSystemUid = 3;</code>
+     * @return The toSystemUid.
      */
     long getToSystemUid();
 
     /**
      * <code>optional sfixed64 fromSystemUid = 4;</code>
+     * @return Whether the fromSystemUid field is set.
      */
     boolean hasFromSystemUid();
     /**
      * <code>optional sfixed64 fromSystemUid = 4;</code>
+     * @return The fromSystemUid.
      */
     long getFromSystemUid();
   }
@@ -13806,24 +14089,29 @@ public final class ReplicatorMessages {
 
       /**
        * <code>required string key = 1;</code>
+       * @return Whether the key field is set.
        */
       boolean hasKey();
       /**
        * <code>required string key = 1;</code>
+       * @return The key.
        */
       java.lang.String getKey();
       /**
        * <code>required string key = 1;</code>
+       * @return The bytes for key.
        */
       akka.protobufv3.internal.ByteString
           getKeyBytes();
 
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+       * @return Whether the envelope field is set.
        */
       boolean hasEnvelope();
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+       * @return The envelope.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope();
       /**
@@ -13934,12 +14222,14 @@ public final class ReplicatorMessages {
       private volatile java.lang.Object key_;
       /**
        * <code>required string key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The key.
        */
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
@@ -13957,6 +14247,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The bytes for key.
        */
       public akka.protobufv3.internal.ByteString
           getKeyBytes() {
@@ -13976,12 +14267,14 @@ public final class ReplicatorMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope envelope_;
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+       * @return Whether the envelope field is set.
        */
       public boolean hasEnvelope() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+       * @return The envelope.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope() {
         return envelope_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.getDefaultInstance() : envelope_;
@@ -14366,12 +14659,14 @@ public final class ReplicatorMessages {
         private java.lang.Object key_ = "";
         /**
          * <code>required string key = 1;</code>
+         * @return Whether the key field is set.
          */
         public boolean hasKey() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required string key = 1;</code>
+         * @return The key.
          */
         public java.lang.String getKey() {
           java.lang.Object ref = key_;
@@ -14389,6 +14684,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @return The bytes for key.
          */
         public akka.protobufv3.internal.ByteString
             getKeyBytes() {
@@ -14405,6 +14701,8 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @param value The key to set.
+         * @return This builder for chaining.
          */
         public Builder setKey(
             java.lang.String value) {
@@ -14418,6 +14716,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -14427,6 +14726,8 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @param value The bytes for key to set.
+         * @return This builder for chaining.
          */
         public Builder setKeyBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -14444,12 +14745,14 @@ public final class ReplicatorMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder> envelopeBuilder_;
         /**
          * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+         * @return Whether the envelope field is set.
          */
         public boolean hasEnvelope() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+         * @return The envelope.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope() {
           if (envelopeBuilder_ == null) {
@@ -14614,12 +14917,14 @@ public final class ReplicatorMessages {
     private boolean sendBack_;
     /**
      * <code>required bool sendBack = 1;</code>
+     * @return Whether the sendBack field is set.
      */
     public boolean hasSendBack() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required bool sendBack = 1;</code>
+     * @return The sendBack.
      */
     public boolean getSendBack() {
       return sendBack_;
@@ -14664,12 +14969,14 @@ public final class ReplicatorMessages {
     private long toSystemUid_;
     /**
      * <code>optional sfixed64 toSystemUid = 3;</code>
+     * @return Whether the toSystemUid field is set.
      */
     public boolean hasToSystemUid() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional sfixed64 toSystemUid = 3;</code>
+     * @return The toSystemUid.
      */
     public long getToSystemUid() {
       return toSystemUid_;
@@ -14679,12 +14986,14 @@ public final class ReplicatorMessages {
     private long fromSystemUid_;
     /**
      * <code>optional sfixed64 fromSystemUid = 4;</code>
+     * @return Whether the fromSystemUid field is set.
      */
     public boolean hasFromSystemUid() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional sfixed64 fromSystemUid = 4;</code>
+     * @return The fromSystemUid.
      */
     public long getFromSystemUid() {
       return fromSystemUid_;
@@ -15133,18 +15442,22 @@ public final class ReplicatorMessages {
       private boolean sendBack_ ;
       /**
        * <code>required bool sendBack = 1;</code>
+       * @return Whether the sendBack field is set.
        */
       public boolean hasSendBack() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required bool sendBack = 1;</code>
+       * @return The sendBack.
        */
       public boolean getSendBack() {
         return sendBack_;
       }
       /**
        * <code>required bool sendBack = 1;</code>
+       * @param value The sendBack to set.
+       * @return This builder for chaining.
        */
       public Builder setSendBack(boolean value) {
         bitField0_ |= 0x00000001;
@@ -15154,6 +15467,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required bool sendBack = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSendBack() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -15405,18 +15719,22 @@ public final class ReplicatorMessages {
       private long toSystemUid_ ;
       /**
        * <code>optional sfixed64 toSystemUid = 3;</code>
+       * @return Whether the toSystemUid field is set.
        */
       public boolean hasToSystemUid() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional sfixed64 toSystemUid = 3;</code>
+       * @return The toSystemUid.
        */
       public long getToSystemUid() {
         return toSystemUid_;
       }
       /**
        * <code>optional sfixed64 toSystemUid = 3;</code>
+       * @param value The toSystemUid to set.
+       * @return This builder for chaining.
        */
       public Builder setToSystemUid(long value) {
         bitField0_ |= 0x00000004;
@@ -15426,6 +15744,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>optional sfixed64 toSystemUid = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearToSystemUid() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -15437,18 +15756,22 @@ public final class ReplicatorMessages {
       private long fromSystemUid_ ;
       /**
        * <code>optional sfixed64 fromSystemUid = 4;</code>
+       * @return Whether the fromSystemUid field is set.
        */
       public boolean hasFromSystemUid() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional sfixed64 fromSystemUid = 4;</code>
+       * @return The fromSystemUid.
        */
       public long getFromSystemUid() {
         return fromSystemUid_;
       }
       /**
        * <code>optional sfixed64 fromSystemUid = 4;</code>
+       * @param value The fromSystemUid to set.
+       * @return This builder for chaining.
        */
       public Builder setFromSystemUid(long value) {
         bitField0_ |= 0x00000008;
@@ -15458,6 +15781,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>optional sfixed64 fromSystemUid = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearFromSystemUid() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -15524,10 +15848,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.UniqueAddress fromNode = 1;</code>
+     * @return Whether the fromNode field is set.
      */
     boolean hasFromNode();
     /**
      * <code>required .akka.cluster.ddata.UniqueAddress fromNode = 1;</code>
+     * @return The fromNode.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getFromNode();
     /**
@@ -15565,6 +15891,7 @@ public final class ReplicatorMessages {
      * </pre>
      *
      * <code>optional bool reply = 3;</code>
+     * @return Whether the reply field is set.
      */
     boolean hasReply();
     /**
@@ -15573,6 +15900,7 @@ public final class ReplicatorMessages {
      * </pre>
      *
      * <code>optional bool reply = 3;</code>
+     * @return The reply.
      */
     boolean getReply();
   }
@@ -15691,24 +16019,29 @@ public final class ReplicatorMessages {
 
       /**
        * <code>required string key = 1;</code>
+       * @return Whether the key field is set.
        */
       boolean hasKey();
       /**
        * <code>required string key = 1;</code>
+       * @return The key.
        */
       java.lang.String getKey();
       /**
        * <code>required string key = 1;</code>
+       * @return The bytes for key.
        */
       akka.protobufv3.internal.ByteString
           getKeyBytes();
 
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+       * @return Whether the envelope field is set.
        */
       boolean hasEnvelope();
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+       * @return The envelope.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope();
       /**
@@ -15718,10 +16051,12 @@ public final class ReplicatorMessages {
 
       /**
        * <code>required int64 fromSeqNr = 3;</code>
+       * @return Whether the fromSeqNr field is set.
        */
       boolean hasFromSeqNr();
       /**
        * <code>required int64 fromSeqNr = 3;</code>
+       * @return The fromSeqNr.
        */
       long getFromSeqNr();
 
@@ -15731,6 +16066,7 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional int64 toSeqNr = 4;</code>
+       * @return Whether the toSeqNr field is set.
        */
       boolean hasToSeqNr();
       /**
@@ -15739,6 +16075,7 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional int64 toSeqNr = 4;</code>
+       * @return The toSeqNr.
        */
       long getToSeqNr();
     }
@@ -15855,12 +16192,14 @@ public final class ReplicatorMessages {
       private volatile java.lang.Object key_;
       /**
        * <code>required string key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The key.
        */
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
@@ -15878,6 +16217,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string key = 1;</code>
+       * @return The bytes for key.
        */
       public akka.protobufv3.internal.ByteString
           getKeyBytes() {
@@ -15897,12 +16237,14 @@ public final class ReplicatorMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope envelope_;
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+       * @return Whether the envelope field is set.
        */
       public boolean hasEnvelope() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+       * @return The envelope.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope() {
         return envelope_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.getDefaultInstance() : envelope_;
@@ -15918,12 +16260,14 @@ public final class ReplicatorMessages {
       private long fromSeqNr_;
       /**
        * <code>required int64 fromSeqNr = 3;</code>
+       * @return Whether the fromSeqNr field is set.
        */
       public boolean hasFromSeqNr() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required int64 fromSeqNr = 3;</code>
+       * @return The fromSeqNr.
        */
       public long getFromSeqNr() {
         return fromSeqNr_;
@@ -15937,6 +16281,7 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional int64 toSeqNr = 4;</code>
+       * @return Whether the toSeqNr field is set.
        */
       public boolean hasToSeqNr() {
         return ((bitField0_ & 0x00000008) != 0);
@@ -15947,6 +16292,7 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional int64 toSeqNr = 4;</code>
+       * @return The toSeqNr.
        */
       public long getToSeqNr() {
         return toSeqNr_;
@@ -16384,12 +16730,14 @@ public final class ReplicatorMessages {
         private java.lang.Object key_ = "";
         /**
          * <code>required string key = 1;</code>
+         * @return Whether the key field is set.
          */
         public boolean hasKey() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required string key = 1;</code>
+         * @return The key.
          */
         public java.lang.String getKey() {
           java.lang.Object ref = key_;
@@ -16407,6 +16755,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @return The bytes for key.
          */
         public akka.protobufv3.internal.ByteString
             getKeyBytes() {
@@ -16423,6 +16772,8 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @param value The key to set.
+         * @return This builder for chaining.
          */
         public Builder setKey(
             java.lang.String value) {
@@ -16436,6 +16787,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearKey() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -16445,6 +16797,8 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required string key = 1;</code>
+         * @param value The bytes for key to set.
+         * @return This builder for chaining.
          */
         public Builder setKeyBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -16462,12 +16816,14 @@ public final class ReplicatorMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelopeOrBuilder> envelopeBuilder_;
         /**
          * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+         * @return Whether the envelope field is set.
          */
         public boolean hasEnvelope() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.DataEnvelope envelope = 2;</code>
+         * @return The envelope.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.DataEnvelope getEnvelope() {
           if (envelopeBuilder_ == null) {
@@ -16578,18 +16934,22 @@ public final class ReplicatorMessages {
         private long fromSeqNr_ ;
         /**
          * <code>required int64 fromSeqNr = 3;</code>
+         * @return Whether the fromSeqNr field is set.
          */
         public boolean hasFromSeqNr() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>required int64 fromSeqNr = 3;</code>
+         * @return The fromSeqNr.
          */
         public long getFromSeqNr() {
           return fromSeqNr_;
         }
         /**
          * <code>required int64 fromSeqNr = 3;</code>
+         * @param value The fromSeqNr to set.
+         * @return This builder for chaining.
          */
         public Builder setFromSeqNr(long value) {
           bitField0_ |= 0x00000004;
@@ -16599,6 +16959,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required int64 fromSeqNr = 3;</code>
+         * @return This builder for chaining.
          */
         public Builder clearFromSeqNr() {
           bitField0_ = (bitField0_ & ~0x00000004);
@@ -16614,6 +16975,7 @@ public final class ReplicatorMessages {
          * </pre>
          *
          * <code>optional int64 toSeqNr = 4;</code>
+         * @return Whether the toSeqNr field is set.
          */
         public boolean hasToSeqNr() {
           return ((bitField0_ & 0x00000008) != 0);
@@ -16624,6 +16986,7 @@ public final class ReplicatorMessages {
          * </pre>
          *
          * <code>optional int64 toSeqNr = 4;</code>
+         * @return The toSeqNr.
          */
         public long getToSeqNr() {
           return toSeqNr_;
@@ -16634,6 +16997,8 @@ public final class ReplicatorMessages {
          * </pre>
          *
          * <code>optional int64 toSeqNr = 4;</code>
+         * @param value The toSeqNr to set.
+         * @return This builder for chaining.
          */
         public Builder setToSeqNr(long value) {
           bitField0_ |= 0x00000008;
@@ -16647,6 +17012,7 @@ public final class ReplicatorMessages {
          * </pre>
          *
          * <code>optional int64 toSeqNr = 4;</code>
+         * @return This builder for chaining.
          */
         public Builder clearToSeqNr() {
           bitField0_ = (bitField0_ & ~0x00000008);
@@ -16712,12 +17078,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress fromNode_;
     /**
      * <code>required .akka.cluster.ddata.UniqueAddress fromNode = 1;</code>
+     * @return Whether the fromNode field is set.
      */
     public boolean hasFromNode() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.UniqueAddress fromNode = 1;</code>
+     * @return The fromNode.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getFromNode() {
       return fromNode_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance() : fromNode_;
@@ -16772,6 +17140,7 @@ public final class ReplicatorMessages {
      * </pre>
      *
      * <code>optional bool reply = 3;</code>
+     * @return Whether the reply field is set.
      */
     public boolean hasReply() {
       return ((bitField0_ & 0x00000002) != 0);
@@ -16782,6 +17151,7 @@ public final class ReplicatorMessages {
      * </pre>
      *
      * <code>optional bool reply = 3;</code>
+     * @return The reply.
      */
     public boolean getReply() {
       return reply_;
@@ -17221,12 +17591,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> fromNodeBuilder_;
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress fromNode = 1;</code>
+       * @return Whether the fromNode field is set.
        */
       public boolean hasFromNode() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress fromNode = 1;</code>
+       * @return The fromNode.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getFromNode() {
         if (fromNodeBuilder_ == null) {
@@ -17581,6 +17953,7 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional bool reply = 3;</code>
+       * @return Whether the reply field is set.
        */
       public boolean hasReply() {
         return ((bitField0_ & 0x00000004) != 0);
@@ -17591,6 +17964,7 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional bool reply = 3;</code>
+       * @return The reply.
        */
       public boolean getReply() {
         return reply_;
@@ -17601,6 +17975,8 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional bool reply = 3;</code>
+       * @param value The reply to set.
+       * @return This builder for chaining.
        */
       public Builder setReply(boolean value) {
         bitField0_ |= 0x00000004;
@@ -17614,6 +17990,7 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional bool reply = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearReply() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -17680,10 +18057,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.Address address = 1;</code>
+     * @return Whether the address field is set.
      */
     boolean hasAddress();
     /**
      * <code>required .akka.cluster.ddata.Address address = 1;</code>
+     * @return The address.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address getAddress();
     /**
@@ -17693,10 +18072,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required sfixed32 uid = 2;</code>
+     * @return Whether the uid field is set.
      */
     boolean hasUid();
     /**
      * <code>required sfixed32 uid = 2;</code>
+     * @return The uid.
      */
     int getUid();
 
@@ -17706,6 +18087,7 @@ public final class ReplicatorMessages {
      * </pre>
      *
      * <code>optional sfixed32 uid2 = 3;</code>
+     * @return Whether the uid2 field is set.
      */
     boolean hasUid2();
     /**
@@ -17714,6 +18096,7 @@ public final class ReplicatorMessages {
      * </pre>
      *
      * <code>optional sfixed32 uid2 = 3;</code>
+     * @return The uid2.
      */
     int getUid2();
   }
@@ -17823,12 +18206,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address address_;
     /**
      * <code>required .akka.cluster.ddata.Address address = 1;</code>
+     * @return Whether the address field is set.
      */
     public boolean hasAddress() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.Address address = 1;</code>
+     * @return The address.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address getAddress() {
       return address_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.getDefaultInstance() : address_;
@@ -17844,12 +18229,14 @@ public final class ReplicatorMessages {
     private int uid_;
     /**
      * <code>required sfixed32 uid = 2;</code>
+     * @return Whether the uid field is set.
      */
     public boolean hasUid() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required sfixed32 uid = 2;</code>
+     * @return The uid.
      */
     public int getUid() {
       return uid_;
@@ -17863,6 +18250,7 @@ public final class ReplicatorMessages {
      * </pre>
      *
      * <code>optional sfixed32 uid2 = 3;</code>
+     * @return Whether the uid2 field is set.
      */
     public boolean hasUid2() {
       return ((bitField0_ & 0x00000004) != 0);
@@ -17873,6 +18261,7 @@ public final class ReplicatorMessages {
      * </pre>
      *
      * <code>optional sfixed32 uid2 = 3;</code>
+     * @return The uid2.
      */
     public int getUid2() {
       return uid2_;
@@ -18277,12 +18666,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.AddressOrBuilder> addressBuilder_;
       /**
        * <code>required .akka.cluster.ddata.Address address = 1;</code>
+       * @return Whether the address field is set.
        */
       public boolean hasAddress() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.Address address = 1;</code>
+       * @return The address.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.Address getAddress() {
         if (addressBuilder_ == null) {
@@ -18393,18 +18784,22 @@ public final class ReplicatorMessages {
       private int uid_ ;
       /**
        * <code>required sfixed32 uid = 2;</code>
+       * @return Whether the uid field is set.
        */
       public boolean hasUid() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required sfixed32 uid = 2;</code>
+       * @return The uid.
        */
       public int getUid() {
         return uid_;
       }
       /**
        * <code>required sfixed32 uid = 2;</code>
+       * @param value The uid to set.
+       * @return This builder for chaining.
        */
       public Builder setUid(int value) {
         bitField0_ |= 0x00000002;
@@ -18414,6 +18809,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required sfixed32 uid = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUid() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -18429,6 +18825,7 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional sfixed32 uid2 = 3;</code>
+       * @return Whether the uid2 field is set.
        */
       public boolean hasUid2() {
         return ((bitField0_ & 0x00000004) != 0);
@@ -18439,6 +18836,7 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional sfixed32 uid2 = 3;</code>
+       * @return The uid2.
        */
       public int getUid2() {
         return uid2_;
@@ -18449,6 +18847,8 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional sfixed32 uid2 = 3;</code>
+       * @param value The uid2 to set.
+       * @return This builder for chaining.
        */
       public Builder setUid2(int value) {
         bitField0_ |= 0x00000004;
@@ -18462,6 +18862,7 @@ public final class ReplicatorMessages {
        * </pre>
        *
        * <code>optional sfixed32 uid2 = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUid2() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -18528,24 +18929,29 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required string hostname = 1;</code>
+     * @return Whether the hostname field is set.
      */
     boolean hasHostname();
     /**
      * <code>required string hostname = 1;</code>
+     * @return The hostname.
      */
     java.lang.String getHostname();
     /**
      * <code>required string hostname = 1;</code>
+     * @return The bytes for hostname.
      */
     akka.protobufv3.internal.ByteString
         getHostnameBytes();
 
     /**
      * <code>required uint32 port = 2;</code>
+     * @return Whether the port field is set.
      */
     boolean hasPort();
     /**
      * <code>required uint32 port = 2;</code>
+     * @return The port.
      */
     int getPort();
   }
@@ -18644,12 +19050,14 @@ public final class ReplicatorMessages {
     private volatile java.lang.Object hostname_;
     /**
      * <code>required string hostname = 1;</code>
+     * @return Whether the hostname field is set.
      */
     public boolean hasHostname() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string hostname = 1;</code>
+     * @return The hostname.
      */
     public java.lang.String getHostname() {
       java.lang.Object ref = hostname_;
@@ -18667,6 +19075,7 @@ public final class ReplicatorMessages {
     }
     /**
      * <code>required string hostname = 1;</code>
+     * @return The bytes for hostname.
      */
     public akka.protobufv3.internal.ByteString
         getHostnameBytes() {
@@ -18686,12 +19095,14 @@ public final class ReplicatorMessages {
     private int port_;
     /**
      * <code>required uint32 port = 2;</code>
+     * @return Whether the port field is set.
      */
     public boolean hasPort() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint32 port = 2;</code>
+     * @return The port.
      */
     public int getPort() {
       return port_;
@@ -19054,12 +19465,14 @@ public final class ReplicatorMessages {
       private java.lang.Object hostname_ = "";
       /**
        * <code>required string hostname = 1;</code>
+       * @return Whether the hostname field is set.
        */
       public boolean hasHostname() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string hostname = 1;</code>
+       * @return The hostname.
        */
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
@@ -19077,6 +19490,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string hostname = 1;</code>
+       * @return The bytes for hostname.
        */
       public akka.protobufv3.internal.ByteString
           getHostnameBytes() {
@@ -19093,6 +19507,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string hostname = 1;</code>
+       * @param value The hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostname(
           java.lang.String value) {
@@ -19106,6 +19522,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string hostname = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearHostname() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -19115,6 +19532,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required string hostname = 1;</code>
+       * @param value The bytes for hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostnameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -19130,18 +19549,22 @@ public final class ReplicatorMessages {
       private int port_ ;
       /**
        * <code>required uint32 port = 2;</code>
+       * @return Whether the port field is set.
        */
       public boolean hasPort() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint32 port = 2;</code>
+       * @return The port.
        */
       public int getPort() {
         return port_;
       }
       /**
        * <code>required uint32 port = 2;</code>
+       * @param value The port to set.
+       * @return This builder for chaining.
        */
       public Builder setPort(int value) {
         bitField0_ |= 0x00000002;
@@ -19151,6 +19574,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required uint32 port = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPort() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -19336,10 +19760,12 @@ public final class ReplicatorMessages {
 
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+       * @return Whether the node field is set.
        */
       boolean hasNode();
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+       * @return The node.
        */
       akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getNode();
       /**
@@ -19349,10 +19775,12 @@ public final class ReplicatorMessages {
 
       /**
        * <code>required int64 version = 2;</code>
+       * @return Whether the version field is set.
        */
       boolean hasVersion();
       /**
        * <code>required int64 version = 2;</code>
+       * @return The version.
        */
       long getVersion();
     }
@@ -19457,12 +19885,14 @@ public final class ReplicatorMessages {
       private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress node_;
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+       * @return Whether the node field is set.
        */
       public boolean hasNode() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+       * @return The node.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getNode() {
         return node_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.getDefaultInstance() : node_;
@@ -19478,12 +19908,14 @@ public final class ReplicatorMessages {
       private long version_;
       /**
        * <code>required int64 version = 2;</code>
+       * @return Whether the version field is set.
        */
       public boolean hasVersion() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int64 version = 2;</code>
+       * @return The version.
        */
       public long getVersion() {
         return version_;
@@ -19864,12 +20296,14 @@ public final class ReplicatorMessages {
             akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddressOrBuilder> nodeBuilder_;
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+         * @return Whether the node field is set.
          */
         public boolean hasNode() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required .akka.cluster.ddata.UniqueAddress node = 1;</code>
+         * @return The node.
          */
         public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.UniqueAddress getNode() {
           if (nodeBuilder_ == null) {
@@ -19980,18 +20414,22 @@ public final class ReplicatorMessages {
         private long version_ ;
         /**
          * <code>required int64 version = 2;</code>
+         * @return Whether the version field is set.
          */
         public boolean hasVersion() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required int64 version = 2;</code>
+         * @return The version.
          */
         public long getVersion() {
           return version_;
         }
         /**
          * <code>required int64 version = 2;</code>
+         * @param value The version to set.
+         * @return This builder for chaining.
          */
         public Builder setVersion(long value) {
           bitField0_ |= 0x00000002;
@@ -20001,6 +20439,7 @@ public final class ReplicatorMessages {
         }
         /**
          * <code>required int64 version = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearVersion() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -20747,28 +21186,34 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return Whether the enclosedMessage field is set.
      */
     boolean hasEnclosedMessage();
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return The enclosedMessage.
      */
     akka.protobufv3.internal.ByteString getEnclosedMessage();
 
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     boolean hasSerializerId();
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     int getSerializerId();
 
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return Whether the messageManifest field is set.
      */
     boolean hasMessageManifest();
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return The messageManifest.
      */
     akka.protobufv3.internal.ByteString getMessageManifest();
   }
@@ -20872,12 +21317,14 @@ public final class ReplicatorMessages {
     private akka.protobufv3.internal.ByteString enclosedMessage_;
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return Whether the enclosedMessage field is set.
      */
     public boolean hasEnclosedMessage() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return The enclosedMessage.
      */
     public akka.protobufv3.internal.ByteString getEnclosedMessage() {
       return enclosedMessage_;
@@ -20887,12 +21334,14 @@ public final class ReplicatorMessages {
     private int serializerId_;
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     public int getSerializerId() {
       return serializerId_;
@@ -20902,12 +21351,14 @@ public final class ReplicatorMessages {
     private akka.protobufv3.internal.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return Whether the messageManifest field is set.
      */
     public boolean hasMessageManifest() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return The messageManifest.
      */
     public akka.protobufv3.internal.ByteString getMessageManifest() {
       return messageManifest_;
@@ -21294,18 +21745,22 @@ public final class ReplicatorMessages {
       private akka.protobufv3.internal.ByteString enclosedMessage_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return Whether the enclosedMessage field is set.
        */
       public boolean hasEnclosedMessage() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return The enclosedMessage.
        */
       public akka.protobufv3.internal.ByteString getEnclosedMessage() {
         return enclosedMessage_;
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @param value The enclosedMessage to set.
+       * @return This builder for chaining.
        */
       public Builder setEnclosedMessage(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -21318,6 +21773,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEnclosedMessage() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -21329,18 +21785,22 @@ public final class ReplicatorMessages {
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return Whether the serializerId field is set.
        */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return The serializerId.
        */
       public int getSerializerId() {
         return serializerId_;
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @param value The serializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000002;
@@ -21350,6 +21810,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -21361,18 +21822,22 @@ public final class ReplicatorMessages {
       private akka.protobufv3.internal.ByteString messageManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return Whether the messageManifest field is set.
        */
       public boolean hasMessageManifest() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return The messageManifest.
        */
       public akka.protobufv3.internal.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @param value The messageManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setMessageManifest(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -21385,6 +21850,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessageManifest() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -21451,19 +21917,25 @@ public final class ReplicatorMessages {
 
     /**
      * <code>repeated string elements = 1;</code>
+     * @return A list containing the elements.
      */
     java.util.List<java.lang.String>
         getElementsList();
     /**
      * <code>repeated string elements = 1;</code>
+     * @return The count of elements.
      */
     int getElementsCount();
     /**
      * <code>repeated string elements = 1;</code>
+     * @param index The index of the element to return.
+     * @return The elements at the given index.
      */
     java.lang.String getElements(int index);
     /**
      * <code>repeated string elements = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the elements at the given index.
      */
     akka.protobufv3.internal.ByteString
         getElementsBytes(int index);
@@ -21563,6 +22035,7 @@ public final class ReplicatorMessages {
     private akka.protobufv3.internal.LazyStringList elements_;
     /**
      * <code>repeated string elements = 1;</code>
+     * @return A list containing the elements.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getElementsList() {
@@ -21570,18 +22043,23 @@ public final class ReplicatorMessages {
     }
     /**
      * <code>repeated string elements = 1;</code>
+     * @return The count of elements.
      */
     public int getElementsCount() {
       return elements_.size();
     }
     /**
      * <code>repeated string elements = 1;</code>
+     * @param index The index of the element to return.
+     * @return The elements at the given index.
      */
     public java.lang.String getElements(int index) {
       return elements_.get(index);
     }
     /**
      * <code>repeated string elements = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the elements at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getElementsBytes(int index) {
@@ -21918,6 +22396,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>repeated string elements = 1;</code>
+       * @return A list containing the elements.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getElementsList() {
@@ -21925,18 +22404,23 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>repeated string elements = 1;</code>
+       * @return The count of elements.
        */
       public int getElementsCount() {
         return elements_.size();
       }
       /**
        * <code>repeated string elements = 1;</code>
+       * @param index The index of the element to return.
+       * @return The elements at the given index.
        */
       public java.lang.String getElements(int index) {
         return elements_.get(index);
       }
       /**
        * <code>repeated string elements = 1;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the elements at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getElementsBytes(int index) {
@@ -21944,6 +22428,9 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>repeated string elements = 1;</code>
+       * @param index The index to set the value at.
+       * @param value The elements to set.
+       * @return This builder for chaining.
        */
       public Builder setElements(
           int index, java.lang.String value) {
@@ -21957,6 +22444,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>repeated string elements = 1;</code>
+       * @param value The elements to add.
+       * @return This builder for chaining.
        */
       public Builder addElements(
           java.lang.String value) {
@@ -21970,6 +22459,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>repeated string elements = 1;</code>
+       * @param values The elements to add.
+       * @return This builder for chaining.
        */
       public Builder addAllElements(
           java.lang.Iterable<java.lang.String> values) {
@@ -21981,6 +22472,7 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>repeated string elements = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearElements() {
         elements_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -21990,6 +22482,8 @@ public final class ReplicatorMessages {
       }
       /**
        * <code>repeated string elements = 1;</code>
+       * @param value The bytes of the elements to add.
+       * @return This builder for chaining.
        */
       public Builder addElementsBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -22060,10 +22554,12 @@ public final class ReplicatorMessages {
 
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+     * @return The data.
      */
     akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData();
     /**
@@ -22204,12 +22700,14 @@ public final class ReplicatorMessages {
     private akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage data_;
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+     * @return The data.
      */
     public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData() {
       return data_ == null ? akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.getDefaultInstance() : data_;
@@ -22664,12 +23162,14 @@ public final class ReplicatorMessages {
           akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage.Builder, akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessageOrBuilder> dataBuilder_;
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .akka.cluster.ddata.OtherMessage data = 1;</code>
+       * @return The data.
        */
       public akka.cluster.ddata.protobuf.msg.ReplicatorMessages.OtherMessage getData() {
         if (dataBuilder_ == null) {
