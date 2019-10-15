@@ -7,7 +7,6 @@ package akka.io
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ Actor, ActorLogging, Deploy, Props }
-import akka.annotation.DoNotInherit
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing.FromConfig
 
