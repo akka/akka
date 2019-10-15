@@ -14,6 +14,7 @@ import java.time.Duration;
 
 // #import
 import akka.cluster.typed.ClusterSingleton;
+import akka.cluster.typed.ClusterSingletonSettings;
 import akka.cluster.typed.SingletonActor;
 
 // #import
@@ -121,7 +122,10 @@ public interface SingletonCompileOnlyTest {
   public static void dcProxy() {
     // #create-singleton-proxy-dc
     ActorRef<Counter.Command> singletonProxy =
-        ClusterSingleton.get(system).init(SingletonActor.of(Counter.create(), "GlobalCounter"));
+        ClusterSingleton.get(system)
+            .init(
+                SingletonActor.of(Counter.create(), "GlobalCounter")
+                    .withSettings(ClusterSingletonSettings.create(system).withDataCenter("B")));
     // #create-singleton-proxy-dc
 
   }
