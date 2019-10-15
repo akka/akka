@@ -12,6 +12,7 @@ import akka.routing.FromConfig
 
 import scala.concurrent.duration.Duration
 
+// TODO final or do not extend
 class SimpleDnsManager(val ext: DnsExt)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics]

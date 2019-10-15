@@ -11,7 +11,6 @@ import akka.actor.Props
 import akka.testkit.{ AkkaSpec, TestActorRef }
 import com.github.ghik.silencer.silent
 
-// FIXME - tests for both versions of the protocol
 @silent
 class InetAddressDnsResolverSpec extends AkkaSpec("""
     akka.io.dns.inet-address.positive-ttl = default

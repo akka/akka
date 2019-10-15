@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Status
 import akka.io.dns.CachePolicy._
 import akka.actor.{ Actor, ActorLogging }
+import akka.annotation.InternalApi
 import akka.io.dns.AAAARecord
 import akka.io.dns.ARecord
 import akka.io.dns.DnsProtocol
@@ -27,8 +28,13 @@ import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.util.{ Failure, Success, Try }
 
-/** Respects the settings that can be set on the Java runtime via parameters. */
+/**
+ * INTERNAL API
+ *
+ * Respects the settings that can be set on the Java runtime via parameters.
+ */
 @silent("deprecated")
+@InternalApi
 class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Actor with ActorLogging {
 
   // Controls the cache policy for successful lookups only
@@ -124,10 +130,10 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
             answer
           } catch {
             case _: UnknownHostException =>
-              val a = DnsProtocol.Resolved(name, immutable.Seq.empty)
+              val answer = DnsProtocol.Resolved(name, immutable.Seq.empty)
               if (negativeCachePolicy != Never)
-                cache.put((name, ip), a, negativeCachePolicy)
-              a
+                cache.put((name, ip), answer, negativeCachePolicy)
+              answer
           }
       }
       sender() ! answer
@@ -138,11 +144,12 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
         case None =>
           try {
             val addresses = InetAddress.getAllByName(name)
-            val records = addressToRecords(name, addresses.toList)
-            // response with the old protocol as the request was the new protocol
+            // respond with the old protocol as the request was the new protocol
             val answer = Dns.Resolved(name, addresses)
-            if (positiveCachePolicy != Never)
+            if (positiveCachePolicy != Never) {
+              val records = addressToRecords(name, addresses.toList)
               cache.put((name, Ip()), DnsProtocol.Resolved(name, records), positiveCachePolicy)
+            }
             answer
           } catch {
             case _: UnknownHostException =>

@@ -48,6 +48,10 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
     val ipv6 = cacheRef.get().get((name, Ip(ipv4 = false))).toList.flatMap(_.records)
     val both = cacheRef.get().get((name, Ip())).toList.flatMap(_.records)
 
+    println("ipv4: " + ipv4)
+    println("ipv6: " + ipv6)
+    println("both: " + both)
+
     val all = (ipv4 ++ ipv6 ++ both).collect {
       case r: ARecord    => r.ip
       case r: AAAARecord => r.ip

@@ -29,11 +29,11 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
         immutable.Seq(ARecord("test.local", ttl, InetAddress.getByName("127.0.0.1"))))
       cache.put(("test.local", Ip()), cacheEntry, ttl)
 
-      cache.cached("test.local") should ===(Some(cacheEntry))
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(Some(cacheEntry))
       localClock.set(4999)
-      cache.cached("test.local") should ===(Some(cacheEntry))
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(Some(cacheEntry))
       localClock.set(5000)
-      cache.cached("test.local") should ===(None)
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(None)
     }
 
     "sweep out expired entries on cleanup()" in {
@@ -48,16 +48,16 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
           immutable.Seq(ARecord("test.local", ttl, InetAddress.getByName("127.0.0.1"))))
       cache.put(("test.local", Ip()), cacheEntry, ttl)
 
-      cache.cached("test.local") should ===(Some(cacheEntry))
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(Some(cacheEntry))
       localClock.set(5000)
-      cache.cached("test.local") should ===(None)
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(None)
       localClock.set(0)
-      cache.cached("test.local") should ===(Some(cacheEntry))
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(Some(cacheEntry))
       localClock.set(5000)
       cache.cleanup()
-      cache.cached("test.local") should ===(None)
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(None)
       localClock.set(0)
-      cache.cached("test.local") should ===(None)
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(None)
     }
 
   }
