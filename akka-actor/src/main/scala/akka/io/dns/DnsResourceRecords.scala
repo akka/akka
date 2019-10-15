@@ -22,7 +22,6 @@ sealed abstract class ResourceRecord(
     val recClass: Short)
     extends NoSerializationVerificationNeeded {}
 
-// TODO - should we stop these being case classes? And all other DNS classes?
 final case class ARecord(override val name: String, override val ttl: CachePolicy.Ttl, ip: InetAddress)
     extends ResourceRecord(name, ttl, RecordType.A.code, RecordClass.IN.code) {}
 

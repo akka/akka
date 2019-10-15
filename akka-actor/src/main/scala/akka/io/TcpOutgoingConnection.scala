@@ -62,7 +62,7 @@ private[io] class TcpOutgoingConnection(
       reportConnectFailure {
         if (remoteAddress.isUnresolved) {
           log.debug("Resolving {} before connecting", remoteAddress.getHostName)
-          Dns.resolve(DnsProtocol.Resolve(remoteAddress.getHostName))(system, self) match {
+          Dns.resolve(DnsProtocol.Resolve(remoteAddress.getHostName), system, self) match {
             case None =>
               context.become(resolving(registration))
             case Some(resolved) =>

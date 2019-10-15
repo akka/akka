@@ -46,7 +46,7 @@ private[io] trait WithUdpSend {
       pendingSend = send
       pendingCommander = sender()
       if (send.target.isUnresolved) {
-        Dns.resolve(DnsProtocol.Resolve(send.target.getHostName))(context.system, self) match {
+        Dns.resolve(DnsProtocol.Resolve(send.target.getHostName), context.system, self) match {
           case Some(r) =>
             try {
               pendingSend = pendingSend.copy(target = new InetSocketAddress(r.address(), pendingSend.target.getPort))

@@ -41,7 +41,7 @@ private[io] class UdpConnection(
   var channel: DatagramChannel = null
 
   if (remoteAddress.isUnresolved) {
-    Dns.resolve(DnsProtocol.Resolve(remoteAddress.getHostName))(context.system, self) match {
+    Dns.resolve(DnsProtocol.Resolve(remoteAddress.getHostName), context.system, self) match {
       case Some(r) =>
         doConnect(new InetSocketAddress(r.address(), remoteAddress.getPort))
       case None =>

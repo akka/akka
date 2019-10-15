@@ -7,12 +7,13 @@ package akka.io
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ Actor, ActorLogging, Deploy, Props }
+import akka.annotation.DoNotInherit
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing.FromConfig
 
 import scala.concurrent.duration.Duration
 
-// TODO final or do not extend?
+@DoNotInherit
 class SimpleDnsManager(val ext: DnsExt)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics]

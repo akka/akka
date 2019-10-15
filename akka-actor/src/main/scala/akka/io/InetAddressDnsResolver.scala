@@ -115,7 +115,7 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
     case DnsProtocol.Resolve(_, Srv) =>
       sender() ! Status.Failure(
         new IllegalArgumentException(
-          "SRV request sent to InetResolver. SRV requests are only supported by async-dns resolver"))
+          "SRV request sent to InetResolver. SRV requests are only supported by async-dns resolver."))
 
     case r @ DnsProtocol.Resolve(name, ip @ Ip(ipv4, ipv6)) =>
       val answer = cache.cached(r) match {
@@ -147,7 +147,7 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
             // respond with the old protocol as the request was the new protocol
             val answer = Dns.Resolved(name, addresses)
             if (positiveCachePolicy != Never) {
-              val records = addressToRecords(name, addresses.toList)
+              val records = addressToRecords(name, addresses.toList, ipv4 = true, ipv6 = true)
               cache.put((name, Ip()), DnsProtocol.Resolved(name, records), positiveCachePolicy)
             }
             answer
@@ -165,8 +165,8 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
   private def addressToRecords(
       name: String,
       addresses: immutable.Seq[InetAddress],
-      ipv4: Boolean = true,
-      ipv6: Boolean = true): immutable.Seq[ResourceRecord] = {
+      ipv4: Boolean,
+      ipv6: Boolean): immutable.Seq[ResourceRecord] = {
     addresses.collect {
       case a: Inet4Address if ipv4 => ARecord(name, Ttl.toTll(positiveCachePolicy), a)
       case a: Inet6Address if ipv6 => AAAARecord(name, Ttl.toTll(positiveCachePolicy), a)
