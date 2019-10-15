@@ -87,16 +87,16 @@ private[persistence] class InmemJournal(cfg: Config) extends AsyncWriteJournal w
 private[persistence] trait InmemMessages {
   // persistenceId -> persistent message
   var messages = Map.empty[String, Vector[PersistentRepr]]
+  // persistenceId -> highest used sequence number
+  private var highestSequenceNumbers = Map.empty[String, Long]
 
-  def add(p: PersistentRepr): Unit =
+  def add(p: PersistentRepr): Unit = {
     messages = messages + (messages.get(p.persistenceId) match {
         case Some(ms) => p.persistenceId -> (ms :+ p)
         case None     => p.persistenceId -> Vector(p)
       })
-
-  def update(pid: String, snr: Long)(f: PersistentRepr => PersistentRepr): Unit = messages = messages.get(pid) match {
-    case Some(ms) => messages + (pid -> ms.map(sp => if (sp.sequenceNr == snr) f(sp) else sp))
-    case None     => messages
+    highestSequenceNumbers =
+      highestSequenceNumbers.updated(p.persistenceId, math.max(highestSequenceNr(p.persistenceId), p.sequenceNr))
   }
 
   def delete(pid: String, snr: Long): Unit = messages = messages.get(pid) match {
@@ -111,11 +111,7 @@ private[persistence] trait InmemMessages {
     }
 
   def highestSequenceNr(pid: String): Long = {
-    val snro = for {
-      ms <- messages.get(pid)
-      m <- ms.lastOption
-    } yield m.sequenceNr
-    snro.getOrElse(0L)
+    highestSequenceNumbers.getOrElse(pid, 0L)
   }
 
   private def safeLongToInt(l: Long): Int =
