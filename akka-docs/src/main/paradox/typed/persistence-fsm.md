@@ -3,7 +3,7 @@
 An @apidoc[EventSourcedBehavior] can be used to represent a persistent FSM. If you're migrating an existing classic
 persistent FSM to EventSourcedBehavior see the @ref[migration guide](../persistence-fsm.md#migration-to-eventsourcedbehavior).
 
-To demonstrate this consider an example of a shopping application. A an customer can be in the following states:
+To demonstrate this consider an example of a shopping application. A customer can be in the following states:
 
 * Looking around
 * Shopping (has something in their basket)
@@ -35,7 +35,7 @@ Java
 :  @@snip [PersistentFsmToTypedMigrationCompileOnlyTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/PersistentFsmToTypedMigrationCompileOnlyTest.java) { #commands }
 
 The command handler of the EventSourcedBehavior is used to convert the commands that change the state of the FSM
-to events and reply to commands.
+to events, and reply to commands.
 
 @scala[The command handler:]@java[The `forStateType` command handler can be used:]
 
