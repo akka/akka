@@ -7,24 +7,23 @@ package akka.discovery.dns
 import java.net.InetAddress
 
 import scala.concurrent.duration._
-
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
 import akka.event.Logging
 import akka.io.{ Dns, IO }
 import akka.pattern.ask
+
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-
 import akka.discovery._
+import akka.io.SimpleDnsCache
 import akka.io.dns.DnsProtocol.{ Ip, Srv }
 import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, SRVRecord }
+
 import scala.collection.{ immutable => im }
 import scala.util.Failure
 import scala.util.Success
-
-import akka.io.dns.internal.SimpleDnsCache
 import akka.io.dns.internal.AsyncDnsManager
 import akka.util.OptionVal
 import akka.util.Timeout

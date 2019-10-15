@@ -27,7 +27,7 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
       val cacheEntry = DnsProtocol.Resolved(
         "test.local",
         immutable.Seq(ARecord("test.local", ttl, InetAddress.getByName("127.0.0.1"))))
-      cache.put(("testl.local", Ip()), cacheEntry, ttl)
+      cache.put(("test.local", Ip()), cacheEntry, ttl)
 
       cache.cached("test.local") should ===(Some(cacheEntry))
       localClock.set(4999)
