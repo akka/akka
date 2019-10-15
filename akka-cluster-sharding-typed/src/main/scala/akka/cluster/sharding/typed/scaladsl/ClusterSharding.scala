@@ -445,9 +445,7 @@ object EntityTypeKey {
 
 object ClusterShardingSetup {
   def apply[T <: Extension](createExtension: ActorSystem[_] => ClusterSharding): ClusterShardingSetup =
-    new ClusterShardingSetup(new java.util.function.Function[ActorSystem[_], ClusterSharding] {
-      override def apply(sys: ActorSystem[_]): ClusterSharding = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+    new ClusterShardingSetup(createExtension(_))
 
 }
 

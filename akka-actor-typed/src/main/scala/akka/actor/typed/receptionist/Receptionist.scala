@@ -372,9 +372,7 @@ object Receptionist extends ExtensionId[Receptionist] {
 
 object ReceptionistSetup {
   def apply[T <: Extension](createExtension: ActorSystem[_] => Receptionist): ReceptionistSetup =
-    new ReceptionistSetup(new java.util.function.Function[ActorSystem[_], Receptionist] {
-      override def apply(sys: ActorSystem[_]): Receptionist = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+    new ReceptionistSetup(createExtension(_))
 
 }
 

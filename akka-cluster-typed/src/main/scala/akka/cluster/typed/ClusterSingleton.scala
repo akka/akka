@@ -297,9 +297,7 @@ final class ClusterSingletonManagerSettings(
 
 object ClusterSingletonSetup {
   def apply[T <: Extension](createExtension: ActorSystem[_] => ClusterSingleton): ClusterSingletonSetup =
-    new ClusterSingletonSetup(new java.util.function.Function[ActorSystem[_], ClusterSingleton] {
-      override def apply(sys: ActorSystem[_]): ClusterSingleton = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+    new ClusterSingletonSetup(createExtension(_))
 
 }
 
