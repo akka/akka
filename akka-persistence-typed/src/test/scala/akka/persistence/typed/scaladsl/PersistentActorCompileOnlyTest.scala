@@ -4,6 +4,8 @@
 
 package akka.persistence.typed.scaladsl
 
+import akka.actor.typed.ActorSystem
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import akka.actor.typed.{ ActorRef, Behavior }
@@ -33,7 +35,7 @@ object PersistentActorCompileOnlyTest {
     case class ExampleState(events: List[String] = Nil)
 
     EventSourcedBehavior[MyCommand, MyEvent, ExampleState](
-      persistenceId = PersistenceId("sample-id-1"),
+      persistenceId = PersistenceId.ofUniqueId("sample-id-1"),
       emptyState = ExampleState(Nil),
       commandHandler = CommandHandler.command {
         case Cmd(data, sender) =>
@@ -64,7 +66,7 @@ object PersistentActorCompileOnlyTest {
     def performSideEffect(sender: ActorRef[AcknowledgeSideEffect], correlationId: Int, data: String): Unit = {
       import akka.actor.typed.scaladsl.AskPattern._
       implicit val timeout: akka.util.Timeout = 1.second
-      implicit val scheduler: akka.actor.typed.Scheduler = ???
+      implicit val system: ActorSystem[_] = ???
       implicit val ec: ExecutionContext = ???
 
       val response: Future[RecoveryComplete.Response] =
@@ -77,7 +79,7 @@ object PersistentActorCompileOnlyTest {
       Behaviors.setup(
         ctx =>
           EventSourcedBehavior[Command, Event, EventsInFlight](
-            persistenceId = PersistenceId("recovery-complete-id"),
+            persistenceId = PersistenceId.ofUniqueId("recovery-complete-id"),
             emptyState = EventsInFlight(0, Map.empty),
             commandHandler = (state, cmd) =>
               cmd match {
@@ -118,7 +120,7 @@ object PersistentActorCompileOnlyTest {
     case class MoodChanged(to: Mood) extends Event
 
     val b: Behavior[Command] = EventSourcedBehavior[Command, Event, Mood](
-      persistenceId = PersistenceId("myPersistenceId"),
+      persistenceId = PersistenceId.ofUniqueId("myPersistenceId"),
       emptyState = Happy,
       commandHandler = { (state, command) =>
         state match {
@@ -162,7 +164,7 @@ object PersistentActorCompileOnlyTest {
     case class State(tasksInFlight: List[Task])
 
     EventSourcedBehavior[Command, Event, State](
-      persistenceId = PersistenceId("asdf"),
+      persistenceId = PersistenceId.ofUniqueId("asdf"),
       emptyState = State(Nil),
       commandHandler = CommandHandler.command {
         case RegisterTask(task) => Effect.persist(TaskRegistered(task))
@@ -195,7 +197,7 @@ object PersistentActorCompileOnlyTest {
     val behavior: Behavior[Command] = Behaviors.setup(
       ctx =>
         EventSourcedBehavior[Command, Event, State](
-          persistenceId = PersistenceId("asdf"),
+          persistenceId = PersistenceId.ofUniqueId("asdf"),
           emptyState = State(Nil),
           commandHandler = (_, cmd) =>
             cmd match {
@@ -257,7 +259,7 @@ object PersistentActorCompileOnlyTest {
         Effect.persist[Event, List[Id]](ItemAdded(id)).thenRun(_ => metadataRegistry ! GetMetaData(id, adapt))
 
       EventSourcedBehavior[Command, Event, List[Id]](
-        persistenceId = PersistenceId("basket-1"),
+        persistenceId = PersistenceId("basket", "1"),
         emptyState = Nil,
         commandHandler = { (state, cmd) =>
           if (isFullyHydrated(basket, state))
@@ -351,7 +353,7 @@ object PersistentActorCompileOnlyTest {
     }
 
     EventSourcedBehavior[Command, Event, Mood](
-      persistenceId = PersistenceId("myPersistenceId"),
+      persistenceId = PersistenceId.ofUniqueId("myPersistenceId"),
       emptyState = Sad,
       commandHandler,
       eventHandler)
@@ -377,7 +379,7 @@ object PersistentActorCompileOnlyTest {
     }
 
     EventSourcedBehavior[Command, Event, State](
-      persistenceId = PersistenceId("myPersistenceId"),
+      persistenceId = PersistenceId.ofUniqueId("myPersistenceId"),
       emptyState = new State,
       commandHandler,
       eventHandler)
@@ -389,7 +391,7 @@ object PersistentActorCompileOnlyTest {
     class Second extends State
 
     EventSourcedBehavior[String, String, State](
-      persistenceId = PersistenceId("myPersistenceId"),
+      persistenceId = PersistenceId.ofUniqueId("myPersistenceId"),
       emptyState = new First,
       commandHandler = CommandHandler.command { cmd =>
         Effect.persist(cmd).thenRun {

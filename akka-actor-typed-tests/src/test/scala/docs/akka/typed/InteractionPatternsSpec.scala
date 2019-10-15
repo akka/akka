@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
+import akka.Done
 import akka.NotUsed
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -69,7 +70,7 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
           Behaviors.receiveMessage[Request] {
             case Request(query, replyTo) =>
               // ... process query ...
-              replyTo ! Response(s"Here's the cookies for [$query]!")
+              replyTo ! Response(s"Here are the cookies for [$query]!")
               Behaviors.same
           }
         // #request-response-respond
@@ -409,10 +410,9 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     import akka.actor.typed.scaladsl.AskPattern._
     import akka.util.Timeout
 
-    // asking someone requires a timeout and a scheduler, if the timeout hits without response
+    // asking someone requires a timeout if the timeout hits without response
     // the ask is failed with a TimeoutException
     implicit val timeout: Timeout = 3.seconds
-    implicit val scheduler = system.scheduler
 
     val result: Future[CookieFabric.Cookies] = cookieFabric.ask(ref => CookieFabric.GiveMeCookies(ref))
 
@@ -426,5 +426,69 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     // #standalone-ask
 
     result.futureValue shouldEqual CookieFabric.Cookies(5)
+  }
+
+  "contain a sample for pipeToSelf" in {
+    //#pipeToSelf
+
+    trait CustomerDataAccess {
+      def update(value: Customer): Future[Done]
+    }
+
+    final case class Customer(id: String, version: Long, name: String, address: String)
+
+    object CustomerRepository {
+      sealed trait Command
+
+      final case class Update(value: Customer, replyTo: ActorRef[UpdateResult]) extends Command
+      sealed trait UpdateResult
+      final case class UpdateSuccess(id: String) extends UpdateResult
+      final case class UpdateFailure(id: String, reason: String) extends UpdateResult
+      private final case class WrappedUpdateResult(result: UpdateResult, replyTo: ActorRef[UpdateResult])
+          extends Command
+
+      private val MaxOperationsInProgress = 10
+
+      def apply(dataAccess: CustomerDataAccess): Behavior[Command] = {
+        next(dataAccess, operationsInProgress = 0)
+      }
+
+      private def next(dataAccess: CustomerDataAccess, operationsInProgress: Int): Behavior[Command] = {
+        Behaviors.receive { (context, command) =>
+          command match {
+            case Update(value, replyTo) =>
+              if (operationsInProgress == MaxOperationsInProgress) {
+                replyTo ! UpdateFailure(value.id, s"Max $MaxOperationsInProgress concurrent operations supported")
+                Behaviors.same
+              } else {
+                val futureResult = dataAccess.update(value)
+                context.pipeToSelf(futureResult) {
+                  // map the Future value to a message, handled by this actor
+                  case Success(_) => WrappedUpdateResult(UpdateSuccess(value.id), replyTo)
+                  case Failure(e) => WrappedUpdateResult(UpdateFailure(value.id, e.getMessage), replyTo)
+                }
+                // increase operationsInProgress counter
+                next(dataAccess, operationsInProgress + 1)
+              }
+
+            case WrappedUpdateResult(result, replyTo) =>
+              // send result to original requestor
+              replyTo ! result
+              // decrease operationsInProgress counter
+              next(dataAccess, operationsInProgress - 1)
+          }
+        }
+      }
+    }
+    //#pipeToSelf
+
+    val dataAccess = new CustomerDataAccess {
+      override def update(value: Customer): Future[Done] = Future.successful(Done)
+    }
+
+    val repository = spawn(CustomerRepository(dataAccess))
+    val probe = createTestProbe[CustomerRepository.UpdateResult]()
+    repository ! CustomerRepository.Update(Customer("123", 1L, "Alice", "Fairy tail road 7"), probe.ref)
+    probe.expectMessage(CustomerRepository.UpdateSuccess("123"))
   }
 }

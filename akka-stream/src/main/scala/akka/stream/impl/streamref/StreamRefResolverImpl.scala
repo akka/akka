@@ -13,7 +13,7 @@ import akka.stream.StreamRefResolver
 /**
  * INTERNAL API
  */
-@InternalApi final class StreamRefResolverImpl(system: ExtendedActorSystem) extends StreamRefResolver {
+@InternalApi private[akka] final class StreamRefResolverImpl(system: ExtendedActorSystem) extends StreamRefResolver {
 
   def toSerializationFormat[T](ref: SourceRef[T]): String = ref match {
     case SourceRefImpl(actorRef) =>

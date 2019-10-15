@@ -39,7 +39,7 @@ class TypedActorBenchmark {
   @Param(Array("50"))
   var batchSize = 0
 
-  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox"))
+  @Param(Array("akka.dispatch.SingleConsumerOnlyUnboundedMailbox", "akka.dispatch.UnboundedMailbox"))
   var mailbox = ""
 
   @Param(Array("fjp-dispatcher")) //  @Param(Array("fjp-dispatcher", "affinity-dispatcher"))
@@ -48,7 +48,6 @@ class TypedActorBenchmark {
   implicit var system: ActorSystem[Start] = _
 
   implicit val askTimeout = akka.util.Timeout(timeout)
-  implicit def scheduler = system.scheduler
 
   @Setup(Level.Trial)
   def setup(): Unit = {

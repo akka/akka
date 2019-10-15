@@ -549,7 +549,7 @@ class InterpreterSpec extends StreamSpec with GraphInterpreterSpecKit {
         }
 
         /**
-         * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push()]]
+         * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push]]
          * is now allowed to be called on this port.
          */
         override def onPull(): Unit = {

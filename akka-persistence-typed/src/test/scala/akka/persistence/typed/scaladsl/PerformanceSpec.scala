@@ -74,7 +74,7 @@ object PerformanceSpec {
       .supervise({
         val parameters = Parameters()
         EventSourcedBehavior[Command, String, String](
-          persistenceId = PersistenceId(name),
+          persistenceId = PersistenceId.ofUniqueId(name),
           "",
           commandHandler = CommandHandler.command {
             case StopMeasure =>

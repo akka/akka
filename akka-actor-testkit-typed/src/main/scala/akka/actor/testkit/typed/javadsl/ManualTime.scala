@@ -17,7 +17,7 @@ import scala.annotation.varargs
  * Manual time allows you to do async tests while controlling the scheduler of the system.
  *
  * To use it you need to configure the `ActorSystem`/`ActorTestKit` with [[ManualTime.config]] and access the
- * scheduler control through [[ManualTime.get()]]
+ * scheduler control through [[ManualTime.get]]
  */
 object ManualTime {
 
@@ -27,8 +27,8 @@ object ManualTime {
   def config(): Config = akka.actor.testkit.typed.scaladsl.ManualTime.config
 
   /**
-   * Access the manual scheduler, note that you need to setup the actor system/testkit with [[config()]] for this to
-   * work.
+   * Access the manual scheduler, note that you need to setup the actor system/testkit with [[ManualTime.config]]
+   * for this to work.
    */
   def get[A](system: ActorSystem[A]): ManualTime =
     system.scheduler match {

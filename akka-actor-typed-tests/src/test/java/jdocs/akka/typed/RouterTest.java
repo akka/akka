@@ -63,9 +63,8 @@ public class RouterTest {
           PoolRouter<Worker.Command> pool =
               Routers.pool(
                   poolSize,
-                  () ->
-                      // make sure the workers are restarted if they fail
-                      Behaviors.supervise(Worker.create()).onFailure(SupervisorStrategy.restart()));
+                  // make sure the workers are restarted if they fail
+                  Behaviors.supervise(Worker.create()).onFailure(SupervisorStrategy.restart()));
           ActorRef<Worker.Command> router = context.spawn(pool, "worker-pool");
 
           for (int i = 0; i < 10; i++) {
@@ -82,7 +81,10 @@ public class RouterTest {
   }
 
   static Behavior<Void> showGroupRouting() {
+    // #group
     ServiceKey<Worker.Command> serviceKey = ServiceKey.create(Worker.Command.class, "log-worker");
+
+    // #group
     return Behaviors.setup(
         context -> {
           // #group

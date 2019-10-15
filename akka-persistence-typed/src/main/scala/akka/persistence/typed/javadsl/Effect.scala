@@ -32,7 +32,7 @@ import akka.actor.typed.ActorRef
 
   /**
    * Persist all of a the given events. Each event will be applied through `applyEffect` separately but not until
-   * all events has been persisted. If `callback` is added through [[Effect#thenRun]] that will invoked
+   * all events has been persisted. If `callback` is added through [[EffectBuilder.thenRun]] that will invoked
    * after all the events has been persisted.
    */
   final def persist(events: java.util.List[Event]): EffectBuilder[Event, State] = PersistAll(events.asScala.toVector)
@@ -73,7 +73,7 @@ import akka.actor.typed.ActorRef
    * commands will not be processed by this `unstashAll` effect and have to be unstashed
    * by another `unstashAll`.
    *
-   * @see [[Effect.thenUnstashAll]]
+   * @see [[EffectBuilder.thenUnstashAll]]
    */
   def unstashAll(): Effect[Event, State] =
     none().thenUnstashAll()
@@ -186,7 +186,7 @@ import akka.actor.typed.ActorRef
 /**
  * [[EventSourcedBehaviorWithEnforcedReplies]] can be used to enforce that replies are not forgotten.
  * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
- * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
+ * created with `Effects().reply`, `Effects().noReply`, [[EffectBuilder.thenReply]], or [[EffectBuilder.thenNoReply]].
  */
 @DoNotInherit trait ReplyEffect[+Event, State] extends Effect[Event, State] {
   self: EffectImpl[Event, State] =>

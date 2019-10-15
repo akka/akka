@@ -33,6 +33,9 @@ private[akka] final class OutputStreamGraphStage(factory: () => OutputStream, au
     val logic = new GraphStageLogicWithLogging(shape) with InHandler {
       var outputStream: OutputStream = _
       var bytesWritten: Long = 0L
+
+      override protected def logSource: Class[_] = classOf[OutputStreamGraphStage]
+
       override def preStart(): Unit = {
         try {
           outputStream = factory()

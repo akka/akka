@@ -79,7 +79,7 @@ object Effect {
    * commands will not be processed by this `unstashAll` effect and have to be unstashed
    * by another `unstashAll`.
    *
-   * @see [[Effect.thenUnstashAll]]
+   * @see [[EffectBuilder.thenUnstashAll]]
    */
   def unstashAll[Event, State](): Effect[Event, State] =
     CompositeEffect(none.asInstanceOf[EffectBuilder[Event, State]], SideEffect.unstashAll[State]())
@@ -178,7 +178,7 @@ trait EffectBuilder[+Event, State] extends Effect[Event, State] {
 /**
  * [[EventSourcedBehavior.withEnforcedReplies]] can be used to enforce that replies are not forgotten.
  * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
- * created with [[Effect.reply]], [[Effect.noReply]], [[Effect.thenReply]], or [[Effect.thenNoReply]].
+ * created with [[Effect.reply]], [[Effect.noReply]], [[EffectBuilder.thenReply]], or [[EffectBuilder.thenNoReply]].
  *
  * Not intended for user extension.
  */

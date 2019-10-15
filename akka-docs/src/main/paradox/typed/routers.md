@@ -26,14 +26,11 @@ There are two kinds of routers included in Akka Typed - the pool router and the 
 
 ## Pool Router
 
-The pool router is created with a routee `Behavior` factory and spawns a number of children with that behavior which it will 
+The pool router is created with a routee `Behavior` and spawns a number of children with that behavior which it will 
 then forward messages to.
 
 If a child is stopped the pool router removes it from its set of routees. When the last child stops the router itself stops.
 To make a resilient router that deals with failures the routee `Behavior` must be supervised.
-
-Note that it is important that the `Routers.pool` factory returns a new behavior instance for every call to the factory or else
-routees may end up sharing mutable state and not work as expected.
 
 Scala
 :  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #pool }
@@ -47,7 +44,7 @@ Java
 The group router is created with a `ServiceKey` and uses the receptionist (see @ref:[Receptionist](actor-discovery.md#receptionist)) to discover
 available actors for that key and routes messages to one of the currently known registered actors for a key.
 
-Since the receptionist is used this means the group router is cluster aware out of the box. The router route
+Since the receptionist is used this means the group router is cluster-aware out of the box. The router sends
 messages to registered actors on any node in the cluster that is reachable. If no reachable actor exists the router
 will fallback and route messages to actors on nodes marked as unreachable.
 
@@ -56,7 +53,7 @@ the group router is started the set of routees it knows about is empty, until it
 it stashes incoming messages and forwards them as soon as it gets a listing from the receptionist.  
 
 When the router has received a listing from the receptionist and the set of registered actors is empty the router will
-drop them (published them to the event stream as `akka.actor.Dropped`).
+drop them (publish them to the event stream as `akka.actor.Dropped`).
 
 Scala
 :  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #group }
@@ -81,12 +78,15 @@ Java
 Rotates over the set of routees making sure that if there are `n` routees, then for `n` messages
 sent through the router, each actor is forwarded one message.
 
-This is the default for pool routers.
+Round robin gives fair routing where every available routee gets the same amount of messages as long as the set
+of routees stays relatively stable, but may be unfair if the set of routees changes a lot.
+
+This is the default for pool routers as the pool of routees is expected to remain the same. 
 
 ### Random
 Randomly selects a routee when a message is sent through the router.
 
-This is the default for group routers.
+This is the default for group routers as the group of routees is expected to change as nodes join and leave the cluster.
 
 ## Routers and performance
 
@@ -96,4 +96,4 @@ it will not give better performance to create more routees than there are thread
 
 Since the router itself is an actor and has a mailbox this means that messages are routed sequentially to the routees
 where it can be processed in parallel (depending on the available threads in the dispatcher).
-In a high throughput use cases the sequential routing could be a bottle neck. Akka Typed does not provide an optimized tool for this.
+In a high throughput use cases the sequential routing could become a bottle neck. Akka Typed does not provide an optimized tool for this.

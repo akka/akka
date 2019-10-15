@@ -41,7 +41,7 @@ object RetentionCriteria {
 @DoNotInherit abstract class SnapshotCountRetentionCriteria extends RetentionCriteria {
 
   /**
-   * Delete events after saving snapshot via [[RetentionCriteria.snapshotEvery()]].
+   * Delete events after saving snapshot via [[RetentionCriteria.snapshotEvery]].
    * Events that have sequence number less than the snapshot sequence number minus
    * `keepNSnapshots * numberOfEvents` are deleted.
    */

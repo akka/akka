@@ -1405,6 +1405,7 @@ private[stream] object Collect {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+      override protected def logSource: Class[_] = classOf[Watch[_]]
 
       private lazy val self = getStageActor {
         case (_, Terminated(`targetRef`)) =>

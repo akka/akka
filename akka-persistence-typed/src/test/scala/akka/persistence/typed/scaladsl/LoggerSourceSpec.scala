@@ -5,7 +5,7 @@
 package akka.persistence.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.Behavior
@@ -25,7 +25,7 @@ class LoggerSourceSpec
     with LogCapturing {
 
   private val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   def behavior: Behavior[String] = Behaviors.setup { ctx =>
     ctx.log.info("setting-up-behavior")
@@ -48,7 +48,7 @@ class LoggerSourceSpec
     // one test case leaks to another, the actual log class is what is tested in each individual case
 
     "log from setup" in {
-      LoggingEventFilter.info("recovery-completed").intercept {
+      LoggingTestKit.info("recovery-completed").intercept {
         eventFilterFor("setting-up-behavior").intercept {
           spawn(behavior)
         }
@@ -57,7 +57,7 @@ class LoggerSourceSpec
     }
 
     "log from recovery completed" in {
-      LoggingEventFilter.info("setting-up-behavior").intercept {
+      LoggingTestKit.info("setting-up-behavior").intercept {
         eventFilterFor("recovery-completed").intercept {
           spawn(behavior)
         }
@@ -65,7 +65,7 @@ class LoggerSourceSpec
     }
 
     "log from command handler" in {
-      LoggingEventFilter.empty
+      LoggingTestKit.empty
         .withLogLevel(Level.INFO)
         .withMessageRegex("(setting-up-behavior|recovery-completed|event-received)")
         .withOccurrences(3)
@@ -77,7 +77,7 @@ class LoggerSourceSpec
     }
 
     "log from event handler" in {
-      LoggingEventFilter.empty
+      LoggingTestKit.empty
         .withLogLevel(Level.INFO)
         .withMessageRegex("(setting-up-behavior|recovery-completed|command-received)")
         .withOccurrences(3)
@@ -90,7 +90,7 @@ class LoggerSourceSpec
   }
 
   def eventFilterFor(logMsg: String) =
-    LoggingEventFilter.custom { logEvent =>
+    LoggingTestKit.custom { logEvent =>
       logEvent.message == logMsg && logEvent.loggerName == classOf[LoggerSourceSpec].getName
     }
 

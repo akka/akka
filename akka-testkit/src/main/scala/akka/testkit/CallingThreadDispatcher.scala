@@ -153,7 +153,7 @@ object CallingThreadDispatcher {
 class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) extends MessageDispatcher(_configurator) {
   import CallingThreadDispatcher._
 
-  val log = akka.event.Logging(eventStream, getClass.getName)
+  val log = akka.event.Logging(eventStream, getClass)
 
   override def id: String = Id
 

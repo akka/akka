@@ -5,7 +5,7 @@
 package akka.actor.typed
 
 import akka.actor
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
@@ -26,11 +26,11 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
 
       val ref: ActorRef[String] = spawn(behavior)
 
-      LoggingEventFilter.debug(s"actor [${ref.path.toString}] received message: Hello").intercept {
+      LoggingTestKit.debug(s"actor [${ref.path.toString}] received message: Hello").intercept {
         ref ! "Hello"
       }
 
-      LoggingEventFilter.debug(s"actor [${ref.path}] received signal: PostStop").intercept {
+      LoggingTestKit.debug(s"actor [${ref.path}] received signal: PostStop").intercept {
         testKit.stop(ref)
       }
     }
@@ -41,11 +41,11 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
 
       val ref: ActorRef[String] = spawn(behavior)
 
-      LoggingEventFilter.info(s"actor [${ref.path}] received message: Hello").intercept {
+      LoggingTestKit.info(s"actor [${ref.path}] received message: Hello").intercept {
         ref ! "Hello"
       }
 
-      LoggingEventFilter.info(s"actor [${ref.path}] received signal: PostStop").intercept {
+      LoggingTestKit.info(s"actor [${ref.path}] received signal: PostStop").intercept {
         testKit.stop(ref)
       }
     }
@@ -57,11 +57,11 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
 
       val ref: ActorRef[String] = spawn(behavior)
 
-      LoggingEventFilter.debug(s"actor [${ref.path}] received message: Hello").intercept {
+      LoggingTestKit.debug(s"actor [${ref.path}] received message: Hello").intercept {
         ref ! "Hello"
       }
 
-      LoggingEventFilter.debug(s"actor [${ref.path}] received signal: PostStop").intercept {
+      LoggingTestKit.debug(s"actor [${ref.path}] received signal: PostStop").intercept {
         testKit.stop(ref)
       }
     }
@@ -72,11 +72,11 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
 
       val ref: ActorRef[String] = spawn(behavior)
 
-      LoggingEventFilter.debug(s"actor [${ref.path}] received message: Hello").withOccurrences(0).intercept {
+      LoggingTestKit.debug(s"actor [${ref.path}] received message: Hello").withOccurrences(0).intercept {
         ref ! "Hello"
       }
 
-      LoggingEventFilter.debug(s"actor [${ref.path}] received signal: PostStop").withOccurrences(0).intercept {
+      LoggingTestKit.debug(s"actor [${ref.path}] received signal: PostStop").withOccurrences(0).intercept {
         testKit.stop(ref)
       }
     }
@@ -88,11 +88,11 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
 
       val ref = spawn(behavior)
 
-      LoggingEventFilter.debug(s"actor [${ref.path}] received message: Hello").withMdc(mdc).intercept {
+      LoggingTestKit.debug(s"actor [${ref.path}] received message: Hello").withMdc(mdc).intercept {
         ref ! "Hello"
       }
 
-      LoggingEventFilter.debug(s"actor [${ref.path}] received signal: PostStop").withMdc(mdc).intercept {
+      LoggingTestKit.debug(s"actor [${ref.path}] received signal: PostStop").withMdc(mdc).intercept {
         testKit.stop(ref)
       }
     }
@@ -106,21 +106,21 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
 
       val ref2 = spawn(behavior2)
 
-      LoggingEventFilter.debug(s"actor [${ref2.path}] received message: Hello").withMdc(mdc2).intercept {
+      LoggingTestKit.debug(s"actor [${ref2.path}] received message: Hello").withMdc(mdc2).intercept {
         ref2 ! "Hello"
       }
 
       val ref1 = spawn(behavior1)
 
-      LoggingEventFilter.debug(s"actor [${ref1.path}] received message: Hello").withMdc(mdc1).intercept {
+      LoggingTestKit.debug(s"actor [${ref1.path}] received message: Hello").withMdc(mdc1).intercept {
         ref1 ! "Hello"
       }
 
-      LoggingEventFilter.debug(s"actor [${ref2.path}] received signal: PostStop").withMdc(mdc2).intercept {
+      LoggingTestKit.debug(s"actor [${ref2.path}] received signal: PostStop").withMdc(mdc2).intercept {
         testKit.stop(ref2)
       }
 
-      LoggingEventFilter.debug(s"actor [${ref1.path}] received signal: PostStop").withMdc(mdc1).intercept {
+      LoggingTestKit.debug(s"actor [${ref1.path}] received signal: PostStop").withMdc(mdc1).intercept {
         testKit.stop(ref1)
       }
     }
@@ -130,7 +130,7 @@ class LogMessagesSpec extends ScalaTestWithActorTestKit("""
 
       val ref = spawn(behavior)
 
-      LoggingEventFilter.debug(s"actor [${ref.path}] received message: 13").intercept {
+      LoggingTestKit.debug(s"actor [${ref.path}] received message: 13").intercept {
         ref.unsafeUpcast[Any] ! 13
       }
     }

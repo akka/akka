@@ -44,8 +44,10 @@ object ReplicatorDocSpec {
     private case class InternalSubscribeResponse(chg: Replicator.SubscribeResponse[GCounter]) extends InternalCommand
 
     def apply(key: GCounterKey): Behavior[Command] =
-      Behaviors.setup[Command] { ctx =>
-        implicit val node: SelfUniqueAddress = DistributedData(ctx.system).selfUniqueAddress
+      Behaviors.setup[Command] { context =>
+        //#selfUniqueAddress
+        implicit val node: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
+        //#selfUniqueAddress
 
         // adapter that turns the response messages from the replicator into our own protocol
         DistributedData.withReplicatorMessageAdapter[Command, GCounter] { replicatorAdapter =>

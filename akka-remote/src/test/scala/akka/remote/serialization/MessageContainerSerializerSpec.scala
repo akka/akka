@@ -4,12 +4,14 @@
 
 package akka.remote.serialization
 
-import akka.serialization.SerializationExtension
-import akka.testkit.AkkaSpec
 import akka.actor.ActorSelectionMessage
 import akka.actor.SelectChildName
-import akka.actor.SelectParent
 import akka.actor.SelectChildPattern
+import akka.actor.SelectParent
+import akka.remote.DaemonMsgCreate
+import akka.serialization.SerializationExtension
+import akka.testkit.AkkaSpec
+import akka.testkit.TestActors
 
 class MessageContainerSerializerSpec extends AkkaSpec {
 
@@ -35,8 +37,17 @@ class MessageContainerSerializerSpec extends AkkaSpec {
           wildcardFanOut = true))
     }
 
-    def verifySerialization(msg: AnyRef): Unit = {
-      ser.deserialize(ser.serialize(msg).get, msg.getClass).get should ===(msg)
+    "serialize and deserialize DaemonMsgCreate with tagged actor" in {
+      val props = TestActors.echoActorProps.withActorTags("one", "two")
+      val deserialized =
+        verifySerialization(DaemonMsgCreate(props, props.deploy, "/user/some/path", system.deadLetters))
+      deserialized.deploy.tags should ===(Set("one", "two"))
+    }
+
+    def verifySerialization[T <: AnyRef](msg: T): T = {
+      val deserialized = ser.deserialize(ser.serialize(msg).get, msg.getClass).get
+      deserialized should ===(msg)
+      deserialized
     }
 
   }

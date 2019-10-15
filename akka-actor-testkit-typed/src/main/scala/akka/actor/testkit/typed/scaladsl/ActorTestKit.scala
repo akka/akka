@@ -8,7 +8,6 @@ import java.util.concurrent.TimeoutException
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.ActorTestKitGuardian
 import akka.actor.testkit.typed.internal.TestKitUtils
@@ -144,10 +143,11 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
 
   implicit def system: ActorSystem[Nothing] = internalSystem
 
-  implicit def scheduler: Scheduler = system.scheduler
   private val childName: Iterator[String] = Iterator.from(0).map(_.toString)
 
   implicit val timeout: Timeout = testKitSettings.DefaultTimeout
+
+  def scheduler: Scheduler = system.scheduler
 
   def shutdownTestKit(): Unit = {
     ActorTestKit.shutdown(

@@ -34,8 +34,8 @@ object Routers {
    * Note that if a child stops, there is a slight chance that messages still get delivered to it, and get lost,
    * before the pool sees that the child stopped. Therefore it is best to _not_ stop children arbitrarily.
    */
-  def pool[T](poolSize: Int)(behaviorFactory: () => Behavior[T]): PoolRouter[T] =
-    new PoolRouterBuilder[T](poolSize, behaviorFactory)
+  def pool[T](poolSize: Int)(behavior: Behavior[T]): PoolRouter[T] =
+    new PoolRouterBuilder[T](poolSize, behavior)
 
 }
 
@@ -73,7 +73,7 @@ trait PoolRouter[T] extends Behavior[T] {
   /**
    * Route messages by randomly selecting the routee from the available routees.
    *
-   * Random routing makes it less likely that every `poolsize` message from a single producer ends up in the same
+   * Random routing makes it less likely that every `poolSize` message from a single producer ends up in the same
    * mailbox of a slow actor.
    */
   def withRandomRouting(): PoolRouter[T]

@@ -436,6 +436,27 @@ inside an actor, prefer `ActorContext.ask` as it provides better thread-safety b
 
 @@@
 
+@@@ div {.group-java}
+
+## ReceiveBuilder
+
+Using the `ReceiveBuilder` is the typical, and recommended, way of defining message handlers, but it can
+be good to know that it's optional in case you would prefer a different approach. Alternatives could be like:
+
+* direct processing because there is only one message type
+* if or switch statements
+* annotation processor
+* [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching)
+* future pattern matching in Java ([JEP 305](http://openjdk.java.net/jeps/305))
+
+In `Behaviors` there are `receive`, `receiveMessage` and `receiveSignal` factory methods that takes functions
+instead of using the `ReceiveBuilder`, which is the `receive` with the class parameter.
+
+In `AbstractBehavior` you can return your own `akka.actor.typed.javadsl.Receive` from `createReceive` instead
+of using `newReceiveBuilder`. Implement the `receiveMessage` and `receiveSignal` in the `Receive` subclass.
+
+@@@
+
 ## Additional naming conventions
 
 Some naming conventions have already been mentioned in the context of other recommendations, but here

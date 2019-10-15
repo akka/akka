@@ -4,19 +4,15 @@
 
 package akka.cluster.sharding.typed.scaladsl
 
-import java.nio.charset.StandardCharsets
-
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
-import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
-import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.PostStop
 import akka.actor.typed.scaladsl.Behaviors
@@ -28,11 +24,11 @@ import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.cluster.typed.Leave
 import akka.pattern.AskTimeoutException
-import akka.serialization.SerializerWithStringManifest
+import akka.serialization.jackson.CborSerializable
 import akka.util.Timeout
+import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
-import akka.util.ccompat._
 
 @ccompatUsedUntil213
 object ClusterShardingSpec {
@@ -50,82 +46,19 @@ object ClusterShardingSpec {
 
       akka.coordinated-shutdown.terminate-actor-system = off
       akka.coordinated-shutdown.run-by-actor-system-terminate = off
-
-      akka.actor {
-       serializers {
-          test = "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$Serializer"
-        }
-        serialization-bindings {
-          "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$TestProtocol" = test
-          "akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec$$IdTestProtocol" = test
-        }
-      }
     """)
 
-  sealed trait TestProtocol extends java.io.Serializable
+  sealed trait TestProtocol extends CborSerializable
   final case class ReplyPlz(toMe: ActorRef[String]) extends TestProtocol
   final case class WhoAreYou(replyTo: ActorRef[String]) extends TestProtocol
   final case class WhoAreYou2(x: Int, replyTo: ActorRef[String]) extends TestProtocol
   final case class StopPlz() extends TestProtocol
   final case class PassivatePlz() extends TestProtocol
 
-  sealed trait IdTestProtocol extends java.io.Serializable
+  sealed trait IdTestProtocol extends CborSerializable
   final case class IdReplyPlz(id: String, toMe: ActorRef[String]) extends IdTestProtocol
   final case class IdWhoAreYou(id: String, replyTo: ActorRef[String]) extends IdTestProtocol
   final case class IdStopPlz() extends IdTestProtocol
-
-  class Serializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
-    def identifier: Int = 48
-    def manifest(o: AnyRef): String = o match {
-      case _: ReplyPlz     => "a"
-      case _: WhoAreYou    => "b"
-      case _: StopPlz      => "c"
-      case _: PassivatePlz => "d"
-      case _: IdReplyPlz   => "A"
-      case _: IdWhoAreYou  => "B"
-      case _: IdStopPlz    => "C"
-    }
-
-    private def actorRefToBinary(ref: ActorRef[_]): Array[Byte] =
-      ActorRefResolver(system.toTyped).toSerializationFormat(ref).getBytes(StandardCharsets.UTF_8)
-
-    private def idAndRefToBinary(id: String, ref: ActorRef[_]): Array[Byte] = {
-      val idBytes = id.getBytes(StandardCharsets.UTF_8)
-      val refBytes = actorRefToBinary(ref)
-      // yeah, very ad-hoc ;-)
-      Array(idBytes.length.toByte) ++ idBytes ++ refBytes
-    }
-
-    def toBinary(o: AnyRef): Array[Byte] = o match {
-      case ReplyPlz(ref)        => actorRefToBinary(ref)
-      case WhoAreYou(ref)       => actorRefToBinary(ref)
-      case _: StopPlz           => Array.emptyByteArray
-      case _: PassivatePlz      => Array.emptyByteArray
-      case IdReplyPlz(id, ref)  => idAndRefToBinary(id, ref)
-      case IdWhoAreYou(id, ref) => idAndRefToBinary(id, ref)
-      case _: IdStopPlz         => Array.emptyByteArray
-    }
-
-    private def actorRefFromBinary[T](bytes: Array[Byte]): ActorRef[T] =
-      ActorRefResolver(system.toTyped).resolveActorRef(new String(bytes, StandardCharsets.UTF_8))
-
-    private def idAndRefFromBinary[T](bytes: Array[Byte]): (String, ActorRef[T]) = {
-      val idLength = bytes(0)
-      val id = new String(bytes.slice(1, idLength + 1), StandardCharsets.UTF_8)
-      val ref = actorRefFromBinary(bytes.drop(1 + idLength))
-      (id, ref)
-    }
-
-    def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-      case "a" => ReplyPlz(actorRefFromBinary(bytes))
-      case "b" => WhoAreYou(actorRefFromBinary(bytes))
-      case "c" => StopPlz()
-      case "d" => PassivatePlz()
-      case "A" => IdReplyPlz.tupled(idAndRefFromBinary(bytes))
-      case "B" => IdWhoAreYou.tupled(idAndRefFromBinary(bytes))
-      case "C" => IdStopPlz()
-    }
-  }
 
   final case class TheReply(s: String)
 

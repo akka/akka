@@ -154,6 +154,11 @@ deprecated and replaced with corresponding methods that takes a factory function
 
 See documentation of @ref:[streaming IO with TLS](../stream/stream-io.md#tls).    
 
+### JavaLogger
+
+`akka.event.jul.JavaLogger` for integration with `java.util.logging` has been deprecated. Use SLF4J instead,
+which also has support for `java.util.logging`.
+
 ### akka.Main
 
 `akka.Main` is deprecated in favour of starting the `ActorSystem` from a custom main class instead. `akka.Main` was not
@@ -369,6 +374,12 @@ Previously the factor for the default dispatcher was set a bit high (`3.0`) to g
 blocking and protect a bit against starving the internal actors. Since the internal actors are now on a separate dispatcher
 the default dispatcher has been adjusted down to `1.0` which means the number of threads will be one per core, but at least
 `8` and at most `64`. This can be tuned using the individual settings in `akka.actor.default-dispatcher.fork-join-executor`.
+
+### Mixed version
+
+Startup will fail if mixed versions of a product family (such as Akka) are accidentally used. This was previously
+only logged as a warning. There is no guarantee mixed modules will work and it's better to fail early than
+that the application is crashing at a later time than startup. 
 
 ### Cluster Sharding
 
@@ -597,6 +608,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `EventSourcedEntity` removed in favor using plain `EventSourcedBehavior` because the alternative way was
   causing more confusion than adding value. Construction of `PersistentId` for the `EventSourcedBehavior` is
   facilitated by factory methods in `PersistenceId`.
+* `PersistenceId.apply(String)` renamed to `PersistenceId.ofUniqueId(String)`  
 * `akka.cluster.sharding.typed.scaladsl.Entity.apply` changed to use two parameter lists because the new
   `EntityContext.entityTypeKey` required additional type parameter that is inferred better with a secondary
   parameter list.
@@ -605,6 +617,8 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 * `ActorContext` is now a mandatory constructor parameter in `AbstractBehavior`. Create via `Behaviors.setup.
   The reason is to encourage right usage and detect mistakes like not creating a new instance (via `setup`)
   when the behavior is supervised and restarted.    
+* `LoggingEventFilter` has been renamed to `LoggingTestKit` and its `intercept` method renamed to `assert`
+* Scala `ask` from `AskPattern` now implicitly converts an implicit `ActorSystem[_]` to `Scheduler` to eliminate some boilerplate.
 
 #### Akka Typed Stream API changes
 

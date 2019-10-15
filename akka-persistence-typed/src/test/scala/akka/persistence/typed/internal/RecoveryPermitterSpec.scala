@@ -16,7 +16,7 @@ import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence.typed.PersistenceId
@@ -47,7 +47,7 @@ object RecoveryPermitterSpec {
       eventProbe: TestProbe[Any],
       throwOnRecovery: Boolean = false): Behavior[Command] =
     EventSourcedBehavior[Command, Event, State](
-      persistenceId = PersistenceId(name),
+      persistenceId = PersistenceId.ofUniqueId(name),
       emptyState = EmptyState,
       commandHandler = CommandHandler.command {
         case StopActor => Effect.stop()
@@ -189,7 +189,7 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
 
       val stopProbe = createTestProbe[ActorRef[Command]]()
       val parent =
-        LoggingEventFilter.error("Exception during recovery.").intercept {
+        LoggingTestKit.error("Exception during recovery.").intercept {
           spawn(Behaviors.setup[Command](ctx => {
             val persistentActor =
               ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))

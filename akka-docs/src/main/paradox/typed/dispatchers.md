@@ -9,7 +9,8 @@ For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers
 
 ## Dependency
 
-Dispatchers are part of core Akka, which means that they are part of the akka-actor-typed dependency:
+Dispatchers are part of core Akka, which means that they are part of the `akka-actor` dependency. This
+page describes how to use mailboxes with `akka-actor-typed`, which has dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -32,8 +33,8 @@ gives excellent performance in most cases.
 
 ## Internal dispatcher
 
-To protect the internal Actors that is spawned by the various Akka modules, a separate internal dispatcher is used by default.
-The internal dispatcher can be tuned in a fine grained way with the setting `akka.actor.internal-dispatcher`, it can also
+To protect the internal Actors that are spawned by the various Akka modules, a separate internal dispatcher is used by default.
+The internal dispatcher can be tuned in a fine-grained way with the setting `akka.actor.internal-dispatcher`, it can also
 be replaced by another dispatcher by making `akka.actor.internal-dispatcher` an @ref[alias](#dispatcher-aliases).
 
 <a id="dispatcher-lookup"></a>
@@ -67,7 +68,7 @@ Java
 * `DispatcherSelector.blocking` can be used to execute actors that block e.g. a legacy database API that does not support @scala[`Future`]@java[`CompletionStage`]s
 * `DispatcherSelector.sameAsParent` to use the same dispatcher as the parent actor
 
-The final example shows how to load a custom dispatcher from configuration and relies on this being in your application.conf:
+The final example shows how to load a custom dispatcher from configuration and relies on this being in your `application.conf`:
 
 <!-- Same between Java and Scala -->
 @@snip [DispatcherDocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/DispatchersDocSpec.scala) { #config }
@@ -79,21 +80,21 @@ There are 2 different types of message dispatchers:
 * **Dispatcher**
 
     This is an event-based dispatcher that binds a set of Actors to a thread
-    pool. It is the default dispatcher used if one is not specified.
+    pool. The default dispatcher is used if no other is specified.
 
-    * Sharability: Unlimited
+    * Shareability: Unlimited
     * Mailboxes: Any, creates one per Actor
     * Use cases: Default dispatcher, Bulkheading
     * Driven by: `java.util.concurrent.ExecutorService`.
-      Specify using "executor" using "fork-join-executor", "thread-pool-executor" or the FQCN of
-      an `akka.dispatcher.ExecutorServiceConfigurator`.
+      Specify using "executor" using "fork-join-executor", "thread-pool-executor" or the fully-qualified
+      class name of an `akka.dispatcher.ExecutorServiceConfigurator` implementation.
 
 * **PinnedDispatcher**
 
     This dispatcher dedicates a unique thread for each actor using it; i.e.
     each actor will have its own thread pool with only one thread in the pool.
 
-    * Sharability: None
+    * Shareability: None
     * Mailboxes: Any, creates one per Actor
     * Use cases: Bulkheading
     * Driven by: Any `akka.dispatch.ThreadPoolExecutorConfigurator`.
@@ -270,7 +271,7 @@ unless you @ref:[set up a separate dispatcher for the actor](../dispatchers.md#s
 
 One of the most efficient methods of isolating the blocking behavior such that it does not impact the rest of the system
 is to prepare and use a dedicated dispatcher for all those blocking operations.
-This technique is often referred to as as "bulk-heading" or simply "isolating blocking".
+This technique is often referred to as "bulk-heading" or simply "isolating blocking".
 
 In `application.conf`, the dispatcher dedicated to blocking behavior should
 be configured as follows:
@@ -279,8 +280,8 @@ be configured as follows:
 @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingDispatcherSample.scala) { #my-blocking-dispatcher-config }
 
 
-A `thread-pool-executor` based dispatcher allows us to set a limit on the number of threads it will host,
-and this way we gain tight control over how at-most-how-many blocked threads will be in the system.
+A `thread-pool-executor` based dispatcher allows us to limit the number of threads it will host,
+and this way we gain tight control over the maximum number of blocked threads the system may use.
 
 The exact size should be fine tuned depending on the workload you're expecting to run on this dispatcher.
 
@@ -304,7 +305,7 @@ When blocking operations are run on the `my-blocking-dispatcher`,
 it uses the threads (up to the configured limit) to handle these operations.
 The sleeping in this case is nicely isolated to just this dispatcher, and the default one remains unaffected,
 allowing the rest of the application to proceed as if nothing bad was happening. After
-a certain period idleness, threads started by this dispatcher will be shut down.
+a certain period of idleness, threads started by this dispatcher will be shut down.
 
 In this case, the throughput of other actors was not impacted -
 they were still served on the default dispatcher.

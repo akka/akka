@@ -9,8 +9,10 @@ import akka.annotation.InternalApi
 
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
-
 import akka.actor.typed.internal.PropsImpl._
+import akka.util.ccompat.JavaConverters._
+
+import scala.annotation.varargs
 
 object Props {
 
@@ -189,12 +191,12 @@ abstract class MailboxSelector extends Props
 object MailboxSelector {
 
   /**
-   * Scala API: The default mailbox is unbounded and backed by a [[java.util.concurrent.ConcurrentLinkedQueue]]
+   * Scala API: The default mailbox is SingleConsumerOnlyUnboundedMailbox
    */
-  def default(): MailboxSelector = DefaultMailboxSelector.empty
+  def default(): MailboxSelector = fromConfig("akka.actor.typed.default-mailbox")
 
   /**
-   * Java API: The default mailbox is unbounded and backed by a [[java.util.concurrent.ConcurrentLinkedQueue]]
+   * Java API: The default mailbox is SingleConsumerOnlyUnboundedMailbox
    */
   def defaultMailbox(): MailboxSelector = default()
 
@@ -210,4 +212,58 @@ object MailboxSelector {
    * This is a power user settings default or bounded should be preferred unless you know what you are doing.
    */
   def fromConfig(path: String): MailboxSelector = MailboxFromConfigSelector(path)
+}
+
+/**
+ * Actor tags are used to logically group actors. The tags are included in logging as markers
+ * Especially useful for logging from functional style actors and since those may not have a clear logger class.
+ *
+ * Not for user extension.
+ */
+@DoNotInherit
+abstract class ActorTags extends Props {
+
+  /**
+   * Scala API: one or more tags defined for the actor
+   * @return
+   */
+  def tags: Set[String]
+
+  /**
+   * Java API: one or more tags defined for the actor
+   */
+  def getTags(): java.util.Set[String] = tags.asJava
+}
+
+object ActorTags {
+
+  /**
+   * Java API: create a tag props with one or more tags
+   */
+  @varargs
+  def create(tags: String*): ActorTags = apply(tags.toSet)
+
+  /**
+   * Java API: create a multi-tag props
+   *
+   * Set must not be empty.
+   */
+  def create(tags: java.util.Set[String]): ActorTags = ActorTagsImpl(tags.asScala.toSet)
+
+  /**
+   * Scala API: create a tag props with one or more tags
+   */
+  def apply(tag: String, additionalTags: String*): ActorTags = {
+    val tags =
+      if (additionalTags.isEmpty) Set(tag)
+      else Set(tag) ++ additionalTags
+    ActorTagsImpl(tags)
+  }
+
+  /**
+   * Scala API: create a multi-tag props.
+   *
+   * Set must not be empty.
+   */
+  def apply(tags: Set[String]): ActorTags = ActorTagsImpl(tags)
 }

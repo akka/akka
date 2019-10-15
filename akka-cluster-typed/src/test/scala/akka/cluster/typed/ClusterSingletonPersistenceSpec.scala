@@ -33,7 +33,7 @@ object ClusterSingletonPersistenceSpec {
 
   val persistentActor: Behavior[Command] =
     EventSourcedBehavior[Command, String, String](
-      persistenceId = PersistenceId("TheSingleton"),
+      persistenceId = PersistenceId.ofUniqueId("TheSingleton"),
       emptyState = "",
       commandHandler = (state, cmd) =>
         cmd match {

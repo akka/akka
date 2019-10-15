@@ -18,7 +18,7 @@ import java.util.Optional;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class LoggingEventFilterTest extends JUnitSuite {
+public class LoggingTestKitTest extends JUnitSuite {
 
   @ClassRule public static TestKitJunitResource testKit = new TestKitJunitResource();
 
@@ -50,35 +50,33 @@ public class LoggingEventFilterTest extends JUnitSuite {
 
   @Test
   public void filterErrorsWithMatchingMessage() {
-    assertTrue(
-        LoggingEventFilter.error("an error").matches(errorWithCause(new TestException("exc"))));
-    assertTrue(LoggingEventFilter.error("an error").matches(errorNoCause()));
-    assertFalse(LoggingEventFilter.error("another error").matches(errorNoCause()));
+    assertTrue(LoggingTestKit.error("an error").matches(errorWithCause(new TestException("exc"))));
+    assertTrue(LoggingTestKit.error("an error").matches(errorNoCause()));
+    assertFalse(LoggingTestKit.error("another error").matches(errorNoCause()));
   }
 
   @Test
   public void filterErrorsWithMatchingCause() {
     assertTrue(
-        LoggingEventFilter.error(TestException.class)
+        LoggingTestKit.error(TestException.class)
             .matches(errorWithCause(new TestException("exc"))));
     assertFalse(
-        LoggingEventFilter.error(TestException.class)
+        LoggingTestKit.error(TestException.class)
             .matches(errorWithCause(new RuntimeException("exc"))));
     assertTrue(
-        LoggingEventFilter.error("an error")
+        LoggingTestKit.error("an error")
             .withCause(TestException.class)
             .matches(errorWithCause(new TestException("exc"))));
     assertFalse(
-        LoggingEventFilter.error("another error")
+        LoggingTestKit.error("another error")
             .withCause(TestException.class)
             .matches(errorWithCause(new TestException("exc"))));
   }
 
   @Test
   public void filterErrorsWithMatchingCustomFunction() {
-    assertTrue(LoggingEventFilter.custom(event -> true).matches(errorNoCause()));
+    assertTrue(LoggingTestKit.custom(event -> true).matches(errorNoCause()));
     assertFalse(
-        LoggingEventFilter.custom(event -> event.getMdc().containsKey("aKey"))
-            .matches(errorNoCause()));
+        LoggingTestKit.custom(event -> event.getMdc().containsKey("aKey")).matches(errorNoCause()));
   }
 }

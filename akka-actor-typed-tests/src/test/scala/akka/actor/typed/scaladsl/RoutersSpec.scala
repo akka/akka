@@ -6,7 +6,7 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.Dropped
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -31,8 +31,8 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
   def compileOnlyApiCoverage(): Unit = {
     Routers.group(ServiceKey[String]("key")).withRandomRouting().withRoundRobinRouting()
 
-    Routers.pool(10)(() => Behaviors.empty[Any]).withRandomRouting()
-    Routers.pool(10)(() => Behaviors.empty[Any]).withRoundRobinRouting()
+    Routers.pool(10)(Behaviors.empty[Any]).withRandomRouting()
+    Routers.pool(10)(Behaviors.empty[Any]).withRoundRobinRouting()
   }
 
   "The router pool" must {
@@ -41,15 +41,14 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val childCounter = new AtomicInteger(0)
       case class Ack(msg: String, recipient: Int)
       val probe = createTestProbe[AnyRef]()
-      val pool = spawn(Routers.pool[String](4)(() =>
-        Behaviors.setup { _ =>
-          val id = childCounter.getAndIncrement()
-          probe.ref ! s"started $id"
-          Behaviors.receiveMessage { msg =>
-            probe.ref ! Ack(msg, id)
-            Behaviors.same
-          }
-        }))
+      val pool = spawn(Routers.pool[String](4)(Behaviors.setup { _ =>
+        val id = childCounter.getAndIncrement()
+        probe.ref ! s"started $id"
+        Behaviors.receiveMessage { msg =>
+          probe.ref ! Ack(msg, id)
+          Behaviors.same
+        }
+      }))
 
       // ordering of these msgs is not guaranteed
       val expectedStarted = (0 to 3).map { n =>
@@ -76,16 +75,15 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
     "keep routing to the rest of the children if some children stops" in {
       val probe = createTestProbe[String]()
-      val pool = spawn(Routers.pool[String](4)(() =>
-        Behaviors.receiveMessage {
-          case "stop" =>
-            Behaviors.stopped
-          case msg =>
-            probe.ref ! msg
-            Behaviors.same
-        }))
+      val pool = spawn(Routers.pool[String](4)(Behaviors.receiveMessage {
+        case "stop" =>
+          Behaviors.stopped
+        case msg =>
+          probe.ref ! msg
+          Behaviors.same
+      }))
 
-      LoggingEventFilter.debug("Pool child stopped").withOccurrences(2).intercept {
+      LoggingTestKit.debug("Pool child stopped").withOccurrences(2).intercept {
         pool ! "stop"
         pool ! "stop"
       }
@@ -105,12 +103,11 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
     "stops if all children stops" in {
       val probe = createTestProbe()
-      val pool = spawn(Routers.pool[String](4)(() =>
-        Behaviors.receiveMessage { _ =>
-          Behaviors.stopped
-        }))
+      val pool = spawn(Routers.pool[String](4)(Behaviors.receiveMessage { _ =>
+        Behaviors.stopped
+      }))
 
-      LoggingEventFilter.info("Last pool child stopped, stopping pool").intercept {
+      LoggingTestKit.info("Last pool child stopped, stopping pool").intercept {
         (0 to 3).foreach { _ =>
           pool ! "stop"
         }

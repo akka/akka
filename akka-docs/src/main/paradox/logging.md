@@ -7,7 +7,7 @@ For the new API see @ref[Logging](typed/logging.md).
 
 ## Dependency
 
-To use Logging, you must at least use the Akka actors dependency in your project, and will most likely want to configure logging via the SLF4J module (@ref:[see below](#slf4j)), or use `java.util.logging` (@ref:[see below](#java-util-logging)).
+To use Logging, you must at least use the Akka actors dependency in your project, and will most likely want to configure logging via the SLF4J module (@ref:[see below](#slf4j)).
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -583,59 +583,3 @@ Since the akka-actor library avoids depending on any specific logging library, t
 which provides the `Slf4jLogMarker` type which can be passed in as first argument instead of the logging framework agnostic LogMarker
 type from `akka-actor`. The most notable difference between the two is that slf4j's Markers can have child markers, so one can
 rely more information using them rather than just a single string.
-
-
-<a id="jul"></a>
-## java.util.logging
-
-Akka includes a logger for [java.util.logging](https://docs.oracle.com/javase/8/docs/api/java/util/logging/package-summary.html#package.description).
-
-You need to enable the `akka.event.jul.JavaLogger` in the `loggers` element in
-the @ref:[configuration](general/configuration.md). Here you can also define the log level of the event bus.
-More fine grained log levels can be defined in the configuration of the logging backend.
-You should also define `akka.event.jul.JavaLoggingFilter` in
-the `logging-filter` configuration property. It will filter the log events using the backend
-configuration before they are published to the event bus.
-
-@@@ warning
-
-If you set the `loglevel` to a higher level than `DEBUG`, any `DEBUG` events will be filtered
-out already at the source and will never reach the logging backend, regardless of how the backend
-is configured.
-
-@@@
-
-```ruby
-akka {
-  loglevel = DEBUG
-  loggers = ["akka.event.jul.JavaLogger"]
-  logging-filter = "akka.event.jul.JavaLoggingFilter"
-}
-```
-
-One gotcha is that the timestamp is attributed in the event handler, not when actually doing the logging.
-
-The `java.util.logging.Logger` selected for each log event is chosen based on the
-@scala[`Class[_]`]@java[`Class`] of the log source specified when creating the
-`LoggingAdapter`, unless that was given directly as a string in which
-case that string is used (i.e. @scala[`LoggerFactory.getLogger(c: Class[_])`] @java[`LoggerFactory.getLogger(Class c)`] is used in
-the first case and @scala[`LoggerFactory.getLogger(s: String)`] @java[`LoggerFactory.getLogger(String s)`] in the second).
-
-@@@ note
-
-Beware that the actor system’s name is appended to a `String` log
-source if the LoggingAdapter was created giving an `ActorSystem` to
-the factory. If this is not intended, give a `LoggingBus` instead as
-shown below:
-
-@@@
-
-Scala
-:   ```scala
-val log = Logging(system.eventStream, "my.nice.string")
-```
-
-Java
-:   ```java
-    final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.string");
-    ```

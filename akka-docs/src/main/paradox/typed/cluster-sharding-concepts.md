@@ -100,7 +100,7 @@ the number of shards (and therefore load) between different nodes may be signifi
 ### ShardCoordinator state
 
 The state of shard locations in the `ShardCoordinator` is persistent (durable) with
-@ref:[Distributed Data](distributed-data.md) (or see @ref:[Classic Distributed Data](../distributed-data.md))to survive failures. 
+@ref:[Distributed Data](distributed-data.md) (or see @ref:[Classic Distributed Data](../distributed-data.md)) to survive failures. 
 
 When a crashed or
 unreachable coordinator node has been removed (via down) from the cluster a new `ShardCoordinator` singleton

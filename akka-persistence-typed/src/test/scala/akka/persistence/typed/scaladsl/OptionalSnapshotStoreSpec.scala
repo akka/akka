@@ -6,7 +6,7 @@ package akka.persistence.typed.scaladsl
 
 import java.util.UUID
 
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -27,7 +27,7 @@ object OptionalSnapshotStoreSpec {
 
   def persistentBehavior(probe: TestProbe[State], name: String = UUID.randomUUID().toString) =
     EventSourcedBehavior[Command, Event, State](
-      persistenceId = PersistenceId(name),
+      persistenceId = PersistenceId.ofUniqueId(name),
       emptyState = State(),
       commandHandler = CommandHandler.command { _ =>
         Effect.persist(Event()).thenRun(probe.ref ! _)
@@ -54,7 +54,7 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
 
   "Persistence extension" must {
     "initialize properly even in absence of configured snapshot store" in {
-      LoggingEventFilter.warn("No default snapshot store configured").intercept {
+      LoggingTestKit.warn("No default snapshot store configured").intercept {
         val stateProbe = TestProbe[State]()
         spawn(persistentBehavior(stateProbe))
         stateProbe.expectNoMessage()
@@ -62,8 +62,8 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     "fail if PersistentActor tries to saveSnapshot without snapshot-store available" in {
-      LoggingEventFilter.error("No snapshot store configured").intercept {
-        LoggingEventFilter.warn("Failed to save snapshot").intercept {
+      LoggingTestKit.error("No snapshot store configured").intercept {
+        LoggingTestKit.warn("Failed to save snapshot").intercept {
           val stateProbe = TestProbe[State]()
           val persistentActor = spawn(persistentBehavior(stateProbe))
           persistentActor ! AnyCommand

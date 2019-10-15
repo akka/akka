@@ -7380,6 +7380,25 @@ public final class WireFormats {
      */
     akka.protobufv3.internal.ByteString
         getRouterConfigManifestBytes();
+
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    java.util.List<java.lang.String>
+        getTagsList();
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    int getTagsCount();
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    java.lang.String getTags(int index);
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    akka.protobufv3.internal.ByteString
+        getTagsBytes(int index);
   }
   /**
    * <pre>
@@ -7407,6 +7426,7 @@ public final class WireFormats {
       scopeManifest_ = "";
       configManifest_ = "";
       routerConfigManifest_ = "";
+      tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
     }
 
     @java.lang.Override
@@ -7500,6 +7520,15 @@ public final class WireFormats {
               routerConfigManifest_ = bs;
               break;
             }
+            case 98: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              if (!((mutable_bitField0_ & 0x00000800) != 0)) {
+                tags_ = new akka.protobufv3.internal.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000800;
+              }
+              tags_.add(bs);
+              break;
+            }
             default: {
               if (!parseUnknownField(
                   input, unknownFields, extensionRegistry, tag)) {
@@ -7515,6 +7544,9 @@ public final class WireFormats {
         throw new akka.protobufv3.internal.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
       } finally {
+        if (((mutable_bitField0_ & 0x00000800) != 0)) {
+          tags_ = tags_.getUnmodifiableView();
+        }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
@@ -7843,6 +7875,35 @@ public final class WireFormats {
       }
     }
 
+    public static final int TAGS_FIELD_NUMBER = 12;
+    private akka.protobufv3.internal.LazyStringList tags_;
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    public akka.protobufv3.internal.ProtocolStringList
+        getTagsList() {
+      return tags_;
+    }
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    public int getTagsCount() {
+      return tags_.size();
+    }
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    public java.lang.String getTags(int index) {
+      return tags_.get(index);
+    }
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    public akka.protobufv3.internal.ByteString
+        getTagsBytes(int index) {
+      return tags_.getByteString(index);
+    }
+
     private byte memoizedIsInitialized = -1;
     @java.lang.Override
     public final boolean isInitialized() {
@@ -7894,6 +7955,9 @@ public final class WireFormats {
       if (((bitField0_ & 0x00000400) != 0)) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 11, routerConfigManifest_);
       }
+      for (int i = 0; i < tags_.size(); i++) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 12, tags_.getRaw(i));
+      }
       unknownFields.writeTo(output);
     }
 
@@ -7941,6 +8005,14 @@ public final class WireFormats {
       }
       if (((bitField0_ & 0x00000400) != 0)) {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(11, routerConfigManifest_);
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < tags_.size(); i++) {
+          dataSize += computeStringSizeNoTag(tags_.getRaw(i));
+        }
+        size += dataSize;
+        size += 1 * getTagsList().size();
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -8012,6 +8084,8 @@ public final class WireFormats {
         if (!getRouterConfigManifest()
             .equals(other.getRouterConfigManifest())) return false;
       }
+      if (!getTagsList()
+          .equals(other.getTagsList())) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -8066,6 +8140,10 @@ public final class WireFormats {
       if (hasRouterConfigManifest()) {
         hash = (37 * hash) + ROUTERCONFIGMANIFEST_FIELD_NUMBER;
         hash = (53 * hash) + getRouterConfigManifest().hashCode();
+      }
+      if (getTagsCount() > 0) {
+        hash = (37 * hash) + TAGS_FIELD_NUMBER;
+        hash = (53 * hash) + getTagsList().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -8227,6 +8305,8 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000200);
         routerConfigManifest_ = "";
         bitField0_ = (bitField0_ & ~0x00000400);
+        tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000800);
         return this;
       }
 
@@ -8299,6 +8379,11 @@ public final class WireFormats {
           to_bitField0_ |= 0x00000400;
         }
         result.routerConfigManifest_ = routerConfigManifest_;
+        if (((bitField0_ & 0x00000800) != 0)) {
+          tags_ = tags_.getUnmodifiableView();
+          bitField0_ = (bitField0_ & ~0x00000800);
+        }
+        result.tags_ = tags_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -8389,6 +8474,16 @@ public final class WireFormats {
         if (other.hasRouterConfigManifest()) {
           bitField0_ |= 0x00000400;
           routerConfigManifest_ = other.routerConfigManifest_;
+          onChanged();
+        }
+        if (!other.tags_.isEmpty()) {
+          if (tags_.isEmpty()) {
+            tags_ = other.tags_;
+            bitField0_ = (bitField0_ & ~0x00000800);
+          } else {
+            ensureTagsIsMutable();
+            tags_.addAll(other.tags_);
+          }
           onChanged();
         }
         this.mergeUnknownFields(other.unknownFields);
@@ -9021,6 +9116,99 @@ public final class WireFormats {
   }
   bitField0_ |= 0x00000400;
         routerConfigManifest_ = value;
+        onChanged();
+        return this;
+      }
+
+      private akka.protobufv3.internal.LazyStringList tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private void ensureTagsIsMutable() {
+        if (!((bitField0_ & 0x00000800) != 0)) {
+          tags_ = new akka.protobufv3.internal.LazyStringArrayList(tags_);
+          bitField0_ |= 0x00000800;
+         }
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public akka.protobufv3.internal.ProtocolStringList
+          getTagsList() {
+        return tags_.getUnmodifiableView();
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public int getTagsCount() {
+        return tags_.size();
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public java.lang.String getTags(int index) {
+        return tags_.get(index);
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public akka.protobufv3.internal.ByteString
+          getTagsBytes(int index) {
+        return tags_.getByteString(index);
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public Builder setTags(
+          int index, java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureTagsIsMutable();
+        tags_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public Builder addTags(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureTagsIsMutable();
+        tags_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public Builder addAllTags(
+          java.lang.Iterable<java.lang.String> values) {
+        ensureTagsIsMutable();
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
+            values, tags_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public Builder clearTags() {
+        tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000800);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public Builder addTagsBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureTagsIsMutable();
+        tags_.add(value);
         onChanged();
         return this;
       }
@@ -19678,48 +19866,48 @@ public final class WireFormats {
       "\002(\0132\r.ActorRefData\"\204\001\n\tPropsData\022\033\n\006depl" +
       "oy\030\002 \002(\0132\013.DeployData\022\r\n\005clazz\030\003 \002(\t\022\014\n\004" +
       "args\030\004 \003(\014\022\021\n\tmanifests\030\005 \003(\t\022\025\n\rseriali" +
-      "zerIds\030\006 \003(\005\022\023\n\013hasManifest\030\007 \003(\010\"\211\002\n\nDe" +
+      "zerIds\030\006 \003(\005\022\023\n\013hasManifest\030\007 \003(\010\"\227\002\n\nDe" +
       "ployData\022\014\n\004path\030\001 \002(\t\022\016\n\006config\030\002 \001(\014\022\024" +
       "\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 \001(\014\022\022\n\nd" +
       "ispatcher\030\005 \001(\t\022\031\n\021scopeSerializerId\030\006 \001" +
       "(\005\022\025\n\rscopeManifest\030\007 \001(\t\022\032\n\022configSeria" +
       "lizerId\030\010 \001(\005\022\026\n\016configManifest\030\t \001(\t\022 \n" +
       "\030routerConfigSerializerId\030\n \001(\005\022\034\n\024route" +
-      "rConfigManifest\030\013 \001(\t\"P\n\023AkkaProtocolMes" +
-      "sage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002 \001" +
-      "(\0132\023.AkkaControlMessage\"b\n\022AkkaControlMe" +
-      "ssage\022!\n\013commandType\030\001 \002(\0162\014.CommandType" +
-      "\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshakeI" +
-      "nfo\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002(\013" +
-      "2\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030\003 " +
-      "\001(\t\"8\n\016FiniteDuration\022\r\n\005value\030\001 \002(\003\022\027\n\004" +
-      "unit\030\002 \002(\0162\t.TimeUnit\")\n\013RemoteScope\022\032\n\004" +
-      "node\030\001 \002(\0132\014.AddressData\"\261\001\n\016DefaultResi" +
-      "zer\022\022\n\nlowerBound\030\001 \002(\r\022\022\n\nupperBound\030\002 " +
-      "\002(\r\022\031\n\021pressureThreshold\030\003 \002(\r\022\022\n\nrampup" +
-      "Rate\030\004 \002(\001\022\030\n\020backoffThreshold\030\005 \002(\001\022\023\n\013" +
-      "backoffRate\030\006 \002(\001\022\031\n\021messagesPerResize\030\007" +
-      " \002(\r\"A\n\nFromConfig\022\031\n\007resizer\030\001 \001(\0132\010.Pa" +
-      "yload\022\030\n\020routerDispatcher\030\002 \001(\t\"{\n\022Gener" +
-      "icRoutingPool\022\025\n\rnrOfInstances\030\001 \002(\r\022\030\n\020" +
-      "routerDispatcher\030\002 \001(\t\022\031\n\021usePoolDispatc" +
-      "her\030\003 \002(\010\022\031\n\007resizer\030\004 \001(\0132\010.Payload\"Z\n\021" +
-      "ScatterGatherPool\022$\n\007generic\030\001 \002(\0132\023.Gen" +
-      "ericRoutingPool\022\037\n\006within\030\002 \002(\0132\017.Finite" +
-      "Duration\"|\n\020TailChoppingPool\022$\n\007generic\030" +
-      "\001 \002(\0132\023.GenericRoutingPool\022\037\n\006within\030\002 \002" +
-      "(\0132\017.FiniteDuration\022!\n\010interval\030\003 \002(\0132\017." +
-      "FiniteDuration\"O\n\013AddressData\022\016\n\006system\030" +
-      "\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n" +
-      "\010protocol\030\004 \001(\t\"J\n\022RemoteRouterConfig\022\027\n" +
-      "\005local\030\001 \002(\0132\010.Payload\022\033\n\005nodes\030\002 \003(\0132\014." +
-      "AddressData*{\n\013CommandType\022\r\n\tASSOCIATE\020" +
-      "\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DI" +
-      "SASSOCIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIA" +
-      "TE_QUARANTINED\020\005*n\n\010TimeUnit\022\017\n\013NANOSECO" +
-      "NDS\020\001\022\020\n\014MICROSECONDS\020\002\022\020\n\014MILLISECONDS\020" +
-      "\003\022\013\n\007SECONDS\020\004\022\013\n\007MINUTES\020\005\022\t\n\005HOURS\020\006\022\010" +
-      "\n\004DAYS\020\007B\017\n\013akka.remoteH\001"
+      "rConfigManifest\030\013 \001(\t\022\014\n\004tags\030\014 \003(\t\"P\n\023A" +
+      "kkaProtocolMessage\022\017\n\007payload\030\001 \001(\014\022(\n\013i" +
+      "nstruction\030\002 \001(\0132\023.AkkaControlMessage\"b\n" +
+      "\022AkkaControlMessage\022!\n\013commandType\030\001 \002(\016" +
+      "2\014.CommandType\022)\n\rhandshakeInfo\030\002 \001(\0132\022." +
+      "AkkaHandshakeInfo\"N\n\021AkkaHandshakeInfo\022\034" +
+      "\n\006origin\030\001 \002(\0132\014.AddressData\022\013\n\003uid\030\002 \002(" +
+      "\006\022\016\n\006cookie\030\003 \001(\t\"8\n\016FiniteDuration\022\r\n\005v" +
+      "alue\030\001 \002(\003\022\027\n\004unit\030\002 \002(\0162\t.TimeUnit\")\n\013R" +
+      "emoteScope\022\032\n\004node\030\001 \002(\0132\014.AddressData\"\261" +
+      "\001\n\016DefaultResizer\022\022\n\nlowerBound\030\001 \002(\r\022\022\n" +
+      "\nupperBound\030\002 \002(\r\022\031\n\021pressureThreshold\030\003" +
+      " \002(\r\022\022\n\nrampupRate\030\004 \002(\001\022\030\n\020backoffThres" +
+      "hold\030\005 \002(\001\022\023\n\013backoffRate\030\006 \002(\001\022\031\n\021messa" +
+      "gesPerResize\030\007 \002(\r\"A\n\nFromConfig\022\031\n\007resi" +
+      "zer\030\001 \001(\0132\010.Payload\022\030\n\020routerDispatcher\030" +
+      "\002 \001(\t\"{\n\022GenericRoutingPool\022\025\n\rnrOfInsta" +
+      "nces\030\001 \002(\r\022\030\n\020routerDispatcher\030\002 \001(\t\022\031\n\021" +
+      "usePoolDispatcher\030\003 \002(\010\022\031\n\007resizer\030\004 \001(\013" +
+      "2\010.Payload\"Z\n\021ScatterGatherPool\022$\n\007gener" +
+      "ic\030\001 \002(\0132\023.GenericRoutingPool\022\037\n\006within\030" +
+      "\002 \002(\0132\017.FiniteDuration\"|\n\020TailChoppingPo" +
+      "ol\022$\n\007generic\030\001 \002(\0132\023.GenericRoutingPool" +
+      "\022\037\n\006within\030\002 \002(\0132\017.FiniteDuration\022!\n\010int" +
+      "erval\030\003 \002(\0132\017.FiniteDuration\"O\n\013AddressD" +
+      "ata\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n" +
+      "\004port\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"J\n\022RemoteR" +
+      "outerConfig\022\027\n\005local\030\001 \002(\0132\010.Payload\022\033\n\005" +
+      "nodes\030\002 \003(\0132\014.AddressData*{\n\013CommandType" +
+      "\022\r\n\tASSOCIATE\020\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEA" +
+      "RTBEAT\020\003\022\036\n\032DISASSOCIATE_SHUTTING_DOWN\020\004" +
+      "\022\034\n\030DISASSOCIATE_QUARANTINED\020\005*n\n\010TimeUn" +
+      "it\022\017\n\013NANOSECONDS\020\001\022\020\n\014MICROSECONDS\020\002\022\020\n" +
+      "\014MILLISECONDS\020\003\022\013\n\007SECONDS\020\004\022\013\n\007MINUTES\020" +
+      "\005\022\t\n\005HOURS\020\006\022\010\n\004DAYS\020\007B\017\n\013akka.remoteH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -19773,7 +19961,7 @@ public final class WireFormats {
     internal_static_DeployData_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_DeployData_descriptor,
-        new java.lang.String[] { "Path", "Config", "RouterConfig", "Scope", "Dispatcher", "ScopeSerializerId", "ScopeManifest", "ConfigSerializerId", "ConfigManifest", "RouterConfigSerializerId", "RouterConfigManifest", });
+        new java.lang.String[] { "Path", "Config", "RouterConfig", "Scope", "Dispatcher", "ScopeSerializerId", "ScopeManifest", "ConfigSerializerId", "ConfigManifest", "RouterConfigSerializerId", "RouterConfigManifest", "Tags", });
     internal_static_AkkaProtocolMessage_descriptor =
       getDescriptor().getMessageTypes().get(8);
     internal_static_AkkaProtocolMessage_fieldAccessorTable = new

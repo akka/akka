@@ -14,7 +14,7 @@ import akka.actor.typed.scaladsl.adapter._
 import org.scalatest.WordSpecLike
 import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 object TransformMessagesSpec {
@@ -134,7 +134,7 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike 
           case s => s.toLowerCase
         }
 
-      LoggingEventFilter.error[ActorInitializationException].intercept {
+      LoggingTestKit.error[ActorInitializationException].intercept {
         val ref = spawn(transform(transform(Behaviors.receiveMessage[String] { _ =>
           Behaviors.same
         })))

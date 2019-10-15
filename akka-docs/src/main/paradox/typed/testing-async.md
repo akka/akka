@@ -197,13 +197,13 @@ Java
 
 ### Test of logging
 
-To verify that certain @ref:[logging](logging.md) events are emitted there is a utility called `LoggingEventFilter`.
+To verify that certain @ref:[logging](logging.md) events are emitted there is a utility called @apidoc[typed.*.LoggingTestKit] .
 You define a criteria of the expected logging events and it will assert that the given number of occurrences
 of matching logging events are emitted within a block of code.
 
 @@@ note
 
-The `LoggingEventFilter` implementation @ref:[requires Logback dependency](logging.md#logback).
+The @apidoc[typed.*.LoggingTestKit] implementation @ref:[requires Logback dependency](logging.md#logback).
 
 @@@
 
@@ -223,7 +223,7 @@ Scala
 Java
 :  @@snip [LoggingDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/LoggingDocExamples.java) { #test-logging-criteria }
 
-See @apidoc[typed.*.LoggingEventFilter] for more details.
+See @apidoc[typed.*.LoggingTestKit] for more details.
 
 ### Silence logging output from tests
 

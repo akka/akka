@@ -206,7 +206,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
 
   import Persistence._
 
-  private def log: LoggingAdapter = Logging(system, getClass.getName)
+  private def log: LoggingAdapter = Logging(system, getClass)
 
   private val NoSnapshotStorePluginId = "akka.persistence.no-snapshot-store"
 

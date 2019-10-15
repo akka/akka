@@ -97,6 +97,10 @@ interface ReplicatorDocSample {
       this.replicatorAdapter = replicatorAdapter;
       this.key = key;
 
+      // #selfUniqueAddress
+      final SelfUniqueAddress node = DistributedData.get(context.getSystem()).selfUniqueAddress();
+      // #selfUniqueAddress
+
       this.node = DistributedData.get(context.getSystem()).selfUniqueAddress();
 
       // #subscribe
