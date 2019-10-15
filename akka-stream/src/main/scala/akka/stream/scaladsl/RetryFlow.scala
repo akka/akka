@@ -223,10 +223,14 @@ object RetryFlow {
       elementInProgress = OptionVal.Some(element)
       retryNo += 1
       pull(internalIn)
-      scheduleOnce(element, delay)
+      scheduleOnce(RetryFlowCoordinator.RetryCurrentElement, delay)
     }
 
-    override def onTimer(timerKey: Any): Unit = pushInternal(timerKey.asInstanceOf[In])
+    override def onTimer(timerKey: Any): Unit = pushInternal(elementInProgress.get)
 
   }
+}
+
+private object RetryFlowCoordinator {
+  case object RetryCurrentElement
 }
