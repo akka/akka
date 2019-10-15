@@ -94,6 +94,11 @@ object DnsProtocol {
       IpVersionSelector.getInetAddress(ipv4, ipv6)
     }
 
+    /**
+     * Return the host, taking into account the "java.net.preferIPv6Addresses" system property.
+     * @throws UnknownHostException
+     */
+    @throws[UnknownHostException]
     def address(): InetAddress = _address match {
       case None            => throw new UnknownHostException(name)
       case Some(ipAddress) => ipAddress

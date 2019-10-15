@@ -9,12 +9,17 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress }
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
 import CachePolicy._
+import akka.annotation.DoNotInherit
 import akka.io.dns.internal.{ DomainName, _ }
 import akka.util.{ unused, ByteIterator, ByteString }
 
 import scala.annotation.switch
 import scala.concurrent.duration._
 
+/**
+ * Not for user extension
+ */
+@DoNotInherit
 sealed abstract class ResourceRecord(
     val name: String,
     val ttl: CachePolicy.Ttl,

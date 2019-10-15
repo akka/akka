@@ -65,6 +65,10 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
     else (now - nanoBase) / 1000000
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
   private[akka] final def get(key: (String, RequestType)): Option[Resolved] = {
     cacheRef.get().get(key)
   }
