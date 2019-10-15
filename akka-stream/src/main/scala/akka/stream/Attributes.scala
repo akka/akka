@@ -14,6 +14,7 @@ import akka.japi.function
 import java.net.URLEncoder
 import java.time.Duration
 
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
@@ -311,6 +312,136 @@ object Attributes {
       extends Attribute
   final case object AsyncBoundary extends Attribute
 
+  /**
+   * Cancellation strategies provide a way to configure the behavior of a stage when `cancelStage` is called.
+   *
+   * It is only relevant for stream components that have more than one output and do not define a custom cancellation
+   * behavior by overriding `onDownstreamFinish`. In those cases, if the first output is cancelled, the default behavior
+   * is to call `cancelStage` which shuts down the stage completely. The given strategy will allow customization of how
+   * the shutdown procedure should be done precisely.
+   */
+  @ApiMayChange
+  final case class CancellationStrategy(strategy: CancellationStrategy.Strategy) extends MandatoryAttribute
+  @ApiMayChange
+  object CancellationStrategy {
+    private[stream] val Default: CancellationStrategy = CancellationStrategy(PropagateFailure)
+
+    sealed trait Strategy
+
+    /**
+     * Strategy that treats `cancelStage` the same as `completeStage`, i.e. all inlets are cancelled (propagating the
+     * cancellation cause) and all outlets are regularly completed.
+     *
+     * This used to be the default behavior before Akka 2.6.
+     *
+     * This behavior can be problematic in stacks of BidiFlows where different layers of the stack are both connected
+     * through inputs and outputs. In this case, an error in a doubly connected component triggers both a cancellation
+     * going upstream and an error going downstream. Since the stack might be connected to those components with inlets and
+     * outlets, a race starts whether the cancellation or the error arrives first. If the error arrives first, that's usually
+     * good because then the error can be propagated both on inlets and outlets. However, if the cancellation arrives first,
+     * the previous default behavior to complete the stage will lead other outputs to be completed regularly. The error
+     * which arrive late at the other hand will just be ignored (that connection will have been cancelled already and also
+     * the paths through which the error could propagates are already shut down).
+     */
+    @ApiMayChange
+    case object CompleteStage extends Strategy
+
+    /**
+     * Strategy that treats `cancelStage` the same as `failStage`, i.e. all inlets are cancelled (propagating the
+     * cancellation cause) and all outlets are failed propagating the cause from cancellation.
+     */
+    @ApiMayChange
+    case object FailStage extends Strategy
+
+    /**
+     * Strategy that treats `cancelStage` in different ways depending on the cause that was given to the cancellation.
+     *
+     * If the cause was a regular, active cancellation (`SubscriptionWithCancelException.NoMoreElementsNeeded`), the stage
+     * receiving this cancellation is completed regularly.
+     *
+     * If another cause was given, this is treated as an error and the behavior is the same as with `failStage`.
+     *
+     * This is a good default strategy.
+     */
+    @ApiMayChange
+    case object PropagateFailure extends Strategy
+
+    /**
+     * Strategy that allows to delay any action when `cancelStage` is invoked.
+     *
+     * The idea of this strategy is to delay any action on cancellation because it is expected that the stage is completed
+     * through another path in the meantime. The downside is that a stage and a stream may live longer than expected if no
+     * such signal is received and cancellation is invoked later on. In streams with many stages that all apply this strategy,
+     * this strategy might significantly delay the propagation of a cancellation signal because each upstream stage might impose
+     * such a delay. During this time, the stream will be mostly "silent", i.e. it cannot make progress because of backpressure,
+     * but you might still be able observe a long delay at the ultimate source.
+     */
+    @ApiMayChange
+    final case class AfterDelay(delay: FiniteDuration, strategy: Strategy) extends Strategy
+  }
+
+  /**
+   * Java API
+   *
+   * Strategy that treats `cancelStage` the same as `completeStage`, i.e. all inlets are cancelled (propagating the
+   * cancellation cause) and all outlets are regularly completed.
+   *
+   * This used to be the default behavior before Akka 2.6.
+   *
+   * This behavior can be problematic in stacks of BidiFlows where different layers of the stack are both connected
+   * through inputs and outputs. In this case, an error in a doubly connected component triggers both a cancellation
+   * going upstream and an error going downstream. Since the stack might be connected to those components with inlets and
+   * outlets, a race starts whether the cancellation or the error arrives first. If the error arrives first, that's usually
+   * good because then the error can be propagated both on inlets and outlets. However, if the cancellation arrives first,
+   * the previous default behavior to complete the stage will lead other outputs to be completed regularly. The error
+   * which arrive late at the other hand will just be ignored (that connection will have been cancelled already and also
+   * the paths through which the error could propagates are already shut down).
+   */
+  @ApiMayChange
+  def cancellationStrategyCompleteState: CancellationStrategy.Strategy = CancellationStrategy.CompleteStage
+
+  /**
+   * Java API
+   *
+   * Strategy that treats `cancelStage` the same as `failStage`, i.e. all inlets are cancelled (propagating the
+   * cancellation cause) and all outlets are failed propagating the cause from cancellation.
+   */
+  @ApiMayChange
+  def cancellationStrategyFailStage: CancellationStrategy.Strategy = CancellationStrategy.FailStage
+
+  /**
+   * Java API
+   *
+   * Strategy that treats `cancelStage` in different ways depending on the cause that was given to the cancellation.
+   *
+   * If the cause was a regular, active cancellation (`SubscriptionWithCancelException.NoMoreElementsNeeded`), the stage
+   * receiving this cancellation is completed regularly.
+   *
+   * If another cause was given, this is treated as an error and the behavior is the same as with `failStage`.
+   *
+   * This is a good default strategy.
+   */
+  @ApiMayChange
+  def cancellationStrategyPropagateFailure: CancellationStrategy.Strategy = CancellationStrategy.PropagateFailure
+
+  /**
+   * Java API
+   *
+   * Strategy that allows to delay any action when `cancelStage` is invoked.
+   *
+   * The idea of this strategy is to delay any action on cancellation because it is expected that the stage is completed
+   * through another path in the meantime. The downside is that a stage and a stream may live longer than expected if no
+   * such signal is received and cancellation is invoked later on. In streams with many stages that all apply this strategy,
+   * this strategy might significantly delay the propagation of a cancellation signal because each upstream stage might impose
+   * such a delay. During this time, the stream will be mostly "silent", i.e. it cannot make progress because of backpressure,
+   * but you might still be able observe a long delay at the ultimate source.
+   */
+  @ApiMayChange
+  def cancellationStrategyAfterDelay(
+      delay: FiniteDuration,
+      strategy: CancellationStrategy.Strategy): CancellationStrategy.Strategy =
+    CancellationStrategy.AfterDelay(delay, strategy)
+
   object LogLevels {
 
     /** Use to disable logging on certain operations when configuring [[Attributes#logLevels]] */
@@ -332,16 +463,16 @@ object Attributes {
   /** Java API: Use to disable logging on certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelOff: Logging.LogLevel = LogLevels.Off
 
-  /** Use to enable logging at ERROR level for certain operations when configuring [[Attributes#createLogLevels]] */
+  /** Java API: Use to enable logging at ERROR level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelError: Logging.LogLevel = LogLevels.Error
 
-  /** Use to enable logging at WARNING level for certain operations when configuring [[Attributes#createLogLevels]] */
+  /** Java API: Use to enable logging at WARNING level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelWarning: Logging.LogLevel = LogLevels.Warning
 
-  /** Use to enable logging at INFO level for certain operations when configuring [[Attributes#createLogLevels]] */
+  /** Java API: Use to enable logging at INFO level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelInfo: Logging.LogLevel = LogLevels.Info
 
-  /** Use to enable logging at DEBUG level for certain operations when configuring [[Attributes#createLogLevels]] */
+  /** Java API: Use to enable logging at DEBUG level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelDebug: Logging.LogLevel = LogLevels.Debug
 
   /**
