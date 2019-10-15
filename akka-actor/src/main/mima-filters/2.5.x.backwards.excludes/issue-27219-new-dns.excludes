@@ -6,5 +6,7 @@ ProblemFilters.exclude[Problem]("akka.io.dns.internal.AsyncDnsResolver*")
 ProblemFilters.exclude[Problem]("akka.io.dns.internal.AsyncDnsResolver*")
 # removed internal class
 ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsCache")
+# make actor final
+ProblemFilters.exclude[FinalClassProblem]("akka.io.SimpleDnsManager")
 
 
