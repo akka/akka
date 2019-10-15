@@ -61,4 +61,6 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
     }
 
   }
+
+  // TODO test that the old protocol is converted correctly
 }
