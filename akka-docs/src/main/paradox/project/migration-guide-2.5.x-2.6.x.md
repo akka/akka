@@ -712,8 +712,15 @@ taking a `cause` parameter and calling `cancelStage(cause)` to pass the cause up
 
 ### Lazy and async stream operator changes
 
-The operators that provide support for lazy and `Future`/`CompletionStage`  stream construction has gotten a workthrough
+The operators that provide support for lazy and @scala[`Future`]@java[`CompletionStage`] stream construction has gotten a workthrough
 to be more consistent.
+
+The materialized value is now no longer wrapped in an @scala[`Option`]@java[`Optional`], instead the @scala[`Future`]@java[`CompletionStage`]
+is failed with a `akka.stream.NeverMaterializedException` in the cases that would previously lead to @scala[`None`]@java[an empty `Optional`] 
+
+A deferred creation of the stream based on the initial element like how the deprecated `lazyInit` worked can be achieved by combining 
+@scala[`future(Flow|Sink)`] @java[`completionStage(Flow|Sink)`] with `prefixAndTail`. See example in @scala[@ref:[futureFlow](../stream/operators/Flow/futureFlow.md)]
+@java[@ref:[completionStageFlow](../stream/operators/Flow/completionStageFlow.md)]. 
 
 #### javadsl.Flow 
   
@@ -721,8 +728,8 @@ to be more consistent.
 ------------------------|----------------
 | lazyInit                | lazyCompletionStageFlow in combination with prefixAndTail(1) |
 | lazyInitAsync           | lazyCompletionStageFlow |
-| -                       | completionStageFlow |
-| -                       | lazyFlow |
+| na                      | completionStageFlow |
+| na                       | lazyFlow |
 
 ### javadsl.Sink            
   
@@ -730,8 +737,8 @@ to be more consistent.
 ------------------------|----------------
 | lazyInit                | lazyCompletionStageSink in combination with Flow.prefixAndTail(1) |
 | lazyInitAsync           | lazyCompletionStageSink |
-| -                       | completionStageSink |
-| -                       | lazySink |
+| na                       | completionStageSink |
+| na                       | lazySink |
   
 ### javadsl.Source
   
@@ -743,9 +750,9 @@ to be more consistent.
 | fromSourceCompletionStage | completionStageSource |
 | lazily                    | lazySource |
 | lazilyAsync               | lazyCompletionStage |
-| -                         | lazySingle |
-| -                         | lazySource |
-| -                         | lazyCompletionStageSource |
+| na                         | lazySingle |
+| na                         | lazySource |
+| na                         | lazyCompletionStageSource |
     
 ### scaladsl.Flow
 
@@ -753,8 +760,8 @@ to be more consistent.
 ------------------------|----------------
 | lazyInit                | lazyFutureFlow |
 | lazyInitAsync           | lazyFutureFlow |
-| -                       | futureFlow |
-| -                       | lazyFlow |
+| na                       | futureFlow |
+| na                       | lazyFlow |
 
 ### scaladsl.Sink            
 
@@ -762,8 +769,8 @@ to be more consistent.
 ------------------------|----------------
 | lazyInit                | lazyFutureSink in combination with Flow.prefixAndTail(1) |
 | lazyInitAsync           | lazyFutureSink |
-| -                       | futureSink |
-| -                       | lazySink |
+| na                       | futureSink |
+| na                       | lazySink |
 
 ### scaladsl.Source
 
@@ -775,6 +782,6 @@ to be more consistent.
 | fromSourceCompletionStage | - |
 | lazily                    | lazySource |
 | lazilyAsync               | lazyFuture |
-| -                         | lazySingle |
-| -                         | lazySource |
-| -                         | lazyFutureSource |
+| na                         | lazySingle |
+| na                         | lazySource |
+| na                         | lazyFutureSource |

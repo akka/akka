@@ -19,7 +19,7 @@ If the future fails the stream is failed.
 
 ## Examples
 
-A deferred creation of the stream based on the initial element like how the deprecated `lazyInit` worked can be achieved by combining `completionStageFlow`
+A deferred creation of the stream based on the initial element by combining `completionStageFlow`
 with `prefixAndTail` like so:
 
 Scala

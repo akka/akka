@@ -2227,8 +2227,7 @@ private[stream] object Collect {
             subInlet.pull()
           }
           override def onDownstreamFinish(cause: Throwable): Unit = {
-            // FIXME logic around cancellation cause here?
-            subInlet.cancel()
+            subInlet.cancel(cause)
             maybeCompleteStage()
           }
         })
@@ -2238,9 +2237,8 @@ private[stream] object Collect {
             pull(in)
           }
           override def onDownstreamFinish(cause: Throwable): Unit = {
-            // FIXME logic around cancellation cause here?
             if (!isClosed(in)) {
-              cancel(in)
+              cancel(in, cause)
             }
             maybeCompleteStage()
           }
