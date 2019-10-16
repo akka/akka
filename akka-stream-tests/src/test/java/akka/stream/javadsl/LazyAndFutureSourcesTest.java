@@ -65,26 +65,18 @@ public class LazyAndFutureSourcesTest extends StreamTest {
 
   @Test
   public void lazySingle() throws Exception {
-    Pair<CompletionStage<Done>, CompletionStage<List<String>>> result =
-        Source.lazySingle(() -> "one").toMat(Sink.seq(), Keep.both()).run(system);
+    CompletionStage<List<String>> list = Source.lazySingle(() -> "one").runWith(Sink.seq(), system);
 
-    CompletionStage<Done> nestedMatVal = result.first();
-    CompletionStage<List<String>> list = result.second();
     assertEquals(Arrays.asList("one"), list.toCompletableFuture().get(3, TimeUnit.SECONDS));
-    assertEquals(true, nestedMatVal.toCompletableFuture().isDone());
   }
 
   @Test
   public void lazyCompletionStage() throws Exception {
-    Pair<CompletionStage<Done>, CompletionStage<List<String>>> result =
+    CompletionStage<List<String>> list =
         Source.lazyCompletionStage(() -> CompletableFuture.completedFuture("one"))
-            .toMat(Sink.seq(), Keep.both())
-            .run(system);
+            .runWith(Sink.seq(), system);
 
-    CompletionStage<Done> nestedMatVal = result.first();
-    CompletionStage<List<String>> list = result.second();
     assertEquals(Arrays.asList("one"), list.toCompletableFuture().get(3, TimeUnit.SECONDS));
-    assertEquals(true, nestedMatVal.toCompletableFuture().isDone());
   }
 
   @Test

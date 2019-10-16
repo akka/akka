@@ -8,7 +8,6 @@ import java.util.concurrent.CompletionStage
 
 import akka.actor.{ ActorRef, Cancellable }
 import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages
 import akka.stream.impl.fusing.GraphStages._
@@ -513,14 +512,9 @@ object Source {
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
    * the laziness and will trigger the factory immediately.
-   *
-   * The materialized future `Done` value is completed when the `create` function has successfully been invoked,
-   * if the function throws the future materialized value is failed with that exception.
-   * If downstream cancels or fails before the function is invoked the materialized value
-   * is failed with a [[akka.stream.NeverMaterializedException]]
    */
-  def lazySingle[T](create: () => T): Source[T, Future[Done]] =
-    lazySource(() => single(create()).mapMaterializedValue(_ => Done))
+  def lazySingle[T](create: () => T): Source[T, NotUsed] =
+    lazySource(() => single(create())).mapMaterializedValue(_ => NotUsed)
 
   /**
    * Defers invoking the `create` function to create a future element until there is downstream demand.
@@ -530,17 +524,12 @@ object Source {
    *
    * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
    * the laziness and will trigger the factory immediately.
-   *
-   * The materialized future `Done` value is completed when the `create` function has successfully been invoked and the future completes,
-   * if the function throws or the future fails the future materialized value is failed with that exception.
-   * If downstream cancels or fails before the function is invoked the materialized value
-   * is failed with a [[akka.stream.NeverMaterializedException]]
    */
-  def lazyFuture[T](create: () => Future[T]): Source[T, Future[Done]] =
+  def lazyFuture[T](create: () => Future[T]): Source[T, NotUsed] =
     lazySource { () =>
       val f = create()
-      future(f).mapMaterializedValue(_ => f.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext))
-    }.mapMaterializedValue(_.flatten)
+      future(f)
+    }.mapMaterializedValue(_ => NotUsed)
 
   /**
    * Defers invoking the `create` function to create a future source until there is downstream demand.

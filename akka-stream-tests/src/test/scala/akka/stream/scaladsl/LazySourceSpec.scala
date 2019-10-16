@@ -30,16 +30,14 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   "Source.lazySingle" must {
     "work like a normal source, happy path" in assertAllStagesStopped {
-      val (lazyMatVal, seq) = Source.lazySingle(() => 1).toMat(Sink.seq)(Keep.both).run()
-
+      val seq = Source.lazySingle(() => 1).runWith(Sink.seq)
       seq.futureValue should ===(Seq(1))
-      lazyMatVal.isCompleted should ===(true)
     }
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
-      val lazyMatVal: Future[Done] = Source
+      Source
         .lazySingle { () =>
           constructed.set(true)
           1
@@ -49,83 +47,73 @@ class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       probe.cancel()
 
       constructed.get() should ===(false)
-      lazyMatVal.isCompleted should ===(false)
-    }
-
-    "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
-      val lazyMatVal: Future[Done] = Source.lazySingle(() => 1).toMat(Sink.cancelled)(Keep.left).run()
-
-      lazyMatVal.failed.futureValue shouldBe a[NeverMaterializedException]
     }
 
     "fail correctly when factory function fails" in assertAllStagesStopped {
       val failure = TE("couldn't create")
-      val lazyMatVal: Future[Done] = Source.lazySingle(() => throw failure).toMat(Sink.ignore)(Keep.left).run()
+      val termination: Future[Done] =
+        Source.lazySingle(() => throw failure).watchTermination()(Keep.right).toMat(Sink.ignore)(Keep.left).run()
 
-      lazyMatVal.failed.futureValue should ===(failure)
+      termination.failed.futureValue should ===(failure)
     }
 
   }
 
   "Source.lazyFuture" must {
     "work like a normal source, happy path, already completed future" in assertAllStagesStopped {
-      val (lazyMatVal, seq) = Source.lazyFuture(() => Future.successful(1)).toMat(Sink.seq)(Keep.both).run()
+      val seq = Source.lazyFuture(() => Future.successful(1)).runWith(Sink.seq)
 
       seq.futureValue should ===(Seq(1))
-      lazyMatVal.isCompleted should ===(true)
     }
 
     "work like a normal source, happy path, completing future" in assertAllStagesStopped {
       val promise = Promise[Int]()
-      val (lazyMatVal, seq) = Source.lazyFuture(() => promise.future).toMat(Sink.seq)(Keep.both).run()
+      val seq = Source.lazyFuture(() => promise.future).runWith(Sink.seq)
       promise.success(1)
       seq.futureValue should ===(Seq(1))
-      lazyMatVal.isCompleted should ===(true)
     }
 
     "never construct the source when there was no demand" in assertAllStagesStopped {
       val probe = TestSubscriber.probe[Int]()
       val constructed = new AtomicBoolean(false)
-      val lazyMatVal: Future[Done] = Source
+      Source
         .lazySingle { () =>
           constructed.set(true)
           1
         }
-        .toMat(Sink.fromSubscriber(probe))(Keep.left)
-        .run()
+        .runWith(Sink.fromSubscriber(probe))
       probe.cancel()
 
       constructed.get() should ===(false)
-      lazyMatVal.isCompleted should ===(false)
-    }
-
-    "fail the materialized value when downstream cancels without ever consuming any element" in assertAllStagesStopped {
-      val lazyMatVal: Future[Done] = Source.lazySingle(() => 1).toMat(Sink.cancelled)(Keep.left).run()
-
-      lazyMatVal.failed.futureValue shouldBe a[NeverMaterializedException]
     }
 
     "fail correctly when factory function fails" in assertAllStagesStopped {
       val failure = TE("couldn't create")
-      val lazyMatVal: Future[Done] = Source.lazyFuture(() => throw failure).toMat(Sink.ignore)(Keep.left).run()
+      val termination =
+        Source.lazyFuture(() => throw failure).watchTermination()(Keep.right).toMat(Sink.ignore)(Keep.left).run()
 
-      lazyMatVal.failed.futureValue should ===(failure)
+      termination.failed.futureValue should ===(failure)
     }
 
     "fail correctly when factory function returns a failed future" in assertAllStagesStopped {
       val failure = TE("couldn't create")
-      val lazyMatVal: Future[Done] =
-        Source.lazyFuture(() => Future.failed(failure)).toMat(Sink.ignore)(Keep.left).run()
+      val termination =
+        Source
+          .lazyFuture(() => Future.failed(failure))
+          .watchTermination()(Keep.right)
+          .toMat(Sink.ignore)(Keep.left)
+          .run()
 
-      lazyMatVal.failed.futureValue should ===(failure)
+      termination.failed.futureValue should ===(failure)
     }
 
     "fail correctly when factory function returns a future that fails" in assertAllStagesStopped {
       val failure = TE("couldn't create")
       val promise = Promise[Int]()
-      val lazyMatVal = Source.lazyFuture(() => promise.future).toMat(Sink.ignore)(Keep.left).run()
+      val termination =
+        Source.lazyFuture(() => promise.future).watchTermination()(Keep.right).toMat(Sink.ignore)(Keep.left).run()
       promise.failure(failure)
-      lazyMatVal.failed.futureValue should ===(failure)
+      termination.failed.futureValue should ===(failure)
     }
   }
 
