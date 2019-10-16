@@ -17,7 +17,32 @@ To use Distributed Publish Subscribe you must add the following dependency in yo
 
 ## Introduction
 
-For the full documentation of this feature and for new projects see @ref:[Distributed Publish Subscribe - Introduction](typed/distributed-pub-sub.md#introduction).
+How do I send a message to an actor without knowing which node it is running on?
+
+How do I send messages to all actors in the cluster that have registered interest
+in a named topic?
+
+This pattern provides a mediator actor, `akka.cluster.pubsub.DistributedPubSubMediator`,
+that manages a registry of actor references and replicates the entries to peer
+actors among all cluster nodes or a group of nodes tagged with a specific role.
+
+The `DistributedPubSubMediator` actor is supposed to be started on all nodes,
+or all nodes with specified role, in the cluster. The mediator can be
+started with the `DistributedPubSub` extension or as an ordinary actor.
+
+The registry is eventually consistent, i.e. changes are not immediately visible at
+other nodes, but typically they will be fully replicated to all other nodes after
+a few seconds. Changes are only performed in the own part of the registry and those
+changes are versioned. Deltas are disseminated in a scalable way to other nodes with
+a gossip protocol.
+
+Cluster members with status @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up),
+will participate in Distributed Publish Subscribe, i.e. subscribers on nodes with
+`WeaklyUp` status will receive published messages if the publisher and subscriber are on
+same side of a network partition.
+
+You can send messages via the mediator on any node to registered actors on
+any other node.
 
 There a two different modes of message delivery, explained in the sections
 @ref:[Publish](#distributed-pub-sub-publish) and @ref:[Send](#distributed-pub-sub-send) below.
