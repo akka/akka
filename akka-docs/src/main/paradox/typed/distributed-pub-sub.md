@@ -1,35 +1,64 @@
-# Classic Distributed Publish Subscribe in Cluster
+# Distributed Publish Subscribe in Cluster
 
-@@include[includes.md](includes.md) { #actor-api }
-For the new API see FIXME https://github.com/akka/akka/issues/26338.
+@@@ note
+For the Akka Classic documentation of this feature see @ref:[Classic Distributed Publish Subscribe](../distributed-pub-sub.md).
+@@@
 
-@@project-info{ projectId="akka-cluster-tools" }
+@@project-info{ projectId="akka-cluster-typed" }
 
 ## Dependency
 
-To use Distributed Publish Subscribe you must add the following dependency in your project:
+To use Distributed Publish Subscribe add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
-  group="com.typesafe.akka"
-  artifact="akka-cluster-tools_$scala.binary_version$"
-  version="$akka.version$"
+  group=com.typesafe.akka
+  artifact=akka-cluster-typed_$scala.binary_version$
+  version=$akka.version$
 }
 
 ## Introduction
 
-For the full documentation of this feature and for new projects see @ref:[Distributed Publish Subscribe - Introduction](typed/distributed-pub-sub.md#introduction).
+How do I send a message to an actor without knowing which node it is running on?
 
-There a two different modes of message delivery, explained in the sections
-@ref:[Publish](#distributed-pub-sub-publish) and @ref:[Send](#distributed-pub-sub-send) below.
+How do I send messages to all actors in the cluster that have registered interest
+in a named topic?
 
-@@@ div { .group-scala }
+This pattern provides a mediator actor, `akka.cluster.pubsub.DistributedPubSubMediator`,
+that manages a registry of actor references and replicates the entries to peer
+actors among all cluster nodes or a group of nodes tagged with a specific role.
 
-A more comprehensive sample is available in the
-tutorial named [Akka Clustered PubSub with Scala!](https://github.com/typesafehub/activator-akka-clustering).
+The `DistributedPubSubMediator` actor is supposed to be started on all nodes,
+or all nodes with specified role, in the cluster. The mediator can be
+started with the `DistributedPubSub` extension or as an ordinary actor.
 
-@@@
+The registry is eventually consistent, i.e. changes are not immediately visible at
+other nodes, but typically they will be fully replicated to all other nodes after
+a few seconds. Changes are only performed in the own part of the registry and those
+changes are versioned. Deltas are disseminated in a scalable way to other nodes with
+a gossip protocol.
 
-<a id="distributed-pub-sub-publish"></a>
+Cluster members with status @ref:[WeaklyUp](cluster-membership.md#weaklyup-members),
+will participate in Distributed Publish Subscribe, i.e. subscribers on nodes with
+`WeaklyUp` status will receive published messages if the publisher and subscriber are on
+same side of a network partition.
+
+You can send messages via the mediator on any node to registered actors on
+any other node.
+
+## Starting the DistributedPubSubMediator
+
+The mediator can be started and accessed with the `akka.cluster.pubsub.DistributedPubSub` extension.
+Classic Pub Sub can be used by leveraging the `.toClassic` adapters until @github[#26338](#26338).
+
+Scala
+:  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #mediator }
+
+It is also possible to start the mediator actor as an ordinary actor.
+You can also have several different mediators at the same time, to divide a large number of
+actors/topics to different mediators. For example you might want to use different cluster roles for different mediators.
+
+See @ref:[configuration](#configuration) for the recommended way to load the DistributedPubSub Extension.
+
 ## Publish
 
 This is the true pub/sub mode. A typical usage of this mode is a chat room in an instant
@@ -56,36 +85,22 @@ can explicitly remove entries with `DistributedPubSubMediator.Unsubscribe`.
 An example of a subscriber actor:
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #subscriber }
-
-Java
-:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #subscriber }
+:  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #subscriber }
 
 Subscriber actors can be started on several nodes in the cluster, and all will receive
 messages published to the "content" topic.
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-subscribers }
-
-Java
-:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-subscribers }
+:  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #start-subscribers }
 
 A simple actor that publishes to this "content" topic:
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publisher }
-
-Java
-:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publisher }
+:  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #publisher }
 
 It can publish messages to the topic from anywhere in the cluster:
-
-Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #publish-message }
-
-Java
-:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #publish-message }
-
+TODO snippet: publish-message
+ 
 ### Topic Groups
 
 Actors may also be subscribed to a named topic with a `group` id.
@@ -109,7 +124,6 @@ to subscribers that subscribed without a group id.
 
 @@@
 
-<a id="distributed-pub-sub-send"></a>
 ## Send
 
 This is a point-to-point mode where each message is delivered to one destination,
@@ -141,35 +155,20 @@ can explicitly remove entries with `DistributedPubSubMediator.Remove`.
 An example of a destination actor:
 
 Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-destination }
-
-Java
-:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-destination }
+:  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #destination }
 
 Destination actors can be started on several nodes in the cluster, and all will receive
 messages sent to the path (without address information).
 
-Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #start-send-destinations }
-
-Java
-:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #start-send-destinations }
+todo  #start-send-destinations
 
 A simple actor that sends to the path:
-
-Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #sender }
-
-Java
-:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #sender }
+ 
+ Scala
+ :  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #sender }
 
 It can send messages to the path from anywhere in the cluster:
-
-Scala
-:  @@snip [DistributedPubSubMediatorSpec.scala](/akka-cluster-tools/src/multi-jvm/scala/akka/cluster/pubsub/DistributedPubSubMediatorSpec.scala) { #send-message }
-
-Java
-:  @@snip [DistributedPubSubMediatorTest.java](/akka-cluster-tools/src/test/java/akka/cluster/pubsub/DistributedPubSubMediatorTest.java) { #send-message }
+TODO snippet: send-message
 
 It is also possible to broadcast messages to the actors that have been registered with
 `Put`. Send `DistributedPubSubMediator.SendToAll` message to the local mediator and the wrapped message
@@ -183,17 +182,7 @@ with the same path, e.g. 3 actors on different nodes that all perform the same a
 for redundancy. You can also optionally specify a property (`allButSelf`) deciding
 if the message should be sent to a matching path on the self node or not.
 
-## DistributedPubSub Extension
-
-In the example above the mediator is started and accessed with the `akka.cluster.pubsub.DistributedPubSub` extension.
-That is convenient and perfectly fine in most cases, but it can be good to know that it is possible to
-start the mediator actor as an ordinary actor and you can have several different mediators at the same
-time to be able to divide a large number of actors/topics to different mediators. For example you might
-want to use different cluster roles for different mediators.
-
-The `DistributedPubSub` extension can be configured with the following properties:
-
-@@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf) { #pub-sub-ext-config }
+## Configuration
 
 It is recommended to load the extension when the actor system is started by defining it in
 `akka.extensions` configuration property. Otherwise it will be activated when first used
@@ -203,9 +192,13 @@ and then it takes a while for it to be populated.
 akka.extensions = ["akka.cluster.pubsub.DistributedPubSub"]
 ```
 
+The `DistributedPubSub` extension can be configured with the following properties:
+
+@@snip [reference.conf](/akka-cluster-tools/src/main/resources/reference.conf) { #pub-sub-ext-config }
+
 ## Delivery Guarantee
 
-As in @ref:[Message Delivery Reliability](general/message-delivery-reliability.md) of Akka, message delivery guarantee in distributed pub sub modes is **at-most-once delivery**.
+As in @ref:[Message Delivery Reliability](../general/message-delivery-reliability.md) of Akka, message delivery guarantee in distributed pub sub modes is **at-most-once delivery**.
 In other words, messages can be lost over the wire.
 
 If you are looking for at-least-once delivery guarantee, we recommend [Kafka Akka Streams integration](http://doc.akka.io/docs/akka-stream-kafka/current/home.html).
