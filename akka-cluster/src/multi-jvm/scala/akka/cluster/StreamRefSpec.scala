@@ -38,11 +38,14 @@ object StreamRefSpec extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
         akka.stream.materializer.stream-ref.subscription-timeout = 10 s
         akka.cluster {
           auto-down-unreachable-after = 1s
-        }""")).withFallback(MultiNodeClusterSpec.clusterConfig))
+        }"""))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 
