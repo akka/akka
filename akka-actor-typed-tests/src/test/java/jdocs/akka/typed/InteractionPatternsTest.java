@@ -620,7 +620,7 @@ public class InteractionPatternsTest extends JUnitSuite {
 
   interface StandaloneAskSample {
     // #standalone-ask
-    public class CookieFabric {
+    public class CookieFabric extends AbstractBehavior<CookieFabric.Command> {
 
       interface Command {}
 
@@ -650,6 +650,26 @@ public class InteractionPatternsTest extends JUnitSuite {
         public InvalidRequest(String reason) {
           this.reason = reason;
         }
+      }
+
+      public static Behavior<Command> create() {
+        return Behaviors.setup(CookieFabric::new);
+      }
+
+      private CookieFabric(ActorContext<Command> context) {
+        super(context);
+      }
+
+      @Override
+      public Receive<Command> createReceive() {
+        return newReceiveBuilder().onMessage(GiveMeCookies.class, this::onGiveMeCookies).build();
+      }
+
+      private Behavior<Command> onGiveMeCookies(GiveMeCookies request) {
+        if (request.count >= 5) request.replyTo.tell(new InvalidRequest("Too many cookies."));
+        else request.replyTo.tell(new Cookies(request.count));
+
+        return this;
       }
     }
     // #standalone-ask
