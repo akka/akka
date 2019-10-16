@@ -267,11 +267,11 @@ class CancellationStrategySpec extends StreamSpec("""akka.loglevel = DEBUG
 
         override def onUpstreamFinish(): Unit = {
           log.debug(s"delaying completion")
-          materializer.scheduleOnce(delay, () => callback.invoke(None))
+          materializer.scheduleOnce(delay, new Runnable { def run(): Unit = callback.invoke(None) })
         }
         override def onUpstreamFailure(ex: Throwable): Unit = {
           log.debug(s"delaying error $ex")
-          materializer.scheduleOnce(delay, () => callback.invoke(Some(ex)))
+          materializer.scheduleOnce(delay, new Runnable { def run(): Unit = callback.invoke(Some(ex)) })
         }
       }
   }

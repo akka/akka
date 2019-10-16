@@ -548,7 +548,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         val callback = getAsyncCallback[Connection] {
           case connection => doCancel(connection)
         }
-        materializer.scheduleOnce(delay, () => callback.invoke(connection))
+        materializer.scheduleOnce(delay, new Runnable { def run(): Unit = callback.invoke(connection) })
       case _ =>
         doCancel(connection)
     }
