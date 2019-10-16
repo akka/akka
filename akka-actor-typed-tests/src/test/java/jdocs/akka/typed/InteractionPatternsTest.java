@@ -625,18 +625,30 @@ public class InteractionPatternsTest extends JUnitSuite {
       interface Command {}
 
       public static class GiveMeCookies implements Command {
-        public final ActorRef<Cookies> cookies;
+        public final int count;
+        public final ActorRef<Reply> replyTo;
 
-        public GiveMeCookies(ActorRef<Cookies> cookies) {
-          this.cookies = cookies;
+        public GiveMeCookies(int count, ActorRef<Reply> replyTo) {
+          this.count = count;
+          this.replyTo = replyTo;
         }
       }
 
-      public static class Cookies {
+      interface Reply {}
+
+      public static class Cookies implements Reply {
         public final int count;
 
         public Cookies(int count) {
           this.count = count;
+        }
+      }
+
+      public static class InvalidRequest implements Reply {
+        public final String reason;
+
+        public InvalidRequest(String reason) {
+          this.reason = reason;
         }
       }
     }
@@ -648,23 +660,59 @@ public class InteractionPatternsTest extends JUnitSuite {
 
       public void askAndPrint(
           ActorSystem<Void> system, ActorRef<CookieFabric.Command> cookieFabric) {
-        CompletionStage<CookieFabric.Cookies> result =
+        CompletionStage<CookieFabric.Reply> result =
             AskPattern.ask(
                 cookieFabric,
-                CookieFabric.GiveMeCookies::new,
+                replyTo -> new CookieFabric.GiveMeCookies(3, replyTo),
                 // asking someone requires a timeout and a scheduler, if the timeout hits without
-                // response
-                // the ask is failed with a TimeoutException
+                // response the ask is failed with a TimeoutException
                 Duration.ofSeconds(3),
                 system.scheduler());
 
         result.whenComplete(
-            (cookies, failure) -> {
-              if (cookies != null) System.out.println("Yay, cookies!");
-              else System.out.println("Boo! didn't get cookies in time.");
+            (reply, failure) -> {
+              if (reply instanceof CookieFabric.Cookies)
+                System.out.println("Yay, " + ((CookieFabric.Cookies) reply).count + " cookies!");
+              else if (reply instanceof CookieFabric.InvalidRequest)
+                System.out.println(
+                    "No cookies for me. " + ((CookieFabric.InvalidRequest) reply).reason);
+              else System.out.println("Boo! didn't get cookies in time. " + failure);
             });
       }
       // #standalone-ask
+
+      public void askAndMapInvalid(
+          ActorSystem<Void> system, ActorRef<CookieFabric.Command> cookieFabric) {
+        // #standalone-ask-fail-future
+        CompletionStage<CookieFabric.Reply> result =
+            AskPattern.ask(
+                cookieFabric,
+                replyTo -> new CookieFabric.GiveMeCookies(3, replyTo),
+                Duration.ofSeconds(3),
+                system.scheduler());
+
+        CompletionStage<CookieFabric.Cookies> cookies =
+            result.thenCompose(
+                (CookieFabric.Reply reply) -> {
+                  if (reply instanceof CookieFabric.Cookies) {
+                    return CompletableFuture.completedFuture((CookieFabric.Cookies) reply);
+                  } else if (reply instanceof CookieFabric.InvalidRequest) {
+                    CompletableFuture<CookieFabric.Cookies> failed = new CompletableFuture<>();
+                    failed.completeExceptionally(
+                        new IllegalArgumentException(((CookieFabric.InvalidRequest) reply).reason));
+                    return failed;
+                  } else {
+                    throw new IllegalStateException("Unexpected reply: " + reply.getClass());
+                  }
+                });
+
+        cookies.whenComplete(
+            (cookiesReply, failure) -> {
+              if (cookies != null) System.out.println("Yay, " + cookiesReply.count + " cookies!");
+              else System.out.println("Boo! didn't get cookies in time. " + failure);
+            });
+        // #standalone-ask-fail-future
+      }
     }
   }
 
