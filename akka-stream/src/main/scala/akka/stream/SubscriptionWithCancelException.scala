@@ -5,7 +5,6 @@
 package akka.stream
 
 import akka.annotation.DoNotInherit
-import org.reactivestreams.Subscription
 
 import scala.util.control.NoStackTrace
 

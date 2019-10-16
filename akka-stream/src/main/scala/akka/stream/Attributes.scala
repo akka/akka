@@ -21,7 +21,6 @@ import scala.compat.java8.OptionConverters._
 import akka.util.{ ByteString, OptionVal }
 
 import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NoStackTrace
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
