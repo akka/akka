@@ -654,7 +654,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       override lazy val connectionActor = createConnectionActorWithoutRegistration(serverAddress = address)
       run {
         connectionActor ! newChannelRegistration
-        userHandler.expectMsg(30.seconds, CommandFailed(Connect(address)))
+        userHandler.expectMsg(15.seconds, CommandFailed(Connect(address)))
       }
     }
 

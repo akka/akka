@@ -164,6 +164,14 @@ which also has support for `java.util.logging`.
 `akka.Main` is deprecated in favour of starting the `ActorSystem` from a custom main class instead. `akka.Main` was not
 adding much value and typically a custom main class is needed anyway.
 
+### Pluggable DNS
+
+Plugging in your own DNS implementation is now deprecated and will be removed in `2.7.0`, it was originally added to
+support a third party DNS provided that supported SRV records. The built in `async-dns` now supports SRV records.
+
+The `resolve` and `cached` methods on the `DNS` extension have also been deprecated in favour of ones that take in
+`DnsProtocol.Resolve`. These methods return a new types that include SRV records.
+
 ## Remoting
 
 ### Default remoting is now Artery TCP

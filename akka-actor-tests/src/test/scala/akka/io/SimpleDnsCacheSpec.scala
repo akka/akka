@@ -7,10 +7,14 @@ package akka.io
 import java.net.InetAddress
 import java.util.concurrent.atomic.AtomicLong
 
+import akka.io.dns.ARecord
 import akka.io.dns.CachePolicy.Ttl
+import akka.io.dns.DnsProtocol
+import akka.io.dns.DnsProtocol.Ip
 import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
+import scala.collection.immutable
 
 class SimpleDnsCacheSpec extends WordSpec with Matchers {
   "Cache" should {
@@ -19,14 +23,17 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
       val cache: SimpleDnsCache = new SimpleDnsCache() {
         override protected def clock() = localClock.get
       }
-      val cacheEntry = Dns.Resolved("test.local", Seq(InetAddress.getByName("127.0.0.1")))
-      cache.put(cacheEntry, Ttl.fromPositive(5000.millis))
+      val ttl = Ttl.fromPositive(5000.millis)
+      val cacheEntry = DnsProtocol.Resolved(
+        "test.local",
+        immutable.Seq(ARecord("test.local", ttl, InetAddress.getByName("127.0.0.1"))))
+      cache.put(("test.local", Ip()), cacheEntry, ttl)
 
-      cache.cached("test.local") should ===(Some(cacheEntry))
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(Some(cacheEntry))
       localClock.set(4999)
-      cache.cached("test.local") should ===(Some(cacheEntry))
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(Some(cacheEntry))
       localClock.set(5000)
-      cache.cached("test.local") should ===(None)
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(None)
     }
 
     "sweep out expired entries on cleanup()" in {
@@ -34,19 +41,26 @@ class SimpleDnsCacheSpec extends WordSpec with Matchers {
       val cache: SimpleDnsCache = new SimpleDnsCache() {
         override protected def clock() = localClock.get
       }
-      val cacheEntry = Dns.Resolved("test.local", Seq(InetAddress.getByName("127.0.0.1")))
-      cache.put(cacheEntry, Ttl.fromPositive(5000.millis))
+      val ttl = Ttl.fromPositive(5000.millis)
+      val cacheEntry =
+        DnsProtocol.Resolved(
+          "test.local",
+          immutable.Seq(ARecord("test.local", ttl, InetAddress.getByName("127.0.0.1"))))
+      cache.put(("test.local", Ip()), cacheEntry, ttl)
 
-      cache.cached("test.local") should ===(Some(cacheEntry))
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(Some(cacheEntry))
       localClock.set(5000)
-      cache.cached("test.local") should ===(None)
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(None)
       localClock.set(0)
-      cache.cached("test.local") should ===(Some(cacheEntry))
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(Some(cacheEntry))
       localClock.set(5000)
       cache.cleanup()
-      cache.cached("test.local") should ===(None)
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(None)
       localClock.set(0)
-      cache.cached("test.local") should ===(None)
+      cache.cached(DnsProtocol.Resolve("test.local")) should ===(None)
     }
+
   }
+
+  // TODO test that the old protocol is converted correctly
 }

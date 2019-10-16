@@ -16,6 +16,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.{ unused, ByteString }
 import akka.io.SelectionHandler._
 import akka.io.UdpConnected._
+import akka.io.dns.DnsProtocol
 
 /**
  * INTERNAL API
@@ -40,9 +41,9 @@ private[io] class UdpConnection(
   var channel: DatagramChannel = null
 
   if (remoteAddress.isUnresolved) {
-    Dns.resolve(remoteAddress.getHostName)(context.system, self) match {
+    Dns.resolve(DnsProtocol.Resolve(remoteAddress.getHostName), context.system, self) match {
       case Some(r) =>
-        doConnect(new InetSocketAddress(r.addr, remoteAddress.getPort))
+        doConnect(new InetSocketAddress(r.address(), remoteAddress.getPort))
       case None =>
         context.become(resolving(), discardOld = true)
     }
@@ -51,9 +52,9 @@ private[io] class UdpConnection(
   }
 
   def resolving(): Receive = {
-    case r: Dns.Resolved =>
+    case r: DnsProtocol.Resolved =>
       reportConnectFailure {
-        doConnect(new InetSocketAddress(r.addr, remoteAddress.getPort))
+        doConnect(new InetSocketAddress(r.address(), remoteAddress.getPort))
       }
   }
 
@@ -149,7 +150,7 @@ private[io] class UdpConnection(
   }
 
   override def postStop(): Unit =
-    if (channel.isOpen) {
+    if (channel != null && channel.isOpen) {
       log.debug("Closing DatagramChannel after being stopped")
       try channel.close()
       catch {

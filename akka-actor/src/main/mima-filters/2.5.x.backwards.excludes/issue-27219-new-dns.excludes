@@ -1,0 +1,12 @@
+# private[io] method removed
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.io.SimpleDnsCache.put")
+# private class AsyncDnsResolver changes
+ProblemFilters.exclude[Problem]("akka.io.dns.internal.AsyncDnsResolver*")
+# ctr of private[akka] class changed
+ProblemFilters.exclude[Problem]("akka.io.dns.internal.AsyncDnsResolver*")
+# removed internal class
+ProblemFilters.exclude[MissingClassProblem]("akka.io.dns.internal.AsyncDnsCache")
+# make actor final
+ProblemFilters.exclude[FinalClassProblem]("akka.io.SimpleDnsManager")
+
+
