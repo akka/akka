@@ -10,6 +10,7 @@ import akka.actor._
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.japi.function.{ Effect, Procedure }
 import akka.pattern.ask
+import akka.stream.Attributes
 import akka.stream._
 import akka.stream.actor.ActorSubscriberMessage
 import akka.stream.impl.fusing.{ GraphInterpreter, GraphStageModule, SubSink, SubSource }
@@ -18,11 +19,11 @@ import akka.stream.scaladsl.GenericGraphWithChangedAttributes
 import akka.util.OptionVal
 import akka.util.unused
 import akka.{ Done, NotUsed }
+
 import scala.annotation.tailrec
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.{ Await, Future, Promise }
-
 import akka.stream.impl.StreamSupervisor
 
 /**
@@ -332,9 +333,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * INTERNAL API
-   *
-   * Input handlers followed by output handlers, use `inHandler(id)` and `outHandler(id)` to access the respective
-   * handlers.
    */
   private[stream] var attributes: Attributes = Attributes.none
 
@@ -347,8 +345,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * INTERNAL API
+   *
+   * Input handlers followed by output handlers, use `inHandler(id)` and `outHandler(id)` to access the respective
+   * handlers.
    */
-  // Using common array to reduce overhead for small port counts
   private[stream] val handlers = new Array[Any](inCount + outCount)
 
   /**
@@ -534,7 +534,26 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Requests to stop receiving events from a given input port. Cancelling clears any ungrabbed elements from the port.
    */
-  final protected def cancel[T](in: Inlet[T]): Unit = interpreter.cancel(conn(in))
+  final protected def cancel[T](in: Inlet[T]): Unit = cancel(conn(in))
+
+  private def cancel[T](connection: Connection): Unit =
+    attributes.get[Attributes.CancellationStrategy](Attributes.CancellationStrategy.Default).strategy match {
+      case Attributes.CancellationStrategy.AfterDelay(delay, _) =>
+        // since the port is not actually cancelled, we install a handler to ignore upcoming elements
+        connection.inHandler = new InHandler {
+          // ignore pushs now, since the stage wanted it cancelled already
+          override def onPush(): Unit = ()
+          // do not ignore termination signals
+        }
+        val callback = getAsyncCallback[Connection] {
+          case connection => doCancel(connection)
+        }
+        materializer.scheduleOnce(delay, new Runnable { def run(): Unit = callback.invoke(connection) })
+      case _ =>
+        doCancel(connection)
+    }
+
+  private def doCancel[T](connection: Connection): Unit = interpreter.cancel(connection)
 
   /**
    * Once the callback [[InHandler.onPush()]] for an input port has been invoked, the element that has been pushed
@@ -652,6 +671,36 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   final protected def fail[T](out: Outlet[T], ex: Throwable): Unit = interpreter.fail(conn(out), ex)
 
   /**
+   * Automatically invokes [[cancel]] or [[complete]] on all the input or output ports that have been called,
+   * then marks the stage as stopped.
+   *
+   * This method is a backport from Akka 2.6 and already includes a `cause` parameter for binary compatibility with
+   * Akka 2.6. This parameter is not propagated to upstream stages in Akka 2.5 which does not support propagation
+   * of cancellation causes. However, it will be used as an error if the [[Attributes.CancellationStrategy.FailStage]]
+   * cancellation strategy was chosen.
+   *
+   * You can use [[SubscriptionWithCancelException.NoMoreElementsNeeded]] as a default if you do not want to pass
+   * additional information.
+   */
+  final def cancelStage(cause: Throwable): Unit =
+    internalCancelStage(
+      cause,
+      attributes.get[Attributes.CancellationStrategy](Attributes.CancellationStrategy.Default).strategy)
+
+  @tailrec private def internalCancelStage(
+      cause: Throwable,
+      strategy: Attributes.CancellationStrategy.Strategy): Unit = {
+    import Attributes.CancellationStrategy._
+    strategy match {
+      case CompleteStage          => completeStage()
+      case FailStage              => failStage(cause)
+      case AfterDelay(_, andThen) =>
+        // delay handled at the stage that sends the delay. See `def cancel(in, cause)`.
+        internalCancelStage(cause, andThen)
+    }
+  }
+
+  /**
    * Automatically invokes [[cancel()]] or [[complete()]] on all the input or output ports that have been called,
    * then marks the operator as stopped.
    */
@@ -659,7 +708,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     var i = 0
     while (i < portToConn.length) {
       if (i < inCount)
-        interpreter.cancel(portToConn(i))
+        cancel(portToConn(i))
       else
         handlers(i) match {
           case e: Emitting[_] => e.addFollowUp(new EmittingCompletion(e.out, e.previous))
@@ -678,7 +727,7 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
     var i = 0
     while (i < portToConn.length) {
       if (i < inCount)
-        interpreter.cancel(portToConn(i))
+        cancel(portToConn(i))
       else
         interpreter.fail(portToConn(i), ex)
       i += 1
@@ -1704,9 +1753,8 @@ trait OutHandler {
    * be called for this port.
    */
   @throws(classOf[Exception])
-  def onDownstreamFinish(): Unit = {
-    GraphInterpreter.currentInterpreter.activeStage.completeStage()
-  }
+  def onDownstreamFinish(): Unit =
+    GraphInterpreter.currentInterpreter.activeStage.cancelStage(SubscriptionWithCancelException.NoMoreElementsNeeded)
 }
 
 /**
