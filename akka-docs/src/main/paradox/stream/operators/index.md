@@ -12,18 +12,28 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 |Source|<a name="assourcewithcontext"></a>@ref[asSourceWithContext](Source/asSourceWithContext.md)|Turns a Source into a SourceWithContext which can propagate a context per element along a stream.|
 |Source|<a name="assubscriber"></a>@ref[asSubscriber](Source/asSubscriber.md)|Integration with Reactive Streams, materializes into a `org.reactivestreams.Subscriber`.|
 |Source|<a name="combine"></a>@ref[combine](Source/combine.md)|Combine several sources, using a given strategy such as merge or concat, into one source.|
+|Source|<a name="completionstage"></a>@ref[completionStage](Source/completionStage.md)|Send the single value of the `CompletionStage` when it completes and there is demand.|
+|Source|<a name="completionstagesource"></a>@ref[completionStageSource](Source/completionStageSource.md)|Streams the elements of an asynchronous source once its given *completion* operator completes.|
 |Source|<a name="cycle"></a>@ref[cycle](Source/cycle.md)|Stream iterator in cycled manner.|
 |Source|<a name="empty"></a>@ref[empty](Source/empty.md)|Complete right away without ever emitting any elements.|
 |Source|<a name="failed"></a>@ref[failed](Source/failed.md)|Fail directly with a user specified exception.|
 |Source|<a name="from"></a>@ref[@scala[apply]@java[from]](Source/from.md)|Stream the values of an @scala[`immutable.Seq`]@java[`Iterable`].|
-|Source|<a name="fromcompletionstage"></a>@ref[fromCompletionStage](Source/fromCompletionStage.md)|Send the single value of the `CompletionStage` when it completes and there is demand.|
-|Source|<a name="fromfuture"></a>@ref[fromFuture](Source/fromFuture.md)|Send the single value of the `Future` when it completes and there is demand.|
-|Source|<a name="fromfuturesource"></a>@ref[fromFutureSource](Source/fromFutureSource.md)|Streams the elements of the given future source once it successfully completes.|
+|Source|<a name="fromcompletionstage"></a>@ref[fromCompletionStage](Source/fromCompletionStage.md)|`fromCompletionStage` has been deprecated in 2.6.0, use `Source.completionStage`|
+|Source|<a name="fromfuture"></a>@ref[fromFuture](Source/fromFuture.md)|`fromFuture` has been deprecated in 2.6.0, use `Source.future` instead.|
+|Source|<a name="fromfuturesource"></a>@ref[fromFutureSource](Source/fromFutureSource.md)|`fromFutureSource` has been deprecated in 2.6.0, use `Source.futureSource` instead.|
 |Source|<a name="fromiterator"></a>@ref[fromIterator](Source/fromIterator.md)|Stream the values from an `Iterator`, requesting the next value when there is demand.|
 |Source|<a name="frompublisher"></a>@ref[fromPublisher](Source/fromPublisher.md)|Integration with Reactive Streams, subscribes to a `org.reactivestreams.Publisher`.|
-|Source|<a name="fromsourcecompletionstage"></a>@ref[fromSourceCompletionStage](Source/fromSourceCompletionStage.md)|Streams the elements of an asynchronous source once its given *completion* operator completes.|
-|Source|<a name="lazily"></a>@ref[lazily](Source/lazily.md)|Defers creation and materialization of a `Source` until there is demand.|
-|Source|<a name="lazilyasync"></a>@ref[lazilyAsync](Source/lazilyAsync.md)|Defers creation and materialization of a `CompletionStage` until there is demand.|
+|Source|<a name="fromsourcecompletionstage"></a>@ref[fromSourceCompletionStage](Source/fromSourceCompletionStage.md)|`fromSourceCompletionStage` has been deprecated in 2.6.0, use `Source.completionStageSource` instead.|
+|Source|<a name="future"></a>@ref[future](Source/future.md)|Send the single value of the `Future` when it completes and there is demand.|
+|Source|<a name="futuresource"></a>@ref[futureSource](Source/futureSource.md)|Streams the elements of the given future source once it successfully completes.|
+|Source|<a name="lazily"></a>@ref[lazily](Source/lazily.md)|`lazily` has been deprecated in 2.6.0, use `Source.lazySource` instead.|
+|Source|<a name="lazilyasync"></a>@ref[lazilyAsync](Source/lazilyAsync.md)|`lazily` has been deprecated in 2.6.0, use `Source.lazyFutureSource` instead.|
+|Source|<a name="lazycompletionstage"></a>@ref[lazyCompletionStage](Source/lazyCompletionStage.md)|Defers creation of a future of a single element source until there is demand.|
+|Source|<a name="lazycompletionstagesource"></a>@ref[lazyCompletionStageSource](Source/lazyCompletionStageSource.md)|Defers creation of a future source until there is demand.|
+|Source|<a name="lazyfuture"></a>@ref[lazyFuture](Source/lazyFuture.md)|Defers creation of a future of a single element source until there is demand.|
+|Source|<a name="lazyfuturesource"></a>@ref[lazyFutureSource](Source/lazyFutureSource.md)|Defers creation and materialization of a `Source` until there is demand.|
+|Source|<a name="lazysingle"></a>@ref[lazySingle](Source/lazySingle.md)|Defers creation of a single element source until there is demand.|
+|Source|<a name="lazysource"></a>@ref[lazySource](Source/lazySource.md)|Defers creation and materialization of a `Source` until there is demand.|
 |Source|<a name="maybe"></a>@ref[maybe](Source/maybe.md)|Create a source that emits once the materialized @scala[`Promise`] @java[`CompletableFuture`] is completed with a value.|
 |Source|<a name="queue"></a>@ref[queue](Source/queue.md)|Materialize a `SourceQueue` onto which elements can be pushed for emitting from the source. |
 |Source|<a name="range"></a>@ref[range](Source/range.md)|Emit each integer in a range, with an option to take bigger steps than 1.|
@@ -49,18 +59,23 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="aspublisher"></a>@ref[asPublisher](Sink/asPublisher.md)|Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.|
 |Sink|<a name="cancelled"></a>@ref[cancelled](Sink/cancelled.md)|Immediately cancel the stream|
 |Sink|<a name="combine"></a>@ref[combine](Sink/combine.md)|Combine several sinks into one using a user specified strategy|
+|Sink|<a name="completionstagesink"></a>@ref[completionStageSink](Sink/completionStageSink.md)|Streams the elements to the given future sink once it successfully completes. |
 |Sink|<a name="fold"></a>@ref[fold](Sink/fold.md)|Fold over emitted element with a function, where each invocation will get the new element and the result from the previous fold invocation.|
 |Sink|<a name="foreach"></a>@ref[foreach](Sink/foreach.md)|Invoke a given procedure for each element received.|
 |Sink|<a name="foreachasync"></a>@ref[foreachAsync](Sink/foreachAsync.md)|Invoke a given procedure asynchronously for each element received.|
 |Sink|<a name="foreachparallel"></a>@ref[foreachParallel](Sink/foreachParallel.md)|Like `foreach` but allows up to `parallellism` procedure calls to happen in parallel.|
 |Sink|<a name="frommaterializer"></a>@ref[fromMaterializer](Sink/fromMaterializer.md)|Defer the creation of a `Sink` until materialization and access `Materializer` and `Attributes`|
 |Sink|<a name="fromsubscriber"></a>@ref[fromSubscriber](Sink/fromSubscriber.md)|Integration with Reactive Streams, wraps a `org.reactivestreams.Subscriber` as a sink.|
+|Sink|<a name="futuresink"></a>@ref[futureSink](Sink/futureSink.md)|Streams the elements to the given future sink once it successfully completes. |
 |Sink|<a name="head"></a>@ref[head](Sink/head.md)|Materializes into a @scala[`Future`] @java[`CompletionStage`] which completes with the first value arriving, after this the stream is canceled.|
 |Sink|<a name="headoption"></a>@ref[headOption](Sink/headOption.md)|Materializes into a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<T>>`] which completes with the first value arriving wrapped in @scala[`Some`] @java[`Optional`], or @scala[a `None`] @java[an empty Optional] if the stream completes without any elements emitted.|
 |Sink|<a name="ignore"></a>@ref[ignore](Sink/ignore.md)|Consume all elements but discards them.|
 |Sink|<a name="last"></a>@ref[last](Sink/last.md)|Materializes into a @scala[`Future`] @java[`CompletionStage`] which will complete with the last value emitted when the stream completes.|
 |Sink|<a name="lastoption"></a>@ref[lastOption](Sink/lastOption.md)|Materialize a @scala[`Future[Option[T]]`] @java[`CompletionStage<Optional<T>>`] which completes with the last value emitted wrapped in an @scala[`Some`] @java[`Optional`] when the stream completes.|
-|Sink|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Sink/lazyInitAsync.md)|Creates a real `Sink` upon receiving the first element. |
+|Sink|<a name="lazycompletionstagesink"></a>@ref[lazyCompletionStageSink](Sink/lazyCompletionStageSink.md)|Defers creation and materialization of a `Sink` until there is a first element.|
+|Sink|<a name="lazyfuturesink"></a>@ref[lazyFutureSink](Sink/lazyFutureSink.md)|Defers creation and materialization of a `Sink` until there is a first element.|
+|Sink|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Sink/lazyInitAsync.md)|`lazyInitAsync` has been deprecated in 2.6.0, use `Sink.lazyFutureSink` |
+|Sink|<a name="lazysink"></a>@ref[lazySink](Sink/lazySink.md)|Defers creation and materialization of a `Sink` until there is a first element.|
 |Sink|<a name="oncomplete"></a>@ref[onComplete](Sink/onComplete.md)|Invoke a callback when the stream has completed or failed.|
 |Sink|<a name="prematerialize"></a>@ref[preMaterialize](Sink/preMaterialize.md)|Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink that can be consume elements 'into' the pre-materialized one.|
 |Sink|<a name="queue"></a>@ref[queue](Sink/queue.md)|Materialize a `SinkQueue` that can be pulled to trigger demand through the sink.|
@@ -129,6 +144,7 @@ depending on being backpressured by downstream or not.
 |Flow|<a name="asflowwithcontext"></a>@ref[asFlowWithContext](Flow/asFlowWithContext.md)|Turns a Flow into a FlowWithContext which can propagate a context per element along a stream.|
 |Source/Flow|<a name="collect"></a>@ref[collect](Source-or-Flow/collect.md)|Apply a partial function to each incoming element, if the partial function is defined for a value the returned value is passed downstream.|
 |Source/Flow|<a name="collecttype"></a>@ref[collectType](Source-or-Flow/collectType.md)|Transform this stream by testing the type of each of the elements on which the element is an instance of the provided type as they pass through this processing step.|
+|Flow|<a name="completionstageflow"></a>@ref[completionStageFlow](Flow/completionStageFlow.md)|Streams the elements through the given future flow once it successfully completes.|
 |Source/Flow|<a name="detach"></a>@ref[detach](Source-or-Flow/detach.md)|Detach upstream demand from downstream demand without detaching the stream rates.|
 |Source/Flow|<a name="drop"></a>@ref[drop](Source-or-Flow/drop.md)|Drop `n` elements and then pass any subsequent element downstream.|
 |Source/Flow|<a name="dropwhile"></a>@ref[dropWhile](Source-or-Flow/dropWhile.md)|Drop elements as long as a predicate function return true for the element|
@@ -137,9 +153,13 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="fold"></a>@ref[fold](Source-or-Flow/fold.md)|Start with current value `zero` and then apply the current and next value to the given function. When upstream completes, the current value is emitted downstream.|
 |Source/Flow|<a name="foldasync"></a>@ref[foldAsync](Source-or-Flow/foldAsync.md)|Just like `fold` but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.|
 |Source/Flow|<a name="frommaterializer"></a>@ref[fromMaterializer](Source-or-Flow/fromMaterializer.md)|Defer the creation of a `Source/Flow` until materialization and access `Materializer` and `Attributes`|
+|Flow|<a name="futureflow"></a>@ref[futureFlow](Flow/futureFlow.md)|Streams the elements through the given future flow once it successfully completes.|
 |Source/Flow|<a name="grouped"></a>@ref[grouped](Source-or-Flow/grouped.md)|Accumulate incoming events until the specified number of elements have been accumulated and then pass the collection of elements downstream.|
 |Source/Flow|<a name="intersperse"></a>@ref[intersperse](Source-or-Flow/intersperse.md)|Intersperse stream with provided element similar to `List.mkString`.|
-|Flow|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Flow/lazyInitAsync.md)|Creates a real `Flow` upon receiving the first element by calling relevant `flowFactory` given as an argument.|
+|Flow|<a name="lazycompletionstageflow"></a>@ref[lazyCompletionStageFlow](Flow/lazyCompletionStageFlow.md)|Defers creation and materialization of a `Flow` until there is a first element.|
+|Flow|<a name="lazyflow"></a>@ref[lazyFlow](Flow/lazyFlow.md)|Defers creation and materialization of a `Flow` until there is a first element.|
+|Flow|<a name="lazyfutureflow"></a>@ref[lazyFutureFlow](Flow/lazyFutureFlow.md)|Defers creation and materialization of a `Flow` until there is a first element.|
+|Flow|<a name="lazyinitasync"></a>@ref[lazyInitAsync](Flow/lazyInitAsync.md)|`lazyInitAsync` has been deprecated in 2.6.0 use `Flow.lazyFutureFlow` in combination with `prefixAndTail` instead.|
 |Source/Flow|<a name="limit"></a>@ref[limit](Source-or-Flow/limit.md)|Limit number of element from upstream to given `max` number.|
 |Source/Flow|<a name="limitweighted"></a>@ref[limitWeighted](Source-or-Flow/limitWeighted.md)|Ensure stream boundedness by evaluating the cost of incoming elements using a cost function.|
 |Source/Flow|<a name="log"></a>@ref[log](Source-or-Flow/log.md)|Log elements flowing through the stream as well as completion and erroring.|
@@ -337,6 +357,13 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [failed](Source/failed.md)
 * [lazily](Source/lazily.md)
 * [lazilyAsync](Source/lazilyAsync.md)
+* [future](Source/future.md)
+* [completionStage](Source/completionStage.md)
+* [futureSource](Source/futureSource.md)
+* [lazySingle](Source/lazySingle.md)
+* [lazyFuture](Source/lazyFuture.md)
+* [lazySource](Source/lazySource.md)
+* [lazyFutureSource](Source/lazyFutureSource.md)
 * [asSubscriber](Source/asSubscriber.md)
 * [actorRef](Source/actorRef.md)
 * [actorRefWithBackpressure](Source/actorRefWithBackpressure.md)
@@ -347,6 +374,9 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [unfoldResourceAsync](Source/unfoldResourceAsync.md)
 * [@scala[apply]@java[from]](Source/from.md)
 * [range](Source/range.md)
+* [completionStageSource](Source/completionStageSource.md)
+* [lazyCompletionStage](Source/lazyCompletionStage.md)
+* [lazyCompletionStageSource](Source/lazyCompletionStageSource.md)
 * [concat](Source-or-Flow/concat.md)
 * [prepend](Source-or-Flow/prepend.md)
 * [orElse](Source-or-Flow/orElse.md)
@@ -427,6 +457,11 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [fromSinkAndSource](Flow/fromSinkAndSource.md)
 * [fromSinkAndSourceCoupled](Flow/fromSinkAndSourceCoupled.md)
 * [lazyInitAsync](Flow/lazyInitAsync.md)
+* [futureFlow](Flow/futureFlow.md)
+* [lazyFlow](Flow/lazyFlow.md)
+* [lazyFutureFlow](Flow/lazyFutureFlow.md)
+* [completionStageFlow](Flow/completionStageFlow.md)
+* [lazyCompletionStageFlow](Flow/lazyCompletionStageFlow.md)
 * [preMaterialize](Sink/preMaterialize.md)
 * [fromMaterializer](Sink/fromMaterializer.md)
 * [setup](Sink/setup.md)
@@ -451,6 +486,11 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [actorRefWithBackpressure](Sink/actorRefWithBackpressure.md)
 * [queue](Sink/queue.md)
 * [lazyInitAsync](Sink/lazyInitAsync.md)
+* [futureSink](Sink/futureSink.md)
+* [lazySink](Sink/lazySink.md)
+* [lazyFutureSink](Sink/lazyFutureSink.md)
+* [completionStageSink](Sink/completionStageSink.md)
+* [lazyCompletionStageSink](Sink/lazyCompletionStageSink.md)
 * [fromInputStream](StreamConverters/fromInputStream.md)
 * [asOutputStream](StreamConverters/asOutputStream.md)
 * [fromOutputStream](StreamConverters/fromOutputStream.md)

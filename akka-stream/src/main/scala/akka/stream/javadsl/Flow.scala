@@ -9,6 +9,7 @@ import java.util.function.BiFunction
 import java.util.function.Supplier
 import java.util.Comparator
 import java.util.Optional
+import java.util.concurrent.CompletableFuture
 
 import akka.actor.ActorRef
 import akka.actor.ClassicActorSystemProvider
@@ -25,6 +26,7 @@ import akka.util.ConstantFun
 import akka.util.Timeout
 import akka.Done
 import akka.NotUsed
+import akka.japi.function.Creator
 import com.github.ghik.silencer.silent
 import org.reactivestreams.Processor
 
@@ -253,10 +255,9 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
-  @Deprecated
   @deprecated(
-    "Use lazyInitAsync instead. (lazyInitAsync returns a flow with a more useful materialized value.)",
-    "2.5.12")
+    "Use 'Flow.completionStageFlow' in combination with prefixAndTail(1) instead, see `completionStageFlow` operator docs for details",
+    "2.6.0")
   def lazyInit[I, O, M](
       flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]],
       fallback: function.Creator[M]): Flow[I, O, M] = {
@@ -284,6 +285,7 @@ object Flow {
    *
    * '''Cancels when''' downstream cancels
    */
+  @deprecated("Use 'Flow.lazyCompletionStageFlow' instead", "2.6.0")
   def lazyInitAsync[I, O, M](
       flowFactory: function.Creator[CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[Optional[M]]] = {
     import scala.compat.java8.FutureConverters._
@@ -298,6 +300,63 @@ object Flow {
             .toJava)
     new Flow(sflow)
   }
+
+  /**
+   * Turn a `CompletionStage<Flow>` into a flow that will consume the values of the source when the future completes successfully.
+   * If the `Future` is completed with a failure the stream is failed.
+   *
+   * The materialized completion stage value is completed with the materialized value of the future flow or failed with a
+   * [[NeverMaterializedException]] if upstream fails or downstream cancels before the completion stage has completed.
+   */
+  def completionStageFlow[I, O, M](flow: CompletionStage[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
+    lazyCompletionStageFlow(() => flow)
+
+  /**
+   * Defers invoking the `create` function to create a future flow until there is downstream demand and passing
+   * that downstream demand upstream triggers the first element.
+   *
+   * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
+   * the laziness and can trigger the factory earlier than expected.
+   *
+   * '''Emits when''' the internal flow is successfully created and it emits
+   *
+   * '''Backpressures when''' the internal flow is successfully created and it backpressures or downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def lazyFlow[I, O, M](create: Creator[Flow[I, O, M]]): Flow[I, O, CompletionStage[M]] =
+    lazyCompletionStageFlow(() => CompletableFuture.completedFuture(create.create()))
+
+  /**
+   * Defers invoking the `create` function to create a future flow until there downstream demand has caused upstream
+   * to send a first element.
+   *
+   * The materialized future value is completed with the materialized value of the created flow when that has successfully
+   * been materialized.
+   *
+   * If the `create` function throws or returns a future that fails the stream is failed, in this case the materialized
+   * future value is failed with a [[NeverMaterializedException]].
+   *
+   * Note that asynchronous boundaries (and other operators) in the stream may do pre-fetching which counter acts
+   * the laziness and can trigger the factory earlier than expected.
+   *
+   * '''Emits when''' the internal flow is successfully created and it emits
+   *
+   * '''Backpressures when''' the internal flow is successfully created and it backpressures or downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all elements have been emitted from the internal flow
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def lazyCompletionStageFlow[I, O, M](
+      create: Creator[CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[M]] =
+    scaladsl.Flow
+      .lazyFutureFlow[I, O, M](() =>
+        create.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.toJava)
+      .asJava
 
   /**
    * Upcast a stream of elements to a stream of supertypes of that element. Useful in combination with

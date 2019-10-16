@@ -16,6 +16,7 @@ import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -23,6 +24,7 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
+@silent("deprecated")
 class LazySinkSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1
     akka.stream.materializer.max-input-buffer-size = 1

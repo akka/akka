@@ -11,10 +11,12 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber
 import akka.testkit.DefaultTimeout
+import com.github.ghik.silencer.silent
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.Future
 
+@silent("deprecated") // tests deprecated methods
 class LazilyAsyncSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import system.dispatcher

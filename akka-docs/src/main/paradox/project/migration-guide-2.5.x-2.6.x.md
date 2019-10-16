@@ -717,3 +717,78 @@ This also means that custom `GraphStage` implementations should be changed to pa
 cancellation cause when downstream cancels by implementing the `OutHandler.onDownstreamFinish` signature
 taking a `cause` parameter and calling `cancelStage(cause)` to pass the cause upstream. The old zero-argument
 `onDownstreamFinish` method has been deprecated.
+
+
+### Lazy and async stream operator changes
+
+The operators that provide support for lazy and @scala[`Future`]@java[`CompletionStage`] stream construction were revised
+to be more consistent.
+
+The materialized value is now no longer wrapped in an @scala[`Option`]@java[`Optional`], instead the @scala[`Future`]@java[`CompletionStage`]
+is failed with a `akka.stream.NeverMaterializedException` in the cases that would previously lead to @scala[`None`]@java[an empty `Optional`] 
+
+A deferred creation of the stream based on the initial element like how the deprecated `lazyInit` worked can be achieved by combining 
+@scala[`future(Flow|Sink)`] @java[`completionStage(Flow|Sink)`] with `prefixAndTail`. See example in @scala[@ref:[futureFlow](../stream/operators/Flow/futureFlow.md)]
+@java[@ref:[completionStageFlow](../stream/operators/Flow/completionStageFlow.md)]. 
+
+#### javadsl.Flow 
+  
+| old                     | new |
+------------------------|----------------
+| lazyInit                | @ref:[lazyCompletionStageFlow](../stream/operators/Flow/lazyCompletionStageFlow.md) in combination with `prefixAndTail(1)` |
+| lazyInitAsync           | @ref:[lazyCompletionStageFlow](../stream/operators/Flow/lazyCompletionStageFlow.md)  | 
+|                         | @ref:[completionStageFlow](../stream/operators/Flow/completionStageFlow.md) |
+|                          | @ref:[lazyFlow](../stream/operators/Flow/lazyFlow.md) |
+
+### javadsl.Sink            
+  
+| old                     | new |
+------------------------|----------------
+| lazyInit                | @ref:[lazyCompletionStageSink](../stream/operators/Sink/lazyCompletionStageSink.md) in combination with `Flow.prefixAndTail(1)` |
+| lazyInitAsync           | @ref:[lazyCompletionStageSink](../stream/operators/Sink/lazyCompletionStageSink.md) |
+|                          | @ref:[completionStageSink](../stream/operators/Sink/completionStageSink.md) |
+|                          | @ref:[lazySink](../stream/operators/Sink/lazySink.md) |
+  
+### javadsl.Source
+  
+| old                       | new |
+--------------------------|----------------
+| fromFuture                | @ref:[future](../stream/operators/Source/future.md) |
+| fromCompletionStage       | @ref:[completionStage](../stream/operators/Source/completionStage.md) |
+| fromFutureSource          | @ref:[futureSource](../stream/operators/Source/futureSource.md) |
+| fromSourceCompletionStage | @ref:[completionStageSource](../stream/operators/Source/completionStageSource.md) |
+| lazily                    | @ref:[lazySource](../stream/operators/Source/lazySource.md) |
+| lazilyAsync               | @ref:[lazyCompletionStage](../stream/operators/Source/lazyCompletionStage.md) |
+|                            | @ref:[lazySingle](../stream/operators/Source/lazySingle.md) |
+|                            | @ref:[lazyCompletionStageSource](../stream/operators/Source/lazyCompletionStageSource.md) |
+    
+### scaladsl.Flow
+
+| old                     | new |
+--------------------------|----------------
+| lazyInit                | @ref:[lazyFutureFlow](../stream/operators/Flow/lazyFutureFlow.md) |
+| lazyInitAsync           | @ref:[lazyFutureFlow](../stream/operators/Flow/lazyFutureFlow.md) |
+|                         | @ref:[futureFlow](../stream/operators/Flow/futureFlow.md) |
+|                         | @ref:[lazyFlow](../stream/operators/Flow/lazyFlow.md) |
+
+### scaladsl.Sink            
+
+| old                     | new |
+------------------------|----------------
+| lazyInit                | @ref:[lazyFutureSink](../stream/operators/Sink/lazyFutureSink.md) in combination with `Flow.prefixAndTail(1)` |
+| lazyInitAsync           | @ref:[lazyFutureSink](../stream/operators/Sink/lazyFutureSink.md) |
+|                         | @ref:[futureSink](../stream/operators/Sink/futureSink.md) |
+|                         | @ref:[lazySink](../stream/operators/Sink/lazySink.md) |
+
+### scaladsl.Source
+
+| old                       | new |
+--------------------------|----------------
+| fromFuture                | @ref:[future](../stream/operators/Source/future.md) |
+| fromCompletionStage       | @ref:[completionStage](../stream/operators/Source/completionStage.md) |
+| fromFutureSource          | @ref:[futureSource](../stream/operators/Source/futureSource.md) |
+| fromSourceCompletionStage |   |
+| lazily                    | @ref:[lazySource](../stream/operators/Source/lazySource.md) |
+| lazilyAsync               | @ref:[lazyFuture](../stream/operators/Source/lazyFuture.md) |
+|                           | @ref:[lazySingle](../stream/operators/Source/lazySingle.md) |
+|                           | @ref:[lazyFutureSource](../stream/operators/Source/lazyFutureSource.md) |

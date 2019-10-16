@@ -1,6 +1,6 @@
-# fromFutureSource
+# futureSource
 
-`fromFutureSource` has been deprecated in 2.6.0, use `Source.futureSource` instead.
+Streams the elements of the given future source once it successfully completes.
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -8,13 +8,11 @@
 
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromFutureSource }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #futureSource }
 
 @@@
 
 ## Description
-
-`fromFutureSource` has been deprecated in 2.6.0, use @ref:[futureSource](futureSource.md) instead.
 
 Streams the elements of the given future source once it successfully completes. 
 If the future fails the stream is failed.
