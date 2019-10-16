@@ -673,19 +673,30 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Automatically invokes [[cancel]] or [[complete]] on all the input or output ports that have been called,
    * then marks the stage as stopped.
+   *
+   * This method is a backport from Akka 2.6 and already includes a `cause` parameter for binary compatibility with
+   * Akka 2.6. This parameter is not propagated to upstream stages in Akka 2.5 which does not support propagation
+   * of cancellation causes. However, it will be used as an error if the [[Attributes.CancellationStrategy.FailStage]]
+   * cancellation strategy was chosen.
+   *
+   * You can use [[SubscriptionWithCancelException.NoMoreElementsNeeded]] as a default if you do not want to pass
+   * additional information.
    */
-  final def cancelStage(): Unit =
+  final def cancelStage(cause: Throwable): Unit =
     internalCancelStage(
+      cause,
       attributes.get[Attributes.CancellationStrategy](Attributes.CancellationStrategy.Default).strategy)
 
-  @tailrec private def internalCancelStage(strategy: Attributes.CancellationStrategy.Strategy): Unit = {
+  @tailrec private def internalCancelStage(
+      cause: Throwable,
+      strategy: Attributes.CancellationStrategy.Strategy): Unit = {
     import Attributes.CancellationStrategy._
     strategy match {
       case CompleteStage          => completeStage()
-      case FailStage              => failStage(Attributes.CancellationStrategy.SiblingDownstreamWasCancelled)
+      case FailStage              => failStage(cause)
       case AfterDelay(_, andThen) =>
         // delay handled at the stage that sends the delay. See `def cancel(in, cause)`.
-        internalCancelStage(andThen)
+        internalCancelStage(cause, andThen)
     }
   }
 
@@ -1743,7 +1754,7 @@ trait OutHandler {
    */
   @throws(classOf[Exception])
   def onDownstreamFinish(): Unit =
-    GraphInterpreter.currentInterpreter.activeStage.cancelStage()
+    GraphInterpreter.currentInterpreter.activeStage.cancelStage(SubscriptionWithCancelException.NoMoreElementsNeeded)
 }
 
 /**

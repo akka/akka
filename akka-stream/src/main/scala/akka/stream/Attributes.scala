@@ -308,8 +308,6 @@ object Attributes {
   @ApiMayChange
   object CancellationStrategy {
     private[stream] val Default: CancellationStrategy = CancellationStrategy(CompleteStage)
-    @ApiMayChange
-    object SiblingDownstreamWasCancelled extends RuntimeException("Sibling downstream was cancelled") with NoStackTrace
 
     sealed trait Strategy
 
@@ -333,7 +331,8 @@ object Attributes {
 
     /**
      * Strategy that treats `cancelStage` the same as `failStage`, i.e. all inlets are cancelled (propagating the
-     * cancellation cause) and all outlets are failed with an SiblingDownstreamWasCancelled exception.
+     * cancellation cause) and all outlets are failed with an [[SubscriptionWithCancelException.NoMoreElementsNeeded]]
+     * exception.
      */
     @ApiMayChange
     case object FailStage extends Strategy

@@ -9,13 +9,12 @@ import akka.stream.ActorMaterializer
 import akka.stream.Attributes
 import akka.stream.Attributes.CancellationStrategy
 import akka.stream.Attributes.CancellationStrategy.FailStage
-import akka.stream.Attributes.CancellationStrategy.SiblingDownstreamWasCancelled
 import akka.stream.BidiShape
 import akka.stream.ClosedShape
 import akka.stream.Inlet
-import akka.stream.Materializer
 import akka.stream.Outlet
 import akka.stream.SharedKillSwitch
+import akka.stream.SubscriptionWithCancelException
 import akka.stream.UniformFanOutShape
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage.GraphStage
@@ -54,12 +53,12 @@ class CancellationStrategySpec extends StreamSpec("""akka.loglevel = DEBUG
         "fail if no failure cancellation" in new TestSetup(CancellationStrategy.FailStage) {
           out1Probe.cancel()
           inProbe.expectCancellation()
-          out2Probe.expectError(SiblingDownstreamWasCancelled)
+          out2Probe.expectError(SubscriptionWithCancelException.NoMoreElementsNeeded)
         }
         "fail if failure cancellation" in new TestSetup(CancellationStrategy.FailStage) {
           out1Probe.cancel()
           inProbe.expectCancellation()
-          out2Probe.expectError(SiblingDownstreamWasCancelled)
+          out2Probe.expectError(SubscriptionWithCancelException.NoMoreElementsNeeded)
         }
       }
       /* PropagateFailure unsupported in 2.5
@@ -84,7 +83,7 @@ class CancellationStrategySpec extends StreamSpec("""akka.loglevel = DEBUG
           out2Probe.expectNoMessage(200.millis)
 
           inProbe.expectCancellation()
-          out2Probe.expectError(SiblingDownstreamWasCancelled)
+          out2Probe.expectError(SubscriptionWithCancelException.NoMoreElementsNeeded)
         }
         "prevent further elements from coming through" in new TestSetup(
           CancellationStrategy.AfterDelay(500.millis, FailStage)) {
@@ -98,7 +97,7 @@ class CancellationStrategySpec extends StreamSpec("""akka.loglevel = DEBUG
 
           // after delay cancellation and error should have propagated
           inProbe.expectCancellation()
-          out2Probe.expectError(SiblingDownstreamWasCancelled)
+          out2Probe.expectError(SubscriptionWithCancelException.NoMoreElementsNeeded)
         }
       }
     }
