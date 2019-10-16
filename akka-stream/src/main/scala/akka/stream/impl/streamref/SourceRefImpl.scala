@@ -246,6 +246,11 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       def isInvalidSequenceNr(seqNr: Long): Boolean =
         seqNr != expectingSeqNr
 
+      override def postStop(): Unit = {
+        if (!promise.isCompleted)
+          promise.tryFailure(new AbruptStageTerminationException(this))
+      }
+
       setHandler(out, this)
     }
     (logic, promise.future)
