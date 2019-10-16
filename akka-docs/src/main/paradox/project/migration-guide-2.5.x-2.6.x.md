@@ -3,9 +3,20 @@ project.description: Migrating to Akka 2.6.
 ---
 # Migration Guide 2.5.x to 2.6.x
 
-It is now recommended to use @apidoc[akka.util.ByteString]`.emptyByteString()` instead of
-@apidoc[akka.util.ByteString]`.empty()` when using Java because @apidoc[akka.util.ByteString]`.empty()`
-is [no longer available as a static method](https://github.com/scala/bug/issues/11509) in the artifacts built for Scala 2.13.
+Akka 2.6.x is binary backwards compatible with 2.5.x with the ordinary exceptions listed in the
+@ref:[Binary Compatibility Rules](../common/circuitbreaker.md).
+
+This means that updating an application from Akka 2.5.x to 2.6.x should be a smooth process, and
+that libraries built for Akka 2.5.x can also be used with Akka 2.6.x. For example Akka HTTP 10.1.10
+and Akka Management 1.0.3 can be used with Akka 2.6.0 dependencies. You may have to add explicit
+dependencies to the new Akka version in your build.
+
+That said, there are some changes to configuration and behavior that should be considered, so
+reading this migration guide and testing your application thoroughly is recommended.
+
+Rolling updates are possible without shutting down all nodes of the Akka Cluster, but will require
+configuration adjustments as described in the @ref:[Remoting](#remoting) section of this migration
+guide.
 
 ## Scala 2.11 no longer supported
 
@@ -47,7 +58,7 @@ Because of these issues, auto-downing should **never** be used in a production e
 
 ## Removed features that were deprecated
 
-After being deprecated since 2.5.0, the following have been removed in Akka 2.6.
+After being deprecated since 2.5.0, the following have been removed in Akka 2.6.0.
 
 * akka-camel module
     - As an alternative we recommend [Alpakka](https://doc.akka.io/docs/alpakka/current/).
@@ -74,11 +85,11 @@ After being deprecated since 2.5.0, the following have been removed in Akka 2.6.
 * `akka.stream.actor.ActorSubscriber` and `akka.stream.actor.ActorPublisher`
     - Use `GraphStage` instead.
 
-After being deprecated since 2.4.0, the following have been removed in Akka 2.6.
+After being deprecated since 2.4.0, the following have been removed in Akka 2.6.0.
 
 * Secure cookie in Classic Akka Remoting
 
-After being deprecated since 2.2, the following have been removed in Akka 2.6.
+After being deprecated since 2.2, the following have been removed in Akka 2.6.0.
 
 * `actorFor`
     - Use `ActorSelection` instead.
@@ -105,7 +116,7 @@ After being deprecated since 2.2, the following have been removed in Akka 2.6.
 
 ### TypedActor
 
-`akka.actor.TypedActor` has been deprecated as of 2.6 in favor of the
+`akka.actor.TypedActor` has been deprecated as of 2.6.0 in favor of the
 `akka.actor.typed` API which should be used instead.
 
 There are several reasons for phasing out the old `TypedActor`. The primary reason is they use transparent
@@ -132,6 +143,11 @@ to make remote interactions look like local method calls.
 Warnings about `TypedActor` have been [mentioned in documentation](https://doc.akka.io/docs/akka/2.5/typed-actors.html#when-to-use-typed-actors)
 for many years.
 
+### Cluster Client
+
+Cluster client has been deprecated as of 2.6.0 in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
+It is not advised to build new applications with Cluster client, and existing users @ref[should migrate to Akka gRPC](../cluster-client.md#migration-to-akka-grpc).
+
 ### akka-protobuf
 
 `akka-protobuf` was never intended to be used by end users but perhaps this was not well-documented.
@@ -140,10 +156,11 @@ published, but the transitive dependency to `akka-protobuf` has been removed.
 
 Akka is now using Protobuf version 3.9.0 for serialization of messages defined by Akka.
 
-### Cluster Client
+### ByteString.empty
 
-Cluster client has been deprecated as of 2.6 in favor of [Akka gRPC](https://doc.akka.io/docs/akka-grpc/current/index.html).
-It is not advised to build new applications with Cluster client, and existing users @ref[should migrate to Akka gRPC](../cluster-client.md#migration-to-akka-grpc).
+It is now recommended to use @apidoc[akka.util.ByteString]`.emptyByteString()` instead of
+@apidoc[akka.util.ByteString]`.empty()` when using Java because @apidoc[akka.util.ByteString]`.empty()`
+is [no longer available as a static method](https://github.com/scala/bug/issues/11509) in the artifacts built for Scala 2.13.
 
 ### AkkaSslConfig
 
@@ -185,7 +202,9 @@ Classic remoting has been deprecated and will be removed in `2.7.0`.
 
 Artery has the same functionality as classic remoting and you should normally only have to change the
 configuration to switch.
+
 To switch a full cluster restart is required and any overrides for classic remoting need to be ported to Artery configuration.
+Artery has a completely different protocol, which means that a rolling update is not supported.
 
 Artery defaults to TCP (see @ref:[selected transport](../remoting-artery.md#selecting-a-transport)) which is a good start
 when migrating from classic remoting.
@@ -206,12 +225,6 @@ akka.remote.artery.canonical.port = 2552
 The configuration for Artery is different, so you might have to revisit any custom configuration. See the full
 @ref:[reference configuration for Artery](../general/configuration-reference.md#config-akka-remote-artery) and
 @ref:[reference configuration for classic remoting](../general/configuration-reference.md#config-akka-remote).
-
-@@@ note
-
-For more details on rolling updates with this migration see the @ref:[shutdown and startup](../additional/rolling-updates.md#migrating-from-classic-remoting-to-artery) section.
-
-@@@
 
 Configuration that is likely required to be ported:
 
@@ -254,7 +267,12 @@ For TCP:
 
 #### Remaining with Classic remoting (not recommended)
 
-Classic remoting is deprecated but can be used in `2.6.` Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `false`. Further, any configuration under `akka.remote` that is
+Classic remoting is deprecated but can be used in 2.6.x Rolling update from Classic remoting to Artery is
+not supported so if you want to update from Akka 2.5.x with Classic remoting to Akka 2.6.x without a full shut
+down of the Cluster you have to enable Classic remoting. Later, you can plan for a full shutdown and
+@ref:[migrate from classic remoting to Artery](#migrating-from-classic-remoting-to-artery) as a separate step.
+
+Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `false`. Further, any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration-reference.md#config-akka-remote).
 
@@ -272,6 +290,10 @@ One may think that network bandwidth and latency limit the performance of remote
 
 From Akka 2.6.0 the Akka serialization with Java serialization is disabled by default and Akka
 itself doesn't use Java serialization for any of its internal messages.
+
+You have to enable @ref:[serialization](../serialization.md)  to send messages between ActorSystems (nodes) in the Cluster.
+@ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
+recommendation if you don't have other preferences or constraints.
 
 For compatibility with older systems that rely on Java serialization it can be enabled with the following configuration:
 
@@ -314,16 +336,16 @@ By default, these remoting features are disabled when not using Akka Cluster:
  
 Watching an actor on a node outside the cluster may have unexpected
 @ref[consequences](../remoting-artery.md#quarantine), such as quarantining
-so it has been disabled by default in Akka 2.6. This is the case if either
+so it has been disabled by default in Akka 2.6.x This is the case if either
 cluster is not used at all (only plain remoting) or when watching an actor outside of the cluster.
 
 On the other hand, failure detection between nodes of the same cluster
 do not have that shortcoming. Thus, when remote watching or deployment is used within
-the same cluster, they are working the same in 2.6 as before, except that a remote watch attempt before a node has joined 
+the same cluster, they are working the same in 2.6.x as before, except that a remote watch attempt before a node has joined 
 will log a warning and be ignored, it must be done after the node has joined.
 
 To optionally enable a watch without Akka Cluster or across a Cluster boundary between Cluster and non Cluster, 
-knowing the consequences, all watchers (cluster as well as remote) need to set
+knowing the consequences, all watchers (cluster as well as remote) need to set:
 ```
 akka.remote.use-unsafe-remote-features-outside-cluster = on`.
 ```
@@ -477,12 +499,12 @@ is failed with that failure rather than completed successfully.
 ### Akka now uses Fork Join Pool from JDK
 
 Previously, Akka contained a shaded copy of the ForkJoinPool. In benchmarks, we could not find significant benefits of
-keeping our own copy, so from Akka 2.6 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
+keeping our own copy, so from Akka 2.6.0 on, the default FJP from the JDK will be used. The Akka FJP copy was removed.
 
 ### Logging of dead letters
 
 When the number of dead letters have reached configured `akka.log-dead-letters` value it didn't log
-more dead letters in Akka 2.5. In Akka 2.6 the count is reset after configured `akka.log-dead-letters-suspend-duration`.
+more dead letters in Akka 2.5.x. In Akka 2.6.x the count is reset after configured `akka.log-dead-letters-suspend-duration`.
 
 `akka.log-dead-letters-during-shutdown` default configuration changed from `on` to `off`.
 
@@ -515,7 +537,7 @@ For example, the default config for Cluster Sharding, refers to the default conf
 akka.cluster.sharding.distributed-data = ${akka.cluster.distributed-data}
 ``` 
 
-In Akka 2.5 this meant that to override default gossip interval for both direct use of Distributed Data and Cluster Sharding
+In Akka 2.5.x this meant that to override default gossip interval for both direct use of Distributed Data and Cluster Sharding
 in the same application you would have to change two settings:
 
 ```ruby
@@ -565,23 +587,23 @@ reference of the new APIs as `typed` is going away as it becomes the primary API
 The receptionist had a name clash with the default Cluster Client Receptionist at `/system/receptionist` and will now 
 instead either run under `/system/localReceptionist` or `/system/clusterReceptionist`.
 
-The path change means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
-rolling update from 2.5 to 2.6 if you use Akka Typed. See @ref:[rolling updates with typed Receptionist](../additional/rolling-updates.md#akka-typed-with-receptionist-or-cluster-receptionist)
+The path change means that the receptionist information will not be disseminated between 2.5.x and 2.6.x nodes during a
+rolling update from 2.5.x to 2.6.x if you use Akka Typed. See @ref:[rolling updates with typed Receptionist](../additional/rolling-updates.md#akka-typed-with-receptionist-or-cluster-receptionist)
 
 ### Cluster Receptionist using own Distributed Data
 
-In 2.5 the Cluster Receptionist was using the shared Distributed Data extension but that could result in
+In 2.5.x the Cluster Receptionist was using the shared Distributed Data extension but that could result in
 undesired configuration changes if the application was also using that and changed for example the `role`
 configuration.
 
-In 2.6 the Cluster Receptionist is using it's own independent instance of Distributed Data.
+In 2.6.x the Cluster Receptionist is using it's own independent instance of Distributed Data.
 
-This means that the receptionist information will not be disseminated between 2.5 and 2.6 nodes during a
-rolling update from 2.5 to 2.6 if you use Akka Typed. See @ref:[rolling updates with typed Cluster Receptionist](../additional/rolling-updates.md#akka-typed-with-receptionist-or-cluster-receptionist)
+This means that the receptionist information will not be disseminated between 2.5.x and 2.6.x nodes during a
+rolling update from 2.5.x to 2.6.x if you use Akka Typed. See @ref:[rolling updates with typed Cluster Receptionist](../additional/rolling-updates.md#akka-typed-with-receptionist-or-cluster-receptionist)
 
 ### Akka Typed API changes
 
-Akka Typed APIs are still marked as @ref:[may change](../common/may-change.md) and a few changes were
+Akka Typed APIs were still marked as @ref:[may change](../common/may-change.md) in Akka 2.5.x and a few changes were
 made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible changes are:
 
 * `Behaviors.intercept` now takes a factory function for the interceptor.
