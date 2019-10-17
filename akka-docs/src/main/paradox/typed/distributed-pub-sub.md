@@ -34,28 +34,12 @@ Until @github[#26338](#26338), [this simple example]($github.base_url$/akka-clus
 
 ### The DistributedPubSub extension
 
-This extension allows creation of a mediator actor, `akka.cluster.pubsub.DistributedPubSubMediator`,
-which manages a registry of actor references and replicates the entries to peer
-actors among all cluster nodes or a group of nodes tagged with a specific role.
-
-The `DistributedPubSubMediator` actor is supposed to be started on all nodes,
-or all nodes with specified role, in the cluster. The mediator can be
-started with the `DistributedPubSub` extension or as an ordinary actor.
-
-The **registry** is eventually consistent, i.e. changes are not immediately visible at
-other nodes, but typically they will be fully replicated to all other nodes after
-a few seconds. Changes are only performed in the own part of the registry and those
-changes are versioned. Deltas are disseminated in a scalable way to other nodes with
-a gossip protocol.
-
-
 The mediator can either be started and accessed with the `akka.cluster.pubsub.DistributedPubSub` extension as shown below,
 or started as an ordinary actor, see the full Akka Classic documentation @ref:[Clasic Distributed PubSub Extension](../distributed-pub-sub.md#distributedpubsub-extension).
 
 Scala
 :  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #mediator }
  
-
 Actors register to a topic for Pub-Sub mode, or register to a path for point-to-point mode. 
 
 ## Publish
@@ -66,13 +50,6 @@ Pub-Sub mode. For the full Akka Classic documentation of this feature see @ref:[
 
 Subscriber actors can be started on several nodes in the cluster, and all will receive
 messages published to the "content" topic. 
-
-Subscriber actors can register to the local mediator with `DistributedPubSubMediator.Subscribe`.
-Successful `Subscribe` and `Unsubscribe` is acknowledged with
-`DistributedPubSubMediator.SubscribeAck` and `DistributedPubSubMediator.UnsubscribeAck`
-replies. The acknowledgment means that the subscription is registered, but it can still
-take some time until it is replicated to other nodes.
-Actors are automatically removed from the registry when they are terminated, or you can explicitly remove entries with `DistributedPubSubMediator.Unsubscribe`.
 
 An actor that subscribes to a topic:
 
