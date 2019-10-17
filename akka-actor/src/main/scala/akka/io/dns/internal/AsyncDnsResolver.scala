@@ -8,6 +8,7 @@ import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
 import akka.annotation.InternalApi
+import akka.io.SimpleDnsCache
 import akka.io.dns.CachePolicy.{ Never, Ttl }
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.dns.internal.DnsClient._
@@ -26,7 +27,7 @@ import scala.util.control.NonFatal
 @InternalApi
 private[io] final class AsyncDnsResolver(
     settings: DnsSettings,
-    cache: AsyncDnsCache,
+    cache: SimpleDnsCache,
     clientFactory: (ActorRefFactory, List[InetSocketAddress]) => List[ActorRef])
     extends Actor
     with ActorLogging {
@@ -57,6 +58,8 @@ private[io] final class AsyncDnsResolver(
 
   private val resolvers: List[ActorRef] = clientFactory(context, nameServers)
 
+  // only supports DnsProtocol, not the deprecated Dns protocol
+  // AsyncDnsManager converts between the protocols to support the deprecated protocol
   override def receive: Receive = {
     case DnsProtocol.Resolve(name, mode) =>
       cache.get((name, mode)) match {

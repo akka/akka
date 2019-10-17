@@ -4,9 +4,15 @@
 
 package akka.io.dns
 
+import java.net.Inet4Address
+import java.net.Inet6Address
+import java.net.InetAddress
+import java.net.UnknownHostException
 import java.util
 
 import akka.actor.NoSerializationVerificationNeeded
+import akka.io.IpVersionSelector
+import akka.routing.ConsistentHashingRouter.ConsistentHashable
 
 import scala.collection.{ immutable => im }
 import akka.util.ccompat.JavaConverters._
@@ -41,7 +47,9 @@ object DnsProtocol {
    */
   def srvRequestType(): RequestType = Srv
 
-  final case class Resolve(name: String, requestType: RequestType)
+  final case class Resolve(name: String, requestType: RequestType) extends ConsistentHashable {
+    override def consistentHashKey: Any = name
+  }
 
   object Resolve {
     def apply(name: String): Resolve = Resolve(name, Ip())
@@ -79,6 +87,22 @@ object DnsProtocol {
      *
      */
     def getAdditionalRecords(): util.List[ResourceRecord] = additionalRecords.asJava
+
+    private val _address: Option[InetAddress] = {
+      val ipv4: Option[Inet4Address] = records.collectFirst { case ARecord(_, _, ip: Inet4Address) => ip }
+      val ipv6: Option[Inet6Address] = records.collectFirst { case AAAARecord(_, _, ip)            => ip }
+      IpVersionSelector.getInetAddress(ipv4, ipv6)
+    }
+
+    /**
+     * Return the host, taking into account the "java.net.preferIPv6Addresses" system property.
+     * @throws UnknownHostException
+     */
+    @throws[UnknownHostException]
+    def address(): InetAddress = _address match {
+      case None            => throw new UnknownHostException(name)
+      case Some(ipAddress) => ipAddress
+    }
   }
 
   object Resolved {

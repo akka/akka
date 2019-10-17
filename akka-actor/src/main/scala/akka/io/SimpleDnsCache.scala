@@ -6,9 +6,16 @@ package akka.io
 
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
-import akka.io.Dns.Resolved
-import akka.io.dns.CachePolicy._
+import akka.io.dns.CachePolicy.CachePolicy
+import akka.io.dns.CachePolicy.Forever
+import akka.io.dns.CachePolicy.Never
+import akka.io.dns.CachePolicy.Ttl
+import akka.io.dns.DnsProtocol
+import akka.io.dns.DnsProtocol.{ Ip, RequestType, Resolved }
+import akka.io.dns.{ AAAARecord, ARecord }
+import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -17,39 +24,70 @@ private[io] trait PeriodicCacheCleanup {
   def cleanup(): Unit
 }
 
-class SimpleDnsCache extends Dns with PeriodicCacheCleanup {
+class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationVerificationNeeded {
   import SimpleDnsCache._
-
-  private val cache = new AtomicReference(
-    new Cache[String, Dns.Resolved](immutable.SortedSet()(expiryEntryOrdering[String]()), Map(), () => clock))
+  private val cacheRef = new AtomicReference(
+    new Cache[(String, RequestType), Resolved](
+      immutable.SortedSet()(expiryEntryOrdering()),
+      immutable.Map(),
+      () => clock))
 
   private val nanoBase = System.nanoTime()
 
-  override def cached(name: String): Option[Resolved] = {
-    cache.get().get(name)
+  /**
+   * Gets any IPv4 and IPv6 cached entries.
+   * To get Srv or just one type use DnsProtocol
+   *
+   * This method is deprecated and involves a copy from the new protocol to
+   * remain compatable
+   */
+  @silent("deprecated")
+  override def cached(name: String): Option[Dns.Resolved] = {
+    // adapt response to the old protocol
+    val ipv4 = cacheRef.get().get((name, Ip(ipv6 = false))).toList.flatMap(_.records)
+    val ipv6 = cacheRef.get().get((name, Ip(ipv4 = false))).toList.flatMap(_.records)
+    val both = cacheRef.get().get((name, Ip())).toList.flatMap(_.records)
+    val all = (ipv4 ++ ipv6 ++ both).collect {
+      case r: ARecord    => r.ip
+      case r: AAAARecord => r.ip
+    }
+    if (all.isEmpty) None
+    else Some(Dns.Resolved(name, all))
   }
 
+  override def cached(request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] =
+    cacheRef.get().get((request.name, request.requestType))
+
+  // Milliseconds since start
   protected def clock(): Long = {
     val now = System.nanoTime()
     if (now - nanoBase < 0) 0
     else (now - nanoBase) / 1000000
   }
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] final def get(key: (String, RequestType)): Option[Resolved] = {
+    cacheRef.get().get(key)
+  }
+
   @tailrec
-  private[io] final def put(r: Resolved, ttl: CachePolicy): Unit = {
-    val c = cache.get()
-    if (!cache.compareAndSet(c, c.put(r.name, r, ttl)))
-      put(r, ttl)
+  private[io] final def put(key: (String, RequestType), records: Resolved, ttl: CachePolicy): Unit = {
+    val c = cacheRef.get()
+    if (!cacheRef.compareAndSet(c, c.put(key, records, ttl)))
+      put(key, records, ttl)
   }
 
   @tailrec
   override final def cleanup(): Unit = {
-    val c = cache.get()
-    if (!cache.compareAndSet(c, c.cleanup()))
+    val c = cacheRef.get()
+    if (!cacheRef.compareAndSet(c, c.cleanup()))
       cleanup()
   }
-}
 
+}
 object SimpleDnsCache {
 
   /**

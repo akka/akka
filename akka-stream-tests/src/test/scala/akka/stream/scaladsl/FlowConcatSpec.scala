@@ -120,7 +120,7 @@ class FlowConcatSpec extends BaseTwoStreamsSetup {
     "correctly handle async errors in secondary upstream" in assertAllStagesStopped {
       val promise = Promise[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
-      Source(List(1, 2, 3)).concat(Source.fromFuture(promise.future)).runWith(Sink.fromSubscriber(subscriber))
+      Source(List(1, 2, 3)).concat(Source.future(promise.future)).runWith(Sink.fromSubscriber(subscriber))
 
       val subscription = subscriber.expectSubscription()
       subscription.request(4)

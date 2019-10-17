@@ -743,6 +743,7 @@ final class ActorMaterializerSettings @InternalApi private (
       // these are the core stream/materializer settings, ad hoc handling of defaults for the stage specific ones
       // for stream refs and io live with the respective stages
       Attributes.InputBuffer(initialInputBufferSize, maxInputBufferSize) ::
+      Attributes.CancellationStrategy.Default :: // FIXME: make configurable, see https://github.com/akka/akka/issues/28000
       ActorAttributes.Dispatcher(dispatcher) ::
       ActorAttributes.SupervisionStrategy(supervisionDecider) ::
       ActorAttributes.DebugLogging(debugLogging) ::
@@ -751,7 +752,9 @@ final class ActorMaterializerSettings @InternalApi private (
       ActorAttributes.OutputBurstLimit(outputBurstLimit) ::
       ActorAttributes.FuzzingMode(fuzzingMode) ::
       ActorAttributes.MaxFixedBufferSize(maxFixedBufferSize) ::
-      ActorAttributes.SyncProcessingLimit(syncProcessingLimit) :: Nil)
+      ActorAttributes.SyncProcessingLimit(syncProcessingLimit) ::
+
+      Nil)
 
   override def toString: String =
     s"ActorMaterializerSettings($initialInputBufferSize,$maxInputBufferSize," +

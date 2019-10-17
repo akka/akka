@@ -58,7 +58,6 @@ abstract class ClusterReceptionistUnreachabilitySpec
   val spawnActor = system.actorOf(PropsAdapter(SpawnProtocol())).toTyped[SpawnProtocol.Command]
   def spawn[T](behavior: Behavior[T], name: String): ActorRef[T] = {
     implicit val timeout: Timeout = 3.seconds
-    implicit val scheduler = typedSystem.scheduler
     val f: Future[ActorRef[T]] = spawnActor.ask(SpawnProtocol.Spawn(behavior, name, Props.empty, _))
 
     Await.result(f, 3.seconds)

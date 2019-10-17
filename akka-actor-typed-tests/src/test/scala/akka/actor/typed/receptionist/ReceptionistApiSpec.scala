@@ -20,8 +20,7 @@ object ReceptionistApiSpec {
     implicit val timeout: Timeout = 3.seconds
     val service: ActorRef[String] = ???
     val key: ServiceKey[String] = ServiceKey[String]("id")
-    val system: ActorSystem[Void] = ???
-    implicit val scheduler = system.scheduler
+    implicit val system: ActorSystem[Void] = ???
     import system.executionContext
 
     // registration from outside, without ack, should be rare

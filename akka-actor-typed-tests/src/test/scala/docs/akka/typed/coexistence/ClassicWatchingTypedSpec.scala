@@ -38,6 +38,7 @@ object ClassicWatchingTypedSpec {
     // self can be used as the `replyTo` parameter here because
     // there is an implicit conversion from akka.actor.ActorRef to
     // akka.actor.typed.ActorRef
+    // An equal alternative would be `self.toTyped`
     second ! Typed.Ping(self)
 
     override def receive = {

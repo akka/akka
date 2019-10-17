@@ -11,8 +11,10 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.compat.java8.FutureConverters._
+
 import akka.util.JavaDurationConverters._
 import scala.concurrent.Future
+
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
@@ -28,6 +30,7 @@ import akka.actor.typed.internal.adapter.ActorRefAdapter
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion
@@ -119,12 +122,15 @@ import akka.util.Timeout
       case Some(e) => e
     }).asInstanceOf[ShardingMessageExtractor[E, M]]
 
+    val settingsWithRole = entity.role.fold(settings)(settings.withRole)
+    val settingsWithDataCenter = entity.dataCenter.fold(settingsWithRole)(settingsWithRole.withDataCenter)
+
     internalInit(
       entity.createBehavior,
       entity.entityProps,
       entity.typeKey,
       entity.stopMessage,
-      entity.role.fold(settings)(settings.withRole),
+      settingsWithDataCenter,
       extractor,
       entity.allocationStrategy)
   }
@@ -142,7 +148,8 @@ import akka.util.Timeout
         settings = entity.settings.asScala,
         messageExtractor = entity.messageExtractor.asScala,
         allocationStrategy = entity.allocationStrategy.asScala,
-        role = entity.role.asScala))
+        role = entity.role.asScala,
+        dataCenter = entity.dataCenter.asScala))
   }
 
   private def internalInit[M, E](
@@ -240,11 +247,37 @@ import akka.util.Timeout
       typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
+  override def entityRefFor[M](
+      typeKey: scaladsl.EntityTypeKey[M],
+      entityId: String,
+      dataCenter: DataCenter): scaladsl.EntityRef[M] = {
+    if (dataCenter == cluster.selfMember.dataCenter)
+      entityRefFor(typeKey, entityId)
+    else
+      new EntityRefImpl[M](
+        classicSharding.shardRegionProxy(typeKey.name, dataCenter),
+        entityId,
+        typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+  }
+
   override def entityRefFor[M](typeKey: javadsl.EntityTypeKey[M], entityId: String): javadsl.EntityRef[M] = {
     new EntityRefImpl[M](
       classicSharding.shardRegion(typeKey.name),
       entityId,
       typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+  }
+
+  override def entityRefFor[M](
+      typeKey: javadsl.EntityTypeKey[M],
+      entityId: String,
+      dataCenter: String): javadsl.EntityRef[M] = {
+    if (dataCenter == cluster.selfMember.dataCenter)
+      entityRefFor(typeKey, entityId)
+    else
+      new EntityRefImpl[M](
+        classicSharding.shardRegionProxy(typeKey.name, dataCenter),
+        entityId,
+        typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {

@@ -271,6 +271,11 @@ trait LoggingBus extends ActorEventBus {
 }
 
 /**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final case class ActorWithLogClass(actor: Actor, logClass: Class[_])
+
+/**
  * This is a “marker” class which is inserted as originator class into
  * [[akka.event.Logging.LogEvent]] when the string representation was supplied
  * directly.
@@ -318,6 +323,16 @@ object LogSource {
         case NonFatal(_) => a.path.toString
       }
   }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] implicit val fromActorWithLoggerClass: LogSource[ActorWithLogClass] =
+    new LogSource[ActorWithLogClass] {
+      def genString(a: ActorWithLogClass) = fromActor.genString(a.actor)
+      override def genString(a: ActorWithLogClass, system: ActorSystem) = fromActor.genString(a.actor, system)
+      override def getClazz(a: ActorWithLogClass): Class[_] = a.logClass
+    }
 
   // this one unfortunately does not work as implicit, because existential types have some weird behavior
   val fromClass: LogSource[Class[_]] = new LogSource[Class[_]] {

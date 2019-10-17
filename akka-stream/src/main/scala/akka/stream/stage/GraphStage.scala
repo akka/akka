@@ -305,9 +305,6 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * INTERNAL API
-   *
-   * Input handlers followed by output handlers, use `inHandler(id)` and `outHandler(id)` to access the respective
-   * handlers.
    */
   private[stream] var attributes: Attributes = Attributes.none
 
@@ -320,8 +317,10 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * INTERNAL API
+   *
+   * Input handlers followed by output handlers, use `inHandler(id)` and `outHandler(id)` to access the respective
+   * handlers.
    */
-  // Using common array to reduce overhead for small port counts
   private[stream] val handlers = new Array[Any](inCount + outCount)
 
   /**
@@ -515,7 +514,26 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
   /**
    * Requests to stop receiving events from a given input port. Cancelling clears any ungrabbed elements from the port.
    */
-  final protected def cancel[T](in: Inlet[T], cause: Throwable): Unit = interpreter.cancel(conn(in), cause)
+  final protected def cancel[T](in: Inlet[T], cause: Throwable): Unit = cancel(conn(in), cause)
+
+  private def cancel[T](connection: Connection, cause: Throwable): Unit =
+    attributes.mandatoryAttribute[Attributes.CancellationStrategy].strategy match {
+      case Attributes.CancellationStrategy.AfterDelay(delay, _) =>
+        // since the port is not actually cancelled, we install a handler to ignore upcoming elements
+        connection.inHandler = new InHandler {
+          // ignore pushs now, since the stage wanted it cancelled already
+          override def onPush(): Unit = ()
+          // do not ignore termination signals
+        }
+        val callback = getAsyncCallback[(Connection, Throwable)] {
+          case (connection, cause) => doCancel(connection, cause)
+        }
+        materializer.scheduleOnce(delay, () => callback.invoke((connection, cause)))
+      case _ =>
+        doCancel(connection, cause)
+    }
+
+  private def doCancel[T](connection: Connection, cause: Throwable): Unit = interpreter.cancel(connection, cause)
 
   /**
    * Once the callback [[InHandler.onPush]] for an input port has been invoked, the element that has been pushed
@@ -648,7 +666,8 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Automatically invokes [[cancel]] or [[complete]] on all the input or output ports that have been called,
    * then marks the operator as stopped.
    */
-  final def completeStage(): Unit = cancelStage(SubscriptionWithCancelException.StageWasCompleted)
+  final def completeStage(): Unit =
+    internalCompleteStage(SubscriptionWithCancelException.StageWasCompleted, OptionVal.None)
 
   // Variable used from `OutHandler.onDownstreamFinish` to carry over cancellation cause in cases where
   // `OutHandler` implementations call `super.onDownstreamFinished()`.
@@ -661,36 +680,48 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * Automatically invokes [[cancel]] or [[complete]] on all the input or output ports that have been called,
    * then marks the stage as stopped.
    */
-  final def cancelStage(cause: Throwable): Unit = {
-    // TODO: It's debatable if completing the stage if one output is cancelled is the right way to do things.
-    //       At least optionally it might be more reasonable to fail the stage with the given cause. That
-    //       would mean that all other *outputs* are failed, i.e. it would only concern stages with more that one
-    //       output anyway.
-    var i = 0
-    while (i < portToConn.length) {
-      if (i < inCount)
-        interpreter.cancel(portToConn(i), cause)
-      else
-        handlers(i) match {
-          case e: Emitting[_] => e.addFollowUp(new EmittingCompletion(e.out, e.previous))
-          case _              => interpreter.complete(portToConn(i))
+  final def cancelStage(cause: Throwable): Unit =
+    internalCancelStage(cause, attributes.mandatoryAttribute[Attributes.CancellationStrategy].strategy)
+
+  private def internalCancelStage(cause: Throwable, strategy: Attributes.CancellationStrategy.Strategy): Unit = {
+    import Attributes.CancellationStrategy._
+    import SubscriptionWithCancelException._
+    strategy match {
+      case CompleteStage => internalCompleteStage(cause, OptionVal.None)
+      case FailStage     => internalCompleteStage(cause, OptionVal.Some(cause))
+      case PropagateFailure =>
+        cause match {
+          case NoMoreElementsNeeded | StageWasCompleted => internalCompleteStage(cause, OptionVal.None)
+          case _                                        => internalCompleteStage(cause, OptionVal.Some(cause))
         }
-      i += 1
+      case AfterDelay(_, andThen) =>
+        // delay handled at the stage that sends the delay. See `def cancel(in, cause)`.
+        internalCancelStage(cause, andThen)
     }
-    setKeepGoing(false)
   }
 
   /**
    * Automatically invokes [[cancel]] or [[fail]] on all the input or output ports that have been called,
    * then marks the operator as stopped.
    */
-  final def failStage(ex: Throwable): Unit = {
+  final def failStage(ex: Throwable): Unit = internalCompleteStage(ex, OptionVal.Some(ex))
+
+  /**
+   * Cancels all incoming ports with the given cause. Then, depending on whether `optionalFailureCause` is
+   * defined, completes or fails the outgoing ports.
+   */
+  private def internalCompleteStage(cancelCause: Throwable, optionalFailureCause: OptionVal[Throwable]): Unit = {
     var i = 0
     while (i < portToConn.length) {
       if (i < inCount)
-        interpreter.cancel(portToConn(i), ex)
+        cancel(portToConn(i), cancelCause) // call through GraphStage.cancel to apply delay if applicable
+      else if (optionalFailureCause.isDefined)
+        interpreter.fail(portToConn(i), optionalFailureCause.get)
       else
-        interpreter.fail(portToConn(i), ex)
+        handlers(i) match {
+          case e: Emitting[_] => e.addFollowUp(new EmittingCompletion(e.out, e.previous))
+          case _              => interpreter.complete(portToConn(i))
+        }
       i += 1
     }
     setKeepGoing(false)

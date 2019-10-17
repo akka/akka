@@ -6,9 +6,11 @@ package akka.io
 
 import java.net.InetSocketAddress
 import java.nio.channels.{ DatagramChannel, SelectionKey }
+
 import akka.actor.{ Actor, ActorLogging, ActorRef }
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
+import akka.io.dns.DnsProtocol
 
 import scala.util.control.NonFatal
 
@@ -44,10 +46,10 @@ private[io] trait WithUdpSend {
       pendingSend = send
       pendingCommander = sender()
       if (send.target.isUnresolved) {
-        Dns.resolve(send.target.getHostName)(context.system, self) match {
+        Dns.resolve(DnsProtocol.Resolve(send.target.getHostName), context.system, self) match {
           case Some(r) =>
             try {
-              pendingSend = pendingSend.copy(target = new InetSocketAddress(r.addr, pendingSend.target.getPort))
+              pendingSend = pendingSend.copy(target = new InetSocketAddress(r.address(), pendingSend.target.getPort))
               doSend(registration)
             } catch {
               case NonFatal(e) =>

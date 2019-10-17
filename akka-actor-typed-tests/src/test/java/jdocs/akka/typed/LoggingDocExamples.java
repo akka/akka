@@ -8,9 +8,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.ActorSystem;
-import akka.actor.typed.Behavior;
+import akka.actor.typed.*;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
@@ -19,7 +17,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 // #logMessages
-import akka.actor.typed.LogOptions;
 import org.slf4j.event.Level;
 
 // #logMessages
@@ -187,5 +184,13 @@ public interface LoggingDocExamples {
             });
     // #test-logging-criteria
 
+  }
+
+  static void tagsExample() {
+    ActorContext<Object> context = null;
+    Behavior<Object> myBehavior = Behaviors.empty();
+    // #tags
+    context.spawn(myBehavior, "MyActor", ActorTags.create("processing"));
+    // #tags
   }
 }

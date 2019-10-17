@@ -5,6 +5,7 @@
 package akka.stream.javadsl
 
 import java.util.Optional
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
@@ -12,6 +13,7 @@ import akka.actor.{ ActorRef, ClassicActorSystemProvider, Status }
 import akka.dispatch.ExecutionContexts
 import akka._
 import akka.japi.function
+import akka.japi.function.Creator
 import akka.stream.impl.LinearTraversalBuilder
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
@@ -360,10 +362,7 @@ object Sink {
    * sink fails then the `Future` is completed with the exception.
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
-  @Deprecated
-  @deprecated(
-    "Use lazyInitAsync instead. (lazyInitAsync no more needs a fallback function and the materialized value more clearly indicates if the internal sink was materialized or not.)",
-    "2.5.11")
+  @deprecated("Use 'Sink.lazyCompletionStageSink' in combination with 'Flow.prefixAndTail(1)' instead", "2.6.0")
   def lazyInit[T, M](
       sinkFactory: function.Function[T, CompletionStage[Sink[T, M]]],
       fallback: function.Creator[M]): Sink[T, CompletionStage[M]] =
@@ -383,6 +382,7 @@ object Sink {
    * sink fails then the `Future` is completed with the exception.
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
+  @deprecated("Use 'Sink.lazyCompletionStageSink' instead", "2.6.0")
   def lazyInitAsync[T, M](
       sinkFactory: function.Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[Optional[M]]] = {
     val sSink = scaladsl.Sink
@@ -395,6 +395,42 @@ object Sink {
             .toJava)
     new Sink(sSink)
   }
+
+  /**
+   * Turn a `Future[Sink]` into a Sink that will consume the values of the source when the future completes successfully.
+   * If the `Future` is completed with a failure the stream is failed.
+   *
+   * The materialized future value is completed with the materialized value of the future sink or failed with a
+   * [[NeverMaterializedException]] if upstream fails or downstream cancels before the future has completed.
+   */
+  def completionStageSink[T, M](future: CompletionStage[Sink[T, M]]): Sink[T, CompletionStage[M]] =
+    lazyCompletionStageSink[T, M](() => future)
+
+  /**
+   * Defers invoking the `create` function to create a sink until there is a first element passed from upstream.
+   *
+   * The materialized future value is completed with the materialized value of the created sink when that has successfully
+   * been materialized.
+   *
+   * If the `create` function throws or returns or the stream fails to materialize, in this
+   * case the materialized future value is failed with a [[akka.stream.NeverMaterializedException]].
+   */
+  def lazySink[T, M](create: Creator[Sink[T, M]]): Sink[T, CompletionStage[M]] =
+    lazyCompletionStageSink(() => CompletableFuture.completedFuture(create.create))
+
+  /**
+   * Defers invoking the `create` function to create a future sink until there is a first element passed from upstream.
+   *
+   * The materialized future value is completed with the materialized value of the created sink when that has successfully
+   * been materialized.
+   *
+   * If the `create` function throws or returns a future that is failed, or the stream fails to materialize, in this
+   * case the materialized future value is failed with a [[akka.stream.NeverMaterializedException]].
+   */
+  def lazyCompletionStageSink[T, M](create: Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[M]] =
+    new Sink(scaladsl.Sink.lazyFutureSink { () =>
+      create.create().toScala.map(_.asScala)((ExecutionContexts.sameThreadExecutionContext))
+    }).mapMaterializedValue(_.toJava)
 }
 
 /**

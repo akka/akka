@@ -48,57 +48,75 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>repeated string regions = 2;</code>
+     * @return A list containing the regions.
      */
     java.util.List<java.lang.String>
         getRegionsList();
     /**
      * <code>repeated string regions = 2;</code>
+     * @return The count of regions.
      */
     int getRegionsCount();
     /**
      * <code>repeated string regions = 2;</code>
+     * @param index The index of the element to return.
+     * @return The regions at the given index.
      */
     java.lang.String getRegions(int index);
     /**
      * <code>repeated string regions = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the regions at the given index.
      */
     akka.protobufv3.internal.ByteString
         getRegionsBytes(int index);
 
     /**
      * <code>repeated string regionProxies = 3;</code>
+     * @return A list containing the regionProxies.
      */
     java.util.List<java.lang.String>
         getRegionProxiesList();
     /**
      * <code>repeated string regionProxies = 3;</code>
+     * @return The count of regionProxies.
      */
     int getRegionProxiesCount();
     /**
      * <code>repeated string regionProxies = 3;</code>
+     * @param index The index of the element to return.
+     * @return The regionProxies at the given index.
      */
     java.lang.String getRegionProxies(int index);
     /**
      * <code>repeated string regionProxies = 3;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the regionProxies at the given index.
      */
     akka.protobufv3.internal.ByteString
         getRegionProxiesBytes(int index);
 
     /**
      * <code>repeated string unallocatedShards = 4;</code>
+     * @return A list containing the unallocatedShards.
      */
     java.util.List<java.lang.String>
         getUnallocatedShardsList();
     /**
      * <code>repeated string unallocatedShards = 4;</code>
+     * @return The count of unallocatedShards.
      */
     int getUnallocatedShardsCount();
     /**
      * <code>repeated string unallocatedShards = 4;</code>
+     * @param index The index of the element to return.
+     * @return The unallocatedShards at the given index.
      */
     java.lang.String getUnallocatedShards(int index);
     /**
      * <code>repeated string unallocatedShards = 4;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the unallocatedShards at the given index.
      */
     akka.protobufv3.internal.ByteString
         getUnallocatedShardsBytes(int index);
@@ -239,28 +257,34 @@ public final class ClusterShardingMessages {
 
       /**
        * <code>required string shardId = 1;</code>
+       * @return Whether the shardId field is set.
        */
       boolean hasShardId();
       /**
        * <code>required string shardId = 1;</code>
+       * @return The shardId.
        */
       java.lang.String getShardId();
       /**
        * <code>required string shardId = 1;</code>
+       * @return The bytes for shardId.
        */
       akka.protobufv3.internal.ByteString
           getShardIdBytes();
 
       /**
        * <code>required string regionRef = 2;</code>
+       * @return Whether the regionRef field is set.
        */
       boolean hasRegionRef();
       /**
        * <code>required string regionRef = 2;</code>
+       * @return The regionRef.
        */
       java.lang.String getRegionRef();
       /**
        * <code>required string regionRef = 2;</code>
+       * @return The bytes for regionRef.
        */
       akka.protobufv3.internal.ByteString
           getRegionRefBytes();
@@ -362,12 +386,14 @@ public final class ClusterShardingMessages {
       private volatile java.lang.Object shardId_;
       /**
        * <code>required string shardId = 1;</code>
+       * @return Whether the shardId field is set.
        */
       public boolean hasShardId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string shardId = 1;</code>
+       * @return The shardId.
        */
       public java.lang.String getShardId() {
         java.lang.Object ref = shardId_;
@@ -385,6 +411,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shardId = 1;</code>
+       * @return The bytes for shardId.
        */
       public akka.protobufv3.internal.ByteString
           getShardIdBytes() {
@@ -404,12 +431,14 @@ public final class ClusterShardingMessages {
       private volatile java.lang.Object regionRef_;
       /**
        * <code>required string regionRef = 2;</code>
+       * @return Whether the regionRef field is set.
        */
       public boolean hasRegionRef() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string regionRef = 2;</code>
+       * @return The regionRef.
        */
       public java.lang.String getRegionRef() {
         java.lang.Object ref = regionRef_;
@@ -427,6 +456,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string regionRef = 2;</code>
+       * @return The bytes for regionRef.
        */
       public akka.protobufv3.internal.ByteString
           getRegionRefBytes() {
@@ -800,12 +830,14 @@ public final class ClusterShardingMessages {
         private java.lang.Object shardId_ = "";
         /**
          * <code>required string shardId = 1;</code>
+         * @return Whether the shardId field is set.
          */
         public boolean hasShardId() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required string shardId = 1;</code>
+         * @return The shardId.
          */
         public java.lang.String getShardId() {
           java.lang.Object ref = shardId_;
@@ -823,6 +855,7 @@ public final class ClusterShardingMessages {
         }
         /**
          * <code>required string shardId = 1;</code>
+         * @return The bytes for shardId.
          */
         public akka.protobufv3.internal.ByteString
             getShardIdBytes() {
@@ -839,6 +872,8 @@ public final class ClusterShardingMessages {
         }
         /**
          * <code>required string shardId = 1;</code>
+         * @param value The shardId to set.
+         * @return This builder for chaining.
          */
         public Builder setShardId(
             java.lang.String value) {
@@ -852,6 +887,7 @@ public final class ClusterShardingMessages {
         }
         /**
          * <code>required string shardId = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearShardId() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -861,6 +897,8 @@ public final class ClusterShardingMessages {
         }
         /**
          * <code>required string shardId = 1;</code>
+         * @param value The bytes for shardId to set.
+         * @return This builder for chaining.
          */
         public Builder setShardIdBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -876,12 +914,14 @@ public final class ClusterShardingMessages {
         private java.lang.Object regionRef_ = "";
         /**
          * <code>required string regionRef = 2;</code>
+         * @return Whether the regionRef field is set.
          */
         public boolean hasRegionRef() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required string regionRef = 2;</code>
+         * @return The regionRef.
          */
         public java.lang.String getRegionRef() {
           java.lang.Object ref = regionRef_;
@@ -899,6 +939,7 @@ public final class ClusterShardingMessages {
         }
         /**
          * <code>required string regionRef = 2;</code>
+         * @return The bytes for regionRef.
          */
         public akka.protobufv3.internal.ByteString
             getRegionRefBytes() {
@@ -915,6 +956,8 @@ public final class ClusterShardingMessages {
         }
         /**
          * <code>required string regionRef = 2;</code>
+         * @param value The regionRef to set.
+         * @return This builder for chaining.
          */
         public Builder setRegionRef(
             java.lang.String value) {
@@ -928,6 +971,7 @@ public final class ClusterShardingMessages {
         }
         /**
          * <code>required string regionRef = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearRegionRef() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -937,6 +981,8 @@ public final class ClusterShardingMessages {
         }
         /**
          * <code>required string regionRef = 2;</code>
+         * @param value The bytes for regionRef to set.
+         * @return This builder for chaining.
          */
         public Builder setRegionRefBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -1040,6 +1086,7 @@ public final class ClusterShardingMessages {
     private akka.protobufv3.internal.LazyStringList regions_;
     /**
      * <code>repeated string regions = 2;</code>
+     * @return A list containing the regions.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getRegionsList() {
@@ -1047,18 +1094,23 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>repeated string regions = 2;</code>
+     * @return The count of regions.
      */
     public int getRegionsCount() {
       return regions_.size();
     }
     /**
      * <code>repeated string regions = 2;</code>
+     * @param index The index of the element to return.
+     * @return The regions at the given index.
      */
     public java.lang.String getRegions(int index) {
       return regions_.get(index);
     }
     /**
      * <code>repeated string regions = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the regions at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getRegionsBytes(int index) {
@@ -1069,6 +1121,7 @@ public final class ClusterShardingMessages {
     private akka.protobufv3.internal.LazyStringList regionProxies_;
     /**
      * <code>repeated string regionProxies = 3;</code>
+     * @return A list containing the regionProxies.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getRegionProxiesList() {
@@ -1076,18 +1129,23 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>repeated string regionProxies = 3;</code>
+     * @return The count of regionProxies.
      */
     public int getRegionProxiesCount() {
       return regionProxies_.size();
     }
     /**
      * <code>repeated string regionProxies = 3;</code>
+     * @param index The index of the element to return.
+     * @return The regionProxies at the given index.
      */
     public java.lang.String getRegionProxies(int index) {
       return regionProxies_.get(index);
     }
     /**
      * <code>repeated string regionProxies = 3;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the regionProxies at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getRegionProxiesBytes(int index) {
@@ -1098,6 +1156,7 @@ public final class ClusterShardingMessages {
     private akka.protobufv3.internal.LazyStringList unallocatedShards_;
     /**
      * <code>repeated string unallocatedShards = 4;</code>
+     * @return A list containing the unallocatedShards.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getUnallocatedShardsList() {
@@ -1105,18 +1164,23 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>repeated string unallocatedShards = 4;</code>
+     * @return The count of unallocatedShards.
      */
     public int getUnallocatedShardsCount() {
       return unallocatedShards_.size();
     }
     /**
      * <code>repeated string unallocatedShards = 4;</code>
+     * @param index The index of the element to return.
+     * @return The unallocatedShards at the given index.
      */
     public java.lang.String getUnallocatedShards(int index) {
       return unallocatedShards_.get(index);
     }
     /**
      * <code>repeated string unallocatedShards = 4;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the unallocatedShards at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getUnallocatedShardsBytes(int index) {
@@ -1827,6 +1891,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regions = 2;</code>
+       * @return A list containing the regions.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getRegionsList() {
@@ -1834,18 +1899,23 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regions = 2;</code>
+       * @return The count of regions.
        */
       public int getRegionsCount() {
         return regions_.size();
       }
       /**
        * <code>repeated string regions = 2;</code>
+       * @param index The index of the element to return.
+       * @return The regions at the given index.
        */
       public java.lang.String getRegions(int index) {
         return regions_.get(index);
       }
       /**
        * <code>repeated string regions = 2;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the regions at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getRegionsBytes(int index) {
@@ -1853,6 +1923,9 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regions = 2;</code>
+       * @param index The index to set the value at.
+       * @param value The regions to set.
+       * @return This builder for chaining.
        */
       public Builder setRegions(
           int index, java.lang.String value) {
@@ -1866,6 +1939,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regions = 2;</code>
+       * @param value The regions to add.
+       * @return This builder for chaining.
        */
       public Builder addRegions(
           java.lang.String value) {
@@ -1879,6 +1954,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regions = 2;</code>
+       * @param values The regions to add.
+       * @return This builder for chaining.
        */
       public Builder addAllRegions(
           java.lang.Iterable<java.lang.String> values) {
@@ -1890,6 +1967,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regions = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRegions() {
         regions_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -1899,6 +1977,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regions = 2;</code>
+       * @param value The bytes of the regions to add.
+       * @return This builder for chaining.
        */
       public Builder addRegionsBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -1920,6 +2000,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
+       * @return A list containing the regionProxies.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getRegionProxiesList() {
@@ -1927,18 +2008,23 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
+       * @return The count of regionProxies.
        */
       public int getRegionProxiesCount() {
         return regionProxies_.size();
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
+       * @param index The index of the element to return.
+       * @return The regionProxies at the given index.
        */
       public java.lang.String getRegionProxies(int index) {
         return regionProxies_.get(index);
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the regionProxies at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getRegionProxiesBytes(int index) {
@@ -1946,6 +2032,9 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
+       * @param index The index to set the value at.
+       * @param value The regionProxies to set.
+       * @return This builder for chaining.
        */
       public Builder setRegionProxies(
           int index, java.lang.String value) {
@@ -1959,6 +2048,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
+       * @param value The regionProxies to add.
+       * @return This builder for chaining.
        */
       public Builder addRegionProxies(
           java.lang.String value) {
@@ -1972,6 +2063,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
+       * @param values The regionProxies to add.
+       * @return This builder for chaining.
        */
       public Builder addAllRegionProxies(
           java.lang.Iterable<java.lang.String> values) {
@@ -1983,6 +2076,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRegionProxies() {
         regionProxies_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -1992,6 +2086,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string regionProxies = 3;</code>
+       * @param value The bytes of the regionProxies to add.
+       * @return This builder for chaining.
        */
       public Builder addRegionProxiesBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -2013,6 +2109,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
+       * @return A list containing the unallocatedShards.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getUnallocatedShardsList() {
@@ -2020,18 +2117,23 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
+       * @return The count of unallocatedShards.
        */
       public int getUnallocatedShardsCount() {
         return unallocatedShards_.size();
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
+       * @param index The index of the element to return.
+       * @return The unallocatedShards at the given index.
        */
       public java.lang.String getUnallocatedShards(int index) {
         return unallocatedShards_.get(index);
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the unallocatedShards at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getUnallocatedShardsBytes(int index) {
@@ -2039,6 +2141,9 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
+       * @param index The index to set the value at.
+       * @param value The unallocatedShards to set.
+       * @return This builder for chaining.
        */
       public Builder setUnallocatedShards(
           int index, java.lang.String value) {
@@ -2052,6 +2157,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
+       * @param value The unallocatedShards to add.
+       * @return This builder for chaining.
        */
       public Builder addUnallocatedShards(
           java.lang.String value) {
@@ -2065,6 +2172,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
+       * @param values The unallocatedShards to add.
+       * @return This builder for chaining.
        */
       public Builder addAllUnallocatedShards(
           java.lang.Iterable<java.lang.String> values) {
@@ -2076,6 +2185,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUnallocatedShards() {
         unallocatedShards_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -2085,6 +2195,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string unallocatedShards = 4;</code>
+       * @param value The bytes of the unallocatedShards to add.
+       * @return This builder for chaining.
        */
       public Builder addUnallocatedShardsBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -2155,14 +2267,17 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required string ref = 1;</code>
+     * @return Whether the ref field is set.
      */
     boolean hasRef();
     /**
      * <code>required string ref = 1;</code>
+     * @return The ref.
      */
     java.lang.String getRef();
     /**
      * <code>required string ref = 1;</code>
+     * @return The bytes for ref.
      */
     akka.protobufv3.internal.ByteString
         getRefBytes();
@@ -2257,12 +2372,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object ref_;
     /**
      * <code>required string ref = 1;</code>
+     * @return Whether the ref field is set.
      */
     public boolean hasRef() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string ref = 1;</code>
+     * @return The ref.
      */
     public java.lang.String getRef() {
       java.lang.Object ref = ref_;
@@ -2280,6 +2397,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string ref = 1;</code>
+     * @return The bytes for ref.
      */
     public akka.protobufv3.internal.ByteString
         getRefBytes() {
@@ -2620,12 +2738,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object ref_ = "";
       /**
        * <code>required string ref = 1;</code>
+       * @return Whether the ref field is set.
        */
       public boolean hasRef() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string ref = 1;</code>
+       * @return The ref.
        */
       public java.lang.String getRef() {
         java.lang.Object ref = ref_;
@@ -2643,6 +2763,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string ref = 1;</code>
+       * @return The bytes for ref.
        */
       public akka.protobufv3.internal.ByteString
           getRefBytes() {
@@ -2659,6 +2780,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string ref = 1;</code>
+       * @param value The ref to set.
+       * @return This builder for chaining.
        */
       public Builder setRef(
           java.lang.String value) {
@@ -2672,6 +2795,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string ref = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRef() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -2681,6 +2805,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string ref = 1;</code>
+       * @param value The bytes for ref to set.
+       * @return This builder for chaining.
        */
       public Builder setRefBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -2751,14 +2877,17 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required string shard = 1;</code>
+     * @return Whether the shard field is set.
      */
     boolean hasShard();
     /**
      * <code>required string shard = 1;</code>
+     * @return The shard.
      */
     java.lang.String getShard();
     /**
      * <code>required string shard = 1;</code>
+     * @return The bytes for shard.
      */
     akka.protobufv3.internal.ByteString
         getShardBytes();
@@ -2853,12 +2982,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object shard_;
     /**
      * <code>required string shard = 1;</code>
+     * @return Whether the shard field is set.
      */
     public boolean hasShard() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string shard = 1;</code>
+     * @return The shard.
      */
     public java.lang.String getShard() {
       java.lang.Object ref = shard_;
@@ -2876,6 +3007,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string shard = 1;</code>
+     * @return The bytes for shard.
      */
     public akka.protobufv3.internal.ByteString
         getShardBytes() {
@@ -3216,12 +3348,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object shard_ = "";
       /**
        * <code>required string shard = 1;</code>
+       * @return Whether the shard field is set.
        */
       public boolean hasShard() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return The shard.
        */
       public java.lang.String getShard() {
         java.lang.Object ref = shard_;
@@ -3239,6 +3373,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return The bytes for shard.
        */
       public akka.protobufv3.internal.ByteString
           getShardBytes() {
@@ -3255,6 +3390,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @param value The shard to set.
+       * @return This builder for chaining.
        */
       public Builder setShard(
           java.lang.String value) {
@@ -3268,6 +3405,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearShard() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -3277,6 +3415,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @param value The bytes for shard to set.
+       * @return This builder for chaining.
        */
       public Builder setShardBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -3347,28 +3487,34 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required string shard = 1;</code>
+     * @return Whether the shard field is set.
      */
     boolean hasShard();
     /**
      * <code>required string shard = 1;</code>
+     * @return The shard.
      */
     java.lang.String getShard();
     /**
      * <code>required string shard = 1;</code>
+     * @return The bytes for shard.
      */
     akka.protobufv3.internal.ByteString
         getShardBytes();
 
     /**
      * <code>required string region = 2;</code>
+     * @return Whether the region field is set.
      */
     boolean hasRegion();
     /**
      * <code>required string region = 2;</code>
+     * @return The region.
      */
     java.lang.String getRegion();
     /**
      * <code>required string region = 2;</code>
+     * @return The bytes for region.
      */
     akka.protobufv3.internal.ByteString
         getRegionBytes();
@@ -3470,12 +3616,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object shard_;
     /**
      * <code>required string shard = 1;</code>
+     * @return Whether the shard field is set.
      */
     public boolean hasShard() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string shard = 1;</code>
+     * @return The shard.
      */
     public java.lang.String getShard() {
       java.lang.Object ref = shard_;
@@ -3493,6 +3641,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string shard = 1;</code>
+     * @return The bytes for shard.
      */
     public akka.protobufv3.internal.ByteString
         getShardBytes() {
@@ -3512,12 +3661,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object region_;
     /**
      * <code>required string region = 2;</code>
+     * @return Whether the region field is set.
      */
     public boolean hasRegion() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string region = 2;</code>
+     * @return The region.
      */
     public java.lang.String getRegion() {
       java.lang.Object ref = region_;
@@ -3535,6 +3686,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string region = 2;</code>
+     * @return The bytes for region.
      */
     public akka.protobufv3.internal.ByteString
         getRegionBytes() {
@@ -3908,12 +4060,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object shard_ = "";
       /**
        * <code>required string shard = 1;</code>
+       * @return Whether the shard field is set.
        */
       public boolean hasShard() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return The shard.
        */
       public java.lang.String getShard() {
         java.lang.Object ref = shard_;
@@ -3931,6 +4085,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return The bytes for shard.
        */
       public akka.protobufv3.internal.ByteString
           getShardBytes() {
@@ -3947,6 +4102,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @param value The shard to set.
+       * @return This builder for chaining.
        */
       public Builder setShard(
           java.lang.String value) {
@@ -3960,6 +4117,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearShard() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -3969,6 +4127,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @param value The bytes for shard to set.
+       * @return This builder for chaining.
        */
       public Builder setShardBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -3984,12 +4144,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object region_ = "";
       /**
        * <code>required string region = 2;</code>
+       * @return Whether the region field is set.
        */
       public boolean hasRegion() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string region = 2;</code>
+       * @return The region.
        */
       public java.lang.String getRegion() {
         java.lang.Object ref = region_;
@@ -4007,6 +4169,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string region = 2;</code>
+       * @return The bytes for region.
        */
       public akka.protobufv3.internal.ByteString
           getRegionBytes() {
@@ -4023,6 +4186,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string region = 2;</code>
+       * @param value The region to set.
+       * @return This builder for chaining.
        */
       public Builder setRegion(
           java.lang.String value) {
@@ -4036,6 +4201,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string region = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRegion() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4045,6 +4211,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string region = 2;</code>
+       * @param value The bytes for region to set.
+       * @return This builder for chaining.
        */
       public Builder setRegionBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -4115,28 +4283,34 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required string shard = 1;</code>
+     * @return Whether the shard field is set.
      */
     boolean hasShard();
     /**
      * <code>required string shard = 1;</code>
+     * @return The shard.
      */
     java.lang.String getShard();
     /**
      * <code>required string shard = 1;</code>
+     * @return The bytes for shard.
      */
     akka.protobufv3.internal.ByteString
         getShardBytes();
 
     /**
      * <code>required string region = 2;</code>
+     * @return Whether the region field is set.
      */
     boolean hasRegion();
     /**
      * <code>required string region = 2;</code>
+     * @return The region.
      */
     java.lang.String getRegion();
     /**
      * <code>required string region = 2;</code>
+     * @return The bytes for region.
      */
     akka.protobufv3.internal.ByteString
         getRegionBytes();
@@ -4238,12 +4412,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object shard_;
     /**
      * <code>required string shard = 1;</code>
+     * @return Whether the shard field is set.
      */
     public boolean hasShard() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string shard = 1;</code>
+     * @return The shard.
      */
     public java.lang.String getShard() {
       java.lang.Object ref = shard_;
@@ -4261,6 +4437,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string shard = 1;</code>
+     * @return The bytes for shard.
      */
     public akka.protobufv3.internal.ByteString
         getShardBytes() {
@@ -4280,12 +4457,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object region_;
     /**
      * <code>required string region = 2;</code>
+     * @return Whether the region field is set.
      */
     public boolean hasRegion() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string region = 2;</code>
+     * @return The region.
      */
     public java.lang.String getRegion() {
       java.lang.Object ref = region_;
@@ -4303,6 +4482,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string region = 2;</code>
+     * @return The bytes for region.
      */
     public akka.protobufv3.internal.ByteString
         getRegionBytes() {
@@ -4676,12 +4856,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object shard_ = "";
       /**
        * <code>required string shard = 1;</code>
+       * @return Whether the shard field is set.
        */
       public boolean hasShard() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return The shard.
        */
       public java.lang.String getShard() {
         java.lang.Object ref = shard_;
@@ -4699,6 +4881,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return The bytes for shard.
        */
       public akka.protobufv3.internal.ByteString
           getShardBytes() {
@@ -4715,6 +4898,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @param value The shard to set.
+       * @return This builder for chaining.
        */
       public Builder setShard(
           java.lang.String value) {
@@ -4728,6 +4913,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearShard() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -4737,6 +4923,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @param value The bytes for shard to set.
+       * @return This builder for chaining.
        */
       public Builder setShardBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -4752,12 +4940,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object region_ = "";
       /**
        * <code>required string region = 2;</code>
+       * @return Whether the region field is set.
        */
       public boolean hasRegion() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string region = 2;</code>
+       * @return The region.
        */
       public java.lang.String getRegion() {
         java.lang.Object ref = region_;
@@ -4775,6 +4965,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string region = 2;</code>
+       * @return The bytes for region.
        */
       public akka.protobufv3.internal.ByteString
           getRegionBytes() {
@@ -4791,6 +4982,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string region = 2;</code>
+       * @param value The region to set.
+       * @return This builder for chaining.
        */
       public Builder setRegion(
           java.lang.String value) {
@@ -4804,6 +4997,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string region = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRegion() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4813,6 +5007,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string region = 2;</code>
+       * @param value The bytes for region to set.
+       * @return This builder for chaining.
        */
       public Builder setRegionBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -4883,19 +5079,25 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>repeated string entities = 1;</code>
+     * @return A list containing the entities.
      */
     java.util.List<java.lang.String>
         getEntitiesList();
     /**
      * <code>repeated string entities = 1;</code>
+     * @return The count of entities.
      */
     int getEntitiesCount();
     /**
      * <code>repeated string entities = 1;</code>
+     * @param index The index of the element to return.
+     * @return The entities at the given index.
      */
     java.lang.String getEntities(int index);
     /**
      * <code>repeated string entities = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the entities at the given index.
      */
     akka.protobufv3.internal.ByteString
         getEntitiesBytes(int index);
@@ -4995,6 +5197,7 @@ public final class ClusterShardingMessages {
     private akka.protobufv3.internal.LazyStringList entities_;
     /**
      * <code>repeated string entities = 1;</code>
+     * @return A list containing the entities.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getEntitiesList() {
@@ -5002,18 +5205,23 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>repeated string entities = 1;</code>
+     * @return The count of entities.
      */
     public int getEntitiesCount() {
       return entities_.size();
     }
     /**
      * <code>repeated string entities = 1;</code>
+     * @param index The index of the element to return.
+     * @return The entities at the given index.
      */
     public java.lang.String getEntities(int index) {
       return entities_.get(index);
     }
     /**
      * <code>repeated string entities = 1;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the entities at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getEntitiesBytes(int index) {
@@ -5350,6 +5558,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string entities = 1;</code>
+       * @return A list containing the entities.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getEntitiesList() {
@@ -5357,18 +5566,23 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string entities = 1;</code>
+       * @return The count of entities.
        */
       public int getEntitiesCount() {
         return entities_.size();
       }
       /**
        * <code>repeated string entities = 1;</code>
+       * @param index The index of the element to return.
+       * @return The entities at the given index.
        */
       public java.lang.String getEntities(int index) {
         return entities_.get(index);
       }
       /**
        * <code>repeated string entities = 1;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the entities at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getEntitiesBytes(int index) {
@@ -5376,6 +5590,9 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string entities = 1;</code>
+       * @param index The index to set the value at.
+       * @param value The entities to set.
+       * @return This builder for chaining.
        */
       public Builder setEntities(
           int index, java.lang.String value) {
@@ -5389,6 +5606,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string entities = 1;</code>
+       * @param value The entities to add.
+       * @return This builder for chaining.
        */
       public Builder addEntities(
           java.lang.String value) {
@@ -5402,6 +5621,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string entities = 1;</code>
+       * @param values The entities to add.
+       * @return This builder for chaining.
        */
       public Builder addAllEntities(
           java.lang.Iterable<java.lang.String> values) {
@@ -5413,6 +5634,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string entities = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEntities() {
         entities_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -5422,6 +5644,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string entities = 1;</code>
+       * @param value The bytes of the entities to add.
+       * @return This builder for chaining.
        */
       public Builder addEntitiesBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -5492,14 +5716,17 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required string entityId = 1;</code>
+     * @return Whether the entityId field is set.
      */
     boolean hasEntityId();
     /**
      * <code>required string entityId = 1;</code>
+     * @return The entityId.
      */
     java.lang.String getEntityId();
     /**
      * <code>required string entityId = 1;</code>
+     * @return The bytes for entityId.
      */
     akka.protobufv3.internal.ByteString
         getEntityIdBytes();
@@ -5594,12 +5821,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object entityId_;
     /**
      * <code>required string entityId = 1;</code>
+     * @return Whether the entityId field is set.
      */
     public boolean hasEntityId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string entityId = 1;</code>
+     * @return The entityId.
      */
     public java.lang.String getEntityId() {
       java.lang.Object ref = entityId_;
@@ -5617,6 +5846,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string entityId = 1;</code>
+     * @return The bytes for entityId.
      */
     public akka.protobufv3.internal.ByteString
         getEntityIdBytes() {
@@ -5957,12 +6187,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object entityId_ = "";
       /**
        * <code>required string entityId = 1;</code>
+       * @return Whether the entityId field is set.
        */
       public boolean hasEntityId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return The entityId.
        */
       public java.lang.String getEntityId() {
         java.lang.Object ref = entityId_;
@@ -5980,6 +6212,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return The bytes for entityId.
        */
       public akka.protobufv3.internal.ByteString
           getEntityIdBytes() {
@@ -5996,6 +6229,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @param value The entityId to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityId(
           java.lang.String value) {
@@ -6009,6 +6244,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEntityId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -6018,6 +6254,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @param value The bytes for entityId to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityIdBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6088,14 +6326,17 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required string entityId = 1;</code>
+     * @return Whether the entityId field is set.
      */
     boolean hasEntityId();
     /**
      * <code>required string entityId = 1;</code>
+     * @return The entityId.
      */
     java.lang.String getEntityId();
     /**
      * <code>required string entityId = 1;</code>
+     * @return The bytes for entityId.
      */
     akka.protobufv3.internal.ByteString
         getEntityIdBytes();
@@ -6190,12 +6431,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object entityId_;
     /**
      * <code>required string entityId = 1;</code>
+     * @return Whether the entityId field is set.
      */
     public boolean hasEntityId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string entityId = 1;</code>
+     * @return The entityId.
      */
     public java.lang.String getEntityId() {
       java.lang.Object ref = entityId_;
@@ -6213,6 +6456,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string entityId = 1;</code>
+     * @return The bytes for entityId.
      */
     public akka.protobufv3.internal.ByteString
         getEntityIdBytes() {
@@ -6553,12 +6797,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object entityId_ = "";
       /**
        * <code>required string entityId = 1;</code>
+       * @return Whether the entityId field is set.
        */
       public boolean hasEntityId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return The entityId.
        */
       public java.lang.String getEntityId() {
         java.lang.Object ref = entityId_;
@@ -6576,6 +6822,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return The bytes for entityId.
        */
       public akka.protobufv3.internal.ByteString
           getEntityIdBytes() {
@@ -6592,6 +6839,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @param value The entityId to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityId(
           java.lang.String value) {
@@ -6605,6 +6854,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEntityId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -6614,6 +6864,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @param value The bytes for entityId to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityIdBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6684,24 +6936,29 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required string shard = 1;</code>
+     * @return Whether the shard field is set.
      */
     boolean hasShard();
     /**
      * <code>required string shard = 1;</code>
+     * @return The shard.
      */
     java.lang.String getShard();
     /**
      * <code>required string shard = 1;</code>
+     * @return The bytes for shard.
      */
     akka.protobufv3.internal.ByteString
         getShardBytes();
 
     /**
      * <code>required int32 entityCount = 2;</code>
+     * @return Whether the entityCount field is set.
      */
     boolean hasEntityCount();
     /**
      * <code>required int32 entityCount = 2;</code>
+     * @return The entityCount.
      */
     int getEntityCount();
   }
@@ -6800,12 +7057,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object shard_;
     /**
      * <code>required string shard = 1;</code>
+     * @return Whether the shard field is set.
      */
     public boolean hasShard() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string shard = 1;</code>
+     * @return The shard.
      */
     public java.lang.String getShard() {
       java.lang.Object ref = shard_;
@@ -6823,6 +7082,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string shard = 1;</code>
+     * @return The bytes for shard.
      */
     public akka.protobufv3.internal.ByteString
         getShardBytes() {
@@ -6842,12 +7102,14 @@ public final class ClusterShardingMessages {
     private int entityCount_;
     /**
      * <code>required int32 entityCount = 2;</code>
+     * @return Whether the entityCount field is set.
      */
     public boolean hasEntityCount() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int32 entityCount = 2;</code>
+     * @return The entityCount.
      */
     public int getEntityCount() {
       return entityCount_;
@@ -7210,12 +7472,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object shard_ = "";
       /**
        * <code>required string shard = 1;</code>
+       * @return Whether the shard field is set.
        */
       public boolean hasShard() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return The shard.
        */
       public java.lang.String getShard() {
         java.lang.Object ref = shard_;
@@ -7233,6 +7497,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return The bytes for shard.
        */
       public akka.protobufv3.internal.ByteString
           getShardBytes() {
@@ -7249,6 +7514,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @param value The shard to set.
+       * @return This builder for chaining.
        */
       public Builder setShard(
           java.lang.String value) {
@@ -7262,6 +7529,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearShard() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -7271,6 +7539,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shard = 1;</code>
+       * @param value The bytes for shard to set.
+       * @return This builder for chaining.
        */
       public Builder setShardBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -7286,18 +7556,22 @@ public final class ClusterShardingMessages {
       private int entityCount_ ;
       /**
        * <code>required int32 entityCount = 2;</code>
+       * @return Whether the entityCount field is set.
        */
       public boolean hasEntityCount() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int32 entityCount = 2;</code>
+       * @return The entityCount.
        */
       public int getEntityCount() {
         return entityCount_;
       }
       /**
        * <code>required int32 entityCount = 2;</code>
+       * @param value The entityCount to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityCount(int value) {
         bitField0_ |= 0x00000002;
@@ -7307,6 +7581,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required int32 entityCount = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEntityCount() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -7397,19 +7672,25 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>repeated string failed = 2;</code>
+     * @return A list containing the failed.
      */
     java.util.List<java.lang.String>
         getFailedList();
     /**
      * <code>repeated string failed = 2;</code>
+     * @return The count of failed.
      */
     int getFailedCount();
     /**
      * <code>repeated string failed = 2;</code>
+     * @param index The index of the element to return.
+     * @return The failed at the given index.
      */
     java.lang.String getFailed(int index);
     /**
      * <code>repeated string failed = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the failed at the given index.
      */
     akka.protobufv3.internal.ByteString
         getFailedBytes(int index);
@@ -7557,6 +7838,7 @@ public final class ClusterShardingMessages {
     private akka.protobufv3.internal.LazyStringList failed_;
     /**
      * <code>repeated string failed = 2;</code>
+     * @return A list containing the failed.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getFailedList() {
@@ -7564,18 +7846,23 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>repeated string failed = 2;</code>
+     * @return The count of failed.
      */
     public int getFailedCount() {
       return failed_.size();
     }
     /**
      * <code>repeated string failed = 2;</code>
+     * @param index The index of the element to return.
+     * @return The failed at the given index.
      */
     public java.lang.String getFailed(int index) {
       return failed_.get(index);
     }
     /**
      * <code>repeated string failed = 2;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the failed at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getFailedBytes(int index) {
@@ -8207,6 +8494,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string failed = 2;</code>
+       * @return A list containing the failed.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getFailedList() {
@@ -8214,18 +8502,23 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string failed = 2;</code>
+       * @return The count of failed.
        */
       public int getFailedCount() {
         return failed_.size();
       }
       /**
        * <code>repeated string failed = 2;</code>
+       * @param index The index of the element to return.
+       * @return The failed at the given index.
        */
       public java.lang.String getFailed(int index) {
         return failed_.get(index);
       }
       /**
        * <code>repeated string failed = 2;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the failed at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getFailedBytes(int index) {
@@ -8233,6 +8526,9 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string failed = 2;</code>
+       * @param index The index to set the value at.
+       * @param value The failed to set.
+       * @return This builder for chaining.
        */
       public Builder setFailed(
           int index, java.lang.String value) {
@@ -8246,6 +8542,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string failed = 2;</code>
+       * @param value The failed to add.
+       * @return This builder for chaining.
        */
       public Builder addFailed(
           java.lang.String value) {
@@ -8259,6 +8557,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string failed = 2;</code>
+       * @param values The failed to add.
+       * @return This builder for chaining.
        */
       public Builder addAllFailed(
           java.lang.Iterable<java.lang.String> values) {
@@ -8270,6 +8570,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string failed = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearFailed() {
         failed_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -8279,6 +8580,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>repeated string failed = 2;</code>
+       * @param value The bytes of the failed to add.
+       * @return This builder for chaining.
        */
       public Builder addFailedBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8349,24 +8652,29 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>optional string key = 1;</code>
+     * @return Whether the key field is set.
      */
     boolean hasKey();
     /**
      * <code>optional string key = 1;</code>
+     * @return The key.
      */
     java.lang.String getKey();
     /**
      * <code>optional string key = 1;</code>
+     * @return The bytes for key.
      */
     akka.protobufv3.internal.ByteString
         getKeyBytes();
 
     /**
      * <code>optional int32 value = 2;</code>
+     * @return Whether the value field is set.
      */
     boolean hasValue();
     /**
      * <code>optional int32 value = 2;</code>
+     * @return The value.
      */
     int getValue();
   }
@@ -8465,12 +8773,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object key_;
     /**
      * <code>optional string key = 1;</code>
+     * @return Whether the key field is set.
      */
     public boolean hasKey() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional string key = 1;</code>
+     * @return The key.
      */
     public java.lang.String getKey() {
       java.lang.Object ref = key_;
@@ -8488,6 +8798,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>optional string key = 1;</code>
+     * @return The bytes for key.
      */
     public akka.protobufv3.internal.ByteString
         getKeyBytes() {
@@ -8507,12 +8818,14 @@ public final class ClusterShardingMessages {
     private int value_;
     /**
      * <code>optional int32 value = 2;</code>
+     * @return Whether the value field is set.
      */
     public boolean hasValue() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional int32 value = 2;</code>
+     * @return The value.
      */
     public int getValue() {
       return value_;
@@ -8861,12 +9174,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object key_ = "";
       /**
        * <code>optional string key = 1;</code>
+       * @return Whether the key field is set.
        */
       public boolean hasKey() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional string key = 1;</code>
+       * @return The key.
        */
       public java.lang.String getKey() {
         java.lang.Object ref = key_;
@@ -8884,6 +9199,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>optional string key = 1;</code>
+       * @return The bytes for key.
        */
       public akka.protobufv3.internal.ByteString
           getKeyBytes() {
@@ -8900,6 +9216,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>optional string key = 1;</code>
+       * @param value The key to set.
+       * @return This builder for chaining.
        */
       public Builder setKey(
           java.lang.String value) {
@@ -8913,6 +9231,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>optional string key = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearKey() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -8922,6 +9241,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>optional string key = 1;</code>
+       * @param value The bytes for key to set.
+       * @return This builder for chaining.
        */
       public Builder setKeyBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8937,18 +9258,22 @@ public final class ClusterShardingMessages {
       private int value_ ;
       /**
        * <code>optional int32 value = 2;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional int32 value = 2;</code>
+       * @return The value.
        */
       public int getValue() {
         return value_;
       }
       /**
        * <code>optional int32 value = 2;</code>
+       * @param value The value to set.
+       * @return This builder for chaining.
        */
       public Builder setValue(int value) {
         bitField0_ |= 0x00000002;
@@ -8958,6 +9283,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>optional int32 value = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearValue() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -9024,10 +9350,12 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required int64 timeoutNanos = 1;</code>
+     * @return Whether the timeoutNanos field is set.
      */
     boolean hasTimeoutNanos();
     /**
      * <code>required int64 timeoutNanos = 1;</code>
+     * @return The timeoutNanos.
      */
     long getTimeoutNanos();
   }
@@ -9119,12 +9447,14 @@ public final class ClusterShardingMessages {
     private long timeoutNanos_;
     /**
      * <code>required int64 timeoutNanos = 1;</code>
+     * @return Whether the timeoutNanos field is set.
      */
     public boolean hasTimeoutNanos() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int64 timeoutNanos = 1;</code>
+     * @return The timeoutNanos.
      */
     public long getTimeoutNanos() {
       return timeoutNanos_;
@@ -9455,18 +9785,22 @@ public final class ClusterShardingMessages {
       private long timeoutNanos_ ;
       /**
        * <code>required int64 timeoutNanos = 1;</code>
+       * @return Whether the timeoutNanos field is set.
        */
       public boolean hasTimeoutNanos() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int64 timeoutNanos = 1;</code>
+       * @return The timeoutNanos.
        */
       public long getTimeoutNanos() {
         return timeoutNanos_;
       }
       /**
        * <code>required int64 timeoutNanos = 1;</code>
+       * @param value The timeoutNanos to set.
+       * @return This builder for chaining.
        */
       public Builder setTimeoutNanos(long value) {
         bitField0_ |= 0x00000001;
@@ -9476,6 +9810,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required int64 timeoutNanos = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTimeoutNanos() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -10341,10 +10676,12 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required .Address address = 1;</code>
+     * @return Whether the address field is set.
      */
     boolean hasAddress();
     /**
      * <code>required .Address address = 1;</code>
+     * @return The address.
      */
     akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.Address getAddress();
     /**
@@ -10354,10 +10691,12 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required .ShardRegionStats stats = 2;</code>
+     * @return Whether the stats field is set.
      */
     boolean hasStats();
     /**
      * <code>required .ShardRegionStats stats = 2;</code>
+     * @return The stats.
      */
     akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats getStats();
     /**
@@ -10474,12 +10813,14 @@ public final class ClusterShardingMessages {
     private akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.Address address_;
     /**
      * <code>required .Address address = 1;</code>
+     * @return Whether the address field is set.
      */
     public boolean hasAddress() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Address address = 1;</code>
+     * @return The address.
      */
     public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.Address getAddress() {
       return address_ == null ? akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.Address.getDefaultInstance() : address_;
@@ -10495,12 +10836,14 @@ public final class ClusterShardingMessages {
     private akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats stats_;
     /**
      * <code>required .ShardRegionStats stats = 2;</code>
+     * @return Whether the stats field is set.
      */
     public boolean hasStats() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .ShardRegionStats stats = 2;</code>
+     * @return The stats.
      */
     public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats getStats() {
       return stats_ == null ? akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats.getDefaultInstance() : stats_;
@@ -10895,12 +11238,14 @@ public final class ClusterShardingMessages {
           akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.Address, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.Address.Builder, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.AddressOrBuilder> addressBuilder_;
       /**
        * <code>required .Address address = 1;</code>
+       * @return Whether the address field is set.
        */
       public boolean hasAddress() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Address address = 1;</code>
+       * @return The address.
        */
       public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.Address getAddress() {
         if (addressBuilder_ == null) {
@@ -11013,12 +11358,14 @@ public final class ClusterShardingMessages {
           akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats.Builder, akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStatsOrBuilder> statsBuilder_;
       /**
        * <code>required .ShardRegionStats stats = 2;</code>
+       * @return Whether the stats field is set.
        */
       public boolean hasStats() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .ShardRegionStats stats = 2;</code>
+       * @return The stats.
        */
       public akka.cluster.sharding.protobuf.msg.ClusterShardingMessages.ShardRegionStats getStats() {
         if (statsBuilder_ == null) {
@@ -11983,52 +12330,63 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required string protocol = 1;</code>
+     * @return Whether the protocol field is set.
      */
     boolean hasProtocol();
     /**
      * <code>required string protocol = 1;</code>
+     * @return The protocol.
      */
     java.lang.String getProtocol();
     /**
      * <code>required string protocol = 1;</code>
+     * @return The bytes for protocol.
      */
     akka.protobufv3.internal.ByteString
         getProtocolBytes();
 
     /**
      * <code>required string system = 2;</code>
+     * @return Whether the system field is set.
      */
     boolean hasSystem();
     /**
      * <code>required string system = 2;</code>
+     * @return The system.
      */
     java.lang.String getSystem();
     /**
      * <code>required string system = 2;</code>
+     * @return The bytes for system.
      */
     akka.protobufv3.internal.ByteString
         getSystemBytes();
 
     /**
      * <code>required string hostname = 3;</code>
+     * @return Whether the hostname field is set.
      */
     boolean hasHostname();
     /**
      * <code>required string hostname = 3;</code>
+     * @return The hostname.
      */
     java.lang.String getHostname();
     /**
      * <code>required string hostname = 3;</code>
+     * @return The bytes for hostname.
      */
     akka.protobufv3.internal.ByteString
         getHostnameBytes();
 
     /**
      * <code>required uint32 port = 4;</code>
+     * @return Whether the port field is set.
      */
     boolean hasPort();
     /**
      * <code>required uint32 port = 4;</code>
+     * @return The port.
      */
     int getPort();
   }
@@ -12146,12 +12504,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object protocol_;
     /**
      * <code>required string protocol = 1;</code>
+     * @return Whether the protocol field is set.
      */
     public boolean hasProtocol() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string protocol = 1;</code>
+     * @return The protocol.
      */
     public java.lang.String getProtocol() {
       java.lang.Object ref = protocol_;
@@ -12169,6 +12529,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string protocol = 1;</code>
+     * @return The bytes for protocol.
      */
     public akka.protobufv3.internal.ByteString
         getProtocolBytes() {
@@ -12188,12 +12549,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object system_;
     /**
      * <code>required string system = 2;</code>
+     * @return Whether the system field is set.
      */
     public boolean hasSystem() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string system = 2;</code>
+     * @return The system.
      */
     public java.lang.String getSystem() {
       java.lang.Object ref = system_;
@@ -12211,6 +12574,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string system = 2;</code>
+     * @return The bytes for system.
      */
     public akka.protobufv3.internal.ByteString
         getSystemBytes() {
@@ -12230,12 +12594,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object hostname_;
     /**
      * <code>required string hostname = 3;</code>
+     * @return Whether the hostname field is set.
      */
     public boolean hasHostname() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required string hostname = 3;</code>
+     * @return The hostname.
      */
     public java.lang.String getHostname() {
       java.lang.Object ref = hostname_;
@@ -12253,6 +12619,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string hostname = 3;</code>
+     * @return The bytes for hostname.
      */
     public akka.protobufv3.internal.ByteString
         getHostnameBytes() {
@@ -12272,12 +12639,14 @@ public final class ClusterShardingMessages {
     private int port_;
     /**
      * <code>required uint32 port = 4;</code>
+     * @return Whether the port field is set.
      */
     public boolean hasPort() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required uint32 port = 4;</code>
+     * @return The port.
      */
     public int getPort() {
       return port_;
@@ -12711,12 +13080,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object protocol_ = "";
       /**
        * <code>required string protocol = 1;</code>
+       * @return Whether the protocol field is set.
        */
       public boolean hasProtocol() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @return The protocol.
        */
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
@@ -12734,6 +13105,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @return The bytes for protocol.
        */
       public akka.protobufv3.internal.ByteString
           getProtocolBytes() {
@@ -12750,6 +13122,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @param value The protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocol(
           java.lang.String value) {
@@ -12763,6 +13137,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearProtocol() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -12772,6 +13147,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string protocol = 1;</code>
+       * @param value The bytes for protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocolBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -12787,12 +13164,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object system_ = "";
       /**
        * <code>required string system = 2;</code>
+       * @return Whether the system field is set.
        */
       public boolean hasSystem() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string system = 2;</code>
+       * @return The system.
        */
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
@@ -12810,6 +13189,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string system = 2;</code>
+       * @return The bytes for system.
        */
       public akka.protobufv3.internal.ByteString
           getSystemBytes() {
@@ -12826,6 +13206,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string system = 2;</code>
+       * @param value The system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystem(
           java.lang.String value) {
@@ -12839,6 +13221,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string system = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSystem() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -12848,6 +13231,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string system = 2;</code>
+       * @param value The bytes for system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystemBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -12863,12 +13248,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object hostname_ = "";
       /**
        * <code>required string hostname = 3;</code>
+       * @return Whether the hostname field is set.
        */
       public boolean hasHostname() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required string hostname = 3;</code>
+       * @return The hostname.
        */
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
@@ -12886,6 +13273,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string hostname = 3;</code>
+       * @return The bytes for hostname.
        */
       public akka.protobufv3.internal.ByteString
           getHostnameBytes() {
@@ -12902,6 +13290,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string hostname = 3;</code>
+       * @param value The hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostname(
           java.lang.String value) {
@@ -12915,6 +13305,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string hostname = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearHostname() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -12924,6 +13315,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string hostname = 3;</code>
+       * @param value The bytes for hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostnameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -12939,18 +13332,22 @@ public final class ClusterShardingMessages {
       private int port_ ;
       /**
        * <code>required uint32 port = 4;</code>
+       * @return Whether the port field is set.
        */
       public boolean hasPort() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required uint32 port = 4;</code>
+       * @return The port.
        */
       public int getPort() {
         return port_;
       }
       /**
        * <code>required uint32 port = 4;</code>
+       * @param value The port to set.
+       * @return This builder for chaining.
        */
       public Builder setPort(int value) {
         bitField0_ |= 0x00000008;
@@ -12960,6 +13357,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required uint32 port = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPort() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -13026,14 +13424,17 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required string entityId = 1;</code>
+     * @return Whether the entityId field is set.
      */
     boolean hasEntityId();
     /**
      * <code>required string entityId = 1;</code>
+     * @return The entityId.
      */
     java.lang.String getEntityId();
     /**
      * <code>required string entityId = 1;</code>
+     * @return The bytes for entityId.
      */
     akka.protobufv3.internal.ByteString
         getEntityIdBytes();
@@ -13128,12 +13529,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object entityId_;
     /**
      * <code>required string entityId = 1;</code>
+     * @return Whether the entityId field is set.
      */
     public boolean hasEntityId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string entityId = 1;</code>
+     * @return The entityId.
      */
     public java.lang.String getEntityId() {
       java.lang.Object ref = entityId_;
@@ -13151,6 +13554,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string entityId = 1;</code>
+     * @return The bytes for entityId.
      */
     public akka.protobufv3.internal.ByteString
         getEntityIdBytes() {
@@ -13491,12 +13895,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object entityId_ = "";
       /**
        * <code>required string entityId = 1;</code>
+       * @return Whether the entityId field is set.
        */
       public boolean hasEntityId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return The entityId.
        */
       public java.lang.String getEntityId() {
         java.lang.Object ref = entityId_;
@@ -13514,6 +13920,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return The bytes for entityId.
        */
       public akka.protobufv3.internal.ByteString
           getEntityIdBytes() {
@@ -13530,6 +13937,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @param value The entityId to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityId(
           java.lang.String value) {
@@ -13543,6 +13952,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEntityId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -13552,6 +13962,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @param value The bytes for entityId to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityIdBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -13622,28 +14034,34 @@ public final class ClusterShardingMessages {
 
     /**
      * <code>required string entityId = 1;</code>
+     * @return Whether the entityId field is set.
      */
     boolean hasEntityId();
     /**
      * <code>required string entityId = 1;</code>
+     * @return The entityId.
      */
     java.lang.String getEntityId();
     /**
      * <code>required string entityId = 1;</code>
+     * @return The bytes for entityId.
      */
     akka.protobufv3.internal.ByteString
         getEntityIdBytes();
 
     /**
      * <code>required string shardId = 2;</code>
+     * @return Whether the shardId field is set.
      */
     boolean hasShardId();
     /**
      * <code>required string shardId = 2;</code>
+     * @return The shardId.
      */
     java.lang.String getShardId();
     /**
      * <code>required string shardId = 2;</code>
+     * @return The bytes for shardId.
      */
     akka.protobufv3.internal.ByteString
         getShardIdBytes();
@@ -13745,12 +14163,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object entityId_;
     /**
      * <code>required string entityId = 1;</code>
+     * @return Whether the entityId field is set.
      */
     public boolean hasEntityId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string entityId = 1;</code>
+     * @return The entityId.
      */
     public java.lang.String getEntityId() {
       java.lang.Object ref = entityId_;
@@ -13768,6 +14188,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string entityId = 1;</code>
+     * @return The bytes for entityId.
      */
     public akka.protobufv3.internal.ByteString
         getEntityIdBytes() {
@@ -13787,12 +14208,14 @@ public final class ClusterShardingMessages {
     private volatile java.lang.Object shardId_;
     /**
      * <code>required string shardId = 2;</code>
+     * @return Whether the shardId field is set.
      */
     public boolean hasShardId() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string shardId = 2;</code>
+     * @return The shardId.
      */
     public java.lang.String getShardId() {
       java.lang.Object ref = shardId_;
@@ -13810,6 +14233,7 @@ public final class ClusterShardingMessages {
     }
     /**
      * <code>required string shardId = 2;</code>
+     * @return The bytes for shardId.
      */
     public akka.protobufv3.internal.ByteString
         getShardIdBytes() {
@@ -14183,12 +14607,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object entityId_ = "";
       /**
        * <code>required string entityId = 1;</code>
+       * @return Whether the entityId field is set.
        */
       public boolean hasEntityId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return The entityId.
        */
       public java.lang.String getEntityId() {
         java.lang.Object ref = entityId_;
@@ -14206,6 +14632,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return The bytes for entityId.
        */
       public akka.protobufv3.internal.ByteString
           getEntityIdBytes() {
@@ -14222,6 +14649,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @param value The entityId to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityId(
           java.lang.String value) {
@@ -14235,6 +14664,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEntityId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -14244,6 +14674,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string entityId = 1;</code>
+       * @param value The bytes for entityId to set.
+       * @return This builder for chaining.
        */
       public Builder setEntityIdBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -14259,12 +14691,14 @@ public final class ClusterShardingMessages {
       private java.lang.Object shardId_ = "";
       /**
        * <code>required string shardId = 2;</code>
+       * @return Whether the shardId field is set.
        */
       public boolean hasShardId() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string shardId = 2;</code>
+       * @return The shardId.
        */
       public java.lang.String getShardId() {
         java.lang.Object ref = shardId_;
@@ -14282,6 +14716,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shardId = 2;</code>
+       * @return The bytes for shardId.
        */
       public akka.protobufv3.internal.ByteString
           getShardIdBytes() {
@@ -14298,6 +14733,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shardId = 2;</code>
+       * @param value The shardId to set.
+       * @return This builder for chaining.
        */
       public Builder setShardId(
           java.lang.String value) {
@@ -14311,6 +14748,7 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shardId = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearShardId() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -14320,6 +14758,8 @@ public final class ClusterShardingMessages {
       }
       /**
        * <code>required string shardId = 2;</code>
+       * @param value The bytes for shardId to set.
+       * @return This builder for chaining.
        */
       public Builder setShardIdBytes(
           akka.protobufv3.internal.ByteString value) {

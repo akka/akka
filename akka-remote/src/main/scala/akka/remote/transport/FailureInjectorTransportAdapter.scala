@@ -68,7 +68,7 @@ private[remote] class FailureInjectorTransportAdapter(
     with AssociationEventListener {
 
   private def rng = ThreadLocalRandom.current()
-  private val log = Logging(extendedSystem, getClass.getName)
+  private val log = Logging(extendedSystem, getClass)
   private val shouldDebugLog: Boolean = extendedSystem.settings.config.getBoolean("akka.remote.classic.gremlin.debug")
 
   @volatile private var upstreamListener: Option[AssociationEventListener] = None

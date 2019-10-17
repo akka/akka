@@ -8,12 +8,11 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.{ Actor, ActorLogging, Deploy, Props }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.event.Logging
 import akka.routing.FromConfig
 
 import scala.concurrent.duration.Duration
 
-class SimpleDnsManager(val ext: DnsExt)
+final class SimpleDnsManager(val ext: DnsExt)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics]
     with ActorLogging {
@@ -27,8 +26,6 @@ class SimpleDnsManager(val ext: DnsExt)
         .withDispatcher(ext.Settings.Dispatcher)),
     ext.Settings.Resolver)
 
-  private val inetDnsEnabled = ext.provider.actorClass == classOf[InetAddressDnsResolver]
-
   private val cacheCleanup = ext.cache match {
     case cleanup: PeriodicCacheCleanup => Some(cleanup)
     case _                             => None
@@ -41,22 +38,18 @@ class SimpleDnsManager(val ext: DnsExt)
     system.scheduler.scheduleWithFixedDelay(interval, interval, self, SimpleDnsManager.CacheCleanup)
   }
 
+  // the inet resolver supports the old and new DNS APIs
   override def receive: Receive = {
     case r @ Dns.Resolve(name) =>
-      log.debug("Resolution request for {} from {}", name, sender())
+      log.debug("(deprecated) Resolution request for {} from {}", name, sender())
       resolver.forward(r)
+
+    case m: dns.DnsProtocol.Resolve =>
+      log.debug("Resolution request for {} from {}", m.name, sender())
+      resolver.forward(m)
 
     case SimpleDnsManager.CacheCleanup =>
       cacheCleanup.foreach(_.cleanup())
-
-    case m: dns.DnsProtocol.Resolve =>
-      if (inetDnsEnabled) {
-        log.error(
-          "Message of [akka.io.dns.DnsProtocol.Protocol] received ({}) while inet-address dns was configured. Dropping DNS resolve request. " +
-          "Only use [akka.io.dns.DnsProtocol] to create resolution requests for the Async DNS resolver (enabled by `akka.io.dns = async-dns`). " +
-          "For the classic (now used) DNS resolver use [akka.io.Dns] messages.",
-          Logging.simpleName(m))
-      } else resolver.forward(m)
   }
 
   override def postStop(): Unit = {

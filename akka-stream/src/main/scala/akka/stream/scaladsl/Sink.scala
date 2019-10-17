@@ -583,14 +583,12 @@ object Sink {
    * sink fails then the `Future` is completed with the exception.
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
-  @Deprecated
-  @deprecated(
-    "Use lazyInitAsync instead. (lazyInitAsync no more needs a fallback function and the materialized value more clearly indicates if the internal sink was materialized or not.)",
-    "2.5.11")
+  @deprecated("Use 'Sink.lazyFutureSink' in combination with 'Flow.prefixAndTail(1)' instead", "2.6.0")
   def lazyInit[T, M](sinkFactory: T => Future[Sink[T, M]], fallback: () => M): Sink[T, Future[M]] =
     Sink
       .fromGraph(new LazySink[T, M](sinkFactory))
-      .mapMaterializedValue(_.map(_.getOrElse(fallback()))(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(
+        _.recover { case _: NeverMaterializedException => fallback() }(ExecutionContexts.sameThreadExecutionContext))
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
@@ -601,7 +599,45 @@ object Sink {
    * sink fails then the `Future` is completed with the exception.
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
+  @deprecated("Use 'Sink.lazyFutureSink' instead", "2.6.0")
   def lazyInitAsync[T, M](sinkFactory: () => Future[Sink[T, M]]): Sink[T, Future[Option[M]]] =
-    Sink.fromGraph(new LazySink[T, M](_ => sinkFactory()))
+    Sink.fromGraph(new LazySink[T, M](_ => sinkFactory())).mapMaterializedValue { m =>
+      implicit val ec = ExecutionContexts.sameThreadExecutionContext
+      m.map(Option.apply _).recover { case _: NeverMaterializedException => None }
+    }
+
+  /**
+   * Turn a `Future[Sink]` into a Sink that will consume the values of the source when the future completes successfully.
+   * If the `Future` is completed with a failure the stream is failed.
+   *
+   * The materialized future value is completed with the materialized value of the future sink or failed with a
+   * [[NeverMaterializedException]] if upstream fails or downstream cancels before the future has completed.
+   */
+  def futureSink[T, M](future: Future[Sink[T, M]]): Sink[T, Future[M]] =
+    lazyFutureSink[T, M](() => future)
+
+  /**
+   * Defers invoking the `create` function to create a sink until there is a first element passed from upstream.
+   *
+   * The materialized future value is completed with the materialized value of the created sink when that has successfully
+   * been materialized.
+   *
+   * If the `create` function throws or returns or the stream fails to materialize, in this
+   * case the materialized future value is failed with a [[akka.stream.NeverMaterializedException]].
+   */
+  def lazySink[T, M](create: () => Sink[T, M]): Sink[T, Future[M]] =
+    lazyFutureSink(() => Future.successful(create()))
+
+  /**
+   * Defers invoking the `create` function to create a future sink until there is a first element passed from upstream.
+   *
+   * The materialized future value is completed with the materialized value of the created sink when that has successfully
+   * been materialized.
+   *
+   * If the `create` function throws or returns a future that is failed, or the stream fails to materialize, in this
+   * case the materialized future value is failed with a [[akka.stream.NeverMaterializedException]].
+   */
+  def lazyFutureSink[T, M](create: () => Future[Sink[T, M]]): Sink[T, Future[M]] =
+    Sink.fromGraph(new LazySink(_ => create()))
 
 }
