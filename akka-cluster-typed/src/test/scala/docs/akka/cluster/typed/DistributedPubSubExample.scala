@@ -23,7 +23,6 @@ object Ontology {
   type DataSourceType = String
   type DataSinkType = String
 
-  @SerialVersionUID(1)
   sealed trait DataApi
   trait Status extends DataApi
   sealed trait ProvisionCommand extends DataApi
