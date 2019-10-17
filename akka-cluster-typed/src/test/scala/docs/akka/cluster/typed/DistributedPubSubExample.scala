@@ -160,6 +160,7 @@ object Ingestion {
 
   /** Would normally be typed more specifically. */
   private def active(dt: DataType, mediator: akka.actor.ActorRef): Behavior[DataEvent] =
+    //#publisher
     Behaviors
       .supervise(Behaviors.receiveMessagePartial[DataEvent] {
         case e: DataEnvelope if e.key == dt.key =>
@@ -171,9 +172,9 @@ object Ingestion {
           mediator ! DistributedPubSubMediator.Publish(IngestionTopic, IngestionStopped(dt.key))
           // cleanup and graceful shutdown
           Behaviors.stopped
-
       })
       .onFailure[DeathPactException](SupervisorStrategy.restart)
+  //#publisher
 
 }
 
@@ -196,7 +197,7 @@ object Subscriber {
             // allocate some shards
             // provision a source and sink
             // start a new ML stream...it's a data platform wonderland
-            Behaviors.same
+            wonderland()
 
           case IngestionStarted(k, path) if k == key =>
             //#send
@@ -207,16 +208,8 @@ object Subscriber {
                 msg = DataEnvelope(key, s"hello-$key-$n"),
                 localAffinity = true)
             }
-
-            // or you can do one of these:
-            // mediator ! DistributedPubSubMediator.Send(path, msg = event, localAffinity = false)
-            // mediator ! DistributedPubSubMediator.SendToAll(path, msg = event)
-
             //#send
-
-            // for the example, shutdown
-            mediator ! DistributedPubSubMediator.Publish(IngestionTopic, StopIngestion(key))
-            Behaviors.same
+            continue(key, mediator)
 
           case _: IngestionStopped =>
             Behaviors.stopped
@@ -225,7 +218,16 @@ object Subscriber {
       }
       .narrow[DataEvent]
     //#subscriber
+  }
 
+  private def wonderland(): Behavior[DataEvent] = {
+    Behaviors.same
+  }
+
+  private def continue(key: DataKey, mediator: akka.actor.ActorRef): Behavior[DataEvent] = {
+    // for the example, shutdown
+    mediator ! DistributedPubSubMediator.Publish(IngestionTopic, StopIngestion(key))
+    Behaviors.stopped
   }
 }
 
