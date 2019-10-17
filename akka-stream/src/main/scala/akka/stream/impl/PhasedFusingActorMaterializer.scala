@@ -23,6 +23,7 @@ import akka.dispatch.Dispatchers
 import akka.event.{ Logging, LoggingAdapter }
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.fusing.ActorGraphInterpreter.{ ActorOutputBoundary, BatchingActorInputBoundary }
 import akka.stream.impl.fusing.GraphInterpreter.Connection
@@ -726,7 +727,7 @@ private final case class SavedIslandData(
     val boundary = new ActorOutputBoundary(shell, out.toString)
     logics.add(boundary)
     boundary.stageId = logics.size() - 1
-    boundary.attributes = logic.attributes
+    boundary.attributes = logic.attributes.and(DefaultAttributes.outputBoundary)
 
     val connection = outConn()
     boundary.portToConn(boundary.in.id) = connection
@@ -750,6 +751,7 @@ private final case class SavedIslandData(
       new BatchingActorInputBoundary(bufferSize, shell, publisher, connection.inOwner.toString)
     logics.add(boundary)
     boundary.stageId = logics.size() - 1
+    boundary.attributes = connection.inOwner.attributes.and(DefaultAttributes.inputBoundary)
 
     boundary.portToConn(boundary.out.id + boundary.inCount) = connection
     connection.outHandler = boundary.handlers(0).asInstanceOf[OutHandler]
