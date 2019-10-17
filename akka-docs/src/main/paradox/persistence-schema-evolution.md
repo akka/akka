@@ -2,7 +2,7 @@
 
 ## Dependency
 
-This documentation page touches upon @ref[Akka Persitence](persistence.md), so to follow those examples you will want to depend on:
+This documentation page touches upon @ref[Akka Persistence](persistence.md), so to follow those examples you will want to depend on:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
