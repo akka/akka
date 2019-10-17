@@ -7,7 +7,7 @@ package docs.akka.cluster.typed
 import scala.util.{ Failure, Success, Try }
 import scala.concurrent.duration._
 
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, DeathPactException, SupervisorStrategy }
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MemberStatus
 import akka.cluster.pubsub.{ DistributedPubSub, DistributedPubSubMediator }
@@ -37,12 +37,14 @@ object Ontology {
   sealed trait ProvisionStatus extends Status {
     def key: DataKey
   }
-  final case class ProvisionSuccess(key: DataKey) extends ProvisionStatus
+  final case class ProvisionSuccess(key: DataKey, ref: ActorRef[DataEvent]) extends ProvisionStatus
   final case class ProvisionFailure(key: DataKey, reason: String) extends ProvisionStatus
 
   sealed trait DataOntology extends DataApi
-  sealed trait DataEvent extends DataOntology
-  final case class StartIngestion(source: Option[DataSource], sink: Option[DataSink]) extends DataEvent
+  sealed trait DataEvent extends DataOntology {
+    def key: DataKey
+  }
+  final case class StartIngestion(key: DataKey, source: Option[DataSource], sink: Option[DataSink]) extends DataEvent
   final case class StopIngestion(key: DataKey) extends DataEvent
   final case class IngestionStarted(key: DataKey, path: String) extends DataEvent
   final case class IngestionStopped(key: DataKey) extends DataEvent
@@ -146,12 +148,12 @@ object Ingestion {
   private def idle(dt: DataType, mediator: akka.actor.ActorRef): Behavior[DataEvent] =
     Behaviors.setup { context =>
       Behaviors.receiveMessage {
-        case StartIngestion(_, _) =>
+        case StartIngestion(key, _, sink) if key == dt.key =>
           context.log.info("Processing events for {} storing.", dt.key)
           mediator ! DistributedPubSubMediator.Publish(
             IngestionTopic,
-            IngestionStarted(dt.key, context.self.path.toStringWithoutAddress))
-          active(dt, mediator)
+            IngestionStarted(key, context.self.path.toStringWithoutAddress))
+          active(key, sink, mediator)
 
         case _ =>
           idle(dt, mediator)
@@ -159,21 +161,22 @@ object Ingestion {
     }
 
   /** Would normally be typed more specifically. */
-  private def active(dt: DataType, mediator: akka.actor.ActorRef): Behavior[DataEvent] =
+  private def active(key: DataKey, sink: Option[DataSink], mediator: akka.actor.ActorRef): Behavior[DataEvent] =
     //#publisher
-    Behaviors
-      .supervise(Behaviors.receiveMessagePartial[DataEvent] {
-        case e: DataEnvelope if e.key == dt.key =>
+    Behaviors.setup { context =>
+      Behaviors.receiveMessagePartial[DataEvent] {
+        case e: DataEnvelope if e.key == key =>
           // fanout to:
           // validate, slice, dice, re-route, store raw to blob, store pre-aggregated/timeseries to Cs*, etc.
+          context.log.debug("Storing to {}.", sink)
           Behaviors.same
 
-        case StopIngestion(k) if k == dt.key =>
-          mediator ! DistributedPubSubMediator.Publish(IngestionTopic, IngestionStopped(dt.key))
+        case StopIngestion(k) if k == key =>
+          mediator ! DistributedPubSubMediator.Publish(IngestionTopic, IngestionStopped(key))
           // cleanup and graceful shutdown
           Behaviors.stopped
-      })
-      .onFailure[DeathPactException](SupervisorStrategy.restart)
+      }
+    }
   //#publisher
 
 }
@@ -184,39 +187,34 @@ object Subscriber {
   def apply(key: DataKey, mediator: akka.actor.ActorRef): Behavior[DataEvent] = {
 
     //#subscriber
-    Behaviors
-      .setup[DataEvent] { context =>
-        import akka.actor.typed.scaladsl.adapter._
+    Behaviors.setup[DataEvent] { context =>
+      import akka.actor.typed.scaladsl.adapter._
 
-        mediator ! DistributedPubSubMediator.Subscribe(RegistrationTopic, context.self.toClassic)
-        mediator ! DistributedPubSubMediator.Subscribe(IngestionTopic, context.self.toClassic)
+      mediator ! DistributedPubSubMediator.Subscribe(RegistrationTopic, context.self.toClassic)
+      mediator ! DistributedPubSubMediator.Subscribe(IngestionTopic, context.self.toClassic)
 
-        Behaviors.receiveMessagePartial {
-          case dt: DataType if dt.key == key =>
-            // do some capacity planning
-            // allocate some shards
-            // provision a source and sink
-            // start a new ML stream...it's a data platform wonderland
-            wonderland()
+      Behaviors.receiveMessagePartial {
+        case dt: DataType if dt.key == key =>
+          // do some capacity planning
+          // allocate some shards
+          // provision a source and sink
+          // start a new ML stream...it's a data platform wonderland
+          wonderland()
 
-          case IngestionStarted(k, path) if k == key =>
-            //#send
-            // simulate data sent from various sources:
-            (1 to 100).foreach { n =>
-              mediator ! DistributedPubSubMediator.Send(
-                path,
-                msg = DataEnvelope(key, s"hello-$key-$n"),
-                localAffinity = true)
-            }
-            //#send
-            continue(key, mediator)
+        case IngestionStarted(k, path) if k == key =>
+          //#send
+          // simulate data sent from various data sources:
+          (1 to 100).foreach { n =>
+            mediator ! DistributedPubSubMediator.Send(
+              path,
+              msg = DataEnvelope(key, s"hello-$key-$n"),
+              localAffinity = true)
+          }
+          //#send
+          andThen(key, mediator)
 
-          case _: IngestionStopped =>
-            Behaviors.stopped
-
-        }
       }
-      .narrow[DataEvent]
+    }
     //#subscriber
   }
 
@@ -224,9 +222,9 @@ object Subscriber {
     Behaviors.same
   }
 
-  private def continue(key: DataKey, mediator: akka.actor.ActorRef): Behavior[DataEvent] = {
+  private def andThen(key: DataKey, mediator: akka.actor.ActorRef): Behavior[DataEvent] = {
     // for the example, shutdown
-    mediator ! DistributedPubSubMediator.Publish(IngestionTopic, StopIngestion(key))
+    mediator ! DistributedPubSubMediator.Publish(IngestionTopic, IngestionStopped(key))
     Behaviors.stopped
   }
 }
@@ -250,8 +248,8 @@ object DataService {
             context.self.path / status.dataType.key)
 
           val ingestion = context.spawn(Ingestion(status.dataType, mediator), status.dataType.key)
-          ingestion ! StartIngestion(None, None) // stubbed source/sink from another service
-          onBehalfOf ! ProvisionSuccess(status.dataType.key)
+          ingestion ! StartIngestion(status.dataType.key, None, None) // stubbed source/sink from another service
+          onBehalfOf ! ProvisionSuccess(status.dataType.key, ingestion)
           Behaviors.same
 
       }
@@ -274,9 +272,7 @@ object DataPlatform {
       Behaviors.receiveMessagePartial {
         case CreateSubscriber(key) =>
           // subscribe to provisioning for this data type
-          //#start-subscribers
           context.spawnAnonymous(Subscriber(key, mediator))
-          //#start-subscribers
           Behaviors.same
 
         case cmd: ProvisionCommand =>
@@ -295,8 +291,6 @@ object DistributedPubSubExample {
   val config: Config = ConfigFactory.parseString(s"""
         akka.actor.provider = "cluster"
         akka.cluster.pub-sub.max-delta-elements = 500
-        # sample vs test so this does not get registered?
-        akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
         akka.cluster.jmx.enabled = off
         akka.remote.artery.canonical.hostname = 127.0.0.1
         akka.remote.classic.netty.tcp.port = 0
@@ -343,13 +337,22 @@ object DistributedPubSubExample {
     nodes.foreach(_ ! CreateSubscriber(key))
 
     // provision new data type
-    val platformProbe = TestProbe[AnyRef]()(system)
+    val platformProbe = TestProbe[DataApi]()(system)
+    val mediator = DistributedPubSub(system.toClassic).mediator
+    mediator ! DistributedPubSubMediator.Subscribe(IngestionTopic, platformProbe.ref.toClassic)
+
     system ! ProvisionDataType(key, "dummy-schema", platformProbe.ref)
-    val provisioned = platformProbe.expectMessageType[ProvisionStatus](5.seconds)
+    val provisioned = platformProbe.expectMessageType[ProvisionSuccess](5.seconds)
     log.info(s"Platform provisioned for new data type {}.", provisioned)
 
-    // send and receive in cluster, then for sample purposes
-    Thread.sleep(4000)
+    // send and receive in cluster, then for example shutdown
+    val started = platformProbe.expectMessageType[IngestionStarted](5.seconds)
+    log.info(s"Platform ingestion started for {}.", started.key)
+
+    val stopped = platformProbe.expectMessageType[IngestionStopped](5.seconds)
+    log.info(s"Platform ingestion completed for {}.", stopped.key)
+    require(Set(started, stopped).forall(_.key == key))
+
     nodes.foreach(_.terminate())
     log.info("Systems terminating.")
   }
