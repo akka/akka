@@ -1,7 +1,7 @@
 # Distributed Publish Subscribe in Cluster
 
 @@@ note
-For the Akka Classic documentation of this feature see @ref:[Classic Distributed Publish Subscribe](../distributed-pub-sub.md).
+For the Akka Classic documentation of this feature see [Classic Distributed Publish Subscribe](../distributed-pub-sub.md).
 Classic Pub Sub can be used by leveraging the `.toClassic` adapters until @github[#26338](#26338).
 @@@
 
@@ -27,11 +27,9 @@ Add the new Cluster API if you don't already have it in an existing Cluster appl
   version=$akka.version$
 }
 
-@@@
-
 ## Sample project
 
-Until @github[#26338](#26338), this simple example shows how to use 
+Until @github[#26338](#26338), [this simple example]($github.base_url$/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) shows how to use 
 @ref:[Classic Distributed Publish Subscribe](../distributed-pub-sub.md) with the new Cluster API.
 
 ### The DistributedPubSub extension
