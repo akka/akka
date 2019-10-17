@@ -228,7 +228,13 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
         }
       }
 
+      override def postStop(): Unit = {
+        if (!promise.isCompleted)
+          promise.tryFailure(new AbruptStageTerminationException(this))
+      }
+
       setHandler(in, this)
+
     }
 
     (logic, promise.future)
