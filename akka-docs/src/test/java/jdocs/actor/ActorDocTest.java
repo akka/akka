@@ -13,7 +13,6 @@ import static jdocs.actor.Messages.Swap.Swap;
 import static jdocs.actor.Messages.*;
 import akka.actor.CoordinatedShutdown;
 
-import akka.util.Timeout;
 import akka.Done;
 
 import java.util.Optional;
@@ -848,6 +847,10 @@ public class ActorDocTest extends AbstractJavaTest {
     };
   }
 
+  private CompletionStage<Done> cleanup() {
+    return null;
+  }
+
   @Test
   public void coordinatedShutdown() {
     final ActorRef someActor = system.actorOf(Props.create(FirstActor.class));
@@ -861,6 +864,15 @@ public class ActorDocTest extends AbstractJavaTest {
                   .thenApply(reply -> Done.getInstance());
             });
     // #coordinated-shutdown-addTask
+
+    // #coordinated-shutdown-cancellable
+    Cancellable cancellable =
+        CoordinatedShutdown.get(system)
+            .addCancellableTask(
+                CoordinatedShutdown.PhaseBeforeServiceUnbind(), "someTaskCleanup", () -> cleanup());
+    // much later...
+    cancellable.cancel();
+    // #coordinated-shutdown-cancellable
 
     // #coordinated-shutdown-jvm-hook
     CoordinatedShutdown.get(system)

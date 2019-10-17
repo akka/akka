@@ -20,6 +20,13 @@ The `async-dns` API is marked as `ApiMayChange` as more information is expected 
 
 @@@
 
+@@@ warning
+
+The ability to plugin in a custom DNS implementation is expected to be removed in future versions of Akka.
+Users should pick one of the built in extensions.
+
+@@@
+
 Akka DNS is a pluggable way to interact with DNS. Implementations much implement `akka.io.DnsProvider` and provide a configuration
 block that specifies the implementation via `provider-object`.
 

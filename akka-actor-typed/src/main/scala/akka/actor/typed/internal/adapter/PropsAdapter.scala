@@ -5,6 +5,7 @@
 package akka.actor.typed.internal.adapter
 
 import akka.actor.Deploy
+import akka.actor.typed.ActorTags
 import akka.actor.typed.Behavior
 import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.MailboxSelector
@@ -38,7 +39,11 @@ import akka.dispatch.Mailboxes
         dispatcherProps.withMailbox(path)
     }
 
-    mailboxProps.withDeploy(Deploy.local) // disallow remote deployment for typed actors
+    val localDeploy = mailboxProps.withDeploy(Deploy.local) // disallow remote deployment for typed actors
+
+    val tags = deploy.firstOrElse[ActorTags](ActorTagsImpl.empty).tags
+    if (tags.isEmpty) localDeploy
+    else localDeploy.withActorTags(tags)
   }
 
 }

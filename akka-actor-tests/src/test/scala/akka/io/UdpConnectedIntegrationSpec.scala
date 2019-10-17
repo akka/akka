@@ -10,10 +10,13 @@ import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.util.ByteString
 import akka.actor.ActorRef
 import akka.testkit.SocketUtil.temporaryServerAddresses
+import akka.testkit.WithLogCapturing
+import scala.concurrent.duration._
 
 class UdpConnectedIntegrationSpec extends AkkaSpec("""
-    akka.loglevel = INFO
-    """) with ImplicitSender {
+    akka.loglevel = DEBUG
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    """) with ImplicitSender with WithLogCapturing {
 
   val addresses = temporaryServerAddresses(5, udp = true)
 
@@ -35,6 +38,15 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
   }
 
   "The UDP connection oriented implementation" must {
+
+    "report error if can not resolve" in {
+      val serverAddress = "doesnotexist.local"
+      val commander = TestProbe()
+      val handler = TestProbe()
+      val command = UdpConnected.Connect(handler.ref, InetSocketAddress.createUnresolved(serverAddress, 1234), None)
+      commander.send(IO(UdpConnected), command)
+      commander.expectMsg(6.seconds, UdpConnected.CommandFailed(command))
+    }
 
     "be able to send and receive without binding" in {
       val serverAddress = addresses(0)

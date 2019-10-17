@@ -24,14 +24,43 @@ import org.slf4j.LoggerFactory
 /**
  * INTERNAL API
  */
+@InternalApi private[akka] object ActorContextImpl {
+
+  // single context for logging as there are a few things that are initialized
+  // together
+  final class LoggingContext(val logger: Logger, tags: Set[String]) {
+    // toggled once per message if logging is used to avoid having to
+    // touch the mdc thread local for cleanup in the end
+    var mdcUsed = false
+    val tagsString =
+      // "" means no tags
+      if (tags.isEmpty) ""
+      else
+        // mdc can only contain string values, and we don't want to render that string
+        // on each log entry or message, so do that up front here
+        tags.mkString(",")
+
+    def withLogger(logger: Logger): LoggingContext = {
+      val l = new LoggingContext(logger, tags)
+      l.mdcUsed = mdcUsed
+      l
+    }
+  }
+
+}
+
+/**
+ * INTERNAL API
+ */
 @InternalApi private[akka] trait ActorContextImpl[T]
     extends TypedActorContext[T]
     with javadsl.ActorContext[T]
     with scaladsl.ActorContext[T] {
 
+  import ActorContextImpl.LoggingContext
+
   // lazily initialized
-  private var logger: OptionVal[Logger] = OptionVal.None
-  private var mdcUsed: Boolean = false
+  private var _logging: OptionVal[LoggingContext] = OptionVal.None
 
   private var messageAdapterRef: OptionVal[ActorRef[Any]] = OptionVal.None
   private var _messageAdapters: List[(Class[_], Any => T)] = Nil
@@ -80,40 +109,45 @@ import org.slf4j.LoggerFactory
   override def getSystem: akka.actor.typed.ActorSystem[Void] =
     system.asInstanceOf[ActorSystem[Void]]
 
-  override def log: Logger = {
-    val l = logger match {
+  private def loggingContext(): LoggingContext = {
+    // lazy init of logging setup
+    _logging match {
       case OptionVal.Some(l) => l
       case OptionVal.None =>
         val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
-        initLoggerWithName(logClass.getName)
+        val logger = LoggerFactory.getLogger(logClass.getName)
+        val l = new LoggingContext(logger, classicActorContext.props.deploy.tags)
+        _logging = OptionVal.Some(l)
+        l
     }
-    // avoid access to MDC ThreadLocal if not needed
-    mdcUsed = true
-    ActorMdc.setMdc(self.path.toString)
-    l
+  }
+
+  override def log: Logger = {
+    val logging = loggingContext()
+    // avoid access to MDC ThreadLocal if not needed, see details in LoggingContext
+    logging.mdcUsed = true
+    ActorMdc.setMdc(self.path.toString, logging.tagsString)
+    logging.logger
   }
 
   override def getLog: Logger = log
 
-  override def setLoggerName(name: String): Unit =
-    initLoggerWithName(name)
+  override def setLoggerName(name: String): Unit = {
+    _logging = OptionVal.Some(loggingContext().withLogger(LoggerFactory.getLogger(name)))
+  }
 
   override def setLoggerName(clazz: Class[_]): Unit =
     setLoggerName(clazz.getName)
 
   // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message
   override private[akka] def clearMdc(): Unit = {
-    // avoid access to MDC ThreadLocal if not needed
-    if (mdcUsed) {
-      ActorMdc.clearMdc()
-      mdcUsed = false
+    // avoid access to MDC ThreadLocal if not needed, see details in LoggingContext
+    _logging match {
+      case OptionVal.Some(ctx) if ctx.mdcUsed =>
+        ActorMdc.clearMdc()
+        ctx.mdcUsed = false
+      case _ =>
     }
-  }
-
-  private def initLoggerWithName(name: String): Logger = {
-    val l = LoggerFactory.getLogger(name)
-    logger = OptionVal.Some(l)
-    l
   }
 
   override def setReceiveTimeout(d: java.time.Duration, msg: T): Unit =

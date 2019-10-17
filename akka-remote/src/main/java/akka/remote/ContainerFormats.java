@@ -56,6 +56,8 @@ public final class ContainerFormats {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -63,6 +65,10 @@ public final class ContainerFormats {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static PatternType forNumber(int value) {
       switch (value) {
         case 0: return PARENT;
@@ -123,19 +129,23 @@ public final class ContainerFormats {
 
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return Whether the enclosedMessage field is set.
      */
     boolean hasEnclosedMessage();
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return The enclosedMessage.
      */
     akka.protobufv3.internal.ByteString getEnclosedMessage();
 
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     boolean hasSerializerId();
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     int getSerializerId();
 
@@ -165,10 +175,12 @@ public final class ContainerFormats {
 
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return Whether the messageManifest field is set.
      */
     boolean hasMessageManifest();
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return The messageManifest.
      */
     akka.protobufv3.internal.ByteString getMessageManifest();
 
@@ -178,6 +190,7 @@ public final class ContainerFormats {
      * </pre>
      *
      * <code>optional bool wildcardFanOut = 5;</code>
+     * @return Whether the wildcardFanOut field is set.
      */
     boolean hasWildcardFanOut();
     /**
@@ -186,6 +199,7 @@ public final class ContainerFormats {
      * </pre>
      *
      * <code>optional bool wildcardFanOut = 5;</code>
+     * @return The wildcardFanOut.
      */
     boolean getWildcardFanOut();
   }
@@ -307,12 +321,14 @@ public final class ContainerFormats {
     private akka.protobufv3.internal.ByteString enclosedMessage_;
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return Whether the enclosedMessage field is set.
      */
     public boolean hasEnclosedMessage() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return The enclosedMessage.
      */
     public akka.protobufv3.internal.ByteString getEnclosedMessage() {
       return enclosedMessage_;
@@ -322,12 +338,14 @@ public final class ContainerFormats {
     private int serializerId_;
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     public int getSerializerId() {
       return serializerId_;
@@ -372,12 +390,14 @@ public final class ContainerFormats {
     private akka.protobufv3.internal.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return Whether the messageManifest field is set.
      */
     public boolean hasMessageManifest() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return The messageManifest.
      */
     public akka.protobufv3.internal.ByteString getMessageManifest() {
       return messageManifest_;
@@ -391,6 +411,7 @@ public final class ContainerFormats {
      * </pre>
      *
      * <code>optional bool wildcardFanOut = 5;</code>
+     * @return Whether the wildcardFanOut field is set.
      */
     public boolean hasWildcardFanOut() {
       return ((bitField0_ & 0x00000008) != 0);
@@ -401,6 +422,7 @@ public final class ContainerFormats {
      * </pre>
      *
      * <code>optional bool wildcardFanOut = 5;</code>
+     * @return The wildcardFanOut.
      */
     public boolean getWildcardFanOut() {
       return wildcardFanOut_;
@@ -879,18 +901,22 @@ public final class ContainerFormats {
       private akka.protobufv3.internal.ByteString enclosedMessage_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return Whether the enclosedMessage field is set.
        */
       public boolean hasEnclosedMessage() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return The enclosedMessage.
        */
       public akka.protobufv3.internal.ByteString getEnclosedMessage() {
         return enclosedMessage_;
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @param value The enclosedMessage to set.
+       * @return This builder for chaining.
        */
       public Builder setEnclosedMessage(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -903,6 +929,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEnclosedMessage() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -914,18 +941,22 @@ public final class ContainerFormats {
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return Whether the serializerId field is set.
        */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return The serializerId.
        */
       public int getSerializerId() {
         return serializerId_;
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @param value The serializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000002;
@@ -935,6 +966,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -1186,18 +1218,22 @@ public final class ContainerFormats {
       private akka.protobufv3.internal.ByteString messageManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return Whether the messageManifest field is set.
        */
       public boolean hasMessageManifest() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return The messageManifest.
        */
       public akka.protobufv3.internal.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @param value The messageManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setMessageManifest(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -1210,6 +1246,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessageManifest() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -1225,6 +1262,7 @@ public final class ContainerFormats {
        * </pre>
        *
        * <code>optional bool wildcardFanOut = 5;</code>
+       * @return Whether the wildcardFanOut field is set.
        */
       public boolean hasWildcardFanOut() {
         return ((bitField0_ & 0x00000010) != 0);
@@ -1235,6 +1273,7 @@ public final class ContainerFormats {
        * </pre>
        *
        * <code>optional bool wildcardFanOut = 5;</code>
+       * @return The wildcardFanOut.
        */
       public boolean getWildcardFanOut() {
         return wildcardFanOut_;
@@ -1245,6 +1284,8 @@ public final class ContainerFormats {
        * </pre>
        *
        * <code>optional bool wildcardFanOut = 5;</code>
+       * @param value The wildcardFanOut to set.
+       * @return This builder for chaining.
        */
       public Builder setWildcardFanOut(boolean value) {
         bitField0_ |= 0x00000010;
@@ -1258,6 +1299,7 @@ public final class ContainerFormats {
        * </pre>
        *
        * <code>optional bool wildcardFanOut = 5;</code>
+       * @return This builder for chaining.
        */
       public Builder clearWildcardFanOut() {
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -1324,23 +1366,28 @@ public final class ContainerFormats {
 
     /**
      * <code>required .PatternType type = 1;</code>
+     * @return Whether the type field is set.
      */
     boolean hasType();
     /**
      * <code>required .PatternType type = 1;</code>
+     * @return The type.
      */
     akka.remote.ContainerFormats.PatternType getType();
 
     /**
      * <code>optional string matcher = 2;</code>
+     * @return Whether the matcher field is set.
      */
     boolean hasMatcher();
     /**
      * <code>optional string matcher = 2;</code>
+     * @return The matcher.
      */
     java.lang.String getMatcher();
     /**
      * <code>optional string matcher = 2;</code>
+     * @return The bytes for matcher.
      */
     akka.protobufv3.internal.ByteString
         getMatcherBytes();
@@ -1448,12 +1495,14 @@ public final class ContainerFormats {
     private int type_;
     /**
      * <code>required .PatternType type = 1;</code>
+     * @return Whether the type field is set.
      */
     public boolean hasType() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .PatternType type = 1;</code>
+     * @return The type.
      */
     public akka.remote.ContainerFormats.PatternType getType() {
       @SuppressWarnings("deprecation")
@@ -1465,12 +1514,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object matcher_;
     /**
      * <code>optional string matcher = 2;</code>
+     * @return Whether the matcher field is set.
      */
     public boolean hasMatcher() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional string matcher = 2;</code>
+     * @return The matcher.
      */
     public java.lang.String getMatcher() {
       java.lang.Object ref = matcher_;
@@ -1488,6 +1539,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>optional string matcher = 2;</code>
+     * @return The bytes for matcher.
      */
     public akka.protobufv3.internal.ByteString
         getMatcherBytes() {
@@ -1852,12 +1904,14 @@ public final class ContainerFormats {
       private int type_ = 0;
       /**
        * <code>required .PatternType type = 1;</code>
+       * @return Whether the type field is set.
        */
       public boolean hasType() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .PatternType type = 1;</code>
+       * @return The type.
        */
       public akka.remote.ContainerFormats.PatternType getType() {
         @SuppressWarnings("deprecation")
@@ -1866,6 +1920,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required .PatternType type = 1;</code>
+       * @param value The type to set.
+       * @return This builder for chaining.
        */
       public Builder setType(akka.remote.ContainerFormats.PatternType value) {
         if (value == null) {
@@ -1878,6 +1934,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required .PatternType type = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearType() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -1889,12 +1946,14 @@ public final class ContainerFormats {
       private java.lang.Object matcher_ = "";
       /**
        * <code>optional string matcher = 2;</code>
+       * @return Whether the matcher field is set.
        */
       public boolean hasMatcher() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional string matcher = 2;</code>
+       * @return The matcher.
        */
       public java.lang.String getMatcher() {
         java.lang.Object ref = matcher_;
@@ -1912,6 +1971,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional string matcher = 2;</code>
+       * @return The bytes for matcher.
        */
       public akka.protobufv3.internal.ByteString
           getMatcherBytes() {
@@ -1928,6 +1988,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional string matcher = 2;</code>
+       * @param value The matcher to set.
+       * @return This builder for chaining.
        */
       public Builder setMatcher(
           java.lang.String value) {
@@ -1941,6 +2003,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional string matcher = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMatcher() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -1950,6 +2013,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional string matcher = 2;</code>
+       * @param value The bytes for matcher to set.
+       * @return This builder for chaining.
        */
       public Builder setMatcherBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -2020,10 +2085,12 @@ public final class ContainerFormats {
 
     /**
      * <code>required .Payload messageId = 1;</code>
+     * @return Whether the messageId field is set.
      */
     boolean hasMessageId();
     /**
      * <code>required .Payload messageId = 1;</code>
+     * @return The messageId.
      */
     akka.remote.ContainerFormats.Payload getMessageId();
     /**
@@ -2127,12 +2194,14 @@ public final class ContainerFormats {
     private akka.remote.ContainerFormats.Payload messageId_;
     /**
      * <code>required .Payload messageId = 1;</code>
+     * @return Whether the messageId field is set.
      */
     public boolean hasMessageId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Payload messageId = 1;</code>
+     * @return The messageId.
      */
     public akka.remote.ContainerFormats.Payload getMessageId() {
       return messageId_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : messageId_;
@@ -2486,12 +2555,14 @@ public final class ContainerFormats {
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> messageIdBuilder_;
       /**
        * <code>required .Payload messageId = 1;</code>
+       * @return Whether the messageId field is set.
        */
       public boolean hasMessageId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Payload messageId = 1;</code>
+       * @return The messageId.
        */
       public akka.remote.ContainerFormats.Payload getMessageId() {
         if (messageIdBuilder_ == null) {
@@ -2657,10 +2728,12 @@ public final class ContainerFormats {
 
     /**
      * <code>required .Payload correlationId = 1;</code>
+     * @return Whether the correlationId field is set.
      */
     boolean hasCorrelationId();
     /**
      * <code>required .Payload correlationId = 1;</code>
+     * @return The correlationId.
      */
     akka.remote.ContainerFormats.Payload getCorrelationId();
     /**
@@ -2670,10 +2743,12 @@ public final class ContainerFormats {
 
     /**
      * <code>optional .ActorRef ref = 2;</code>
+     * @return Whether the ref field is set.
      */
     boolean hasRef();
     /**
      * <code>optional .ActorRef ref = 2;</code>
+     * @return The ref.
      */
     akka.remote.ContainerFormats.ActorRef getRef();
     /**
@@ -2790,12 +2865,14 @@ public final class ContainerFormats {
     private akka.remote.ContainerFormats.Payload correlationId_;
     /**
      * <code>required .Payload correlationId = 1;</code>
+     * @return Whether the correlationId field is set.
      */
     public boolean hasCorrelationId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Payload correlationId = 1;</code>
+     * @return The correlationId.
      */
     public akka.remote.ContainerFormats.Payload getCorrelationId() {
       return correlationId_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : correlationId_;
@@ -2811,12 +2888,14 @@ public final class ContainerFormats {
     private akka.remote.ContainerFormats.ActorRef ref_;
     /**
      * <code>optional .ActorRef ref = 2;</code>
+     * @return Whether the ref field is set.
      */
     public boolean hasRef() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .ActorRef ref = 2;</code>
+     * @return The ref.
      */
     public akka.remote.ContainerFormats.ActorRef getRef() {
       return ref_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : ref_;
@@ -3215,12 +3294,14 @@ public final class ContainerFormats {
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> correlationIdBuilder_;
       /**
        * <code>required .Payload correlationId = 1;</code>
+       * @return Whether the correlationId field is set.
        */
       public boolean hasCorrelationId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Payload correlationId = 1;</code>
+       * @return The correlationId.
        */
       public akka.remote.ContainerFormats.Payload getCorrelationId() {
         if (correlationIdBuilder_ == null) {
@@ -3333,12 +3414,14 @@ public final class ContainerFormats {
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> refBuilder_;
       /**
        * <code>optional .ActorRef ref = 2;</code>
+       * @return Whether the ref field is set.
        */
       public boolean hasRef() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .ActorRef ref = 2;</code>
+       * @return The ref.
        */
       public akka.remote.ContainerFormats.ActorRef getRef() {
         if (refBuilder_ == null) {
@@ -3504,14 +3587,17 @@ public final class ContainerFormats {
 
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     boolean hasPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     java.lang.String getPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     akka.protobufv3.internal.ByteString
         getPathBytes();
@@ -3606,12 +3692,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object path_;
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     public boolean hasPath() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
@@ -3629,6 +3717,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     public akka.protobufv3.internal.ByteString
         getPathBytes() {
@@ -3969,12 +4058,14 @@ public final class ContainerFormats {
       private java.lang.Object path_ = "";
       /**
        * <code>required string path = 1;</code>
+       * @return Whether the path field is set.
        */
       public boolean hasPath() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The path.
        */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
@@ -3992,6 +4083,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The bytes for path.
        */
       public akka.protobufv3.internal.ByteString
           getPathBytes() {
@@ -4008,6 +4100,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The path to set.
+       * @return This builder for chaining.
        */
       public Builder setPath(
           java.lang.String value) {
@@ -4021,6 +4115,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPath() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -4030,6 +4125,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The bytes for path to set.
+       * @return This builder for chaining.
        */
       public Builder setPathBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -4100,10 +4197,12 @@ public final class ContainerFormats {
 
     /**
      * <code>optional .Payload value = 1;</code>
+     * @return Whether the value field is set.
      */
     boolean hasValue();
     /**
      * <code>optional .Payload value = 1;</code>
+     * @return The value.
      */
     akka.remote.ContainerFormats.Payload getValue();
     /**
@@ -4207,12 +4306,14 @@ public final class ContainerFormats {
     private akka.remote.ContainerFormats.Payload value_;
     /**
      * <code>optional .Payload value = 1;</code>
+     * @return Whether the value field is set.
      */
     public boolean hasValue() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional .Payload value = 1;</code>
+     * @return The value.
      */
     public akka.remote.ContainerFormats.Payload getValue() {
       return value_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : value_;
@@ -4563,12 +4664,14 @@ public final class ContainerFormats {
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> valueBuilder_;
       /**
        * <code>optional .Payload value = 1;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional .Payload value = 1;</code>
+       * @return The value.
        */
       public akka.remote.ContainerFormats.Payload getValue() {
         if (valueBuilder_ == null) {
@@ -4734,28 +4837,34 @@ public final class ContainerFormats {
 
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return Whether the enclosedMessage field is set.
      */
     boolean hasEnclosedMessage();
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return The enclosedMessage.
      */
     akka.protobufv3.internal.ByteString getEnclosedMessage();
 
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     boolean hasSerializerId();
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     int getSerializerId();
 
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return Whether the messageManifest field is set.
      */
     boolean hasMessageManifest();
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return The messageManifest.
      */
     akka.protobufv3.internal.ByteString getMessageManifest();
   }
@@ -4859,12 +4968,14 @@ public final class ContainerFormats {
     private akka.protobufv3.internal.ByteString enclosedMessage_;
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return Whether the enclosedMessage field is set.
      */
     public boolean hasEnclosedMessage() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required bytes enclosedMessage = 1;</code>
+     * @return The enclosedMessage.
      */
     public akka.protobufv3.internal.ByteString getEnclosedMessage() {
       return enclosedMessage_;
@@ -4874,12 +4985,14 @@ public final class ContainerFormats {
     private int serializerId_;
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     public int getSerializerId() {
       return serializerId_;
@@ -4889,12 +5002,14 @@ public final class ContainerFormats {
     private akka.protobufv3.internal.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return Whether the messageManifest field is set.
      */
     public boolean hasMessageManifest() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes messageManifest = 4;</code>
+     * @return The messageManifest.
      */
     public akka.protobufv3.internal.ByteString getMessageManifest() {
       return messageManifest_;
@@ -5281,18 +5396,22 @@ public final class ContainerFormats {
       private akka.protobufv3.internal.ByteString enclosedMessage_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return Whether the enclosedMessage field is set.
        */
       public boolean hasEnclosedMessage() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return The enclosedMessage.
        */
       public akka.protobufv3.internal.ByteString getEnclosedMessage() {
         return enclosedMessage_;
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @param value The enclosedMessage to set.
+       * @return This builder for chaining.
        */
       public Builder setEnclosedMessage(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -5305,6 +5424,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required bytes enclosedMessage = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearEnclosedMessage() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -5316,18 +5436,22 @@ public final class ContainerFormats {
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return Whether the serializerId field is set.
        */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return The serializerId.
        */
       public int getSerializerId() {
         return serializerId_;
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @param value The serializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000002;
@@ -5337,6 +5461,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -5348,18 +5473,22 @@ public final class ContainerFormats {
       private akka.protobufv3.internal.ByteString messageManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return Whether the messageManifest field is set.
        */
       public boolean hasMessageManifest() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return The messageManifest.
        */
       public akka.protobufv3.internal.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @param value The messageManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setMessageManifest(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -5372,6 +5501,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional bytes messageManifest = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessageManifest() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -5438,10 +5568,12 @@ public final class ContainerFormats {
 
     /**
      * <code>required uint64 uid = 1;</code>
+     * @return Whether the uid field is set.
      */
     boolean hasUid();
     /**
      * <code>required uint64 uid = 1;</code>
+     * @return The uid.
      */
     long getUid();
   }
@@ -5533,12 +5665,14 @@ public final class ContainerFormats {
     private long uid_;
     /**
      * <code>required uint64 uid = 1;</code>
+     * @return Whether the uid field is set.
      */
     public boolean hasUid() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint64 uid = 1;</code>
+     * @return The uid.
      */
     public long getUid() {
       return uid_;
@@ -5869,18 +6003,22 @@ public final class ContainerFormats {
       private long uid_ ;
       /**
        * <code>required uint64 uid = 1;</code>
+       * @return Whether the uid field is set.
        */
       public boolean hasUid() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint64 uid = 1;</code>
+       * @return The uid.
        */
       public long getUid() {
         return uid_;
       }
       /**
        * <code>required uint64 uid = 1;</code>
+       * @param value The uid to set.
+       * @return This builder for chaining.
        */
       public Builder setUid(long value) {
         bitField0_ |= 0x00000001;
@@ -5890,6 +6028,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required uint64 uid = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUid() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -5956,38 +6095,46 @@ public final class ContainerFormats {
 
     /**
      * <code>required string className = 1;</code>
+     * @return Whether the className field is set.
      */
     boolean hasClassName();
     /**
      * <code>required string className = 1;</code>
+     * @return The className.
      */
     java.lang.String getClassName();
     /**
      * <code>required string className = 1;</code>
+     * @return The bytes for className.
      */
     akka.protobufv3.internal.ByteString
         getClassNameBytes();
 
     /**
      * <code>optional string message = 2;</code>
+     * @return Whether the message field is set.
      */
     boolean hasMessage();
     /**
      * <code>optional string message = 2;</code>
+     * @return The message.
      */
     java.lang.String getMessage();
     /**
      * <code>optional string message = 2;</code>
+     * @return The bytes for message.
      */
     akka.protobufv3.internal.ByteString
         getMessageBytes();
 
     /**
      * <code>optional .Payload cause = 3;</code>
+     * @return Whether the cause field is set.
      */
     boolean hasCause();
     /**
      * <code>optional .Payload cause = 3;</code>
+     * @return The cause.
      */
     akka.remote.ContainerFormats.Payload getCause();
     /**
@@ -6142,12 +6289,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object className_;
     /**
      * <code>required string className = 1;</code>
+     * @return Whether the className field is set.
      */
     public boolean hasClassName() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string className = 1;</code>
+     * @return The className.
      */
     public java.lang.String getClassName() {
       java.lang.Object ref = className_;
@@ -6165,6 +6314,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>required string className = 1;</code>
+     * @return The bytes for className.
      */
     public akka.protobufv3.internal.ByteString
         getClassNameBytes() {
@@ -6184,12 +6334,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object message_;
     /**
      * <code>optional string message = 2;</code>
+     * @return Whether the message field is set.
      */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional string message = 2;</code>
+     * @return The message.
      */
     public java.lang.String getMessage() {
       java.lang.Object ref = message_;
@@ -6207,6 +6359,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>optional string message = 2;</code>
+     * @return The bytes for message.
      */
     public akka.protobufv3.internal.ByteString
         getMessageBytes() {
@@ -6226,12 +6379,14 @@ public final class ContainerFormats {
     private akka.remote.ContainerFormats.Payload cause_;
     /**
      * <code>optional .Payload cause = 3;</code>
+     * @return Whether the cause field is set.
      */
     public boolean hasCause() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional .Payload cause = 3;</code>
+     * @return The cause.
      */
     public akka.remote.ContainerFormats.Payload getCause() {
       return cause_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : cause_;
@@ -6740,12 +6895,14 @@ public final class ContainerFormats {
       private java.lang.Object className_ = "";
       /**
        * <code>required string className = 1;</code>
+       * @return Whether the className field is set.
        */
       public boolean hasClassName() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string className = 1;</code>
+       * @return The className.
        */
       public java.lang.String getClassName() {
         java.lang.Object ref = className_;
@@ -6763,6 +6920,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string className = 1;</code>
+       * @return The bytes for className.
        */
       public akka.protobufv3.internal.ByteString
           getClassNameBytes() {
@@ -6779,6 +6937,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string className = 1;</code>
+       * @param value The className to set.
+       * @return This builder for chaining.
        */
       public Builder setClassName(
           java.lang.String value) {
@@ -6792,6 +6952,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string className = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearClassName() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -6801,6 +6962,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string className = 1;</code>
+       * @param value The bytes for className to set.
+       * @return This builder for chaining.
        */
       public Builder setClassNameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6816,12 +6979,14 @@ public final class ContainerFormats {
       private java.lang.Object message_ = "";
       /**
        * <code>optional string message = 2;</code>
+       * @return Whether the message field is set.
        */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional string message = 2;</code>
+       * @return The message.
        */
       public java.lang.String getMessage() {
         java.lang.Object ref = message_;
@@ -6839,6 +7004,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional string message = 2;</code>
+       * @return The bytes for message.
        */
       public akka.protobufv3.internal.ByteString
           getMessageBytes() {
@@ -6855,6 +7021,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional string message = 2;</code>
+       * @param value The message to set.
+       * @return This builder for chaining.
        */
       public Builder setMessage(
           java.lang.String value) {
@@ -6868,6 +7036,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional string message = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessage() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -6877,6 +7046,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>optional string message = 2;</code>
+       * @param value The bytes for message to set.
+       * @return This builder for chaining.
        */
       public Builder setMessageBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6894,12 +7065,14 @@ public final class ContainerFormats {
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> causeBuilder_;
       /**
        * <code>optional .Payload cause = 3;</code>
+       * @return Whether the cause field is set.
        */
       public boolean hasCause() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .Payload cause = 3;</code>
+       * @return The cause.
        */
       public akka.remote.ContainerFormats.Payload getCause() {
         if (causeBuilder_ == null) {
@@ -7305,42 +7478,51 @@ public final class ContainerFormats {
 
     /**
      * <code>required string message = 1;</code>
+     * @return Whether the message field is set.
      */
     boolean hasMessage();
     /**
      * <code>required string message = 1;</code>
+     * @return The message.
      */
     java.lang.String getMessage();
     /**
      * <code>required string message = 1;</code>
+     * @return The bytes for message.
      */
     akka.protobufv3.internal.ByteString
         getMessageBytes();
 
     /**
      * <code>required string originalMessage = 2;</code>
+     * @return Whether the originalMessage field is set.
      */
     boolean hasOriginalMessage();
     /**
      * <code>required string originalMessage = 2;</code>
+     * @return The originalMessage.
      */
     java.lang.String getOriginalMessage();
     /**
      * <code>required string originalMessage = 2;</code>
+     * @return The bytes for originalMessage.
      */
     akka.protobufv3.internal.ByteString
         getOriginalMessageBytes();
 
     /**
      * <code>required string originalClassName = 3;</code>
+     * @return Whether the originalClassName field is set.
      */
     boolean hasOriginalClassName();
     /**
      * <code>required string originalClassName = 3;</code>
+     * @return The originalClassName.
      */
     java.lang.String getOriginalClassName();
     /**
      * <code>required string originalClassName = 3;</code>
+     * @return The bytes for originalClassName.
      */
     akka.protobufv3.internal.ByteString
         getOriginalClassNameBytes();
@@ -7449,12 +7631,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object message_;
     /**
      * <code>required string message = 1;</code>
+     * @return Whether the message field is set.
      */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string message = 1;</code>
+     * @return The message.
      */
     public java.lang.String getMessage() {
       java.lang.Object ref = message_;
@@ -7472,6 +7656,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>required string message = 1;</code>
+     * @return The bytes for message.
      */
     public akka.protobufv3.internal.ByteString
         getMessageBytes() {
@@ -7491,12 +7676,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object originalMessage_;
     /**
      * <code>required string originalMessage = 2;</code>
+     * @return Whether the originalMessage field is set.
      */
     public boolean hasOriginalMessage() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string originalMessage = 2;</code>
+     * @return The originalMessage.
      */
     public java.lang.String getOriginalMessage() {
       java.lang.Object ref = originalMessage_;
@@ -7514,6 +7701,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>required string originalMessage = 2;</code>
+     * @return The bytes for originalMessage.
      */
     public akka.protobufv3.internal.ByteString
         getOriginalMessageBytes() {
@@ -7533,12 +7721,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object originalClassName_;
     /**
      * <code>required string originalClassName = 3;</code>
+     * @return Whether the originalClassName field is set.
      */
     public boolean hasOriginalClassName() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required string originalClassName = 3;</code>
+     * @return The originalClassName.
      */
     public java.lang.String getOriginalClassName() {
       java.lang.Object ref = originalClassName_;
@@ -7556,6 +7746,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>required string originalClassName = 3;</code>
+     * @return The bytes for originalClassName.
      */
     public akka.protobufv3.internal.ByteString
         getOriginalClassNameBytes() {
@@ -7962,12 +8153,14 @@ public final class ContainerFormats {
       private java.lang.Object message_ = "";
       /**
        * <code>required string message = 1;</code>
+       * @return Whether the message field is set.
        */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string message = 1;</code>
+       * @return The message.
        */
       public java.lang.String getMessage() {
         java.lang.Object ref = message_;
@@ -7985,6 +8178,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string message = 1;</code>
+       * @return The bytes for message.
        */
       public akka.protobufv3.internal.ByteString
           getMessageBytes() {
@@ -8001,6 +8195,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string message = 1;</code>
+       * @param value The message to set.
+       * @return This builder for chaining.
        */
       public Builder setMessage(
           java.lang.String value) {
@@ -8014,6 +8210,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string message = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessage() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -8023,6 +8220,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string message = 1;</code>
+       * @param value The bytes for message to set.
+       * @return This builder for chaining.
        */
       public Builder setMessageBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8038,12 +8237,14 @@ public final class ContainerFormats {
       private java.lang.Object originalMessage_ = "";
       /**
        * <code>required string originalMessage = 2;</code>
+       * @return Whether the originalMessage field is set.
        */
       public boolean hasOriginalMessage() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string originalMessage = 2;</code>
+       * @return The originalMessage.
        */
       public java.lang.String getOriginalMessage() {
         java.lang.Object ref = originalMessage_;
@@ -8061,6 +8262,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string originalMessage = 2;</code>
+       * @return The bytes for originalMessage.
        */
       public akka.protobufv3.internal.ByteString
           getOriginalMessageBytes() {
@@ -8077,6 +8279,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string originalMessage = 2;</code>
+       * @param value The originalMessage to set.
+       * @return This builder for chaining.
        */
       public Builder setOriginalMessage(
           java.lang.String value) {
@@ -8090,6 +8294,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string originalMessage = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearOriginalMessage() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -8099,6 +8304,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string originalMessage = 2;</code>
+       * @param value The bytes for originalMessage to set.
+       * @return This builder for chaining.
        */
       public Builder setOriginalMessageBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8114,12 +8321,14 @@ public final class ContainerFormats {
       private java.lang.Object originalClassName_ = "";
       /**
        * <code>required string originalClassName = 3;</code>
+       * @return Whether the originalClassName field is set.
        */
       public boolean hasOriginalClassName() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required string originalClassName = 3;</code>
+       * @return The originalClassName.
        */
       public java.lang.String getOriginalClassName() {
         java.lang.Object ref = originalClassName_;
@@ -8137,6 +8346,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string originalClassName = 3;</code>
+       * @return The bytes for originalClassName.
        */
       public akka.protobufv3.internal.ByteString
           getOriginalClassNameBytes() {
@@ -8153,6 +8363,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string originalClassName = 3;</code>
+       * @param value The originalClassName to set.
+       * @return This builder for chaining.
        */
       public Builder setOriginalClassName(
           java.lang.String value) {
@@ -8166,6 +8378,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string originalClassName = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearOriginalClassName() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -8175,6 +8388,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string originalClassName = 3;</code>
+       * @param value The bytes for originalClassName to set.
+       * @return This builder for chaining.
        */
       public Builder setOriginalClassNameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8245,10 +8460,12 @@ public final class ContainerFormats {
 
     /**
      * <code>optional .ActorRef actor = 1;</code>
+     * @return Whether the actor field is set.
      */
     boolean hasActor();
     /**
      * <code>optional .ActorRef actor = 1;</code>
+     * @return The actor.
      */
     akka.remote.ContainerFormats.ActorRef getActor();
     /**
@@ -8258,24 +8475,29 @@ public final class ContainerFormats {
 
     /**
      * <code>required string message = 2;</code>
+     * @return Whether the message field is set.
      */
     boolean hasMessage();
     /**
      * <code>required string message = 2;</code>
+     * @return The message.
      */
     java.lang.String getMessage();
     /**
      * <code>required string message = 2;</code>
+     * @return The bytes for message.
      */
     akka.protobufv3.internal.ByteString
         getMessageBytes();
 
     /**
      * <code>required .Payload cause = 3;</code>
+     * @return Whether the cause field is set.
      */
     boolean hasCause();
     /**
      * <code>required .Payload cause = 3;</code>
+     * @return The cause.
      */
     akka.remote.ContainerFormats.Payload getCause();
     /**
@@ -8399,12 +8621,14 @@ public final class ContainerFormats {
     private akka.remote.ContainerFormats.ActorRef actor_;
     /**
      * <code>optional .ActorRef actor = 1;</code>
+     * @return Whether the actor field is set.
      */
     public boolean hasActor() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional .ActorRef actor = 1;</code>
+     * @return The actor.
      */
     public akka.remote.ContainerFormats.ActorRef getActor() {
       return actor_ == null ? akka.remote.ContainerFormats.ActorRef.getDefaultInstance() : actor_;
@@ -8420,12 +8644,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object message_;
     /**
      * <code>required string message = 2;</code>
+     * @return Whether the message field is set.
      */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string message = 2;</code>
+     * @return The message.
      */
     public java.lang.String getMessage() {
       java.lang.Object ref = message_;
@@ -8443,6 +8669,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>required string message = 2;</code>
+     * @return The bytes for message.
      */
     public akka.protobufv3.internal.ByteString
         getMessageBytes() {
@@ -8462,12 +8689,14 @@ public final class ContainerFormats {
     private akka.remote.ContainerFormats.Payload cause_;
     /**
      * <code>required .Payload cause = 3;</code>
+     * @return Whether the cause field is set.
      */
     public boolean hasCause() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required .Payload cause = 3;</code>
+     * @return The cause.
      */
     public akka.remote.ContainerFormats.Payload getCause() {
       return cause_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : cause_;
@@ -8899,12 +9128,14 @@ public final class ContainerFormats {
           akka.remote.ContainerFormats.ActorRef, akka.remote.ContainerFormats.ActorRef.Builder, akka.remote.ContainerFormats.ActorRefOrBuilder> actorBuilder_;
       /**
        * <code>optional .ActorRef actor = 1;</code>
+       * @return Whether the actor field is set.
        */
       public boolean hasActor() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional .ActorRef actor = 1;</code>
+       * @return The actor.
        */
       public akka.remote.ContainerFormats.ActorRef getActor() {
         if (actorBuilder_ == null) {
@@ -9015,12 +9246,14 @@ public final class ContainerFormats {
       private java.lang.Object message_ = "";
       /**
        * <code>required string message = 2;</code>
+       * @return Whether the message field is set.
        */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string message = 2;</code>
+       * @return The message.
        */
       public java.lang.String getMessage() {
         java.lang.Object ref = message_;
@@ -9038,6 +9271,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string message = 2;</code>
+       * @return The bytes for message.
        */
       public akka.protobufv3.internal.ByteString
           getMessageBytes() {
@@ -9054,6 +9288,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string message = 2;</code>
+       * @param value The message to set.
+       * @return This builder for chaining.
        */
       public Builder setMessage(
           java.lang.String value) {
@@ -9067,6 +9303,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string message = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessage() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -9076,6 +9313,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string message = 2;</code>
+       * @param value The bytes for message to set.
+       * @return This builder for chaining.
        */
       public Builder setMessageBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -9093,12 +9332,14 @@ public final class ContainerFormats {
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> causeBuilder_;
       /**
        * <code>required .Payload cause = 3;</code>
+       * @return Whether the cause field is set.
        */
       public boolean hasCause() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required .Payload cause = 3;</code>
+       * @return The cause.
        */
       public akka.remote.ContainerFormats.Payload getCause() {
         if (causeBuilder_ == null) {
@@ -9264,52 +9505,63 @@ public final class ContainerFormats {
 
     /**
      * <code>required string className = 1;</code>
+     * @return Whether the className field is set.
      */
     boolean hasClassName();
     /**
      * <code>required string className = 1;</code>
+     * @return The className.
      */
     java.lang.String getClassName();
     /**
      * <code>required string className = 1;</code>
+     * @return The bytes for className.
      */
     akka.protobufv3.internal.ByteString
         getClassNameBytes();
 
     /**
      * <code>required string methodName = 2;</code>
+     * @return Whether the methodName field is set.
      */
     boolean hasMethodName();
     /**
      * <code>required string methodName = 2;</code>
+     * @return The methodName.
      */
     java.lang.String getMethodName();
     /**
      * <code>required string methodName = 2;</code>
+     * @return The bytes for methodName.
      */
     akka.protobufv3.internal.ByteString
         getMethodNameBytes();
 
     /**
      * <code>required string fileName = 3;</code>
+     * @return Whether the fileName field is set.
      */
     boolean hasFileName();
     /**
      * <code>required string fileName = 3;</code>
+     * @return The fileName.
      */
     java.lang.String getFileName();
     /**
      * <code>required string fileName = 3;</code>
+     * @return The bytes for fileName.
      */
     akka.protobufv3.internal.ByteString
         getFileNameBytes();
 
     /**
      * <code>required int32 lineNumber = 4;</code>
+     * @return Whether the lineNumber field is set.
      */
     boolean hasLineNumber();
     /**
      * <code>required int32 lineNumber = 4;</code>
+     * @return The lineNumber.
      */
     int getLineNumber();
   }
@@ -9422,12 +9674,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object className_;
     /**
      * <code>required string className = 1;</code>
+     * @return Whether the className field is set.
      */
     public boolean hasClassName() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string className = 1;</code>
+     * @return The className.
      */
     public java.lang.String getClassName() {
       java.lang.Object ref = className_;
@@ -9445,6 +9699,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>required string className = 1;</code>
+     * @return The bytes for className.
      */
     public akka.protobufv3.internal.ByteString
         getClassNameBytes() {
@@ -9464,12 +9719,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object methodName_;
     /**
      * <code>required string methodName = 2;</code>
+     * @return Whether the methodName field is set.
      */
     public boolean hasMethodName() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string methodName = 2;</code>
+     * @return The methodName.
      */
     public java.lang.String getMethodName() {
       java.lang.Object ref = methodName_;
@@ -9487,6 +9744,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>required string methodName = 2;</code>
+     * @return The bytes for methodName.
      */
     public akka.protobufv3.internal.ByteString
         getMethodNameBytes() {
@@ -9506,12 +9764,14 @@ public final class ContainerFormats {
     private volatile java.lang.Object fileName_;
     /**
      * <code>required string fileName = 3;</code>
+     * @return Whether the fileName field is set.
      */
     public boolean hasFileName() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required string fileName = 3;</code>
+     * @return The fileName.
      */
     public java.lang.String getFileName() {
       java.lang.Object ref = fileName_;
@@ -9529,6 +9789,7 @@ public final class ContainerFormats {
     }
     /**
      * <code>required string fileName = 3;</code>
+     * @return The bytes for fileName.
      */
     public akka.protobufv3.internal.ByteString
         getFileNameBytes() {
@@ -9548,12 +9809,14 @@ public final class ContainerFormats {
     private int lineNumber_;
     /**
      * <code>required int32 lineNumber = 4;</code>
+     * @return Whether the lineNumber field is set.
      */
     public boolean hasLineNumber() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required int32 lineNumber = 4;</code>
+     * @return The lineNumber.
      */
     public int getLineNumber() {
       return lineNumber_;
@@ -9982,12 +10245,14 @@ public final class ContainerFormats {
       private java.lang.Object className_ = "";
       /**
        * <code>required string className = 1;</code>
+       * @return Whether the className field is set.
        */
       public boolean hasClassName() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string className = 1;</code>
+       * @return The className.
        */
       public java.lang.String getClassName() {
         java.lang.Object ref = className_;
@@ -10005,6 +10270,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string className = 1;</code>
+       * @return The bytes for className.
        */
       public akka.protobufv3.internal.ByteString
           getClassNameBytes() {
@@ -10021,6 +10287,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string className = 1;</code>
+       * @param value The className to set.
+       * @return This builder for chaining.
        */
       public Builder setClassName(
           java.lang.String value) {
@@ -10034,6 +10302,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string className = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearClassName() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -10043,6 +10312,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string className = 1;</code>
+       * @param value The bytes for className to set.
+       * @return This builder for chaining.
        */
       public Builder setClassNameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -10058,12 +10329,14 @@ public final class ContainerFormats {
       private java.lang.Object methodName_ = "";
       /**
        * <code>required string methodName = 2;</code>
+       * @return Whether the methodName field is set.
        */
       public boolean hasMethodName() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string methodName = 2;</code>
+       * @return The methodName.
        */
       public java.lang.String getMethodName() {
         java.lang.Object ref = methodName_;
@@ -10081,6 +10354,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string methodName = 2;</code>
+       * @return The bytes for methodName.
        */
       public akka.protobufv3.internal.ByteString
           getMethodNameBytes() {
@@ -10097,6 +10371,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string methodName = 2;</code>
+       * @param value The methodName to set.
+       * @return This builder for chaining.
        */
       public Builder setMethodName(
           java.lang.String value) {
@@ -10110,6 +10386,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string methodName = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMethodName() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -10119,6 +10396,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string methodName = 2;</code>
+       * @param value The bytes for methodName to set.
+       * @return This builder for chaining.
        */
       public Builder setMethodNameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -10134,12 +10413,14 @@ public final class ContainerFormats {
       private java.lang.Object fileName_ = "";
       /**
        * <code>required string fileName = 3;</code>
+       * @return Whether the fileName field is set.
        */
       public boolean hasFileName() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required string fileName = 3;</code>
+       * @return The fileName.
        */
       public java.lang.String getFileName() {
         java.lang.Object ref = fileName_;
@@ -10157,6 +10438,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string fileName = 3;</code>
+       * @return The bytes for fileName.
        */
       public akka.protobufv3.internal.ByteString
           getFileNameBytes() {
@@ -10173,6 +10455,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string fileName = 3;</code>
+       * @param value The fileName to set.
+       * @return This builder for chaining.
        */
       public Builder setFileName(
           java.lang.String value) {
@@ -10186,6 +10470,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string fileName = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearFileName() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -10195,6 +10480,8 @@ public final class ContainerFormats {
       }
       /**
        * <code>required string fileName = 3;</code>
+       * @param value The bytes for fileName to set.
+       * @return This builder for chaining.
        */
       public Builder setFileNameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -10210,18 +10497,22 @@ public final class ContainerFormats {
       private int lineNumber_ ;
       /**
        * <code>required int32 lineNumber = 4;</code>
+       * @return Whether the lineNumber field is set.
        */
       public boolean hasLineNumber() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required int32 lineNumber = 4;</code>
+       * @return The lineNumber.
        */
       public int getLineNumber() {
         return lineNumber_;
       }
       /**
        * <code>required int32 lineNumber = 4;</code>
+       * @param value The lineNumber to set.
+       * @return This builder for chaining.
        */
       public Builder setLineNumber(int value) {
         bitField0_ |= 0x00000008;
@@ -10231,6 +10522,7 @@ public final class ContainerFormats {
       }
       /**
        * <code>required int32 lineNumber = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearLineNumber() {
         bitField0_ = (bitField0_ & ~0x00000008);

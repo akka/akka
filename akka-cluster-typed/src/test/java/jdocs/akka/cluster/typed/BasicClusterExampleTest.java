@@ -24,6 +24,7 @@ import com.typesafe.config.ConfigFactory;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 // FIXME use awaitAssert to await cluster forming like in BasicClusterExampleSpec
 public class BasicClusterExampleTest { // extends JUnitSuite {
@@ -145,5 +146,20 @@ public class BasicClusterExampleTest { // extends JUnitSuite {
       context.spawn(Frontend.create(), "front");
     }
     // #hasRole
+  }
+
+  void illustrateDcAccess() {
+    ActorSystem<Void> system = null;
+
+    // #dcAccess
+    final Cluster cluster = Cluster.get(system);
+    // this node's data center
+    String dc = cluster.selfMember().dataCenter();
+    // all known data centers
+    Set<String> allDc = cluster.state().getAllDataCenters();
+    // a specific member's data center
+    Member aMember = cluster.state().getMembers().iterator().next();
+    String aDc = aMember.dataCenter();
+    // #dcAccess
   }
 }

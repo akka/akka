@@ -14,6 +14,8 @@ import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.dispatch.Dispatchers
+import akka.event.ActorWithLogClass
+import akka.event.Logging
 import akka.remote.FailureDetectorRegistry
 import akka.remote.RemoteSettings
 import akka.remote.RemoteWatcher
@@ -65,6 +67,8 @@ private[cluster] class ClusterRemoteWatcher(
   private val arteryEnabled = RARP(context.system).provider.remoteSettings.Artery.Enabled
   val cluster = Cluster(context.system)
   import cluster.selfAddress
+
+  override val log = Logging(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterCore))
 
   private var pendingDelayedQuarantine: Set[UniqueAddress] = Set.empty
 
