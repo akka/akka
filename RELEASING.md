@@ -39,6 +39,8 @@ a snapshot to https://repo.akka.io/snapshots from any branch.
 
 ## Release steps
 
+* Make sure akka/akka is the remote named `origin`, if not, make a clean clone to get 
+  the release scmInfo point to the right urls
 * Check the instructions for `project/scripts/release`
 * Do a `project/scripts/release <version>` dry run
 * If all goes well, `project/scripts/release --real-run <version>`
