@@ -47,7 +47,7 @@ object FaultToleranceDocSpec {
 
         // here we don't handle Terminated at all which means that
         // when the child fails or stops gracefully this actor will
-        // fail with a DeathWatchException
+        // fail with a DeathPactException
         Behaviors.receiveMessage { message =>
           child ! message
           Behaviors.same
@@ -65,7 +65,7 @@ object FaultToleranceDocSpec {
           context.watch(middleManagement)
 
           // here we don't handle Terminated at all which means that
-          // when middle management fails with a DeathWatchException
+          // when middle management fails with a DeathPactException
           // this actor will also fail
           Behaviors.receiveMessage[Command] { message =>
             middleManagement ! message
