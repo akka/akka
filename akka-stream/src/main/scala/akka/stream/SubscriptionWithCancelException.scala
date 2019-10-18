@@ -14,7 +14,10 @@ import scala.util.control.NoStackTrace
  *
  * Subscribers can check for this trait and use its `cancel(cause)` method instead of the regular
  * cancel method to pass a cancellation cause.
+ *
+ * Not for user extension.
  */
+@DoNotInherit
 trait SubscriptionWithCancelException extends Subscription {
   final override def cancel() = cancel(SubscriptionWithCancelException.NoMoreElementsNeeded)
   def cancel(cause: Throwable): Unit
