@@ -16,6 +16,7 @@ project.description: Akka Cluster concepts, node membership service, CRDT Distri
 * [cluster-sharding](cluster-sharding.md)
 * [cluster-sharding-specification](cluster-sharding-concepts.md)
 * [cluster-dc](cluster-dc.md)
+* [distributed-pub-sub](distributed-pub-sub.md)
 * [serialization](../serialization.md)
 * [serialization-jackson](../serialization-jackson.md)
 * [multi-jvm-testing](../multi-jvm-testing.md)
