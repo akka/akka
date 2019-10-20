@@ -23,4 +23,4 @@ addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.22")
 
 // used for @unidoc directive
-libraryDependencies += "io.github.classgraph" % "classgraph" % "4.8.47"
+libraryDependencies += "io.github.classgraph" % "classgraph" % "4.8.52"
