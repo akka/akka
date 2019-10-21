@@ -5,22 +5,82 @@
 package akka.stream
 
 import akka.Done
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
 import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
 import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream.testkit.{ StreamSpec, TestPublisher }
+import akka.testkit.TestKit
 import akka.testkit.{ ImplicitSender, TestProbe }
 import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Try }
+
+object IndirectMaterializerCreation extends ExtensionId[IndirectMaterializerCreation] with ExtensionIdProvider {
+  def createExtension(system: ExtendedActorSystem): IndirectMaterializerCreation =
+    new IndirectMaterializerCreation(system)
+
+  def lookup(): ExtensionId[IndirectMaterializerCreation] = this
+}
+
+@silent
+class IndirectMaterializerCreation(ex: ExtendedActorSystem) extends Extension {
+  // extension instantiation blocked on materializer (which has Await.result inside)
+  implicit val mat = ActorMaterializer()(ex)
+
+  def futureThing(n: Int): Future[Int] = {
+    Source.single(n).runWith(Sink.head)
+  }
+
+}
 
 @silent
 class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
 
   "ActorMaterializer" must {
+
+    "not suffer from deadlock" in {
+      val n = 4
+      implicit val deadlockSystem = ActorSystem(
+        "ActorMaterializerSpec-deadlock",
+        ConfigFactory.parseString(s"""
+          akka.actor.default-dispatcher {
+            executor = "fork-join-executor"
+            fork-join-executor {
+              parallelism-min = $n
+              parallelism-factor = 0.5
+              parallelism-max = $n
+            }
+          }
+          # undo stream testkit specific dispatcher and run "normally"
+          akka.actor.default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
+          akka.stream.materializer.dispatcher = "akka.actor.default-dispatcher"
+          """))
+      try {
+        import deadlockSystem.dispatcher
+
+        // tricky part here is that the concurrent access is to the extension
+        // so the threads are indirectly blocked and not waiting for the Await.result(ask) directly.
+        val result = Future.sequence((1 to (n + 1)).map(n =>
+          Future {
+            IndirectMaterializerCreation(deadlockSystem).mat
+          }))
+
+        // with starvation these fail
+        result.futureValue.size should ===(n + 1)
+
+      } finally {
+        TestKit.shutdownActorSystem(deadlockSystem)
+      }
+    }
 
     "report shutdown status properly" in {
       val m = ActorMaterializer.create(system)
