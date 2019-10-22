@@ -24,7 +24,7 @@ object ShardRegionSpec {
 
   val config =
     ConfigFactory.parseString(tempConfig).withFallback(ConfigFactory.parseString(s"""
-        akka.loglevel = DEBUG
+        akka.loglevel = INFO
         akka.actor.provider = "cluster"
         akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
