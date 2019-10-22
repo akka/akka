@@ -43,14 +43,14 @@ not using classic remoting do not have to have Netty on the classpath:
 
 ## Configuration
 
+We recommend using @ref:[Akka Cluster](cluster-usage.md) over using remoting directly. Therefore
+`akka.actor.provider = cluster` should be configured.
+
 To enable classic remoting in your Akka project you should, at a minimum, add the following changes
 to your `application.conf` file:
 
 ```
 akka {
-  actor {
-    provider = remote
-  }
   remote.artery.enabled = false
   remote.classic {
     enabled-transports = ["akka.remote.classic.netty.tcp"]
@@ -62,9 +62,8 @@ akka {
 }
 ```
 
-As you can see in the example above there are five things you need to add to get started:
+As you can see in the example above there are four things you need to add to get started:
 
- * Change provider from `local` to `remote`. Note: we recommend using @ref:[Akka Cluster](cluster-usage.md) over using remoting directly.
  * Disable artery remoting. Artery is the default remoting implementation since `2.6.0`
  * Add host name - the machine you want to run the actor system on; this host
 name is exactly what is passed to remote systems in order to identify this
@@ -72,7 +71,7 @@ system and consequently used for connecting back to this system if need be,
 hence set it to a reachable IP address or resolvable name in case you want to
 communicate across the network.
  * Add port number - the port the actor system should listen on, set to 0 to have it chosen automatically
-
+  
 @@@ note
 
 The port number needs to be unique for each actor system on the same machine even if the actor
