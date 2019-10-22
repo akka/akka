@@ -952,7 +952,7 @@ private[akka] class ShardRegion(
         case (msg, snd) =>
           msg match {
             case msg @ RestartShard(_) if receiver != self =>
-              log.debug("Dropping buffered message {}, these are only processed by a local ShardRegion.", msg, receiver)
+              log.debug("Dropping buffered message {}, these are only processed by a local ShardRegion.", msg)
             case _ =>
               receiver.tell(msg, snd)
           }

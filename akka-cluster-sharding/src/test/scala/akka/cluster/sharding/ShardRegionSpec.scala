@@ -156,6 +156,7 @@ class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) {
       region2 ! PoisonPill
       awaitAssert(region2.isTerminated)
 
+      // Difficult to raise the RestartShard in conjunction with the rebalance for mode=ddata
       awaitAssert(awaitRebalance(region1, 2, p1))
 
       val rebalancedOnRegion1 = statesFor(region1, p1, expect = numberOfShards)
