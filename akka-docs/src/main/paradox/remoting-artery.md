@@ -48,6 +48,7 @@ to your `application.conf` file:
 ```
 akka {
   actor {
+    # provider=remote is possible, but prefer cluster
     provider = cluster 
   }
   remote {
@@ -62,7 +63,7 @@ akka {
 
 As you can see in the example above there are four things you need to add to get started:
 
- * Change provider from `local` to `cluster`
+Change provider from `local`. We recommend using @ref:[Akka Cluster](cluster-usage.md) over using remoting directly.
  * Enable Artery to use it as the remoting implementation
  * Add host name - the machine you want to run the actor system on; this host
 name is exactly what is passed to remote systems in order to identify this
