@@ -116,6 +116,9 @@ And:
 Scala
 :   @@snip [DeviceGroupQuery.scala](/akka-docs/src/test/scala/typed/tutorial_5/Device.scala) { #respond-reply }
 
+Java
+:   @@snip [DeviceGroupQuery.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/Device.java) { #respond-reply }
+
 
 After processing each message we delegate to a method `respondWhenAllCollected`, which we will discuss soon.
 

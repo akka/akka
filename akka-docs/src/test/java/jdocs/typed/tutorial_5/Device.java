@@ -14,7 +14,6 @@ import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 
-// #respond-declare
 public class Device extends AbstractBehavior<Device.Command> {
 
   public interface Command {}
@@ -49,6 +48,7 @@ public class Device extends AbstractBehavior<Device.Command> {
     }
   }
 
+  // #respond-declare
   public static final class RespondTemperature {
     final long requestId;
     final String deviceId;
@@ -60,6 +60,7 @@ public class Device extends AbstractBehavior<Device.Command> {
       this.value = value;
     }
   }
+  // #respond-declare
 
   static enum Passivate implements Command {
     INSTANCE
@@ -99,14 +100,15 @@ public class Device extends AbstractBehavior<Device.Command> {
     return this;
   }
 
+  // #respond-reply
   private Behavior<Command> onReadTemperature(ReadTemperature r) {
     r.replyTo.tell(new RespondTemperature(r.requestId, deviceId, lastTemperatureReading));
     return this;
   }
+  // #respond-reply
 
   private Behavior<Command> onPostStop() {
     getContext().getLog().info("Device actor {}-{} stopped", groupId, deviceId);
     return Behaviors.stopped();
   }
 }
-// #respond-declare
