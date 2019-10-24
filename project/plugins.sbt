@@ -1,3 +1,8 @@
+libraryDependencies += Defaults.sbtPluginExtra(
+  "com.eed3si9n" % "sbt-assembly" % "0.14.10",
+  (sbtBinaryVersion in pluginCrossBuild).value,
+  (scalaBinaryVersion in pluginCrossBuild).value)
+
 // these comment markers are for including code into the docs
 //#sbt-multi-jvm
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
