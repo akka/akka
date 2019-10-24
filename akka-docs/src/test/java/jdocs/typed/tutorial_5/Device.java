@@ -54,12 +54,10 @@ public class Device extends AbstractBehavior<Device.Command> {
     final String deviceId;
     final Optional<Double> value;
 
-
     public RespondTemperature(long requestId, String deviceId, Optional<Double> value) {
       this.requestId = requestId;
       this.deviceId = deviceId;
       this.value = value;
-
     }
   }
 
@@ -105,7 +103,6 @@ public class Device extends AbstractBehavior<Device.Command> {
     r.replyTo.tell(new RespondTemperature(r.requestId, deviceId, lastTemperatureReading));
     return this;
   }
-
 
   private Behavior<Command> onPostStop() {
     getContext().getLog().info("Device actor {}-{} stopped", groupId, deviceId);
