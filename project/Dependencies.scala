@@ -19,7 +19,7 @@ object Dependencies {
   // check agrona version when updating this
   val aeronVersion = "1.22.1"
   // needs to be inline with the aeron version
-  val agronaVersion = "1.0.8"
+  val agronaVersion = "1.0.9"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.10.0"
   val jacksonDatabindVersion = "2.10.0"
