@@ -98,7 +98,7 @@ private[akka] final class GroupRouterImpl[T](
       this
     case msg: T @unchecked =>
       import akka.actor.typed.scaladsl.adapter._
-      if (!routeesEmpty) routingLogic.selectRoutee() ! msg
+      if (!routeesEmpty) routingLogic.selectRoutee(msg) ! msg
       else
         context.system.eventStream ! EventStream.Publish(
           Dropped(msg, s"No routees in group router for [$serviceKey]", context.self.toClassic))

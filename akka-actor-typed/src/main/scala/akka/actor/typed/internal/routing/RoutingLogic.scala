@@ -7,7 +7,9 @@ package akka.actor.typed.internal.routing
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic.ConsistentHashMapping
 import akka.annotation.InternalApi
+import akka.routing.ConsistentHash
 
 /**
  * Kept in the behavior, not shared between instances, meant to be stateful.
@@ -17,7 +19,7 @@ import akka.annotation.InternalApi
 @InternalApi
 sealed private[akka] trait RoutingLogic[T] {
 
-  def selectRoutee(): ActorRef[T]
+  def selectRoutee(msg: T): ActorRef[T]
 
   /**
    * Invoked an initial time before `selectRoutee` is ever called and then every time the set of available
@@ -43,7 +45,7 @@ private[akka] object RoutingLogics {
 
     private var nextIdx = 0
 
-    def selectRoutee(): ActorRef[T] = {
+    def selectRoutee(msg: T): ActorRef[T] = {
       if (nextIdx >= currentRoutees.length) nextIdx = 0
       val selected = currentRoutees(nextIdx)
       nextIdx += 1
@@ -76,14 +78,51 @@ private[akka] object RoutingLogics {
 
     private var currentRoutees: Array[ActorRef[T]] = _
 
-    override def selectRoutee(): ActorRef[T] = {
+    override def selectRoutee(msg: T): ActorRef[T] = {
       val selectedIdx = ThreadLocalRandom.current().nextInt(currentRoutees.length)
       currentRoutees(selectedIdx)
     }
+
     override def routeesUpdated(newRoutees: Set[ActorRef[T]]): Unit = {
       currentRoutees = newRoutees.toArray
     }
 
+  }
+
+  final class ConsistentHashingLogic[T](
+      virtualNodesFactor: Int = 0,
+      mapping: ConsistentHashMapping[T] = ConsistentHashingLogic.emptyHashMapping)
+      extends RoutingLogic[T] {
+
+    private var currentRoutees: Set[ActorRef[T]] = _
+
+    private var currentConsistentHash: ConsistentHash[ActorRef[T]] = ConsistentHash(currentRoutees, virtualNodesFactor)
+
+    override def selectRoutee(msg: T): ActorRef[T] = {
+      mapping(msg) match {
+        case bytes: Array[Byte] => currentConsistentHash.nodeFor(bytes)
+        case str: String        => currentConsistentHash.nodeFor(str)
+        case x: AnyRef          => ??? // What serialization mechanism we should use here?
+      }
+    }
+
+    override def routeesUpdated(newRoutees: Set[ActorRef[T]]): Unit = {
+      val toRemove = currentRoutees -- newRoutees
+      val toAdd = newRoutees -- currentRoutees
+      currentRoutees = newRoutees
+      toRemove.foreach(currentConsistentHash :- _)
+      toAdd.foreach(currentConsistentHash :+ _)
+    }
+  }
+
+  object ConsistentHashingLogic {
+    type ConsistentHashMapping[T] = PartialFunction[T, Any]
+
+    def emptyHashMapping[T]: ConsistentHashMapping[T] = new ConsistentHashMapping[T] {
+      override def isDefinedAt(x: T): Boolean = false
+
+      override def apply(v1: T): Any = throw new UnsupportedOperationException("Empty ConsistentHashMapping[T] apply()")
+    }
   }
 
 }

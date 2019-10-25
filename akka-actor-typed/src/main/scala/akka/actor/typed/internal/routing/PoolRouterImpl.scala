@@ -57,7 +57,7 @@ private final class PoolRouterImpl[T](
   }
 
   def onMessage(msg: T): Behavior[T] = {
-    logic.selectRoutee() ! msg
+    logic.selectRoutee(msg) ! msg
     this
   }
 
