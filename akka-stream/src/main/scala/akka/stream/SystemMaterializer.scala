@@ -11,6 +11,7 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalApi
+import akka.dispatch.Dispatchers
 import akka.stream.impl.MaterializerGuardian
 
 import scala.concurrent.Await
@@ -52,7 +53,8 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
   private val materializerGuardian = system.systemActorOf(
     MaterializerGuardian
       .props(systemMaterializerPromise, materializerSettings)
-      .withDispatcher(materializerSettings.dispatcher)
+      // #28037 run on internal dispatcher to make sure default dispatcher starvation doesn't stop materializer creation
+      .withDispatcher(Dispatchers.InternalDispatcherId)
       .withDeploy(Deploy.local),
     "Materializers")
 
