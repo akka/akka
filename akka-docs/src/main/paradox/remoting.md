@@ -18,7 +18,8 @@ to your `application.conf` file:
 ```
 akka {
   actor {
-    provider = remote
+    # provider=remote is possible, but prefer cluster
+    provider = cluster
   }
   remote {
     enabled-transports = ["akka.remote.netty.tcp"]
@@ -32,7 +33,7 @@ akka {
 
 As you can see in the example above there are four things you need to add to get started:
 
- * Change provider from `local` to `remote`
+ * Change provider from `local`. We recommend using @ref:[Akka Cluster](cluster-usage.md) over using remoting directly.
  * Add host name - the machine you want to run the actor system on; this host
 name is exactly what is passed to remote systems in order to identify this
 system and consequently used for connecting back to this system if need be,
