@@ -45,6 +45,10 @@ interface ReplicatorDocSample {
       }
     }
 
+    enum Unsubscribe implements Command {
+      INSTANCE
+    }
+
     private interface InternalCommand extends Command {}
 
     private static class InternalUpdateResponse implements InternalCommand {
@@ -115,6 +119,7 @@ interface ReplicatorDocSample {
           .onMessage(InternalUpdateResponse.class, msg -> Behaviors.same())
           .onMessage(GetValue.class, this::onGetValue)
           .onMessage(GetCachedValue.class, this::onGetCachedValue)
+          .onMessage(Unsubscribe.class, this::onUnsubscribe)
           .onMessage(InternalGetResponse.class, this::onInternalGetResponse)
           .onMessage(InternalSubscribeResponse.class, this::onInternalSubscribeResponse)
           .build();
@@ -144,6 +149,11 @@ interface ReplicatorDocSample {
 
     private Behavior<Command> onGetCachedValue(GetCachedValue cmd) {
       cmd.replyTo.tell(cachedValue);
+      return this;
+    }
+
+    private Behavior<Command> onUnsubscribe(Unsubscribe cmd) {
+      replicatorAdapter.unsubscribe(key);
       return this;
     }
 
