@@ -128,6 +128,10 @@ sent back. Note that a `Replicator.UpdateTimeout` reply does not mean that the u
 or was rolled back. It may still have been replicated to some nodes, and will eventually
 be replicated to all nodes with the gossip protocol.
 
+It is possible to abort the `Update` when inspecting the state parameter that is passed in to
+the `modify` function by throwing an exception. That happens before the update is performed and
+a `Replicator.ModifyFailure` is sent back as reply. 
+
 ### Get
 
 To retrieve the current value of a data you send `Replicator.Get` message to the
