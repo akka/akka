@@ -68,7 +68,7 @@ object PersistenceId {
           s"entityTypeHint [$entityTypeHint] contains [$separator] which is a reserved character")
     }
 
-    new PersistenceId(entityTypeHint + separator + entityId)
+    new PersistenceId(entityId, Some(entityTypeHint), separator)
   }
 
   /**
@@ -131,12 +131,22 @@ object PersistenceId {
  * Unique identifier in the backend data store (journal and snapshot store) of the
  * persistent actor.
  */
-final class PersistenceId private (val id: String) {
-  if (id eq null)
+final class PersistenceId private (
+    val entityId: String,
+    maybeHint: Option[String] = None,
+    separator: String = PersistenceId.DefaultSeparator) {
+  if (entityId eq null)
     throw new IllegalArgumentException("persistenceId must not be null")
 
-  if (id.trim.isEmpty)
+  if (entityId.trim.isEmpty)
     throw new IllegalArgumentException("persistenceId must not be empty")
+
+  val id =
+    maybeHint
+      .map { hint =>
+        hint + separator + entityId
+      }
+      .getOrElse(entityId)
 
   override def toString: String = s"PersistenceId($id)"
 

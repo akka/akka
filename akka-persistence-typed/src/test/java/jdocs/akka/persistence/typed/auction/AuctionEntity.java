@@ -27,7 +27,7 @@ public class AuctionEntity
   private final UUID entityUUID;
 
   public AuctionEntity(String entityId) {
-    super(new PersistenceId("Auction|" + entityId));
+    super(PersistenceId.ofUniqueId("Auction|" + entityId));
     this.entityUUID = UUID.fromString(entityId);
   }
 

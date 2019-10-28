@@ -85,7 +85,7 @@ public class NullEmptyStateTest extends JUnitSuite {
   public void handleNullState() throws Exception {
     TestProbe<String> probe = testKit.createTestProbe();
     Behavior<String> b =
-        Behaviors.setup(ctx -> new NullEmptyState(new PersistenceId("a"), probe.ref()));
+        Behaviors.setup(ctx -> new NullEmptyState(PersistenceId.ofUniqueId("a"), probe.ref()));
 
     ActorRef<String> ref1 = testKit.spawn(b);
     probe.expectMessage("onRecoveryCompleted:null");

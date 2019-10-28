@@ -46,6 +46,12 @@ class PersistenceIdSpec extends WordSpec with Matchers with LogCapturing {
         PersistenceId("SomeType", "A#B", "#")
       }
     }
+
+    "expose the entityId used for the PersistenceId" in {
+      PersistenceId("MyType", "abc", "#/#").entityId should ===("abc")
+      PersistenceId("MyType", "abc", "#/#").id should ===("MyType#/#abc")
+    }
+
   }
 
 }

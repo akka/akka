@@ -292,7 +292,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
   @Test
   public void persistEvents() {
-    ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c1")));
+    ActorRef<Command> c = testKit.spawn(counter(PersistenceId.ofUniqueId("c1")));
     TestProbe<State> probe = testKit.createTestProbe();
     c.tell(Increment.INSTANCE);
     c.tell(new GetValue(probe.ref()));
@@ -301,7 +301,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
   @Test
   public void replyStoredEvents() {
-    ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c2")));
+    ActorRef<Command> c = testKit.spawn(counter(PersistenceId.ofUniqueId("c2")));
     TestProbe<State> probe = testKit.createTestProbe();
     c.tell(Increment.INSTANCE);
     c.tell(Increment.INSTANCE);
@@ -309,7 +309,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     c.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
 
-    ActorRef<Command> c2 = testKit.spawn(counter(new PersistenceId("c2")));
+    ActorRef<Command> c2 = testKit.spawn(counter(PersistenceId.ofUniqueId("c2")));
     c2.tell(new GetValue(probe.ref()));
     probe.expectMessage(new State(3, Arrays.asList(0, 1, 2)));
     c2.tell(Increment.INSTANCE);
@@ -319,7 +319,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
 
   @Test
   public void thenReplyEffect() {
-    ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c1b")));
+    ActorRef<Command> c = testKit.spawn(counter(PersistenceId.ofUniqueId("c1b")));
     TestProbe<Done> probe = testKit.createTestProbe();
     c.tell(new IncrementWithConfirmation(probe.ref()));
     probe.expectMessage(Done.getInstance());
@@ -331,7 +331,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     Behavior<Command> counter =
         Behaviors.setup(
             ctx ->
-                new CounterBehavior(new PersistenceId("c3"), ctx) {
+                new CounterBehavior(PersistenceId.ofUniqueId("c3"), ctx) {
                   @Override
                   protected State applyIncremented(State state, Incremented event) {
                     eventHandlerProbe.ref().tell(Pair.create(state, event));
@@ -352,7 +352,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     Behavior<Command> counter =
         Behaviors.setup(
             ctx ->
-                new CounterBehavior(new PersistenceId("c4"), ctx) {
+                new CounterBehavior(PersistenceId.ofUniqueId("c4"), ctx) {
                   @Override
                   protected State applyIncremented(State state, Incremented event) {
                     eventHandlerProbe.ref().tell(Pair.create(state, event));
@@ -370,7 +370,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     Behavior<Command> counter =
         Behaviors.setup(
             ctx ->
-                new CounterBehavior(new PersistenceId("c5"), ctx) {
+                new CounterBehavior(PersistenceId.ofUniqueId("c5"), ctx) {
                   @Override
                   protected void log() {
                     loggingProbe.ref().tell("logged");
@@ -384,7 +384,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   @Test
   public void workWhenWrappedInOtherBehavior() {
     Behavior<Command> behavior =
-        Behaviors.supervise(counter(new PersistenceId("c6")))
+        Behaviors.supervise(counter(PersistenceId.ofUniqueId("c6")))
             .onFailure(
                 SupervisorStrategy.restartWithBackoff(
                     Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1));
@@ -403,7 +403,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     Behavior<Command> snapshoter =
         Behaviors.setup(
             ctx ->
-                new CounterBehavior(new PersistenceId("snapshot"), ctx) {
+                new CounterBehavior(PersistenceId.ofUniqueId("snapshot"), ctx) {
                   @Override
                   public boolean shouldSnapshot(State state, Event event, long sequenceNr) {
                     return state.value % 2 == 0;
@@ -439,7 +439,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     Behavior<Command> recovered =
         Behaviors.setup(
             ctx ->
-                new CounterBehavior(new PersistenceId("snapshot"), ctx) {
+                new CounterBehavior(PersistenceId.ofUniqueId("snapshot"), ctx) {
                   @Override
                   protected State applyIncremented(State state, Incremented event) {
                     eventHandlerProbe.ref().tell(Pair.create(state, event));
@@ -457,7 +457,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
   @Test
   public void stopThenLog() {
     TestProbe<State> probe = testKit.createTestProbe();
-    ActorRef<Command> c = testKit.spawn(counter(new PersistenceId("c12")));
+    ActorRef<Command> c = testKit.spawn(counter(PersistenceId.ofUniqueId("c12")));
     c.tell(StopThenLog.INSTANCE);
     probe.expectTerminated(c);
   }
@@ -468,7 +468,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     Behavior<Command> counter =
         Behaviors.setup(
             ctx ->
-                new CounterBehavior(new PersistenceId("c5"), ctx) {
+                new CounterBehavior(PersistenceId.ofUniqueId("c5"), ctx) {
 
                   @Override
                   public SignalHandler<State> signalHandler() {
@@ -508,7 +508,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
           }
         };
     ActorRef<Command> c =
-        testKit.spawn(Behaviors.intercept(() -> tap, counter(new PersistenceId("tap1"))));
+        testKit.spawn(Behaviors.intercept(() -> tap, counter(PersistenceId.ofUniqueId("tap1"))));
     c.tell(Increment.INSTANCE);
     interceptProbe.expectMessage(Increment.INSTANCE);
     signalProbe.expectNoMessage();
@@ -519,7 +519,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     Behavior<Command> tagger =
         Behaviors.setup(
             ctx ->
-                new CounterBehavior(new PersistenceId("tagging"), ctx) {
+                new CounterBehavior(PersistenceId.ofUniqueId("tagging"), ctx) {
                   @Override
                   public Set<String> tagsFor(Event incremented) {
                     return Sets.newHashSet("tag1", "tag2");
@@ -549,7 +549,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     Behavior<Command> transformer =
         Behaviors.setup(
             ctx ->
-                new CounterBehavior(new PersistenceId("transform"), ctx) {
+                new CounterBehavior(PersistenceId.ofUniqueId("transform"), ctx) {
                   private final EventAdapter<Event, ?> adapter = new WrapperEventAdapter();
 
                   public EventAdapter<Event, ?> eventAdapter() {
@@ -688,7 +688,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<String> probe = testKit.createTestProbe();
     ActorRef<String> c =
         testKit.spawn(
-            new IncorrectExpectedStateForThenRun(probe.getRef(), new PersistenceId("foiesftr")));
+            new IncorrectExpectedStateForThenRun(
+                probe.getRef(), PersistenceId.ofUniqueId("foiesftr")));
 
     probe.expectMessage("started!");
 
@@ -767,7 +768,7 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
             Behaviors.<String>setup(
                 context ->
                     new SequenceNumberBehavior(
-                        new PersistenceId("seqnr1"), probe.getRef(), context)));
+                        PersistenceId.ofUniqueId("seqnr1"), probe.getRef(), context)));
 
     probe.expectMessage("0 onRecoveryCompleted");
     ref.tell("cmd");
