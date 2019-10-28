@@ -4,6 +4,12 @@
 
 package akka.cluster
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.util.control.NonFatal
+
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.actor.SupervisorStrategy.Stop
@@ -15,15 +21,9 @@ import akka.pattern.ask
 import akka.remote.{ QuarantinedEvent => ClassicQuarantinedEvent }
 import akka.remote.artery.QuarantinedEvent
 import akka.util.Timeout
-import com.typesafe.config.Config
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.control.NonFatal
-
 import akka.event.ActorWithLogClass
 import akka.event.Logging
+import com.typesafe.config.Config
 import com.github.ghik.silencer.silent
 
 /**
@@ -1504,6 +1504,140 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
 /**
  * INTERNAL API.
+ */
+@InternalApi
+private[cluster] abstract class SeedNodeProcess(joinConfigCompatChecker: JoinConfigCompatChecker) extends Actor {
+  import InternalClusterAction._
+  import ClusterUserAction.JoinTo
+
+  val cluster = Cluster(context.system)
+  import cluster.ClusterLogger._
+  import cluster.settings._
+
+  val selfAddress = cluster.selfAddress
+
+  private val JoinToIncompatibleConfigUnenforced =
+    "Join will be performed because compatibility check is configured to not be enforced."
+
+  private val ValidatedIncompatibleConfig = "Cluster validated this node config, but sent back incompatible settings"
+
+  private val NodeShutdownWarning =
+    "It's recommended to perform a full cluster shutdown in order to deploy this new version. " +
+    "If a cluster shutdown isn't an option, you may want to disable this protection by setting " +
+    "'akka.cluster.configuration-compatibility-check.enforce-on-join = off'. " +
+    "Note that disabling it will allow the formation of a cluster with nodes having incompatible configuration settings. " +
+    "This node will be shutdown!"
+
+  private def stopOrBecome(behavior: Option[Actor.Receive]): Unit =
+    behavior match {
+      case Some(done) => context.become(done) // JoinSeedNodeProcess
+      case None       => context.stop(self) // FirstSeedNodeProcess
+    }
+
+  /**
+   * INTERNAL API.
+   *
+   * @param seedNodes the remaining (if first seed process) otherwise the other seed nodes to send `InitJoin` commands to
+   */
+  final def receiveJoinSeedNode(seedNodes: Set[Address]): Unit = {
+    val requiredNonSensitiveKeys =
+      JoinConfigCompatChecker.removeSensitiveKeys(joinConfigCompatChecker.requiredKeys, cluster.settings)
+    // configToValidate only contains the keys that are required according to JoinConfigCompatChecker on this node
+    val configToValidate =
+      JoinConfigCompatChecker.filterWithKeys(requiredNonSensitiveKeys, context.system.settings.config)
+    // send InitJoin to remaining seed nodes (except myself)
+    seedNodes.foreach { a =>
+      context.actorSelection(context.parent.path.toStringWithAddress(a)) ! InitJoin(configToValidate)
+    }
+  }
+
+  /**
+   * INTERNAL API.
+   * Received first InitJoinAck reply with an `IncompatibleConfig`.
+   * After sending JoinTo(address), `FirstSeedNodeProcess` calls `context.stop(self)`,
+   * `JoinSeedNodeProcess` calls `context.become(done)`.
+   *
+   * @param joinTo the address to join to
+   * @param origin the `InitJoinAck` sender
+   * @param behavior on `JoinTo` being sent, if defined, `context.become`  is called, otherwise  `context.stop`.
+   */
+  final def receiveInitJoinAckIncompatibleConfig(
+      joinTo: Address,
+      origin: ActorRef,
+      behavior: Option[Actor.Receive]): Unit = {
+    // first InitJoinAck reply, but incompatible
+
+    if (ByPassConfigCompatCheck) {
+      logInitJoinAckReceived(origin)
+      logWarning("Joining cluster with incompatible configurations. {}", JoinToIncompatibleConfigUnenforced)
+
+      // only join if set to ignore config validation
+      context.parent ! JoinTo(joinTo)
+      stopOrBecome(behavior)
+
+    } else {
+      logError("Couldn't join seed nodes because of incompatible cluster configuration. {}", NodeShutdownWarning)
+      context.stop(self)
+      CoordinatedShutdown(context.system).run(CoordinatedShutdown.IncompatibleConfigurationDetectedReason)
+    }
+  }
+
+  final def receiveInitJoinAckCompatibleConfig(
+      joinTo: Address,
+      origin: ActorRef,
+      configCheck: CompatibleConfig,
+      behavior: Option[Actor.Receive]): Unit = {
+
+    logInitJoinAckReceived(origin)
+
+    // validates config coming from cluster against this node config
+    joinConfigCompatChecker.check(configCheck.clusterConfig, context.system.settings.config) match {
+      case Valid =>
+        // first InitJoinAck reply
+        context.parent ! JoinTo(joinTo)
+        stopOrBecome(behavior)
+
+      case checked: Invalid if ByPassConfigCompatCheck =>
+        logWarningInvalidConfigIfBypassConfigCheck(checked)
+        context.parent ! JoinTo(joinTo)
+        stopOrBecome(behavior)
+
+      case checked: Invalid =>
+        logErrorInvalidConfig(checked)
+        context.stop(self)
+        CoordinatedShutdown(context.system).run(CoordinatedShutdown.IncompatibleConfigurationDetectedReason)
+    }
+  }
+
+  final def receiveInitJoinAckUncheckedConfig(
+      joinTo: Address,
+      origin: ActorRef,
+      behavior: Option[Actor.Receive]): Unit = {
+
+    logInitJoinAckReceived(origin)
+    logWarning("Joining a cluster without configuration compatibility check feature.")
+    context.parent ! JoinTo(joinTo)
+
+    stopOrBecome(behavior)
+  }
+
+  private def logInitJoinAckReceived(from: ActorRef): Unit =
+    logInfo("Received InitJoinAck message from [{}] to [{}]", from, selfAddress)
+
+  private def logWarningInvalidConfigIfBypassConfigCheck(invalid: Invalid): Unit =
+    logWarning(
+      "{}: {}. {}.",
+      ValidatedIncompatibleConfig,
+      invalid.errorMessages.mkString(", "),
+      JoinToIncompatibleConfigUnenforced)
+
+  private def logErrorInvalidConfig(validation: Invalid): Unit =
+    logError("{}: {}. {}", ValidatedIncompatibleConfig, validation.errorMessages.mkString(", "), NodeShutdownWarning)
+
+}
+
+/**
+ * INTERNAL API.
  *
  * Used only for the first seed node.
  * Sends InitJoin to all seed nodes (except itself).
@@ -1518,15 +1652,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 private[cluster] final class FirstSeedNodeProcess(
     seedNodes: immutable.IndexedSeq[Address],
     joinConfigCompatChecker: JoinConfigCompatChecker)
-    extends Actor {
+    extends SeedNodeProcess(joinConfigCompatChecker) {
   import InternalClusterAction._
   import ClusterUserAction.JoinTo
 
-  val cluster = Cluster(context.system)
-  import cluster.settings._
   import cluster.ClusterLogger._
-
-  def selfAddress = cluster.selfAddress
 
   if (seedNodes.size <= 1 || seedNodes.head != selfAddress)
     throw new IllegalArgumentException("Join seed node should not be done")
@@ -1542,18 +1672,10 @@ private[cluster] final class FirstSeedNodeProcess(
 
   override def postStop(): Unit = retryTask.cancel()
 
-  def receive = {
+  def receive: Receive = {
     case JoinSeedNode =>
       if (timeout.hasTimeLeft) {
-        val requiredNonSensitiveKeys =
-          JoinConfigCompatChecker.removeSensitiveKeys(joinConfigCompatChecker.requiredKeys, cluster.settings)
-        // configToValidate only contains the keys that are required according to JoinConfigCompatChecker on this node
-        val configToValidate =
-          JoinConfigCompatChecker.filterWithKeys(requiredNonSensitiveKeys, context.system.settings.config)
-        // send InitJoin to remaining seed nodes (except myself)
-        remainingSeedNodes.foreach { a =>
-          context.actorSelection(context.parent.path.toStringWithAddress(a)) ! InitJoin(configToValidate)
-        }
+        receiveJoinSeedNode(remainingSeedNodes)
       } else {
         // no InitJoinAck received, initialize new cluster by joining myself
         if (isDebugEnabled)
@@ -1562,63 +1684,14 @@ private[cluster] final class FirstSeedNodeProcess(
         context.stop(self)
       }
 
-    case InitJoinAck(address, CompatibleConfig(clusterConfig)) =>
-      logInfo("Received InitJoinAck message from [{}] to [{}]", sender(), selfAddress)
-      // validates config coming from cluster against this node config
-      joinConfigCompatChecker.check(clusterConfig, context.system.settings.config) match {
-        case Valid =>
-          // first InitJoinAck reply
-          context.parent ! JoinTo(address)
-          context.stop(self)
-
-        case Invalid(messages) if ByPassConfigCompatCheck =>
-          logWarning(
-            "Cluster validated this node config, but sent back incompatible settings: {}. " +
-            "Join will be performed because compatibility check is configured to not be enforced.",
-            messages.mkString(", "))
-          context.parent ! JoinTo(address)
-          context.stop(self)
-
-        case Invalid(messages) =>
-          logError(
-            "Cluster validated this node config, but sent back incompatible settings: {}. " +
-            "It's recommended to perform a full cluster shutdown in order to deploy this new version. " +
-            "If a cluster shutdown isn't an option, you may want to disable this protection by setting " +
-            "'akka.cluster.configuration-compatibility-check.enforce-on-join = off'. " +
-            "Note that disabling it will allow the formation of a cluster with nodes having incompatible configuration settings. " +
-            "This node will be shutdown!",
-            messages.mkString(", "))
-          context.stop(self)
-          CoordinatedShutdown(context.system).run(CoordinatedShutdown.IncompatibleConfigurationDetectedReason)
-      }
+    case InitJoinAck(address, compatible: CompatibleConfig) =>
+      receiveInitJoinAckCompatibleConfig(joinTo = address, origin = sender(), configCheck = compatible, behavior = None)
 
     case InitJoinAck(address, UncheckedConfig) =>
-      logInfo("Received InitJoinAck message from [{}] to [{}]", sender(), selfAddress)
-      logWarning("Joining a cluster without configuration compatibility check feature.")
-      context.parent ! JoinTo(address)
-      context.stop(self)
+      receiveInitJoinAckUncheckedConfig(joinTo = address, origin = sender(), behavior = None)
 
     case InitJoinAck(address, IncompatibleConfig) =>
-      // first InitJoinAck reply, but incompatible
-      if (ByPassConfigCompatCheck) {
-        // only join if set to ignore config validation
-        logInfo("Received InitJoinAck message from [{}] to [{}]", sender(), selfAddress)
-        logWarning(
-          "Joining cluster with incompatible configurations. " +
-          "Join will be performed because compatibility check is configured to not be enforced.")
-        context.parent ! JoinTo(address)
-        context.stop(self)
-      } else {
-        logError(
-          "Couldn't join seed nodes because of incompatible cluster configuration. " +
-          "It's recommended to perform a full cluster shutdown in order to deploy this new version." +
-          "If a cluster shutdown isn't an option, you may want to disable this protection by setting " +
-          "'akka.cluster.configuration-compatibility-check.enforce-on-join = off'. " +
-          "Note that disabling it will allow the formation of a cluster with nodes having incompatible configuration settings. " +
-          "This node will be shutdown!")
-        context.stop(self)
-        CoordinatedShutdown(context.system).run(CoordinatedShutdown.IncompatibleConfigurationDetectedReason)
-      }
+      receiveInitJoinAckIncompatibleConfig(joinTo = address, origin = sender(), behavior = None)
 
     case InitJoinNack(address) =>
       logInfo("Received InitJoinNack message from [{}] to [{}]", sender(), selfAddress)
@@ -1660,14 +1733,11 @@ private[cluster] final class FirstSeedNodeProcess(
 private[cluster] final class JoinSeedNodeProcess(
     seedNodes: immutable.IndexedSeq[Address],
     joinConfigCompatChecker: JoinConfigCompatChecker)
-    extends Actor {
+    extends SeedNodeProcess(joinConfigCompatChecker) {
   import InternalClusterAction._
-  import ClusterUserAction.JoinTo
 
-  val cluster = Cluster(context.system)
   import cluster.settings._
   import cluster.ClusterLogger._
-  def selfAddress = cluster.selfAddress
 
   if (seedNodes.isEmpty || seedNodes.head == selfAddress)
     throw new IllegalArgumentException("Join seed node should not be done")
@@ -1681,75 +1751,25 @@ private[cluster] final class JoinSeedNodeProcess(
 
   override def preStart(): Unit = self ! JoinSeedNode
 
-  def receive = {
+  def receive: Receive = {
     case JoinSeedNode =>
-      val requiredNonSensitiveKeys =
-        JoinConfigCompatChecker.removeSensitiveKeys(joinConfigCompatChecker.requiredKeys, cluster.settings)
-      // configToValidate only contains the keys that are required according to JoinConfigCompatChecker on this node
-      val configToValidate =
-        JoinConfigCompatChecker.filterWithKeys(requiredNonSensitiveKeys, context.system.settings.config)
       // send InitJoin to all seed nodes (except myself)
       attempt += 1
-      otherSeedNodes.foreach { a =>
-        context.actorSelection(context.parent.path.toStringWithAddress(a)) ! InitJoin(configToValidate)
-      }
+      receiveJoinSeedNode(otherSeedNodes)
 
-    case InitJoinAck(address, CompatibleConfig(clusterConfig)) =>
-      logInfo("Received InitJoinAck message from [{}] to [{}]", sender(), selfAddress)
-      // validates config coming from cluster against this node config
-      joinConfigCompatChecker.check(clusterConfig, context.system.settings.config) match {
-        case Valid =>
-          // first InitJoinAck reply
-          context.parent ! JoinTo(address)
-          context.become(done)
-
-        case Invalid(messages) if ByPassConfigCompatCheck =>
-          logWarning(
-            "Cluster validated this node config, but sent back incompatible settings: {}. " +
-            "Join will be performed because compatibility check is configured to not be enforced.",
-            messages.mkString(", "))
-          context.parent ! JoinTo(address)
-          context.become(done)
-
-        case Invalid(messages) =>
-          logError(
-            "Cluster validated this node config, but sent back incompatible settings: {}. " +
-            "It's recommended to perform a full cluster shutdown in order to deploy this new version. " +
-            "If a cluster shutdown isn't an option, you may want to disable this protection by setting " +
-            "'akka.cluster.configuration-compatibility-check.enforce-on-join = off'. " +
-            "Note that disabling it will allow the formation of a cluster with nodes having incompatible configuration settings. " +
-            "This node will be shutdown!",
-            messages.mkString(", "))
-          context.stop(self)
-          CoordinatedShutdown(context.system).run(CoordinatedShutdown.IncompatibleConfigurationDetectedReason)
-      }
+    case InitJoinAck(address, compatible: CompatibleConfig) =>
+      receiveInitJoinAckCompatibleConfig(
+        joinTo = address,
+        origin = sender(),
+        configCheck = compatible,
+        behavior = Some(done))
 
     case InitJoinAck(address, UncheckedConfig) =>
-      logWarning("Joining a cluster without configuration compatibility check feature.")
-      context.parent ! JoinTo(address)
-      context.become(done)
+      receiveInitJoinAckUncheckedConfig(joinTo = address, origin = sender(), behavior = Some(done))
 
     case InitJoinAck(address, IncompatibleConfig) =>
       // first InitJoinAck reply, but incompatible
-      if (ByPassConfigCompatCheck) {
-        logInfo("Received InitJoinAck message from [{}] to [{}]", sender(), selfAddress)
-        logWarning(
-          "Joining cluster with incompatible configurations. " +
-          "Join will be performed because compatibility check is configured to not be enforced.")
-        // only join if set to ignore config validation
-        context.parent ! JoinTo(address)
-        context.become(done)
-      } else {
-        logError(
-          "Couldn't join seed nodes because of incompatible cluster configuration. " +
-          "It's recommended to perform a full cluster shutdown in order to deploy this new version." +
-          "If a cluster shutdown isn't an option, you may want to disable this protection by setting " +
-          "'akka.cluster.configuration-compatibility-check.enforce-on-join = off'. " +
-          "Note that disabling it will allow the formation of a cluster with nodes having incompatible configuration settings. " +
-          "This node will be shutdown!")
-        context.stop(self)
-        CoordinatedShutdown(context.system).run(CoordinatedShutdown.IncompatibleConfigurationDetectedReason)
-      }
+      receiveInitJoinAckIncompatibleConfig(joinTo = address, origin = sender(), behavior = Some(done))
 
     case InitJoinNack(_) => // that seed was uninitialized
 
