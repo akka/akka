@@ -274,9 +274,7 @@ class SourceOrFlow {
 
   void takeExample() {
     // #take
-    Source.from(Arrays.asList(1,2,3,4,5))
-       .take(3)
-       .runForeach(System.out::println, materializer);
+    Source.from(Arrays.asList(1, 2, 3, 4, 5)).take(3).runForeach(System.out::println, materializer);
     // 1
     // 2
     // 3
@@ -286,9 +284,9 @@ class SourceOrFlow {
 
   void takeWhilExample() {
     // #take-while
-    Source.from(Arrays.asList(1,2,3,4,5))
-       .takeWhile(i -> i < 3)
-       .runForeach(System.out::println, materializer);
+    Source.from(Arrays.asList(1, 2, 3, 4, 5))
+        .takeWhile(i -> i < 3)
+        .runForeach(System.out::println, materializer);
     // 1
     // 2
     // #take-while
