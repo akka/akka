@@ -5,7 +5,6 @@
 package akka.actor.typed.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
-import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
@@ -342,7 +341,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       val ref = LoggingTestKit
         .info("Starting")
         // not counting for example "akkaSource", but it shouldn't have any other entries
-        .withCustom(logEvent => logEvent.mdc.keysIterator.forall(_.startsWith("akka")))
+        .withCustom(logEvent =>
+          logEvent.mdc.keysIterator.forall(key => key.startsWith("akka") || key == "sourceActorSystem"))
         .intercept {
           spawn(behaviors)
         }
@@ -462,33 +462,41 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     }
 
     "always include some MDC values in the log" in {
-      // need AtomicReference because LoggingFilter defined before actor is created and ActorTestKit names are dynamic
-      val actorPathStr = new AtomicReference[String]
       val behavior =
         Behaviors.setup[Message] { context =>
-          actorPathStr.set(context.self.path.toString)
           context.log.info("Starting")
           Behaviors.receiveMessage { _ =>
-            if (MDC.get("logSource") != null)
-              throw new IllegalStateException("MDC wasn't cleared. logSource has value before context.log is accessed.")
+            for (key <- ("logSource" :: "akkaSource" :: "tags" :: Nil)) {
+              if (MDC.get(key) != null)
+                throw new IllegalStateException(
+                  s"MDC ${key} wasn't cleared. logSource has value before context.log is accessed.")
+            }
             context.log.info("Got message!")
             Behaviors.same
           }
         }
+      val path = "akka://ActorLoggingSpec/user/mdclogspec"
 
       // log from setup
       // can't use LoggingEventFilter.withMdc here because the actorPathStr isn't know yet
       val ref =
-        LoggingTestKit.info("Starting").withCustom(event => event.mdc("akkaSource") == actorPathStr.get).intercept {
-          spawn(behavior)
-        }
+        LoggingTestKit
+          .info("Starting")
+          .withMdc(Map("akkaSource" -> path, "sourceActorSystem" -> system.name))
+          .intercept {
+            spawn(behavior, "mdclogspec")
+          }
 
       // on message
-      LoggingTestKit.info("Got message!").withMdc(Map("akkaSource" -> actorPathStr.get)).withOccurrences(10).intercept {
-        (1 to 10).foreach { n =>
-          ref ! Message(n, s"msg-$n")
+      LoggingTestKit
+        .info("Got message!")
+        .withMdc(Map("akkaSource" -> path, "sourceActorSystem" -> system.name))
+        .withOccurrences(10)
+        .intercept {
+          (1 to 10).foreach { n =>
+            ref ! Message(n, s"msg-$n")
+          }
         }
-      }
 
     }
 

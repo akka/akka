@@ -126,7 +126,7 @@ import org.slf4j.LoggerFactory
     val logging = loggingContext()
     // avoid access to MDC ThreadLocal if not needed, see details in LoggingContext
     logging.mdcUsed = true
-    ActorMdc.setMdc(self.path.toString, logging.tagsString)
+    ActorMdc.setMdc(self.path.toString, logging.tagsString, system.name)
     logging.logger
   }
 
