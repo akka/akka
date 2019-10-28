@@ -16,6 +16,15 @@ Pass `n` incoming elements downstream and then complete
 
 Pass `n` incoming elements downstream and then complete
 
+## Example
+
+Scala
+:  @@snip [Take.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Take.scala) { #take }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #take }
+
+
 ## Reactive Streams semantics
 
 @@@div { .callout }

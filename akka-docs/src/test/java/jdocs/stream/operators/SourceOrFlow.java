@@ -271,4 +271,27 @@ class SourceOrFlow {
     // 7   (= 7)
     // #grouped
   }
+
+  void takeExample() {
+    // #take
+    Source.from(Arrays.asList(1,2,3,4,5))
+       .take(3)
+       .runForeach(System.out::println, materializer);
+    // 1
+    // 2
+    // 3
+    // #take
+
+  }
+
+  void takeWhilExample() {
+    // #take-while
+    Source.from(Arrays.asList(1,2,3,4,5))
+       .takeWhile(i -> i < 3)
+       .runForeach(System.out::println, materializer);
+    // 1
+    // 2
+    // #take-while
+
+  }
 }
