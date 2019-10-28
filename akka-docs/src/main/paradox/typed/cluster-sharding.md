@@ -70,7 +70,9 @@ Scala
 Java
 :  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #counter }
 
-Each Entity type has a key that is then used to retrieve an EntityRef for a given entity identifier.
+Each Entity type has a key that is then used to retrieve an EntityRef for a given entity identifier. 
+Note in the sample's @scala[`Counter.apply`]@java[`Counter.create`] function that the `entityId` parameter is not
+called, it is included to demonstrate how one can pass it to an entity. Another way to do this is by sending the `entityId` as part of the message if needed.
 
 Scala
 :  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #init }
