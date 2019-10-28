@@ -72,11 +72,8 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   protected def replayEvents(fromSeqNr: Long, toSeqNr: Long): Unit = {
     setup.log.debug("Replaying messages: from: {}, to: {}", fromSeqNr, toSeqNr)
-    setup.journal ! ReplayMessages(
-      fromSeqNr,
-      toSeqNr,
-      setup.recovery.replayMax,
-      setup.persistenceId.id,
+    setup.journal.tell(
+      ReplayMessages(fromSeqNr, toSeqNr, setup.recovery.replayMax, setup.persistenceId.id, setup.selfUntyped),
       setup.selfUntyped)
   }
 
@@ -114,7 +111,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       val self = setup.selfUntyped
 
       if (toSequenceNr == Long.MaxValue || toSequenceNr <= lastSequenceNr)
-        setup.journal ! JournalProtocol.DeleteMessagesTo(setup.persistenceId.id, toSequenceNr, self)
+        setup.journal.tell(JournalProtocol.DeleteMessagesTo(setup.persistenceId.id, toSequenceNr, self), self)
       else
         self ! DeleteMessagesFailure(
           new RuntimeException(
