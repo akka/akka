@@ -76,7 +76,7 @@ public class PrimitiveStateTest extends JUnitSuite {
   public void handleIntegerState() throws Exception {
     TestProbe<String> probe = testKit.createTestProbe();
     Behavior<Integer> b =
-        Behaviors.setup(ctx -> new PrimitiveState(new PersistenceId("a"), probe.ref()));
+        Behaviors.setup(ctx -> new PrimitiveState(PersistenceId.ofUniqueId("a"), probe.ref()));
     ActorRef<Integer> ref1 = testKit.spawn(b);
     probe.expectMessage("onRecoveryCompleted:0");
     ref1.tell(1);

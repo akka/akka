@@ -39,7 +39,7 @@ public class LoggerSourceTest extends JUnitSuite {
   private static final AtomicInteger idCounter = new AtomicInteger(0);
 
   public static PersistenceId nextId() {
-    return new PersistenceId("" + idCounter.incrementAndGet());
+    return PersistenceId.ofUniqueId("" + idCounter.incrementAndGet());
   }
 
   static class LoggingBehavior extends EventSourcedBehavior<String, String, String> {
