@@ -94,7 +94,8 @@ public class PersistentActorCompileOnlyTest {
     }
 
     public static EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> pb =
-        new EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState>(PersistenceId.ofUniqueId("p1")) {
+        new EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState>(
+            PersistenceId.ofUniqueId("p1")) {
 
           @Override
           public SimpleState emptyState() {

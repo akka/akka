@@ -102,7 +102,10 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
     TestProbe<String> probe = testKit.createTestProbe();
     TestProbe<Throwable> recoveryFailureProbe = testKit.createTestProbe();
     Behavior<String> p1 =
-        fail(PersistenceId.ofUniqueId("fail-recovery-once"), probe.ref(), recoveryFailureProbe.ref());
+        fail(
+            PersistenceId.ofUniqueId("fail-recovery-once"),
+            probe.ref(),
+            recoveryFailureProbe.ref());
     testKit.spawn(p1);
     recoveryFailureProbe.expectMessageClass(TestException.class);
   }

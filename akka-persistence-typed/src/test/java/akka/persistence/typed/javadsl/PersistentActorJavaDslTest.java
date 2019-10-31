@@ -688,7 +688,8 @@ public class PersistentActorJavaDslTest extends JUnitSuite {
     TestProbe<String> probe = testKit.createTestProbe();
     ActorRef<String> c =
         testKit.spawn(
-            new IncorrectExpectedStateForThenRun(probe.getRef(), PersistenceId.ofUniqueId("foiesftr")));
+            new IncorrectExpectedStateForThenRun(
+                probe.getRef(), PersistenceId.ofUniqueId("foiesftr")));
 
     probe.expectMessage("started!");
 
