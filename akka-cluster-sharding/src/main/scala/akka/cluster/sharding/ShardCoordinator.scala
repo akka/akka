@@ -211,6 +211,11 @@ object ShardCoordinator {
   }
 
   /**
+   * Used as a special termination message from [[ClusterSharding]]
+   */
+  private[cluster] case object Terminate extends DeadLetterSuppression
+
+  /**
    * INTERNAL API
    */
   private[akka] object Internal {
@@ -690,6 +695,9 @@ abstract class ShardCoordinator(
         })
         sender() ! reply
 
+      case ShardCoordinator.Terminate =>
+        log.debug("{} received termination message", context.self.path)
+        context.stop(self)
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
   private def clearRebalanceInProgress(shard: String): Unit = {
@@ -950,6 +958,9 @@ class PersistentShardCoordinator(
 
   def waitingForStateInitialized: Receive =
     ({
+      case ShardCoordinator.Terminate =>
+        log.debug("{} received termination message before state was initialized", context.self.path)
+        context.stop(self)
       case StateInitialized =>
         stateInitialized()
         context.become(active.orElse[Any, Unit](receiveSnapshotResult))

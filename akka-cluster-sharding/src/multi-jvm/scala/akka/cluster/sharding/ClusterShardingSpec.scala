@@ -323,7 +323,7 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
           .withDeploy(Deploy.local)
       system.actorOf(
         ClusterSingletonManager
-          .props(singletonProps, terminationMessage = PoisonPill, settings = ClusterSingletonManagerSettings(system)),
+          .props(singletonProps, terminationMessage = ShardCoordinator.Terminate, settings = ClusterSingletonManagerSettings(system)),
         name = typeName + "Coordinator")
     }
   }

@@ -761,7 +761,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
             val singletonSettings = settings.coordinatorSingletonSettings.withSingletonName("singleton").withRole(role)
             context.actorOf(
               ClusterSingletonManager
-                .props(singletonProps, terminationMessage = PoisonPill, singletonSettings)
+                .props(singletonProps, terminationMessage = ShardCoordinator.Terminate, singletonSettings)
                 .withDispatcher(context.props.dispatcher),
               name = cName)
           }
