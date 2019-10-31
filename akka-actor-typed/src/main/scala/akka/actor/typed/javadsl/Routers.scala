@@ -4,11 +4,11 @@
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
-import akka.actor.typed.internal.routing.GroupRouterBuilder
-import akka.actor.typed.internal.routing.PoolRouterBuilder
+import akka.actor.typed.internal.routing.{GroupRouterBuilder, PoolRouterBuilder}
+import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic.ConsistentHashMapping
 import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.{ActorSystem, Behavior}
 import akka.annotation.DoNotInherit
 
 object Routers {
@@ -64,6 +64,18 @@ abstract class GroupRouter[T] extends DeferredBehavior[T] {
    */
   def withRoundRobinRouting(): GroupRouter[T]
 
+  /**
+   *
+   * @param virtualNodesFactor
+   * @param mapping
+   * @param system
+   * @return
+   */
+  def withConsistentHashingRouting(
+    virtualNodesFactor: Int,
+    mapping: ConsistentHashMapping[T],
+    system: ActorSystem[T]): GroupRouter[T]
+
 }
 
 /**
@@ -90,6 +102,18 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    * This is the default for pool routers.
    */
   def withRoundRobinRouting(): PoolRouter[T]
+
+  /**
+   *
+   * @param virtualNodesFactor
+   * @param mapping
+   * @param system
+   * @return
+   */
+  def withConsistentHashingRouting(
+      virtualNodesFactor: Int,
+      mapping: ConsistentHashMapping[T],
+      system: ActorSystem[T]): PoolRouter[T]
 
   /**
    * Set a new pool size from the one set at construction
