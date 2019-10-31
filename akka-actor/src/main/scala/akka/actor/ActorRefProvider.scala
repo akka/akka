@@ -179,7 +179,7 @@ trait ActorRefFactory {
   implicit def dispatcher: ExecutionContextExecutor
 
   /**
-   * Father of all children created by this interface.
+   * Parent of all children created by this interface.
    *
    * INTERNAL API
    */
