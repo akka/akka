@@ -5,13 +5,12 @@
 package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.Dropped
+import akka.actor.{ ActorSystem, Dropped }
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ ActorRef, ActorSystem => TypedActorSystem, Behavior }
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.routing.GroupRouterImpl
 import akka.actor.typed.internal.routing.RoutingLogics
@@ -26,13 +25,16 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
   """) with WordSpecLike with Matchers with LogCapturing {
 
   // needed for the event filter
-  implicit val classicSystem = system.toClassic
+  implicit val classicSystem: ActorSystem = system.toClassic
 
   def compileOnlyApiCoverage(): Unit = {
     Routers.group(ServiceKey[String]("key")).withRandomRouting().withRoundRobinRouting()
 
     Routers.pool(10)(Behaviors.empty[Any]).withRandomRouting()
     Routers.pool(10)(Behaviors.empty[Any]).withRoundRobinRouting()
+    Routers
+      .pool(10)(Behaviors.empty[Any])
+      .withConsistentHashingRouting(actorSystem = TypedActorSystem(Behaviors.empty[Any], "emptySystem"))
   }
 
   "The router pool" must {

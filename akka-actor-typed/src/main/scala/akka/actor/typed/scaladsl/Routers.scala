@@ -3,9 +3,9 @@
  */
 
 package akka.actor.typed.scaladsl
-import akka.actor.typed.Behavior
-import akka.actor.typed.internal.routing.GroupRouterBuilder
-import akka.actor.typed.internal.routing.PoolRouterBuilder
+import akka.actor.typed.{ ActorSystem, Behavior }
+import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder, RoutingLogics }
+import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic.ConsistentHashMapping
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.DoNotInherit
 
@@ -60,6 +60,18 @@ trait GroupRouter[T] extends Behavior[T] {
    */
   def withRoundRobinRouting(): GroupRouter[T]
 
+  /**
+   * Route messages by using consistent hashing.
+   *
+   * From wikipedia: Consistent hashing is based on mapping each object to a point on a circle
+   * (or equivalently, mapping each object to a real angle). The system maps each available machine
+   * (or other storage bucket) to many pseudo-randomly distributed points on the same circle.
+   */
+  def withConsistentHashingRouting(
+      virtualNodesFactor: Int,
+      mapping: ConsistentHashMapping[T],
+      system: ActorSystem[T]): GroupRouter[T]
+
 }
 
 /**
@@ -86,6 +98,18 @@ trait PoolRouter[T] extends Behavior[T] {
    * This is the default for pool routers.
    */
   def withRoundRobinRouting(): PoolRouter[T]
+
+  /**
+   * Route messages by using consistent hashing.
+   *
+   * From wikipedia: Consistent hashing is based on mapping each object to a point on a circle
+   * (or equivalently, mapping each object to a real angle). The system maps each available machine
+   * (or other storage bucket) to many pseudo-randomly distributed points on the same circle.
+   */
+  def withConsistentHashingRouting(
+      virtualNodesFactor: Int = 0,
+      mapping: ConsistentHashMapping[T] = RoutingLogics.ConsistentHashingLogic.emptyHashMapping,
+      actorSystem: ActorSystem[T]): PoolRouter[T]
 
   /**
    * Set a new pool size from the one set at construction
