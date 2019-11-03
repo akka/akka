@@ -264,7 +264,12 @@ object AkkaBuild {
   )
 
   private def optionalDir(path: String): Option[File] =
-    Option(path).filter(_.nonEmpty).map(new File(_))
+    Option(path).filter(_.nonEmpty).map { path =>
+      val dir = new File(path)
+      if (!dir.exists)
+        throw new IllegalArgumentException(s"Path [$path] not found")
+      dir
+    }
 
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
