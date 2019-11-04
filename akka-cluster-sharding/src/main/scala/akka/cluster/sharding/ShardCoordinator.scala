@@ -12,6 +12,7 @@ import scala.concurrent.duration._
 import scala.util.Success
 import akka.actor._
 import akka.actor.DeadLetterSuppression
+import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus
@@ -211,14 +212,14 @@ object ShardCoordinator {
   }
 
   /**
-   * Used as a special termination message from [[ClusterSharding]]
-   */
-  private[cluster] case object Terminate extends DeadLetterSuppression
-
-  /**
    * INTERNAL API
    */
   private[akka] object Internal {
+
+    /**
+     * Used as a special termination message from [[ClusterSharding]]
+     */
+    @InternalApi private[cluster] case object Terminate extends DeadLetterSuppression
 
     /**
      * Messages sent to the coordinator
@@ -422,9 +423,9 @@ object ShardCoordinator {
    * INTERNAL API. Rebalancing process is performed by this actor.
    * It sends `BeginHandOff` to all `ShardRegion` actors followed by
    * `HandOff` to the `ShardRegion` responsible for the shard.
-   * When the handoff is completed it sends [[akka.cluster.sharding.RebalanceDone]] to its
-   * parent `ShardCoordinator`. If the process takes longer than the
-   * `handOffTimeout` it also sends [[akka.cluster.sharding.RebalanceDone]].
+   * When the handoff is completed it sends [[akka.cluster.sharding.ShardCoordinator.RebalanceDone]]
+   * to its parent `ShardCoordinator`. If the process takes longer than the
+   * `handOffTimeout` it also sends [[akka.cluster.sharding.ShardCoordinator.RebalanceDone]].
    */
   private[akka] class RebalanceWorker(
       shard: String,
@@ -695,7 +696,7 @@ abstract class ShardCoordinator(
         })
         sender() ! reply
 
-      case ShardCoordinator.Terminate =>
+      case ShardCoordinator.Internal.Terminate =>
         log.debug("{} received termination message", context.self.path)
         context.stop(self)
     }: Receive).orElse[Any, Unit](receiveTerminated)
@@ -958,7 +959,7 @@ class PersistentShardCoordinator(
 
   def waitingForStateInitialized: Receive =
     ({
-      case ShardCoordinator.Terminate =>
+      case ShardCoordinator.Internal.Terminate =>
         log.debug("{} received termination message before state was initialized", context.self.path)
         context.stop(self)
       case StateInitialized =>

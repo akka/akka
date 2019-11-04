@@ -209,7 +209,8 @@ object ClusterShardingDocCode {
 
 object PersistentClusterShardingSpecConfig extends ClusterShardingSpecConfig("persistence")
 object DDataClusterShardingSpecConfig extends ClusterShardingSpecConfig("ddata")
-object PersistentClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig("persistence", "constant")
+object PersistentClusterShardingWithEntityRecoverySpecConfig
+    extends ClusterShardingSpecConfig("persistence", "constant")
 object DDataClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig("ddata", "constant")
 
 class PersistentClusterShardingSpec extends ClusterShardingSpec(PersistentClusterShardingSpecConfig)
@@ -322,8 +323,10 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
           .props
           .withDeploy(Deploy.local)
       system.actorOf(
-        ClusterSingletonManager
-          .props(singletonProps, terminationMessage = ShardCoordinator.Terminate, settings = ClusterSingletonManagerSettings(system)),
+        ClusterSingletonManager.props(
+          singletonProps,
+          terminationMessage = ShardCoordinator.Internal.Terminate,
+          settings = ClusterSingletonManagerSettings(system)),
         name = typeName + "Coordinator")
     }
   }

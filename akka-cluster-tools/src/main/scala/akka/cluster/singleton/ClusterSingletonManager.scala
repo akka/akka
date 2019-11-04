@@ -472,11 +472,6 @@ class ClusterSingletonManagerIsStuck(message: String) extends AkkaException(mess
  *   Note that [[akka.actor.PoisonPill]] is a perfectly fine
  *   `terminationMessage` if you only need to stop the actor.
  *
- *   '''Caution:''' care must be taken when stopping persistent actors as
- *   [[akka.actor.PoisonPill]] can be processed faster than actor persists
- *   its state, leading to possibly corrupt journal.
- *   See also [[https://doc.akka.io/docs/akka/current/persistence.html#safely-shutting-down-persistent-actors]]
- *
  * @param settings see [[ClusterSingletonManagerSettings]]
  */
 @DoNotInherit
