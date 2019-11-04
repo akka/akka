@@ -756,6 +756,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
                   minBackoff = coordinatorFailureBackoff,
                   maxBackoff = coordinatorFailureBackoff * 5,
                   randomFactor = 0.2)
+                .withFinalStopMessage(msg => msg == ShardCoordinator.Internal.Terminate)
                 .props
                 .withDeploy(Deploy.local)
             val singletonSettings = settings.coordinatorSingletonSettings.withSingletonName("singleton").withRole(role)
