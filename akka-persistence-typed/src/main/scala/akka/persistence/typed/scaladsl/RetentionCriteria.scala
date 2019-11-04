@@ -34,7 +34,7 @@ object RetentionCriteria {
    * delete old events. Events are not deleted by default.
    *
    * If multiple events are persisted with a single Effect the snapshot will happen after
-   * all of the events are persisted rather than precisely every numberOfEvents
+   * all of the events are persisted rather than precisely every `numberOfEvents`.
    */
   def snapshotEvery(numberOfEvents: Int, keepNSnapshots: Int): SnapshotCountRetentionCriteria =
     SnapshotCountRetentionCriteriaImpl(numberOfEvents, keepNSnapshots, deleteEventsOnSnapshot = false)
