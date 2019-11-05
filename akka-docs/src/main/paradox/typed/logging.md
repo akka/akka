@@ -228,7 +228,7 @@ For historical reasons logging by the Akka internals and by classic actors are p
 through an event bus. Such log events are processed by an event handler actor, which then emits them to
 SLF4J or directly to standard out.
 
-When `akka-actor-typed` is on the classpath this event handler actor will emit the events to SLF4J.
+When `akka-actor-typed` and `akka-slf4j` are on the classpath this event handler actor will emit the events to SLF4J.
 The `akka.event.slf4j.Slf4jLogger` and `akka.event.slf4j.Slf4jLoggingFilter` are enabled automatically
 without additional configuration. This can be disabled by `akka.use-slf4j=off` configuration property.
 
