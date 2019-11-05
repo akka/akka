@@ -27,8 +27,6 @@ setting the `MultiJvm` config.
 **Please note** that by default MultiJvm test sources are located in `src/multi-jvm/...`, 
 and not in `src/test/...`.
 
-Here is an example of a @extref[sample project](samples:akka-sample-multi-node-scala) that uses the `sbt-multi-jvm` plugin.
-
 ## Running tests
 
 The multi-JVM tasks are similar to the normal tasks: `test`, `testOnly`,
@@ -210,3 +208,10 @@ the sbt prompt.
 There has also been some additions made to the `SbtMultiJvm` plugin to accommodate the
 @ref:[may change](common/may-change.md) module @ref:[multi node testing](multi-node-testing.md),
 described in that section.
+
+## Example project
+
+@extref[Multi JVM example project](samples:akka-sample-multi-node-scala)
+is an example project that can be downloaded, and with instructions of how to run.
+
+This project illustrates how to use Multi JVM Testing with the `sbt-multi-jvm` plugin.

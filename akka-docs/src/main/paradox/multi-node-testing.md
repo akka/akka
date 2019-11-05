@@ -15,12 +15,6 @@ To use Multi Node Testing, you must add the following dependency in your project
 
 @@project-info{ projectId="akka-multi-node-testkit" }
 
-## Sample project
-
-You can look at the
-@extref[Multi Node example project](samples:akka-samples-multi-node-scala)
-to see what this looks like in practice.
-
 ## Multi Node Testing Concepts
 
 When we talk about multi node testing in Akka we mean the process of running coordinated tests on multiple actor
@@ -185,10 +179,6 @@ And then finally to the node test code. That starts the two nodes, and demonstra
 message send/receive.
 
 @@snip [MultiNodeSample.scala](/akka-remote-tests/src/multi-jvm/scala/akka/remote/sample/MultiNodeSample.scala) { #package #spec }
-
-The easiest way to run this example yourself is to download the ready to run
-@extref[Akka Multi-Node Testing Sample with Scala](ecs:akka-samples-multi-node-scala)
-together with the tutorial. The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-multi-node-scala).
 
 ## Things to Keep in Mind
 

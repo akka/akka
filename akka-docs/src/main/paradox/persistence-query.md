@@ -347,3 +347,13 @@ around this. For more details see @java[[Managing Data Persistence](https://www.
 ### Plugin TCK
 
 TODO, not available yet.
+
+## Example project
+
+@java[@extref[CQRS example project](samples:akka-sample-cqrs-java)]
+@scala[@extref[CQRS example project](samples:akka-sample-cqrs-scala)]
+is an example project that can be downloaded, and with instructions of how to run.
+
+This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
+The events are tagged to be consumed by even processors to build other representations
+from the events, or publish the events to other services.

@@ -3,12 +3,6 @@
 This chapter outlines the concept behind the supervision in Akka Classic, for the
 corresponding overview of the new APIs see @ref:[supervision](general/supervision.md)
 
-## Sample project
-
-You can look at the
-@extref[Supervision example project](samples:akka-samples-supervision-java)
-to see what this looks like in practice.
-
 <a id="supervision-directives"></a>
 ## What Supervision Means
 

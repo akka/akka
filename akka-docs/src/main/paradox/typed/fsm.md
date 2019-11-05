@@ -45,10 +45,10 @@ Java
 
 To set state timeouts use `Behaviors.withTimers` along with a `startSingleTimer`.
 
+## Example project
 
+@java[@extref[FSM example project](samples:akka-sample-fsm-java)]
+@scala[@extref[FSM example project](samples:akka-sample-fsm-scala)]
+is an example project that can be downloaded, and with instructions of how to run.
 
-
-
-
-
-
+This project contains a Dining Hakkers sample illustrating how to model a Finite State Machine (FSM) with actors.

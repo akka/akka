@@ -759,3 +759,11 @@ paper by Mark Shapiro et. al.
 The `DistributedData` extension can be configured with the following properties:
 
 @@snip [reference.conf](/akka-distributed-data/src/main/resources/reference.conf) { #distributed-data }
+
+## Example project
+
+@java[@extref[Distributed Data example project](samples:akka-sample-distributed-data-java)]
+@scala[@extref[Distributed Data example project](samples:akka-sample-distributed-data-scala)]
+is an example project that can be downloaded, and with instructions of how to run.
+
+This project contains several samples illustrating how to use Distributed Data.

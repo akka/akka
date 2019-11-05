@@ -31,19 +31,6 @@ To use Akka Cluster add the following dependency in your project:
 
 @@project-info{ projectId="akka-cluster-typed" }
 
-## Cluster samples
-
-To see what using Akka Cluster looks like in practice, see the
-@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
-@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)].
-This project contains samples illustrating different features, such as
-subscribing to cluster membership events, sending messages to actors running on nodes in the cluster
-and using Cluster aware routers.
-
-The easiest way to run this example yourself is to try the
-@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
-It contains instructions on how to run the `SimpleClusterApp`.
-
 ## Cluster API Extension
 
 The Cluster extension gives you access to management tasks such as @ref:[Joining, Leaving and Downing](cluster-membership.md#user-actions)
@@ -458,3 +445,13 @@ See @ref:[Distributed Publish Subscribe in Cluster](distributed-pub-sub.md). The
 
 @@include[cluster.md](../includes/cluster.md) { #cluster-multidc }
 See @ref:[Cluster Multi-DC](cluster-dc.md).
+
+## Example project
+
+@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
+@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)]
+is an example project that can be downloaded, and with instructions of how to run.
+
+This project contains samples illustrating different Cluster features, such as
+subscribing to cluster membership events, and sending messages to actors running on nodes in the cluster
+with Cluster aware routers.
