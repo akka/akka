@@ -211,7 +211,7 @@ described in that section.
 
 ## Example project
 
-@extref[Multi JVM example project](samples:akka-sample-multi-node-scala)
+@extref[Cluster example project](samples:akka-sample-cluster-scala)
 is an example project that can be downloaded, and with instructions of how to run.
 
-This project illustrates how to use Multi JVM Testing with the `sbt-multi-jvm` plugin.
+This project illustrates Cluster features and also includes Multi JVM Testing with the `sbt-multi-jvm` plugin.

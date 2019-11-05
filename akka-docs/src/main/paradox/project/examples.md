@@ -27,6 +27,8 @@ This project contains samples illustrating different Cluster features, such as
 subscribing to cluster membership events, and sending messages to actors running on nodes in the cluster
 with Cluster aware routers.
 
+It also includes Multi JVM Testing with the `sbt-multi-jvm` plugin.
+
 ## Distributed Data
 
 @java[@extref[Distributed Data example project](samples:akka-sample-distributed-data-java)]
@@ -77,9 +79,3 @@ Illustrates how to use Akka Cluster with Docker compose.
 @extref[Cluster with Kubernetes example project](samples:akka-sample-cluster-kubernetes-java)
 
 This sample illustrates how to form an Akka Cluster with Akka Bootstrap when running in Kubernetes.
-
-## Multi JVM testing
-
-@extref[Multi-JVM example project](samples:akka-sample-multi-node-scala)
-
-This project illustrates how to use Multi JVM Testing with the `sbt-multi-jvm` plugin.
