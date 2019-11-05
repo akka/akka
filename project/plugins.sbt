@@ -21,7 +21,7 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.4.1")
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.4.2")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.26")
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.17")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.2.0") // for maintenance of copyright file header
 addSbtPlugin("com.hpe.sbt" % "sbt-pull-request-validator" % "1.0.0")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")
