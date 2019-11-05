@@ -6,9 +6,7 @@ project.description: Akka Persistence Classic, event sourcing with Akka, At-Leas
 @@include[includes.md](includes.md) { #actor-api }
 For the full documentation of this feature and for new projects see @ref:[persistence](typed/persistence.md).
 
-@@project-info{ projectId="akka-persistence" }
-
-## Dependency
+## Module info
 
 To use Akka Persistence, you must add the following dependency in your project:
 
@@ -20,6 +18,8 @@ To use Akka Persistence, you must add the following dependency in your project:
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
 @ref:[Persistence Plugins](persistence-plugins.md).
+
+@@project-info{ projectId="akka-persistence" }
 
 ## Sample project
 

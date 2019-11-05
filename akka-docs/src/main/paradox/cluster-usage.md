@@ -19,9 +19,7 @@ recommendation if you don't have other preferences or constraints.
 
 @@@
 
-@@project-info{ projectId="akka-cluster" }
-
-## Dependency
+## Modue info
 
 To use Akka Cluster add the following dependency in your project:
 
@@ -30,6 +28,8 @@ To use Akka Cluster add the following dependency in your project:
   artifact="akka-cluster_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-cluster" }
 
 ## Cluster samples
 

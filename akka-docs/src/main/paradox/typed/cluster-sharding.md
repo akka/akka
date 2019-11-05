@@ -5,9 +5,7 @@ project.description: Shard a clustered compute process across the network with l
 
 For the Akka Classic documentation of this feature see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
 
-@@project-info{ projectId="akka-cluster-sharding-typed" }
-
-## Dependency
+## Module info
 
 To use Akka Cluster Sharding, you must add the following dependency in your project:
 
@@ -16,6 +14,8 @@ To use Akka Cluster Sharding, you must add the following dependency in your proj
   artifact=akka-cluster-sharding-typed_$scala.binary_version$
   version=$akka.version$
 }
+
+@@project-info{ projectId="akka-cluster-sharding-typed" }
 
 ## Introduction
 

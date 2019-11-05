@@ -2,9 +2,7 @@
 
 For the Akka Classic documentation of this feature see @ref:[Classic Cluster Singleton](../cluster-singleton.md).
 
-@@project-info{ projectId="akka-cluster-typed" }
-
-## Dependency
+## Module info
 
 To use Cluster Singleton, you must add the following dependency in your project:
 
@@ -13,6 +11,8 @@ To use Cluster Singleton, you must add the following dependency in your project:
   artifact=akka-cluster-typed_$scala.binary_version$
   version=$akka.version$
 }
+
+@@project-info{ projectId="akka-cluster-typed" }
 
 ## Introduction
 

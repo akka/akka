@@ -2,9 +2,7 @@
 
 @@include[includes.md](includes.md) { #actor-api }
 
-@@project-info{ projectId="akka-actor" }
-
-## Dependency
+## Module info
 
 To use Classic Actors, add the following dependency in your project:
 
@@ -13,6 +11,8 @@ To use Classic Actors, add the following dependency in your project:
   artifact="akka-actor_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-actor" }
 
 ## Introduction
 

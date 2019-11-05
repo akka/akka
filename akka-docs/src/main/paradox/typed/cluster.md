@@ -19,9 +19,7 @@ You have to enable @ref:[serialization](../serialization.md)  to send messages b
 @ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
 recommendation if you don't have other preferences or constraints.
 
-@@project-info{ projectId="akka-cluster-typed" }
-
-## Dependency
+## Module info
 
 To use Akka Cluster add the following dependency in your project:
 
@@ -30,6 +28,8 @@ To use Akka Cluster add the following dependency in your project:
   artifact=akka-cluster-typed_$scala.binary_version$
   version=$akka.version$
 }
+
+@@project-info{ projectId="akka-cluster-typed" }
 
 ## Cluster samples
 
