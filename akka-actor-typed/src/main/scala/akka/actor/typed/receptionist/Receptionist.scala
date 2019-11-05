@@ -109,7 +109,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * by sending this command to the [[Receptionist.ref]].
    *
    * Multiple registrations can be made for the same key. De-registration is implied by
-   * the end of the referenced Actor’s lifecycle.
+   * the end of the referenced Actor’s lifecycle, but it can also be explicitly unregistered before termination.
    *
    * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor
    * if there is one.
@@ -135,7 +135,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * by sending this command to the [[Receptionist.ref]].
    *
    * Multiple registrations can be made for the same key. De-registration is implied by
-   * the end of the referenced Actor’s lifecycle.
+   * the end of the referenced Actor’s lifecycle, but it can also be explicitly unregistered before termination.
    */
   def register[T](key: ServiceKey[T], service: ActorRef[T]): Command = Register(key, service)
 
@@ -145,7 +145,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * by sending this command to the [[Receptionist.ref]].
    *
    * Multiple registrations can be made for the same key. De-registration is implied by
-   * the end of the referenced Actor’s lifecycle.
+   * the end of the referenced Actor’s lifecycle, but it can also be explicitly unregistered before termination.
    *
    * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor.
    */
@@ -199,6 +199,79 @@ object Receptionist extends ExtensionId[Receptionist] {
    */
   def registered[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Registered =
     Registered(key, serviceInstance)
+
+  /**
+   * Remove association between the given [[akka.actor.typed.ActorRef]] and the given [[ServiceKey]].
+   *
+   * De-registration will be acknowledged with the [[Unregistered]] message to the given replyTo actor
+   * if there is one.
+   */
+  object Unregister {
+
+    /**
+     * Create a Unregister without Ack that the service was unregistered
+     */
+    def apply[T](key: ServiceKey[T], service: ActorRef[T]): Command =
+      new ReceptionistMessages.Unregister[T](key, service, None)
+
+    /**
+     * Create a Unregister with an actor that will get an ack that the service was unregistered
+     */
+    def apply[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Unregistered]): Command =
+      new ReceptionistMessages.Unregister[T](key, service, Some(replyTo))
+  }
+
+  /**
+   * Java API: A Unregister message without Ack that the service was unregistered
+   */
+  def unregister[T](key: ServiceKey[T], service: ActorRef[T]): Command = Unregister(key, service)
+
+  /**
+   * Confirmation that the given [[akka.actor.typed.ActorRef]] no more associated with the [[ServiceKey]].
+   *
+   * You can use `key.Unregistered` for type-safe pattern matching.
+   *
+   * Not for user extension
+   */
+  @DoNotInherit
+  trait Unregistered {
+
+    def isForKey(key: ServiceKey[_]): Boolean
+
+    /** Scala API */
+    def key: ServiceKey[_]
+
+    /** Java API */
+    def getKey: ServiceKey[_] = key
+
+    /**
+     * Scala API
+     *
+     * Also, see [[ServiceKey.Listing]] for more convenient pattern matching
+     */
+    def serviceInstance[T](key: ServiceKey[T]): ActorRef[T]
+
+    /** Java API */
+    def getServiceInstance[T](key: ServiceKey[T]): ActorRef[T]
+  }
+
+  /**
+   * Sent by the receptionist, available here for easier testing
+   */
+  object Unregistered {
+
+    /**
+     * Scala API
+     */
+    def apply[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Unregistered =
+      new ReceptionistMessages.Unregistered(key, serviceInstance)
+  }
+
+  /**
+   * Java API: Sent by the receptionist, available here for easier testing
+   */
+  def unregistered[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Unregistered =
+    Unregistered(key, serviceInstance)
 
   /**
    * `Subscribe` message. The given actor will subscribe to service updates when this command is sent to
