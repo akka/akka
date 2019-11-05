@@ -67,6 +67,6 @@ object JdkOptions extends AutoPlugin {
 
   val targetJdkSettings = Seq(
     targetSystemJdk := false,
-    jdk8home := "",
+    jdk8home := sys.env.get("JAVA_8_HOME").getOrElse(""),
   )
 }
