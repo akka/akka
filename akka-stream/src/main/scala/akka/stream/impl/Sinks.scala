@@ -531,16 +531,16 @@ import scala.util.control.NonFatal
  * INTERNAL API
  */
 @InternalApi final private[stream] class LazySink[T, M](sinkFactory: T => Future[Sink[T, M]])
-    extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[M]]] {
+    extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
   val in = Inlet[T]("lazySink.in")
   override def initialAttributes = DefaultAttributes.lazySink
   override val shape: SinkShape[T] = SinkShape.of(in)
 
   override def toString: String = "LazySink"
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
 
-    val promise = Promise[Option[M]]()
+    val promise = Promise[M]()
     val stageLogic = new GraphStageLogic(shape) with InHandler {
       var switching = false
       override def preStart(): Unit = pull(in)
@@ -556,7 +556,7 @@ import scala.util.control.NonFatal
               if (!promise.isCompleted) {
                 try {
                   val mat = switchTo(sink, element)
-                  promise.success(Some(mat))
+                  promise.success(mat)
                   setKeepGoing(true)
                 } catch {
                   case NonFatal(e) =>
@@ -584,7 +584,7 @@ import scala.util.control.NonFatal
           // there is a cached element -> the stage must not be shut down automatically because isClosed(in) is satisfied
           setKeepGoing(true)
         } else {
-          promise.success(None)
+          promise.failure(new NeverMaterializedException)
           super.onUpstreamFinish()
         }
       }

@@ -242,7 +242,7 @@ class ClusterSingletonManagerSpec
     val proxyDcB = system.actorOf(
       ClusterSingletonProxy.props(
         singletonManagerPath = "/user/consumer",
-        settings = ClusterSingletonProxySettings(system).withRole("worker").withDataCenter("B")),
+        settings = ClusterSingletonProxySettings(system).withDataCenter("B")),
       name = "consumerProxyDcB")
     //#create-singleton-proxy-dc
     proxyDcB

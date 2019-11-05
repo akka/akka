@@ -84,7 +84,7 @@ public class MovieWatchList
   }
 
   public static Behavior<Command> behavior(String userId) {
-    return new MovieWatchList(new PersistenceId("movies-" + userId));
+    return new MovieWatchList(PersistenceId.ofUniqueId("movies-" + userId));
   }
 
   public MovieWatchList(PersistenceId persistenceId) {

@@ -8,7 +8,7 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorCell
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.internal.adapter.ActorContextAdapter
@@ -71,7 +71,7 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
       }, MailboxSelector.bounded(2))
       actor ! "one" // actor will block here
       actor ! "two"
-      LoggingEventFilter.deadLetters().intercept {
+      LoggingTestKit.deadLetters().intercept {
         // one or both of these doesn't fit in mailbox
         // depending on race with how fast actor consumes
         actor ! "three"

@@ -9,7 +9,6 @@ import akka.actor.testkit.typed.internal.TestKitUtils
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.Scheduler
 import akka.actor.typed.Props
 import akka.util.Timeout
 import com.typesafe.config.Config
@@ -64,11 +63,6 @@ abstract class ActorTestKitBase(val testKit: ActorTestKit) {
    * See corresponding method on [[ActorTestKit]]
    */
   implicit def timeout: Timeout = testKit.timeout
-
-  /**
-   * See corresponding method on [[ActorTestKit]]
-   */
-  implicit def scheduler: Scheduler = testKit.scheduler
 
   /**
    * See corresponding method on [[ActorTestKit]]

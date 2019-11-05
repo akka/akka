@@ -24,24 +24,29 @@ public final class ClusterMessages {
 
     /**
      * <code>required string actorRef = 1;</code>
+     * @return Whether the actorRef field is set.
      */
     boolean hasActorRef();
     /**
      * <code>required string actorRef = 1;</code>
+     * @return The actorRef.
      */
     java.lang.String getActorRef();
     /**
      * <code>required string actorRef = 1;</code>
+     * @return The bytes for actorRef.
      */
     akka.protobufv3.internal.ByteString
         getActorRefBytes();
 
     /**
      * <code>required uint64 systemUid = 2;</code>
+     * @return Whether the systemUid field is set.
      */
     boolean hasSystemUid();
     /**
      * <code>required uint64 systemUid = 2;</code>
+     * @return The systemUid.
      */
     long getSystemUid();
   }
@@ -140,12 +145,14 @@ public final class ClusterMessages {
     private volatile java.lang.Object actorRef_;
     /**
      * <code>required string actorRef = 1;</code>
+     * @return Whether the actorRef field is set.
      */
     public boolean hasActorRef() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string actorRef = 1;</code>
+     * @return The actorRef.
      */
     public java.lang.String getActorRef() {
       java.lang.Object ref = actorRef_;
@@ -163,6 +170,7 @@ public final class ClusterMessages {
     }
     /**
      * <code>required string actorRef = 1;</code>
+     * @return The bytes for actorRef.
      */
     public akka.protobufv3.internal.ByteString
         getActorRefBytes() {
@@ -182,12 +190,14 @@ public final class ClusterMessages {
     private long systemUid_;
     /**
      * <code>required uint64 systemUid = 2;</code>
+     * @return Whether the systemUid field is set.
      */
     public boolean hasSystemUid() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint64 systemUid = 2;</code>
+     * @return The systemUid.
      */
     public long getSystemUid() {
       return systemUid_;
@@ -551,12 +561,14 @@ public final class ClusterMessages {
       private java.lang.Object actorRef_ = "";
       /**
        * <code>required string actorRef = 1;</code>
+       * @return Whether the actorRef field is set.
        */
       public boolean hasActorRef() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string actorRef = 1;</code>
+       * @return The actorRef.
        */
       public java.lang.String getActorRef() {
         java.lang.Object ref = actorRef_;
@@ -574,6 +586,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string actorRef = 1;</code>
+       * @return The bytes for actorRef.
        */
       public akka.protobufv3.internal.ByteString
           getActorRefBytes() {
@@ -590,6 +603,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string actorRef = 1;</code>
+       * @param value The actorRef to set.
+       * @return This builder for chaining.
        */
       public Builder setActorRef(
           java.lang.String value) {
@@ -603,6 +618,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string actorRef = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearActorRef() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -612,6 +628,8 @@ public final class ClusterMessages {
       }
       /**
        * <code>required string actorRef = 1;</code>
+       * @param value The bytes for actorRef to set.
+       * @return This builder for chaining.
        */
       public Builder setActorRefBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -627,18 +645,22 @@ public final class ClusterMessages {
       private long systemUid_ ;
       /**
        * <code>required uint64 systemUid = 2;</code>
+       * @return Whether the systemUid field is set.
        */
       public boolean hasSystemUid() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint64 systemUid = 2;</code>
+       * @return The systemUid.
        */
       public long getSystemUid() {
         return systemUid_;
       }
       /**
        * <code>required uint64 systemUid = 2;</code>
+       * @param value The systemUid to set.
+       * @return This builder for chaining.
        */
       public Builder setSystemUid(long value) {
         bitField0_ |= 0x00000002;
@@ -648,6 +670,7 @@ public final class ClusterMessages {
       }
       /**
        * <code>required uint64 systemUid = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSystemUid() {
         bitField0_ = (bitField0_ & ~0x00000002);

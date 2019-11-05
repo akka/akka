@@ -80,9 +80,9 @@ The benefit of parallelizing is that it is easy to scale. In the pancake example
 it is easy to add a third frying pan with Patrik's method, but Roland cannot add a third frying pan,
 since that would require a third processing step, which is not practically possible in the case of frying pancakes.
 
-One drawback of the example code above that it does not preserve the ordering of pancakes. This might be a problem
+One drawback of the example code above is it does not preserve the ordering of pancakes. This might be a problem
 if children like to track their "own" pancakes. In those cases the `Balance` and `Merge` operators should be replaced
-by strict-round robing balancing and merging operators that put in and take out pancakes in a strict order.
+by round-robin balancing and merging operators which put in and take out pancakes in a strict order.
 
 A more detailed example of creating a worker pool can be found in the cookbook: @ref:[Balancing jobs to a fixed pool of workers](stream-cookbook.md#cookbook-balance)
 

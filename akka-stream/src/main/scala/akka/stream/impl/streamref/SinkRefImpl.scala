@@ -59,6 +59,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       eagerMaterializer: Materializer): (GraphStageLogic, SourceRef[In]) = {
 
     val logic = new TimerGraphStageLogic(shape) with StageLogging with ActorRefStage with InHandler {
+      override protected def logSource: Class[_] = classOf[SinkRefStageImpl[_]]
 
       private[this] val streamRefsMaster = StreamRefsMaster(eagerMaterializer.system)
 

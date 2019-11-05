@@ -93,6 +93,8 @@ public final class WireFormats {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -100,6 +102,10 @@ public final class WireFormats {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static CommandType forNumber(int value) {
       switch (value) {
         case 1: return ASSOCIATE;
@@ -231,6 +237,8 @@ public final class WireFormats {
     }
 
     /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
      * @deprecated Use {@link #forNumber(int)} instead.
      */
     @java.lang.Deprecated
@@ -238,6 +246,10 @@ public final class WireFormats {
       return forNumber(value);
     }
 
+    /**
+     * @param value The numeric wire value of the corresponding enum entry.
+     * @return The enum associated with the given numeric wire value.
+     */
     public static TimeUnit forNumber(int value) {
       switch (value) {
         case 1: return NANOSECONDS;
@@ -302,10 +314,12 @@ public final class WireFormats {
 
     /**
      * <code>optional .AcknowledgementInfo ack = 1;</code>
+     * @return Whether the ack field is set.
      */
     boolean hasAck();
     /**
      * <code>optional .AcknowledgementInfo ack = 1;</code>
+     * @return The ack.
      */
     akka.remote.WireFormats.AcknowledgementInfo getAck();
     /**
@@ -315,10 +329,12 @@ public final class WireFormats {
 
     /**
      * <code>optional .RemoteEnvelope envelope = 2;</code>
+     * @return Whether the envelope field is set.
      */
     boolean hasEnvelope();
     /**
      * <code>optional .RemoteEnvelope envelope = 2;</code>
+     * @return The envelope.
      */
     akka.remote.WireFormats.RemoteEnvelope getEnvelope();
     /**
@@ -435,12 +451,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.AcknowledgementInfo ack_;
     /**
      * <code>optional .AcknowledgementInfo ack = 1;</code>
+     * @return Whether the ack field is set.
      */
     public boolean hasAck() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional .AcknowledgementInfo ack = 1;</code>
+     * @return The ack.
      */
     public akka.remote.WireFormats.AcknowledgementInfo getAck() {
       return ack_ == null ? akka.remote.WireFormats.AcknowledgementInfo.getDefaultInstance() : ack_;
@@ -456,12 +474,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.RemoteEnvelope envelope_;
     /**
      * <code>optional .RemoteEnvelope envelope = 2;</code>
+     * @return Whether the envelope field is set.
      */
     public boolean hasEnvelope() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .RemoteEnvelope envelope = 2;</code>
+     * @return The envelope.
      */
     public akka.remote.WireFormats.RemoteEnvelope getEnvelope() {
       return envelope_ == null ? akka.remote.WireFormats.RemoteEnvelope.getDefaultInstance() : envelope_;
@@ -857,12 +877,14 @@ public final class WireFormats {
           akka.remote.WireFormats.AcknowledgementInfo, akka.remote.WireFormats.AcknowledgementInfo.Builder, akka.remote.WireFormats.AcknowledgementInfoOrBuilder> ackBuilder_;
       /**
        * <code>optional .AcknowledgementInfo ack = 1;</code>
+       * @return Whether the ack field is set.
        */
       public boolean hasAck() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional .AcknowledgementInfo ack = 1;</code>
+       * @return The ack.
        */
       public akka.remote.WireFormats.AcknowledgementInfo getAck() {
         if (ackBuilder_ == null) {
@@ -975,12 +997,14 @@ public final class WireFormats {
           akka.remote.WireFormats.RemoteEnvelope, akka.remote.WireFormats.RemoteEnvelope.Builder, akka.remote.WireFormats.RemoteEnvelopeOrBuilder> envelopeBuilder_;
       /**
        * <code>optional .RemoteEnvelope envelope = 2;</code>
+       * @return Whether the envelope field is set.
        */
       public boolean hasEnvelope() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .RemoteEnvelope envelope = 2;</code>
+       * @return The envelope.
        */
       public akka.remote.WireFormats.RemoteEnvelope getEnvelope() {
         if (envelopeBuilder_ == null) {
@@ -1146,10 +1170,12 @@ public final class WireFormats {
 
     /**
      * <code>required .ActorRefData recipient = 1;</code>
+     * @return Whether the recipient field is set.
      */
     boolean hasRecipient();
     /**
      * <code>required .ActorRefData recipient = 1;</code>
+     * @return The recipient.
      */
     akka.remote.WireFormats.ActorRefData getRecipient();
     /**
@@ -1159,10 +1185,12 @@ public final class WireFormats {
 
     /**
      * <code>required .SerializedMessage message = 2;</code>
+     * @return Whether the message field is set.
      */
     boolean hasMessage();
     /**
      * <code>required .SerializedMessage message = 2;</code>
+     * @return The message.
      */
     akka.remote.WireFormats.SerializedMessage getMessage();
     /**
@@ -1172,10 +1200,12 @@ public final class WireFormats {
 
     /**
      * <code>optional .ActorRefData sender = 4;</code>
+     * @return Whether the sender field is set.
      */
     boolean hasSender();
     /**
      * <code>optional .ActorRefData sender = 4;</code>
+     * @return The sender.
      */
     akka.remote.WireFormats.ActorRefData getSender();
     /**
@@ -1185,10 +1215,12 @@ public final class WireFormats {
 
     /**
      * <code>optional fixed64 seq = 5;</code>
+     * @return Whether the seq field is set.
      */
     boolean hasSeq();
     /**
      * <code>optional fixed64 seq = 5;</code>
+     * @return The seq.
      */
     long getSeq();
   }
@@ -1324,12 +1356,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.ActorRefData recipient_;
     /**
      * <code>required .ActorRefData recipient = 1;</code>
+     * @return Whether the recipient field is set.
      */
     public boolean hasRecipient() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .ActorRefData recipient = 1;</code>
+     * @return The recipient.
      */
     public akka.remote.WireFormats.ActorRefData getRecipient() {
       return recipient_ == null ? akka.remote.WireFormats.ActorRefData.getDefaultInstance() : recipient_;
@@ -1345,12 +1379,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.SerializedMessage message_;
     /**
      * <code>required .SerializedMessage message = 2;</code>
+     * @return Whether the message field is set.
      */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .SerializedMessage message = 2;</code>
+     * @return The message.
      */
     public akka.remote.WireFormats.SerializedMessage getMessage() {
       return message_ == null ? akka.remote.WireFormats.SerializedMessage.getDefaultInstance() : message_;
@@ -1366,12 +1402,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.ActorRefData sender_;
     /**
      * <code>optional .ActorRefData sender = 4;</code>
+     * @return Whether the sender field is set.
      */
     public boolean hasSender() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional .ActorRefData sender = 4;</code>
+     * @return The sender.
      */
     public akka.remote.WireFormats.ActorRefData getSender() {
       return sender_ == null ? akka.remote.WireFormats.ActorRefData.getDefaultInstance() : sender_;
@@ -1387,12 +1425,14 @@ public final class WireFormats {
     private long seq_;
     /**
      * <code>optional fixed64 seq = 5;</code>
+     * @return Whether the seq field is set.
      */
     public boolean hasSeq() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional fixed64 seq = 5;</code>
+     * @return The seq.
      */
     public long getSeq() {
       return seq_;
@@ -1864,12 +1904,14 @@ public final class WireFormats {
           akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder> recipientBuilder_;
       /**
        * <code>required .ActorRefData recipient = 1;</code>
+       * @return Whether the recipient field is set.
        */
       public boolean hasRecipient() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .ActorRefData recipient = 1;</code>
+       * @return The recipient.
        */
       public akka.remote.WireFormats.ActorRefData getRecipient() {
         if (recipientBuilder_ == null) {
@@ -1982,12 +2024,14 @@ public final class WireFormats {
           akka.remote.WireFormats.SerializedMessage, akka.remote.WireFormats.SerializedMessage.Builder, akka.remote.WireFormats.SerializedMessageOrBuilder> messageBuilder_;
       /**
        * <code>required .SerializedMessage message = 2;</code>
+       * @return Whether the message field is set.
        */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .SerializedMessage message = 2;</code>
+       * @return The message.
        */
       public akka.remote.WireFormats.SerializedMessage getMessage() {
         if (messageBuilder_ == null) {
@@ -2100,12 +2144,14 @@ public final class WireFormats {
           akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder> senderBuilder_;
       /**
        * <code>optional .ActorRefData sender = 4;</code>
+       * @return Whether the sender field is set.
        */
       public boolean hasSender() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional .ActorRefData sender = 4;</code>
+       * @return The sender.
        */
       public akka.remote.WireFormats.ActorRefData getSender() {
         if (senderBuilder_ == null) {
@@ -2216,18 +2262,22 @@ public final class WireFormats {
       private long seq_ ;
       /**
        * <code>optional fixed64 seq = 5;</code>
+       * @return Whether the seq field is set.
        */
       public boolean hasSeq() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional fixed64 seq = 5;</code>
+       * @return The seq.
        */
       public long getSeq() {
         return seq_;
       }
       /**
        * <code>optional fixed64 seq = 5;</code>
+       * @param value The seq to set.
+       * @return This builder for chaining.
        */
       public Builder setSeq(long value) {
         bitField0_ |= 0x00000008;
@@ -2237,6 +2287,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional fixed64 seq = 5;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSeq() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -2303,23 +2354,29 @@ public final class WireFormats {
 
     /**
      * <code>required fixed64 cumulativeAck = 1;</code>
+     * @return Whether the cumulativeAck field is set.
      */
     boolean hasCumulativeAck();
     /**
      * <code>required fixed64 cumulativeAck = 1;</code>
+     * @return The cumulativeAck.
      */
     long getCumulativeAck();
 
     /**
      * <code>repeated fixed64 nacks = 2;</code>
+     * @return A list containing the nacks.
      */
     java.util.List<java.lang.Long> getNacksList();
     /**
      * <code>repeated fixed64 nacks = 2;</code>
+     * @return The count of nacks.
      */
     int getNacksCount();
     /**
      * <code>repeated fixed64 nacks = 2;</code>
+     * @param index The index of the element to return.
+     * @return The nacks at the given index.
      */
     long getNacks(int index);
   }
@@ -2436,12 +2493,14 @@ public final class WireFormats {
     private long cumulativeAck_;
     /**
      * <code>required fixed64 cumulativeAck = 1;</code>
+     * @return Whether the cumulativeAck field is set.
      */
     public boolean hasCumulativeAck() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required fixed64 cumulativeAck = 1;</code>
+     * @return The cumulativeAck.
      */
     public long getCumulativeAck() {
       return cumulativeAck_;
@@ -2451,6 +2510,7 @@ public final class WireFormats {
     private akka.protobufv3.internal.Internal.LongList nacks_;
     /**
      * <code>repeated fixed64 nacks = 2;</code>
+     * @return A list containing the nacks.
      */
     public java.util.List<java.lang.Long>
         getNacksList() {
@@ -2458,12 +2518,15 @@ public final class WireFormats {
     }
     /**
      * <code>repeated fixed64 nacks = 2;</code>
+     * @return The count of nacks.
      */
     public int getNacksCount() {
       return nacks_.size();
     }
     /**
      * <code>repeated fixed64 nacks = 2;</code>
+     * @param index The index of the element to return.
+     * @return The nacks at the given index.
      */
     public long getNacks(int index) {
       return nacks_.getLong(index);
@@ -2826,18 +2889,22 @@ public final class WireFormats {
       private long cumulativeAck_ ;
       /**
        * <code>required fixed64 cumulativeAck = 1;</code>
+       * @return Whether the cumulativeAck field is set.
        */
       public boolean hasCumulativeAck() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required fixed64 cumulativeAck = 1;</code>
+       * @return The cumulativeAck.
        */
       public long getCumulativeAck() {
         return cumulativeAck_;
       }
       /**
        * <code>required fixed64 cumulativeAck = 1;</code>
+       * @param value The cumulativeAck to set.
+       * @return This builder for chaining.
        */
       public Builder setCumulativeAck(long value) {
         bitField0_ |= 0x00000001;
@@ -2847,6 +2914,7 @@ public final class WireFormats {
       }
       /**
        * <code>required fixed64 cumulativeAck = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearCumulativeAck() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -2864,6 +2932,7 @@ public final class WireFormats {
       }
       /**
        * <code>repeated fixed64 nacks = 2;</code>
+       * @return A list containing the nacks.
        */
       public java.util.List<java.lang.Long>
           getNacksList() {
@@ -2872,18 +2941,24 @@ public final class WireFormats {
       }
       /**
        * <code>repeated fixed64 nacks = 2;</code>
+       * @return The count of nacks.
        */
       public int getNacksCount() {
         return nacks_.size();
       }
       /**
        * <code>repeated fixed64 nacks = 2;</code>
+       * @param index The index of the element to return.
+       * @return The nacks at the given index.
        */
       public long getNacks(int index) {
         return nacks_.getLong(index);
       }
       /**
        * <code>repeated fixed64 nacks = 2;</code>
+       * @param index The index to set the value at.
+       * @param value The nacks to set.
+       * @return This builder for chaining.
        */
       public Builder setNacks(
           int index, long value) {
@@ -2894,6 +2969,8 @@ public final class WireFormats {
       }
       /**
        * <code>repeated fixed64 nacks = 2;</code>
+       * @param value The nacks to add.
+       * @return This builder for chaining.
        */
       public Builder addNacks(long value) {
         ensureNacksIsMutable();
@@ -2903,6 +2980,8 @@ public final class WireFormats {
       }
       /**
        * <code>repeated fixed64 nacks = 2;</code>
+       * @param values The nacks to add.
+       * @return This builder for chaining.
        */
       public Builder addAllNacks(
           java.lang.Iterable<? extends java.lang.Long> values) {
@@ -2914,6 +2993,7 @@ public final class WireFormats {
       }
       /**
        * <code>repeated fixed64 nacks = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearNacks() {
         nacks_ = emptyLongList();
@@ -2980,14 +3060,17 @@ public final class WireFormats {
 
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     boolean hasPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     java.lang.String getPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     akka.protobufv3.internal.ByteString
         getPathBytes();
@@ -3088,12 +3171,14 @@ public final class WireFormats {
     private volatile java.lang.Object path_;
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     public boolean hasPath() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
@@ -3111,6 +3196,7 @@ public final class WireFormats {
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     public akka.protobufv3.internal.ByteString
         getPathBytes() {
@@ -3457,12 +3543,14 @@ public final class WireFormats {
       private java.lang.Object path_ = "";
       /**
        * <code>required string path = 1;</code>
+       * @return Whether the path field is set.
        */
       public boolean hasPath() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The path.
        */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
@@ -3480,6 +3568,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The bytes for path.
        */
       public akka.protobufv3.internal.ByteString
           getPathBytes() {
@@ -3496,6 +3585,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The path to set.
+       * @return This builder for chaining.
        */
       public Builder setPath(
           java.lang.String value) {
@@ -3509,6 +3600,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPath() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -3518,6 +3610,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The bytes for path to set.
+       * @return This builder for chaining.
        */
       public Builder setPathBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -3588,28 +3682,34 @@ public final class WireFormats {
 
     /**
      * <code>required bytes message = 1;</code>
+     * @return Whether the message field is set.
      */
     boolean hasMessage();
     /**
      * <code>required bytes message = 1;</code>
+     * @return The message.
      */
     akka.protobufv3.internal.ByteString getMessage();
 
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     boolean hasSerializerId();
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     int getSerializerId();
 
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return Whether the messageManifest field is set.
      */
     boolean hasMessageManifest();
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return The messageManifest.
      */
     akka.protobufv3.internal.ByteString getMessageManifest();
   }
@@ -3718,12 +3818,14 @@ public final class WireFormats {
     private akka.protobufv3.internal.ByteString message_;
     /**
      * <code>required bytes message = 1;</code>
+     * @return Whether the message field is set.
      */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required bytes message = 1;</code>
+     * @return The message.
      */
     public akka.protobufv3.internal.ByteString getMessage() {
       return message_;
@@ -3733,12 +3835,14 @@ public final class WireFormats {
     private int serializerId_;
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return Whether the serializerId field is set.
      */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required int32 serializerId = 2;</code>
+     * @return The serializerId.
      */
     public int getSerializerId() {
       return serializerId_;
@@ -3748,12 +3852,14 @@ public final class WireFormats {
     private akka.protobufv3.internal.ByteString messageManifest_;
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return Whether the messageManifest field is set.
      */
     public boolean hasMessageManifest() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes messageManifest = 3;</code>
+     * @return The messageManifest.
      */
     public akka.protobufv3.internal.ByteString getMessageManifest() {
       return messageManifest_;
@@ -4145,18 +4251,22 @@ public final class WireFormats {
       private akka.protobufv3.internal.ByteString message_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes message = 1;</code>
+       * @return Whether the message field is set.
        */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required bytes message = 1;</code>
+       * @return The message.
        */
       public akka.protobufv3.internal.ByteString getMessage() {
         return message_;
       }
       /**
        * <code>required bytes message = 1;</code>
+       * @param value The message to set.
+       * @return This builder for chaining.
        */
       public Builder setMessage(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -4169,6 +4279,7 @@ public final class WireFormats {
       }
       /**
        * <code>required bytes message = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessage() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -4180,18 +4291,22 @@ public final class WireFormats {
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return Whether the serializerId field is set.
        */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return The serializerId.
        */
       public int getSerializerId() {
         return serializerId_;
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @param value The serializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000002;
@@ -4201,6 +4316,7 @@ public final class WireFormats {
       }
       /**
        * <code>required int32 serializerId = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -4212,18 +4328,22 @@ public final class WireFormats {
       private akka.protobufv3.internal.ByteString messageManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @return Whether the messageManifest field is set.
        */
       public boolean hasMessageManifest() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @return The messageManifest.
        */
       public akka.protobufv3.internal.ByteString getMessageManifest() {
         return messageManifest_;
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @param value The messageManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setMessageManifest(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -4236,6 +4356,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional bytes messageManifest = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessageManifest() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -4302,10 +4423,12 @@ public final class WireFormats {
 
     /**
      * <code>required .PropsData props = 1;</code>
+     * @return Whether the props field is set.
      */
     boolean hasProps();
     /**
      * <code>required .PropsData props = 1;</code>
+     * @return The props.
      */
     akka.remote.WireFormats.PropsData getProps();
     /**
@@ -4315,10 +4438,12 @@ public final class WireFormats {
 
     /**
      * <code>required .DeployData deploy = 2;</code>
+     * @return Whether the deploy field is set.
      */
     boolean hasDeploy();
     /**
      * <code>required .DeployData deploy = 2;</code>
+     * @return The deploy.
      */
     akka.remote.WireFormats.DeployData getDeploy();
     /**
@@ -4328,24 +4453,29 @@ public final class WireFormats {
 
     /**
      * <code>required string path = 3;</code>
+     * @return Whether the path field is set.
      */
     boolean hasPath();
     /**
      * <code>required string path = 3;</code>
+     * @return The path.
      */
     java.lang.String getPath();
     /**
      * <code>required string path = 3;</code>
+     * @return The bytes for path.
      */
     akka.protobufv3.internal.ByteString
         getPathBytes();
 
     /**
      * <code>required .ActorRefData supervisor = 4;</code>
+     * @return Whether the supervisor field is set.
      */
     boolean hasSupervisor();
     /**
      * <code>required .ActorRefData supervisor = 4;</code>
+     * @return The supervisor.
      */
     akka.remote.WireFormats.ActorRefData getSupervisor();
     /**
@@ -4487,12 +4617,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.PropsData props_;
     /**
      * <code>required .PropsData props = 1;</code>
+     * @return Whether the props field is set.
      */
     public boolean hasProps() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .PropsData props = 1;</code>
+     * @return The props.
      */
     public akka.remote.WireFormats.PropsData getProps() {
       return props_ == null ? akka.remote.WireFormats.PropsData.getDefaultInstance() : props_;
@@ -4508,12 +4640,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.DeployData deploy_;
     /**
      * <code>required .DeployData deploy = 2;</code>
+     * @return Whether the deploy field is set.
      */
     public boolean hasDeploy() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .DeployData deploy = 2;</code>
+     * @return The deploy.
      */
     public akka.remote.WireFormats.DeployData getDeploy() {
       return deploy_ == null ? akka.remote.WireFormats.DeployData.getDefaultInstance() : deploy_;
@@ -4529,12 +4663,14 @@ public final class WireFormats {
     private volatile java.lang.Object path_;
     /**
      * <code>required string path = 3;</code>
+     * @return Whether the path field is set.
      */
     public boolean hasPath() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required string path = 3;</code>
+     * @return The path.
      */
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
@@ -4552,6 +4688,7 @@ public final class WireFormats {
     }
     /**
      * <code>required string path = 3;</code>
+     * @return The bytes for path.
      */
     public akka.protobufv3.internal.ByteString
         getPathBytes() {
@@ -4571,12 +4708,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.ActorRefData supervisor_;
     /**
      * <code>required .ActorRefData supervisor = 4;</code>
+     * @return Whether the supervisor field is set.
      */
     public boolean hasSupervisor() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required .ActorRefData supervisor = 4;</code>
+     * @return The supervisor.
      */
     public akka.remote.WireFormats.ActorRefData getSupervisor() {
       return supervisor_ == null ? akka.remote.WireFormats.ActorRefData.getDefaultInstance() : supervisor_;
@@ -5064,12 +5203,14 @@ public final class WireFormats {
           akka.remote.WireFormats.PropsData, akka.remote.WireFormats.PropsData.Builder, akka.remote.WireFormats.PropsDataOrBuilder> propsBuilder_;
       /**
        * <code>required .PropsData props = 1;</code>
+       * @return Whether the props field is set.
        */
       public boolean hasProps() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .PropsData props = 1;</code>
+       * @return The props.
        */
       public akka.remote.WireFormats.PropsData getProps() {
         if (propsBuilder_ == null) {
@@ -5182,12 +5323,14 @@ public final class WireFormats {
           akka.remote.WireFormats.DeployData, akka.remote.WireFormats.DeployData.Builder, akka.remote.WireFormats.DeployDataOrBuilder> deployBuilder_;
       /**
        * <code>required .DeployData deploy = 2;</code>
+       * @return Whether the deploy field is set.
        */
       public boolean hasDeploy() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .DeployData deploy = 2;</code>
+       * @return The deploy.
        */
       public akka.remote.WireFormats.DeployData getDeploy() {
         if (deployBuilder_ == null) {
@@ -5298,12 +5441,14 @@ public final class WireFormats {
       private java.lang.Object path_ = "";
       /**
        * <code>required string path = 3;</code>
+       * @return Whether the path field is set.
        */
       public boolean hasPath() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required string path = 3;</code>
+       * @return The path.
        */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
@@ -5321,6 +5466,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 3;</code>
+       * @return The bytes for path.
        */
       public akka.protobufv3.internal.ByteString
           getPathBytes() {
@@ -5337,6 +5483,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 3;</code>
+       * @param value The path to set.
+       * @return This builder for chaining.
        */
       public Builder setPath(
           java.lang.String value) {
@@ -5350,6 +5498,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPath() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -5359,6 +5508,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 3;</code>
+       * @param value The bytes for path to set.
+       * @return This builder for chaining.
        */
       public Builder setPathBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -5376,12 +5527,14 @@ public final class WireFormats {
           akka.remote.WireFormats.ActorRefData, akka.remote.WireFormats.ActorRefData.Builder, akka.remote.WireFormats.ActorRefDataOrBuilder> supervisorBuilder_;
       /**
        * <code>required .ActorRefData supervisor = 4;</code>
+       * @return Whether the supervisor field is set.
        */
       public boolean hasSupervisor() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required .ActorRefData supervisor = 4;</code>
+       * @return The supervisor.
        */
       public akka.remote.WireFormats.ActorRefData getSupervisor() {
         if (supervisorBuilder_ == null) {
@@ -5547,10 +5700,12 @@ public final class WireFormats {
 
     /**
      * <code>required .DeployData deploy = 2;</code>
+     * @return Whether the deploy field is set.
      */
     boolean hasDeploy();
     /**
      * <code>required .DeployData deploy = 2;</code>
+     * @return The deploy.
      */
     akka.remote.WireFormats.DeployData getDeploy();
     /**
@@ -5560,28 +5715,35 @@ public final class WireFormats {
 
     /**
      * <code>required string clazz = 3;</code>
+     * @return Whether the clazz field is set.
      */
     boolean hasClazz();
     /**
      * <code>required string clazz = 3;</code>
+     * @return The clazz.
      */
     java.lang.String getClazz();
     /**
      * <code>required string clazz = 3;</code>
+     * @return The bytes for clazz.
      */
     akka.protobufv3.internal.ByteString
         getClazzBytes();
 
     /**
      * <code>repeated bytes args = 4;</code>
+     * @return A list containing the args.
      */
     java.util.List<akka.protobufv3.internal.ByteString> getArgsList();
     /**
      * <code>repeated bytes args = 4;</code>
+     * @return The count of args.
      */
     int getArgsCount();
     /**
      * <code>repeated bytes args = 4;</code>
+     * @param index The index of the element to return.
+     * @return The args at the given index.
      */
     akka.protobufv3.internal.ByteString getArgs(int index);
 
@@ -5593,6 +5755,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated string manifests = 5;</code>
+     * @return A list containing the manifests.
      */
     java.util.List<java.lang.String>
         getManifestsList();
@@ -5604,6 +5767,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated string manifests = 5;</code>
+     * @return The count of manifests.
      */
     int getManifestsCount();
     /**
@@ -5614,6 +5778,8 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated string manifests = 5;</code>
+     * @param index The index of the element to return.
+     * @return The manifests at the given index.
      */
     java.lang.String getManifests(int index);
     /**
@@ -5624,6 +5790,8 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated string manifests = 5;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the manifests at the given index.
      */
     akka.protobufv3.internal.ByteString
         getManifestsBytes(int index);
@@ -5634,6 +5802,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated int32 serializerIds = 6;</code>
+     * @return A list containing the serializerIds.
      */
     java.util.List<java.lang.Integer> getSerializerIdsList();
     /**
@@ -5642,6 +5811,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated int32 serializerIds = 6;</code>
+     * @return The count of serializerIds.
      */
     int getSerializerIdsCount();
     /**
@@ -5650,6 +5820,8 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated int32 serializerIds = 6;</code>
+     * @param index The index of the element to return.
+     * @return The serializerIds at the given index.
      */
     int getSerializerIds(int index);
 
@@ -5660,6 +5832,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated bool hasManifest = 7;</code>
+     * @return A list containing the hasManifest.
      */
     java.util.List<java.lang.Boolean> getHasManifestList();
     /**
@@ -5669,6 +5842,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated bool hasManifest = 7;</code>
+     * @return The count of hasManifest.
      */
     int getHasManifestCount();
     /**
@@ -5678,6 +5852,8 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated bool hasManifest = 7;</code>
+     * @param index The index of the element to return.
+     * @return The hasManifest at the given index.
      */
     boolean getHasManifest(int index);
   }
@@ -5864,12 +6040,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.DeployData deploy_;
     /**
      * <code>required .DeployData deploy = 2;</code>
+     * @return Whether the deploy field is set.
      */
     public boolean hasDeploy() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .DeployData deploy = 2;</code>
+     * @return The deploy.
      */
     public akka.remote.WireFormats.DeployData getDeploy() {
       return deploy_ == null ? akka.remote.WireFormats.DeployData.getDefaultInstance() : deploy_;
@@ -5885,12 +6063,14 @@ public final class WireFormats {
     private volatile java.lang.Object clazz_;
     /**
      * <code>required string clazz = 3;</code>
+     * @return Whether the clazz field is set.
      */
     public boolean hasClazz() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string clazz = 3;</code>
+     * @return The clazz.
      */
     public java.lang.String getClazz() {
       java.lang.Object ref = clazz_;
@@ -5908,6 +6088,7 @@ public final class WireFormats {
     }
     /**
      * <code>required string clazz = 3;</code>
+     * @return The bytes for clazz.
      */
     public akka.protobufv3.internal.ByteString
         getClazzBytes() {
@@ -5927,6 +6108,7 @@ public final class WireFormats {
     private java.util.List<akka.protobufv3.internal.ByteString> args_;
     /**
      * <code>repeated bytes args = 4;</code>
+     * @return A list containing the args.
      */
     public java.util.List<akka.protobufv3.internal.ByteString>
         getArgsList() {
@@ -5934,12 +6116,15 @@ public final class WireFormats {
     }
     /**
      * <code>repeated bytes args = 4;</code>
+     * @return The count of args.
      */
     public int getArgsCount() {
       return args_.size();
     }
     /**
      * <code>repeated bytes args = 4;</code>
+     * @param index The index of the element to return.
+     * @return The args at the given index.
      */
     public akka.protobufv3.internal.ByteString getArgs(int index) {
       return args_.get(index);
@@ -5955,6 +6140,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated string manifests = 5;</code>
+     * @return A list containing the manifests.
      */
     public akka.protobufv3.internal.ProtocolStringList
         getManifestsList() {
@@ -5968,6 +6154,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated string manifests = 5;</code>
+     * @return The count of manifests.
      */
     public int getManifestsCount() {
       return manifests_.size();
@@ -5980,6 +6167,8 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated string manifests = 5;</code>
+     * @param index The index of the element to return.
+     * @return The manifests at the given index.
      */
     public java.lang.String getManifests(int index) {
       return manifests_.get(index);
@@ -5992,6 +6181,8 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated string manifests = 5;</code>
+     * @param index The index of the value to return.
+     * @return The bytes of the manifests at the given index.
      */
     public akka.protobufv3.internal.ByteString
         getManifestsBytes(int index) {
@@ -6006,6 +6197,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated int32 serializerIds = 6;</code>
+     * @return A list containing the serializerIds.
      */
     public java.util.List<java.lang.Integer>
         getSerializerIdsList() {
@@ -6017,6 +6209,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated int32 serializerIds = 6;</code>
+     * @return The count of serializerIds.
      */
     public int getSerializerIdsCount() {
       return serializerIds_.size();
@@ -6027,6 +6220,8 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated int32 serializerIds = 6;</code>
+     * @param index The index of the element to return.
+     * @return The serializerIds at the given index.
      */
     public int getSerializerIds(int index) {
       return serializerIds_.getInt(index);
@@ -6041,6 +6236,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated bool hasManifest = 7;</code>
+     * @return A list containing the hasManifest.
      */
     public java.util.List<java.lang.Boolean>
         getHasManifestList() {
@@ -6053,6 +6249,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated bool hasManifest = 7;</code>
+     * @return The count of hasManifest.
      */
     public int getHasManifestCount() {
       return hasManifest_.size();
@@ -6064,6 +6261,8 @@ public final class WireFormats {
      * </pre>
      *
      * <code>repeated bool hasManifest = 7;</code>
+     * @param index The index of the element to return.
+     * @return The hasManifest at the given index.
      */
     public boolean getHasManifest(int index) {
       return hasManifest_.getBoolean(index);
@@ -6585,12 +6784,14 @@ public final class WireFormats {
           akka.remote.WireFormats.DeployData, akka.remote.WireFormats.DeployData.Builder, akka.remote.WireFormats.DeployDataOrBuilder> deployBuilder_;
       /**
        * <code>required .DeployData deploy = 2;</code>
+       * @return Whether the deploy field is set.
        */
       public boolean hasDeploy() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .DeployData deploy = 2;</code>
+       * @return The deploy.
        */
       public akka.remote.WireFormats.DeployData getDeploy() {
         if (deployBuilder_ == null) {
@@ -6701,12 +6902,14 @@ public final class WireFormats {
       private java.lang.Object clazz_ = "";
       /**
        * <code>required string clazz = 3;</code>
+       * @return Whether the clazz field is set.
        */
       public boolean hasClazz() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string clazz = 3;</code>
+       * @return The clazz.
        */
       public java.lang.String getClazz() {
         java.lang.Object ref = clazz_;
@@ -6724,6 +6927,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string clazz = 3;</code>
+       * @return The bytes for clazz.
        */
       public akka.protobufv3.internal.ByteString
           getClazzBytes() {
@@ -6740,6 +6944,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string clazz = 3;</code>
+       * @param value The clazz to set.
+       * @return This builder for chaining.
        */
       public Builder setClazz(
           java.lang.String value) {
@@ -6753,6 +6959,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string clazz = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearClazz() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -6762,6 +6969,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string clazz = 3;</code>
+       * @param value The bytes for clazz to set.
+       * @return This builder for chaining.
        */
       public Builder setClazzBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6783,6 +6992,7 @@ public final class WireFormats {
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       * @return A list containing the args.
        */
       public java.util.List<akka.protobufv3.internal.ByteString>
           getArgsList() {
@@ -6791,18 +7001,24 @@ public final class WireFormats {
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       * @return The count of args.
        */
       public int getArgsCount() {
         return args_.size();
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       * @param index The index of the element to return.
+       * @return The args at the given index.
        */
       public akka.protobufv3.internal.ByteString getArgs(int index) {
         return args_.get(index);
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       * @param index The index to set the value at.
+       * @param value The args to set.
+       * @return This builder for chaining.
        */
       public Builder setArgs(
           int index, akka.protobufv3.internal.ByteString value) {
@@ -6816,6 +7032,8 @@ public final class WireFormats {
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       * @param value The args to add.
+       * @return This builder for chaining.
        */
       public Builder addArgs(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -6828,6 +7046,8 @@ public final class WireFormats {
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       * @param values The args to add.
+       * @return This builder for chaining.
        */
       public Builder addAllArgs(
           java.lang.Iterable<? extends akka.protobufv3.internal.ByteString> values) {
@@ -6839,6 +7059,7 @@ public final class WireFormats {
       }
       /**
        * <code>repeated bytes args = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearArgs() {
         args_ = java.util.Collections.emptyList();
@@ -6862,6 +7083,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated string manifests = 5;</code>
+       * @return A list containing the manifests.
        */
       public akka.protobufv3.internal.ProtocolStringList
           getManifestsList() {
@@ -6875,6 +7097,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated string manifests = 5;</code>
+       * @return The count of manifests.
        */
       public int getManifestsCount() {
         return manifests_.size();
@@ -6887,6 +7110,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated string manifests = 5;</code>
+       * @param index The index of the element to return.
+       * @return The manifests at the given index.
        */
       public java.lang.String getManifests(int index) {
         return manifests_.get(index);
@@ -6899,6 +7124,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated string manifests = 5;</code>
+       * @param index The index of the value to return.
+       * @return The bytes of the manifests at the given index.
        */
       public akka.protobufv3.internal.ByteString
           getManifestsBytes(int index) {
@@ -6912,6 +7139,9 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated string manifests = 5;</code>
+       * @param index The index to set the value at.
+       * @param value The manifests to set.
+       * @return This builder for chaining.
        */
       public Builder setManifests(
           int index, java.lang.String value) {
@@ -6931,6 +7161,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated string manifests = 5;</code>
+       * @param value The manifests to add.
+       * @return This builder for chaining.
        */
       public Builder addManifests(
           java.lang.String value) {
@@ -6950,6 +7182,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated string manifests = 5;</code>
+       * @param values The manifests to add.
+       * @return This builder for chaining.
        */
       public Builder addAllManifests(
           java.lang.Iterable<java.lang.String> values) {
@@ -6967,6 +7201,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated string manifests = 5;</code>
+       * @return This builder for chaining.
        */
       public Builder clearManifests() {
         manifests_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
@@ -6982,6 +7217,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated string manifests = 5;</code>
+       * @param value The bytes of the manifests to add.
+       * @return This builder for chaining.
        */
       public Builder addManifestsBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -7007,6 +7244,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated int32 serializerIds = 6;</code>
+       * @return A list containing the serializerIds.
        */
       public java.util.List<java.lang.Integer>
           getSerializerIdsList() {
@@ -7019,6 +7257,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated int32 serializerIds = 6;</code>
+       * @return The count of serializerIds.
        */
       public int getSerializerIdsCount() {
         return serializerIds_.size();
@@ -7029,6 +7268,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated int32 serializerIds = 6;</code>
+       * @param index The index of the element to return.
+       * @return The serializerIds at the given index.
        */
       public int getSerializerIds(int index) {
         return serializerIds_.getInt(index);
@@ -7039,6 +7280,9 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated int32 serializerIds = 6;</code>
+       * @param index The index to set the value at.
+       * @param value The serializerIds to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerIds(
           int index, int value) {
@@ -7053,6 +7297,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated int32 serializerIds = 6;</code>
+       * @param value The serializerIds to add.
+       * @return This builder for chaining.
        */
       public Builder addSerializerIds(int value) {
         ensureSerializerIdsIsMutable();
@@ -7066,6 +7312,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated int32 serializerIds = 6;</code>
+       * @param values The serializerIds to add.
+       * @return This builder for chaining.
        */
       public Builder addAllSerializerIds(
           java.lang.Iterable<? extends java.lang.Integer> values) {
@@ -7081,6 +7329,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated int32 serializerIds = 6;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerIds() {
         serializerIds_ = emptyIntList();
@@ -7103,6 +7352,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated bool hasManifest = 7;</code>
+       * @return A list containing the hasManifest.
        */
       public java.util.List<java.lang.Boolean>
           getHasManifestList() {
@@ -7116,6 +7366,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated bool hasManifest = 7;</code>
+       * @return The count of hasManifest.
        */
       public int getHasManifestCount() {
         return hasManifest_.size();
@@ -7127,6 +7378,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated bool hasManifest = 7;</code>
+       * @param index The index of the element to return.
+       * @return The hasManifest at the given index.
        */
       public boolean getHasManifest(int index) {
         return hasManifest_.getBoolean(index);
@@ -7138,6 +7391,9 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated bool hasManifest = 7;</code>
+       * @param index The index to set the value at.
+       * @param value The hasManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setHasManifest(
           int index, boolean value) {
@@ -7153,6 +7409,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated bool hasManifest = 7;</code>
+       * @param value The hasManifest to add.
+       * @return This builder for chaining.
        */
       public Builder addHasManifest(boolean value) {
         ensureHasManifestIsMutable();
@@ -7167,6 +7425,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated bool hasManifest = 7;</code>
+       * @param values The hasManifest to add.
+       * @return This builder for chaining.
        */
       public Builder addAllHasManifest(
           java.lang.Iterable<? extends java.lang.Boolean> values) {
@@ -7183,6 +7443,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>repeated bool hasManifest = 7;</code>
+       * @return This builder for chaining.
        */
       public Builder clearHasManifest() {
         hasManifest_ = emptyBooleanList();
@@ -7249,55 +7510,67 @@ public final class WireFormats {
 
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     boolean hasPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     java.lang.String getPath();
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     akka.protobufv3.internal.ByteString
         getPathBytes();
 
     /**
      * <code>optional bytes config = 2;</code>
+     * @return Whether the config field is set.
      */
     boolean hasConfig();
     /**
      * <code>optional bytes config = 2;</code>
+     * @return The config.
      */
     akka.protobufv3.internal.ByteString getConfig();
 
     /**
      * <code>optional bytes routerConfig = 3;</code>
+     * @return Whether the routerConfig field is set.
      */
     boolean hasRouterConfig();
     /**
      * <code>optional bytes routerConfig = 3;</code>
+     * @return The routerConfig.
      */
     akka.protobufv3.internal.ByteString getRouterConfig();
 
     /**
      * <code>optional bytes scope = 4;</code>
+     * @return Whether the scope field is set.
      */
     boolean hasScope();
     /**
      * <code>optional bytes scope = 4;</code>
+     * @return The scope.
      */
     akka.protobufv3.internal.ByteString getScope();
 
     /**
      * <code>optional string dispatcher = 5;</code>
+     * @return Whether the dispatcher field is set.
      */
     boolean hasDispatcher();
     /**
      * <code>optional string dispatcher = 5;</code>
+     * @return The dispatcher.
      */
     java.lang.String getDispatcher();
     /**
      * <code>optional string dispatcher = 5;</code>
+     * @return The bytes for dispatcher.
      */
     akka.protobufv3.internal.ByteString
         getDispatcherBytes();
@@ -7309,6 +7582,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>optional int32 scopeSerializerId = 6;</code>
+     * @return Whether the scopeSerializerId field is set.
      */
     boolean hasScopeSerializerId();
     /**
@@ -7318,68 +7592,101 @@ public final class WireFormats {
      * </pre>
      *
      * <code>optional int32 scopeSerializerId = 6;</code>
+     * @return The scopeSerializerId.
      */
     int getScopeSerializerId();
 
     /**
      * <code>optional string scopeManifest = 7;</code>
+     * @return Whether the scopeManifest field is set.
      */
     boolean hasScopeManifest();
     /**
      * <code>optional string scopeManifest = 7;</code>
+     * @return The scopeManifest.
      */
     java.lang.String getScopeManifest();
     /**
      * <code>optional string scopeManifest = 7;</code>
+     * @return The bytes for scopeManifest.
      */
     akka.protobufv3.internal.ByteString
         getScopeManifestBytes();
 
     /**
      * <code>optional int32 configSerializerId = 8;</code>
+     * @return Whether the configSerializerId field is set.
      */
     boolean hasConfigSerializerId();
     /**
      * <code>optional int32 configSerializerId = 8;</code>
+     * @return The configSerializerId.
      */
     int getConfigSerializerId();
 
     /**
      * <code>optional string configManifest = 9;</code>
+     * @return Whether the configManifest field is set.
      */
     boolean hasConfigManifest();
     /**
      * <code>optional string configManifest = 9;</code>
+     * @return The configManifest.
      */
     java.lang.String getConfigManifest();
     /**
      * <code>optional string configManifest = 9;</code>
+     * @return The bytes for configManifest.
      */
     akka.protobufv3.internal.ByteString
         getConfigManifestBytes();
 
     /**
      * <code>optional int32 routerConfigSerializerId = 10;</code>
+     * @return Whether the routerConfigSerializerId field is set.
      */
     boolean hasRouterConfigSerializerId();
     /**
      * <code>optional int32 routerConfigSerializerId = 10;</code>
+     * @return The routerConfigSerializerId.
      */
     int getRouterConfigSerializerId();
 
     /**
      * <code>optional string routerConfigManifest = 11;</code>
+     * @return Whether the routerConfigManifest field is set.
      */
     boolean hasRouterConfigManifest();
     /**
      * <code>optional string routerConfigManifest = 11;</code>
+     * @return The routerConfigManifest.
      */
     java.lang.String getRouterConfigManifest();
     /**
      * <code>optional string routerConfigManifest = 11;</code>
+     * @return The bytes for routerConfigManifest.
      */
     akka.protobufv3.internal.ByteString
         getRouterConfigManifestBytes();
+
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    java.util.List<java.lang.String>
+        getTagsList();
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    int getTagsCount();
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    java.lang.String getTags(int index);
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    akka.protobufv3.internal.ByteString
+        getTagsBytes(int index);
   }
   /**
    * <pre>
@@ -7407,6 +7714,7 @@ public final class WireFormats {
       scopeManifest_ = "";
       configManifest_ = "";
       routerConfigManifest_ = "";
+      tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
     }
 
     @java.lang.Override
@@ -7500,6 +7808,15 @@ public final class WireFormats {
               routerConfigManifest_ = bs;
               break;
             }
+            case 98: {
+              akka.protobufv3.internal.ByteString bs = input.readBytes();
+              if (!((mutable_bitField0_ & 0x00000800) != 0)) {
+                tags_ = new akka.protobufv3.internal.LazyStringArrayList();
+                mutable_bitField0_ |= 0x00000800;
+              }
+              tags_.add(bs);
+              break;
+            }
             default: {
               if (!parseUnknownField(
                   input, unknownFields, extensionRegistry, tag)) {
@@ -7515,6 +7832,9 @@ public final class WireFormats {
         throw new akka.protobufv3.internal.InvalidProtocolBufferException(
             e).setUnfinishedMessage(this);
       } finally {
+        if (((mutable_bitField0_ & 0x00000800) != 0)) {
+          tags_ = tags_.getUnmodifiableView();
+        }
         this.unknownFields = unknownFields.build();
         makeExtensionsImmutable();
       }
@@ -7537,12 +7857,14 @@ public final class WireFormats {
     private volatile java.lang.Object path_;
     /**
      * <code>required string path = 1;</code>
+     * @return Whether the path field is set.
      */
     public boolean hasPath() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The path.
      */
     public java.lang.String getPath() {
       java.lang.Object ref = path_;
@@ -7560,6 +7882,7 @@ public final class WireFormats {
     }
     /**
      * <code>required string path = 1;</code>
+     * @return The bytes for path.
      */
     public akka.protobufv3.internal.ByteString
         getPathBytes() {
@@ -7579,12 +7902,14 @@ public final class WireFormats {
     private akka.protobufv3.internal.ByteString config_;
     /**
      * <code>optional bytes config = 2;</code>
+     * @return Whether the config field is set.
      */
     public boolean hasConfig() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional bytes config = 2;</code>
+     * @return The config.
      */
     public akka.protobufv3.internal.ByteString getConfig() {
       return config_;
@@ -7594,12 +7919,14 @@ public final class WireFormats {
     private akka.protobufv3.internal.ByteString routerConfig_;
     /**
      * <code>optional bytes routerConfig = 3;</code>
+     * @return Whether the routerConfig field is set.
      */
     public boolean hasRouterConfig() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes routerConfig = 3;</code>
+     * @return The routerConfig.
      */
     public akka.protobufv3.internal.ByteString getRouterConfig() {
       return routerConfig_;
@@ -7609,12 +7936,14 @@ public final class WireFormats {
     private akka.protobufv3.internal.ByteString scope_;
     /**
      * <code>optional bytes scope = 4;</code>
+     * @return Whether the scope field is set.
      */
     public boolean hasScope() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional bytes scope = 4;</code>
+     * @return The scope.
      */
     public akka.protobufv3.internal.ByteString getScope() {
       return scope_;
@@ -7624,12 +7953,14 @@ public final class WireFormats {
     private volatile java.lang.Object dispatcher_;
     /**
      * <code>optional string dispatcher = 5;</code>
+     * @return Whether the dispatcher field is set.
      */
     public boolean hasDispatcher() {
       return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>optional string dispatcher = 5;</code>
+     * @return The dispatcher.
      */
     public java.lang.String getDispatcher() {
       java.lang.Object ref = dispatcher_;
@@ -7647,6 +7978,7 @@ public final class WireFormats {
     }
     /**
      * <code>optional string dispatcher = 5;</code>
+     * @return The bytes for dispatcher.
      */
     public akka.protobufv3.internal.ByteString
         getDispatcherBytes() {
@@ -7671,6 +8003,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>optional int32 scopeSerializerId = 6;</code>
+     * @return Whether the scopeSerializerId field is set.
      */
     public boolean hasScopeSerializerId() {
       return ((bitField0_ & 0x00000020) != 0);
@@ -7682,6 +8015,7 @@ public final class WireFormats {
      * </pre>
      *
      * <code>optional int32 scopeSerializerId = 6;</code>
+     * @return The scopeSerializerId.
      */
     public int getScopeSerializerId() {
       return scopeSerializerId_;
@@ -7691,12 +8025,14 @@ public final class WireFormats {
     private volatile java.lang.Object scopeManifest_;
     /**
      * <code>optional string scopeManifest = 7;</code>
+     * @return Whether the scopeManifest field is set.
      */
     public boolean hasScopeManifest() {
       return ((bitField0_ & 0x00000040) != 0);
     }
     /**
      * <code>optional string scopeManifest = 7;</code>
+     * @return The scopeManifest.
      */
     public java.lang.String getScopeManifest() {
       java.lang.Object ref = scopeManifest_;
@@ -7714,6 +8050,7 @@ public final class WireFormats {
     }
     /**
      * <code>optional string scopeManifest = 7;</code>
+     * @return The bytes for scopeManifest.
      */
     public akka.protobufv3.internal.ByteString
         getScopeManifestBytes() {
@@ -7733,12 +8070,14 @@ public final class WireFormats {
     private int configSerializerId_;
     /**
      * <code>optional int32 configSerializerId = 8;</code>
+     * @return Whether the configSerializerId field is set.
      */
     public boolean hasConfigSerializerId() {
       return ((bitField0_ & 0x00000080) != 0);
     }
     /**
      * <code>optional int32 configSerializerId = 8;</code>
+     * @return The configSerializerId.
      */
     public int getConfigSerializerId() {
       return configSerializerId_;
@@ -7748,12 +8087,14 @@ public final class WireFormats {
     private volatile java.lang.Object configManifest_;
     /**
      * <code>optional string configManifest = 9;</code>
+     * @return Whether the configManifest field is set.
      */
     public boolean hasConfigManifest() {
       return ((bitField0_ & 0x00000100) != 0);
     }
     /**
      * <code>optional string configManifest = 9;</code>
+     * @return The configManifest.
      */
     public java.lang.String getConfigManifest() {
       java.lang.Object ref = configManifest_;
@@ -7771,6 +8112,7 @@ public final class WireFormats {
     }
     /**
      * <code>optional string configManifest = 9;</code>
+     * @return The bytes for configManifest.
      */
     public akka.protobufv3.internal.ByteString
         getConfigManifestBytes() {
@@ -7790,12 +8132,14 @@ public final class WireFormats {
     private int routerConfigSerializerId_;
     /**
      * <code>optional int32 routerConfigSerializerId = 10;</code>
+     * @return Whether the routerConfigSerializerId field is set.
      */
     public boolean hasRouterConfigSerializerId() {
       return ((bitField0_ & 0x00000200) != 0);
     }
     /**
      * <code>optional int32 routerConfigSerializerId = 10;</code>
+     * @return The routerConfigSerializerId.
      */
     public int getRouterConfigSerializerId() {
       return routerConfigSerializerId_;
@@ -7805,12 +8149,14 @@ public final class WireFormats {
     private volatile java.lang.Object routerConfigManifest_;
     /**
      * <code>optional string routerConfigManifest = 11;</code>
+     * @return Whether the routerConfigManifest field is set.
      */
     public boolean hasRouterConfigManifest() {
       return ((bitField0_ & 0x00000400) != 0);
     }
     /**
      * <code>optional string routerConfigManifest = 11;</code>
+     * @return The routerConfigManifest.
      */
     public java.lang.String getRouterConfigManifest() {
       java.lang.Object ref = routerConfigManifest_;
@@ -7828,6 +8174,7 @@ public final class WireFormats {
     }
     /**
      * <code>optional string routerConfigManifest = 11;</code>
+     * @return The bytes for routerConfigManifest.
      */
     public akka.protobufv3.internal.ByteString
         getRouterConfigManifestBytes() {
@@ -7841,6 +8188,35 @@ public final class WireFormats {
       } else {
         return (akka.protobufv3.internal.ByteString) ref;
       }
+    }
+
+    public static final int TAGS_FIELD_NUMBER = 12;
+    private akka.protobufv3.internal.LazyStringList tags_;
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    public akka.protobufv3.internal.ProtocolStringList
+        getTagsList() {
+      return tags_;
+    }
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    public int getTagsCount() {
+      return tags_.size();
+    }
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    public java.lang.String getTags(int index) {
+      return tags_.get(index);
+    }
+    /**
+     * <code>repeated string tags = 12;</code>
+     */
+    public akka.protobufv3.internal.ByteString
+        getTagsBytes(int index) {
+      return tags_.getByteString(index);
     }
 
     private byte memoizedIsInitialized = -1;
@@ -7894,6 +8270,9 @@ public final class WireFormats {
       if (((bitField0_ & 0x00000400) != 0)) {
         akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 11, routerConfigManifest_);
       }
+      for (int i = 0; i < tags_.size(); i++) {
+        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 12, tags_.getRaw(i));
+      }
       unknownFields.writeTo(output);
     }
 
@@ -7941,6 +8320,14 @@ public final class WireFormats {
       }
       if (((bitField0_ & 0x00000400) != 0)) {
         size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(11, routerConfigManifest_);
+      }
+      {
+        int dataSize = 0;
+        for (int i = 0; i < tags_.size(); i++) {
+          dataSize += computeStringSizeNoTag(tags_.getRaw(i));
+        }
+        size += dataSize;
+        size += 1 * getTagsList().size();
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -8012,6 +8399,8 @@ public final class WireFormats {
         if (!getRouterConfigManifest()
             .equals(other.getRouterConfigManifest())) return false;
       }
+      if (!getTagsList()
+          .equals(other.getTagsList())) return false;
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -8066,6 +8455,10 @@ public final class WireFormats {
       if (hasRouterConfigManifest()) {
         hash = (37 * hash) + ROUTERCONFIGMANIFEST_FIELD_NUMBER;
         hash = (53 * hash) + getRouterConfigManifest().hashCode();
+      }
+      if (getTagsCount() > 0) {
+        hash = (37 * hash) + TAGS_FIELD_NUMBER;
+        hash = (53 * hash) + getTagsList().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -8227,6 +8620,8 @@ public final class WireFormats {
         bitField0_ = (bitField0_ & ~0x00000200);
         routerConfigManifest_ = "";
         bitField0_ = (bitField0_ & ~0x00000400);
+        tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000800);
         return this;
       }
 
@@ -8299,6 +8694,11 @@ public final class WireFormats {
           to_bitField0_ |= 0x00000400;
         }
         result.routerConfigManifest_ = routerConfigManifest_;
+        if (((bitField0_ & 0x00000800) != 0)) {
+          tags_ = tags_.getUnmodifiableView();
+          bitField0_ = (bitField0_ & ~0x00000800);
+        }
+        result.tags_ = tags_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -8391,6 +8791,16 @@ public final class WireFormats {
           routerConfigManifest_ = other.routerConfigManifest_;
           onChanged();
         }
+        if (!other.tags_.isEmpty()) {
+          if (tags_.isEmpty()) {
+            tags_ = other.tags_;
+            bitField0_ = (bitField0_ & ~0x00000800);
+          } else {
+            ensureTagsIsMutable();
+            tags_.addAll(other.tags_);
+          }
+          onChanged();
+        }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
         return this;
@@ -8427,12 +8837,14 @@ public final class WireFormats {
       private java.lang.Object path_ = "";
       /**
        * <code>required string path = 1;</code>
+       * @return Whether the path field is set.
        */
       public boolean hasPath() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The path.
        */
       public java.lang.String getPath() {
         java.lang.Object ref = path_;
@@ -8450,6 +8862,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return The bytes for path.
        */
       public akka.protobufv3.internal.ByteString
           getPathBytes() {
@@ -8466,6 +8879,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The path to set.
+       * @return This builder for chaining.
        */
       public Builder setPath(
           java.lang.String value) {
@@ -8479,6 +8894,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPath() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -8488,6 +8904,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string path = 1;</code>
+       * @param value The bytes for path to set.
+       * @return This builder for chaining.
        */
       public Builder setPathBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8503,18 +8921,22 @@ public final class WireFormats {
       private akka.protobufv3.internal.ByteString config_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes config = 2;</code>
+       * @return Whether the config field is set.
        */
       public boolean hasConfig() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional bytes config = 2;</code>
+       * @return The config.
        */
       public akka.protobufv3.internal.ByteString getConfig() {
         return config_;
       }
       /**
        * <code>optional bytes config = 2;</code>
+       * @param value The config to set.
+       * @return This builder for chaining.
        */
       public Builder setConfig(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -8527,6 +8949,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional bytes config = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearConfig() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -8538,18 +8961,22 @@ public final class WireFormats {
       private akka.protobufv3.internal.ByteString routerConfig_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes routerConfig = 3;</code>
+       * @return Whether the routerConfig field is set.
        */
       public boolean hasRouterConfig() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bytes routerConfig = 3;</code>
+       * @return The routerConfig.
        */
       public akka.protobufv3.internal.ByteString getRouterConfig() {
         return routerConfig_;
       }
       /**
        * <code>optional bytes routerConfig = 3;</code>
+       * @param value The routerConfig to set.
+       * @return This builder for chaining.
        */
       public Builder setRouterConfig(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -8562,6 +8989,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional bytes routerConfig = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRouterConfig() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -8573,18 +9001,22 @@ public final class WireFormats {
       private akka.protobufv3.internal.ByteString scope_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes scope = 4;</code>
+       * @return Whether the scope field is set.
        */
       public boolean hasScope() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional bytes scope = 4;</code>
+       * @return The scope.
        */
       public akka.protobufv3.internal.ByteString getScope() {
         return scope_;
       }
       /**
        * <code>optional bytes scope = 4;</code>
+       * @param value The scope to set.
+       * @return This builder for chaining.
        */
       public Builder setScope(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -8597,6 +9029,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional bytes scope = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearScope() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -8608,12 +9041,14 @@ public final class WireFormats {
       private java.lang.Object dispatcher_ = "";
       /**
        * <code>optional string dispatcher = 5;</code>
+       * @return Whether the dispatcher field is set.
        */
       public boolean hasDispatcher() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>optional string dispatcher = 5;</code>
+       * @return The dispatcher.
        */
       public java.lang.String getDispatcher() {
         java.lang.Object ref = dispatcher_;
@@ -8631,6 +9066,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string dispatcher = 5;</code>
+       * @return The bytes for dispatcher.
        */
       public akka.protobufv3.internal.ByteString
           getDispatcherBytes() {
@@ -8647,6 +9083,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string dispatcher = 5;</code>
+       * @param value The dispatcher to set.
+       * @return This builder for chaining.
        */
       public Builder setDispatcher(
           java.lang.String value) {
@@ -8660,6 +9098,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string dispatcher = 5;</code>
+       * @return This builder for chaining.
        */
       public Builder clearDispatcher() {
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -8669,6 +9108,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string dispatcher = 5;</code>
+       * @param value The bytes for dispatcher to set.
+       * @return This builder for chaining.
        */
       public Builder setDispatcherBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8689,6 +9130,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>optional int32 scopeSerializerId = 6;</code>
+       * @return Whether the scopeSerializerId field is set.
        */
       public boolean hasScopeSerializerId() {
         return ((bitField0_ & 0x00000020) != 0);
@@ -8700,6 +9142,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>optional int32 scopeSerializerId = 6;</code>
+       * @return The scopeSerializerId.
        */
       public int getScopeSerializerId() {
         return scopeSerializerId_;
@@ -8711,6 +9154,8 @@ public final class WireFormats {
        * </pre>
        *
        * <code>optional int32 scopeSerializerId = 6;</code>
+       * @param value The scopeSerializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setScopeSerializerId(int value) {
         bitField0_ |= 0x00000020;
@@ -8725,6 +9170,7 @@ public final class WireFormats {
        * </pre>
        *
        * <code>optional int32 scopeSerializerId = 6;</code>
+       * @return This builder for chaining.
        */
       public Builder clearScopeSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000020);
@@ -8736,12 +9182,14 @@ public final class WireFormats {
       private java.lang.Object scopeManifest_ = "";
       /**
        * <code>optional string scopeManifest = 7;</code>
+       * @return Whether the scopeManifest field is set.
        */
       public boolean hasScopeManifest() {
         return ((bitField0_ & 0x00000040) != 0);
       }
       /**
        * <code>optional string scopeManifest = 7;</code>
+       * @return The scopeManifest.
        */
       public java.lang.String getScopeManifest() {
         java.lang.Object ref = scopeManifest_;
@@ -8759,6 +9207,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string scopeManifest = 7;</code>
+       * @return The bytes for scopeManifest.
        */
       public akka.protobufv3.internal.ByteString
           getScopeManifestBytes() {
@@ -8775,6 +9224,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string scopeManifest = 7;</code>
+       * @param value The scopeManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setScopeManifest(
           java.lang.String value) {
@@ -8788,6 +9239,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string scopeManifest = 7;</code>
+       * @return This builder for chaining.
        */
       public Builder clearScopeManifest() {
         bitField0_ = (bitField0_ & ~0x00000040);
@@ -8797,6 +9249,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string scopeManifest = 7;</code>
+       * @param value The bytes for scopeManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setScopeManifestBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8812,18 +9266,22 @@ public final class WireFormats {
       private int configSerializerId_ ;
       /**
        * <code>optional int32 configSerializerId = 8;</code>
+       * @return Whether the configSerializerId field is set.
        */
       public boolean hasConfigSerializerId() {
         return ((bitField0_ & 0x00000080) != 0);
       }
       /**
        * <code>optional int32 configSerializerId = 8;</code>
+       * @return The configSerializerId.
        */
       public int getConfigSerializerId() {
         return configSerializerId_;
       }
       /**
        * <code>optional int32 configSerializerId = 8;</code>
+       * @param value The configSerializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setConfigSerializerId(int value) {
         bitField0_ |= 0x00000080;
@@ -8833,6 +9291,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional int32 configSerializerId = 8;</code>
+       * @return This builder for chaining.
        */
       public Builder clearConfigSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000080);
@@ -8844,12 +9303,14 @@ public final class WireFormats {
       private java.lang.Object configManifest_ = "";
       /**
        * <code>optional string configManifest = 9;</code>
+       * @return Whether the configManifest field is set.
        */
       public boolean hasConfigManifest() {
         return ((bitField0_ & 0x00000100) != 0);
       }
       /**
        * <code>optional string configManifest = 9;</code>
+       * @return The configManifest.
        */
       public java.lang.String getConfigManifest() {
         java.lang.Object ref = configManifest_;
@@ -8867,6 +9328,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string configManifest = 9;</code>
+       * @return The bytes for configManifest.
        */
       public akka.protobufv3.internal.ByteString
           getConfigManifestBytes() {
@@ -8883,6 +9345,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string configManifest = 9;</code>
+       * @param value The configManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setConfigManifest(
           java.lang.String value) {
@@ -8896,6 +9360,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string configManifest = 9;</code>
+       * @return This builder for chaining.
        */
       public Builder clearConfigManifest() {
         bitField0_ = (bitField0_ & ~0x00000100);
@@ -8905,6 +9370,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string configManifest = 9;</code>
+       * @param value The bytes for configManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setConfigManifestBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -8920,18 +9387,22 @@ public final class WireFormats {
       private int routerConfigSerializerId_ ;
       /**
        * <code>optional int32 routerConfigSerializerId = 10;</code>
+       * @return Whether the routerConfigSerializerId field is set.
        */
       public boolean hasRouterConfigSerializerId() {
         return ((bitField0_ & 0x00000200) != 0);
       }
       /**
        * <code>optional int32 routerConfigSerializerId = 10;</code>
+       * @return The routerConfigSerializerId.
        */
       public int getRouterConfigSerializerId() {
         return routerConfigSerializerId_;
       }
       /**
        * <code>optional int32 routerConfigSerializerId = 10;</code>
+       * @param value The routerConfigSerializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setRouterConfigSerializerId(int value) {
         bitField0_ |= 0x00000200;
@@ -8941,6 +9412,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional int32 routerConfigSerializerId = 10;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRouterConfigSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000200);
@@ -8952,12 +9424,14 @@ public final class WireFormats {
       private java.lang.Object routerConfigManifest_ = "";
       /**
        * <code>optional string routerConfigManifest = 11;</code>
+       * @return Whether the routerConfigManifest field is set.
        */
       public boolean hasRouterConfigManifest() {
         return ((bitField0_ & 0x00000400) != 0);
       }
       /**
        * <code>optional string routerConfigManifest = 11;</code>
+       * @return The routerConfigManifest.
        */
       public java.lang.String getRouterConfigManifest() {
         java.lang.Object ref = routerConfigManifest_;
@@ -8975,6 +9449,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerConfigManifest = 11;</code>
+       * @return The bytes for routerConfigManifest.
        */
       public akka.protobufv3.internal.ByteString
           getRouterConfigManifestBytes() {
@@ -8991,6 +9466,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerConfigManifest = 11;</code>
+       * @param value The routerConfigManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setRouterConfigManifest(
           java.lang.String value) {
@@ -9004,6 +9481,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerConfigManifest = 11;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRouterConfigManifest() {
         bitField0_ = (bitField0_ & ~0x00000400);
@@ -9013,6 +9491,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerConfigManifest = 11;</code>
+       * @param value The bytes for routerConfigManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setRouterConfigManifestBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -9021,6 +9501,99 @@ public final class WireFormats {
   }
   bitField0_ |= 0x00000400;
         routerConfigManifest_ = value;
+        onChanged();
+        return this;
+      }
+
+      private akka.protobufv3.internal.LazyStringList tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+      private void ensureTagsIsMutable() {
+        if (!((bitField0_ & 0x00000800) != 0)) {
+          tags_ = new akka.protobufv3.internal.LazyStringArrayList(tags_);
+          bitField0_ |= 0x00000800;
+         }
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public akka.protobufv3.internal.ProtocolStringList
+          getTagsList() {
+        return tags_.getUnmodifiableView();
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public int getTagsCount() {
+        return tags_.size();
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public java.lang.String getTags(int index) {
+        return tags_.get(index);
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public akka.protobufv3.internal.ByteString
+          getTagsBytes(int index) {
+        return tags_.getByteString(index);
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public Builder setTags(
+          int index, java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureTagsIsMutable();
+        tags_.set(index, value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public Builder addTags(
+          java.lang.String value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureTagsIsMutable();
+        tags_.add(value);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public Builder addAllTags(
+          java.lang.Iterable<java.lang.String> values) {
+        ensureTagsIsMutable();
+        akka.protobufv3.internal.AbstractMessageLite.Builder.addAll(
+            values, tags_);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public Builder clearTags() {
+        tags_ = akka.protobufv3.internal.LazyStringArrayList.EMPTY;
+        bitField0_ = (bitField0_ & ~0x00000800);
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>repeated string tags = 12;</code>
+       */
+      public Builder addTagsBytes(
+          akka.protobufv3.internal.ByteString value) {
+        if (value == null) {
+    throw new NullPointerException();
+  }
+  ensureTagsIsMutable();
+        tags_.add(value);
         onChanged();
         return this;
       }
@@ -9083,19 +9656,23 @@ public final class WireFormats {
 
     /**
      * <code>optional bytes payload = 1;</code>
+     * @return Whether the payload field is set.
      */
     boolean hasPayload();
     /**
      * <code>optional bytes payload = 1;</code>
+     * @return The payload.
      */
     akka.protobufv3.internal.ByteString getPayload();
 
     /**
      * <code>optional .AkkaControlMessage instruction = 2;</code>
+     * @return Whether the instruction field is set.
      */
     boolean hasInstruction();
     /**
      * <code>optional .AkkaControlMessage instruction = 2;</code>
+     * @return The instruction.
      */
     akka.remote.WireFormats.AkkaControlMessage getInstruction();
     /**
@@ -9211,12 +9788,14 @@ public final class WireFormats {
     private akka.protobufv3.internal.ByteString payload_;
     /**
      * <code>optional bytes payload = 1;</code>
+     * @return Whether the payload field is set.
      */
     public boolean hasPayload() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional bytes payload = 1;</code>
+     * @return The payload.
      */
     public akka.protobufv3.internal.ByteString getPayload() {
       return payload_;
@@ -9226,12 +9805,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.AkkaControlMessage instruction_;
     /**
      * <code>optional .AkkaControlMessage instruction = 2;</code>
+     * @return Whether the instruction field is set.
      */
     public boolean hasInstruction() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .AkkaControlMessage instruction = 2;</code>
+     * @return The instruction.
      */
     public akka.remote.WireFormats.AkkaControlMessage getInstruction() {
       return instruction_ == null ? akka.remote.WireFormats.AkkaControlMessage.getDefaultInstance() : instruction_;
@@ -9611,18 +10192,22 @@ public final class WireFormats {
       private akka.protobufv3.internal.ByteString payload_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes payload = 1;</code>
+       * @return Whether the payload field is set.
        */
       public boolean hasPayload() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional bytes payload = 1;</code>
+       * @return The payload.
        */
       public akka.protobufv3.internal.ByteString getPayload() {
         return payload_;
       }
       /**
        * <code>optional bytes payload = 1;</code>
+       * @param value The payload to set.
+       * @return This builder for chaining.
        */
       public Builder setPayload(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -9635,6 +10220,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional bytes payload = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPayload() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -9648,12 +10234,14 @@ public final class WireFormats {
           akka.remote.WireFormats.AkkaControlMessage, akka.remote.WireFormats.AkkaControlMessage.Builder, akka.remote.WireFormats.AkkaControlMessageOrBuilder> instructionBuilder_;
       /**
        * <code>optional .AkkaControlMessage instruction = 2;</code>
+       * @return Whether the instruction field is set.
        */
       public boolean hasInstruction() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .AkkaControlMessage instruction = 2;</code>
+       * @return The instruction.
        */
       public akka.remote.WireFormats.AkkaControlMessage getInstruction() {
         if (instructionBuilder_ == null) {
@@ -9819,19 +10407,23 @@ public final class WireFormats {
 
     /**
      * <code>required .CommandType commandType = 1;</code>
+     * @return Whether the commandType field is set.
      */
     boolean hasCommandType();
     /**
      * <code>required .CommandType commandType = 1;</code>
+     * @return The commandType.
      */
     akka.remote.WireFormats.CommandType getCommandType();
 
     /**
      * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
+     * @return Whether the handshakeInfo field is set.
      */
     boolean hasHandshakeInfo();
     /**
      * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
+     * @return The handshakeInfo.
      */
     akka.remote.WireFormats.AkkaHandshakeInfo getHandshakeInfo();
     /**
@@ -9953,12 +10545,14 @@ public final class WireFormats {
     private int commandType_;
     /**
      * <code>required .CommandType commandType = 1;</code>
+     * @return Whether the commandType field is set.
      */
     public boolean hasCommandType() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .CommandType commandType = 1;</code>
+     * @return The commandType.
      */
     public akka.remote.WireFormats.CommandType getCommandType() {
       @SuppressWarnings("deprecation")
@@ -9970,12 +10564,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.AkkaHandshakeInfo handshakeInfo_;
     /**
      * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
+     * @return Whether the handshakeInfo field is set.
      */
     public boolean hasHandshakeInfo() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
+     * @return The handshakeInfo.
      */
     public akka.remote.WireFormats.AkkaHandshakeInfo getHandshakeInfo() {
       return handshakeInfo_ == null ? akka.remote.WireFormats.AkkaHandshakeInfo.getDefaultInstance() : handshakeInfo_;
@@ -10360,12 +10956,14 @@ public final class WireFormats {
       private int commandType_ = 1;
       /**
        * <code>required .CommandType commandType = 1;</code>
+       * @return Whether the commandType field is set.
        */
       public boolean hasCommandType() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .CommandType commandType = 1;</code>
+       * @return The commandType.
        */
       public akka.remote.WireFormats.CommandType getCommandType() {
         @SuppressWarnings("deprecation")
@@ -10374,6 +10972,8 @@ public final class WireFormats {
       }
       /**
        * <code>required .CommandType commandType = 1;</code>
+       * @param value The commandType to set.
+       * @return This builder for chaining.
        */
       public Builder setCommandType(akka.remote.WireFormats.CommandType value) {
         if (value == null) {
@@ -10386,6 +10986,7 @@ public final class WireFormats {
       }
       /**
        * <code>required .CommandType commandType = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearCommandType() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -10399,12 +11000,14 @@ public final class WireFormats {
           akka.remote.WireFormats.AkkaHandshakeInfo, akka.remote.WireFormats.AkkaHandshakeInfo.Builder, akka.remote.WireFormats.AkkaHandshakeInfoOrBuilder> handshakeInfoBuilder_;
       /**
        * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
+       * @return Whether the handshakeInfo field is set.
        */
       public boolean hasHandshakeInfo() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional .AkkaHandshakeInfo handshakeInfo = 2;</code>
+       * @return The handshakeInfo.
        */
       public akka.remote.WireFormats.AkkaHandshakeInfo getHandshakeInfo() {
         if (handshakeInfoBuilder_ == null) {
@@ -10570,10 +11173,12 @@ public final class WireFormats {
 
     /**
      * <code>required .AddressData origin = 1;</code>
+     * @return Whether the origin field is set.
      */
     boolean hasOrigin();
     /**
      * <code>required .AddressData origin = 1;</code>
+     * @return The origin.
      */
     akka.remote.WireFormats.AddressData getOrigin();
     /**
@@ -10583,23 +11188,28 @@ public final class WireFormats {
 
     /**
      * <code>required fixed64 uid = 2;</code>
+     * @return Whether the uid field is set.
      */
     boolean hasUid();
     /**
      * <code>required fixed64 uid = 2;</code>
+     * @return The uid.
      */
     long getUid();
 
     /**
      * <code>optional string cookie = 3;</code>
+     * @return Whether the cookie field is set.
      */
     boolean hasCookie();
     /**
      * <code>optional string cookie = 3;</code>
+     * @return The cookie.
      */
     java.lang.String getCookie();
     /**
      * <code>optional string cookie = 3;</code>
+     * @return The bytes for cookie.
      */
     akka.protobufv3.internal.ByteString
         getCookieBytes();
@@ -10712,12 +11322,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.AddressData origin_;
     /**
      * <code>required .AddressData origin = 1;</code>
+     * @return Whether the origin field is set.
      */
     public boolean hasOrigin() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .AddressData origin = 1;</code>
+     * @return The origin.
      */
     public akka.remote.WireFormats.AddressData getOrigin() {
       return origin_ == null ? akka.remote.WireFormats.AddressData.getDefaultInstance() : origin_;
@@ -10733,12 +11345,14 @@ public final class WireFormats {
     private long uid_;
     /**
      * <code>required fixed64 uid = 2;</code>
+     * @return Whether the uid field is set.
      */
     public boolean hasUid() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required fixed64 uid = 2;</code>
+     * @return The uid.
      */
     public long getUid() {
       return uid_;
@@ -10748,12 +11362,14 @@ public final class WireFormats {
     private volatile java.lang.Object cookie_;
     /**
      * <code>optional string cookie = 3;</code>
+     * @return Whether the cookie field is set.
      */
     public boolean hasCookie() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional string cookie = 3;</code>
+     * @return The cookie.
      */
     public java.lang.String getCookie() {
       java.lang.Object ref = cookie_;
@@ -10771,6 +11387,7 @@ public final class WireFormats {
     }
     /**
      * <code>optional string cookie = 3;</code>
+     * @return The bytes for cookie.
      */
     public akka.protobufv3.internal.ByteString
         getCookieBytes() {
@@ -11187,12 +11804,14 @@ public final class WireFormats {
           akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder> originBuilder_;
       /**
        * <code>required .AddressData origin = 1;</code>
+       * @return Whether the origin field is set.
        */
       public boolean hasOrigin() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .AddressData origin = 1;</code>
+       * @return The origin.
        */
       public akka.remote.WireFormats.AddressData getOrigin() {
         if (originBuilder_ == null) {
@@ -11303,18 +11922,22 @@ public final class WireFormats {
       private long uid_ ;
       /**
        * <code>required fixed64 uid = 2;</code>
+       * @return Whether the uid field is set.
        */
       public boolean hasUid() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required fixed64 uid = 2;</code>
+       * @return The uid.
        */
       public long getUid() {
         return uid_;
       }
       /**
        * <code>required fixed64 uid = 2;</code>
+       * @param value The uid to set.
+       * @return This builder for chaining.
        */
       public Builder setUid(long value) {
         bitField0_ |= 0x00000002;
@@ -11324,6 +11947,7 @@ public final class WireFormats {
       }
       /**
        * <code>required fixed64 uid = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUid() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -11335,12 +11959,14 @@ public final class WireFormats {
       private java.lang.Object cookie_ = "";
       /**
        * <code>optional string cookie = 3;</code>
+       * @return Whether the cookie field is set.
        */
       public boolean hasCookie() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional string cookie = 3;</code>
+       * @return The cookie.
        */
       public java.lang.String getCookie() {
         java.lang.Object ref = cookie_;
@@ -11358,6 +11984,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string cookie = 3;</code>
+       * @return The bytes for cookie.
        */
       public akka.protobufv3.internal.ByteString
           getCookieBytes() {
@@ -11374,6 +12001,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string cookie = 3;</code>
+       * @param value The cookie to set.
+       * @return This builder for chaining.
        */
       public Builder setCookie(
           java.lang.String value) {
@@ -11387,6 +12016,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string cookie = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearCookie() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -11396,6 +12026,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string cookie = 3;</code>
+       * @param value The bytes for cookie to set.
+       * @return This builder for chaining.
        */
       public Builder setCookieBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -11466,19 +12098,23 @@ public final class WireFormats {
 
     /**
      * <code>required int64 value = 1;</code>
+     * @return Whether the value field is set.
      */
     boolean hasValue();
     /**
      * <code>required int64 value = 1;</code>
+     * @return The value.
      */
     long getValue();
 
     /**
      * <code>required .TimeUnit unit = 2;</code>
+     * @return Whether the unit field is set.
      */
     boolean hasUnit();
     /**
      * <code>required .TimeUnit unit = 2;</code>
+     * @return The unit.
      */
     akka.remote.WireFormats.TimeUnit getUnit();
   }
@@ -11583,12 +12219,14 @@ public final class WireFormats {
     private long value_;
     /**
      * <code>required int64 value = 1;</code>
+     * @return Whether the value field is set.
      */
     public boolean hasValue() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int64 value = 1;</code>
+     * @return The value.
      */
     public long getValue() {
       return value_;
@@ -11598,12 +12236,14 @@ public final class WireFormats {
     private int unit_;
     /**
      * <code>required .TimeUnit unit = 2;</code>
+     * @return Whether the unit field is set.
      */
     public boolean hasUnit() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .TimeUnit unit = 2;</code>
+     * @return The unit.
      */
     public akka.remote.WireFormats.TimeUnit getUnit() {
       @SuppressWarnings("deprecation")
@@ -11967,18 +12607,22 @@ public final class WireFormats {
       private long value_ ;
       /**
        * <code>required int64 value = 1;</code>
+       * @return Whether the value field is set.
        */
       public boolean hasValue() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int64 value = 1;</code>
+       * @return The value.
        */
       public long getValue() {
         return value_;
       }
       /**
        * <code>required int64 value = 1;</code>
+       * @param value The value to set.
+       * @return This builder for chaining.
        */
       public Builder setValue(long value) {
         bitField0_ |= 0x00000001;
@@ -11988,6 +12632,7 @@ public final class WireFormats {
       }
       /**
        * <code>required int64 value = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearValue() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -11999,12 +12644,14 @@ public final class WireFormats {
       private int unit_ = 1;
       /**
        * <code>required .TimeUnit unit = 2;</code>
+       * @return Whether the unit field is set.
        */
       public boolean hasUnit() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .TimeUnit unit = 2;</code>
+       * @return The unit.
        */
       public akka.remote.WireFormats.TimeUnit getUnit() {
         @SuppressWarnings("deprecation")
@@ -12013,6 +12660,8 @@ public final class WireFormats {
       }
       /**
        * <code>required .TimeUnit unit = 2;</code>
+       * @param value The unit to set.
+       * @return This builder for chaining.
        */
       public Builder setUnit(akka.remote.WireFormats.TimeUnit value) {
         if (value == null) {
@@ -12025,6 +12674,7 @@ public final class WireFormats {
       }
       /**
        * <code>required .TimeUnit unit = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUnit() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -12091,10 +12741,12 @@ public final class WireFormats {
 
     /**
      * <code>required .AddressData node = 1;</code>
+     * @return Whether the node field is set.
      */
     boolean hasNode();
     /**
      * <code>required .AddressData node = 1;</code>
+     * @return The node.
      */
     akka.remote.WireFormats.AddressData getNode();
     /**
@@ -12198,12 +12850,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.AddressData node_;
     /**
      * <code>required .AddressData node = 1;</code>
+     * @return Whether the node field is set.
      */
     public boolean hasNode() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .AddressData node = 1;</code>
+     * @return The node.
      */
     public akka.remote.WireFormats.AddressData getNode() {
       return node_ == null ? akka.remote.WireFormats.AddressData.getDefaultInstance() : node_;
@@ -12557,12 +13211,14 @@ public final class WireFormats {
           akka.remote.WireFormats.AddressData, akka.remote.WireFormats.AddressData.Builder, akka.remote.WireFormats.AddressDataOrBuilder> nodeBuilder_;
       /**
        * <code>required .AddressData node = 1;</code>
+       * @return Whether the node field is set.
        */
       public boolean hasNode() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .AddressData node = 1;</code>
+       * @return The node.
        */
       public akka.remote.WireFormats.AddressData getNode() {
         if (nodeBuilder_ == null) {
@@ -12728,64 +13384,78 @@ public final class WireFormats {
 
     /**
      * <code>required uint32 lowerBound = 1;</code>
+     * @return Whether the lowerBound field is set.
      */
     boolean hasLowerBound();
     /**
      * <code>required uint32 lowerBound = 1;</code>
+     * @return The lowerBound.
      */
     int getLowerBound();
 
     /**
      * <code>required uint32 upperBound = 2;</code>
+     * @return Whether the upperBound field is set.
      */
     boolean hasUpperBound();
     /**
      * <code>required uint32 upperBound = 2;</code>
+     * @return The upperBound.
      */
     int getUpperBound();
 
     /**
      * <code>required uint32 pressureThreshold = 3;</code>
+     * @return Whether the pressureThreshold field is set.
      */
     boolean hasPressureThreshold();
     /**
      * <code>required uint32 pressureThreshold = 3;</code>
+     * @return The pressureThreshold.
      */
     int getPressureThreshold();
 
     /**
      * <code>required double rampupRate = 4;</code>
+     * @return Whether the rampupRate field is set.
      */
     boolean hasRampupRate();
     /**
      * <code>required double rampupRate = 4;</code>
+     * @return The rampupRate.
      */
     double getRampupRate();
 
     /**
      * <code>required double backoffThreshold = 5;</code>
+     * @return Whether the backoffThreshold field is set.
      */
     boolean hasBackoffThreshold();
     /**
      * <code>required double backoffThreshold = 5;</code>
+     * @return The backoffThreshold.
      */
     double getBackoffThreshold();
 
     /**
      * <code>required double backoffRate = 6;</code>
+     * @return Whether the backoffRate field is set.
      */
     boolean hasBackoffRate();
     /**
      * <code>required double backoffRate = 6;</code>
+     * @return The backoffRate.
      */
     double getBackoffRate();
 
     /**
      * <code>required uint32 messagesPerResize = 7;</code>
+     * @return Whether the messagesPerResize field is set.
      */
     boolean hasMessagesPerResize();
     /**
      * <code>required uint32 messagesPerResize = 7;</code>
+     * @return The messagesPerResize.
      */
     int getMessagesPerResize();
   }
@@ -12907,12 +13577,14 @@ public final class WireFormats {
     private int lowerBound_;
     /**
      * <code>required uint32 lowerBound = 1;</code>
+     * @return Whether the lowerBound field is set.
      */
     public boolean hasLowerBound() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint32 lowerBound = 1;</code>
+     * @return The lowerBound.
      */
     public int getLowerBound() {
       return lowerBound_;
@@ -12922,12 +13594,14 @@ public final class WireFormats {
     private int upperBound_;
     /**
      * <code>required uint32 upperBound = 2;</code>
+     * @return Whether the upperBound field is set.
      */
     public boolean hasUpperBound() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint32 upperBound = 2;</code>
+     * @return The upperBound.
      */
     public int getUpperBound() {
       return upperBound_;
@@ -12937,12 +13611,14 @@ public final class WireFormats {
     private int pressureThreshold_;
     /**
      * <code>required uint32 pressureThreshold = 3;</code>
+     * @return Whether the pressureThreshold field is set.
      */
     public boolean hasPressureThreshold() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required uint32 pressureThreshold = 3;</code>
+     * @return The pressureThreshold.
      */
     public int getPressureThreshold() {
       return pressureThreshold_;
@@ -12952,12 +13628,14 @@ public final class WireFormats {
     private double rampupRate_;
     /**
      * <code>required double rampupRate = 4;</code>
+     * @return Whether the rampupRate field is set.
      */
     public boolean hasRampupRate() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>required double rampupRate = 4;</code>
+     * @return The rampupRate.
      */
     public double getRampupRate() {
       return rampupRate_;
@@ -12967,12 +13645,14 @@ public final class WireFormats {
     private double backoffThreshold_;
     /**
      * <code>required double backoffThreshold = 5;</code>
+     * @return Whether the backoffThreshold field is set.
      */
     public boolean hasBackoffThreshold() {
       return ((bitField0_ & 0x00000010) != 0);
     }
     /**
      * <code>required double backoffThreshold = 5;</code>
+     * @return The backoffThreshold.
      */
     public double getBackoffThreshold() {
       return backoffThreshold_;
@@ -12982,12 +13662,14 @@ public final class WireFormats {
     private double backoffRate_;
     /**
      * <code>required double backoffRate = 6;</code>
+     * @return Whether the backoffRate field is set.
      */
     public boolean hasBackoffRate() {
       return ((bitField0_ & 0x00000020) != 0);
     }
     /**
      * <code>required double backoffRate = 6;</code>
+     * @return The backoffRate.
      */
     public double getBackoffRate() {
       return backoffRate_;
@@ -12997,12 +13679,14 @@ public final class WireFormats {
     private int messagesPerResize_;
     /**
      * <code>required uint32 messagesPerResize = 7;</code>
+     * @return Whether the messagesPerResize field is set.
      */
     public boolean hasMessagesPerResize() {
       return ((bitField0_ & 0x00000040) != 0);
     }
     /**
      * <code>required uint32 messagesPerResize = 7;</code>
+     * @return The messagesPerResize.
      */
     public int getMessagesPerResize() {
       return messagesPerResize_;
@@ -13530,18 +14214,22 @@ public final class WireFormats {
       private int lowerBound_ ;
       /**
        * <code>required uint32 lowerBound = 1;</code>
+       * @return Whether the lowerBound field is set.
        */
       public boolean hasLowerBound() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint32 lowerBound = 1;</code>
+       * @return The lowerBound.
        */
       public int getLowerBound() {
         return lowerBound_;
       }
       /**
        * <code>required uint32 lowerBound = 1;</code>
+       * @param value The lowerBound to set.
+       * @return This builder for chaining.
        */
       public Builder setLowerBound(int value) {
         bitField0_ |= 0x00000001;
@@ -13551,6 +14239,7 @@ public final class WireFormats {
       }
       /**
        * <code>required uint32 lowerBound = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearLowerBound() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -13562,18 +14251,22 @@ public final class WireFormats {
       private int upperBound_ ;
       /**
        * <code>required uint32 upperBound = 2;</code>
+       * @return Whether the upperBound field is set.
        */
       public boolean hasUpperBound() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint32 upperBound = 2;</code>
+       * @return The upperBound.
        */
       public int getUpperBound() {
         return upperBound_;
       }
       /**
        * <code>required uint32 upperBound = 2;</code>
+       * @param value The upperBound to set.
+       * @return This builder for chaining.
        */
       public Builder setUpperBound(int value) {
         bitField0_ |= 0x00000002;
@@ -13583,6 +14276,7 @@ public final class WireFormats {
       }
       /**
        * <code>required uint32 upperBound = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUpperBound() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -13594,18 +14288,22 @@ public final class WireFormats {
       private int pressureThreshold_ ;
       /**
        * <code>required uint32 pressureThreshold = 3;</code>
+       * @return Whether the pressureThreshold field is set.
        */
       public boolean hasPressureThreshold() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required uint32 pressureThreshold = 3;</code>
+       * @return The pressureThreshold.
        */
       public int getPressureThreshold() {
         return pressureThreshold_;
       }
       /**
        * <code>required uint32 pressureThreshold = 3;</code>
+       * @param value The pressureThreshold to set.
+       * @return This builder for chaining.
        */
       public Builder setPressureThreshold(int value) {
         bitField0_ |= 0x00000004;
@@ -13615,6 +14313,7 @@ public final class WireFormats {
       }
       /**
        * <code>required uint32 pressureThreshold = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPressureThreshold() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -13626,18 +14325,22 @@ public final class WireFormats {
       private double rampupRate_ ;
       /**
        * <code>required double rampupRate = 4;</code>
+       * @return Whether the rampupRate field is set.
        */
       public boolean hasRampupRate() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>required double rampupRate = 4;</code>
+       * @return The rampupRate.
        */
       public double getRampupRate() {
         return rampupRate_;
       }
       /**
        * <code>required double rampupRate = 4;</code>
+       * @param value The rampupRate to set.
+       * @return This builder for chaining.
        */
       public Builder setRampupRate(double value) {
         bitField0_ |= 0x00000008;
@@ -13647,6 +14350,7 @@ public final class WireFormats {
       }
       /**
        * <code>required double rampupRate = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRampupRate() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -13658,18 +14362,22 @@ public final class WireFormats {
       private double backoffThreshold_ ;
       /**
        * <code>required double backoffThreshold = 5;</code>
+       * @return Whether the backoffThreshold field is set.
        */
       public boolean hasBackoffThreshold() {
         return ((bitField0_ & 0x00000010) != 0);
       }
       /**
        * <code>required double backoffThreshold = 5;</code>
+       * @return The backoffThreshold.
        */
       public double getBackoffThreshold() {
         return backoffThreshold_;
       }
       /**
        * <code>required double backoffThreshold = 5;</code>
+       * @param value The backoffThreshold to set.
+       * @return This builder for chaining.
        */
       public Builder setBackoffThreshold(double value) {
         bitField0_ |= 0x00000010;
@@ -13679,6 +14387,7 @@ public final class WireFormats {
       }
       /**
        * <code>required double backoffThreshold = 5;</code>
+       * @return This builder for chaining.
        */
       public Builder clearBackoffThreshold() {
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -13690,18 +14399,22 @@ public final class WireFormats {
       private double backoffRate_ ;
       /**
        * <code>required double backoffRate = 6;</code>
+       * @return Whether the backoffRate field is set.
        */
       public boolean hasBackoffRate() {
         return ((bitField0_ & 0x00000020) != 0);
       }
       /**
        * <code>required double backoffRate = 6;</code>
+       * @return The backoffRate.
        */
       public double getBackoffRate() {
         return backoffRate_;
       }
       /**
        * <code>required double backoffRate = 6;</code>
+       * @param value The backoffRate to set.
+       * @return This builder for chaining.
        */
       public Builder setBackoffRate(double value) {
         bitField0_ |= 0x00000020;
@@ -13711,6 +14424,7 @@ public final class WireFormats {
       }
       /**
        * <code>required double backoffRate = 6;</code>
+       * @return This builder for chaining.
        */
       public Builder clearBackoffRate() {
         bitField0_ = (bitField0_ & ~0x00000020);
@@ -13722,18 +14436,22 @@ public final class WireFormats {
       private int messagesPerResize_ ;
       /**
        * <code>required uint32 messagesPerResize = 7;</code>
+       * @return Whether the messagesPerResize field is set.
        */
       public boolean hasMessagesPerResize() {
         return ((bitField0_ & 0x00000040) != 0);
       }
       /**
        * <code>required uint32 messagesPerResize = 7;</code>
+       * @return The messagesPerResize.
        */
       public int getMessagesPerResize() {
         return messagesPerResize_;
       }
       /**
        * <code>required uint32 messagesPerResize = 7;</code>
+       * @param value The messagesPerResize to set.
+       * @return This builder for chaining.
        */
       public Builder setMessagesPerResize(int value) {
         bitField0_ |= 0x00000040;
@@ -13743,6 +14461,7 @@ public final class WireFormats {
       }
       /**
        * <code>required uint32 messagesPerResize = 7;</code>
+       * @return This builder for chaining.
        */
       public Builder clearMessagesPerResize() {
         bitField0_ = (bitField0_ & ~0x00000040);
@@ -13809,10 +14528,12 @@ public final class WireFormats {
 
     /**
      * <code>optional .Payload resizer = 1;</code>
+     * @return Whether the resizer field is set.
      */
     boolean hasResizer();
     /**
      * <code>optional .Payload resizer = 1;</code>
+     * @return The resizer.
      */
     akka.remote.ContainerFormats.Payload getResizer();
     /**
@@ -13822,14 +14543,17 @@ public final class WireFormats {
 
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return Whether the routerDispatcher field is set.
      */
     boolean hasRouterDispatcher();
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return The routerDispatcher.
      */
     java.lang.String getRouterDispatcher();
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return The bytes for routerDispatcher.
      */
     akka.protobufv3.internal.ByteString
         getRouterDispatcherBytes();
@@ -13937,12 +14661,14 @@ public final class WireFormats {
     private akka.remote.ContainerFormats.Payload resizer_;
     /**
      * <code>optional .Payload resizer = 1;</code>
+     * @return Whether the resizer field is set.
      */
     public boolean hasResizer() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional .Payload resizer = 1;</code>
+     * @return The resizer.
      */
     public akka.remote.ContainerFormats.Payload getResizer() {
       return resizer_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : resizer_;
@@ -13958,12 +14684,14 @@ public final class WireFormats {
     private volatile java.lang.Object routerDispatcher_;
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return Whether the routerDispatcher field is set.
      */
     public boolean hasRouterDispatcher() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return The routerDispatcher.
      */
     public java.lang.String getRouterDispatcher() {
       java.lang.Object ref = routerDispatcher_;
@@ -13981,6 +14709,7 @@ public final class WireFormats {
     }
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return The bytes for routerDispatcher.
      */
     public akka.protobufv3.internal.ByteString
         getRouterDispatcherBytes() {
@@ -14361,12 +15090,14 @@ public final class WireFormats {
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> resizerBuilder_;
       /**
        * <code>optional .Payload resizer = 1;</code>
+       * @return Whether the resizer field is set.
        */
       public boolean hasResizer() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional .Payload resizer = 1;</code>
+       * @return The resizer.
        */
       public akka.remote.ContainerFormats.Payload getResizer() {
         if (resizerBuilder_ == null) {
@@ -14477,12 +15208,14 @@ public final class WireFormats {
       private java.lang.Object routerDispatcher_ = "";
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @return Whether the routerDispatcher field is set.
        */
       public boolean hasRouterDispatcher() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @return The routerDispatcher.
        */
       public java.lang.String getRouterDispatcher() {
         java.lang.Object ref = routerDispatcher_;
@@ -14500,6 +15233,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @return The bytes for routerDispatcher.
        */
       public akka.protobufv3.internal.ByteString
           getRouterDispatcherBytes() {
@@ -14516,6 +15250,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @param value The routerDispatcher to set.
+       * @return This builder for chaining.
        */
       public Builder setRouterDispatcher(
           java.lang.String value) {
@@ -14529,6 +15265,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRouterDispatcher() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -14538,6 +15275,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @param value The bytes for routerDispatcher to set.
+       * @return This builder for chaining.
        */
       public Builder setRouterDispatcherBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -14608,42 +15347,51 @@ public final class WireFormats {
 
     /**
      * <code>required uint32 nrOfInstances = 1;</code>
+     * @return Whether the nrOfInstances field is set.
      */
     boolean hasNrOfInstances();
     /**
      * <code>required uint32 nrOfInstances = 1;</code>
+     * @return The nrOfInstances.
      */
     int getNrOfInstances();
 
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return Whether the routerDispatcher field is set.
      */
     boolean hasRouterDispatcher();
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return The routerDispatcher.
      */
     java.lang.String getRouterDispatcher();
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return The bytes for routerDispatcher.
      */
     akka.protobufv3.internal.ByteString
         getRouterDispatcherBytes();
 
     /**
      * <code>required bool usePoolDispatcher = 3;</code>
+     * @return Whether the usePoolDispatcher field is set.
      */
     boolean hasUsePoolDispatcher();
     /**
      * <code>required bool usePoolDispatcher = 3;</code>
+     * @return The usePoolDispatcher.
      */
     boolean getUsePoolDispatcher();
 
     /**
      * <code>optional .Payload resizer = 4;</code>
+     * @return Whether the resizer field is set.
      */
     boolean hasResizer();
     /**
      * <code>optional .Payload resizer = 4;</code>
+     * @return The resizer.
      */
     akka.remote.ContainerFormats.Payload getResizer();
     /**
@@ -14764,12 +15512,14 @@ public final class WireFormats {
     private int nrOfInstances_;
     /**
      * <code>required uint32 nrOfInstances = 1;</code>
+     * @return Whether the nrOfInstances field is set.
      */
     public boolean hasNrOfInstances() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint32 nrOfInstances = 1;</code>
+     * @return The nrOfInstances.
      */
     public int getNrOfInstances() {
       return nrOfInstances_;
@@ -14779,12 +15529,14 @@ public final class WireFormats {
     private volatile java.lang.Object routerDispatcher_;
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return Whether the routerDispatcher field is set.
      */
     public boolean hasRouterDispatcher() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return The routerDispatcher.
      */
     public java.lang.String getRouterDispatcher() {
       java.lang.Object ref = routerDispatcher_;
@@ -14802,6 +15554,7 @@ public final class WireFormats {
     }
     /**
      * <code>optional string routerDispatcher = 2;</code>
+     * @return The bytes for routerDispatcher.
      */
     public akka.protobufv3.internal.ByteString
         getRouterDispatcherBytes() {
@@ -14821,12 +15574,14 @@ public final class WireFormats {
     private boolean usePoolDispatcher_;
     /**
      * <code>required bool usePoolDispatcher = 3;</code>
+     * @return Whether the usePoolDispatcher field is set.
      */
     public boolean hasUsePoolDispatcher() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required bool usePoolDispatcher = 3;</code>
+     * @return The usePoolDispatcher.
      */
     public boolean getUsePoolDispatcher() {
       return usePoolDispatcher_;
@@ -14836,12 +15591,14 @@ public final class WireFormats {
     private akka.remote.ContainerFormats.Payload resizer_;
     /**
      * <code>optional .Payload resizer = 4;</code>
+     * @return Whether the resizer field is set.
      */
     public boolean hasResizer() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional .Payload resizer = 4;</code>
+     * @return The resizer.
      */
     public akka.remote.ContainerFormats.Payload getResizer() {
       return resizer_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : resizer_;
@@ -15281,18 +16038,22 @@ public final class WireFormats {
       private int nrOfInstances_ ;
       /**
        * <code>required uint32 nrOfInstances = 1;</code>
+       * @return Whether the nrOfInstances field is set.
        */
       public boolean hasNrOfInstances() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint32 nrOfInstances = 1;</code>
+       * @return The nrOfInstances.
        */
       public int getNrOfInstances() {
         return nrOfInstances_;
       }
       /**
        * <code>required uint32 nrOfInstances = 1;</code>
+       * @param value The nrOfInstances to set.
+       * @return This builder for chaining.
        */
       public Builder setNrOfInstances(int value) {
         bitField0_ |= 0x00000001;
@@ -15302,6 +16063,7 @@ public final class WireFormats {
       }
       /**
        * <code>required uint32 nrOfInstances = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearNrOfInstances() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -15313,12 +16075,14 @@ public final class WireFormats {
       private java.lang.Object routerDispatcher_ = "";
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @return Whether the routerDispatcher field is set.
        */
       public boolean hasRouterDispatcher() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @return The routerDispatcher.
        */
       public java.lang.String getRouterDispatcher() {
         java.lang.Object ref = routerDispatcher_;
@@ -15336,6 +16100,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @return The bytes for routerDispatcher.
        */
       public akka.protobufv3.internal.ByteString
           getRouterDispatcherBytes() {
@@ -15352,6 +16117,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @param value The routerDispatcher to set.
+       * @return This builder for chaining.
        */
       public Builder setRouterDispatcher(
           java.lang.String value) {
@@ -15365,6 +16132,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRouterDispatcher() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -15374,6 +16142,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string routerDispatcher = 2;</code>
+       * @param value The bytes for routerDispatcher to set.
+       * @return This builder for chaining.
        */
       public Builder setRouterDispatcherBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -15389,18 +16159,22 @@ public final class WireFormats {
       private boolean usePoolDispatcher_ ;
       /**
        * <code>required bool usePoolDispatcher = 3;</code>
+       * @return Whether the usePoolDispatcher field is set.
        */
       public boolean hasUsePoolDispatcher() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required bool usePoolDispatcher = 3;</code>
+       * @return The usePoolDispatcher.
        */
       public boolean getUsePoolDispatcher() {
         return usePoolDispatcher_;
       }
       /**
        * <code>required bool usePoolDispatcher = 3;</code>
+       * @param value The usePoolDispatcher to set.
+       * @return This builder for chaining.
        */
       public Builder setUsePoolDispatcher(boolean value) {
         bitField0_ |= 0x00000004;
@@ -15410,6 +16184,7 @@ public final class WireFormats {
       }
       /**
        * <code>required bool usePoolDispatcher = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearUsePoolDispatcher() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -15423,12 +16198,14 @@ public final class WireFormats {
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> resizerBuilder_;
       /**
        * <code>optional .Payload resizer = 4;</code>
+       * @return Whether the resizer field is set.
        */
       public boolean hasResizer() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional .Payload resizer = 4;</code>
+       * @return The resizer.
        */
       public akka.remote.ContainerFormats.Payload getResizer() {
         if (resizerBuilder_ == null) {
@@ -15594,10 +16371,12 @@ public final class WireFormats {
 
     /**
      * <code>required .GenericRoutingPool generic = 1;</code>
+     * @return Whether the generic field is set.
      */
     boolean hasGeneric();
     /**
      * <code>required .GenericRoutingPool generic = 1;</code>
+     * @return The generic.
      */
     akka.remote.WireFormats.GenericRoutingPool getGeneric();
     /**
@@ -15607,10 +16386,12 @@ public final class WireFormats {
 
     /**
      * <code>required .FiniteDuration within = 2;</code>
+     * @return Whether the within field is set.
      */
     boolean hasWithin();
     /**
      * <code>required .FiniteDuration within = 2;</code>
+     * @return The within.
      */
     akka.remote.WireFormats.FiniteDuration getWithin();
     /**
@@ -15727,12 +16508,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.GenericRoutingPool generic_;
     /**
      * <code>required .GenericRoutingPool generic = 1;</code>
+     * @return Whether the generic field is set.
      */
     public boolean hasGeneric() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .GenericRoutingPool generic = 1;</code>
+     * @return The generic.
      */
     public akka.remote.WireFormats.GenericRoutingPool getGeneric() {
       return generic_ == null ? akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance() : generic_;
@@ -15748,12 +16531,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.FiniteDuration within_;
     /**
      * <code>required .FiniteDuration within = 2;</code>
+     * @return Whether the within field is set.
      */
     public boolean hasWithin() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .FiniteDuration within = 2;</code>
+     * @return The within.
      */
     public akka.remote.WireFormats.FiniteDuration getWithin() {
       return within_ == null ? akka.remote.WireFormats.FiniteDuration.getDefaultInstance() : within_;
@@ -16155,12 +16940,14 @@ public final class WireFormats {
           akka.remote.WireFormats.GenericRoutingPool, akka.remote.WireFormats.GenericRoutingPool.Builder, akka.remote.WireFormats.GenericRoutingPoolOrBuilder> genericBuilder_;
       /**
        * <code>required .GenericRoutingPool generic = 1;</code>
+       * @return Whether the generic field is set.
        */
       public boolean hasGeneric() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .GenericRoutingPool generic = 1;</code>
+       * @return The generic.
        */
       public akka.remote.WireFormats.GenericRoutingPool getGeneric() {
         if (genericBuilder_ == null) {
@@ -16273,12 +17060,14 @@ public final class WireFormats {
           akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder> withinBuilder_;
       /**
        * <code>required .FiniteDuration within = 2;</code>
+       * @return Whether the within field is set.
        */
       public boolean hasWithin() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .FiniteDuration within = 2;</code>
+       * @return The within.
        */
       public akka.remote.WireFormats.FiniteDuration getWithin() {
         if (withinBuilder_ == null) {
@@ -16444,10 +17233,12 @@ public final class WireFormats {
 
     /**
      * <code>required .GenericRoutingPool generic = 1;</code>
+     * @return Whether the generic field is set.
      */
     boolean hasGeneric();
     /**
      * <code>required .GenericRoutingPool generic = 1;</code>
+     * @return The generic.
      */
     akka.remote.WireFormats.GenericRoutingPool getGeneric();
     /**
@@ -16457,10 +17248,12 @@ public final class WireFormats {
 
     /**
      * <code>required .FiniteDuration within = 2;</code>
+     * @return Whether the within field is set.
      */
     boolean hasWithin();
     /**
      * <code>required .FiniteDuration within = 2;</code>
+     * @return The within.
      */
     akka.remote.WireFormats.FiniteDuration getWithin();
     /**
@@ -16470,10 +17263,12 @@ public final class WireFormats {
 
     /**
      * <code>required .FiniteDuration interval = 3;</code>
+     * @return Whether the interval field is set.
      */
     boolean hasInterval();
     /**
      * <code>required .FiniteDuration interval = 3;</code>
+     * @return The interval.
      */
     akka.remote.WireFormats.FiniteDuration getInterval();
     /**
@@ -16603,12 +17398,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.GenericRoutingPool generic_;
     /**
      * <code>required .GenericRoutingPool generic = 1;</code>
+     * @return Whether the generic field is set.
      */
     public boolean hasGeneric() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .GenericRoutingPool generic = 1;</code>
+     * @return The generic.
      */
     public akka.remote.WireFormats.GenericRoutingPool getGeneric() {
       return generic_ == null ? akka.remote.WireFormats.GenericRoutingPool.getDefaultInstance() : generic_;
@@ -16624,12 +17421,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.FiniteDuration within_;
     /**
      * <code>required .FiniteDuration within = 2;</code>
+     * @return Whether the within field is set.
      */
     public boolean hasWithin() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .FiniteDuration within = 2;</code>
+     * @return The within.
      */
     public akka.remote.WireFormats.FiniteDuration getWithin() {
       return within_ == null ? akka.remote.WireFormats.FiniteDuration.getDefaultInstance() : within_;
@@ -16645,12 +17444,14 @@ public final class WireFormats {
     private akka.remote.WireFormats.FiniteDuration interval_;
     /**
      * <code>required .FiniteDuration interval = 3;</code>
+     * @return Whether the interval field is set.
      */
     public boolean hasInterval() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required .FiniteDuration interval = 3;</code>
+     * @return The interval.
      */
     public akka.remote.WireFormats.FiniteDuration getInterval() {
       return interval_ == null ? akka.remote.WireFormats.FiniteDuration.getDefaultInstance() : interval_;
@@ -17100,12 +17901,14 @@ public final class WireFormats {
           akka.remote.WireFormats.GenericRoutingPool, akka.remote.WireFormats.GenericRoutingPool.Builder, akka.remote.WireFormats.GenericRoutingPoolOrBuilder> genericBuilder_;
       /**
        * <code>required .GenericRoutingPool generic = 1;</code>
+       * @return Whether the generic field is set.
        */
       public boolean hasGeneric() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .GenericRoutingPool generic = 1;</code>
+       * @return The generic.
        */
       public akka.remote.WireFormats.GenericRoutingPool getGeneric() {
         if (genericBuilder_ == null) {
@@ -17218,12 +18021,14 @@ public final class WireFormats {
           akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder> withinBuilder_;
       /**
        * <code>required .FiniteDuration within = 2;</code>
+       * @return Whether the within field is set.
        */
       public boolean hasWithin() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .FiniteDuration within = 2;</code>
+       * @return The within.
        */
       public akka.remote.WireFormats.FiniteDuration getWithin() {
         if (withinBuilder_ == null) {
@@ -17336,12 +18141,14 @@ public final class WireFormats {
           akka.remote.WireFormats.FiniteDuration, akka.remote.WireFormats.FiniteDuration.Builder, akka.remote.WireFormats.FiniteDurationOrBuilder> intervalBuilder_;
       /**
        * <code>required .FiniteDuration interval = 3;</code>
+       * @return Whether the interval field is set.
        */
       public boolean hasInterval() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required .FiniteDuration interval = 3;</code>
+       * @return The interval.
        */
       public akka.remote.WireFormats.FiniteDuration getInterval() {
         if (intervalBuilder_ == null) {
@@ -17507,51 +18314,62 @@ public final class WireFormats {
 
     /**
      * <code>required string system = 1;</code>
+     * @return Whether the system field is set.
      */
     boolean hasSystem();
     /**
      * <code>required string system = 1;</code>
+     * @return The system.
      */
     java.lang.String getSystem();
     /**
      * <code>required string system = 1;</code>
+     * @return The bytes for system.
      */
     akka.protobufv3.internal.ByteString
         getSystemBytes();
 
     /**
      * <code>required string hostname = 2;</code>
+     * @return Whether the hostname field is set.
      */
     boolean hasHostname();
     /**
      * <code>required string hostname = 2;</code>
+     * @return The hostname.
      */
     java.lang.String getHostname();
     /**
      * <code>required string hostname = 2;</code>
+     * @return The bytes for hostname.
      */
     akka.protobufv3.internal.ByteString
         getHostnameBytes();
 
     /**
      * <code>required uint32 port = 3;</code>
+     * @return Whether the port field is set.
      */
     boolean hasPort();
     /**
      * <code>required uint32 port = 3;</code>
+     * @return The port.
      */
     int getPort();
 
     /**
      * <code>optional string protocol = 4;</code>
+     * @return Whether the protocol field is set.
      */
     boolean hasProtocol();
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The protocol.
      */
     java.lang.String getProtocol();
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The bytes for protocol.
      */
     akka.protobufv3.internal.ByteString
         getProtocolBytes();
@@ -17670,12 +18488,14 @@ public final class WireFormats {
     private volatile java.lang.Object system_;
     /**
      * <code>required string system = 1;</code>
+     * @return Whether the system field is set.
      */
     public boolean hasSystem() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string system = 1;</code>
+     * @return The system.
      */
     public java.lang.String getSystem() {
       java.lang.Object ref = system_;
@@ -17693,6 +18513,7 @@ public final class WireFormats {
     }
     /**
      * <code>required string system = 1;</code>
+     * @return The bytes for system.
      */
     public akka.protobufv3.internal.ByteString
         getSystemBytes() {
@@ -17712,12 +18533,14 @@ public final class WireFormats {
     private volatile java.lang.Object hostname_;
     /**
      * <code>required string hostname = 2;</code>
+     * @return Whether the hostname field is set.
      */
     public boolean hasHostname() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string hostname = 2;</code>
+     * @return The hostname.
      */
     public java.lang.String getHostname() {
       java.lang.Object ref = hostname_;
@@ -17735,6 +18558,7 @@ public final class WireFormats {
     }
     /**
      * <code>required string hostname = 2;</code>
+     * @return The bytes for hostname.
      */
     public akka.protobufv3.internal.ByteString
         getHostnameBytes() {
@@ -17754,12 +18578,14 @@ public final class WireFormats {
     private int port_;
     /**
      * <code>required uint32 port = 3;</code>
+     * @return Whether the port field is set.
      */
     public boolean hasPort() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required uint32 port = 3;</code>
+     * @return The port.
      */
     public int getPort() {
       return port_;
@@ -17769,12 +18595,14 @@ public final class WireFormats {
     private volatile java.lang.Object protocol_;
     /**
      * <code>optional string protocol = 4;</code>
+     * @return Whether the protocol field is set.
      */
     public boolean hasProtocol() {
       return ((bitField0_ & 0x00000008) != 0);
     }
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The protocol.
      */
     public java.lang.String getProtocol() {
       java.lang.Object ref = protocol_;
@@ -17792,6 +18620,7 @@ public final class WireFormats {
     }
     /**
      * <code>optional string protocol = 4;</code>
+     * @return The bytes for protocol.
      */
     public akka.protobufv3.internal.ByteString
         getProtocolBytes() {
@@ -18228,12 +19057,14 @@ public final class WireFormats {
       private java.lang.Object system_ = "";
       /**
        * <code>required string system = 1;</code>
+       * @return Whether the system field is set.
        */
       public boolean hasSystem() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string system = 1;</code>
+       * @return The system.
        */
       public java.lang.String getSystem() {
         java.lang.Object ref = system_;
@@ -18251,6 +19082,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string system = 1;</code>
+       * @return The bytes for system.
        */
       public akka.protobufv3.internal.ByteString
           getSystemBytes() {
@@ -18267,6 +19099,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string system = 1;</code>
+       * @param value The system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystem(
           java.lang.String value) {
@@ -18280,6 +19114,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string system = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSystem() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -18289,6 +19124,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string system = 1;</code>
+       * @param value The bytes for system to set.
+       * @return This builder for chaining.
        */
       public Builder setSystemBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -18304,12 +19141,14 @@ public final class WireFormats {
       private java.lang.Object hostname_ = "";
       /**
        * <code>required string hostname = 2;</code>
+       * @return Whether the hostname field is set.
        */
       public boolean hasHostname() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return The hostname.
        */
       public java.lang.String getHostname() {
         java.lang.Object ref = hostname_;
@@ -18327,6 +19166,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return The bytes for hostname.
        */
       public akka.protobufv3.internal.ByteString
           getHostnameBytes() {
@@ -18343,6 +19183,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @param value The hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostname(
           java.lang.String value) {
@@ -18356,6 +19198,7 @@ public final class WireFormats {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearHostname() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -18365,6 +19208,8 @@ public final class WireFormats {
       }
       /**
        * <code>required string hostname = 2;</code>
+       * @param value The bytes for hostname to set.
+       * @return This builder for chaining.
        */
       public Builder setHostnameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -18380,18 +19225,22 @@ public final class WireFormats {
       private int port_ ;
       /**
        * <code>required uint32 port = 3;</code>
+       * @return Whether the port field is set.
        */
       public boolean hasPort() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @return The port.
        */
       public int getPort() {
         return port_;
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @param value The port to set.
+       * @return This builder for chaining.
        */
       public Builder setPort(int value) {
         bitField0_ |= 0x00000004;
@@ -18401,6 +19250,7 @@ public final class WireFormats {
       }
       /**
        * <code>required uint32 port = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPort() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -18412,12 +19262,14 @@ public final class WireFormats {
       private java.lang.Object protocol_ = "";
       /**
        * <code>optional string protocol = 4;</code>
+       * @return Whether the protocol field is set.
        */
       public boolean hasProtocol() {
         return ((bitField0_ & 0x00000008) != 0);
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return The protocol.
        */
       public java.lang.String getProtocol() {
         java.lang.Object ref = protocol_;
@@ -18435,6 +19287,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return The bytes for protocol.
        */
       public akka.protobufv3.internal.ByteString
           getProtocolBytes() {
@@ -18451,6 +19304,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @param value The protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocol(
           java.lang.String value) {
@@ -18464,6 +19319,7 @@ public final class WireFormats {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearProtocol() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -18473,6 +19329,8 @@ public final class WireFormats {
       }
       /**
        * <code>optional string protocol = 4;</code>
+       * @param value The bytes for protocol to set.
+       * @return This builder for chaining.
        */
       public Builder setProtocolBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -18543,10 +19401,12 @@ public final class WireFormats {
 
     /**
      * <code>required .Payload local = 1;</code>
+     * @return Whether the local field is set.
      */
     boolean hasLocal();
     /**
      * <code>required .Payload local = 1;</code>
+     * @return The local.
      */
     akka.remote.ContainerFormats.Payload getLocal();
     /**
@@ -18687,12 +19547,14 @@ public final class WireFormats {
     private akka.remote.ContainerFormats.Payload local_;
     /**
      * <code>required .Payload local = 1;</code>
+     * @return Whether the local field is set.
      */
     public boolean hasLocal() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required .Payload local = 1;</code>
+     * @return The local.
      */
     public akka.remote.ContainerFormats.Payload getLocal() {
       return local_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : local_;
@@ -19147,12 +20009,14 @@ public final class WireFormats {
           akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> localBuilder_;
       /**
        * <code>required .Payload local = 1;</code>
+       * @return Whether the local field is set.
        */
       public boolean hasLocal() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required .Payload local = 1;</code>
+       * @return The local.
        */
       public akka.remote.ContainerFormats.Payload getLocal() {
         if (localBuilder_ == null) {
@@ -19678,48 +20542,48 @@ public final class WireFormats {
       "\002(\0132\r.ActorRefData\"\204\001\n\tPropsData\022\033\n\006depl" +
       "oy\030\002 \002(\0132\013.DeployData\022\r\n\005clazz\030\003 \002(\t\022\014\n\004" +
       "args\030\004 \003(\014\022\021\n\tmanifests\030\005 \003(\t\022\025\n\rseriali" +
-      "zerIds\030\006 \003(\005\022\023\n\013hasManifest\030\007 \003(\010\"\211\002\n\nDe" +
+      "zerIds\030\006 \003(\005\022\023\n\013hasManifest\030\007 \003(\010\"\227\002\n\nDe" +
       "ployData\022\014\n\004path\030\001 \002(\t\022\016\n\006config\030\002 \001(\014\022\024" +
       "\n\014routerConfig\030\003 \001(\014\022\r\n\005scope\030\004 \001(\014\022\022\n\nd" +
       "ispatcher\030\005 \001(\t\022\031\n\021scopeSerializerId\030\006 \001" +
       "(\005\022\025\n\rscopeManifest\030\007 \001(\t\022\032\n\022configSeria" +
       "lizerId\030\010 \001(\005\022\026\n\016configManifest\030\t \001(\t\022 \n" +
       "\030routerConfigSerializerId\030\n \001(\005\022\034\n\024route" +
-      "rConfigManifest\030\013 \001(\t\"P\n\023AkkaProtocolMes" +
-      "sage\022\017\n\007payload\030\001 \001(\014\022(\n\013instruction\030\002 \001" +
-      "(\0132\023.AkkaControlMessage\"b\n\022AkkaControlMe" +
-      "ssage\022!\n\013commandType\030\001 \002(\0162\014.CommandType" +
-      "\022)\n\rhandshakeInfo\030\002 \001(\0132\022.AkkaHandshakeI" +
-      "nfo\"N\n\021AkkaHandshakeInfo\022\034\n\006origin\030\001 \002(\013" +
-      "2\014.AddressData\022\013\n\003uid\030\002 \002(\006\022\016\n\006cookie\030\003 " +
-      "\001(\t\"8\n\016FiniteDuration\022\r\n\005value\030\001 \002(\003\022\027\n\004" +
-      "unit\030\002 \002(\0162\t.TimeUnit\")\n\013RemoteScope\022\032\n\004" +
-      "node\030\001 \002(\0132\014.AddressData\"\261\001\n\016DefaultResi" +
-      "zer\022\022\n\nlowerBound\030\001 \002(\r\022\022\n\nupperBound\030\002 " +
-      "\002(\r\022\031\n\021pressureThreshold\030\003 \002(\r\022\022\n\nrampup" +
-      "Rate\030\004 \002(\001\022\030\n\020backoffThreshold\030\005 \002(\001\022\023\n\013" +
-      "backoffRate\030\006 \002(\001\022\031\n\021messagesPerResize\030\007" +
-      " \002(\r\"A\n\nFromConfig\022\031\n\007resizer\030\001 \001(\0132\010.Pa" +
-      "yload\022\030\n\020routerDispatcher\030\002 \001(\t\"{\n\022Gener" +
-      "icRoutingPool\022\025\n\rnrOfInstances\030\001 \002(\r\022\030\n\020" +
-      "routerDispatcher\030\002 \001(\t\022\031\n\021usePoolDispatc" +
-      "her\030\003 \002(\010\022\031\n\007resizer\030\004 \001(\0132\010.Payload\"Z\n\021" +
-      "ScatterGatherPool\022$\n\007generic\030\001 \002(\0132\023.Gen" +
-      "ericRoutingPool\022\037\n\006within\030\002 \002(\0132\017.Finite" +
-      "Duration\"|\n\020TailChoppingPool\022$\n\007generic\030" +
-      "\001 \002(\0132\023.GenericRoutingPool\022\037\n\006within\030\002 \002" +
-      "(\0132\017.FiniteDuration\022!\n\010interval\030\003 \002(\0132\017." +
-      "FiniteDuration\"O\n\013AddressData\022\016\n\006system\030" +
-      "\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n\004port\030\003 \002(\r\022\020\n" +
-      "\010protocol\030\004 \001(\t\"J\n\022RemoteRouterConfig\022\027\n" +
-      "\005local\030\001 \002(\0132\010.Payload\022\033\n\005nodes\030\002 \003(\0132\014." +
-      "AddressData*{\n\013CommandType\022\r\n\tASSOCIATE\020" +
-      "\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEARTBEAT\020\003\022\036\n\032DI" +
-      "SASSOCIATE_SHUTTING_DOWN\020\004\022\034\n\030DISASSOCIA" +
-      "TE_QUARANTINED\020\005*n\n\010TimeUnit\022\017\n\013NANOSECO" +
-      "NDS\020\001\022\020\n\014MICROSECONDS\020\002\022\020\n\014MILLISECONDS\020" +
-      "\003\022\013\n\007SECONDS\020\004\022\013\n\007MINUTES\020\005\022\t\n\005HOURS\020\006\022\010" +
-      "\n\004DAYS\020\007B\017\n\013akka.remoteH\001"
+      "rConfigManifest\030\013 \001(\t\022\014\n\004tags\030\014 \003(\t\"P\n\023A" +
+      "kkaProtocolMessage\022\017\n\007payload\030\001 \001(\014\022(\n\013i" +
+      "nstruction\030\002 \001(\0132\023.AkkaControlMessage\"b\n" +
+      "\022AkkaControlMessage\022!\n\013commandType\030\001 \002(\016" +
+      "2\014.CommandType\022)\n\rhandshakeInfo\030\002 \001(\0132\022." +
+      "AkkaHandshakeInfo\"N\n\021AkkaHandshakeInfo\022\034" +
+      "\n\006origin\030\001 \002(\0132\014.AddressData\022\013\n\003uid\030\002 \002(" +
+      "\006\022\016\n\006cookie\030\003 \001(\t\"8\n\016FiniteDuration\022\r\n\005v" +
+      "alue\030\001 \002(\003\022\027\n\004unit\030\002 \002(\0162\t.TimeUnit\")\n\013R" +
+      "emoteScope\022\032\n\004node\030\001 \002(\0132\014.AddressData\"\261" +
+      "\001\n\016DefaultResizer\022\022\n\nlowerBound\030\001 \002(\r\022\022\n" +
+      "\nupperBound\030\002 \002(\r\022\031\n\021pressureThreshold\030\003" +
+      " \002(\r\022\022\n\nrampupRate\030\004 \002(\001\022\030\n\020backoffThres" +
+      "hold\030\005 \002(\001\022\023\n\013backoffRate\030\006 \002(\001\022\031\n\021messa" +
+      "gesPerResize\030\007 \002(\r\"A\n\nFromConfig\022\031\n\007resi" +
+      "zer\030\001 \001(\0132\010.Payload\022\030\n\020routerDispatcher\030" +
+      "\002 \001(\t\"{\n\022GenericRoutingPool\022\025\n\rnrOfInsta" +
+      "nces\030\001 \002(\r\022\030\n\020routerDispatcher\030\002 \001(\t\022\031\n\021" +
+      "usePoolDispatcher\030\003 \002(\010\022\031\n\007resizer\030\004 \001(\013" +
+      "2\010.Payload\"Z\n\021ScatterGatherPool\022$\n\007gener" +
+      "ic\030\001 \002(\0132\023.GenericRoutingPool\022\037\n\006within\030" +
+      "\002 \002(\0132\017.FiniteDuration\"|\n\020TailChoppingPo" +
+      "ol\022$\n\007generic\030\001 \002(\0132\023.GenericRoutingPool" +
+      "\022\037\n\006within\030\002 \002(\0132\017.FiniteDuration\022!\n\010int" +
+      "erval\030\003 \002(\0132\017.FiniteDuration\"O\n\013AddressD" +
+      "ata\022\016\n\006system\030\001 \002(\t\022\020\n\010hostname\030\002 \002(\t\022\014\n" +
+      "\004port\030\003 \002(\r\022\020\n\010protocol\030\004 \001(\t\"J\n\022RemoteR" +
+      "outerConfig\022\027\n\005local\030\001 \002(\0132\010.Payload\022\033\n\005" +
+      "nodes\030\002 \003(\0132\014.AddressData*{\n\013CommandType" +
+      "\022\r\n\tASSOCIATE\020\001\022\020\n\014DISASSOCIATE\020\002\022\r\n\tHEA" +
+      "RTBEAT\020\003\022\036\n\032DISASSOCIATE_SHUTTING_DOWN\020\004" +
+      "\022\034\n\030DISASSOCIATE_QUARANTINED\020\005*n\n\010TimeUn" +
+      "it\022\017\n\013NANOSECONDS\020\001\022\020\n\014MICROSECONDS\020\002\022\020\n" +
+      "\014MILLISECONDS\020\003\022\013\n\007SECONDS\020\004\022\013\n\007MINUTES\020" +
+      "\005\022\t\n\005HOURS\020\006\022\010\n\004DAYS\020\007B\017\n\013akka.remoteH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
@@ -19773,7 +20637,7 @@ public final class WireFormats {
     internal_static_DeployData_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_DeployData_descriptor,
-        new java.lang.String[] { "Path", "Config", "RouterConfig", "Scope", "Dispatcher", "ScopeSerializerId", "ScopeManifest", "ConfigSerializerId", "ConfigManifest", "RouterConfigSerializerId", "RouterConfigManifest", });
+        new java.lang.String[] { "Path", "Config", "RouterConfig", "Scope", "Dispatcher", "ScopeSerializerId", "ScopeManifest", "ConfigSerializerId", "ConfigManifest", "RouterConfigSerializerId", "RouterConfigManifest", "Tags", });
     internal_static_AkkaProtocolMessage_descriptor =
       getDescriptor().getMessageTypes().get(8);
     internal_static_AkkaProtocolMessage_fieldAccessorTable = new

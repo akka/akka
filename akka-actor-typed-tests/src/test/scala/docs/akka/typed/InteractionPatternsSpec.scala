@@ -391,12 +391,18 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     // #standalone-ask
     object CookieFabric {
       sealed trait Command {}
-      case class GiveMeCookies(replyTo: ActorRef[Cookies]) extends Command
-      case class Cookies(count: Int)
+      case class GiveMeCookies(count: Int, replyTo: ActorRef[Reply]) extends Command
+
+      sealed trait Reply
+      case class Cookies(count: Int) extends Reply
+      case class InvalidRequest(reason: String) extends Reply
 
       def apply(): Behaviors.Receive[CookieFabric.GiveMeCookies] =
         Behaviors.receiveMessage { message =>
-          message.replyTo ! Cookies(5)
+          if (message.count >= 5)
+            message.replyTo ! InvalidRequest("Too many cookies.")
+          else
+            message.replyTo ! Cookies(message.count)
           Behaviors.same
         }
     }
@@ -410,23 +416,38 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
     import akka.actor.typed.scaladsl.AskPattern._
     import akka.util.Timeout
 
-    // asking someone requires a timeout and a scheduler, if the timeout hits without response
+    // asking someone requires a timeout if the timeout hits without response
     // the ask is failed with a TimeoutException
     implicit val timeout: Timeout = 3.seconds
-    implicit val scheduler = system.scheduler
 
-    val result: Future[CookieFabric.Cookies] = cookieFabric.ask(ref => CookieFabric.GiveMeCookies(ref))
+    val result: Future[CookieFabric.Reply] = cookieFabric.ask(ref => CookieFabric.GiveMeCookies(3, ref))
 
     // the response callback will be executed on this execution context
     implicit val ec = system.executionContext
 
     result.onComplete {
-      case Success(cookies) => println(s"Yay, cookies! $cookies")
-      case Failure(ex)      => println(s"Boo! didn't get cookies: ${ex.getMessage}")
+      case Success(CookieFabric.Cookies(count))         => println(s"Yay, $count cookies!")
+      case Success(CookieFabric.InvalidRequest(reason)) => println(s"No cookies for me. $reason")
+      case Failure(ex)                                  => println(s"Boo! didn't get cookies: ${ex.getMessage}")
     }
     // #standalone-ask
 
-    result.futureValue shouldEqual CookieFabric.Cookies(5)
+    result.futureValue shouldEqual CookieFabric.Cookies(3)
+
+    // #standalone-ask-fail-future
+    val cookies: Future[CookieFabric.Cookies] =
+      cookieFabric.ask[CookieFabric.Reply](ref => CookieFabric.GiveMeCookies(3, ref)).flatMap {
+        case c: CookieFabric.Cookies             => Future.successful(c)
+        case CookieFabric.InvalidRequest(reason) => Future.failed(new IllegalArgumentException(reason))
+      }
+
+    cookies.onComplete {
+      case Success(CookieFabric.Cookies(count)) => println(s"Yay, $count cookies!")
+      case Failure(ex)                          => println(s"Boo! didn't get cookies: ${ex.getMessage}")
+    }
+    // #standalone-ask-fail-future
+
+    cookies.futureValue shouldEqual CookieFabric.Cookies(3)
   }
 
   "contain a sample for pipeToSelf" in {

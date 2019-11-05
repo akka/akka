@@ -13,7 +13,7 @@ import scala.concurrent._
 import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.TestException
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
@@ -109,7 +109,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
         },
         "supervised-child-parent")
 
-      LoggingEventFilter.error[TestException].intercept {
+      LoggingTestKit.error[TestException].intercept {
         parent ! "boom"
       }
       probe.expectMessageType[ChildHasFailed].t.cause shouldEqual ex
@@ -144,7 +144,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       }
       val parent = spawn(behavior, "parent")
 
-      LoggingEventFilter.error[TestException].intercept {
+      LoggingTestKit.error[TestException].intercept {
         parent ! "boom"
       }
       probe.expectMessageType[ChildHasFailed].t.cause shouldEqual ex
@@ -183,8 +183,8 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
           },
           "grosso-bosso")
 
-      LoggingEventFilter.error[TestException].intercept {
-        LoggingEventFilter.error[DeathPactException].intercept {
+      LoggingTestKit.error[TestException].intercept {
+        LoggingTestKit.error[DeathPactException].intercept {
           grossoBosso ! "boom"
         }
       }
@@ -324,7 +324,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "fail when watch is used after watchWith on same subject" in new ErrorTestSetup {
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
 
-      LoggingEventFilter
+      LoggingTestKit
         .error[IllegalStateException]
         .withMessageContains("termination message was not overwritten")
         .intercept {
@@ -337,7 +337,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "fail when watchWitch is used after watchWith with different termination message" in new ErrorTestSetup {
       watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
 
-      LoggingEventFilter
+      LoggingTestKit
         .error[IllegalStateException]
         .withMessageContains("termination message was not overwritten")
         .intercept {
@@ -349,7 +349,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "fail when watchWith is used after watch on same subject" in new ErrorTestSetup {
       watcher ! StartWatching(terminator)
 
-      LoggingEventFilter
+      LoggingTestKit
         .error[IllegalStateException]
         .withMessageContains("termination message was not overwritten")
         .intercept {

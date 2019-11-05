@@ -24,24 +24,29 @@ public final class FlightAppModels {
 
     /**
      * <code>required string letter = 1;</code>
+     * @return Whether the letter field is set.
      */
     boolean hasLetter();
     /**
      * <code>required string letter = 1;</code>
+     * @return The letter.
      */
     java.lang.String getLetter();
     /**
      * <code>required string letter = 1;</code>
+     * @return The bytes for letter.
      */
     akka.protobufv3.internal.ByteString
         getLetterBytes();
 
     /**
      * <code>required uint32 row = 2;</code>
+     * @return Whether the row field is set.
      */
     boolean hasRow();
     /**
      * <code>required uint32 row = 2;</code>
+     * @return The row.
      */
     int getRow();
 
@@ -51,6 +56,7 @@ public final class FlightAppModels {
      * </pre>
      *
      * <code>optional string seatType = 3;</code>
+     * @return Whether the seatType field is set.
      */
     boolean hasSeatType();
     /**
@@ -59,6 +65,7 @@ public final class FlightAppModels {
      * </pre>
      *
      * <code>optional string seatType = 3;</code>
+     * @return The seatType.
      */
     java.lang.String getSeatType();
     /**
@@ -67,6 +74,7 @@ public final class FlightAppModels {
      * </pre>
      *
      * <code>optional string seatType = 3;</code>
+     * @return The bytes for seatType.
      */
     akka.protobufv3.internal.ByteString
         getSeatTypeBytes();
@@ -173,12 +181,14 @@ public final class FlightAppModels {
     private volatile java.lang.Object letter_;
     /**
      * <code>required string letter = 1;</code>
+     * @return Whether the letter field is set.
      */
     public boolean hasLetter() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string letter = 1;</code>
+     * @return The letter.
      */
     public java.lang.String getLetter() {
       java.lang.Object ref = letter_;
@@ -196,6 +206,7 @@ public final class FlightAppModels {
     }
     /**
      * <code>required string letter = 1;</code>
+     * @return The bytes for letter.
      */
     public akka.protobufv3.internal.ByteString
         getLetterBytes() {
@@ -215,12 +226,14 @@ public final class FlightAppModels {
     private int row_;
     /**
      * <code>required uint32 row = 2;</code>
+     * @return Whether the row field is set.
      */
     public boolean hasRow() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required uint32 row = 2;</code>
+     * @return The row.
      */
     public int getRow() {
       return row_;
@@ -234,6 +247,7 @@ public final class FlightAppModels {
      * </pre>
      *
      * <code>optional string seatType = 3;</code>
+     * @return Whether the seatType field is set.
      */
     public boolean hasSeatType() {
       return ((bitField0_ & 0x00000004) != 0);
@@ -244,6 +258,7 @@ public final class FlightAppModels {
      * </pre>
      *
      * <code>optional string seatType = 3;</code>
+     * @return The seatType.
      */
     public java.lang.String getSeatType() {
       java.lang.Object ref = seatType_;
@@ -265,6 +280,7 @@ public final class FlightAppModels {
      * </pre>
      *
      * <code>optional string seatType = 3;</code>
+     * @return The bytes for seatType.
      */
     public akka.protobufv3.internal.ByteString
         getSeatTypeBytes() {
@@ -663,12 +679,14 @@ public final class FlightAppModels {
       private java.lang.Object letter_ = "";
       /**
        * <code>required string letter = 1;</code>
+       * @return Whether the letter field is set.
        */
       public boolean hasLetter() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string letter = 1;</code>
+       * @return The letter.
        */
       public java.lang.String getLetter() {
         java.lang.Object ref = letter_;
@@ -686,6 +704,7 @@ public final class FlightAppModels {
       }
       /**
        * <code>required string letter = 1;</code>
+       * @return The bytes for letter.
        */
       public akka.protobufv3.internal.ByteString
           getLetterBytes() {
@@ -702,6 +721,8 @@ public final class FlightAppModels {
       }
       /**
        * <code>required string letter = 1;</code>
+       * @param value The letter to set.
+       * @return This builder for chaining.
        */
       public Builder setLetter(
           java.lang.String value) {
@@ -715,6 +736,7 @@ public final class FlightAppModels {
       }
       /**
        * <code>required string letter = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearLetter() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -724,6 +746,8 @@ public final class FlightAppModels {
       }
       /**
        * <code>required string letter = 1;</code>
+       * @param value The bytes for letter to set.
+       * @return This builder for chaining.
        */
       public Builder setLetterBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -739,18 +763,22 @@ public final class FlightAppModels {
       private int row_ ;
       /**
        * <code>required uint32 row = 2;</code>
+       * @return Whether the row field is set.
        */
       public boolean hasRow() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required uint32 row = 2;</code>
+       * @return The row.
        */
       public int getRow() {
         return row_;
       }
       /**
        * <code>required uint32 row = 2;</code>
+       * @param value The row to set.
+       * @return This builder for chaining.
        */
       public Builder setRow(int value) {
         bitField0_ |= 0x00000002;
@@ -760,6 +788,7 @@ public final class FlightAppModels {
       }
       /**
        * <code>required uint32 row = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearRow() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -775,6 +804,7 @@ public final class FlightAppModels {
        * </pre>
        *
        * <code>optional string seatType = 3;</code>
+       * @return Whether the seatType field is set.
        */
       public boolean hasSeatType() {
         return ((bitField0_ & 0x00000004) != 0);
@@ -785,6 +815,7 @@ public final class FlightAppModels {
        * </pre>
        *
        * <code>optional string seatType = 3;</code>
+       * @return The seatType.
        */
       public java.lang.String getSeatType() {
         java.lang.Object ref = seatType_;
@@ -806,6 +837,7 @@ public final class FlightAppModels {
        * </pre>
        *
        * <code>optional string seatType = 3;</code>
+       * @return The bytes for seatType.
        */
       public akka.protobufv3.internal.ByteString
           getSeatTypeBytes() {
@@ -826,6 +858,8 @@ public final class FlightAppModels {
        * </pre>
        *
        * <code>optional string seatType = 3;</code>
+       * @param value The seatType to set.
+       * @return This builder for chaining.
        */
       public Builder setSeatType(
           java.lang.String value) {
@@ -843,6 +877,7 @@ public final class FlightAppModels {
        * </pre>
        *
        * <code>optional string seatType = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSeatType() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -856,6 +891,8 @@ public final class FlightAppModels {
        * </pre>
        *
        * <code>optional string seatType = 3;</code>
+       * @param value The bytes for seatType to set.
+       * @return This builder for chaining.
        */
       public Builder setSeatTypeBytes(
           akka.protobufv3.internal.ByteString value) {

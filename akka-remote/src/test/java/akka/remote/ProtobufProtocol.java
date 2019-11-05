@@ -24,33 +24,40 @@ public final class ProtobufProtocol {
 
     /**
      * <code>required uint64 id = 1;</code>
+     * @return Whether the id field is set.
      */
     boolean hasId();
     /**
      * <code>required uint64 id = 1;</code>
+     * @return The id.
      */
     long getId();
 
     /**
      * <code>required string name = 2;</code>
+     * @return Whether the name field is set.
      */
     boolean hasName();
     /**
      * <code>required string name = 2;</code>
+     * @return The name.
      */
     java.lang.String getName();
     /**
      * <code>required string name = 2;</code>
+     * @return The bytes for name.
      */
     akka.protobufv3.internal.ByteString
         getNameBytes();
 
     /**
      * <code>required bool status = 3;</code>
+     * @return Whether the status field is set.
      */
     boolean hasStatus();
     /**
      * <code>required bool status = 3;</code>
+     * @return The status.
      */
     boolean getStatus();
   }
@@ -154,12 +161,14 @@ public final class ProtobufProtocol {
     private long id_;
     /**
      * <code>required uint64 id = 1;</code>
+     * @return Whether the id field is set.
      */
     public boolean hasId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required uint64 id = 1;</code>
+     * @return The id.
      */
     public long getId() {
       return id_;
@@ -169,12 +178,14 @@ public final class ProtobufProtocol {
     private volatile java.lang.Object name_;
     /**
      * <code>required string name = 2;</code>
+     * @return Whether the name field is set.
      */
     public boolean hasName() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required string name = 2;</code>
+     * @return The name.
      */
     public java.lang.String getName() {
       java.lang.Object ref = name_;
@@ -192,6 +203,7 @@ public final class ProtobufProtocol {
     }
     /**
      * <code>required string name = 2;</code>
+     * @return The bytes for name.
      */
     public akka.protobufv3.internal.ByteString
         getNameBytes() {
@@ -211,12 +223,14 @@ public final class ProtobufProtocol {
     private boolean status_;
     /**
      * <code>required bool status = 3;</code>
+     * @return Whether the status field is set.
      */
     public boolean hasStatus() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>required bool status = 3;</code>
+     * @return The status.
      */
     public boolean getStatus() {
       return status_;
@@ -613,18 +627,22 @@ public final class ProtobufProtocol {
       private long id_ ;
       /**
        * <code>required uint64 id = 1;</code>
+       * @return Whether the id field is set.
        */
       public boolean hasId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required uint64 id = 1;</code>
+       * @return The id.
        */
       public long getId() {
         return id_;
       }
       /**
        * <code>required uint64 id = 1;</code>
+       * @param value The id to set.
+       * @return This builder for chaining.
        */
       public Builder setId(long value) {
         bitField0_ |= 0x00000001;
@@ -634,6 +652,7 @@ public final class ProtobufProtocol {
       }
       /**
        * <code>required uint64 id = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -645,12 +664,14 @@ public final class ProtobufProtocol {
       private java.lang.Object name_ = "";
       /**
        * <code>required string name = 2;</code>
+       * @return Whether the name field is set.
        */
       public boolean hasName() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string name = 2;</code>
+       * @return The name.
        */
       public java.lang.String getName() {
         java.lang.Object ref = name_;
@@ -668,6 +689,7 @@ public final class ProtobufProtocol {
       }
       /**
        * <code>required string name = 2;</code>
+       * @return The bytes for name.
        */
       public akka.protobufv3.internal.ByteString
           getNameBytes() {
@@ -684,6 +706,8 @@ public final class ProtobufProtocol {
       }
       /**
        * <code>required string name = 2;</code>
+       * @param value The name to set.
+       * @return This builder for chaining.
        */
       public Builder setName(
           java.lang.String value) {
@@ -697,6 +721,7 @@ public final class ProtobufProtocol {
       }
       /**
        * <code>required string name = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearName() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -706,6 +731,8 @@ public final class ProtobufProtocol {
       }
       /**
        * <code>required string name = 2;</code>
+       * @param value The bytes for name to set.
+       * @return This builder for chaining.
        */
       public Builder setNameBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -721,18 +748,22 @@ public final class ProtobufProtocol {
       private boolean status_ ;
       /**
        * <code>required bool status = 3;</code>
+       * @return Whether the status field is set.
        */
       public boolean hasStatus() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required bool status = 3;</code>
+       * @return The status.
        */
       public boolean getStatus() {
         return status_;
       }
       /**
        * <code>required bool status = 3;</code>
+       * @param value The status to set.
+       * @return This builder for chaining.
        */
       public Builder setStatus(boolean value) {
         bitField0_ |= 0x00000004;
@@ -742,6 +773,7 @@ public final class ProtobufProtocol {
       }
       /**
        * <code>required bool status = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearStatus() {
         bitField0_ = (bitField0_ & ~0x00000004);

@@ -96,6 +96,7 @@ message DeployData {
   optional string configManifest = 9;
   optional int32 routerConfigSerializerId = 10;
   optional string routerConfigManifest = 11;
+  repeated string tags = 12;
 }
 
 

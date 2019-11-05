@@ -33,7 +33,7 @@ import akka.actor.typed.Terminated
   val localAskTimeout = 60.seconds // ReadLocal, WriteLocal shouldn't timeout
   val additionalAskTimeout = 1.second
 
-  def behavior(
+  def apply(
       settings: dd.ReplicatorSettings,
       underlyingReplicator: Option[akka.actor.ActorRef]): Behavior[SReplicator.Command] = {
 
@@ -48,11 +48,11 @@ import akka.actor.typed.Terminated
 
       def withState(
           subscribeAdapters: Map[
-            ActorRef[JReplicator.Changed[ReplicatedData]],
-            ActorRef[dd.Replicator.Changed[ReplicatedData]]]): Behavior[SReplicator.Command] = {
+            ActorRef[JReplicator.SubscribeResponse[ReplicatedData]],
+            ActorRef[dd.Replicator.SubscribeResponse[ReplicatedData]]]): Behavior[SReplicator.Command] = {
 
         def stopSubscribeAdapter(
-            subscriber: ActorRef[JReplicator.Changed[ReplicatedData]]): Behavior[SReplicator.Command] = {
+            subscriber: ActorRef[JReplicator.SubscribeResponse[ReplicatedData]]): Behavior[SReplicator.Command] = {
           subscribeAdapters.get(subscriber) match {
             case Some(adapter) =>
               // will be unsubscribed from classicReplicator via Terminated
@@ -122,14 +122,14 @@ import akka.actor.typed.Terminated
                 Behaviors.same
 
               case cmd: SReplicator.Subscribe[_] =>
-                // For the Scala API the Changed messages can be sent directly to the subscriber
+                // For the Scala API the SubscribeResponse messages can be sent directly to the subscriber
                 classicReplicator.tell(
                   dd.Replicator.Subscribe(cmd.key, cmd.subscriber.toClassic),
                   sender = cmd.subscriber.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Subscribe[ReplicatedData] @unchecked =>
-                // For the Java API the Changed messages must be mapped to the JReplicator.Changed class.
+                // For the Java API the Changed/Deleted messages must be mapped to the JReplicator.Changed/Deleted class.
                 // That is done with an adapter, and we have to keep track of the lifecycle of the original
                 // subscriber and stop the adapter when the original subscriber is stopped.
                 val adapter: ActorRef[dd.Replicator.SubscribeResponse[ReplicatedData]] = ctx.spawnMessageAdapter {
@@ -150,6 +150,12 @@ import akka.actor.typed.Terminated
                   case chg: dd.Replicator.Changed[_] => subscriber ! JReplicator.Changed(chg.key)(chg.dataValue)
                   case del: dd.Replicator.Deleted[_] => subscriber ! JReplicator.Deleted(del.key)
                 }
+                Behaviors.same
+
+              case cmd: SReplicator.Unsubscribe[_] =>
+                classicReplicator.tell(
+                  dd.Replicator.Unsubscribe(cmd.key, cmd.subscriber.toClassic),
+                  sender = cmd.subscriber.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Unsubscribe[ReplicatedData] @unchecked =>
@@ -202,7 +208,7 @@ import akka.actor.typed.Terminated
             }
           }
           .receiveSignal {
-            case (_, Terminated(ref: ActorRef[JReplicator.Changed[ReplicatedData]] @unchecked)) =>
+            case (_, Terminated(ref: ActorRef[JReplicator.SubscribeResponse[ReplicatedData]] @unchecked)) =>
               stopSubscribeAdapter(ref)
           }
       }

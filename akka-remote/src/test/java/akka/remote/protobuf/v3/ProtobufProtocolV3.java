@@ -22,15 +22,31 @@ public final class ProtobufProtocolV3 {
       // @@protoc_insertion_point(interface_extends:MyMessageV3)
       akka.protobufv3.internal.MessageOrBuilder {
 
-    /** <code>string query = 1;</code> */
+    /**
+     * <code>string query = 1;</code>
+     *
+     * @return The query.
+     */
     java.lang.String getQuery();
-    /** <code>string query = 1;</code> */
+    /**
+     * <code>string query = 1;</code>
+     *
+     * @return The bytes for query.
+     */
     akka.protobufv3.internal.ByteString getQueryBytes();
 
-    /** <code>int32 page_number = 2;</code> */
+    /**
+     * <code>int32 page_number = 2;</code>
+     *
+     * @return The pageNumber.
+     */
     int getPageNumber();
 
-    /** <code>int32 result_per_page = 3;</code> */
+    /**
+     * <code>int32 result_per_page = 3;</code>
+     *
+     * @return The resultPerPage.
+     */
     int getResultPerPage();
   }
   /** Protobuf type {@code MyMessageV3} */
@@ -131,7 +147,11 @@ public final class ProtobufProtocolV3 {
 
     public static final int QUERY_FIELD_NUMBER = 1;
     private volatile java.lang.Object query_;
-    /** <code>string query = 1;</code> */
+    /**
+     * <code>string query = 1;</code>
+     *
+     * @return The query.
+     */
     public java.lang.String getQuery() {
       java.lang.Object ref = query_;
       if (ref instanceof java.lang.String) {
@@ -143,7 +163,11 @@ public final class ProtobufProtocolV3 {
         return s;
       }
     }
-    /** <code>string query = 1;</code> */
+    /**
+     * <code>string query = 1;</code>
+     *
+     * @return The bytes for query.
+     */
     public akka.protobufv3.internal.ByteString getQueryBytes() {
       java.lang.Object ref = query_;
       if (ref instanceof java.lang.String) {
@@ -158,14 +182,22 @@ public final class ProtobufProtocolV3 {
 
     public static final int PAGE_NUMBER_FIELD_NUMBER = 2;
     private int pageNumber_;
-    /** <code>int32 page_number = 2;</code> */
+    /**
+     * <code>int32 page_number = 2;</code>
+     *
+     * @return The pageNumber.
+     */
     public int getPageNumber() {
       return pageNumber_;
     }
 
     public static final int RESULT_PER_PAGE_FIELD_NUMBER = 3;
     private int resultPerPage_;
-    /** <code>int32 result_per_page = 3;</code> */
+    /**
+     * <code>int32 result_per_page = 3;</code>
+     *
+     * @return The resultPerPage.
+     */
     public int getResultPerPage() {
       return resultPerPage_;
     }
@@ -516,7 +548,11 @@ public final class ProtobufProtocolV3 {
       }
 
       private java.lang.Object query_ = "";
-      /** <code>string query = 1;</code> */
+      /**
+       * <code>string query = 1;</code>
+       *
+       * @return The query.
+       */
       public java.lang.String getQuery() {
         java.lang.Object ref = query_;
         if (!(ref instanceof java.lang.String)) {
@@ -528,7 +564,11 @@ public final class ProtobufProtocolV3 {
           return (java.lang.String) ref;
         }
       }
-      /** <code>string query = 1;</code> */
+      /**
+       * <code>string query = 1;</code>
+       *
+       * @return The bytes for query.
+       */
       public akka.protobufv3.internal.ByteString getQueryBytes() {
         java.lang.Object ref = query_;
         if (ref instanceof String) {
@@ -540,7 +580,12 @@ public final class ProtobufProtocolV3 {
           return (akka.protobufv3.internal.ByteString) ref;
         }
       }
-      /** <code>string query = 1;</code> */
+      /**
+       * <code>string query = 1;</code>
+       *
+       * @param value The query to set.
+       * @return This builder for chaining.
+       */
       public Builder setQuery(java.lang.String value) {
         if (value == null) {
           throw new NullPointerException();
@@ -550,14 +595,23 @@ public final class ProtobufProtocolV3 {
         onChanged();
         return this;
       }
-      /** <code>string query = 1;</code> */
+      /**
+       * <code>string query = 1;</code>
+       *
+       * @return This builder for chaining.
+       */
       public Builder clearQuery() {
 
         query_ = getDefaultInstance().getQuery();
         onChanged();
         return this;
       }
-      /** <code>string query = 1;</code> */
+      /**
+       * <code>string query = 1;</code>
+       *
+       * @param value The bytes for query to set.
+       * @return This builder for chaining.
+       */
       public Builder setQueryBytes(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
           throw new NullPointerException();
@@ -570,18 +624,31 @@ public final class ProtobufProtocolV3 {
       }
 
       private int pageNumber_;
-      /** <code>int32 page_number = 2;</code> */
+      /**
+       * <code>int32 page_number = 2;</code>
+       *
+       * @return The pageNumber.
+       */
       public int getPageNumber() {
         return pageNumber_;
       }
-      /** <code>int32 page_number = 2;</code> */
+      /**
+       * <code>int32 page_number = 2;</code>
+       *
+       * @param value The pageNumber to set.
+       * @return This builder for chaining.
+       */
       public Builder setPageNumber(int value) {
 
         pageNumber_ = value;
         onChanged();
         return this;
       }
-      /** <code>int32 page_number = 2;</code> */
+      /**
+       * <code>int32 page_number = 2;</code>
+       *
+       * @return This builder for chaining.
+       */
       public Builder clearPageNumber() {
 
         pageNumber_ = 0;
@@ -590,18 +657,31 @@ public final class ProtobufProtocolV3 {
       }
 
       private int resultPerPage_;
-      /** <code>int32 result_per_page = 3;</code> */
+      /**
+       * <code>int32 result_per_page = 3;</code>
+       *
+       * @return The resultPerPage.
+       */
       public int getResultPerPage() {
         return resultPerPage_;
       }
-      /** <code>int32 result_per_page = 3;</code> */
+      /**
+       * <code>int32 result_per_page = 3;</code>
+       *
+       * @param value The resultPerPage to set.
+       * @return This builder for chaining.
+       */
       public Builder setResultPerPage(int value) {
 
         resultPerPage_ = value;
         onChanged();
         return this;
       }
-      /** <code>int32 result_per_page = 3;</code> */
+      /**
+       * <code>int32 result_per_page = 3;</code>
+       *
+       * @return This builder for chaining.
+       */
       public Builder clearResultPerPage() {
 
         resultPerPage_ = 0;

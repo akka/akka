@@ -83,8 +83,9 @@ Java
 :  @@snip [ClassicWatchingTypedTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/ClassicWatchingTypedTest.java) { #adapter-import }
 
 
-@scala[That adds some implicit extension methods that are added to classic and typed `ActorSystem` and `ActorContext` in both directions.]
-@java[To convert between typed and classic there are adapter methods in `akka.actor.typed.javadsl.Adapter`.] Note the inline comments in the example above.
+@scala[That adds some implicit extension methods that are added to classic and typed `ActorSystem`, `ActorContext` and `ActorRef` in both directions.]
+@java[To convert between typed and classic `ActorSystem`, `ActorContext` and `ActorRef` in both directions there are adapter methods in `akka.actor.typed.javadsl.Adapter`.]
+Note the inline comments in the example above.
 
 ## Typed to classic
 

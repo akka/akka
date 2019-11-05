@@ -9,10 +9,12 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
-import akka.actor.testkit.typed.scaladsl.LoggingEventFilter
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.typed.ActorTags
 import akka.actor.typed.Behavior
+import akka.actor.typed.internal.ActorMdc
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.DefaultLoggingFilter
 import akka.event.Logging.DefaultLogger
@@ -69,9 +71,9 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
       }
 
-      val actor = LoggingEventFilter.info("Started").intercept(spawn(behavior, "the-actor"))
+      val actor = LoggingTestKit.info("Started").intercept(spawn(behavior, "the-actor"))
 
-      LoggingEventFilter.info("got message Hello").intercept(actor ! "Hello")
+      LoggingTestKit.info("got message Hello").intercept(actor ! "Hello")
 
     }
 
@@ -87,7 +89,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       }
 
       val actor =
-        LoggingEventFilter.info("Started").withLoggerName(classOf[AnotherLoggerClass].getName).intercept {
+        LoggingTestKit.info("Started").withLoggerName(classOf[AnotherLoggerClass].getName).intercept {
           spawn(behavior, "the-other-actor")
         }
 
@@ -95,7 +97,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       // verify that it's only capturing log events for that logger and not any other logger when interceptLogger
       // is used
       val count = new AtomicInteger
-      LoggingEventFilter
+      LoggingTestKit
         .custom { logEvent =>
           count.incrementAndGet()
           logEvent.message == "got message Hello" && logEvent.loggerName == classOf[AnotherLoggerClass].getName
@@ -112,7 +114,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     }
 
     "contain the class name where the first log was called" in {
-      val eventFilter = LoggingEventFilter.custom({
+      val eventFilter = LoggingTestKit.custom({
         case event if event.loggerName == classOf[ActorLoggingSpec].getName =>
           true
         case event =>
@@ -132,7 +134,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     }
 
     "contain the object class name where the first log was called" in {
-      val eventFilter = LoggingEventFilter.custom({
+      val eventFilter = LoggingTestKit.custom({
         case event if event.loggerName == WhereTheBehaviorIsDefined.getClass.getName => true
         case other =>
           println(other.loggerName)
@@ -143,7 +145,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     }
 
     "contain the abstract behavior class name where the first log was called" in {
-      val eventFilter = LoggingEventFilter.custom({
+      val eventFilter = LoggingTestKit.custom({
         case event if event.loggerName == classOf[BehaviorWhereTheLoggerIsUsed].getName => true
         case other =>
           println(other.loggerName)
@@ -156,7 +158,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     }
 
     "pass markers to the log" in {
-      LoggingEventFilter
+      LoggingTestKit
         .custom { event =>
           event.marker.map(_.getName) == Option(marker.getName)
         }
@@ -172,7 +174,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     }
 
     "pass cause with warn" in {
-      LoggingEventFilter
+      LoggingTestKit
         .custom { event =>
           event.throwable == Option(cause)
         }
@@ -188,7 +190,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
       // Not the best test but at least it exercises every log overload ;)
 
-      LoggingEventFilter
+      LoggingTestKit
         .custom { _ =>
           true // any is fine, we're just after the right count of statements reaching the listener
         }
@@ -244,9 +246,29 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     }
 
     "use Slf4jLogger from akka-slf4j automatically" in {
-      LoggingEventFilter.info("via Slf4jLogger").intercept {
+      LoggingTestKit.info("via Slf4jLogger").intercept {
         // this will log via classic eventStream
         system.toClassic.log.info("via Slf4jLogger")
+      }
+    }
+
+    "pass tags from props to MDC" in {
+      val behavior = Behaviors.setup[String] { ctx =>
+        ctx.log.info("Starting up")
+
+        Behaviors.receiveMessage {
+          case msg =>
+            ctx.log.info("Got message {}", msg)
+            Behaviors.same
+        }
+      }
+      val actor =
+        LoggingTestKit.info("Starting up").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).intercept {
+          spawn(behavior, ActorTags("tag1", "tag2"))
+        }
+
+      LoggingTestKit.info("Got message").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).intercept {
+        actor ! "ping"
       }
     }
 
@@ -317,7 +339,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       }
 
       // mdc on defer is empty
-      val ref = LoggingEventFilter
+      val ref = LoggingTestKit
         .info("Starting")
         // not counting for example "akkaSource", but it shouldn't have any other entries
         .withCustom(logEvent => logEvent.mdc.keysIterator.forall(_.startsWith("akka")))
@@ -326,15 +348,12 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
 
       // mdc on message
-      LoggingEventFilter
-        .info("Got message!")
-        .withMdc(Map("static" -> "1", "txId" -> "1", "first" -> "true"))
-        .intercept {
-          ref ! Message(1, "first")
-        }
+      LoggingTestKit.info("Got message!").withMdc(Map("static" -> "1", "txId" -> "1", "first" -> "true")).intercept {
+        ref ! Message(1, "first")
+      }
 
       // mdc does not leak between messages
-      LoggingEventFilter
+      LoggingTestKit
         .info("Got message!")
         .withMdc(Map("static" -> "1", "txId" -> "2"))
         .withCustom(event => !event.mdc.contains("first"))
@@ -356,7 +375,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
 
       val ref = spawn(behavior)
-      LoggingEventFilter
+      LoggingTestKit
         .info("message")
         .withMdc(Map("outermost" -> "true"))
         .withCustom(event => !event.mdc.contains("innermost"))
@@ -378,13 +397,13 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
 
       val ref = spawn(Behaviors.withMdc(Map("hasMdc" -> "true"))(behavior))
-      LoggingEventFilter.info("message").withMdc(Map("hasMdc" -> "true")).intercept {
+      LoggingTestKit.info("message").withMdc(Map("hasMdc" -> "true")).intercept {
         ref ! "message"
       }
 
       ref ! "new-behavior"
 
-      LoggingEventFilter
+      LoggingTestKit
         .info("message")
         .withMdc(Map("hasMdc" -> "true")) // original mdc should stay
         .intercept {
@@ -410,11 +429,11 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
 
       val ref = spawn(behavior)
-      LoggingEventFilter.info("message").withMdc(Map("mdc-version" -> "1")).intercept {
+      LoggingTestKit.info("message").withMdc(Map("mdc-version" -> "1")).intercept {
         ref ! "message"
       }
       ref ! "new-mdc"
-      LoggingEventFilter
+      LoggingTestKit
         .info("message")
         .withMdc(Map("mdc-version" -> "2")) // mdc should have been replaced
         .intercept {
@@ -435,8 +454,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
       // mdc on message
       val ref = spawn(behavior)
-      LoggingEventFilter.info("first").withMdc(Map("mdc" -> "outer")).intercept {
-        LoggingEventFilter.info("second").withMdc(Map("mdc" -> "inner-outer")).intercept {
+      LoggingTestKit.info("first").withMdc(Map("mdc" -> "outer")).intercept {
+        LoggingTestKit.info("second").withMdc(Map("mdc" -> "inner-outer")).intercept {
           ref ! Message(1, "first")
         }
       }
@@ -460,20 +479,16 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       // log from setup
       // can't use LoggingEventFilter.withMdc here because the actorPathStr isn't know yet
       val ref =
-        LoggingEventFilter.info("Starting").withCustom(event => event.mdc("akkaSource") == actorPathStr.get).intercept {
+        LoggingTestKit.info("Starting").withCustom(event => event.mdc("akkaSource") == actorPathStr.get).intercept {
           spawn(behavior)
         }
 
       // on message
-      LoggingEventFilter
-        .info("Got message!")
-        .withMdc(Map("akkaSource" -> actorPathStr.get))
-        .withOccurrences(10)
-        .intercept {
-          (1 to 10).foreach { n =>
-            ref ! Message(n, s"msg-$n")
-          }
+      LoggingTestKit.info("Got message!").withMdc(Map("akkaSource" -> actorPathStr.get)).withOccurrences(10).intercept {
+        (1 to 10).foreach { n =>
+          ref ! Message(n, s"msg-$n")
         }
+      }
 
     }
 

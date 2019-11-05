@@ -95,10 +95,13 @@ object GraphInterpreterSpecKit {
       stages: Array[GraphStageWithMaterializedValue[_ <: Shape, _]],
       upstreams: Array[UpstreamBoundaryStageLogic[_]],
       downstreams: Array[DownstreamBoundaryStageLogic[_]],
-      attributes: Array[Attributes] = Array.empty)
+      attributes: Array[Attributes] = Array.empty)(implicit system: ActorSystem)
       : (Array[GraphStageLogic], SMap[Inlet[_], GraphStageLogic], SMap[Outlet[_], GraphStageLogic]) = {
     if (attributes.nonEmpty && attributes.length != stages.length)
       throw new IllegalArgumentException("Attributes must be either empty or one per stage")
+
+    @silent("deprecated")
+    val defaultAttributes = ActorMaterializerSettings(system).toAttributes
 
     var inOwners = SMap.empty[Inlet[_], GraphStageLogic]
     var outOwners = SMap.empty[Outlet[_], GraphStageLogic]
@@ -108,6 +111,7 @@ object GraphInterpreterSpecKit {
 
     while (idx < upstreams.length) {
       val upstream = upstreams(idx)
+      upstream.attributes = defaultAttributes
       upstream.stageId = idx
       logics(idx) = upstream
       upstream.out.id = 0
@@ -120,11 +124,13 @@ object GraphInterpreterSpecKit {
       val stage = stages(stageIdx)
       setPortIds(stage.shape)
 
-      val stageAttributes =
+      val stageAttributes = defaultAttributes and {
         if (attributes.nonEmpty) stage.traversalBuilder.attributes and attributes(stageIdx)
         else stage.traversalBuilder.attributes
+      }
 
       val logic = stage.createLogicAndMaterializedValue(stageAttributes)._1
+      logic.attributes = stageAttributes
       logic.stageId = idx
 
       var inletIdx = 0
@@ -151,6 +157,7 @@ object GraphInterpreterSpecKit {
     var downstreamIdx = 0
     while (downstreamIdx < downstreams.length) {
       val downstream = downstreams(downstreamIdx)
+      downstream.attributes = defaultAttributes
       downstream.stageId = idx
       logics(idx) = downstream
       downstream.in.id = 0
@@ -243,6 +250,8 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
   import GraphInterpreterSpecKit._
   val logger = Logging(system, "InterpreterSpecKit")
+  @silent("deprecated")
+  val defaultAttributes = ActorMaterializerSettings(system).toAttributes
 
   abstract class Builder {
     private var _interpreter: GraphInterpreter = _
@@ -312,6 +321,11 @@ trait GraphInterpreterSpecKit extends StreamSpec {
     }
 
     def manualInit(logics: Array[GraphStageLogic], connections: Array[Connection]): Unit = {
+      // set some default attributes where missing
+      logics.foreach { l =>
+        if (l.attributes == Attributes.none) l.attributes = defaultAttributes
+      }
+
       _interpreter = new GraphInterpreter(
         NoMaterializer,
         logger,
