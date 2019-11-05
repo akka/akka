@@ -141,13 +141,14 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
   }
 
   "The consistent hashing logic" must {
-    val behavior: Behavior[String] = Behaviors.empty[String]
-    val typedSystem: ActorSystem[String] = ActorSystem(behavior, "emptySystem")
-    val identityMapping: ConsistentHashMapping[String] = { case in: String => in }
+    val behavior: Behavior[Int] = Behaviors.empty[Int]
+    val typedSystem: ActorSystem[Int] = ActorSystem(behavior, "emptySystem")
+    val modulo10Mapping: ConsistentHashMapping[Int] = { case in: Int => (in % 10).toString }
+    val messages: Map[Any, Seq[Int]] = (1 to 1000).groupBy(modulo10Mapping)
 
     "not accept virtualization factor lesser than 1" in {
       val caught = intercept[IllegalArgumentException] {
-        new RoutingLogics.ConsistentHashingLogic[String](0, ConsistentHashingLogic.emptyHashMapping, typedSystem)
+        new RoutingLogics.ConsistentHashingLogic[Int](0, ConsistentHashingLogic.emptyHashMapping, typedSystem)
       }
       caught.getMessage shouldEqual "virtualNodesFactor must be >= 1"
     }
@@ -161,26 +162,62 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
 
     "return deadLetters when there are no routees" in {
       val logic =
-        new RoutingLogics.ConsistentHashingLogic[String](1, identityMapping, typedSystem)
-      logic.selectRoutee("msg") shouldBe typedSystem.deadLetters
+        new RoutingLogics.ConsistentHashingLogic[Int](1, modulo10Mapping, typedSystem)
+      logic.selectRoutee(0) shouldBe typedSystem.deadLetters
     }
 
     "hash consistently" in {
-
-      val refA = typedSystem.ref // -1670067195
-      val refB = ActorSystem(behavior, "system-b").ref // -1670067195
-      val logic =
-        new RoutingLogics.ConsistentHashingLogic[String](1, identityMapping, typedSystem)
-      logic.routeesUpdated(Set(refA, refB))
-      logic.selectRoutee("a") shouldBe refA
-
+      consitentHashingTestWithVirtualizationFactor(1)
     }
 
-    "hash consistently with virtualization facotr" in {}
+    "hash consistently with virtualization factor" in {
+      consitentHashingTestWithVirtualizationFactor(13)
+    }
 
-    "hash consistently when several new added" in {}
+    "hash consistently when several new added" in {
+      val logic =
+        new RoutingLogics.ConsistentHashingLogic[Int](2, modulo10Mapping, typedSystem)
+      val refA = TestProbe("a").ref
+      val refB = TestProbe("b").ref
+      val refC = TestProbe("c").ref
+      val refD = TestProbe("d").ref
+      logic.routeesUpdated(Set(refA, refB, refC, refD))
+      // every group should have the same actor ref
+      verifyConsistentHashing(logic)
+      logic.routeesUpdated(Set(refA, refB))
+      verifyConsistentHashing(logic)
+    }
 
-    "hash consistently when several new removed" in {}
+    "hash consistently when several new removed" in {
+      val logic =
+        new RoutingLogics.ConsistentHashingLogic[Int](2, modulo10Mapping, typedSystem)
+      val refA = TestProbe("a").ref
+      val refB = TestProbe("b").ref
+      val refC = TestProbe("c").ref
+      val refD = TestProbe("d").ref
+      logic.routeesUpdated(Set(refA, refB))
+      // every group should have the same actor ref
+      verifyConsistentHashing(logic)
+      logic.routeesUpdated(Set(refA, refB, refC, refD))
+      verifyConsistentHashing(logic)
+    }
+
+    def consitentHashingTestWithVirtualizationFactor(virtualizationFactor: Int): Boolean = {
+      val logic =
+        new RoutingLogics.ConsistentHashingLogic[Int](virtualizationFactor, modulo10Mapping, typedSystem)
+      val refA = TestProbe("a").ref
+      val refB = TestProbe("b").ref
+      val refC = TestProbe("c").ref
+      val refD = TestProbe("d").ref
+      logic.routeesUpdated(Set(refA, refB, refC, refD))
+      verifyConsistentHashing(logic)
+    }
+
+    def verifyConsistentHashing(logic: ConsistentHashingLogic[Int]): Boolean = {
+      messages.mapValues(_.map(logic.selectRoutee)).forall {
+        case (_, refs) => refs.headOption.forall(head => refs.forall(_ == head))
+      }
+    }
 
   }
 }
