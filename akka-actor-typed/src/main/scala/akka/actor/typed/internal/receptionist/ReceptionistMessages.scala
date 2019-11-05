@@ -27,8 +27,26 @@ private[akka] object ReceptionistMessages {
       replyTo: Option[ActorRef[Receptionist.Registered]])
       extends Command
 
+  final case class Unregister[T] private[akka] (
+       key: ServiceKey[T],
+       serviceInstance: ActorRef[T],
+       replyTo: Option[ActorRef[Receptionist.Unregistered]]) extends Command
+
   final case class Registered[T] private[akka] (key: ServiceKey[T], _serviceInstance: ActorRef[T])
       extends Receptionist.Registered {
+    def isForKey(key: ServiceKey[_]): Boolean = key == this.key
+    def serviceInstance[M](key: ServiceKey[M]): ActorRef[M] = {
+      if (key != this.key)
+        throw new IllegalArgumentException(s"Wrong key [$key] used, must use listing key [${this.key}]")
+      _serviceInstance.asInstanceOf[ActorRef[M]]
+    }
+
+    def getServiceInstance[M](key: ServiceKey[M]): ActorRef[M] =
+      serviceInstance(key)
+  }
+
+  final case class Unregistered[T] private[akka] (key: ServiceKey[T], _serviceInstance: ActorRef[T])
+    extends Receptionist.Unregistered {
     def isForKey(key: ServiceKey[_]): Boolean = key == this.key
     def serviceInstance[M](key: ServiceKey[M]): ActorRef[M] = {
       if (key != this.key)

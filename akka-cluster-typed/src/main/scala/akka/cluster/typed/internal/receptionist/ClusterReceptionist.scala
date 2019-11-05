@@ -29,6 +29,8 @@ import akka.cluster.ClusterEvent.ReachableMember
 import akka.cluster.ClusterEvent.UnreachableMember
 import akka.cluster.ddata.SelfUniqueAddress
 
+import scala.collection.mutable
+
 // just to provide a log class
 /** INTERNAL API */
 @InternalApi
@@ -70,6 +72,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   private case object RemoveTick extends InternalCommand
   private case object PruneTombstonesTick extends InternalCommand
 
+  val terminationWatchers = new mutable.HashMap[String, ActorRef[Nothing]]();
+
   // captures setup/dependencies so we can avoid doing it over and over again
   final class Setup(ctx: ActorContext[Command]) {
     val classicSystem = ctx.system.toClassic
@@ -88,6 +92,10 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
     def newTombstoneDeadline() = Deadline(keepTombstonesFor)
     def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
+  }
+
+  def uniqueKey(key: ServiceKey[_], service: ActorRef[_]): String = {
+    key.toString + service.path.toStringWithoutAddress
   }
 
   override def behavior: Behavior[Command] =
@@ -162,7 +170,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
        * Hack to allow multiple termination notifications per target
        * FIXME #26505: replace by simple map in our state
        */
-      def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): Unit = {
+      def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): ActorRef[Nothing] = {
         ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
           innerCtx.watch(target)
           Behaviors.receiveSignal[Nothing] {
@@ -171,7 +179,6 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               Behaviors.stopped
           }
         })
-        ()
       }
 
       def isLeader = {
@@ -239,7 +246,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             val entry = Entry(serviceInstance, setup.selfSystemUid)
             ctx.log
               .debugN("ClusterReceptionist [{}] - Actor was registered: [{}] [{}]", cluster.selfAddress, key, entry)
-            watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
+            val watcher = watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
+            terminationWatchers.put(uniqueKey(key, serviceInstance), watcher);
             maybeReplyTo match {
               case Some(replyTo) => replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
               case None          =>
@@ -252,6 +260,27 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             ctx.log.error("ClusterReceptionist [{}] - Register of non-local [{}] is not supported", serviceInstance)
           }
           Behaviors.same
+
+        case ReceptionistMessages.Unregister(key, serviceInstance, maybeReplyTo) =>
+          val entry = Entry(serviceInstance, setup.selfSystemUid)
+          ctx.log.debugN(
+            "ClusterReceptionist [{}] - Unregister actor: [{}] [{}]",
+            cluster.selfAddress,
+            key.asServiceKey.id,
+            entry)
+          val watcher = terminationWatchers.remove(uniqueKey(key, serviceInstance))
+          if(!watcher.isEmpty) ctx.stop(watcher.get)
+          maybeReplyTo match {
+            case Some(replyTo) => replyTo ! ReceptionistMessages.Unregistered(key, serviceInstance)
+            case None          =>
+          }
+          val ddataKey = registry.ddataKeyFor(key)
+          replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
+            ServiceRegistry(registry).removeBinding(key, entry).toORMultiMap
+          }
+          // tombstone removals so they are not re-added by merging with other concurrent
+          // registrations for the same key
+          next(newState = registry.addTombstone(serviceInstance, setup.newTombstoneDeadline()))
 
         case ReceptionistMessages.Find(key, replyTo) =>
           val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
@@ -283,6 +312,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             cluster.selfAddress,
             key.asServiceKey.id,
             entry)
+          terminationWatchers.remove(uniqueKey(key, serviceInstance))
+
           val ddataKey = registry.ddataKeyFor(key)
           replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
             ServiceRegistry(registry).removeBinding(key, entry).toORMultiMap

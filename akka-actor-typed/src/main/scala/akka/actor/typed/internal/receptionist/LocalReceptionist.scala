@@ -15,6 +15,8 @@ import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.util.TypedMultiMap
 
+import scala.collection.mutable
+
 /**
  * Marker interface to use with dynamic access
  *
@@ -47,6 +49,12 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
   final case class SubscriberTerminated[T](key: ServiceKey[T], ref: ActorRef[ReceptionistMessages.Listing[T]])
       extends InternalCommand
 
+  val terminationWatchers = new mutable.HashMap[String, ActorRef[Nothing]]();
+
+  def uniqueKey(key: ServiceKey[_], service: ActorRef[_]): String = {
+    key.toString + service.path.toStringWithoutAddress
+  }
+
   override def behavior: Behavior[Command] = Behaviors.setup { ctx =>
     ctx.setLoggerName(classOf[LocalReceptionist])
     behavior(TypedMultiMap.empty[AbstractServiceKey, KV], TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV])
@@ -65,7 +73,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
      * Hack to allow multiple termination notifications per target
      * FIXME #26505: replace by simple map in our state
      */
-    def watchWith(ctx: ActorContext[Any], target: ActorRef[_], msg: InternalCommand): Unit =
+    def watchWith(ctx: ActorContext[Any], target: ActorRef[_], msg: InternalCommand): ActorRef[Nothing] =
       ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
         innerCtx.watch(target)
         Behaviors.receiveSignal[Nothing] {
@@ -102,12 +110,23 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
     def onCommand(ctx: ActorContext[Any], cmd: Command): Behavior[Any] = cmd match {
       case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>
         ctx.log.debug2("Actor was registered: {} {}", key, serviceInstance)
-        watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
+        val watcher = watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
+        terminationWatchers.put(uniqueKey(key, serviceInstance), watcher);
         maybeReplyTo match {
           case Some(replyTo) => replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
           case None          =>
         }
         updateRegistry(Set(key), _.inserted(key)(serviceInstance))
+
+      case ReceptionistMessages.Unregister(key, serviceInstance, maybeReplyTo) =>
+        ctx.log.debug2("Actor was unregistered: {} {}", key, serviceInstance)
+        val watcher = terminationWatchers.remove(uniqueKey(key, serviceInstance))
+        if(!watcher.isEmpty) ctx.stop(watcher.get)
+        maybeReplyTo match {
+          case Some(replyTo) => replyTo ! ReceptionistMessages.Unregistered(key, serviceInstance)
+          case None          =>
+        }
+        updateRegistry(Set(key), _.removed(key)(serviceInstance))
 
       case ReceptionistMessages.Find(key, replyTo) =>
         replyWithListing(key, replyTo)
@@ -125,6 +144,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
     def onInternal(ctx: ActorContext[Any], cmd: InternalCommand): Behavior[Any] = cmd match {
       case RegisteredActorTerminated(key, serviceInstance) =>
         ctx.log.debug2("Registered actor terminated: {} {}", key, serviceInstance)
+        terminationWatchers.remove(uniqueKey(key, serviceInstance))
         updateRegistry(Set(key), _.removed(key)(serviceInstance))
 
       case SubscriberTerminated(key, subscriber) =>
