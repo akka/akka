@@ -3,9 +3,7 @@ project.description: Share data between nodes and perform updates without coordi
 ---
 # Distributed Data
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Distributed Data](../distributed-data.md).
-@@@
 
 @@project-info{ projectId="akka-cluster-typed" }
 

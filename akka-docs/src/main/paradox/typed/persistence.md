@@ -3,9 +3,7 @@ project.description: Event Sourcing with Akka Persistence enables actors to pers
 ---
 # Event Sourcing
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
-@@@
 
 @@project-info{ projectId="akka-persistence-typed" }
 

@@ -1,9 +1,7 @@
 # Distributed Publish Subscribe in Cluster
 
-@@@ note
 For the Akka Classic documentation of this feature see [Classic Distributed Publish Subscribe](../distributed-pub-sub.md).
 Classic Pub Sub can be used by leveraging the `.toClassic` adapters until @github[#26338](#26338).
-@@@
 
 @@project-info{ projectId="akka-cluster-typed" }
 

@@ -1,8 +1,6 @@
 # Cluster Singleton
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Cluster Singleton](../cluster-singleton.md).
-@@@
 
 @@project-info{ projectId="akka-cluster-typed" }
 

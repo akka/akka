@@ -1,8 +1,6 @@
 # Testing
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Testing](../testing.md).
-@@@
 
 @@project-info{ projectId="akka-actor-testkit-typed" }
 

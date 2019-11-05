@@ -3,9 +3,7 @@ project.description: Shard a clustered compute process across the network with l
 ---
 # Cluster Sharding
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
-@@@
 
 @@project-info{ projectId="akka-cluster-sharding-typed" }
 
