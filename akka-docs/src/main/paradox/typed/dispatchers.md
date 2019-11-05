@@ -3,9 +3,7 @@ project.description: Akka dispatchers and how to choose the right ones.
 ---
 # Dispatchers
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers](../dispatchers.md).
-@@@
 
 ## Dependency
 

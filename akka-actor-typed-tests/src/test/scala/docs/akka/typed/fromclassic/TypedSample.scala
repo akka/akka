@@ -49,10 +49,10 @@ object TypedSample {
               children.get(name) match {
                 case Some(ref) =>
                   ref ! childCommand
-                  context.watchWith(ref, ChildTerminated(name))
                   Behaviors.same
                 case None =>
                   val ref = context.spawn(Child(), name)
+                  context.watchWith(ref, ChildTerminated(name))
                   ref ! childCommand
                   updated(children + (name -> ref))
               }

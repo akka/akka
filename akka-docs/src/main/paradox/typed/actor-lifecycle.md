@@ -3,9 +3,7 @@ project.description: The Akka Actor lifecycle.
 ---
 # Actor lifecycle
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
-@@@
 
 ## Dependency
 

@@ -9,9 +9,7 @@ It is not advised to build new applications with Cluster Client, and existing us
 
 @@include[includes.md](includes.md) { #actor-api }
 
-@@project-info{ projectId="akka-cluster-tools" }
-
-## Dependency
+## Module info
 
 To use Cluster Client, you must add the following dependency in your project:
 
@@ -20,6 +18,8 @@ To use Cluster Client, you must add the following dependency in your project:
   artifact=akka-cluster-tools_$scala.binary_version$
   version=$akka.version$
 }
+
+@@project-info{ projectId="akka-cluster-tools" }
 
 ## Introduction
 

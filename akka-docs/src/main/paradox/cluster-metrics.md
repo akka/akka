@@ -1,8 +1,6 @@
 # Classic Cluster Metrics Extension
 
-@@project-info{ projectId="akka-cluster-metrics" }
-
-## Dependency
+## Module info
 
 To use Cluster Metrics Extension, you must add the following dependency in your project:
 
@@ -18,6 +16,8 @@ and add the following configuration stanza to your `application.conf`
 ```
 akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 ```
+
+@@project-info{ projectId="akka-cluster-metrics" }
 
 ## Introduction
 

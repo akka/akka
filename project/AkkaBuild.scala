@@ -11,6 +11,8 @@ import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
 import java.time.ZoneOffset
 import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
+import com.typesafe.sbt.MultiJvmPlugin.autoImport.MultiJvm
+import sbtassembly.AssemblyPlugin.autoImport._
 
 import sbt.Keys._
 import sbt._
@@ -251,6 +253,14 @@ object AkkaBuild {
     mavenLocalResolverSettings,
     docLintingSettings,
     JdkOptions.targetJdkSettings,
+
+    // a workaround for https://github.com/akka/akka/issues/27661
+    // see also project/Protobuf.scala that introduces /../ to make "intellij happy"
+    MultiJvm / assembly / fullClasspath := {
+      val old = (MultiJvm / assembly / fullClasspath).value.toVector
+      val files = old.map(_.data.getCanonicalFile).distinct
+      files map { x => Attributed.blank(x) }
+    },
   )
 
   lazy val docLintingSettings = Seq(

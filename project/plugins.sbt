@@ -1,3 +1,8 @@
+libraryDependencies += Defaults.sbtPluginExtra(
+  "com.eed3si9n" % "sbt-assembly" % "0.14.10",
+  (sbtBinaryVersion in pluginCrossBuild).value,
+  (scalaBinaryVersion in pluginCrossBuild).value)
+
 // these comment markers are for including code into the docs
 //#sbt-multi-jvm
 addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
@@ -15,8 +20,8 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.7")
 addSbtPlugin("com.typesafe.sbt" % "sbt-native-packager" % "1.4.1")
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("com.timushev.sbt" % "sbt-updates" % "0.4.2")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.25")
-addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.26")
+addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.17")
 addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.2.0") // for maintenance of copyright file header
 addSbtPlugin("com.hpe.sbt" % "sbt-pull-request-validator" % "1.0.0")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")

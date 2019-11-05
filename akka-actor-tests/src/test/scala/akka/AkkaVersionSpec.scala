@@ -18,6 +18,7 @@ class AkkaVersionSpec extends WordSpec with Matchers {
 
     "succeed if version is RC and ok" in {
       AkkaVersion.require("AkkaVersionSpec", "2.5.6", "2.5.7-RC10")
+      AkkaVersion.require("AkkaVersionSpec", "2.6.0-RC1", "2.6.0-RC1")
     }
 
     "fail if version is RC and not ok" in {

@@ -101,6 +101,10 @@ You will always see your own writes. For example if you send two `Update` messag
 changing the value of the same `key`, the `modify` function of the second message will
 see the change that was performed by the first `Update` message.
 
+It is possible to abort the `Update` when inspecting the state parameter that is passed in to
+the `modify` function by throwing an exception. That happens before the update is performed and
+a `Replicator.ModifyFailure` is sent back as reply.
+
 In the `Update` message you can pass an optional request context, which the `Replicator`
 does not care about, but is included in the reply messages. This is a convenient
 way to pass contextual information (e.g. original sender) without having to use `ask`

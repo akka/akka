@@ -42,18 +42,7 @@ Scala REPL session in order to allow these processes to terminate.
 Shutting down an ActorSystem will properly terminate all Actors and Materializers
 that were created within it.
 
-## Actors in General
-
-### sender()/getSender() disappears when I use Future in my Actor, why?
-
-When using future callbacks, inside actors you need to carefully avoid closing over
-the containing actor’s reference, i.e. do not call methods or access mutable state
-on the enclosing actor from within the callback. This breaks the actor encapsulation
-and may introduce synchronization bugs and race conditions because the callback will
-be scheduled concurrently to the enclosing actor. Unfortunately there is not yet a way
-to detect these illegal accesses at compile time.
-
-Read more about it in the docs for @ref:[Actors and shared mutable state](../general/jmm.md#jmm-shared-state).
+## Actors
 
 ### Why OutOfMemoryError?
 
@@ -62,81 +51,7 @@ message consumers that are potentially slower than corresponding message produce
 add some kind of message flow control. Otherwise messages will be queued in the consumers'
 mailboxes and thereby filling up the heap memory.
 
-Some articles for inspiration:
-
- * [Balancing Workload across Nodes with Akka 2](http://letitcrash.com/post/29044669086/balancing-workload-across-nodes-with-akka-2).
- * [Work Pulling Pattern to prevent mailbox overflow, throttle and distribute work](http://www.michaelpollmeier.com/akka-work-pulling-pattern)
-
-## Actors Scala API
-
-### How can I get compile time errors for missing messages in *receive*?
-
-One solution to help you get a compile time warning for not handling a message
-that you should be handling is to define your actors input and output messages
-implementing base traits, and then do a match that the will be checked for
-exhaustiveness.
-
-Here is an example where the compiler will warn you that the match in
-receive isn't exhaustive:
-
-@@snip [Faq.scala](/akka-docs/src/test/scala/docs/faq/Faq.scala) { #exhaustiveness-check }
-
-## Remoting
-
-### I want to send to a remote system but it does not do anything
-
-Make sure that you have remoting enabled on both ends: client and server. Both
-do need hostname and port configured, and you will need to know the port of the
-server; the client can use an automatic port in most cases (i.e. configure port
-zero). If both systems are running on the same network host, their ports must
-be different
-
-If you still do not see anything, look at what the logging of remote
-life-cycle events tells you (normally logged at INFO level) or switch on 
-@ref:[Auxiliary remote logging options](../logging.md#logging-remote)
-to see all sent and received messages (logged at DEBUG level).
-
-### Which options shall I enable when debugging remoting issues?
-
-Have a look at the @ref:[Remote Configuration](../logging.md#auxiliary-remote-logging-options).
-
-### What is the name of a remote actor?
-
-When you want to send messages to an actor on a remote host, you need to know
-its @ref:[full path](../general/addressing.md), which is of the form:
-
-```
-akka://system@host:1234/user/my/actor/hierarchy/path
-```
-
-Observe all the parts you need here:
-
- * `system` is the remote system’s name (must match exactly, case-sensitive!)
- * `host` is the remote system’s IP address or DNS name, and it must match that
-system’s configuration (i.e. *akka.remote.artery.canonical.hostname*)
- * `1234` is the port number on which the remote system is listening for
-connections and receiving messages
- * `/user/my/actor/hierarchy/path` is the absolute path of the remote actor in
-the remote system’s supervision hierarchy, including the system’s guardian
-(i.e. `/user`, there are others e.g. `/system` which hosts loggers, `/temp`
-which keeps temporary actor refs used with `ask`, `/remote` which enables
-remote deployment, etc.); this matches how the actor prints its own `self`
-reference on the remote host, e.g. in log output.
-
-### Why are replies not received from a remote actor?
-
-The most common reason is that the local system’s name (i.e. the
-`system@host:1234` part in the answer above) is not reachable from the remote
-system’s network location, e.g. because `host` was configured to be `0.0.0.0`,
-`localhost` or a NAT’ed IP address.
-
-If you are running an ActorSystem under a NAT or inside a docker container, make sure to
-set *akka.remote.artery.hostname* and *akka.remote.artery.canonical.port* to the address
-it is reachable at from other ActorSystems. If you need to bind your network interface
-to a different address - use *akka.remote.artery.bind.hostname* and
-*akka.remote.artery.bind.port* settings. Also make sure your network is configured
-to translate from the address your ActorSystem is reachable at to the address your
-ActorSystem network interface is bound to.
+## Cluster
 
 ### How reliable is the message delivery?
 
@@ -155,10 +70,4 @@ To turn on debug logging in your actor system add the following to your configur
 akka.loglevel = DEBUG
 ```
 
-To enable different types of debug logging add the following to your configuration:
-
- * `akka.actor.debug.receive` will log all messages sent to an actor if that actors *receive* method is a `LoggingReceive`
- * `akka.actor.debug.autoreceive` will log all *special* messages like `Kill`, `PoisonPill` e.t.c. sent to all actors
- * `akka.actor.debug.lifecycle` will log all actor lifecycle events of all actors
-
-Read more about it in the docs for @ref:[Logging](../logging.md) and @ref:[actor.logging-scala](../testing.md#actor-logging).
+Read more about it in the docs for @ref:[Logging](../typed/logging.md).

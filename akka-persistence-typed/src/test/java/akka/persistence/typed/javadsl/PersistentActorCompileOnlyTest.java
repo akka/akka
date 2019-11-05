@@ -94,7 +94,8 @@ public class PersistentActorCompileOnlyTest {
     }
 
     public static EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> pb =
-        new EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState>(new PersistenceId("p1")) {
+        new EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState>(
+            PersistenceId.ofUniqueId("p1")) {
 
           @Override
           public SimpleState emptyState() {
@@ -139,7 +140,7 @@ public class PersistentActorCompileOnlyTest {
         extends EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> {
 
       public AdditionalSettings(PersistenceId persistenceId) {
-        super(new PersistenceId("p1"));
+        super(PersistenceId.ofUniqueId("p1"));
       }
 
       @Override
@@ -211,7 +212,7 @@ public class PersistentActorCompileOnlyTest {
     // #commonChainedEffects
 
     private EventSourcedBehavior<MyCommand, MyEvent, ExampleState> pa =
-        new EventSourcedBehavior<MyCommand, MyEvent, ExampleState>(new PersistenceId("pa")) {
+        new EventSourcedBehavior<MyCommand, MyEvent, ExampleState>(PersistenceId.ofUniqueId("pa")) {
 
           @Override
           public ExampleState emptyState() {

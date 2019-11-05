@@ -105,8 +105,9 @@ import com.github.ghik.silencer.silent
       attributes: Attributes): PhasedFusingActorMaterializer = {
     val haveShutDown = new AtomicBoolean(false)
 
+    val dispatcher = attributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher
     val supervisorProps =
-      StreamSupervisor.props(attributes, haveShutDown).withDispatcher(context.props.dispatcher).withDeploy(Deploy.local)
+      StreamSupervisor.props(attributes, haveShutDown).withDispatcher(dispatcher).withDeploy(Deploy.local)
 
     // FIXME why do we need a global unique name for the child?
     val streamSupervisor = context.actorOf(supervisorProps, StreamSupervisor.nextName())

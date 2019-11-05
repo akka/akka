@@ -20,6 +20,8 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
+import java.time.Duration;
+
 import static jdocs.akka.cluster.ddata.typed.javadsl.ReplicatorDocSample.Counter;
 import static org.junit.Assert.assertEquals;
 
@@ -48,7 +50,7 @@ public class ReplicatorDocTest extends JUnitSuite {
   }
 
   @Test
-  public void shouldHaveApiForSubscribe() {
+  public void shouldHaveApiForSubscribeAndUnsubscribe() {
     TestProbe<Integer> probe = testKit.createTestProbe(Integer.class);
     ActorRef<Counter.Command> client =
         testKit.spawn(Counter.create(GCounterKey.create("counter2")));
@@ -69,6 +71,13 @@ public class ReplicatorDocTest extends JUnitSuite {
           probe.expectMessage(3);
           return null;
         });
+
+    client.tell(Counter.Unsubscribe.INSTANCE);
+    client.tell(Counter.Increment.INSTANCE);
+    // wait so it would update the cached value if we didn't unsubscribe
+    probe.expectNoMessage(Duration.ofMillis(500));
+    client.tell(new Counter.GetCachedValue(probe.getRef()));
+    probe.expectMessage(3); // old value, not 4
   }
 
   @Test

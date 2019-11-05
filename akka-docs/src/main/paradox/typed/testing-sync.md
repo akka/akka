@@ -1,8 +1,6 @@
 ## Synchronous behavior testing
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Testing](../testing.md).
-@@@
 
 The `BehaviorTestKit` provides a very nice way of unit testing a `Behavior` in a deterministic way, but it has
 some limitations to be aware of.
