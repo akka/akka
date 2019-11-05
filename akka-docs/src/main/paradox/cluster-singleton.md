@@ -3,9 +3,7 @@
 @@include[includes.md](includes.md) { #actor-api }
 For the full documentation of this feature and for new projects see @ref:[Cluster Singleton](typed/cluster-singleton.md).
 
-@@project-info{ projectId="akka-cluster-tools" }
-
-## Dependency
+## Module info
 
 To use Cluster Singleton, you must add the following dependency in your project:
 
@@ -14,6 +12,8 @@ To use Cluster Singleton, you must add the following dependency in your project:
   artifact=akka-cluster-tools_$scala.binary_version$
   version=$akka.version$
 }
+
+@@project-info{ projectId="akka-cluster-tools" }
 
 ## Introduction
 

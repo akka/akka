@@ -3,9 +3,7 @@ project.description: Logging options with Akka.
 ---
 # Logging
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Logging](../logging.md).
-@@@
 
 ## Dependency
 

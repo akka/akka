@@ -3,13 +3,9 @@ project.description: Event Sourcing with Akka Persistence enables actors to pers
 ---
 # Event Sourcing
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
-@@@
 
-@@project-info{ projectId="akka-persistence-typed" }
-
-## Dependency
+## Module info
 
 To use Akka Persistence, add the module to your project:
 
@@ -21,6 +17,8 @@ To use Akka Persistence, add the module to your project:
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
 @ref:[Persistence Plugins](../persistence-plugins.md).
+
+@@project-info{ projectId="akka-persistence-typed" }
 
 ## Introduction
 
