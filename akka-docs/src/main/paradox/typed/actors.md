@@ -5,12 +5,6 @@ project.description: The Actor model, managing internal state and changing behav
 
 For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
 
-@@@ note
-Both the Java and Scala DSLs of Akka modules bundled in the same JAR. For a smooth development experience,
-when using an IDE such as Eclipse or IntelliJ, you can disable the auto-importer from suggesting `javadsl`
-imports when working in Scala, or viceversa. See @ref:[IDE Tips](../additional/ide.md). 
-@@@
-
 @@project-info{ projectId="akka-actor-typed" }
 
 ## Dependency
@@ -22,6 +16,10 @@ To use Akka Actors, add the following dependency in your project:
   artifact=akka-actor-typed_$scala.binary_version$
   version=$akka.version$
 }
+
+Both the Java and Scala DSLs of Akka modules bundled in the same JAR. For a smooth development experience,
+when using an IDE such as Eclipse or IntelliJ, you can disable the auto-importer from suggesting `javadsl`
+imports when working in Scala, or viceversa. See @ref:[IDE Tips](../additional/ide.md). 
 
 ## Akka Actors
 
