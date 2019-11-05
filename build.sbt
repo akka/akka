@@ -75,8 +75,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
   .settings(rootSettings: _*)
-  .settings(
-    unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
+  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
 
@@ -371,8 +370,8 @@ lazy val testkit = akkaModule("akka-testkit")
   .settings(initialCommands += "import akka.testkit._")
 
 lazy val actorTyped = akkaModule("akka-actor-typed")
-  .dependsOn(actor)
-  .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
+  .dependsOn(actor, slf4j)
+  .settings(AutomaticModuleName.settings("akka.actor.typed"))
   .settings(Dependencies.actorTyped)
   .settings(OSGi.actorTyped)
   .settings(initialCommands :=
