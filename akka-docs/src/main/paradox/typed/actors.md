@@ -3,9 +3,7 @@ project.description: The Actor model, managing internal state and changing behav
 ---
 # Introduction to Actors
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
-@@@
 
 @@@ note
 Both the Java and Scala DSLs of Akka modules bundled in the same JAR. For a smooth development experience,
