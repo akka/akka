@@ -217,7 +217,6 @@ lazy val jackson = akkaModule("akka-serialization-jackson")
   .settings(OSGi.jackson)
   .settings(javacOptions += "-parameters")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
-  .disablePlugins(MimaPlugin)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
