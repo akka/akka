@@ -85,7 +85,7 @@ Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #request-response-send }
 
 
-On the receiving side the @scala[`ActorRef[response]`]@java[`ActorRef<Response>`] can then be used to send one or more responses back:
+On the receiving side the @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`] can then be used to send one or more responses back:
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #request-response-respond }
@@ -468,6 +468,3 @@ Java
 
 A disadvantage is that a message adapter can't be used so the response has to be in the protocol of the actor being responded to. Additionally the `EntityTypeKey`
 could be included in the message if it is not known statically.
-
-
-
