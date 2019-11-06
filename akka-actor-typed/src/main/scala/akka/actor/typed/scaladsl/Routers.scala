@@ -3,8 +3,8 @@
  */
 
 package akka.actor.typed.scaladsl
-import akka.actor.typed.{ActorSystem, Behavior}
-import akka.actor.typed.internal.routing.{GroupRouterBuilder, PoolRouterBuilder, RoutingLogics}
+import akka.actor.typed.{ ActorSystem, Behavior }
+import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder, RoutingLogics }
 import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic.ConsistentHashMapping
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.DoNotInherit
@@ -61,11 +61,11 @@ trait GroupRouter[T] extends Behavior[T] {
   def withRoundRobinRouting(): GroupRouter[T]
 
   /**
+   * Route messages by using consistent hashing.
    *
-   * @param virtualNodesFactor
-   * @param mapping
-   * @param system
-   * @return
+   * From wikipedia: Consistent hashing is based on mapping each object to a point on a circle
+   * (or equivalently, mapping each object to a real angle). The system maps each available machine
+   * (or other storage bucket) to many pseudo-randomly distributed points on the same circle.
    */
   def withConsistentHashingRouting(
       virtualNodesFactor: Int,
@@ -100,11 +100,11 @@ trait PoolRouter[T] extends Behavior[T] {
   def withRoundRobinRouting(): PoolRouter[T]
 
   /**
+   * Route messages by using consistent hashing.
    *
-   * @param virtualNodesFactor
-   * @param mapping
-   * @param actorSystem
-   * @return
+   * From wikipedia: Consistent hashing is based on mapping each object to a point on a circle
+   * (or equivalently, mapping each object to a real angle). The system maps each available machine
+   * (or other storage bucket) to many pseudo-randomly distributed points on the same circle.
    */
   def withConsistentHashingRouting(
       virtualNodesFactor: Int = 0,
