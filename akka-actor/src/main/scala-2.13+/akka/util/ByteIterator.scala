@@ -99,6 +99,12 @@ object ByteIterator {
       this
     }
 
+    override def copyToArray[B >: Byte](xs: Array[B], start: Int): Int =
+      this.copyToArray(xs, start, xs.length)
+
+    override def copyToArray[B >: Byte](xs: Array[B]): Int =
+      this.copyToArray(xs, 0, xs.length)
+
     final override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int = {
       val n = 0 max ((xs.length - start) min this.len min len)
       Array.copy(this.array, from, xs, start, n)
