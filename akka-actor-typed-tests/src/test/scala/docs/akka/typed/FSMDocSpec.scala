@@ -57,7 +57,7 @@ object FSMDocSpec {
     private def active(data: Todo): Behavior[Event] =
       Behaviors.withTimers[Event] { timers =>
         // instead of FSM state timeout
-        timers.startSingleTimer(Timeout, Timeout, 1.second)
+        timers.startSingleTimer(Timeout, 1.second)
         Behaviors.receiveMessagePartial {
           case Flush | Timeout =>
             data.target ! Batch(data.queue)

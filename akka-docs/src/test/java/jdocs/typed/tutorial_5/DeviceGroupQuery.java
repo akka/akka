@@ -78,7 +78,7 @@ public class DeviceGroupQuery extends AbstractBehavior<DeviceGroupQuery.Command>
     this.requestId = requestId;
     this.requester = requester;
 
-    timers.startSingleTimer(CollectionTimeout.class, CollectionTimeout.INSTANCE, timeout);
+    timers.startSingleTimer(CollectionTimeout.INSTANCE, timeout);
 
     ActorRef<Device.RespondTemperature> respondTemperatureAdapter =
         context.messageAdapter(Device.RespondTemperature.class, WrappedRespondTemperature::new);
