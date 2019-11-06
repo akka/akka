@@ -285,6 +285,7 @@ class SourceOrFlow {
       this.high = high;
     }
 
+    // Immutable start value
     public static Histogram INSTANCE = new Histogram(0L, 0L);
 
     public Histogram add(int number) {
