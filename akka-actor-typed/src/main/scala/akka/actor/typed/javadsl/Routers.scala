@@ -5,10 +5,10 @@
 package akka.actor.typed.javadsl
 
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
-import akka.actor.typed.internal.routing.{GroupRouterBuilder, PoolRouterBuilder}
+import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic.ConsistentHashMapping
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.{ActorSystem, Behavior}
+import akka.actor.typed.{ ActorSystem, Behavior }
 import akka.annotation.DoNotInherit
 
 object Routers {
@@ -65,16 +65,16 @@ abstract class GroupRouter[T] extends DeferredBehavior[T] {
   def withRoundRobinRouting(): GroupRouter[T]
 
   /**
+   * Route messages by using consistent hashing.
    *
-   * @param virtualNodesFactor
-   * @param mapping
-   * @param system
-   * @return
+   * From wikipedia: Consistent hashing is based on mapping each object to a point on a circle
+   * (or equivalently, mapping each object to a real angle). The system maps each available machine
+   * (or other storage bucket) to many pseudo-randomly distributed points on the same circle.
    */
   def withConsistentHashingRouting(
-    virtualNodesFactor: Int,
-    mapping: ConsistentHashMapping[T],
-    system: ActorSystem[T]): GroupRouter[T]
+      virtualNodesFactor: Int,
+      mapping: ConsistentHashMapping[T],
+      system: ActorSystem[T]): GroupRouter[T]
 
 }
 
@@ -104,11 +104,11 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
   def withRoundRobinRouting(): PoolRouter[T]
 
   /**
+   * Route messages by using consistent hashing.
    *
-   * @param virtualNodesFactor
-   * @param mapping
-   * @param system
-   * @return
+   * From wikipedia: Consistent hashing is based on mapping each object to a point on a circle
+   * (or equivalently, mapping each object to a real angle). The system maps each available machine
+   * (or other storage bucket) to many pseudo-randomly distributed points on the same circle.
    */
   def withConsistentHashingRouting(
       virtualNodesFactor: Int,
