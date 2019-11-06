@@ -32,13 +32,6 @@ private[akka] final case class GroupRouterBuilder[T] private[akka] (
 
   def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RoundRobinLogic[T])
 
-  /**
-   *
-   * @param virtualNodesFactor
-   * @param mapping
-   * @param system
-   * @return
-   */
   override def withConsistentHashingRouting(
       virtualNodesFactor: Int,
       mapping: ConsistentHashMapping[T],
