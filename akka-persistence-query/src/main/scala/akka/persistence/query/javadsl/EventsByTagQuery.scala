@@ -30,7 +30,7 @@ trait EventsByTagQuery extends ReadJournal {
    * In strongly consistent stores, where the `offset` is unique and strictly ordered, the
    * stream should start from the next event after the `offset`. Otherwise, the read journal
    * should ensure that between an invocation that returned an event with the given
-   * `offset`, and this invocation, no events are missed, and, depending on the journal
+   * `offset` and this invocation, no events are missed. Depending on the journal
    * implementation, this may mean that this invocation will return events that were already
    * returned by the previous invocation, including the event with the passed in `offset`.
    *
