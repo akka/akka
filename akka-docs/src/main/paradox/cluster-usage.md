@@ -31,19 +31,6 @@ To use Akka Cluster add the following dependency in your project:
 
 @@project-info{ projectId="akka-cluster" }
 
-## Cluster samples
-
-To see what using Akka Cluster looks like in practice, see the
-@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
-@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)].
-This project contains samples illustrating different features, such as
-subscribing to cluster membership events, sending messages to actors running on nodes in the cluster,
-and using Cluster aware routers.
-
-The easiest way to run this example yourself is to try the
-@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
-It contains instructions on how to run the `SimpleClusterApp`.
-
 ## When and where to use Akka Cluster
  
 See @ref:[Choosing Akka Cluster](typed/choosing-cluster.md#when-and-where-to-use-akka-cluster) in the documentation of the new APIs.
@@ -210,10 +197,6 @@ Death watch uses the cluster failure detector for nodes in the cluster, i.e. it 
 network failures and JVM crashes, in addition to graceful termination of watched
 actor. Death watch generates the `Terminated` message to the watching actor when the
 unreachable cluster node has been downed and removed.
-
-The easiest way to run **Worker Dial-in Example** example yourself is to try the
-@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
-It contains instructions on how to run the **Worker Dial-in Example** sample.
 
 ## Node Roles
 

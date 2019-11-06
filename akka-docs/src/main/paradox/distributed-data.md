@@ -13,13 +13,6 @@ To use Akka Distributed Data, you must add the following dependency in your proj
   version="$akka.version$"
 }
 
-## Sample project
-
-You can look at the
-@java[@extref[Distributed Data example project](samples:akka-samples-distributed-data-java)]
-@scala[@extref[Distributed Data example project](samples:akka-samples-distributed-data-scala)]
-to see what this looks like in practice.
-
 ## Introduction
 
 For the full documentation of this feature and for new projects see @ref:[Distributed Data - Introduction](typed/distributed-data.md#introduction).
@@ -268,17 +261,6 @@ For the full documentation of this feature and for new projects see @ref:[Distri
 ## Durable Storage
 
 For the full documentation of this feature and for new projects see @ref:[Durable Storage](typed/distributed-data.md#durable-storage).
-
-## Samples
-
-Several interesting samples are included and described in the
-tutorial named @scala[@extref[Akka Distributed Data Samples with Scala](ecs:akka-samples-distributed-data-scala) (@extref[source code](samples:akka-sample-distributed-data-scala))]@java[@extref[Akka Distributed Data Samples with Java](ecs:akka-samples-distributed-data-java) (@extref[source code](samples:akka-sample-distributed-data-java))]
-
- * Low Latency Voting Service
- * Highly Available Shopping Cart
- * Distributed Service Registry
- * Replicated Cache
- * Replicated Metrics
 
 ## Limitations
 

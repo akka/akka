@@ -14,6 +14,7 @@
 * [licenses](licenses.md)
 * [faq](../additional/faq.md)
 * [books](../additional/books.md)
+* [examples](examples.md)
 * [links](links.md)
 
 @@@

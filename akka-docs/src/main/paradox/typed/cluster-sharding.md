@@ -408,3 +408,11 @@ One important configuration property is `number-of-shards` as described in @ref:
 @@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
 
 @@snip [reference.conf](/akka-cluster-sharding-typed/src/main/resources/reference.conf) { #sharding-ext-config }
+
+## Example project
+
+@java[@extref[Sharding example project](samples:akka-sample-sharding-java)]
+@scala[@extref[Sharding example project](samples:akka-sample-sharding-scala)]
+is an example project that can be downloaded, and with instructions of how to run.
+
+This project contains a KillrWeather sample illustrating how to use Cluster Sharding.
