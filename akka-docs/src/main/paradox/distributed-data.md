@@ -13,13 +13,6 @@ To use Akka Distributed Data, you must add the following dependency in your proj
   version="$akka.version$"
 }
 
-## Sample project
-
-You can look at the
-@java[@extref[Distributed Data example project](samples:akka-samples-distributed-data-java)]
-@scala[@extref[Distributed Data example project](samples:akka-samples-distributed-data-scala)]
-to see what this looks like in practice.
-
 ## Introduction
 
 For the full documentation of this feature and for new projects see @ref:[Distributed Data - Introduction](typed/distributed-data.md#introduction).
@@ -36,10 +29,10 @@ that it is given the same name, started on same path, on all nodes.
 
 Cluster members with status @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up),
 will participate in Distributed Data. This means that the data will be replicated to the
-@ref:[WeaklyUp](typed/cluster-membership.md#weakly-up) nodes with the background gossip protocol. Note that it
+`WeaklyUp` nodes with the background gossip protocol. Note that it
 will not participate in any actions where the consistency mode is to read/write from all
-nodes or the majority of nodes. The @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up) node is not counted
-as part of the cluster. So 3 nodes + 5 @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up) is essentially a
+nodes or the majority of nodes. The `WeaklyUp` node is not counted
+as part of the cluster. So 3 nodes + 5 `WeaklyUp` is essentially a
 3 node cluster as far as consistent actions are concerned.
 
 Below is an example of an actor that schedules tick messages to itself and for each tick
@@ -100,6 +93,10 @@ Java
 You will always see your own writes. For example if you send two `Update` messages
 changing the value of the same `key`, the `modify` function of the second message will
 see the change that was performed by the first `Update` message.
+
+It is possible to abort the `Update` when inspecting the state parameter that is passed in to
+the `modify` function by throwing an exception. That happens before the update is performed and
+a `Replicator.ModifyFailure` is sent back as reply.
 
 In the `Update` message you can pass an optional request context, which the `Replicator`
 does not care about, but is included in the reply messages. This is a convenient
@@ -246,100 +243,24 @@ types that support both updates and removals, for example `ORMap` or `ORSet`.
 
 @@@
 
-### Delta-CRDT
- 
-For the full documentation of this feature and for new projects see @ref:[Distributed Data Delta CRDT](typed/distributed-data.md#delta-crdt).
-
 ## Replicated data types
 
 Akka contains a set of useful replicated data types and it is fully possible to implement custom replicated data types.
 For the full documentation of this feature and for new projects see @ref:[Distributed Data Replicated data types](typed/distributed-data.md#replicated-data-types).
+
+### Delta-CRDT
+ 
+For the full documentation of this feature and for new projects see @ref:[Distributed Data Delta CRDT](typed/distributed-data.md#delta-crdt).
 
 ### Custom Data Type
 
 You can implement your own data types. 
 For the full documentation of this feature and for new projects see @ref:[Distributed Data custom data type](typed/distributed-data.md#custom-data-type).
 
-#### Serialization
-
-The data types must be serializable with an @ref:[Akka Serializer](serialization.md).
-It is highly recommended that you implement  efficient serialization with Protobuf or similar
-for your custom data types. The built in data types are marked with `ReplicatedDataSerialization`
-and serialized with `akka.cluster.ddata.protobuf.ReplicatedDataSerializer`.
-
-Serialization of the data types are used in remote messages and also for creating message
-digests (SHA-1) to detect changes. Therefore it is important that the serialization is efficient
-and produce the same bytes for the same content. For example sets and maps should be sorted
-deterministically in the serialization.
-
-This is a protobuf representation of the above `TwoPhaseSet`:
-
-@@snip [TwoPhaseSetMessages.proto](/akka-docs/src/test/../main/protobuf/TwoPhaseSetMessages.proto) { #twophaseset }
-
-The serializer for the `TwoPhaseSet`:
-
-Scala
-: @@snip [TwoPhaseSetSerializer.scala](/akka-docs/src/test/scala/docs/ddata/protobuf/TwoPhaseSetSerializer.scala) { #serializer }
-
-Java
-: @@snip [TwoPhaseSetSerializer.java](/akka-docs/src/test/java/jdocs/ddata/protobuf/TwoPhaseSetSerializer.java) { #serializer }
-
-Note that the elements of the sets are sorted so the SHA-1 digests are the same
-for the same elements.
-
-You register the serializer in configuration:
-
-Scala
-: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #serializer-config }
-
-Java
-: @@snip [DistributedDataDocSpec.scala](/akka-docs/src/test/scala/docs/ddata/DistributedDataDocSpec.scala) { #japi-serializer-config }
-
-Using compression can sometimes be a good idea to reduce the data size. Gzip compression is
-provided by the @scala[`akka.cluster.ddata.protobuf.SerializationSupport` trait]@java[`akka.cluster.ddata.protobuf.AbstractSerializationSupport` interface]:
-
-Scala
-: @@snip [TwoPhaseSetSerializer.scala](/akka-docs/src/test/scala/docs/ddata/protobuf/TwoPhaseSetSerializer.scala) { #compression }
-
-Java
-: @@snip [TwoPhaseSetSerializerWithCompression.java](/akka-docs/src/test/java/jdocs/ddata/protobuf/TwoPhaseSetSerializerWithCompression.java) { #compression }
-
-The two embedded `GSet` can be serialized as illustrated above, but in general when composing
-new data types from the existing built in types it is better to make use of the existing
-serializer for those types. This can be done by declaring those as bytes fields in protobuf:
-
-@@snip [TwoPhaseSetMessages.proto](/akka-docs/src/test/../main/protobuf/TwoPhaseSetMessages.proto) { #twophaseset2 }
-
-and use the methods `otherMessageToProto` and `otherMessageFromBinary` that are provided
-by the `SerializationSupport` trait to serialize and deserialize the `GSet` instances. This
-works with any type that has a registered Akka serializer. This is how such an serializer would
-look like for the `TwoPhaseSet`:
-
-Scala
-: @@snip [TwoPhaseSetSerializer2.scala](/akka-docs/src/test/scala/docs/ddata/protobuf/TwoPhaseSetSerializer2.scala) { #serializer }
-
-Java
-: @@snip [TwoPhaseSetSerializer2.java](/akka-docs/src/test/java/jdocs/ddata/protobuf/TwoPhaseSetSerializer2.java) { #serializer }
-
 <a id="ddata-durable"></a>
-### Durable Storage
+## Durable Storage
 
 For the full documentation of this feature and for new projects see @ref:[Durable Storage](typed/distributed-data.md#durable-storage).
-
-### CRDT Garbage
-
-For the full documentation of this feature and for new projects see @ref:[CRDT Garbage](typed/distributed-data.md#crdt-garbage).
-
-## Samples
-
-Several interesting samples are included and described in the
-tutorial named @scala[@extref[Akka Distributed Data Samples with Scala](ecs:akka-samples-distributed-data-scala) (@extref[source code](samples:akka-sample-distributed-data-scala))]@java[@extref[Akka Distributed Data Samples with Java](ecs:akka-samples-distributed-data-java) (@extref[source code](samples:akka-sample-distributed-data-java))]
-
- * Low Latency Voting Service
- * Highly Available Shopping Cart
- * Distributed Service Registry
- * Replicated Cache
- * Replicated Metrics
 
 ## Limitations
 

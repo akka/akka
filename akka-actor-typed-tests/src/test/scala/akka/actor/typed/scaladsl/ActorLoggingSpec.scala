@@ -12,7 +12,9 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.typed.ActorTags
 import akka.actor.typed.Behavior
+import akka.actor.typed.internal.ActorMdc
 import akka.actor.typed.scaladsl.adapter._
 import akka.event.DefaultLoggingFilter
 import akka.event.Logging.DefaultLogger
@@ -247,6 +249,26 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       LoggingTestKit.info("via Slf4jLogger").intercept {
         // this will log via classic eventStream
         system.toClassic.log.info("via Slf4jLogger")
+      }
+    }
+
+    "pass tags from props to MDC" in {
+      val behavior = Behaviors.setup[String] { ctx =>
+        ctx.log.info("Starting up")
+
+        Behaviors.receiveMessage {
+          case msg =>
+            ctx.log.info("Got message {}", msg)
+            Behaviors.same
+        }
+      }
+      val actor =
+        LoggingTestKit.info("Starting up").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).intercept {
+          spawn(behavior, ActorTags("tag1", "tag2"))
+        }
+
+      LoggingTestKit.info("Got message").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).intercept {
+        actor ! "ping"
       }
     }
 

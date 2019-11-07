@@ -7,7 +7,7 @@ package akka.cluster
 import language.postfixOps
 import scala.collection.immutable
 import scala.collection.immutable.{ SortedSet, VectorBuilder }
-import akka.actor.{ Actor, ActorLogging, ActorRef, Address }
+import akka.actor.{ Actor, ActorRef, Address }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
@@ -572,7 +572,6 @@ object ClusterEvent {
  */
 private[cluster] final class ClusterDomainEventPublisher
     extends Actor
-    with ActorLogging
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
 

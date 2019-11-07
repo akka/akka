@@ -422,14 +422,13 @@ object StyleGuideDocExamples {
   object Ask {
     import Messages.CounterProtocol._
 
-    val system: ActorSystem[Nothing] = ???
+    implicit val system: ActorSystem[Nothing] = ???
 
     //#ask-1
     import akka.actor.typed.scaladsl.AskPattern._
     import akka.util.Timeout
 
     implicit val timeout = Timeout(3.seconds)
-    implicit val scheduler = system.scheduler
     val counter: ActorRef[Command] = ???
 
     val result: Future[OperationResult] = counter.ask(replyTo => Increment(delta = 2, replyTo))

@@ -158,7 +158,7 @@ import org.reactivestreams.Subscriber
             primaryInputs.cancel()
             context.stop(self)
           case WarnTermination =>
-            context.system.log.warning("Subscription timeout for {}", this)
+            log.warning("Subscription timeout for {}", this)
           case NoopTermination => // won't happen
         }
       }

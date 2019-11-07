@@ -94,7 +94,7 @@ public class BubblingSample {
     public Receive<Protocol.Command> createReceive() {
       // here we don't handle Terminated at all which means that
       // when the child fails or stops gracefully this actor will
-      // fail with a DeathWatchException
+      // fail with a DeathPactException
       return newReceiveBuilder().onMessage(Protocol.Command.class, this::onCommand).build();
     }
 
@@ -125,7 +125,7 @@ public class BubblingSample {
     @Override
     public Receive<Protocol.Command> createReceive() {
       // here we don't handle Terminated at all which means that
-      // when middle management fails with a DeathWatchException
+      // when middle management fails with a DeathPactException
       // this actor will also fail
       return newReceiveBuilder().onMessage(Protocol.Command.class, this::onCommand).build();
     }

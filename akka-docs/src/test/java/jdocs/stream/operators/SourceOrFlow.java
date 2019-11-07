@@ -252,4 +252,23 @@ class SourceOrFlow {
             .map(p -> new Pong(p.id));
     // #collectType
   }
+
+  void groupedExample() {
+    // #grouped
+    Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7))
+        .grouped(3)
+        .runForeach(System.out::println, materializer);
+    // [1, 2, 3]
+    // [4, 5, 6]
+    // [7]
+
+    Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7))
+        .grouped(3)
+        .map(g -> g.stream().reduce(0, Integer::sum))
+        .runForeach(System.out::println, materializer);
+    // 6   (= 1 + 2 + 3)
+    // 15  (= 4 + 5 + 6)
+    // 7   (= 7)
+    // #grouped
+  }
 }

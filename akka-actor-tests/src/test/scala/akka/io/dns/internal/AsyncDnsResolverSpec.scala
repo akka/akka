@@ -8,6 +8,7 @@ import java.net.{ Inet6Address, InetAddress }
 
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
+import akka.io.SimpleDnsCache
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol._
 import akka.io.dns.internal.AsyncDnsResolver.ResolveFailedException
@@ -220,7 +221,7 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
 
   def resolver(clients: List[ActorRef], config: Config): ActorRef = {
     val settings = new DnsSettings(system.asInstanceOf[ExtendedActorSystem], config)
-    system.actorOf(Props(new AsyncDnsResolver(settings, new AsyncDnsCache(), (_, _) => {
+    system.actorOf(Props(new AsyncDnsResolver(settings, new SimpleDnsCache(), (_, _) => {
       clients
     })))
   }

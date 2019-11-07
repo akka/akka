@@ -179,7 +179,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
     settings.ReconnectBackoff,
     settings.ClientSocketWorkerPoolSize,
     self,
-    Logging(context.system, classOf[PlayerHandler].getName),
+    Logging(context.system, classOf[PlayerHandler]),
     context.system.scheduler)(context.dispatcher)
 
   startWith(Connecting, Data(None, None))

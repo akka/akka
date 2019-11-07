@@ -20,6 +20,7 @@ import akka.actor.typed.Props
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
@@ -178,7 +179,8 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =
 
   /**
    * Create an `ActorRef`-like reference to a specific sharded entity.
-   * Currently you have to correctly specify the type of messages the target can handle.
+   *
+   * You have to correctly specify the type of messages the target can handle via the `typeKey`.
    *
    * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
    * here provided `entityId`.
@@ -186,6 +188,18 @@ trait ClusterSharding extends Extension { javadslSelf: javadsl.ClusterSharding =
    * For in-depth documentation of its semantics, see [[EntityRef]].
    */
   def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String): EntityRef[M]
+
+  /**
+   * Create an `ActorRef`-like reference to a specific sharded entity running in another data center.
+   *
+   * You have to correctly specify the type of messages the target can handle via the `typeKey`.
+   *
+   * Messages sent through this [[EntityRef]] will be wrapped in a [[ShardingEnvelope]] including the
+   * here provided `entityId`.
+   *
+   * For in-depth documentation of its semantics, see [[EntityRef]].
+   */
+  def entityRefFor[M](typeKey: EntityTypeKey[M], entityId: String, dataCenter: DataCenter): EntityRef[M]
 
   /**
    * Actor for querying Cluster Sharding state
@@ -217,7 +231,7 @@ object Entity {
    */
   def apply[M](typeKey: EntityTypeKey[M])(
       createBehavior: EntityContext[M] => Behavior[M]): Entity[M, ShardingEnvelope[M]] =
-    new Entity(createBehavior, typeKey, None, Props.empty, None, None, None, None)
+    new Entity(createBehavior, typeKey, None, Props.empty, None, None, None, None, None)
 }
 
 /**
@@ -231,7 +245,8 @@ final class Entity[M, E] private[akka] (
     val settings: Option[ClusterShardingSettings],
     val messageExtractor: Option[ShardingMessageExtractor[E, M]],
     val allocationStrategy: Option[ShardAllocationStrategy],
-    val role: Option[String]) {
+    val role: Option[String],
+    val dataCenter: Option[DataCenter]) {
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -271,7 +286,8 @@ final class Entity[M, E] private[akka] (
       settings,
       Option(newExtractor),
       allocationStrategy,
-      role)
+      role,
+      dataCenter)
 
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,
@@ -283,7 +299,15 @@ final class Entity[M, E] private[akka] (
   /**
    *  Run the Entity actors on nodes with the given role.
    */
-  def withRole(role: String): Entity[M, E] = copy(role = Some(role))
+  def withRole(newRole: String): Entity[M, E] = copy(role = Some(newRole))
+
+  /**
+   * The data center of the cluster nodes where the cluster sharding is running.
+   * If the dataCenter is not specified then the same data center as current node. If the given
+   * dataCenter does not match the data center of the current node the `ShardRegion` will be started
+   * in proxy mode.
+   */
+  def withDataCenter(newDataCenter: DataCenter): Entity[M, E] = copy(dataCenter = Some(newDataCenter))
 
   private def copy(
       createBehavior: EntityContext[M] => Behavior[M] = createBehavior,
@@ -292,8 +316,18 @@ final class Entity[M, E] private[akka] (
       entityProps: Props = entityProps,
       settings: Option[ClusterShardingSettings] = settings,
       allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy,
-      role: Option[String] = role): Entity[M, E] = {
-    new Entity(createBehavior, typeKey, stopMessage, entityProps, settings, messageExtractor, allocationStrategy, role)
+      role: Option[String] = role,
+      dataCenter: Option[DataCenter] = dataCenter): Entity[M, E] = {
+    new Entity(
+      createBehavior,
+      typeKey,
+      stopMessage,
+      entityProps,
+      settings,
+      messageExtractor,
+      allocationStrategy,
+      role,
+      dataCenter)
   }
 
 }
@@ -445,9 +479,7 @@ object EntityTypeKey {
 
 object ClusterShardingSetup {
   def apply[T <: Extension](createExtension: ActorSystem[_] => ClusterSharding): ClusterShardingSetup =
-    new ClusterShardingSetup(new java.util.function.Function[ActorSystem[_], ClusterSharding] {
-      override def apply(sys: ActorSystem[_]): ClusterSharding = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+    new ClusterShardingSetup(createExtension(_))
 
 }
 

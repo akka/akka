@@ -14,6 +14,7 @@ import akka.annotation.InternalApi
 import akka.io.TcpConnection.CloseInformation
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
+import akka.io.dns.DnsProtocol
 
 /**
  * An actor handling the connection state machine for an outgoing connection
@@ -61,11 +62,11 @@ private[io] class TcpOutgoingConnection(
       reportConnectFailure {
         if (remoteAddress.isUnresolved) {
           log.debug("Resolving {} before connecting", remoteAddress.getHostName)
-          Dns.resolve(remoteAddress.getHostName)(system, self) match {
+          Dns.resolve(DnsProtocol.Resolve(remoteAddress.getHostName), system, self) match {
             case None =>
               context.become(resolving(registration))
             case Some(resolved) =>
-              register(new InetSocketAddress(resolved.addr, remoteAddress.getPort), registration)
+              register(new InetSocketAddress(resolved.address(), remoteAddress.getPort), registration)
           }
         } else {
           register(remoteAddress, registration)
@@ -76,9 +77,9 @@ private[io] class TcpOutgoingConnection(
   }
 
   def resolving(registration: ChannelRegistration): Receive = {
-    case resolved: Dns.Resolved =>
+    case resolved: DnsProtocol.Resolved =>
       reportConnectFailure {
-        register(new InetSocketAddress(resolved.addr, remoteAddress.getPort), registration)
+        register(new InetSocketAddress(resolved.address(), remoteAddress.getPort), registration)
       }
     case ReceiveTimeout =>
       connectionTimeout()

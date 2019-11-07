@@ -24,10 +24,12 @@ public final class MessageFormats {
 
     /**
      * <code>optional .PersistentPayload payload = 1;</code>
+     * @return Whether the payload field is set.
      */
     boolean hasPayload();
     /**
      * <code>optional .PersistentPayload payload = 1;</code>
+     * @return The payload.
      */
     akka.persistence.serialization.MessageFormats.PersistentPayload getPayload();
     /**
@@ -37,23 +39,28 @@ public final class MessageFormats {
 
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return Whether the sequenceNr field is set.
      */
     boolean hasSequenceNr();
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return The sequenceNr.
      */
     long getSequenceNr();
 
     /**
      * <code>optional string persistenceId = 3;</code>
+     * @return Whether the persistenceId field is set.
      */
     boolean hasPersistenceId();
     /**
      * <code>optional string persistenceId = 3;</code>
+     * @return The persistenceId.
      */
     java.lang.String getPersistenceId();
     /**
      * <code>optional string persistenceId = 3;</code>
+     * @return The bytes for persistenceId.
      */
     akka.protobufv3.internal.ByteString
         getPersistenceIdBytes();
@@ -64,6 +71,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional bool deleted = 4;</code>
+     * @return Whether the deleted field is set.
      */
     boolean hasDeleted();
     /**
@@ -72,6 +80,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional bool deleted = 4;</code>
+     * @return The deleted.
      */
     boolean getDeleted();
 
@@ -85,6 +94,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string sender = 11;</code>
+     * @return Whether the sender field is set.
      */
     boolean hasSender();
     /**
@@ -97,6 +107,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string sender = 11;</code>
+     * @return The sender.
      */
     java.lang.String getSender();
     /**
@@ -109,34 +120,41 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string sender = 11;</code>
+     * @return The bytes for sender.
      */
     akka.protobufv3.internal.ByteString
         getSenderBytes();
 
     /**
      * <code>optional string manifest = 12;</code>
+     * @return Whether the manifest field is set.
      */
     boolean hasManifest();
     /**
      * <code>optional string manifest = 12;</code>
+     * @return The manifest.
      */
     java.lang.String getManifest();
     /**
      * <code>optional string manifest = 12;</code>
+     * @return The bytes for manifest.
      */
     akka.protobufv3.internal.ByteString
         getManifestBytes();
 
     /**
      * <code>optional string writerUuid = 13;</code>
+     * @return Whether the writerUuid field is set.
      */
     boolean hasWriterUuid();
     /**
      * <code>optional string writerUuid = 13;</code>
+     * @return The writerUuid.
      */
     java.lang.String getWriterUuid();
     /**
      * <code>optional string writerUuid = 13;</code>
+     * @return The bytes for writerUuid.
      */
     akka.protobufv3.internal.ByteString
         getWriterUuidBytes();
@@ -275,12 +293,14 @@ public final class MessageFormats {
     private akka.persistence.serialization.MessageFormats.PersistentPayload payload_;
     /**
      * <code>optional .PersistentPayload payload = 1;</code>
+     * @return Whether the payload field is set.
      */
     public boolean hasPayload() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>optional .PersistentPayload payload = 1;</code>
+     * @return The payload.
      */
     public akka.persistence.serialization.MessageFormats.PersistentPayload getPayload() {
       return payload_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : payload_;
@@ -296,12 +316,14 @@ public final class MessageFormats {
     private long sequenceNr_;
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return Whether the sequenceNr field is set.
      */
     public boolean hasSequenceNr() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>optional int64 sequenceNr = 2;</code>
+     * @return The sequenceNr.
      */
     public long getSequenceNr() {
       return sequenceNr_;
@@ -311,12 +333,14 @@ public final class MessageFormats {
     private volatile java.lang.Object persistenceId_;
     /**
      * <code>optional string persistenceId = 3;</code>
+     * @return Whether the persistenceId field is set.
      */
     public boolean hasPersistenceId() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional string persistenceId = 3;</code>
+     * @return The persistenceId.
      */
     public java.lang.String getPersistenceId() {
       java.lang.Object ref = persistenceId_;
@@ -334,6 +358,7 @@ public final class MessageFormats {
     }
     /**
      * <code>optional string persistenceId = 3;</code>
+     * @return The bytes for persistenceId.
      */
     public akka.protobufv3.internal.ByteString
         getPersistenceIdBytes() {
@@ -357,6 +382,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional bool deleted = 4;</code>
+     * @return Whether the deleted field is set.
      */
     public boolean hasDeleted() {
       return ((bitField0_ & 0x00000008) != 0);
@@ -367,6 +393,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional bool deleted = 4;</code>
+     * @return The deleted.
      */
     public boolean getDeleted() {
       return deleted_;
@@ -384,6 +411,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string sender = 11;</code>
+     * @return Whether the sender field is set.
      */
     public boolean hasSender() {
       return ((bitField0_ & 0x00000010) != 0);
@@ -398,6 +426,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string sender = 11;</code>
+     * @return The sender.
      */
     public java.lang.String getSender() {
       java.lang.Object ref = sender_;
@@ -423,6 +452,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string sender = 11;</code>
+     * @return The bytes for sender.
      */
     public akka.protobufv3.internal.ByteString
         getSenderBytes() {
@@ -442,12 +472,14 @@ public final class MessageFormats {
     private volatile java.lang.Object manifest_;
     /**
      * <code>optional string manifest = 12;</code>
+     * @return Whether the manifest field is set.
      */
     public boolean hasManifest() {
       return ((bitField0_ & 0x00000020) != 0);
     }
     /**
      * <code>optional string manifest = 12;</code>
+     * @return The manifest.
      */
     public java.lang.String getManifest() {
       java.lang.Object ref = manifest_;
@@ -465,6 +497,7 @@ public final class MessageFormats {
     }
     /**
      * <code>optional string manifest = 12;</code>
+     * @return The bytes for manifest.
      */
     public akka.protobufv3.internal.ByteString
         getManifestBytes() {
@@ -484,12 +517,14 @@ public final class MessageFormats {
     private volatile java.lang.Object writerUuid_;
     /**
      * <code>optional string writerUuid = 13;</code>
+     * @return Whether the writerUuid field is set.
      */
     public boolean hasWriterUuid() {
       return ((bitField0_ & 0x00000040) != 0);
     }
     /**
      * <code>optional string writerUuid = 13;</code>
+     * @return The writerUuid.
      */
     public java.lang.String getWriterUuid() {
       java.lang.Object ref = writerUuid_;
@@ -507,6 +542,7 @@ public final class MessageFormats {
     }
     /**
      * <code>optional string writerUuid = 13;</code>
+     * @return The bytes for writerUuid.
      */
     public akka.protobufv3.internal.ByteString
         getWriterUuidBytes() {
@@ -1017,12 +1053,14 @@ public final class MessageFormats {
           akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> payloadBuilder_;
       /**
        * <code>optional .PersistentPayload payload = 1;</code>
+       * @return Whether the payload field is set.
        */
       public boolean hasPayload() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>optional .PersistentPayload payload = 1;</code>
+       * @return The payload.
        */
       public akka.persistence.serialization.MessageFormats.PersistentPayload getPayload() {
         if (payloadBuilder_ == null) {
@@ -1133,18 +1171,22 @@ public final class MessageFormats {
       private long sequenceNr_ ;
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @return Whether the sequenceNr field is set.
        */
       public boolean hasSequenceNr() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @return The sequenceNr.
        */
       public long getSequenceNr() {
         return sequenceNr_;
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @param value The sequenceNr to set.
+       * @return This builder for chaining.
        */
       public Builder setSequenceNr(long value) {
         bitField0_ |= 0x00000002;
@@ -1154,6 +1196,7 @@ public final class MessageFormats {
       }
       /**
        * <code>optional int64 sequenceNr = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSequenceNr() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -1165,12 +1208,14 @@ public final class MessageFormats {
       private java.lang.Object persistenceId_ = "";
       /**
        * <code>optional string persistenceId = 3;</code>
+       * @return Whether the persistenceId field is set.
        */
       public boolean hasPersistenceId() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional string persistenceId = 3;</code>
+       * @return The persistenceId.
        */
       public java.lang.String getPersistenceId() {
         java.lang.Object ref = persistenceId_;
@@ -1188,6 +1233,7 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string persistenceId = 3;</code>
+       * @return The bytes for persistenceId.
        */
       public akka.protobufv3.internal.ByteString
           getPersistenceIdBytes() {
@@ -1204,6 +1250,8 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string persistenceId = 3;</code>
+       * @param value The persistenceId to set.
+       * @return This builder for chaining.
        */
       public Builder setPersistenceId(
           java.lang.String value) {
@@ -1217,6 +1265,7 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string persistenceId = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPersistenceId() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -1226,6 +1275,8 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string persistenceId = 3;</code>
+       * @param value The bytes for persistenceId to set.
+       * @return This builder for chaining.
        */
       public Builder setPersistenceIdBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -1245,6 +1296,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional bool deleted = 4;</code>
+       * @return Whether the deleted field is set.
        */
       public boolean hasDeleted() {
         return ((bitField0_ & 0x00000008) != 0);
@@ -1255,6 +1307,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional bool deleted = 4;</code>
+       * @return The deleted.
        */
       public boolean getDeleted() {
         return deleted_;
@@ -1265,6 +1318,8 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional bool deleted = 4;</code>
+       * @param value The deleted to set.
+       * @return This builder for chaining.
        */
       public Builder setDeleted(boolean value) {
         bitField0_ |= 0x00000008;
@@ -1278,6 +1333,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional bool deleted = 4;</code>
+       * @return This builder for chaining.
        */
       public Builder clearDeleted() {
         bitField0_ = (bitField0_ & ~0x00000008);
@@ -1297,6 +1353,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string sender = 11;</code>
+       * @return Whether the sender field is set.
        */
       public boolean hasSender() {
         return ((bitField0_ & 0x00000010) != 0);
@@ -1311,6 +1368,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string sender = 11;</code>
+       * @return The sender.
        */
       public java.lang.String getSender() {
         java.lang.Object ref = sender_;
@@ -1336,6 +1394,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string sender = 11;</code>
+       * @return The bytes for sender.
        */
       public akka.protobufv3.internal.ByteString
           getSenderBytes() {
@@ -1360,6 +1419,8 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string sender = 11;</code>
+       * @param value The sender to set.
+       * @return This builder for chaining.
        */
       public Builder setSender(
           java.lang.String value) {
@@ -1381,6 +1442,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string sender = 11;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSender() {
         bitField0_ = (bitField0_ & ~0x00000010);
@@ -1398,6 +1460,8 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string sender = 11;</code>
+       * @param value The bytes for sender to set.
+       * @return This builder for chaining.
        */
       public Builder setSenderBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -1413,12 +1477,14 @@ public final class MessageFormats {
       private java.lang.Object manifest_ = "";
       /**
        * <code>optional string manifest = 12;</code>
+       * @return Whether the manifest field is set.
        */
       public boolean hasManifest() {
         return ((bitField0_ & 0x00000020) != 0);
       }
       /**
        * <code>optional string manifest = 12;</code>
+       * @return The manifest.
        */
       public java.lang.String getManifest() {
         java.lang.Object ref = manifest_;
@@ -1436,6 +1502,7 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string manifest = 12;</code>
+       * @return The bytes for manifest.
        */
       public akka.protobufv3.internal.ByteString
           getManifestBytes() {
@@ -1452,6 +1519,8 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string manifest = 12;</code>
+       * @param value The manifest to set.
+       * @return This builder for chaining.
        */
       public Builder setManifest(
           java.lang.String value) {
@@ -1465,6 +1534,7 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string manifest = 12;</code>
+       * @return This builder for chaining.
        */
       public Builder clearManifest() {
         bitField0_ = (bitField0_ & ~0x00000020);
@@ -1474,6 +1544,8 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string manifest = 12;</code>
+       * @param value The bytes for manifest to set.
+       * @return This builder for chaining.
        */
       public Builder setManifestBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -1489,12 +1561,14 @@ public final class MessageFormats {
       private java.lang.Object writerUuid_ = "";
       /**
        * <code>optional string writerUuid = 13;</code>
+       * @return Whether the writerUuid field is set.
        */
       public boolean hasWriterUuid() {
         return ((bitField0_ & 0x00000040) != 0);
       }
       /**
        * <code>optional string writerUuid = 13;</code>
+       * @return The writerUuid.
        */
       public java.lang.String getWriterUuid() {
         java.lang.Object ref = writerUuid_;
@@ -1512,6 +1586,7 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string writerUuid = 13;</code>
+       * @return The bytes for writerUuid.
        */
       public akka.protobufv3.internal.ByteString
           getWriterUuidBytes() {
@@ -1528,6 +1603,8 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string writerUuid = 13;</code>
+       * @param value The writerUuid to set.
+       * @return This builder for chaining.
        */
       public Builder setWriterUuid(
           java.lang.String value) {
@@ -1541,6 +1618,7 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string writerUuid = 13;</code>
+       * @return This builder for chaining.
        */
       public Builder clearWriterUuid() {
         bitField0_ = (bitField0_ & ~0x00000040);
@@ -1550,6 +1628,8 @@ public final class MessageFormats {
       }
       /**
        * <code>optional string writerUuid = 13;</code>
+       * @param value The bytes for writerUuid to set.
+       * @return This builder for chaining.
        */
       public Builder setWriterUuidBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -1620,28 +1700,34 @@ public final class MessageFormats {
 
     /**
      * <code>required int32 serializerId = 1;</code>
+     * @return Whether the serializerId field is set.
      */
     boolean hasSerializerId();
     /**
      * <code>required int32 serializerId = 1;</code>
+     * @return The serializerId.
      */
     int getSerializerId();
 
     /**
      * <code>required bytes payload = 2;</code>
+     * @return Whether the payload field is set.
      */
     boolean hasPayload();
     /**
      * <code>required bytes payload = 2;</code>
+     * @return The payload.
      */
     akka.protobufv3.internal.ByteString getPayload();
 
     /**
      * <code>optional bytes payloadManifest = 3;</code>
+     * @return Whether the payloadManifest field is set.
      */
     boolean hasPayloadManifest();
     /**
      * <code>optional bytes payloadManifest = 3;</code>
+     * @return The payloadManifest.
      */
     akka.protobufv3.internal.ByteString getPayloadManifest();
   }
@@ -1745,12 +1831,14 @@ public final class MessageFormats {
     private int serializerId_;
     /**
      * <code>required int32 serializerId = 1;</code>
+     * @return Whether the serializerId field is set.
      */
     public boolean hasSerializerId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int32 serializerId = 1;</code>
+     * @return The serializerId.
      */
     public int getSerializerId() {
       return serializerId_;
@@ -1760,12 +1848,14 @@ public final class MessageFormats {
     private akka.protobufv3.internal.ByteString payload_;
     /**
      * <code>required bytes payload = 2;</code>
+     * @return Whether the payload field is set.
      */
     public boolean hasPayload() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required bytes payload = 2;</code>
+     * @return The payload.
      */
     public akka.protobufv3.internal.ByteString getPayload() {
       return payload_;
@@ -1775,12 +1865,14 @@ public final class MessageFormats {
     private akka.protobufv3.internal.ByteString payloadManifest_;
     /**
      * <code>optional bytes payloadManifest = 3;</code>
+     * @return Whether the payloadManifest field is set.
      */
     public boolean hasPayloadManifest() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional bytes payloadManifest = 3;</code>
+     * @return The payloadManifest.
      */
     public akka.protobufv3.internal.ByteString getPayloadManifest() {
       return payloadManifest_;
@@ -2167,18 +2259,22 @@ public final class MessageFormats {
       private int serializerId_ ;
       /**
        * <code>required int32 serializerId = 1;</code>
+       * @return Whether the serializerId field is set.
        */
       public boolean hasSerializerId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int32 serializerId = 1;</code>
+       * @return The serializerId.
        */
       public int getSerializerId() {
         return serializerId_;
       }
       /**
        * <code>required int32 serializerId = 1;</code>
+       * @param value The serializerId to set.
+       * @return This builder for chaining.
        */
       public Builder setSerializerId(int value) {
         bitField0_ |= 0x00000001;
@@ -2188,6 +2284,7 @@ public final class MessageFormats {
       }
       /**
        * <code>required int32 serializerId = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearSerializerId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -2199,18 +2296,22 @@ public final class MessageFormats {
       private akka.protobufv3.internal.ByteString payload_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>required bytes payload = 2;</code>
+       * @return Whether the payload field is set.
        */
       public boolean hasPayload() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required bytes payload = 2;</code>
+       * @return The payload.
        */
       public akka.protobufv3.internal.ByteString getPayload() {
         return payload_;
       }
       /**
        * <code>required bytes payload = 2;</code>
+       * @param value The payload to set.
+       * @return This builder for chaining.
        */
       public Builder setPayload(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -2223,6 +2324,7 @@ public final class MessageFormats {
       }
       /**
        * <code>required bytes payload = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPayload() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -2234,18 +2336,22 @@ public final class MessageFormats {
       private akka.protobufv3.internal.ByteString payloadManifest_ = akka.protobufv3.internal.ByteString.EMPTY;
       /**
        * <code>optional bytes payloadManifest = 3;</code>
+       * @return Whether the payloadManifest field is set.
        */
       public boolean hasPayloadManifest() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional bytes payloadManifest = 3;</code>
+       * @return The payloadManifest.
        */
       public akka.protobufv3.internal.ByteString getPayloadManifest() {
         return payloadManifest_;
       }
       /**
        * <code>optional bytes payloadManifest = 3;</code>
+       * @param value The payloadManifest to set.
+       * @return This builder for chaining.
        */
       public Builder setPayloadManifest(akka.protobufv3.internal.ByteString value) {
         if (value == null) {
@@ -2258,6 +2364,7 @@ public final class MessageFormats {
       }
       /**
        * <code>optional bytes payloadManifest = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearPayloadManifest() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -3123,10 +3230,12 @@ public final class MessageFormats {
 
     /**
      * <code>required int64 currentDeliveryId = 1;</code>
+     * @return Whether the currentDeliveryId field is set.
      */
     boolean hasCurrentDeliveryId();
     /**
      * <code>required int64 currentDeliveryId = 1;</code>
+     * @return The currentDeliveryId.
      */
     long getCurrentDeliveryId();
 
@@ -3256,33 +3365,40 @@ public final class MessageFormats {
 
       /**
        * <code>required int64 deliveryId = 1;</code>
+       * @return Whether the deliveryId field is set.
        */
       boolean hasDeliveryId();
       /**
        * <code>required int64 deliveryId = 1;</code>
+       * @return The deliveryId.
        */
       long getDeliveryId();
 
       /**
        * <code>required string destination = 2;</code>
+       * @return Whether the destination field is set.
        */
       boolean hasDestination();
       /**
        * <code>required string destination = 2;</code>
+       * @return The destination.
        */
       java.lang.String getDestination();
       /**
        * <code>required string destination = 2;</code>
+       * @return The bytes for destination.
        */
       akka.protobufv3.internal.ByteString
           getDestinationBytes();
 
       /**
        * <code>required .PersistentPayload payload = 3;</code>
+       * @return Whether the payload field is set.
        */
       boolean hasPayload();
       /**
        * <code>required .PersistentPayload payload = 3;</code>
+       * @return The payload.
        */
       akka.persistence.serialization.MessageFormats.PersistentPayload getPayload();
       /**
@@ -3398,12 +3514,14 @@ public final class MessageFormats {
       private long deliveryId_;
       /**
        * <code>required int64 deliveryId = 1;</code>
+       * @return Whether the deliveryId field is set.
        */
       public boolean hasDeliveryId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int64 deliveryId = 1;</code>
+       * @return The deliveryId.
        */
       public long getDeliveryId() {
         return deliveryId_;
@@ -3413,12 +3531,14 @@ public final class MessageFormats {
       private volatile java.lang.Object destination_;
       /**
        * <code>required string destination = 2;</code>
+       * @return Whether the destination field is set.
        */
       public boolean hasDestination() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required string destination = 2;</code>
+       * @return The destination.
        */
       public java.lang.String getDestination() {
         java.lang.Object ref = destination_;
@@ -3436,6 +3556,7 @@ public final class MessageFormats {
       }
       /**
        * <code>required string destination = 2;</code>
+       * @return The bytes for destination.
        */
       public akka.protobufv3.internal.ByteString
           getDestinationBytes() {
@@ -3455,12 +3576,14 @@ public final class MessageFormats {
       private akka.persistence.serialization.MessageFormats.PersistentPayload payload_;
       /**
        * <code>required .PersistentPayload payload = 3;</code>
+       * @return Whether the payload field is set.
        */
       public boolean hasPayload() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>required .PersistentPayload payload = 3;</code>
+       * @return The payload.
        */
       public akka.persistence.serialization.MessageFormats.PersistentPayload getPayload() {
         return payload_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : payload_;
@@ -3878,18 +4001,22 @@ public final class MessageFormats {
         private long deliveryId_ ;
         /**
          * <code>required int64 deliveryId = 1;</code>
+         * @return Whether the deliveryId field is set.
          */
         public boolean hasDeliveryId() {
           return ((bitField0_ & 0x00000001) != 0);
         }
         /**
          * <code>required int64 deliveryId = 1;</code>
+         * @return The deliveryId.
          */
         public long getDeliveryId() {
           return deliveryId_;
         }
         /**
          * <code>required int64 deliveryId = 1;</code>
+         * @param value The deliveryId to set.
+         * @return This builder for chaining.
          */
         public Builder setDeliveryId(long value) {
           bitField0_ |= 0x00000001;
@@ -3899,6 +4026,7 @@ public final class MessageFormats {
         }
         /**
          * <code>required int64 deliveryId = 1;</code>
+         * @return This builder for chaining.
          */
         public Builder clearDeliveryId() {
           bitField0_ = (bitField0_ & ~0x00000001);
@@ -3910,12 +4038,14 @@ public final class MessageFormats {
         private java.lang.Object destination_ = "";
         /**
          * <code>required string destination = 2;</code>
+         * @return Whether the destination field is set.
          */
         public boolean hasDestination() {
           return ((bitField0_ & 0x00000002) != 0);
         }
         /**
          * <code>required string destination = 2;</code>
+         * @return The destination.
          */
         public java.lang.String getDestination() {
           java.lang.Object ref = destination_;
@@ -3933,6 +4063,7 @@ public final class MessageFormats {
         }
         /**
          * <code>required string destination = 2;</code>
+         * @return The bytes for destination.
          */
         public akka.protobufv3.internal.ByteString
             getDestinationBytes() {
@@ -3949,6 +4080,8 @@ public final class MessageFormats {
         }
         /**
          * <code>required string destination = 2;</code>
+         * @param value The destination to set.
+         * @return This builder for chaining.
          */
         public Builder setDestination(
             java.lang.String value) {
@@ -3962,6 +4095,7 @@ public final class MessageFormats {
         }
         /**
          * <code>required string destination = 2;</code>
+         * @return This builder for chaining.
          */
         public Builder clearDestination() {
           bitField0_ = (bitField0_ & ~0x00000002);
@@ -3971,6 +4105,8 @@ public final class MessageFormats {
         }
         /**
          * <code>required string destination = 2;</code>
+         * @param value The bytes for destination to set.
+         * @return This builder for chaining.
          */
         public Builder setDestinationBytes(
             akka.protobufv3.internal.ByteString value) {
@@ -3988,12 +4124,14 @@ public final class MessageFormats {
             akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> payloadBuilder_;
         /**
          * <code>required .PersistentPayload payload = 3;</code>
+         * @return Whether the payload field is set.
          */
         public boolean hasPayload() {
           return ((bitField0_ & 0x00000004) != 0);
         }
         /**
          * <code>required .PersistentPayload payload = 3;</code>
+         * @return The payload.
          */
         public akka.persistence.serialization.MessageFormats.PersistentPayload getPayload() {
           if (payloadBuilder_ == null) {
@@ -4158,12 +4296,14 @@ public final class MessageFormats {
     private long currentDeliveryId_;
     /**
      * <code>required int64 currentDeliveryId = 1;</code>
+     * @return Whether the currentDeliveryId field is set.
      */
     public boolean hasCurrentDeliveryId() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required int64 currentDeliveryId = 1;</code>
+     * @return The currentDeliveryId.
      */
     public long getCurrentDeliveryId() {
       return currentDeliveryId_;
@@ -4595,18 +4735,22 @@ public final class MessageFormats {
       private long currentDeliveryId_ ;
       /**
        * <code>required int64 currentDeliveryId = 1;</code>
+       * @return Whether the currentDeliveryId field is set.
        */
       public boolean hasCurrentDeliveryId() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required int64 currentDeliveryId = 1;</code>
+       * @return The currentDeliveryId.
        */
       public long getCurrentDeliveryId() {
         return currentDeliveryId_;
       }
       /**
        * <code>required int64 currentDeliveryId = 1;</code>
+       * @param value The currentDeliveryId to set.
+       * @return This builder for chaining.
        */
       public Builder setCurrentDeliveryId(long value) {
         bitField0_ |= 0x00000001;
@@ -4616,6 +4760,7 @@ public final class MessageFormats {
       }
       /**
        * <code>required int64 currentDeliveryId = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearCurrentDeliveryId() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -4922,14 +5067,17 @@ public final class MessageFormats {
 
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return Whether the stateIdentifier field is set.
      */
     boolean hasStateIdentifier();
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return The stateIdentifier.
      */
     java.lang.String getStateIdentifier();
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return The bytes for stateIdentifier.
      */
     akka.protobufv3.internal.ByteString
         getStateIdentifierBytes();
@@ -4940,6 +5088,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string timeout = 2;</code>
+     * @return Whether the timeout field is set.
      */
     boolean hasTimeout();
     /**
@@ -4948,6 +5097,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string timeout = 2;</code>
+     * @return The timeout.
      */
     java.lang.String getTimeout();
     /**
@@ -4956,16 +5106,19 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string timeout = 2;</code>
+     * @return The bytes for timeout.
      */
     akka.protobufv3.internal.ByteString
         getTimeoutBytes();
 
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
+     * @return Whether the timeoutNanos field is set.
      */
     boolean hasTimeoutNanos();
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
+     * @return The timeoutNanos.
      */
     long getTimeoutNanos();
   }
@@ -5071,12 +5224,14 @@ public final class MessageFormats {
     private volatile java.lang.Object stateIdentifier_;
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return Whether the stateIdentifier field is set.
      */
     public boolean hasStateIdentifier() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return The stateIdentifier.
      */
     public java.lang.String getStateIdentifier() {
       java.lang.Object ref = stateIdentifier_;
@@ -5094,6 +5249,7 @@ public final class MessageFormats {
     }
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return The bytes for stateIdentifier.
      */
     public akka.protobufv3.internal.ByteString
         getStateIdentifierBytes() {
@@ -5117,6 +5273,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string timeout = 2;</code>
+     * @return Whether the timeout field is set.
      */
     public boolean hasTimeout() {
       return ((bitField0_ & 0x00000002) != 0);
@@ -5127,6 +5284,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string timeout = 2;</code>
+     * @return The timeout.
      */
     public java.lang.String getTimeout() {
       java.lang.Object ref = timeout_;
@@ -5148,6 +5306,7 @@ public final class MessageFormats {
      * </pre>
      *
      * <code>optional string timeout = 2;</code>
+     * @return The bytes for timeout.
      */
     public akka.protobufv3.internal.ByteString
         getTimeoutBytes() {
@@ -5167,12 +5326,14 @@ public final class MessageFormats {
     private long timeoutNanos_;
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
+     * @return Whether the timeoutNanos field is set.
      */
     public boolean hasTimeoutNanos() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
+     * @return The timeoutNanos.
      */
     public long getTimeoutNanos() {
       return timeoutNanos_;
@@ -5555,12 +5716,14 @@ public final class MessageFormats {
       private java.lang.Object stateIdentifier_ = "";
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @return Whether the stateIdentifier field is set.
        */
       public boolean hasStateIdentifier() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @return The stateIdentifier.
        */
       public java.lang.String getStateIdentifier() {
         java.lang.Object ref = stateIdentifier_;
@@ -5578,6 +5741,7 @@ public final class MessageFormats {
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @return The bytes for stateIdentifier.
        */
       public akka.protobufv3.internal.ByteString
           getStateIdentifierBytes() {
@@ -5594,6 +5758,8 @@ public final class MessageFormats {
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @param value The stateIdentifier to set.
+       * @return This builder for chaining.
        */
       public Builder setStateIdentifier(
           java.lang.String value) {
@@ -5607,6 +5773,7 @@ public final class MessageFormats {
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearStateIdentifier() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -5616,6 +5783,8 @@ public final class MessageFormats {
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @param value The bytes for stateIdentifier to set.
+       * @return This builder for chaining.
        */
       public Builder setStateIdentifierBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -5635,6 +5804,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string timeout = 2;</code>
+       * @return Whether the timeout field is set.
        */
       public boolean hasTimeout() {
         return ((bitField0_ & 0x00000002) != 0);
@@ -5645,6 +5815,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string timeout = 2;</code>
+       * @return The timeout.
        */
       public java.lang.String getTimeout() {
         java.lang.Object ref = timeout_;
@@ -5666,6 +5837,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string timeout = 2;</code>
+       * @return The bytes for timeout.
        */
       public akka.protobufv3.internal.ByteString
           getTimeoutBytes() {
@@ -5686,6 +5858,8 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string timeout = 2;</code>
+       * @param value The timeout to set.
+       * @return This builder for chaining.
        */
       public Builder setTimeout(
           java.lang.String value) {
@@ -5703,6 +5877,7 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string timeout = 2;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTimeout() {
         bitField0_ = (bitField0_ & ~0x00000002);
@@ -5716,6 +5891,8 @@ public final class MessageFormats {
        * </pre>
        *
        * <code>optional string timeout = 2;</code>
+       * @param value The bytes for timeout to set.
+       * @return This builder for chaining.
        */
       public Builder setTimeoutBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -5731,18 +5908,22 @@ public final class MessageFormats {
       private long timeoutNanos_ ;
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
+       * @return Whether the timeoutNanos field is set.
        */
       public boolean hasTimeoutNanos() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
+       * @return The timeoutNanos.
        */
       public long getTimeoutNanos() {
         return timeoutNanos_;
       }
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
+       * @param value The timeoutNanos to set.
+       * @return This builder for chaining.
        */
       public Builder setTimeoutNanos(long value) {
         bitField0_ |= 0x00000004;
@@ -5752,6 +5933,7 @@ public final class MessageFormats {
       }
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTimeoutNanos() {
         bitField0_ = (bitField0_ & ~0x00000004);
@@ -5818,24 +6000,29 @@ public final class MessageFormats {
 
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return Whether the stateIdentifier field is set.
      */
     boolean hasStateIdentifier();
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return The stateIdentifier.
      */
     java.lang.String getStateIdentifier();
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return The bytes for stateIdentifier.
      */
     akka.protobufv3.internal.ByteString
         getStateIdentifierBytes();
 
     /**
      * <code>required .PersistentPayload data = 2;</code>
+     * @return Whether the data field is set.
      */
     boolean hasData();
     /**
      * <code>required .PersistentPayload data = 2;</code>
+     * @return The data.
      */
     akka.persistence.serialization.MessageFormats.PersistentPayload getData();
     /**
@@ -5845,10 +6032,12 @@ public final class MessageFormats {
 
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
+     * @return Whether the timeoutNanos field is set.
      */
     boolean hasTimeoutNanos();
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
+     * @return The timeoutNanos.
      */
     long getTimeoutNanos();
   }
@@ -5960,12 +6149,14 @@ public final class MessageFormats {
     private volatile java.lang.Object stateIdentifier_;
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return Whether the stateIdentifier field is set.
      */
     public boolean hasStateIdentifier() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return The stateIdentifier.
      */
     public java.lang.String getStateIdentifier() {
       java.lang.Object ref = stateIdentifier_;
@@ -5983,6 +6174,7 @@ public final class MessageFormats {
     }
     /**
      * <code>required string stateIdentifier = 1;</code>
+     * @return The bytes for stateIdentifier.
      */
     public akka.protobufv3.internal.ByteString
         getStateIdentifierBytes() {
@@ -6002,12 +6194,14 @@ public final class MessageFormats {
     private akka.persistence.serialization.MessageFormats.PersistentPayload data_;
     /**
      * <code>required .PersistentPayload data = 2;</code>
+     * @return Whether the data field is set.
      */
     public boolean hasData() {
       return ((bitField0_ & 0x00000002) != 0);
     }
     /**
      * <code>required .PersistentPayload data = 2;</code>
+     * @return The data.
      */
     public akka.persistence.serialization.MessageFormats.PersistentPayload getData() {
       return data_ == null ? akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance() : data_;
@@ -6023,12 +6217,14 @@ public final class MessageFormats {
     private long timeoutNanos_;
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
+     * @return Whether the timeoutNanos field is set.
      */
     public boolean hasTimeoutNanos() {
       return ((bitField0_ & 0x00000004) != 0);
     }
     /**
      * <code>optional int64 timeoutNanos = 3;</code>
+     * @return The timeoutNanos.
      */
     public long getTimeoutNanos() {
       return timeoutNanos_;
@@ -6433,12 +6629,14 @@ public final class MessageFormats {
       private java.lang.Object stateIdentifier_ = "";
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @return Whether the stateIdentifier field is set.
        */
       public boolean hasStateIdentifier() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @return The stateIdentifier.
        */
       public java.lang.String getStateIdentifier() {
         java.lang.Object ref = stateIdentifier_;
@@ -6456,6 +6654,7 @@ public final class MessageFormats {
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @return The bytes for stateIdentifier.
        */
       public akka.protobufv3.internal.ByteString
           getStateIdentifierBytes() {
@@ -6472,6 +6671,8 @@ public final class MessageFormats {
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @param value The stateIdentifier to set.
+       * @return This builder for chaining.
        */
       public Builder setStateIdentifier(
           java.lang.String value) {
@@ -6485,6 +6686,7 @@ public final class MessageFormats {
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @return This builder for chaining.
        */
       public Builder clearStateIdentifier() {
         bitField0_ = (bitField0_ & ~0x00000001);
@@ -6494,6 +6696,8 @@ public final class MessageFormats {
       }
       /**
        * <code>required string stateIdentifier = 1;</code>
+       * @param value The bytes for stateIdentifier to set.
+       * @return This builder for chaining.
        */
       public Builder setStateIdentifierBytes(
           akka.protobufv3.internal.ByteString value) {
@@ -6511,12 +6715,14 @@ public final class MessageFormats {
           akka.persistence.serialization.MessageFormats.PersistentPayload, akka.persistence.serialization.MessageFormats.PersistentPayload.Builder, akka.persistence.serialization.MessageFormats.PersistentPayloadOrBuilder> dataBuilder_;
       /**
        * <code>required .PersistentPayload data = 2;</code>
+       * @return Whether the data field is set.
        */
       public boolean hasData() {
         return ((bitField0_ & 0x00000002) != 0);
       }
       /**
        * <code>required .PersistentPayload data = 2;</code>
+       * @return The data.
        */
       public akka.persistence.serialization.MessageFormats.PersistentPayload getData() {
         if (dataBuilder_ == null) {
@@ -6627,18 +6833,22 @@ public final class MessageFormats {
       private long timeoutNanos_ ;
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
+       * @return Whether the timeoutNanos field is set.
        */
       public boolean hasTimeoutNanos() {
         return ((bitField0_ & 0x00000004) != 0);
       }
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
+       * @return The timeoutNanos.
        */
       public long getTimeoutNanos() {
         return timeoutNanos_;
       }
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
+       * @param value The timeoutNanos to set.
+       * @return This builder for chaining.
        */
       public Builder setTimeoutNanos(long value) {
         bitField0_ |= 0x00000004;
@@ -6648,6 +6858,7 @@ public final class MessageFormats {
       }
       /**
        * <code>optional int64 timeoutNanos = 3;</code>
+       * @return This builder for chaining.
        */
       public Builder clearTimeoutNanos() {
         bitField0_ = (bitField0_ & ~0x00000004);

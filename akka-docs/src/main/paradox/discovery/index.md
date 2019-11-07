@@ -31,15 +31,15 @@ See @ref:[Migration hints](#migrating-from-akka-management-discovery-before-1-0-
 
 @@@
 
-@@project-info{ projectId="akka-discovery" }
-
-## Dependency
+## Module info
 
 @@dependency[sbt,Gradle,Maven] {
   group="com.typesafe.akka"
   artifact="akka-discovery_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-discovery" }
 
 ## How it works
 

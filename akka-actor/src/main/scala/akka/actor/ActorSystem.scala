@@ -25,6 +25,7 @@ import scala.collection.immutable
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
+import scala.concurrent.blocking
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
 import scala.util.control.{ ControlThrowable, NonFatal }
 import scala.util.{ Failure, Success, Try }
@@ -1125,7 +1126,10 @@ private[akka] class ActorSystemImpl(
   @tailrec
   private def findExtension[T <: Extension](ext: ExtensionId[T]): T = extensions.get(ext) match {
     case c: CountDownLatch =>
-      c.await(); findExtension(ext) //Registration in process, await completion and retry
+      blocking {
+        c.await()
+      }
+      findExtension(ext) //Registration in process, await completion and retry
     case t: Throwable => throw t //Initialization failed, throw same again
     case other =>
       other.asInstanceOf[T] //could be a T or null, in which case we return the null as T

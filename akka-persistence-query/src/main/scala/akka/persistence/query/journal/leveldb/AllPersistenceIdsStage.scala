@@ -40,6 +40,8 @@ final private[akka] class AllPersistenceIdsStage(liveQuery: Boolean, writeJourna
       val journal: ActorRef = Persistence(eagerMaterializer.system).journalFor(writeJournalPluginId)
       var initialResponseReceived = false
 
+      override protected def logSource: Class[_] = classOf[AllPersistenceIdsStage]
+
       override def preStart(): Unit = {
         journal.tell(LeveldbJournal.SubscribeAllPersistenceIds, getStageActor(journalInteraction).ref)
       }

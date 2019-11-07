@@ -109,7 +109,7 @@ private[akka] object EventAdapters {
       case (map, (c, s)) => map.put(c, s); map
     }
 
-    new EventAdapters(backing, bindings, system.log)
+    new EventAdapters(backing, bindings, Logging(system, classOf[EventAdapters]))
   }
 
   def instantiateAdapter(adapterFQN: String, system: ExtendedActorSystem): Try[EventAdapter] = {

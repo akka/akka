@@ -8,7 +8,7 @@
             <fileNamePattern>myapp_%d{yyyy-MM-dd}.log</fileNamePattern>
         </rollingPolicy>
         <encoder>
-            <pattern>[%date{ISO8601}] [%-5level] [%logger] [%thread] [%X{akkaSource}] - %msg%n</pattern>
+            <pattern>[%date{ISO8601}] [%level] [%logger] [%thread] [%X{akkaSource}] - %msg%n</pattern>
         </encoder>
     </appender>
 

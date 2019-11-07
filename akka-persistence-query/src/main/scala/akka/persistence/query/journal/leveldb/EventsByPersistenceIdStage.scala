@@ -68,6 +68,8 @@ final private[akka] class EventsByPersistenceIdStage(
       var nextSequenceNr = fromSequenceNr
       var toSequenceNr = initialToSequenceNr
 
+      override protected def logSource: Class[_] = classOf[EventsByPersistenceIdStage]
+
       override def preStart(): Unit = {
         stageActorRef = getStageActor(journalInteraction).ref
         refreshInterval.foreach(fd => {
@@ -117,6 +119,7 @@ final private[akka] class EventsByPersistenceIdStage(
             if (highestSeqNr < toSequenceNr && isCurrentQuery()) {
               toSequenceNr = highestSeqNr
             }
+
             log.debug(
               "Replay complete. From sequenceNr {} currentSequenceNr {} toSequenceNr {} buffer size {}",
               fromSequenceNr,

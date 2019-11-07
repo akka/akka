@@ -103,7 +103,24 @@ Scala
 Java
 :   @@snip [DeviceGroupQuery.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/DeviceGroupQuery.java) { #query-state }
 
-For `RespondTemperature` and `DeviceTerminated` we keep track of the replies by updating `repliesSoFar` and remove the actor from `stillWaiting`, and then delegate to a method `respondWhenAllCollected`, which we will discuss soon.
+For `RespondTemperature` and `DeviceTerminated` we keep track of the replies by updating `repliesSoFar` and remove the actor from `stillWaiting`. For this, we can use the actor's identifier already present in the `DeviceTerminated` message. For our `RespondTemperature` message we will need to add this information as follows:
+
+Scala
+:   @@snip [DeviceGroupQuery.scala](/akka-docs/src/test/scala/typed/tutorial_5/Device.scala) { #respond-declare }
+
+Java
+:   @@snip [DeviceGroupQuery.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/Device.java) { #respond-declare }
+
+And:
+
+Scala
+:   @@snip [DeviceGroupQuery.scala](/akka-docs/src/test/scala/typed/tutorial_5/Device.scala) { #respond-reply }
+
+Java
+:   @@snip [DeviceGroupQuery.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/Device.java) { #respond-reply }
+
+
+After processing each message we delegate to a method `respondWhenAllCollected`, which we will discuss soon.
 
 In the case of timeout, we need to take all the actors that have not yet replied (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply.
 

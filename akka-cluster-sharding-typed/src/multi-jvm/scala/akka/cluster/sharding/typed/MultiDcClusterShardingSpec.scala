@@ -9,7 +9,7 @@ import akka.actor.typed.ActorRef
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
-import akka.cluster.typed.{ MultiDcClusterActors, MultiNodeTypedClusterSpec }
+import akka.cluster.typed.{ MultiDcPinger, MultiNodeTypedClusterSpec }
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.cluster.MultiNodeClusterSpec
@@ -54,9 +54,9 @@ abstract class MultiDcClusterShardingSpec
     with ScalaFutures {
 
   import MultiDcClusterShardingSpecConfig._
-  import MultiDcClusterActors._
+  import MultiDcPinger._
 
-  val typeKey = EntityTypeKey[PingProtocol]("ping")
+  val typeKey = EntityTypeKey[Command]("ping")
   val entityId = "ping-1"
 
   "Cluster sharding in multi dc cluster" must {
@@ -66,7 +66,7 @@ abstract class MultiDcClusterShardingSpec
 
     "init sharding" in {
       val sharding = ClusterSharding(typedSystem)
-      val shardRegion: ActorRef[ShardingEnvelope[PingProtocol]] = sharding.init(Entity(typeKey)(_ => multiDcPinger))
+      val shardRegion: ActorRef[ShardingEnvelope[Command]] = sharding.init(Entity(typeKey)(_ => MultiDcPinger()))
       val probe = TestProbe[Pong]
       shardRegion ! ShardingEnvelope(entityId, Ping(probe.ref))
       probe.expectMessage(max = 15.seconds, Pong(cluster.selfMember.dataCenter))
@@ -90,14 +90,45 @@ abstract class MultiDcClusterShardingSpec
     enterBarrier("ask")
   }
 
-  "be able to message cross dc via proxy" in {
+  "be able to message cross dc via proxy, defined with ClusterShardingSettings" in {
     runOn(first, second) {
-      val proxy: ActorRef[ShardingEnvelope[PingProtocol]] = ClusterSharding(typedSystem).init(
-        Entity(typeKey)(_ => multiDcPinger).withSettings(ClusterShardingSettings(typedSystem).withDataCenter("dc2")))
+      val proxy: ActorRef[ShardingEnvelope[Command]] = ClusterSharding(typedSystem).init(
+        Entity(typeKey)(_ => MultiDcPinger()).withSettings(ClusterShardingSettings(typedSystem).withDataCenter("dc2")))
       val probe = TestProbe[Pong]
       proxy ! ShardingEnvelope(entityId, Ping(probe.ref))
       probe.expectMessage(remainingOrDefault, Pong("dc2"))
     }
-    enterBarrier("done")
+    enterBarrier("cross-dc-1")
+  }
+
+  "be able to message cross dc via proxy, defined with Entity" in {
+    runOn(first, second) {
+      val system = typedSystem
+      //#proxy-dc
+      val proxy: ActorRef[ShardingEnvelope[Command]] =
+        ClusterSharding(system).init(Entity(typeKey)(_ => MultiDcPinger()).withDataCenter("dc2"))
+      //#proxy-dc
+      val probe = TestProbe[Pong]
+      proxy ! ShardingEnvelope(entityId, Ping(probe.ref))
+      probe.expectMessage(remainingOrDefault, Pong("dc2"))
+    }
+    enterBarrier("cross-dc-2")
+  }
+
+  "be able to message cross dc via proxy, defined with EntityRef" in {
+    runOn(first, second) {
+      val system = typedSystem
+      //#proxy-dc-entityref
+      // it must still be started before usage
+      ClusterSharding(system).init(Entity(typeKey)(_ => MultiDcPinger()).withDataCenter("dc2"))
+
+      val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId, "dc2")
+      //#proxy-dc-entityref
+
+      val probe = TestProbe[Pong]
+      entityRef ! Ping(probe.ref)
+      probe.expectMessage(remainingOrDefault, Pong("dc2"))
+    }
+    enterBarrier("cross-dc-3")
   }
 }

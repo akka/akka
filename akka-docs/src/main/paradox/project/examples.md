@@ -1,0 +1,81 @@
+# Example projects
+
+The following example projects can be downloaded. They contain build files and have instructions
+of how to run.
+
+## Quickstart
+
+@scala[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala)]
+@java[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-java)]
+ 
+The *Quickstart* guide walks you through example code that introduces how to define actor systems, actors, and
+messages as well as how to use the test module and logging.
+
+## FSM
+
+@java[@extref[FSM example project](samples:akka-sample-fsm-java)]
+@scala[@extref[FSM example project](samples:akka-sample-fsm-scala)]
+
+This project contains a Dining Hakkers sample illustrating how to model a Finite State Machine (FSM) with actors.
+
+## Cluster
+
+@java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
+@scala[@extref[Cluster example project](samples:akka-samples-cluster-scala)]
+
+This project contains samples illustrating different Cluster features, such as
+subscribing to cluster membership events, and sending messages to actors running on nodes in the cluster
+with Cluster aware routers.
+
+It also includes Multi JVM Testing with the `sbt-multi-jvm` plugin.
+
+## Distributed Data
+
+@java[@extref[Distributed Data example project](samples:akka-sample-distributed-data-java)]
+@scala[@extref[Distributed Data example project](samples:akka-sample-distributed-data-scala)]
+
+This project contains several samples illustrating how to use Distributed Data.
+
+## Cluster Sharding
+
+@java[@extref[Sharding example project](samples:akka-sample-sharding-java)]
+@scala[@extref[Sharding example project](samples:akka-sample-sharding-scala)]
+
+This project contains a KillrWeather sample illustrating how to use Cluster Sharding.
+
+## Persistence
+
+@java[@extref[Persistence example project](samples:akka-sample-persistence-java)]
+@scala[@extref[Persistence example project](samples:akka-sample-persistence-scala)]
+
+This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
+
+## CQRS
+
+@java[@extref[CQRS example project](samples:akka-sample-cqrs-java)]
+@scala[@extref[CQRS example project](samples:akka-sample-cqrs-scala)]
+
+This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
+The events are tagged to be consumed by even processors to build other representations
+from the events, or publish the events to other services.
+
+## Multi-DC Persistence
+
+@java[@extref[Multi-DC Persistence example project](samples:akka-sample-persistence-dc-java)]
+@scala[@extref[Multi-DC Persistence example project](samples:akka-sample-persistence-dc-scala)]
+
+Illustrates how to use Lightbend's [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
+with active-active persistent entities across data centers.
+
+## Cluster with Docker
+
+@java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
+@scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
+
+Illustrates how to use Akka Cluster with Docker compose.
+
+## Cluster with Kubernetes
+
+@extref[Cluster with Kubernetes example project](samples:akka-sample-cluster-kubernetes-java)
+
+This sample illustrates how to form an Akka Cluster with Akka Bootstrap when running in Kubernetes.

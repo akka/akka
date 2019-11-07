@@ -41,7 +41,7 @@ class MaterializerStateSpec extends StreamSpec {
 
     "snapshot a running stream on the default dispatcher" in {
       val promise = Promise[Int]()
-      Source.fromFuture(promise.future).map(_.toString).zipWithIndex.runWith(Sink.seq)
+      Source.future(promise.future).map(_.toString).zipWithIndex.runWith(Sink.seq)
 
       awaitAssert({
         val snapshot = MaterializerState.streamSnapshots(system).futureValue

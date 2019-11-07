@@ -12,9 +12,8 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 25
-  // No 2.6 has been released yet. Update to '0' after releasing 2.6.0
-  private val latestPatchOf26 = -1
+  private val latestPatchOf25 = 26
+  private val latestPatchOf26 = 0
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
@@ -33,8 +32,8 @@ object MiMa extends AutoPlugin {
         else if (projectName.contains("discovery")) 19
         else if (projectName.contains("coordination")) 22
         else 0
-    
-      if (!projectName.contains("typed")) {
+
+      if (!(projectName.contains("typed") || projectName.contains("jackson"))) {
         // 2.5.18 is the only release built with Scala 2.12.7, which due to
         // https://github.com/scala/bug/issues/11207 produced many more
         // static methods than expected. These are hard to filter out, so
@@ -46,7 +45,6 @@ object MiMa extends AutoPlugin {
     }
 
     val akka25PromotedArtifacts = Set("akka-distributed-data")
-    val akkaTypedModules = Set("akka-actor-typed")
 
     // check against all binary compatible artifacts
     versions.map { v =>

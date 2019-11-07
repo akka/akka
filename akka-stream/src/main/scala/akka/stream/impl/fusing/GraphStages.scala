@@ -335,6 +335,11 @@ import scala.concurrent.{ Future, Promise }
         override def onUpstreamFinish(): Unit =
           completeStage()
 
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          sinkIn.cancel(cause)
+          super.onDownstreamFinish(cause)
+        }
+
         override def postStop(): Unit =
           if (!sinkIn.isClosed) sinkIn.cancel()
 
@@ -376,11 +381,13 @@ import scala.concurrent.{ Future, Promise }
     override def createLogic(attr: Attributes) =
       new GraphStageLogic(shape) with OutHandler {
         def onPull(): Unit = {
-          if (future.isCompleted) {
-            onFutureCompleted(future.value.get)
-          } else {
-            val cb = getAsyncCallback[Try[T]](onFutureCompleted).invoke _
-            future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+          future.value match {
+            case Some(completed) =>
+              // optimization if the future is already completed
+              onFutureCompleted(completed)
+            case None =>
+              val cb = getAsyncCallback[Try[T]](onFutureCompleted).invoke _
+              future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
           }
 
           def onFutureCompleted(result: Try[T]): Unit = {

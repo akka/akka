@@ -6,8 +6,9 @@ package docs.akka.cluster.typed
 
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, SupervisorStrategy }
 import akka.actor.typed.scaladsl.Behaviors
-
 import scala.concurrent.duration._
+
+import akka.cluster.typed.ClusterSingletonSettings
 
 object SingletonCompileOnlySpec {
 
@@ -64,4 +65,9 @@ object SingletonCompileOnlySpec {
         .onFailure[Exception](SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.2)),
       "GlobalCounter"))
   //#backoff
+
+  //#create-singleton-proxy-dc
+  val singletonProxy: ActorRef[Counter.Command] = ClusterSingleton(system).init(
+    SingletonActor(Counter(), "GlobalCounter").withSettings(ClusterSingletonSettings(system).withDataCenter("dc2")))
+  //#create-singleton-proxy-dc
 }
