@@ -214,8 +214,8 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
     }
 
     def verifyConsistentHashing(logic: ConsistentHashingLogic[Int]): Boolean = {
-      messages.mapValues(_.map(logic.selectRoutee)).forall {
-        case (_, refs) => refs.headOption.forall(head => refs.forall(_ == head))
+      messages.view.map(_._2.map(logic.selectRoutee)).forall {
+        refs => refs.headOption.forall(head => refs.forall(_ == head))
       }
     }
 
