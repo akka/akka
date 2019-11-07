@@ -262,6 +262,8 @@ private[akka] class RemoteActorRefProvider(
     remoteDeploymentWatcher = createOrNone[ActorRef](createRemoteDeploymentWatcher(system))
   }
 
+  override def address: OptionVal[Address] = OptionVal.Some(_internals.transport.defaultAddress)
+
   private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {
     // TODO change link to current once 2.6 is out
     checkClassOrThrow(

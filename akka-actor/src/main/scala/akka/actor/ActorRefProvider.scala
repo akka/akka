@@ -29,6 +29,8 @@ import akka.util.OptionVal
  */
 @DoNotInherit trait ActorRefProvider {
 
+  def address: OptionVal[Address] = OptionVal.None
+
   /**
    * Reference to the supervisor of guardian and systemGuardian; this is
    * exposed so that the ActorSystemImpl can use it as lookupRoot, i.e.
