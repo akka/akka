@@ -27,7 +27,7 @@ stopped automatically when the `ActorSystem` is shut down.
 
 @@@ note
 An `ActorSystem` is a heavyweight structure that will allocate threads,
-so create one per logical application. Typically on `ActorSystem` per JVM process.
+so create one per logical application. Typically one `ActorSystem` per JVM process.
 @@@
 
 ## Creating Actors
