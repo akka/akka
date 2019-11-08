@@ -755,8 +755,9 @@ sealed abstract class ByteString
   protected[ByteString] def toArray: Array[Byte] = toArray[Byte]
 
   override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = iterator.toArray
-  // override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Unit =
-  //   iterator.copyToArray(xs, start, len)
+
+  override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int =
+    iterator.copyToArray(xs, start, len)
 
   override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 

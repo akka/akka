@@ -15,13 +15,6 @@ To use Cluster Sharding, you must add the following dependency in your project:
 
 @@project-info{ projectId="akka-cluster-sharding" }
 
-## Sample project
-
-You can look at the
-@java[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-java)]
-@scala[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-scala)]
-to see what this looks like in practice.
-
 ## Introduction
 
 For an introduction to Sharding concepts see @ref:[Cluster Sharding](typed/cluster-sharding.md).
@@ -102,14 +95,6 @@ Scala
 
 Java
 :  @@snip [ClusterShardingTest.java](/akka-docs/src/test/java/jdocs/sharding/ClusterShardingTest.java) { #counter-usage }
-
-@@@ div { .group-scala }
-
-A more comprehensive sample is available in the
-@java[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-java)]
-@scala[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-scala)].
-
-@@@
 
 ## How it works
 

@@ -35,10 +35,10 @@ Scala
 Java
 :  @@snip [ExtensionDocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/extensions/ExtensionDocTest.java) { #extension }
 
-This is the public API of your extension. Internally in this example we instantiate our expensive database connection.
-The `DatabaseConnectionPool` can be looked up this way any number of times and it will return the same instance. 
+This is the public API of your extension. Internally in this example we instantiate our expensive database connection. 
 
 Then create an @apidoc[akka.actor.typed.ExtensionId] to identify the extension.
+@scala[A good convention is to let the companion object of the `Extension` be the `ExtensionId`.]@java[A good convention is to define the `ExtensionId` as a static inner class of the `Extension`.]
 
 Scala
 :  @@snip [ExtensionDocSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/extensions/ExtensionDocSpec.scala) { #extension-id }
@@ -54,6 +54,8 @@ Scala
 Java
 :  @@snip [ExtensionDocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/extensions/ExtensionDocTest.java) { #usage  }
 
+The `DatabaseConnectionPool` can be looked up in this way any number of times and it will return the same instance.
+
 <a id="loading"></a>
 ## Loading from configuration
 
@@ -66,7 +68,7 @@ Scala
 Java
 :   ```ruby
    akka.actor.typed {
-     extensions = ["jdocs.akka.extensions.ExtensionDocTest$DatabaseConnectionPoolId"]
+     extensions = ["jdocs.akka.extensions.ExtensionDocTest$DatabaseConnectionPool$Id"]
    }
    ```
      
