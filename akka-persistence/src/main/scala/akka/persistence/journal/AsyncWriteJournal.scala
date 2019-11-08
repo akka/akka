@@ -5,17 +5,16 @@
 package akka.persistence.journal
 
 import scala.concurrent.duration._
-
 import akka.actor._
 import akka.pattern.pipe
 import akka.persistence._
 import akka.util.Helpers.toRootLowerCase
+
 import scala.collection.immutable
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.NonFatal
-
 import akka.pattern.CircuitBreaker
 
 /**
@@ -144,13 +143,12 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           else persistentActor
 
         val readHighestSequenceNrFrom = math.max(0L, fromSequenceNr - 1)
-        /*
-         * The API docs for the [[AsyncRecovery]] say not to rely on asyncReadHighestSequenceNr
-         * being called before a call to asyncReplayMessages even tho it currently always is. The Cassandra
-         * plugin does rely on this so if you change this change the Cassandra plugin.
-         */
+        val initialization = for {
+          _ <- asyncPersistentActorStarting(persistenceId, persistentActor)
+          seqNr <- asyncReadHighestSequenceNr(persistenceId, readHighestSequenceNrFrom)
+        } yield seqNr
         breaker
-          .withCircuitBreaker(asyncReadHighestSequenceNr(persistenceId, readHighestSequenceNrFrom))
+          .withCircuitBreaker(initialization)
           .flatMap { highSeqNr =>
             val toSeqNr = math.min(toSequenceNr, highSeqNr)
             if (toSeqNr <= 0L || fromSequenceNr > toSeqNr)

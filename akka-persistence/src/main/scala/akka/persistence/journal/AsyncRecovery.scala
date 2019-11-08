@@ -4,15 +4,30 @@
 
 package akka.persistence.journal
 
-import scala.concurrent.Future
+import akka.Done
+import akka.actor.ActorRef
 
+import scala.concurrent.Future
 import akka.persistence.PersistentRepr
+import com.github.ghik.silencer.silent
 
 /**
  * Asynchronous message replay and sequence number recovery interface.
  */
 trait AsyncRecovery {
   //#journal-plugin-api
+  /**
+   * Plugin API: optional API to be notified that a persistent actor is starting. Recovery
+   * of the actor won't start until the returned future has completed.
+   *
+   * @param persistenceId persistent actor id
+   * @param ref persistent actor ref
+   *
+   * This call is protected with a circuit-breaker.
+   */
+  @silent("never used")
+  def asyncPersistentActorStarting(persistenceId: String, ref: ActorRef): Future[Done] = Future.successful(Done)
+
   /**
    * Plugin API: asynchronously replays persistent messages. Implementations replay
    * a message by calling `replayCallback`. The returned future must be completed
