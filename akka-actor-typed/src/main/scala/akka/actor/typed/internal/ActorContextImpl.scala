@@ -17,12 +17,9 @@ import scala.reflect.ClassTag
 import scala.util.Try
 
 import akka.annotation.InternalApi
-<<<<<<< HEAD
 import akka.dispatch.ExecutionContexts
-import akka.util.{ BoxedType, OptionVal, Timeout }
-=======
+import akka.util.{ BoxedType, Timeout }
 import akka.util.Timeout
->>>>>>> Include host and port in akkaSource if clustered or remote #28073
 import akka.util.JavaDurationConverters._
 import akka.util.OptionVal
 import com.github.ghik.silencer.silent
@@ -35,7 +32,7 @@ import org.slf4j.LoggerFactory
 @InternalApi private[akka] object ActorContextImpl {
 
   // single context for logging as there are a few things that are initialized
-  // together
+  // together that we can cache as long as the actor is alive
   object LoggingContext {
     def apply(logger: Logger, tags: Set[String], ctx: ActorContextImpl[_]): LoggingContext = {
       val tagsString =
@@ -45,24 +42,31 @@ import org.slf4j.LoggerFactory
           // mdc can only contain string values, and we don't want to render that string
           // on each log entry or message, so do that up front here
           tags.mkString(",")
-      val akkaSource = {
-        ctx.system.asInstanceOf[ActorSystemAdapter[_]].provider.address match {
-          case OptionVal.Some(address) => ctx.self.path.toStringWithAddress(address)
-          case OptionVal.None          => ctx.self.path.toString
-        }
-      }
 
-      new LoggingContext(logger, tagsString, akkaSource, hasCustomName = false)
+      val akkaSource = ctx.self.path.toStringWithoutAddress
+
+      val akkaSystem =
+        ctx.system match {
+          case adapter: ActorSystemAdapter[_] => adapter.provider.akkaSystem
+          case _                              => ctx.system.name
+        }
+
+      new LoggingContext(logger, tagsString, akkaSource, akkaSystem, hasCustomName = false)
     }
   }
 
-  final class LoggingContext(val logger: Logger, val tagsString: String, val akkaSource: String, val hasCustomName: Boolean) {
+  final case class LoggingContext(
+      logger: Logger,
+      tagsString: String,
+      akkaSource: String,
+      sourceActorSystem: String,
+      hasCustomName: Boolean) {
     // toggled once per message if logging is used to avoid having to
     // touch the mdc thread local for cleanup in the end
     var mdcUsed = false
 
     def withLogger(logger: Logger): LoggingContext = {
-      val l = new LoggingContext(logger, tagsString, akkaSource, hasCustomName = true)
+      val l = new LoggingContext(logger, tagsString, akkaSource, sourceActorSystem, hasCustomName = true)
       l.mdcUsed = mdcUsed
       l
     }
@@ -147,7 +151,7 @@ import org.slf4j.LoggerFactory
     val logging = loggingContext()
     // avoid access to MDC ThreadLocal if not needed, see details in LoggingContext
     logging.mdcUsed = true
-    ActorMdc.setMdc(logging.akkaSource, logging.tagsString)
+    ActorMdc.setMdc(logging.akkaSource, logging.tagsString, logging.sourceActorSystem)
     logging.logger
   }
 

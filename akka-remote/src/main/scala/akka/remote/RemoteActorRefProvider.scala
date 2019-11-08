@@ -246,7 +246,6 @@ private[akka] class RemoteActorRefProvider(
         case ArterySettings.Tcp      => new ArteryTcpTransport(system, this, tlsEnabled = false)
         case ArterySettings.TlsTcp   => new ArteryTcpTransport(system, this, tlsEnabled = true)
       } else new Remoting(system, this))
-
     _internals = internals
     remotingTerminator ! internals
 
@@ -257,12 +256,34 @@ private[akka] class RemoteActorRefProvider(
 
     // this enables reception of remote requests
     transport.start()
+    _akkaSystem = {
+      val address = transport.defaultAddress
+      // the None cases shouldn't be possible
+      val text = address.host match {
+        case Some(host) =>
+          address.port match {
+            case Some(port) => s"${systemName}@${host}:${port}"
+            case None       => s"${systemName}@${host}"
+          }
+        case None => systemName
+      }
+
+      OptionVal.Some(text)
+    }
 
     _remoteWatcher = createOrNone[ActorRef](createRemoteWatcher(system))
     remoteDeploymentWatcher = createOrNone[ActorRef](createRemoteDeploymentWatcher(system))
   }
 
-  override def address: OptionVal[Address] = OptionVal.Some(_internals.transport.defaultAddress)
+  // lazily initialized with fallback since it depends on transport which is not initialized up front
+  // worth caching since if it is used once in a system it will very likely be used many times
+  @volatile private var _akkaSystem: OptionVal[String] = OptionVal.None
+  override private[akka] def akkaSystem: String = {
+    _akkaSystem match {
+      case OptionVal.Some(text) => text
+      case OptionVal.None       => systemName
+    }
+  }
 
   private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {
     // TODO change link to current once 2.6 is out

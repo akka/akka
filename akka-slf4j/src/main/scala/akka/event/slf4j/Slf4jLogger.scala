@@ -138,7 +138,13 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
   protected def formatTimestamp(timestamp: Long): String =
     Helpers.currentTimeMillisToUTCString(timestamp)
 
-  private val actorSystemName = context.system.name
+  private val actorSystemName = context.system match {
+    case ex: ExtendedActorSystem =>
+      ex.provider.akkaSystem
+    case _ =>
+      context.system.name
+  }
+
 }
 
 /**

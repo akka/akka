@@ -29,8 +29,6 @@ import akka.util.OptionVal
  */
 @DoNotInherit trait ActorRefProvider {
 
-  def address: OptionVal[Address] = OptionVal.None
-
   /**
    * Reference to the supervisor of guardian and systemGuardian; this is
    * exposed so that the ActorSystemImpl can use it as lookupRoot, i.e.
@@ -155,6 +153,13 @@ import akka.util.OptionVal
 
   /** INTERNAL API */
   @InternalApi private[akka] def serializationInformation: Serialization.Information
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def akkaSystem: String
+
 }
 
 /**
@@ -731,4 +736,6 @@ private[akka] class LocalActorRefProvider private[akka] (
         }
     }
   }
+
+  override private[akka] def akkaSystem: String = _systemName
 }

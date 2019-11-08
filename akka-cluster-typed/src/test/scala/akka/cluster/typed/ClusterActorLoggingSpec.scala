@@ -30,9 +30,9 @@ class ClusterActorLoggingSpec
 
   "Logging from an actor in a cluster" must {
 
-    "include host and port in akkaSource mdc entry" in {
+    "include host and port in sourceActorSystem mdc entry" in {
 
-      val port = system.classicSystem.asInstanceOf[ExtendedActorSystem].provider.address.get.port.get
+      def akkaSystem = system.classicSystem.asInstanceOf[ExtendedActorSystem].provider.akkaSystem
 
       val behavior =
         Behaviors.setup[String] { context =>
@@ -43,7 +43,7 @@ class ClusterActorLoggingSpec
       LoggingTestKit
         .info("Starting")
         .withCustom { event =>
-          event.mdc("akkaSource").contains(s"127.0.0.1:$port")
+          event.mdc("sourceActorSystem") == akkaSystem
         }
         .intercept {
           spawn(behavior)
