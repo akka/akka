@@ -256,20 +256,7 @@ private[akka] class RemoteActorRefProvider(
 
     // this enables reception of remote requests
     transport.start()
-    _akkaSystem = {
-      val address = transport.defaultAddress
-      // the None cases shouldn't be possible
-      val text = address.host match {
-        case Some(host) =>
-          address.port match {
-            case Some(port) => s"${systemName}@${host}:${port}"
-            case None       => s"${systemName}@${host}"
-          }
-        case None => systemName
-      }
-
-      OptionVal.Some(text)
-    }
+    _akkaSystem = OptionVal.Some(transport.defaultAddress.toString)
 
     _remoteWatcher = createOrNone[ActorRef](createRemoteWatcher(system))
     remoteDeploymentWatcher = createOrNone[ActorRef](createRemoteDeploymentWatcher(system))
