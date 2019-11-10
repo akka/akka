@@ -3,10 +3,11 @@
  */
 
 package akka.actor.typed.internal.routing
+import java.nio.charset.StandardCharsets
+
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic
-import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic.ConsistentHashMapping
-import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.{ Behaviors, TypedSerializer }
 import akka.actor.typed.{ ActorSystem, Behavior }
 import org.scalatest.{ Matchers, WordSpecLike }
 
@@ -142,28 +143,25 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
 
   "The consistent hashing logic" must {
     val behavior: Behavior[Int] = Behaviors.empty[Int]
-    val typedSystem: ActorSystem[Int] = ActorSystem(behavior, "emptySystem")
-    val modulo10Mapping: ConsistentHashMapping[Int] = { case in: Int => (in % 10).toString }
-    val messages: Map[Any, Seq[Int]] = (1 to 1000).groupBy(modulo10Mapping)
+    val typedSystem: ActorSystem[Int] = ActorSystem(behavior, "testSystem")
+    val modulo10Mapping: TypedSerializer[Int] = (in: Int) => (in % 10).toString.getBytes(StandardCharsets.UTF_8)
+    val messages: Map[Any, Seq[Int]] = (1 to 1000).groupBy(modulo10Mapping.apply)
 
     "not accept virtualization factor lesser than 1" in {
       val caught = intercept[IllegalArgumentException] {
-        new RoutingLogics.ConsistentHashingLogic[Int](0, ConsistentHashingLogic.emptyHashMapping, typedSystem)
+        new RoutingLogics.ConsistentHashingLogic[Int](0, modulo10Mapping)
       }
-      caught.getMessage shouldEqual "virtualNodesFactor must be >= 1"
+      caught.getMessage shouldEqual "requirement failed: virtualNodesFactor has to be a positive integer"
     }
 
-    "not accept null actor system" in {
-      val caught = intercept[IllegalArgumentException] {
-        new RoutingLogics.ConsistentHashingLogic[String](2, ConsistentHashingLogic.emptyHashMapping, null)
-      }
-      caught.getMessage shouldEqual "requirement failed: system argument of ConsistentHashingLogic cannot be null."
-    }
-
-    "return deadLetters when there are no routees" in {
+    "throw an error when there are no routees" in {
       val logic =
-        new RoutingLogics.ConsistentHashingLogic[Int](1, modulo10Mapping, typedSystem)
-      logic.selectRoutee(0) shouldBe typedSystem.deadLetters
+        new RoutingLogics.ConsistentHashingLogic[Int](1, modulo10Mapping)
+      val caught = intercept[IllegalStateException] {
+        logic.selectRoutee(0) shouldBe typedSystem.deadLetters
+      }
+      (caught.getMessage should fullyMatch).regex("""Can't get node for \[.+\] from an empty node ring""")
+
     }
 
     "hash consistently" in {
@@ -176,7 +174,7 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
 
     "hash consistently when several new added" in {
       val logic =
-        new RoutingLogics.ConsistentHashingLogic[Int](2, modulo10Mapping, typedSystem)
+        new RoutingLogics.ConsistentHashingLogic[Int](2, modulo10Mapping)
       val refA = TestProbe("a").ref
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
@@ -190,7 +188,7 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
 
     "hash consistently when several new removed" in {
       val logic =
-        new RoutingLogics.ConsistentHashingLogic[Int](2, modulo10Mapping, typedSystem)
+        new RoutingLogics.ConsistentHashingLogic[Int](2, modulo10Mapping)
       val refA = TestProbe("a").ref
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
@@ -204,7 +202,7 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
 
     def consitentHashingTestWithVirtualizationFactor(virtualizationFactor: Int): Boolean = {
       val logic =
-        new RoutingLogics.ConsistentHashingLogic[Int](virtualizationFactor, modulo10Mapping, typedSystem)
+        new RoutingLogics.ConsistentHashingLogic[Int](virtualizationFactor, modulo10Mapping)
       val refA = TestProbe("a").ref
       val refB = TestProbe("b").ref
       val refC = TestProbe("c").ref
@@ -214,8 +212,8 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
     }
 
     def verifyConsistentHashing(logic: ConsistentHashingLogic[Int]): Boolean = {
-      messages.view.map(_._2.map(logic.selectRoutee)).forall {
-        refs => refs.headOption.forall(head => refs.forall(_ == head))
+      messages.view.map(_._2.map(logic.selectRoutee)).forall { refs =>
+        refs.headOption.forall(head => refs.forall(_ == head))
       }
     }
 

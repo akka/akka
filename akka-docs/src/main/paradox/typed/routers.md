@@ -83,6 +83,12 @@ of routees stays relatively stable, but may be unfair if the set of routees chan
 
 This is the default for pool routers as the pool of routees is expected to remain the same.
 
+### Random
+
+Randomly selects a routee when a message is sent through the router.
+
+This is the default for group routers as the group of routees is expected to change as nodes join and leave the cluster.
+
 ### Consistent Hashing
  
 Uses [consistent hashing](http://en.wikipedia.org/wiki/Consistent_hashing) to select a routee based
@@ -92,11 +98,13 @@ gives good insight into how consistent hashing is implemented.
 Currently you have to define hashMapping of the router to map incoming messages to their consistent
 hash key. This makes the decision transparent for the sender.
 
-### Random
+Example of good hashing function:
 
-Randomly selects a routee when a message is sent through the router.
+Scala
+:  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #hashing-any }
 
-This is the default for group routers as the group of routees is expected to change as nodes join and leave the cluster.
+Java
+:  @@snip [RouterTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/RouterTest.java) { #hashing-any } 
 
 ## Routers and performance
 
