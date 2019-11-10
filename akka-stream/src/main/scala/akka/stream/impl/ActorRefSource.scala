@@ -52,6 +52,7 @@ private object ActorRefSource {
       override protected def stageActorName: String =
         inheritedAttributes.get[Attributes.Name].map(_.n).getOrElse(super.stageActorName)
 
+      private val name = inheritedAttributes.nameOrDefault(getClass.toString)
       override val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {
         case (_, PoisonPill) =>
           log.warning(
@@ -71,17 +72,18 @@ private object ActorRefSource {
           buffer match {
             case OptionVal.None =>
               if (isCompleting) {
-                log.warning("Dropping element because Status.Success received already: [{}]", m)
+                log.warning("[{}] Dropping element because Status.Success received already: [{}]", name, m)
               } else if (isAvailable(out)) {
                 push(out, m)
               } else {
-                log.debug("Dropping element because there is no downstream demand and no buffer: [{}]", m)
+                log.debug("[{}] Dropping element because there is no downstream demand and no buffer: [{}]", name, m)
               }
 
             case OptionVal.Some(buf) =>
               if (isCompleting) {
                 log.warning(
-                  "Dropping element because Status.Success received already, only draining already buffered elements: [{}] (pending: [{}])",
+                  "[{}] Dropping element because Status.Success received already, only draining already buffered elements: [{}] (pending: [{}])",
+                  name,
                   m,
                   buf.used)
               } else if (!buf.isFull) {
@@ -92,30 +94,30 @@ private object ActorRefSource {
                   case s: DropHead =>
                     log.log(
                       s.logLevel,
-                      "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
+                      "[{}] Dropping the head element because buffer is full and overflowStrategy is: [DropHead]", name)
                     buf.dropHead()
                     buf.enqueue(m)
                     tryPush()
                   case s: DropTail =>
                     log.log(
                       s.logLevel,
-                      "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
+                      "[{}] Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]", name)
                     buf.dropTail()
                     buf.enqueue(m)
                     tryPush()
                   case s: DropBuffer =>
                     log.log(
                       s.logLevel,
-                      "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
+                      "[{}] Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]", name)
                     buf.clear()
                     buf.enqueue(m)
                     tryPush()
                   case s: DropNew =>
                     log.log(
                       s.logLevel,
-                      "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
+                      "[{}] Dropping the new element because buffer is full and overflowStrategy is: [DropNew]", name)
                   case s: Fail =>
-                    log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
+                    log.log(s.logLevel, "[{}] Failing because buffer is full and overflowStrategy is: [Fail]", name)
                     val bufferOverflowException =
                       BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
                     failStage(bufferOverflowException)
