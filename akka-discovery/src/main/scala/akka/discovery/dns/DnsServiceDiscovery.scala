@@ -31,8 +31,6 @@ import akka.pattern.AskTimeoutException
 import akka.util.OptionVal
 import akka.util.Timeout
 
-import scala.util.Try
-
 /**
  * INTERNAL API
  */
@@ -130,7 +128,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
             log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
             Resolved(srvRequest, Nil)
         }
-        .transform(convertToTimeout)
+        .recoverWith(convertToTimeout)
     }
 
     asyncDnsCache match {
@@ -148,10 +146,9 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
     }
   }
 
-  private def convertToTimeout(in: Try[Resolved]): Try[Resolved] = in match {
-    case s @ Success(_)                  => s
-    case Failure(_: AskTimeoutException) => Failure(new DiscoveryTimeoutException())
-    case f @ Failure(_)                  => f
+  private val convertToTimeout: PartialFunction[Throwable, Future[Resolved]] = {
+    case _: AskTimeoutException =>
+      Future.failed(new DiscoveryTimeoutException("Dns resolve did not respond within resolveTimeout"))
   }
 
   private def lookupIp(lookup: Lookup, resolveTimeout: FiniteDuration) = {
@@ -177,7 +174,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
             log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
             Resolved(lookup.serviceName, Nil)
         }
-        .transform(convertToTimeout)
+        .recoverWith(convertToTimeout)
     }
 
     asyncDnsCache match {

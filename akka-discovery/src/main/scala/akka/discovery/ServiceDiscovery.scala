@@ -24,7 +24,7 @@ object ServiceDiscovery {
    *
    * It is up to each implementation to implement timeouts.
    */
-  final class DiscoveryTimeoutException() extends Exception
+  final class DiscoveryTimeoutException(reason: String) extends RuntimeException(reason)
 
   object Resolved {
     def apply(serviceName: String, addresses: immutable.Seq[ResolvedTarget]): Resolved =
