@@ -14,8 +14,7 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
 import akka.annotation.InternalApi
-import akka.util.OptionVal
-import akka.util.Timeout
+import akka.util.{ BoxedType, OptionVal, Timeout }
 import akka.util.JavaDurationConverters._
 import com.github.ghik.silencer.silent
 import org.slf4j.Logger
@@ -220,8 +219,9 @@ import org.slf4j.LoggerFactory
   private def internalMessageAdapter[U](messageClass: Class[U], f: U => T): ActorRef[U] = {
     // replace existing adapter for same class, only one per class is supported to avoid unbounded growth
     // in case "same" adapter is added repeatedly
-    _messageAdapters = (messageClass, f.asInstanceOf[Any => T]) ::
-      _messageAdapters.filterNot { case (cls, _) => cls == messageClass }
+    val boxedMessageClass = BoxedType(messageClass).asInstanceOf[Class[U]]
+    _messageAdapters = (boxedMessageClass, f.asInstanceOf[Any => T]) ::
+      _messageAdapters.filterNot { case (cls, _) => cls == boxedMessageClass }
     val ref = messageAdapterRef match {
       case OptionVal.Some(ref) => ref.asInstanceOf[ActorRef[U]]
       case OptionVal.None      =>
