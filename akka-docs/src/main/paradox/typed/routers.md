@@ -98,14 +98,6 @@ gives good insight into how consistent hashing is implemented.
 Currently you have to define hashMapping of the router to map incoming messages to their consistent
 hash key. This makes the decision transparent for the sender.
 
-Example of good hashing function:
-
-Scala
-:  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #hashing-any }
-
-Java
-:  @@snip [RouterTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/RouterTest.java) { #hashing-any } 
-
 ## Routers and performance
 
 Note that if the routees are sharing a resource, the resource will determine if increasing the number of

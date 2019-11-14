@@ -4,11 +4,10 @@
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ Behavior, RoutingHashExtractor => HashExtractor }
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.TypedSerializer
 import akka.annotation.DoNotInherit
 
 object Routers {
@@ -70,8 +69,26 @@ abstract class GroupRouter[T] extends DeferredBehavior[T] {
    * From wikipedia: Consistent hashing is based on mapping each object to a point on a circle
    * (or equivalently, mapping each object to a real angle). The system maps each available machine
    * (or other storage bucket) to many pseudo-randomly distributed points on the same circle.
+   *
+   * @param virtualNodesFactor This factor has to be greater or equal to 1. Assuming that the reader
+   *                           knows what consistent hashing is
+   *                           (if not, please refer: http://www.tom-e-white.com/2007/11/consistent-hashing.html or wiki).
+   *                           This number is responsible for creating additional,
+   *                           virtual addresses for a provided set of routees,
+   *                           so that in the total number of points on hashing ring
+   *                           will be equal to numberOfRoutees * virtualNodesFactor
+   *                           (if virtualNodesFactor is equal to 1, then no additional points will be created).
+   *
+   *                           Those virtual nodes are being created by additionally rehashing routees
+   *                           to evenly distribute them across hashing ring.
+   *                           Consider increasing this number when you have a small number of routees.
+   *                           For bigger loads one can aim in having around 100-200 total addresses.
+   *
+   *                           Please also note that setting this number to a too big value will cause
+   *                           reasonable overhead when new routees will be added or old one removed.
+   * @param mapping Hash key extractor. See [[akka.actor.typed.RoutingHashExtractor]]
    */
-  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: TypedSerializer[T]): GroupRouter[T]
+  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: HashExtractor[T]): GroupRouter[T]
 
 }
 
@@ -106,8 +123,23 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    * From wikipedia: Consistent hashing is based on mapping each object to a point on a circle
    * (or equivalently, mapping each object to a real angle). The system maps each available machine
    * (or other storage bucket) to many pseudo-randomly distributed points on the same circle.
+   *
+   * @param virtualNodesFactor This factor has to be greater or equal to 1. Assuming that the reader
+   *                           knows what consistent hashing is
+   *                           (if not, please refer: http://www.tom-e-white.com/2007/11/consistent-hashing.html or wiki).
+   *                           This number is responsible for creating additional,
+   *                           virtual addresses for a provided set of routees,
+   *                           so that in the total number of points on hashing ring
+   *                           will be equal to numberOfRoutees * virtualNodesFactor
+   *                           (if virtualNodesFactor is equal to 1, then no additional points will be created).
+   *
+   *                           Those virtual nodes are being created by additionally rehashing routees
+   *                           to evenly distribute them across hashing ring.
+   *                           Consider increasing this number when you have a small number of routees.
+   *                           For bigger loads one can aim in having around 100-200 total addresses.
+   * @param mapping Hash key extractor. See [[akka.actor.typed.RoutingHashExtractor]]
    */
-  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: TypedSerializer[T]): PoolRouter[T]
+  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: HashExtractor[T]): PoolRouter[T]
 
   /**
    * Set a new pool size from the one set at construction

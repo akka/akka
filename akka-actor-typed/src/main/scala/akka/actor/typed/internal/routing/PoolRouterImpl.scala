@@ -5,7 +5,7 @@
 package akka.actor.typed.internal.routing
 
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, TypedSerializer }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 import akka.annotation.InternalApi
 
 /**
@@ -28,7 +28,7 @@ private[akka] final case class PoolRouterBuilder[T](
 
   def withRoundRobinRouting(): PoolRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RoundRobinLogic[T])
 
-  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: TypedSerializer[T]): PoolRouterBuilder[T] =
+  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: RoutingHashExtractor[T]): PoolRouterBuilder[T] =
     copy(logicFactory = () => new RoutingLogics.ConsistentHashingLogic[T](virtualNodesFactor, mapping))
 
   def withPoolSize(poolSize: Int): PoolRouterBuilder[T] = copy(poolSize = poolSize)

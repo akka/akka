@@ -9,7 +9,7 @@ import akka.actor.typed._
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, StashBuffer, TypedSerializer }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, StashBuffer }
 import akka.annotation.InternalApi
 
 /**
@@ -33,7 +33,7 @@ private[akka] final case class GroupRouterBuilder[T] private[akka] (
 
   override def withConsistentHashingRouting(
       virtualNodesFactor: Int,
-      mapping: TypedSerializer[T]): GroupRouterBuilder[T] =
+      mapping: RoutingHashExtractor[T]): GroupRouterBuilder[T] =
     copy(logicFactory = () => new RoutingLogics.ConsistentHashingLogic[T](virtualNodesFactor, mapping))
 }
 

@@ -3,7 +3,7 @@
  */
 
 package akka.actor.typed.scaladsl
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ Behavior, RoutingHashExtractor => HashExtractor }
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.DoNotInherit
@@ -62,11 +62,9 @@ trait GroupRouter[T] extends Behavior[T] {
   /**
    * Route messages by using consistent hashing.
    *
-   * From wikipedia: Consistent hashing is based on mapping each object to a point on a circle
-   * (or equivalently, mapping each object to a real angle). The system maps each available machine
-   * (or other storage bucket) to many pseudo-randomly distributed points on the same circle.
+   * See [[akka.actor.typed.javadsl.GroupRouter#withConsistentHashingRouting]].
    */
-  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: TypedSerializer[T]): GroupRouter[T]
+  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: HashExtractor[T]): GroupRouter[T]
 
 }
 
@@ -98,11 +96,9 @@ trait PoolRouter[T] extends Behavior[T] {
   /**
    * Route messages by using consistent hashing.
    *
-   * From wikipedia: Consistent hashing is based on mapping each object to a point on a circle
-   * (or equivalently, mapping each object to a real angle). The system maps each available machine
-   * (or other storage bucket) to many pseudo-randomly distributed points on the same circle.
+   * See [[akka.actor.typed.javadsl.PoolRouter#withConsistentHashingRouting]].
    */
-  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: TypedSerializer[T]): PoolRouter[T]
+  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: HashExtractor[T]): PoolRouter[T]
 
   /**
    * Set a new pool size from the one set at construction
