@@ -116,13 +116,16 @@ Scala
 Java
 :  @@snip [TypedWatchingClassicTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingClassicTest.java) { #typed }
 
+Note that when sending from a typed actor to a classic @scala[`ActorRef`]@java[`ActorRef`] there is no sender in scope as in classic.
+The typed sender would use its own @scala[`ActorContext[T].self`]@java[`ActorContext[T].getSelf()`] explicitly, as shown in the snippet.
+
 @@@ Note
 
 One important difference when having a typed system and a typed user guardian actor and combining that with classic actors  
 is that even if you can turn the typed `ActorSystem` to a classic one it is no longer possible to spawn user level
 actors, trying to do this will throw an exception, such usage must instead be replaced with bootstrap directly in the 
 guardian actor, or commands telling the guardian to spawn children. 
-
+ 
 @@@
 
 ## Supervision
