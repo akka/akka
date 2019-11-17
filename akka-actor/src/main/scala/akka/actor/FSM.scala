@@ -928,7 +928,7 @@ trait LoggingFSM[S, D] extends FSM[S, D] { this: Actor =>
         case a: ActorRef             => a.toString
         case _                       => "unknown"
       }
-      log.debug("processing {} from {} in state {}", event, srcstr, stateName)
+      log.debug("{} is processing {} from {} in state {}", self, event, srcstr, stateName)
     }
 
     if (logDepth > 0) {

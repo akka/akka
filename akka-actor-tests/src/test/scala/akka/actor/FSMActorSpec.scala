@@ -281,7 +281,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
             fsm ! "go"
             expectMsgPF(1 second, hint = "processing Event(go,null)") {
               case Logging.Debug(`name`, `fsmClass`, s: String)
-                  if s.startsWith("processing Event(go,null) from Actor[") =>
+                  if s.startsWith(s"${fsm} is processing Event(go,null) from Actor[") =>
                 true
             }
             expectMsg(1 second, Logging.Debug(name, fsmClass, "setting timer 't'/1500 milliseconds: Shutdown"))
@@ -289,7 +289,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
             fsm ! "stop"
             expectMsgPF(1 second, hint = "processing Event(stop,null)") {
               case Logging.Debug(`name`, `fsmClass`, s: String)
-                  if s.startsWith("processing Event(stop,null) from Actor[") =>
+                  if s.startsWith(s"${fsm} is processing Event(stop,null) from Actor[") =>
                 true
             }
             expectMsgAllOf(1 second, Logging.Debug(name, fsmClass, "canceling timer 't'"), FSM.Normal)
