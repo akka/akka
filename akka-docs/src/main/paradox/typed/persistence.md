@@ -646,18 +646,18 @@ reference documentation of the chosen plugin.
 
 ## Example project
 
-@java[@extref[Persistence example project](samples:akka-sample-persistence-java)]
-@scala[@extref[Persistence example project](samples:akka-sample-persistence-scala)]
+@java[@extref[Persistence example project](samples:akka-samples-persistence-java)]
+@scala[@extref[Persistence example project](samples:akka-samples-persistence-scala)]
 is an example project that can be downloaded, and with instructions of how to run.
 This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
 
 The Shopping Cart sample is expanded further in the
-@java[@extref[CQRS example project](samples:akka-sample-cqrs-java)]
-@scala[@extref[CQRS example project](samples:akka-sample-cqrs-scala)]
+@java[@extref[CQRS example project](samples:akka-samples-cqrs-java)]
+@scala[@extref[CQRS example project](samples:akka-samples-cqrs-scala)]
 sample. In that sample the events are tagged to be consumed by even processors to build other representations
 from the events, or publish the events to other services.
 
-@java[@extref[Multi-DC Persistence example project](samples:akka-sample-persistence-dc-java)]
-@scala[@extref[Multi-DC Persistence example project](samples:akka-sample-persistence-dc-scala)]
+@java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]
+@scala[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-scala)]
 illustrates how to use Lightbend's [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
 with active-active persistent entities across data centers.
