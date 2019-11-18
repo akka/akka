@@ -29,3 +29,6 @@ it returns true the element is discarded.
 
 @@@
 
+## API docs
+
+@apidoc[Flow.filterNot](Flow) { scala="#filterNot(p:Out=%3EBoolean):FlowOps.this.Repr[Out]" java="#filterNot(akka.japi.function.Predicate)" }
