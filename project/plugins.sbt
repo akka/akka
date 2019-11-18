@@ -25,6 +25,3 @@ addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.3.0") // for maintenance of
 addSbtPlugin("com.hpe.sbt" % "sbt-pull-request-validator" % "1.0.0")
 addSbtPlugin("org.scoverage" % "sbt-scoverage" % "1.6.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.22")
-
-// used for @unidoc directive
-libraryDependencies += "io.github.classgraph" % "classgraph" % "4.8.47"
