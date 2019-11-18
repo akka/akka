@@ -28,7 +28,7 @@ import org.slf4j.LoggerFactory
 
   // single context for logging as there are a few things that are initialized
   // together
-  final class LoggingContext(val logger: Logger, tags: Set[String]) {
+  final class LoggingContext(val logger: Logger, tags: Set[String], val hasCustomName: Boolean) {
     // toggled once per message if logging is used to avoid having to
     // touch the mdc thread local for cleanup in the end
     var mdcUsed = false
@@ -41,7 +41,7 @@ import org.slf4j.LoggerFactory
         tags.mkString(",")
 
     def withLogger(logger: Logger): LoggingContext = {
-      val l = new LoggingContext(logger, tags)
+      val l = new LoggingContext(logger, tags, hasCustomName = true)
       l.mdcUsed = mdcUsed
       l
     }
@@ -116,7 +116,7 @@ import org.slf4j.LoggerFactory
       case OptionVal.None =>
         val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
         val logger = LoggerFactory.getLogger(logClass.getName)
-        val l = new LoggingContext(logger, classicActorContext.props.deploy.tags)
+        val l = new LoggingContext(logger, classicActorContext.props.deploy.tags, hasCustomName = false)
         _logging = OptionVal.Some(l)
         l
     }
@@ -138,6 +138,8 @@ import org.slf4j.LoggerFactory
 
   override def setLoggerName(clazz: Class[_]): Unit =
     setLoggerName(clazz.getName)
+
+  def hasCustomLoggerName: Boolean = loggingContext().hasCustomName
 
   // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message
   override private[akka] def clearMdc(): Unit = {
