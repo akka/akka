@@ -4,7 +4,7 @@
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.{ Behavior, RoutingHashExtractor => HashExtractor }
+import akka.actor.typed.{ ActorSystem, Behavior, RoutingHashExtractor => HashExtractor }
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
@@ -88,7 +88,10 @@ abstract class GroupRouter[T] extends DeferredBehavior[T] {
    *                           reasonable overhead when new routees will be added or old one removed.
    * @param mapping Hash key extractor. See [[akka.actor.typed.RoutingHashExtractor]]
    */
-  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: HashExtractor[T]): GroupRouter[T]
+  def withConsistentHashingRouting(
+      virtualNodesFactor: Int,
+      mapping: HashExtractor[T],
+      system: ActorSystem[T]): GroupRouter[T]
 
 }
 
@@ -139,7 +142,10 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    *                           For bigger loads one can aim in having around 100-200 total addresses.
    * @param mapping Hash key extractor. See [[akka.actor.typed.RoutingHashExtractor]]
    */
-  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: HashExtractor[T]): PoolRouter[T]
+  def withConsistentHashingRouting(
+      virtualNodesFactor: Int,
+      mapping: HashExtractor[T],
+      system: ActorSystem[T]): PoolRouter[T]
 
   /**
    * Set a new pool size from the one set at construction

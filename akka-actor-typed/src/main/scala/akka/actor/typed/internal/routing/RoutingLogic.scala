@@ -6,6 +6,7 @@ package akka.actor.typed.internal.routing
 
 import java.util.concurrent.ThreadLocalRandom
 
+import akka.actor.Address
 import akka.actor.typed.{ ActorRef, RoutingHashExtractor }
 import akka.annotation.InternalApi
 import akka.routing.ConsistentHash
@@ -87,20 +88,26 @@ private[akka] object RoutingLogics {
     }
   }
 
-  final class ConsistentHashingLogic[T](virtualNodesFactor: Int, mapping: RoutingHashExtractor[T])
+  final class ConsistentHashingLogic[T](virtualNodesFactor: Int, mapping: RoutingHashExtractor[T], baseAddress: Address)
       extends RoutingLogic[T] {
     require(virtualNodesFactor > 0, "virtualNodesFactor has to be a positive integer")
 
-    private var currentRoutees: Set[ActorRef[T]] = Set.empty
+    private var pathToRefs: Map[String, ActorRef[T]] = Map.empty
 
-    private var consistentHash: ConsistentHash[ActorRef[T]] = ConsistentHash(currentRoutees, virtualNodesFactor)
+    private var consistentHash: ConsistentHash[String] = ConsistentHash(Set.empty, virtualNodesFactor)
 
-    override def selectRoutee(msg: T): ActorRef[T] = consistentHash.nodeFor(mapping(msg))
+    override def selectRoutee(msg: T): ActorRef[T] = pathToRefs(consistentHash.nodeFor(mapping(msg)))
 
     override def routeesUpdated(newRoutees: Set[ActorRef[T]]): Unit = {
-      val withoutOld = currentRoutees.diff(newRoutees).foldLeft(consistentHash)(_ :- _)
-      consistentHash = newRoutees.diff(currentRoutees).foldLeft(withoutOld)(_ :+ _)
-      currentRoutees = newRoutees
+      val updatedPathToRefs = newRoutees.map(routee => toFullAddressString(routee) -> routee).toMap
+      val withoutOld = pathToRefs.keySet.diff(updatedPathToRefs.keySet).foldLeft(consistentHash)(_ :- _)
+      consistentHash = updatedPathToRefs.keySet.diff(pathToRefs.keySet).foldLeft(withoutOld)(_ :+ _)
+      pathToRefs = updatedPathToRefs
+    }
+
+    private def toFullAddressString(routee: ActorRef[T]): String = routee.path.address match {
+      case Address(_, _, None, None) => routee.path.toStringWithAddress(baseAddress)
+      case _                         => routee.path.toString
     }
   }
 

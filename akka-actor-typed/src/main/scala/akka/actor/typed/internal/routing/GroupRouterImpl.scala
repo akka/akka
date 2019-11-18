@@ -4,7 +4,7 @@
 
 package akka.actor.typed.internal.routing
 
-import akka.actor.Dropped
+import akka.actor.{ Dropped, ExtendedActorSystem }
 import akka.actor.typed._
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.receptionist.Receptionist
@@ -33,8 +33,16 @@ private[akka] final case class GroupRouterBuilder[T] private[akka] (
 
   override def withConsistentHashingRouting(
       virtualNodesFactor: Int,
-      mapping: RoutingHashExtractor[T]): GroupRouterBuilder[T] =
-    copy(logicFactory = () => new RoutingLogics.ConsistentHashingLogic[T](virtualNodesFactor, mapping))
+      mapping: RoutingHashExtractor[T],
+      system: ActorSystem[T]): GroupRouterBuilder[T] = {
+    import akka.actor.typed.scaladsl.adapter._
+    copy(
+      logicFactory = () =>
+        new RoutingLogics.ConsistentHashingLogic[T](
+          virtualNodesFactor,
+          mapping,
+          system.toClassic.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress))
+  }
 }
 
 /**

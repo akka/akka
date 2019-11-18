@@ -3,7 +3,7 @@
  */
 
 package akka.actor.typed.scaladsl
-import akka.actor.typed.{ Behavior, RoutingHashExtractor => HashExtractor }
+import akka.actor.typed.{ ActorSystem, Behavior, RoutingHashExtractor => HashExtractor }
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.DoNotInherit
@@ -64,7 +64,10 @@ trait GroupRouter[T] extends Behavior[T] {
    *
    * See [[akka.actor.typed.javadsl.GroupRouter#withConsistentHashingRouting]].
    */
-  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: HashExtractor[T]): GroupRouter[T]
+  def withConsistentHashingRouting(
+      virtualNodesFactor: Int,
+      mapping: HashExtractor[T],
+      system: ActorSystem[T]): GroupRouter[T]
 
 }
 
@@ -98,7 +101,10 @@ trait PoolRouter[T] extends Behavior[T] {
    *
    * See [[akka.actor.typed.javadsl.PoolRouter#withConsistentHashingRouting]].
    */
-  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: HashExtractor[T]): PoolRouter[T]
+  def withConsistentHashingRouting(
+      virtualNodesFactor: Int,
+      mapping: HashExtractor[T],
+      system: ActorSystem[T]): PoolRouter[T]
 
   /**
    * Set a new pool size from the one set at construction
