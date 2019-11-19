@@ -1207,8 +1207,10 @@ private[akka] class ActorSystemImpl(
           (if (indent.isEmpty) "-> " else indent.dropRight(1) + "⌊-> ") +
           node.path.name + " " + Logging.simpleName(node) + " " +
           (cell match {
-            case real: ActorCell => if (real.actor ne null) real.actor.getClass else "null"
-            case _               => Logging.simpleName(cell)
+            case real: ActorCell =>
+              val realActor = real.actor
+              if (realActor ne null) realActor.getClass else "null"
+            case _ => Logging.simpleName(cell)
           }) +
           (cell match {
             case real: ActorCell => " status=" + real.mailbox.currentStatus
