@@ -104,12 +104,11 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
 
   @inline
   final def withMdc(logSource: String, logEvent: LogEvent)(logStatement: => Unit): Unit = {
-    val mdcAdapter = MDC.getMDCAdapter
-    mdcAdapter.put(mdcAkkaSourceAttributeName, logSource)
-    mdcAdapter.put(mdcThreadAttributeName, logEvent.thread.getName)
-    mdcAdapter.put(mdcAkkaTimestamp, formatTimestamp(logEvent.timestamp))
-    mdcAdapter.put(mdcActorSystemAttributeName, actorSystemName)
-    logEvent.mdc.foreach { case (k, v) => mdcAdapter.put(k, String.valueOf(v)) }
+    MDC.put(mdcAkkaSourceAttributeName, logSource)
+    MDC.put(mdcThreadAttributeName, logEvent.thread.getName)
+    MDC.put(mdcAkkaTimestamp, formatTimestamp(logEvent.timestamp))
+    MDC.put(mdcActorSystemAttributeName, actorSystemName)
+    logEvent.mdc.foreach { case (k, v) => MDC.put(k, String.valueOf(v)) }
     try logStatement
     finally {
       MDC.clear()

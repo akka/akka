@@ -90,12 +90,11 @@ import scala.reflect.ClassTag
   }
 
   private def setMdcValues(dynamicMdc: Map[String, String]): Unit = {
-    val mdcAdapter = MDC.getMDCAdapter
     if (staticMdc.nonEmpty) staticMdc.foreach {
-      case (key, value) => mdcAdapter.put(key, value)
+      case (key, value) => MDC.put(key, value)
     }
     if (dynamicMdc.nonEmpty) dynamicMdc.foreach {
-      case (key, value) => mdcAdapter.put(key, value)
+      case (key, value) => MDC.put(key, value)
     }
   }
 
