@@ -1034,7 +1034,7 @@ class DDataShardCoordinator(
     if (rememberEntities) Set(CoordinatorStateKey, AllShardsKey) else Set(CoordinatorStateKey)
 
   var shards = Set.empty[String]
-  var terminated = false
+  var terminating = false
   if (rememberEntities)
     replicator ! Subscribe(AllShardsKey, self)
 
@@ -1127,7 +1127,7 @@ class DDataShardCoordinator(
     case _ => stash()
   }
 
-  private def onTerminated(): Unit = {
+  private def onTerminating(): Unit = {
     context.unbecome()
     unstashAll()
   }
@@ -1146,19 +1146,15 @@ class DDataShardCoordinator(
         context.become(waitingForUpdate(evt, afterUpdateCallback, newRemainingKeys))
 
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) =>
-      if (terminated) {
-        log.error(
-          "The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis (terminating). " +
-          "Perhaps the ShardRegion has not started on all active nodes yet? event={}",
-          writeMajority.timeout.toMillis,
-          evt)
-        onTerminated()
+      log.error(
+        "The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis ({}). " +
+        "Perhaps the ShardRegion has not started on all active nodes yet? event={}",
+        writeMajority.timeout.toMillis,
+        if (terminating) "terminating" else "retrying",
+        evt)
+      if (terminating) {
+        onTerminating()
       } else {
-        log.error(
-          "The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis (retrying). " +
-          "Perhaps the ShardRegion has not started on all active nodes yet? event={}",
-          writeMajority.timeout.toMillis,
-          evt)
         // repeat until UpdateSuccess
         sendCoordinatorStateUpdate(evt)
       }
@@ -1171,38 +1167,31 @@ class DDataShardCoordinator(
       else
         context.become(waitingForUpdate(evt, afterUpdateCallback, newRemainingKeys))
 
-    case UpdateTimeout(AllShardsKey, Some(newShard: String)) =>
-      if (terminated) {
-        log.error(
-          "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis (terminating), event={}",
-          writeMajority.timeout.toMillis,
-          evt)
-        onTerminated()
+    case UpdateTimeout(AllShardsKey, Some(_: String)) =>
+      log.error(
+        "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis ({}), event={}",
+        writeMajority.timeout.toMillis,
+        if (terminating) "terminating" else "retrying",
+        evt)
+      if (terminating) {
+        context.stop(self)
       } else {
-        log.error(
-          "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis (retrying), event={}",
-          writeMajority.timeout.toMillis,
-          evt)
         // repeat until UpdateSuccess
-        sendAllShardsUpdate(newShard)
+        sendCoordinatorStateUpdate(evt)
       }
 
     case ModifyFailure(key, error, cause, _) =>
-      if (terminated) {
-        log.error(
-          cause,
-          "The ShardCoordinator was unable to update a distributed state {} with error {} and event {}.Coordinator will be terminated",
-          key,
-          error,
-          evt)
-        onTerminated()
+      log.error(
+        cause,
+        "The ShardCoordinator was unable to update a distributed state {} with error {} and event {}. {}",
+        key,
+        error,
+        evt,
+        if (terminating) "Coordinator will be terminated due to Terminate message received"
+        else "Coordinator will be restarted")
+      if (terminating) {
+        onTerminating()
       } else {
-        log.error(
-          cause,
-          "The ShardCoordinator was unable to update a distributed state {} with error {} and event {}.Coordinator will be restarted",
-          key,
-          error,
-          evt)
         throw cause
       }
 
@@ -1212,7 +1201,7 @@ class DDataShardCoordinator(
 
     case ShardCoordinator.Internal.Terminate =>
       log.debug("Received termination message while waiting for update")
-      terminated = true
+      terminating = true
       stash()
 
     case _ => stash()
