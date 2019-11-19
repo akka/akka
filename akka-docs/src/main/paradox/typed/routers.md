@@ -1,8 +1,6 @@
 # Routers
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Routing](../routing.md).
-@@@
 
 ## Dependency
 

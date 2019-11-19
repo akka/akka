@@ -3,9 +3,7 @@ project.description: Finite State Machines (FSM) with Akka Actors.
 ---
 # Behaviors as finite state machines
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic FSM](../fsm.md).
-@@@
 
 An actor can be used to model a Finite State Machine (FSM).
 
@@ -47,10 +45,10 @@ Java
 
 To set state timeouts use `Behaviors.withTimers` along with a `startSingleTimer`.
 
+## Example project
 
+@java[@extref[FSM example project](samples:akka-samples-fsm-java)]
+@scala[@extref[FSM example project](samples:akka-samples-fsm-scala)]
+is an example project that can be downloaded, and with instructions of how to run.
 
-
-
-
-
-
+This project contains a Dining Hakkers sample illustrating how to model a Finite State Machine (FSM) with actors.

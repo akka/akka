@@ -3,9 +3,7 @@ project.description: An intuitive and safe way to do asynchronous, non-blocking 
 ---
 # Streams
 
-@@project-info{ projectId="akka-stream" }
-
-## Dependency
+## Module info
 
 To use Akka Streams, add the module to your project:
 
@@ -14,6 +12,8 @@ To use Akka Streams, add the module to your project:
   artifact="akka-stream_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-stream" }
 
 @@toc { depth=2 }
 

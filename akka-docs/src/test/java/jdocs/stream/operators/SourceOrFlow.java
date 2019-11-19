@@ -271,24 +271,60 @@ class SourceOrFlow {
     // #grouped
   }
 
-  void takeExample() {
-    // #take
-    Source.from(Arrays.asList(1, 2, 3, 4, 5)).take(3).runForeach(System.out::println, system);
-    // 1
-    // 2
-    // 3
-    // #take
+  static
+  // #fold
+  class Histogram {
+    final long low;
+    final long high;
 
+    private Histogram(long low, long high) {
+      this.low = low;
+      this.high = high;
+    }
+
+    // Immutable start value
+    public static Histogram INSTANCE = new Histogram(0L, 0L);
+
+    public Histogram add(int number) {
+      if (number < 100) {
+        return new Histogram(low + 1L, high);
+      } else {
+        return new Histogram(low, high + 1L);
+      }
+    }
+  }
+  // #fold
+
+  void foldExample() {
+    // #fold
+
+    // Folding over the numbers from 1 to 150:
+    Source.range(1, 150)
+        .fold(Histogram.INSTANCE, (acc, n) -> acc.add(n))
+        .runForeach(h -> System.out.println("Histogram(" + h.low + ", " + h.high + ")"), system);
+
+    // Prints: Histogram(99, 51)
+    // #fold
+  }
+
+  void takeExample() {
+     // #take
+     Source.from(Arrays.asList(1, 2, 3, 4, 5)).take(3).runForeach(System.out::println, system);
+     // this will print:
+     // 1
+     // 2
+     // 3
+     // #take
   }
 
   void takeWhileExample() {
     // #take-while
     Source.from(Arrays.asList(1, 2, 3, 4, 5))
-        .takeWhile(i -> i < 3)
-        .runForeach(System.out::println, system);
+            .takeWhile(i -> i < 3)
+            .runForeach(System.out::println, system);
+    // this will print:
     // 1
     // 2
     // #take-while
-
   }
 }
