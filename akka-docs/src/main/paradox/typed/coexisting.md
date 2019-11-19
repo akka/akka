@@ -116,9 +116,9 @@ Scala
 Java
 :  @@snip [TypedWatchingClassicTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/coexistence/TypedWatchingClassicTest.java) { #typed }
 
-Note that when sending from a typed actor to a classic @scala[`ActorRef`]@java[`ActorRef`] there is no sender in scope as in classic.
-
 @@@ div { .group-scala }
+
+Note that when sending from a typed actor to a classic `ActorRef` there is no sender in scope as in classic.
 The typed sender should use its own `ActorContext[T].self` explicitly, as shown in the snippet.
 
 @@@
