@@ -1,6 +1,7 @@
 # Source.unfoldResourceAsync
 
-Wrap any resource that can be opened, queried for next element and closed using in an asynchronous way with three distinct functions into a source.
+Wrap any resource that can be opened, queried for next element and closed in an asynchronous way with three distinct functions into a source.
+It is the equivalent of @ref[unfoldResource](unfoldResource.md) but for resources with asynchronous APIs.
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -20,6 +21,9 @@ three functions that all return a @scala[`Future`]@java[`CompletionStage`]:
 1. `create`: Open or create the resource
 1. `read`: Fetch the next element or signal that we reached the end of the stream by completing the @scala[`Future`]@java[`CompletionStage`] with a @java[`Optional.empty`]@scala[`None`]
 1. `close`: Close the resource, invoked on end of stream or if the stream fails
+
+All exceptions thrown by create and close as well as the @scala[`Future`]@java[`CompletionStage`]s completing with failure will
+fail the stream. The supervision strategy to handle exceptions from read, create and from the @scala[`Future`]@java[`CompletionStage`]s.
 
 ## Examples
 
