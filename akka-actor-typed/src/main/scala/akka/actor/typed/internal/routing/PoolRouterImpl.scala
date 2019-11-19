@@ -4,8 +4,11 @@
 
 package akka.actor.typed.internal.routing
 
+import java.util.function
+
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed._
+import akka.actor.typed.javadsl.PoolRouter
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
 import akka.annotation.InternalApi
 
@@ -29,9 +32,15 @@ private[akka] final case class PoolRouterBuilder[T](
 
   def withRoundRobinRouting(): PoolRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RoundRobinLogic[T])
 
+  override def withConsistentHashingRouting(
+      virtualNodesFactor: Int,
+      mapping: function.Function[T, String],
+      system: ActorSystem[T]): PoolRouter[T] =
+    withConsistentHashingRouting(virtualNodesFactor, mapping.apply(_), system)
+
   def withConsistentHashingRouting(
       virtualNodesFactor: Int,
-      mapping: RoutingHashExtractor[T],
+      mapping: T => String,
       system: ActorSystem[T]): PoolRouterBuilder[T] = {
     import akka.actor.typed.scaladsl.adapter._
     copy(

@@ -8,7 +8,7 @@ import akka.actor.{ Address, ExtendedActorSystem }
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorSystem, Behavior, RoutingHashExtractor }
+import akka.actor.typed.{ ActorSystem, Behavior }
 import org.scalatest.{ Matchers, WordSpecLike }
 
 class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with Matchers with LogCapturing {
@@ -146,7 +146,7 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
     val behavior: Behavior[Int] = Behaviors.empty[Int]
     val typedSystem: ActorSystem[Int] = ActorSystem(behavior, "testSystem")
     val selfAddress: Address = typedSystem.toClassic.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-    val modulo10Mapping: RoutingHashExtractor[Int] = (in: Int) => (in % 10).toString
+    val modulo10Mapping: Int => String = (in: Int) => (in % 10).toString
     val messages: Map[Any, Seq[Int]] = (1 to 1000).groupBy(modulo10Mapping.apply)
 
     "not accept virtualization factor lesser than 1" in {

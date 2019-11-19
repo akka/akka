@@ -7,7 +7,7 @@ package akka.actor.typed.internal.routing
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.actor.Address
-import akka.actor.typed.{ ActorRef, RoutingHashExtractor }
+import akka.actor.typed.ActorRef
 import akka.annotation.InternalApi
 import akka.routing.ConsistentHash
 
@@ -88,7 +88,7 @@ private[akka] object RoutingLogics {
     }
   }
 
-  final class ConsistentHashingLogic[T](virtualNodesFactor: Int, mapping: RoutingHashExtractor[T], baseAddress: Address)
+  final class ConsistentHashingLogic[T](virtualNodesFactor: Int, mapping: T => String, baseAddress: Address)
       extends RoutingLogic[T] {
     require(virtualNodesFactor > 0, "virtualNodesFactor has to be a positive integer")
 

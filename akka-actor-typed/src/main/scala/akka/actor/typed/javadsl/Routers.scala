@@ -4,7 +4,7 @@
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.{ ActorSystem, Behavior, RoutingHashExtractor => HashExtractor }
+import akka.actor.typed.{ ActorSystem, Behavior }
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
@@ -86,11 +86,13 @@ abstract class GroupRouter[T] extends DeferredBehavior[T] {
    *
    *                           Please also note that setting this number to a too big value will cause
    *                           reasonable overhead when new routees will be added or old one removed.
-   * @param mapping Hash key extractor. See [[akka.actor.typed.RoutingHashExtractor]]
+   *
+   * @param mapping            Hash key extractor. This function will be used in consistent hashing process.
+   *                           Result of this operation should possibly uniquely distinguish messages.
    */
   def withConsistentHashingRouting(
       virtualNodesFactor: Int,
-      mapping: HashExtractor[T],
+      mapping: java.util.function.Function[T, String],
       system: ActorSystem[T]): GroupRouter[T]
 
 }
@@ -140,11 +142,13 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    *                           to evenly distribute them across hashing ring.
    *                           Consider increasing this number when you have a small number of routees.
    *                           For bigger loads one can aim in having around 100-200 total addresses.
-   * @param mapping Hash key extractor. See [[akka.actor.typed.RoutingHashExtractor]]
+   *
+   * @param mapping            Hash key extractor. This function will be used in consistent hashing process.
+   *                           Result of this operation should possibly uniquely distinguish messages.
    */
   def withConsistentHashingRouting(
       virtualNodesFactor: Int,
-      mapping: HashExtractor[T],
+      mapping: java.util.function.Function[T, String],
       system: ActorSystem[T]): PoolRouter[T]
 
   /**
