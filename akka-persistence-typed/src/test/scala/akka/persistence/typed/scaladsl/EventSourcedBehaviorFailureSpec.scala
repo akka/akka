@@ -121,7 +121,7 @@ class EventSourcedBehaviorFailureSpec
   "A typed persistent actor (failures)" must {
 
     "signal RecoveryFailure when replay fails" in {
-      LoggingTestKit.error[JournalFailureException].intercept {
+      LoggingTestKit.error[JournalFailureException].expect {
         val probe = TestProbe[String]()
         val excProbe = TestProbe[Throwable]()
         spawn(failingPersistentActor(PersistenceId.ofUniqueId("fail-recovery"), probe.ref, {
@@ -159,7 +159,7 @@ class EventSourcedBehaviorFailureSpec
       probe.expectMessage("malicious")
       probe.expectMessage("persisted")
 
-      LoggingTestKit.error[JournalFailureException].intercept {
+      LoggingTestKit.error[JournalFailureException].expect {
         // start again and then the event handler will throw
         spawn(failingPersistentActor(pid, probe.ref, {
           case (_, RecoveryFailed(t)) =>
@@ -173,7 +173,7 @@ class EventSourcedBehaviorFailureSpec
 
     "fail recovery if exception from RecoveryCompleted signal handler" in {
       val probe = TestProbe[String]()
-      LoggingTestKit.error[JournalFailureException].intercept {
+      LoggingTestKit.error[JournalFailureException].expect {
         spawn(
           Behaviors
             .supervise(failingPersistentActor(
@@ -252,7 +252,7 @@ class EventSourcedBehaviorFailureSpec
     }
 
     "stop (default supervisor strategy) if command handler throws" in {
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         val probe = TestProbe[String]()
         val behav = failingPersistentActor(PersistenceId.ofUniqueId("wrong-command-1"), probe.ref)
         val c = spawn(behav)
@@ -263,7 +263,7 @@ class EventSourcedBehaviorFailureSpec
     }
 
     "restart supervisor strategy if command handler throws" in {
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         val probe = TestProbe[String]()
         val behav = Behaviors
           .supervise(failingPersistentActor(PersistenceId.ofUniqueId("wrong-command-2"), probe.ref))
@@ -276,7 +276,7 @@ class EventSourcedBehaviorFailureSpec
     }
 
     "stop (default supervisor strategy) if side effect callback throws" in {
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         val probe = TestProbe[String]()
         val behav = failingPersistentActor(PersistenceId.ofUniqueId("wrong-command-3"), probe.ref)
         val c = spawn(behav)
@@ -291,7 +291,7 @@ class EventSourcedBehaviorFailureSpec
 
     "stop (default supervisor strategy) if signal handler throws" in {
       case object SomeSignal extends Signal
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         val probe = TestProbe[String]()
         val behav = failingPersistentActor(PersistenceId.ofUniqueId("wrong-signal-handler"), probe.ref, {
           case (_, SomeSignal) => throw TestException("from signal")
@@ -304,7 +304,7 @@ class EventSourcedBehaviorFailureSpec
     }
 
     "not accept wrong event, before persisting it" in {
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         val probe = TestProbe[String]()
         val behav = failingPersistentActor(PersistenceId.ofUniqueId("wrong-event-2"), probe.ref)
         val c = spawn(behav)

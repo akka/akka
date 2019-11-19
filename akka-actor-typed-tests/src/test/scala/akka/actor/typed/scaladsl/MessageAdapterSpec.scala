@@ -259,7 +259,7 @@ class MessageAdapterSpec
       }
 
       // Not expecting "Exception thrown out of adapter. Stopping myself"
-      LoggingTestKit.error[TestException].withMessageContains("boom").intercept {
+      LoggingTestKit.error[TestException].withMessageContains("boom").expect {
         spawn(snitch)
       }
 

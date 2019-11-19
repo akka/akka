@@ -87,7 +87,7 @@ import org.slf4j.event.Level
   def matches(event: LoggingEvent): Boolean
 
   /**
-   * Run the given code block and assert that this filter has
+   * Run the given code block and assert that the criteria of this `LoggingTestKit` has
    * matched within the configured `akka.actor.testkit.typed.filter-leeway`
    * as often as requested by its `occurrences` parameter specifies.
    *
