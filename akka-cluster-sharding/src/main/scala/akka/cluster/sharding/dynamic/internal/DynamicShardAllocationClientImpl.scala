@@ -57,6 +57,8 @@ private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSystem, typ
     }
   }
 
+  // TODO API for getting the current shard allocations so can be exposed via akka management
+
   override def setShardLocation(shard: ShardId, location: Address): CompletionStage[Done] = {
     import scala.compat.java8.FutureConverters._
     updateShardLocation(shard, location).toJava
