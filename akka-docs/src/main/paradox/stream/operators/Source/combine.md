@@ -17,16 +17,16 @@ Combine several sources, using a given strategy such as merge or concat, into on
 Provides a way to create a "fan-in" of multiple sources without having to use the more advanced @ref:[GraphDSL](../../stream-graphs.md#constructing-graphs).
 
 The way the elements from the sources
-is combined is pluggable through the `strategy` parameter which accepts a function 
+are combined is pluggable through the `strategy` parameter which accepts a function 
 @scala[`Int => Graph[FanInShape]`]@java[`Integer -> Graph<FanInShape>`] where the integer parameter specifies the number of sources
-that the graph must accept. This makes it possible to use `combine` it with the built in `Concat` 
-and `Merge` by @scala[expanding their `apply` methods to functions]@java[using a method reference to their `create` methods] 
+that the graph must accept. This makes it possible to use `combine` with the built-in `Concat` 
+and `Merge` by @scala[expanding their `apply` methods to functions]@java[using a method reference to their `create` methods],
 but also to use an arbitrary strategy. 
 
-Combine is most useful when you have more sources than 2 or want to use a custom operator since there are more concise 
+Combine is most useful when you have more sources than 2 or want to use a custom operator, as there are more concise 
 operators for 2-source @ref:[concat](../Source-or-Flow/concat.md) and @ref:[merge](../Source-or-Flow/merge.md) 
 
-Some of the built in operators that can be used as strategy are:
+Some of the built-in operators that can be used as strategy are:
  
  * @apidoc[akka.stream.*.Merge] 
  * @apidoc[akka.stream.(javadsl|scaladsl).Concat] 
