@@ -15,6 +15,9 @@ partitioner function applied to the element.
 
 ## Example
 
+Here is an example of using `Partition` to split a `Source` of integers to one `Sink` for the even numbers and
+another `Sink` for the odd numbers. 
+
 Scala
 :   @@snip [PartitionDocExample.scala](/akka-docs/src/test/scala/docs/stream/operators/PartitionDocExample.scala) { #partition }
 
