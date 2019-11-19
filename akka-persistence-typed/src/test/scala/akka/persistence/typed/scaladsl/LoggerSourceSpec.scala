@@ -87,6 +87,23 @@ class LoggerSourceSpec
           }
         }
     }
+
+    "use the user provided name" in {
+
+      val behavior: Behavior[String] = Behaviors.setup[String] { ctx =>
+        ctx.setLoggerName("my-custom-name")
+        EventSourcedBehavior[String, String, String](nextPid(), emptyState = "", commandHandler = (_, _) => {
+          ctx.log.info("command-received")
+          Effect.persist("evt")
+        }, eventHandler = (state, _) => state)
+      }
+
+      val actor = spawn(behavior)
+
+      LoggingTestKit.info("command-received").withLoggerName("my-custom-name").withOccurrences(1).intercept {
+        actor ! "cmd"
+      }
+    }
   }
 
   def eventFilterFor(logMsg: String) =
