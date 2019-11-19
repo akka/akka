@@ -12,7 +12,6 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-
 import akka.Done
 import akka.remote.UniqueAddress
 import akka.remote.artery.InboundControlJunction.ControlMessageObserver
@@ -28,9 +27,10 @@ import akka.stream.stage.TimerGraphStageLogic
 import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.actor.ActorRef
 import akka.dispatch.sysmsg.SystemMessage
-import scala.util.control.NoStackTrace
 
+import scala.util.control.NoStackTrace
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.stream.stage.StageLogging
 import akka.util.OptionVal
@@ -104,15 +104,14 @@ import akka.util.OptionVal
       override protected def logSource: Class[_] = classOf[SystemMessageDelivery]
 
       override def preStart(): Unit = {
-        implicit val ec = materializer.executionContext
-        outboundContext.controlSubject.attach(this).foreach {
-          // FIXME potentially unsafe getAsyncCallback usage
-          getAsyncCallback[Done] { _ =>
-            replyObserverAttached = true
-            if (isAvailable(out))
-              pull(in) // onPull from downstream already called
-          }.invoke
+        val callback = getAsyncCallback[Done] { _ =>
+          replyObserverAttached = true
+          if (isAvailable(out))
+            pull(in) // onPull from downstream already called
         }
+        outboundContext.controlSubject
+          .attach(this)
+          .foreach(callback.invoke)(ExecutionContexts.sameThreadExecutionContext)
       }
 
       override def postStop(): Unit = {
