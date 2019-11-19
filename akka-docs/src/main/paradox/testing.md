@@ -3,9 +3,7 @@
 @@include[includes.md](includes.md) { #actor-api }
 For the new API see @ref[testing](typed/testing.md).
 
-@@project-info{ projectId="akka-testkit" }
-
-## Dependency
+## Module info
 
 To use Akka Testkit, you must add the following dependency in your project:
 
@@ -15,6 +13,8 @@ To use Akka Testkit, you must add the following dependency in your project:
   version="$akka.version$"
   scope="test"
 }
+
+@@project-info{ projectId="akka-testkit" }
 
 ## Introduction
 

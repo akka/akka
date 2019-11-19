@@ -2,9 +2,7 @@
 
 @@include[includes.md](includes.md) { #actor-api }
 
-@@project-info{ projectId="akka-actor" }
-
-## Dependency
+## Module info
 
 To use Classic Actors, add the following dependency in your project:
 
@@ -13,6 +11,8 @@ To use Classic Actors, add the following dependency in your project:
   artifact="akka-actor_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-actor" }
 
 ## Introduction
 
@@ -1061,9 +1061,7 @@ Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #hot-swap-actor }
 
 This variant of the `become` method is useful for many different things,
-such as to implement a Finite State Machine (FSM, for an example see @scala[[Dining
-Hakkers](http://www.lightbend.com/activator/template/akka-sample-fsm-scala)).] @java[[Dining
-Hakkers](http://www.lightbend.com/activator/template/akka-sample-fsm-java-lambda)).] It will replace the current behavior (i.e. the top of the behavior
+such as to implement a Finite State Machine (FSM). It will replace the current behavior (i.e. the top of the behavior
 stack), which means that you do not use `unbecome`, instead always the
 next behavior is explicitly installed.
 

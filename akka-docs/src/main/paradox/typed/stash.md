@@ -1,8 +1,6 @@
 # Stash
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md#stash).
-@@@
 
 ## Dependency
 

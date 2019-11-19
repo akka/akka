@@ -3,13 +3,9 @@ project.description: Shard a clustered compute process across the network with l
 ---
 # Cluster Sharding
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Cluster Sharding](../cluster-sharding.md)
-@@@
 
-@@project-info{ projectId="akka-cluster-sharding-typed" }
-
-## Dependency
+## Module info
 
 To use Akka Cluster Sharding, you must add the following dependency in your project:
 
@@ -18,6 +14,8 @@ To use Akka Cluster Sharding, you must add the following dependency in your proj
   artifact=akka-cluster-sharding-typed_$scala.binary_version$
   version=$akka.version$
 }
+
+@@project-info{ projectId="akka-cluster-sharding-typed" }
 
 ## Introduction
 
@@ -410,3 +408,11 @@ One important configuration property is `number-of-shards` as described in @ref:
 @@snip [reference.conf](/akka-cluster-sharding/src/main/resources/reference.conf) { #sharding-ext-config }
 
 @@snip [reference.conf](/akka-cluster-sharding-typed/src/main/resources/reference.conf) { #sharding-ext-config }
+
+## Example project
+
+@java[@extref[Sharding example project](samples:akka-samples-cluster-sharding-java)]
+@scala[@extref[Sharding example project](samples:akka-samples-cluster-sharding-scala)]
+is an example project that can be downloaded, and with instructions of how to run.
+
+This project contains a KillrWeather sample illustrating how to use Cluster Sharding.

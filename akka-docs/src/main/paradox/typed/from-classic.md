@@ -12,6 +12,8 @@ the differences and details described here. A good starting point for that is th
 @ref:[IoT example](guide/tutorial_3.md) in the Getting Started Guide or the examples shown in
 @ref:[Introduction to Actors](actors.md).
 
+Another good resource to learning Akka Typed is Manuel Bernhardt's [Tour of Akka Typed](https://manuel.bernhardt.io/articles/#akka-typed).
+
 Note that Akka Classic is still fully supported and existing applications can continue to use
 the classic APIs. It is also possible to use Akka Typed together with classic actors within the same
 ActorSystem, see @ref[coexistence](coexisting.md). For new projects we recommend using the new Actor APIs.

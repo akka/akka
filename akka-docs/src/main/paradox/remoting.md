@@ -20,9 +20,7 @@ such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
 
 @@@
 
-@@project-info{ projectId="akka-remote" }
-
-## Dependency
+## Module info
 
 To use Akka Remoting, you must add the following dependency in your project:
 
@@ -31,6 +29,8 @@ To use Akka Remoting, you must add the following dependency in your project:
   artifact=akka-remote_$scala.binary_version$
   version=$akka.version$
 }
+
+@@project-info{ projectId="akka-remote" }
 
 Classic remoting depends on Netty. This needs to be explicitly added as a dependency so that users
 not using classic remoting do not have to have Netty on the classpath:
@@ -621,8 +621,3 @@ Keep in mind that local.address will most likely be in one of private network ra
  * *192.168.0.0 - 192.168.255.255* (network class C)
 
 For further details see [RFC 1597](https://tools.ietf.org/html/rfc1597) and [RFC 1918](https://tools.ietf.org/html/rfc1918).
-
-You can look at the
-@java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
-@scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
-to see what this looks like in practice.

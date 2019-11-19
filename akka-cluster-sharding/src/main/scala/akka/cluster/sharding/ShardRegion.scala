@@ -947,7 +947,17 @@ private[akka] class ShardRegion(
     if (shardBuffers.contains(shardId)) {
       val buf = shardBuffers.getOrEmpty(shardId)
       log.debug("{}: Deliver [{}] buffered messages for shard [{}]", typeName, buf.size, shardId)
-      buf.foreach { case (msg, snd) => receiver.tell(msg, snd) }
+
+      buf.foreach {
+        case (msg, snd) =>
+          msg match {
+            case msg @ RestartShard(_) if receiver != self =>
+              log.debug("Dropping buffered message {}, these are only processed by a local ShardRegion.", msg)
+            case _ =>
+              receiver.tell(msg, snd)
+          }
+      }
+
       shardBuffers.remove(shardId)
     }
     loggedFullBufferWarning = false

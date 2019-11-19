@@ -6,9 +6,7 @@ project.description: Akka Persistence Classic, event sourcing with Akka, At-Leas
 @@include[includes.md](includes.md) { #actor-api }
 For the full documentation of this feature and for new projects see @ref:[persistence](typed/persistence.md).
 
-@@project-info{ projectId="akka-persistence" }
-
-## Dependency
+## Module info
 
 To use Akka Persistence, you must add the following dependency in your project:
 
@@ -21,12 +19,7 @@ To use Akka Persistence, you must add the following dependency in your project:
 You also have to select journal plugin and optionally snapshot store plugin, see 
 @ref:[Persistence Plugins](persistence-plugins.md).
 
-## Sample project
-
-You can look at the
-@java[@extref[Persistence example project](samples:akka-samples-persistence-java)]
-@scala[@extref[Persistence example project](samples:akka-samples-persistence-scala)]
-to see what this looks like in practice.
+@@project-info{ projectId="akka-persistence" }
 
 ## Introduction
 
@@ -90,12 +83,6 @@ If persistence of an event fails, `onPersistFailure` will be invoked (logging th
 and the actor will unconditionally be stopped. If persistence of an event is rejected before it is
 stored, e.g. due to serialization error, `onPersistRejected` will be invoked (logging a warning
 by default) and the actor continues with the next message.
-
-The easiest way to run this example yourself is to download the ready to run
-@scala[@extref[Akka Persistence Sample with Scala](ecs:akka-samples-persistence-scala)]
-@java[@extref[Akka Persistence Sample with Java](ecs:akka-samples-persistence-java)]
-together with the tutorial. It contains instructions on how to run the `PersistentActorExample`.
-The source code of this sample can be found in the @scala[@extref[Akka Samples Repository](samples:akka-samples-persistence-scala)]@java[@extref[Akka Samples Repository](samples:akka-samples-persistence-java)].
 
 @@@ note
 

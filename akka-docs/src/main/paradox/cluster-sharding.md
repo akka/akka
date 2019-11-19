@@ -3,9 +3,7 @@
 @@include[includes.md](includes.md) { #actor-api }
 For the full documentation of this feature and for new projects see @ref:[Cluster Sharding](typed/cluster-sharding.md).
 
-@@project-info{ projectId="akka-cluster-sharding" }
-
-## Dependency
+## Module info
 
 To use Cluster Sharding, you must add the following dependency in your project:
 
@@ -15,12 +13,7 @@ To use Cluster Sharding, you must add the following dependency in your project:
   version=$akka.version$
 }
 
-## Sample project
-
-You can look at the
-@java[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-java)]
-@scala[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-scala)]
-to see what this looks like in practice.
+@@project-info{ projectId="akka-cluster-sharding" }
 
 ## Introduction
 
@@ -102,14 +95,6 @@ Scala
 
 Java
 :  @@snip [ClusterShardingTest.java](/akka-docs/src/test/java/jdocs/sharding/ClusterShardingTest.java) { #counter-usage }
-
-@@@ div { .group-scala }
-
-A more comprehensive sample is available in the
-@java[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-java)]
-@scala[@extref[Cluster Sharding example project](samples:akka-samples-cluster-sharding-scala)].
-
-@@@
 
 ## How it works
 

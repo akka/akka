@@ -1,8 +1,6 @@
 # Actor discovery
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md#actorselection).
-@@@
 
 ## Dependency
 

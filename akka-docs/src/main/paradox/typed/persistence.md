@@ -3,13 +3,9 @@ project.description: Event Sourcing with Akka Persistence enables actors to pers
 ---
 # Event Sourcing
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
-@@@
 
-@@project-info{ projectId="akka-persistence-typed" }
-
-## Dependency
+## Module info
 
 To use Akka Persistence, add the module to your project:
 
@@ -21,6 +17,8 @@ To use Akka Persistence, add the module to your project:
 
 You also have to select journal plugin and optionally snapshot store plugin, see 
 @ref:[Persistence Plugins](../persistence-plugins.md).
+
+@@project-info{ projectId="akka-persistence-typed" }
 
 ## Introduction
 
@@ -645,3 +643,21 @@ to the @ref:[reference configuration](../general/configuration-reference.md#conf
 
 The @ref:[journal and snapshot store plugins](../persistence-plugins.md) have specific configuration, see
 reference documentation of the chosen plugin.
+
+## Example project
+
+@java[@extref[Persistence example project](samples:akka-samples-persistence-java)]
+@scala[@extref[Persistence example project](samples:akka-samples-persistence-scala)]
+is an example project that can be downloaded, and with instructions of how to run.
+This project contains a Shopping Cart sample illustrating how to use Akka Persistence.
+
+The Shopping Cart sample is expanded further in the
+@java[@extref[CQRS example project](samples:akka-samples-cqrs-java)]
+@scala[@extref[CQRS example project](samples:akka-samples-cqrs-scala)]
+sample. In that sample the events are tagged to be consumed by even processors to build other representations
+from the events, or publish the events to other services.
+
+@java[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-java)]
+@scala[@extref[Multi-DC Persistence example project](samples:akka-samples-persistence-dc-scala)]
+illustrates how to use Lightbend's [Multi-DC Persistence](https://doc.akka.io/docs/akka-enhancements/current/persistence-dc/index.html)
+with active-active persistent entities across data centers.

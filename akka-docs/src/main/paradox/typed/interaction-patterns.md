@@ -1,8 +1,6 @@
 # Interaction Patterns
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
-@@@
 
 ## Dependency
 
@@ -24,7 +22,7 @@ Message exchange with Actors follow a few common patterns, let's go through each
 
 The fundamental way to interact with an actor is through @scala["tell", which is so common that it has a special symbolic method name: `actorRef ! message`]@java[`actorRef.tell(message)`]. Sending a message with tell can safely be done from any thread.
 
-Tell is asynchronous which means that the method returns right away, when the statement after it is executed there is no guarantee that the message has been processed by the recipient yet. It also means there is no way to know if the message was received, the processing succeeded or failed.
+Tell is asynchronous which means that the method returns right away. After the statement is executed there is no guarantee that the message has been processed by the recipient yet. It also means there is no way to know if the message was received, the processing succeeded or failed.
 
 **Example:**
 
@@ -87,7 +85,7 @@ Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #request-response-send }
 
 
-On the receiving side the @scala[`ActorRef[response]`]@java[`ActorRef<Response>`] can then be used to send one or more responses back:
+On the receiving side the @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`] can then be used to send one or more responses back:
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #request-response-respond }
@@ -470,6 +468,3 @@ Java
 
 A disadvantage is that a message adapter can't be used so the response has to be in the protocol of the actor being responded to. Additionally the `EntityTypeKey`
 could be included in the message if it is not known statically.
-
-
-
