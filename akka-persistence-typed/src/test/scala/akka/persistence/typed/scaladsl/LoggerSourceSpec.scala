@@ -100,7 +100,7 @@ class LoggerSourceSpec
 
       val actor = spawn(behavior)
 
-      LoggingTestKit.info("command-received").withLoggerName("my-custom-name").withOccurrences(1).intercept {
+      LoggingTestKit.info("command-received").withLoggerName("my-custom-name").withOccurrences(1).expect {
         actor ! "cmd"
       }
     }
