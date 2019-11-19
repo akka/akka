@@ -731,7 +731,7 @@ object Source {
     }, { case akka.actor.Status.Failure(cause)              => cause })
 
   /**
-   * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
+   * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]].
    */
   def combine[T, U](first: Source[T, _], second: Source[T, _], rest: Source[T, _]*)(
       strategy: Int => Graph[UniformFanInShape[T, U], NotUsed]): Source[U, NotUsed] =
