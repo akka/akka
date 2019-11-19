@@ -88,7 +88,7 @@ class EventSourcedBehaviorRecoveryTimeoutSpec
       LoggingTestKit
         .error[JournalFailureException]
         .withMessageRegex("Exception during recovery.*Replay timed out")
-        .intercept {
+        .expect {
           val replaying = spawn(testBehavior(pid, probe.ref))
 
           // initial read highest

@@ -422,7 +422,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike with Lo
       LoggingTestKit
         .error[TestException]
         .withMessageContains("unstash-fail")
-        .intercept {
+        .expect {
           ref ! "unstash"
           probe.expectMessage("unstashing-0")
           probe.expectMessage("unstashing-1")
@@ -452,7 +452,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike with Lo
       LoggingTestKit
         .error[TestException]
         .withMessageContains("Supervisor RestartSupervisor saw failure: unstash-fail")
-        .intercept {
+        .expect {
           ref ! "unstash"
           // when childLatch is defined this be stashed in the internal stash of the RestartSupervisor
           // because it's waiting for child to stop
@@ -535,7 +535,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with WordSpecLike with Lo
       LoggingTestKit
         .error[TestException]
         .withMessageContains("Supervisor ResumeSupervisor saw failure: unstash-fail")
-        .intercept {
+        .expect {
           ref ! "unstash"
           ref ! "get-current"
 

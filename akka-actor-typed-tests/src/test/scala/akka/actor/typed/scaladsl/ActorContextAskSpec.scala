@@ -104,7 +104,7 @@ class ActorContextAskSpec
           }
       }
 
-      LoggingTestKit.error[NotImplementedError].withMessageContains("Pong").intercept {
+      LoggingTestKit.error[NotImplementedError].withMessageContains("Pong").expect {
         spawn(snitch)
       }
 
