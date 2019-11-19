@@ -4,29 +4,22 @@
 
 package akka.cluster.sharding.dynamic
 
-import akka.Done
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.ExtendedActorSystem
 import akka.actor.LocalActorRef
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.ddata.DistributedData
-import akka.cluster.ddata.LWWMap
 import akka.cluster.ddata.LWWMapKey
 import akka.cluster.ddata.Replicator.Changed
 import akka.cluster.ddata.Replicator.Subscribe
 import akka.cluster.sharding.ShardCoordinator
-import akka.cluster.ddata.Replicator.Update
-import akka.cluster.ddata.Replicator.UpdateSuccess
-import akka.cluster.ddata.Replicator.UpdateTimeout
-import akka.cluster.ddata.Replicator.WriteMajority
-import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.sharding.dynamic.DynamicShardAllocationStrategy.ShardLocation
 import akka.event.Logging
 import akka.util.Timeout
 import com.github.ghik.silencer.silent
@@ -85,41 +78,11 @@ object DynamicShardAllocationStrategy {
     }
   }
 }
-
-// TODO make an extension and create max one per typeName
-class DynamicShardAllocationStrategyClient(system: ActorSystem, typeName: String) {
-
-  private val replicator: ActorRef = DistributedData(system).replicator
-  private val self: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
-  private val DataKey: LWWMapKey[ShardId, ShardLocation] =
-    LWWMapKey[ShardId, ShardLocation](s"dynamic-sharding-$typeName")
-  private val timeout = 5.seconds
-  private implicit val askTimeout = Timeout(timeout * 2)
-  private implicit val ec = system.dispatcher
-
-  // TODO configurable consistency, timeout etc
-
-  def updateShardLocation(shard: ShardId, location: Address): Future[Done] = {
-    import akka.pattern.ask
-    (replicator ? Update(DataKey, WriteMajority(timeout), None) {
-      case None =>
-        LWWMap.empty.put(self, shard, ShardLocation(location))
-      case Some(existing) =>
-        existing.put(self, shard, ShardLocation(address = location))
-    }).flatMap {
-      case UpdateSuccess(_, _) => Future.successful(Done)
-      case UpdateTimeout       => Future.failed(new RuntimeException("oh noes"))
-    }
-  }
-
-}
-
 @silent
 class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
     extends ShardCoordinator.ShardAllocationStrategy {
 
   import DynamicShardAllocationStrategy._
-
   import akka.pattern.ask
   import system.dispatcher
 
@@ -128,7 +91,9 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
 
   private val log = Logging(system, classOf[DynamicShardAllocationStrategy])
 
-  private val shardState = system.actorOf(Props(new DDataStateActor(typeName)))
+  private val shardState = system
+    .asInstanceOf[ExtendedActorSystem]
+    .systemActorOf(Props(new DDataStateActor(typeName)), s"dynamic-allocation-state-$typeName")
 
   private val cluster = Cluster(system)
 

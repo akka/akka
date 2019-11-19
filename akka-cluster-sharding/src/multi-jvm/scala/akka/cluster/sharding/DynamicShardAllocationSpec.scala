@@ -5,15 +5,15 @@
 package akka.cluster.sharding
 
 import akka.actor.Actor
+import akka.actor.Address
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.MultiNodeClusterSpec
-import akka.cluster.UniqueAddress
 import akka.cluster.sharding.DynamicShardAllocationSpec.GiveMeYourHome.Get
 import akka.cluster.sharding.DynamicShardAllocationSpec.GiveMeYourHome.Home
+import akka.cluster.sharding.dynamic.DynamicShardAllocation
 import akka.cluster.sharding.dynamic.DynamicShardAllocationStrategy
-import akka.cluster.sharding.dynamic.DynamicShardAllocationStrategyClient
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -59,7 +59,7 @@ object DynamicShardAllocationSpec {
 
   object GiveMeYourHome {
     case class Get(id: String)
-    case class Home(address: UniqueAddress)
+    case class Home(address: Address)
 
     val extractEntityId: ShardRegion.ExtractEntityId = {
       case g @ Get(id) => (id, g)
@@ -73,14 +73,13 @@ object DynamicShardAllocationSpec {
 
   class GiveMeYourHome extends Actor {
 
-    val selfAddress = Cluster(context.system).selfUniqueAddress
+    val selfAddress = Cluster(context.system).selfAddress
 
     override def receive: Receive = {
       case Get(_) =>
         sender() ! Home(selfAddress)
     }
   }
-
 }
 
 @silent
@@ -97,6 +96,7 @@ abstract class DynamicShardAllocationSpec
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.second)
 
   val typeName = "home"
+  val initiallyOnForth = "on-forth"
 
   "Dynamic shard allocation" must {
     "form cluster" in {
@@ -135,7 +135,7 @@ abstract class DynamicShardAllocationSpec
       runOn(first, second, third) {
         shardRegion() ! Get(myself.name)
         val actorLocation = expectMsgType[Home](10.seconds).address
-        actorLocation shouldEqual Cluster(system).selfUniqueAddress
+        actorLocation shouldEqual Cluster(system).selfAddress
       }
       enterBarrier("local-message-sent")
     }
@@ -144,16 +144,18 @@ abstract class DynamicShardAllocationSpec
       // TODO put a small API around updating to not expose the
       // exact DData message as public API
       val shardToSpecifyLocation = "cats"
-      val client = new DynamicShardAllocationStrategyClient(system, typeName)
       runOn(first) {
-        client.updateShardLocation(shardToSpecifyLocation, Cluster(system).selfAddress).futureValue
+        DynamicShardAllocation(system)
+          .clientFor(typeName)
+          .updateShardLocation(shardToSpecifyLocation, Cluster(system).selfAddress)
+          .futureValue
       }
       enterBarrier("shard-location-updated")
 
       runOn(second, third) {
         awaitAssert({
           shardRegion() ! Get(shardToSpecifyLocation)
-          expectMsg(Home(uniqueAddress(first)))
+          expectMsg(Home(address(first)))
         }, 10.seconds)
       }
       enterBarrier("shard-allocated-to-specific-node")
@@ -161,11 +163,10 @@ abstract class DynamicShardAllocationSpec
 
     "allocate to a node that does not exist yet" in {
       val onForthShardId = "on-forth"
-      val client = new DynamicShardAllocationStrategyClient(system, typeName)
       val forthAddress = address(forth)
       runOn(second) {
         system.log.info("Allocating {} on {}", onForthShardId, forthAddress)
-        client.updateShardLocation(onForthShardId, forthAddress)
+        DynamicShardAllocation(system).clientFor(typeName).updateShardLocation(onForthShardId, forthAddress)
       }
       enterBarrier("allocated-to-new-node")
       runOn(forth) {
@@ -174,11 +175,30 @@ abstract class DynamicShardAllocationSpec
       enterBarrier("forth-node-joined")
       runOn(first, second, third) {
         awaitAssert({
-          shardRegion() ! Get(onForthShardId)
-          expectMsg(Home(uniqueAddress(forth)))
+          shardRegion() ! Get(initiallyOnForth)
+          expectMsg(Home(address(forth)))
         }, 10.seconds)
       }
       enterBarrier("shard-allocated-to-forth")
+    }
+
+    "move allocation" in {
+      runOn(third) {
+        system.log.info("Moving shard from forth to first: {}", address(first))
+        DynamicShardAllocation(system).clientFor(typeName).updateShardLocation(initiallyOnForth, address(first))
+      }
+      enterBarrier("shard-moved-from-forth-to-first")
+      runOn(first, second, third, forth) {
+        awaitAssert({
+          shardRegion() ! Get(initiallyOnForth)
+          expectMsg(Home(address(first)))
+        }, 10.seconds)
+      }
+      enterBarrier("finished")
+    }
+
+    "continue to work when shard coordinator is moved" in {
+      pending
     }
   }
 }
