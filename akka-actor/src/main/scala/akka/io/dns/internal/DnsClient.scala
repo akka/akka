@@ -78,6 +78,7 @@ import scala.concurrent.duration._
     case DropRequest(id) =>
       log.debug("Dropping request [{}]", id)
       inflightRequests -= id
+
     case Question4(id, name) =>
       log.debug("Resolving [{}] (A)", name)
       val msg = message(name, id, RecordType.A)

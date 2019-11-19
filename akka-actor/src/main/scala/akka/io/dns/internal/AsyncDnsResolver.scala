@@ -106,9 +106,9 @@ private[io] final class AsyncDnsResolver(
             case NonFatal(t) =>
               t match {
                 case _: AskTimeoutException =>
-                  log.error("Resolve timed out after {}. Trying next name server", timeout.duration.pretty)
+                  log.info("Resolve of {} timed out after {}. Trying next name server", name, timeout.duration.pretty)
                 case _ =>
-                  log.error(t, "Resolve failed. Trying next name server")
+                  log.info("Resolve of {} failed. Trying next name server {}", name, t.getMessage)
               }
               resolveWithResolvers(name, requestType, tail)
           }
