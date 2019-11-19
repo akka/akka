@@ -241,8 +241,21 @@ object DistributedPubSubMediator {
     }
   }
 
-  // Only for testing purposes, to poll/await replication
-  case object Count
+  sealed abstract class Count
+
+  /**
+   * Scala API: Send this message to the mediator and it will reply with an `Int` of
+   * the number of subscribers.
+   * Only for testing purposes, to poll/await replication.
+   */
+  case object Count extends Count
+
+  /**
+   * Java API: Send this message to the mediator and it will reply with an `Integer` of
+   * the number of subscribers.
+   */
+  def getCountInstance: Count = Count
+
   final case class CountSubscribers(topic: String)
 
   /**
