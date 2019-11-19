@@ -14,6 +14,8 @@ Emit each incoming element each of `n` outputs.
 
 ## Example
 
+Here is an example that is using `Broadcast` to aggregate different values from a `Source` of integers.
+
 Scala
 :   @@snip [BroadcastDocExample.scala](/akka-docs/src/test/scala/docs/stream/operators/BroadcastDocExample.scala) { #broadcast }
 
