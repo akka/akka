@@ -1127,11 +1127,6 @@ class DDataShardCoordinator(
     case _ => stash()
   }
 
-  private def onTerminating(): Unit = {
-    context.unbecome()
-    unstashAll()
-  }
-
   // this state will stash all messages until it receives UpdateSuccess
   def waitingForUpdate[E <: DomainEvent](
       evt: E,
@@ -1153,7 +1148,7 @@ class DDataShardCoordinator(
         if (terminating) "terminating" else "retrying",
         evt)
       if (terminating) {
-        onTerminating()
+        context.stop(self)
       } else {
         // repeat until UpdateSuccess
         sendCoordinatorStateUpdate(evt)
@@ -1167,7 +1162,7 @@ class DDataShardCoordinator(
       else
         context.become(waitingForUpdate(evt, afterUpdateCallback, newRemainingKeys))
 
-    case UpdateTimeout(AllShardsKey, Some(_: String)) =>
+    case UpdateTimeout(AllShardsKey, Some(newShard: String)) =>
       log.error(
         "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis ({}), event={}",
         writeMajority.timeout.toMillis,
@@ -1177,7 +1172,7 @@ class DDataShardCoordinator(
         context.stop(self)
       } else {
         // repeat until UpdateSuccess
-        sendCoordinatorStateUpdate(evt)
+        sendAllShardsUpdate(newShard)
       }
 
     case ModifyFailure(key, error, cause, _) =>
@@ -1190,7 +1185,7 @@ class DDataShardCoordinator(
         if (terminating) "Coordinator will be terminated due to Terminate message received"
         else "Coordinator will be restarted")
       if (terminating) {
-        onTerminating()
+        context.stop(self)
       } else {
         throw cause
       }
