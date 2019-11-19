@@ -156,6 +156,37 @@ class ActorContextAskSpec
       exc.getMessage should include("[10 ms]") // timeout
     }
 
+    "receive replies in same order as sent" in {
+      case class Ping(n: Int, replyTo: ActorRef[Pong])
+      case class Pong(n: Int)
+
+      val N = 100
+      val probe = TestProbe[Pong]()
+
+      val pingPong = spawn(Behaviors.receiveMessage[Ping] { message =>
+        message.replyTo ! Pong(message.n)
+        Behaviors.same
+      })
+
+      val snitch = Behaviors.setup[Pong] { context =>
+        (1 to N).foreach { n =>
+          context.ask[Ping, Pong](pingPong, Ping(n, _)) {
+            case Success(pong) => pong
+            case Failure(ex)   => throw ex
+          }
+        }
+
+        Behaviors.receiveMessage { pong =>
+          probe.ref ! pong
+          Behaviors.same
+        }
+      }
+
+      spawn(snitch)
+
+      probe.receiveMessages(N).map(_.n) should ===(1 to N)
+    }
+
   }
 
 }

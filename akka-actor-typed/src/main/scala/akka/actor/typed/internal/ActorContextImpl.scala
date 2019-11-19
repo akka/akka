@@ -13,7 +13,9 @@ import java.util.concurrent.CompletionStage
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
+
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.util.{ BoxedType, OptionVal, Timeout }
 import akka.util.JavaDurationConverters._
 import com.github.ghik.silencer.silent
@@ -182,7 +184,8 @@ import org.slf4j.LoggerFactory
 
   // Scala API impl
   def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit = {
-    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))
+    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))(
+      ExecutionContexts.sameThreadExecutionContext)
   }
 
   // Java API impl
