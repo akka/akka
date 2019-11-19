@@ -7,7 +7,6 @@ package akka.remote.artery
 import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
-
 import akka.actor.ActorSystem
 import akka.remote.UniqueAddress
 import akka.stream.Attributes
@@ -18,6 +17,9 @@ import akka.stream.stage._
 import akka.util.{ unused, OptionVal }
 import akka.Done
 import akka.actor.Address
+import akka.dispatch.ExecutionContexts
+
+import scala.util.Try
 
 /**
  * INTERNAL API
@@ -282,10 +284,8 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
             // periodically.
             thenInside
           case None =>
-            implicit val ec = materializer.executionContext
-            first.onComplete { _ =>
-              getAsyncCallback[Done](_ => thenInside).invoke(Done)
-            }
+            val callback = getAsyncCallback[Try[Done]](_ => thenInside)
+            first.onComplete(callback.invoke)(ExecutionContexts.sameThreadExecutionContext)
         }
 
       }

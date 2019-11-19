@@ -106,6 +106,7 @@ import akka.util.OptionVal
       override def preStart(): Unit = {
         implicit val ec = materializer.executionContext
         outboundContext.controlSubject.attach(this).foreach {
+          // FIXME potentially unsafe getAsyncCallback usage
           getAsyncCallback[Done] { _ =>
             replyObserverAttached = true
             if (isAvailable(out))
@@ -151,7 +152,7 @@ import akka.util.OptionVal
         }
       }
 
-      // ControlMessageObserver, external call
+      // ControlMessageObserver, external call but on graph logic machinery thread (getAsyncCallback safe)
       override def controlSubjectCompleted(signal: Try[Done]): Unit = {
         getAsyncCallback[Try[Done]] {
           case Success(_)     => completeStage()

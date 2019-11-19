@@ -1407,14 +1407,12 @@ private[stream] object Collect {
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
       override protected def logSource: Class[_] = classOf[Watch[_]]
 
-      private lazy val self = getStageActor {
-        case (_, Terminated(`targetRef`)) =>
-          failStage(new WatchedActorTerminatedException("Watch", targetRef))
-        case (_, _) => // keep the compiler happy (stage actor receive is total)
-      }
-
       override def preStart(): Unit = {
-        // initialize self, and watch the target
+        val self = getStageActor {
+          case (_, Terminated(`targetRef`)) =>
+            failStage(new WatchedActorTerminatedException("Watch", targetRef))
+          case (_, _) => // keep the compiler happy (stage actor receive is total)
+        }
         self.watch(targetRef)
       }
 
