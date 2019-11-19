@@ -308,7 +308,7 @@ abstract class ServiceDiscovery {
    * the passed `resolveTimeout` should never be exceeded, as it signals the application's
    * eagerness to wait for a result for this specific lookup.
    *
-   * The returned future should be failed once resolveTimeout has passed with a [DiscoveryTimeoutException].
+   * The returned future should be failed once resolveTimeout has passed with a [[DiscoveryTimeoutException]].
    *
    */
   def lookup(query: Lookup, resolveTimeout: java.time.Duration): CompletionStage[Resolved] = {

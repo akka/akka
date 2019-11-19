@@ -77,7 +77,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
   private val dns = initializeDns()
 
   // exposed for testing
-  def initializeDns(): ActorRef = {
+  private[dns] def initializeDns(): ActorRef = {
     if (system.settings.config.getString("akka.io.dns.resolver") == "async-dns") {
       log.debug("using system resolver as it is set to async-dns")
       IO(Dns)(system)
@@ -128,7 +128,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
             log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
             Resolved(srvRequest, Nil)
         }
-        .recoverWith(convertToTimeout)
+        .recoverWith(convertToTimeout(resolveTimeout))
     }
 
     asyncDnsCache match {
@@ -146,9 +146,10 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
     }
   }
 
-  private val convertToTimeout: PartialFunction[Throwable, Future[Resolved]] = {
+  private def convertToTimeout(timeout: FiniteDuration): PartialFunction[Throwable, Future[Resolved]] = {
     case _: AskTimeoutException =>
-      Future.failed(new DiscoveryTimeoutException("Dns resolve did not respond within resolveTimeout"))
+      import akka.util.PrettyDuration._
+      Future.failed(new DiscoveryTimeoutException(s"Dns resolve did not respond within ${timeout.pretty}"))
   }
 
   private def lookupIp(lookup: Lookup, resolveTimeout: FiniteDuration) = {
@@ -174,7 +175,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
             log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
             Resolved(lookup.serviceName, Nil)
         }
-        .recoverWith(convertToTimeout)
+        .recoverWith(convertToTimeout(resolveTimeout))
     }
 
     asyncDnsCache match {
