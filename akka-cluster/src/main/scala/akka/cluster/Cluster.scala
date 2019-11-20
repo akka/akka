@@ -24,8 +24,9 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Await, ExecutionContext }
 import scala.util.control.NonFatal
 
+import akka.event.LogMarker
 import akka.event.Logging.LogLevel
-
+import akka.event.MarkerLoggingAdapter
 import com.github.ghik.silencer.silent
 
 /**
@@ -101,7 +102,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
 
   private val _isTerminated = new AtomicBoolean(false)
-  private val log = Logging(system, ClusterLogClass.ClusterCore)
+  private val log = Logging.withMarker(system, ClusterLogClass.ClusterCore)
   // ClusterJmx is initialized as the last thing in the constructor
   private var clusterJmx: Option[ClusterJmx] = None
 
@@ -468,57 +469,85 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * INTERNAL API
    */
-  private[cluster] class ClusterLogger(log: LoggingAdapter) {
+  private[cluster] class ClusterLogger(log: MarkerLoggingAdapter) {
     def isDebugEnabled: Boolean =
       log.isDebugEnabled
 
     def logDebug(message: String): Unit =
-      logAtLevel(Logging.DebugLevel, message)
+      if (LogInfo && log.isDebugEnabled)
+        logAtLevel(Logging.DebugLevel, message)
 
     def logDebug(template: String, arg1: Any): Unit =
-      logAtLevel(Logging.DebugLevel, template, arg1)
+      if (LogInfo && log.isDebugEnabled)
+        logAtLevel(Logging.DebugLevel, log.format(template, arg1))
 
     def logDebug(template: String, arg1: Any, arg2: Any): Unit =
-      logAtLevel(Logging.DebugLevel, template, arg1, arg2)
+      if (LogInfo && log.isDebugEnabled)
+        logAtLevel(Logging.DebugLevel, log.format(template, arg1, arg2))
 
     def logDebug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-      logAtLevel(Logging.DebugLevel, template, arg1, arg2, arg3)
+      if (LogInfo && log.isDebugEnabled)
+        logAtLevel(Logging.DebugLevel, log.format(template, arg1, arg2, arg3))
 
     def logInfo(message: String): Unit =
-      logAtLevel(Logging.InfoLevel, message)
+      if (LogInfo && log.isInfoEnabled)
+        logAtLevel(Logging.InfoLevel, message)
 
     def logInfo(template: String, arg1: Any): Unit =
-      logAtLevel(Logging.InfoLevel, template, arg1)
+      if (LogInfo && log.isInfoEnabled)
+        logAtLevel(Logging.InfoLevel, log.format(template, arg1))
+
+    def logInfo(marker: LogMarker, template: String, arg1: Any): Unit =
+      if (LogInfo && log.isInfoEnabled)
+        logAtLevel(marker, Logging.InfoLevel, log.format(template, arg1))
 
     def logInfo(template: String, arg1: Any, arg2: Any): Unit =
-      logAtLevel(Logging.InfoLevel, template, arg1, arg2)
+      if (LogInfo && log.isInfoEnabled)
+        logAtLevel(Logging.InfoLevel, log.format(template, arg1, arg2))
 
     def logInfo(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-      logAtLevel(Logging.InfoLevel, template, arg1, arg2, arg3)
+      if (LogInfo && log.isInfoEnabled)
+        logAtLevel(Logging.InfoLevel, log.format(template, arg1, arg2, arg3))
 
     def logWarning(message: String): Unit =
-      logAtLevel(Logging.WarningLevel, message)
+      if (log.isWarningEnabled)
+        logAtLevel(Logging.WarningLevel, message)
 
     def logWarning(template: String, arg1: Any): Unit =
-      logAtLevel(Logging.WarningLevel, template, arg1)
+      if (log.isWarningEnabled)
+        logAtLevel(Logging.WarningLevel, log.format(template, arg1))
+
+    def logWarning(marker: LogMarker, template: String, arg1: Any): Unit =
+      if (log.isWarningEnabled)
+        logAtLevel(marker, Logging.WarningLevel, log.format(template, arg1))
 
     def logWarning(template: String, arg1: Any, arg2: Any): Unit =
-      logAtLevel(Logging.WarningLevel, template, arg1, arg2)
+      if (log.isWarningEnabled)
+        logAtLevel(Logging.WarningLevel, log.format(template, arg1, arg2))
+
+    def logWarning(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
+      if (log.isWarningEnabled)
+        logAtLevel(marker, Logging.WarningLevel, log.format(template, arg1, arg2))
 
     def logWarning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-      logAtLevel(Logging.WarningLevel, template, arg1, arg2, arg3)
+      if (log.isWarningEnabled)
+        logAtLevel(Logging.WarningLevel, log.format(template, arg1, arg2, arg3))
 
     def logError(message: String): Unit =
-      logAtLevel(Logging.ErrorLevel, message)
+      if (log.isErrorEnabled)
+        logAtLevel(Logging.ErrorLevel, message)
 
     def logError(template: String, arg1: Any): Unit =
-      logAtLevel(Logging.ErrorLevel, template, arg1)
+      if (log.isErrorEnabled)
+        logAtLevel(Logging.ErrorLevel, log.format(template, arg1))
 
     def logError(template: String, arg1: Any, arg2: Any): Unit =
-      logAtLevel(Logging.ErrorLevel, template, arg1, arg2)
+      if (log.isErrorEnabled)
+        logAtLevel(Logging.ErrorLevel, log.format(template, arg1, arg2))
 
     def logError(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-      logAtLevel(Logging.ErrorLevel, template, arg1, arg2, arg3)
+      if (log.isErrorEnabled)
+        logAtLevel(Logging.ErrorLevel, log.format(template, arg1, arg2, arg3))
 
     def logError(cause: Throwable, message: String): Unit = {
       if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
@@ -527,71 +556,32 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         log.error(cause, "Cluster Node [{}] dc [{}] - {}", selfAddress, settings.SelfDataCenter, message)
     }
 
-    def logError(cause: Throwable, template: String, arg1: Any): Unit = {
-      if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
-        log.error(cause, "Cluster Node [{}] - " + template, selfAddress, arg1)
-      else
-        log.error(cause, "Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.SelfDataCenter, arg1)
-    }
+    def logError(cause: Throwable, template: String, arg1: Any): Unit =
+      logError(cause, log.format(template, arg1))
 
-    def logError(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit = {
-      if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
-        log.error(cause, "Cluster Node [{}] - " + template, selfAddress, arg1, arg2)
-      else
-        log.error(cause, "Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.SelfDataCenter, arg1, arg2)
-    }
+    def logError(cause: Throwable, template: String, arg1: Any, arg2: Any): Unit =
+      logError(cause, log.format(template, arg1, arg2))
 
-    def logError(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit = {
-      if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
-        log.error(cause, "Cluster Node [{}] - " + template, selfAddress, arg1, arg2, arg3)
-      else
-        log.error(
-          cause,
-          "Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template,
-          selfAddress,
-          arg1,
-          arg2,
-          arg3)
-    }
+    def logError(cause: Throwable, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
+      logError(cause, log.format(template, arg1, arg2, arg3))
 
     private def logAtLevel(logLevel: LogLevel, message: String): Unit = {
-      if (isLevelEnabled(logLevel))
-        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
-          log.log(logLevel, "Cluster Node [{}] - {}", selfAddress, message)
-        else
-          log.log(logLevel, "Cluster Node [{}] dc [{}] - {}", selfAddress, settings.SelfDataCenter, message)
+      if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
+        log.log(logLevel, "Cluster Node [{}] - {}", selfAddress, message)
+      else
+        log.log(logLevel, "Cluster Node [{}] dc [{}] - {}", selfAddress, settings.SelfDataCenter, message)
     }
 
-    private def logAtLevel(logLevel: LogLevel, template: String, arg1: Any): Unit = {
-      if (isLevelEnabled(logLevel))
-        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
-          log.log(logLevel, "Cluster Node [{}] - " + template, selfAddress, arg1)
-        else
-          log.log(logLevel, "Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.SelfDataCenter, arg1)
+    private def logAtLevel(marker: LogMarker, logLevel: LogLevel, message: String): Unit = {
+      if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
+        log.log(marker, logLevel, log.format("Cluster Node [{}] - {}", selfAddress, message))
+      else
+        log.log(
+          marker,
+          logLevel,
+          log.format("Cluster Node [{}] dc [{}] - {}", selfAddress, settings.SelfDataCenter, message))
     }
 
-    private def logAtLevel(logLevel: LogLevel, template: String, arg1: Any, arg2: Any): Unit =
-      if (isLevelEnabled(logLevel))
-        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
-          log.log(logLevel, "Cluster Node [{}] - " + template, selfAddress, arg1, arg2)
-        else
-          log.log(logLevel, "Cluster Node [{}] dc [{}] - " + template, selfAddress, settings.SelfDataCenter, arg1, arg2)
-
-    private def logAtLevel(logLevel: LogLevel, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-      if (isLevelEnabled(logLevel))
-        if (settings.SelfDataCenter == ClusterSettings.DefaultDataCenter)
-          log.log(logLevel, "Cluster Node [{}] - " + template, selfAddress, arg1, arg2, arg3)
-        else
-          log.log(
-            logLevel,
-            "Cluster Node [{}] dc [" + settings.SelfDataCenter + "] - " + template,
-            selfAddress,
-            arg1,
-            arg2,
-            arg3)
-
-    private def isLevelEnabled(logLevel: LogLevel): Boolean =
-      LogInfo || logLevel < Logging.InfoLevel
   }
 
 }

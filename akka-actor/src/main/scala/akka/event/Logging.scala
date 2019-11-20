@@ -1627,16 +1627,35 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
 
 /** DO NOT INHERIT: Class is open only for use by akka-slf4j*/
 @DoNotInherit
-class LogMarker(val name: String)
+class LogMarker(val name: String, val properties: Map[String, Any]) {
+
+  // for binary compatibility
+  def this(name: String) = this(name, Map.empty)
+
+  /** Java API */
+  def getProperties: java.util.Map[String, Object] = {
+    import scala.collection.JavaConverters._
+    properties.map { case (k, v) => (k, v.asInstanceOf[AnyRef]) }.asJava
+  }
+}
+
 object LogMarker {
 
   /** The Marker is internally transferred via MDC using using this key */
   private[akka] final val MDCKey = "marker"
 
-  def apply(name: String): LogMarker = new LogMarker(name)
+  def apply(name: String): LogMarker = new LogMarker(name, Map.empty)
+
+  def apply(name: String, properties: Map[String, Any]): LogMarker = new LogMarker(name, properties)
 
   /** Java API */
   def create(name: String): LogMarker = apply(name)
+
+  /** Java API */
+  def create(name: String, properties: java.util.Map[String, Any]): LogMarker = {
+    import scala.collection.JavaConverters._
+    apply(name, properties.asScala.toMap)
+  }
 
   @Deprecated
   @deprecated("use akka.event.LogEventWithMarker#marker instead", since = "2.5.12")
@@ -1647,6 +1666,14 @@ object LogMarker {
     }
 
   private[akka] final val Security = apply("SECURITY")
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] object Properties {
+    val RemoteAddress = "akkaRemoteAddress"
+    val RemoteAddressUid = "akkaRemoteAddressUid"
+  }
 
 }
 
@@ -1895,6 +1922,19 @@ class MarkerLoggingAdapter(
   def debug(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any, arg4: Any): Unit =
     if (isDebugEnabled(marker))
       bus.publish(Debug(logSource, logClass, format(template, arg1, arg2, arg3, arg4), mdc, marker))
+
+  /**
+   * Log message at the specified log level.
+   */
+  def log(marker: LogMarker, level: Logging.LogLevel, message: String): Unit = {
+    level match {
+      case Logging.DebugLevel   => debug(marker, message)
+      case Logging.InfoLevel    => info(marker, message)
+      case Logging.WarningLevel => warning(marker, message)
+      case Logging.ErrorLevel   => error(marker, message)
+      case _                    =>
+    }
+  }
 
   // Copy of LoggingAdapter.format1 due to binary compatibility restrictions
   private def format1(t: String, arg: Any): String = arg match {

@@ -24,6 +24,7 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.dispatch.ExecutionContexts
+import akka.event.LogMarker
 import akka.event.Logging
 import akka.remote.RemoteActorRefProvider
 import akka.remote.RemoteTransportException
@@ -145,6 +146,34 @@ private[remote] class ArteryTcpTransport(
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
       val restartCount = new AtomicInteger(0)
 
+      def logConnected(): Unit = {
+        if (log.isDebugEnabled)
+          log.debug(
+            LogMarker(
+              "remote.outbound",
+              Map(
+                LogMarker.Properties.RemoteAddress -> outboundContext.remoteAddress,
+                LogMarker.Properties.RemoteAddressUid -> outboundContext.associationState
+                  .uniqueRemoteAddressValue()
+                  .getOrElse(""))),
+            "Outbound connection opened to [{}]",
+            outboundContext.remoteAddress)
+      }
+
+      def logDisconnected(): Unit = {
+        if (log.isDebugEnabled)
+          log.debug(
+            LogMarker(
+              "remote.outbound",
+              Map(
+                LogMarker.Properties.RemoteAddress -> outboundContext.remoteAddress,
+                LogMarker.Properties.RemoteAddressUid -> outboundContext.associationState
+                  .uniqueRemoteAddressValue()
+                  .getOrElse(""))),
+            "Outbound connection closed to [{}]",
+            outboundContext.remoteAddress)
+      }
+
       val flowFactory = () => {
         val onFailureLogLevel = if (restartCount.incrementAndGet() == 1) Logging.WarningLevel else Logging.DebugLevel
 
@@ -159,8 +188,19 @@ private[remote] class ArteryTcpTransport(
               if (controlIdleKillSwitch.isDefined)
                 outboundContext.asInstanceOf[Association].setControlIdleKillSwitch(controlIdleKillSwitch)
 
-              Flow[ByteString].prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId))).via(connectionFlow)
+              Flow[ByteString]
+                .prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId)).map { header =>
+                  logConnected()
+                  header
+                })
+                .via(connectionFlow)
             }))
+            .mapError {
+              case ArteryTransport.ShutdownSignal => ArteryTransport.ShutdownSignal
+              case e =>
+                logDisconnected()
+                e
+            }
             .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal => Source.empty })
             .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
             .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = onFailureLogLevel))

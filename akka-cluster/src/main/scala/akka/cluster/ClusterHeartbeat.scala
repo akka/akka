@@ -19,6 +19,7 @@ import akka.actor.RootActorPath
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent._
 import akka.event.ActorWithLogClass
+import akka.event.LogMarker
 import akka.event.Logging
 import akka.remote.FailureDetectorRegistry
 import akka.remote.HeartbeatMessage
@@ -227,6 +228,7 @@ private[cluster] class ClusterHeartbeatSender extends Actor {
     val now = System.nanoTime()
     if ((now - tickTimestamp) >= (HeartbeatInterval.toNanos * 2))
       logWarning(
+        LogMarker("cluster.fd.starvation"),
         "Scheduled sending of heartbeat was delayed. " +
         "Previous heartbeat was sent [{}] ms ago, expected interval is [{}] ms. This may cause failure detection " +
         "to mark members as unreachable. The reason can be thread starvation, e.g. by running blocking tasks on the " +

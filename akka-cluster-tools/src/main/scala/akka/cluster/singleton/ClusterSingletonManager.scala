@@ -32,6 +32,8 @@ import akka.coordination.lease.LeaseUsageSettings
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.dispatch.Dispatchers
+import akka.event.LogMarker
+import akka.event.Logging
 import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.JavaDurationConverters._
@@ -494,6 +496,8 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
   private val singletonLeaseName = s"${context.system.name}-singleton-${self.path}"
 
+  override val log = Logging.withMarker(context.system, this)
+
   val lease: Option[Lease] = settings.leaseSettings.map(
     settings =>
       LeaseProvider(context.system)
@@ -555,11 +559,20 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   def logInfo(message: String): Unit =
     if (LogInfo) log.info(message)
 
+  def logInfo(marker: LogMarker, message: String): Unit =
+    if (LogInfo) log.info(marker, message)
+
   def logInfo(template: String, arg1: Any): Unit =
     if (LogInfo) log.info(template, arg1)
 
+  def logInfo(marker: LogMarker, template: String, arg1: Any): Unit =
+    if (LogInfo) log.info(marker, template, arg1)
+
   def logInfo(template: String, arg1: Any, arg2: Any): Unit =
     if (LogInfo) log.info(template, arg1, arg2)
+
+  def logInfo(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
+    if (LogInfo) log.info(marker, template, arg1, arg2)
 
   def logInfo(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
     if (LogInfo) log.info(template, arg1, arg2, arg3)
@@ -802,7 +815,9 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
         stay.using(AcquiringLeaseData(leaseRequestInProgress = false, None))
       }
     case Event(Terminated(ref), AcquiringLeaseData(_, Some(singleton))) if ref == singleton =>
-      logInfo("Singleton actor terminated. Trying to acquire lease again before re-creating.")
+      logInfo(
+        LogMarker("cluster.singleton.terminated"),
+        "Singleton actor terminated. Trying to acquire lease again before re-creating.")
       // tryAcquireLease sets the state to None for singleton actor
       tryAcquireLease()
     case Event(AcquireLeaseFailure(t), _) =>
@@ -834,8 +849,11 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
   @InternalStableApi
   def gotoOldest(): State = {
+    logInfo(
+      LogMarker("cluster.singleton.started"),
+      "Singleton manager starting singleton actor [{}]",
+      self.path / singletonName)
     val singleton = context.watch(context.actorOf(singletonProps, singletonName))
-    logInfo("Singleton manager starting singleton actor [{}]", singleton.path)
     goto(Oldest).using(OldestData(Some(singleton)))
   }
 
@@ -874,7 +892,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stay
 
     case Event(Terminated(ref), d @ OldestData(Some(singleton))) if ref == singleton =>
-      logInfo("Singleton actor [{}] was terminated", singleton.path)
+      logInfo(LogMarker("cluster.singleton.terminated"), "Singleton actor [{}] was terminated", singleton.path)
       stay.using(d.copy(singleton = None))
 
     case Event(SelfExiting, _) =>
@@ -934,7 +952,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       gotoHandingOver(singleton, None)
 
     case Event(Terminated(ref), d @ WasOldestData(singleton, _)) if singleton.contains(ref) =>
-      logInfo("Singleton actor [{}] was terminated", ref.path)
+      logInfo(LogMarker("cluster.singleton.terminated"), "Singleton actor [{}] was terminated", ref.path)
       stay.using(d.copy(singleton = None))
 
     case Event(SelfExiting, _) =>
@@ -984,7 +1002,11 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
   def handOverDone(handOverTo: Option[ActorRef]): State = {
     val newOldest = handOverTo.map(_.path.address)
-    logInfo("Singleton terminated, hand-over done [{} -> {}]", cluster.selfAddress, newOldest)
+    logInfo(
+      LogMarker("cluster.singleton.terminated"),
+      "Singleton terminated, hand-over done [{} -> {}]",
+      cluster.selfAddress,
+      newOldest)
     handOverTo.foreach { _ ! HandOverDone }
     memberExitingProgress.trySuccess(Done)
     if (removed.contains(cluster.selfUniqueAddress)) {
@@ -1004,7 +1026,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
   when(Stopping) {
     case Event(Terminated(ref), StoppingData(singleton)) if ref == singleton =>
-      logInfo("Singleton actor [{}] was terminated", singleton.path)
+      logInfo(LogMarker("cluster.singleton.terminated"), "Singleton actor [{}] was terminated", singleton.path)
       stop()
   }
 
