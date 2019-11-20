@@ -45,13 +45,15 @@ import org.slf4j.LoggerFactory
 
       val akkaSource = ctx.self.path.toStringWithoutAddress
 
-      val akkaSystem =
+      val akkaAddress =
         ctx.system match {
-          case adapter: ActorSystemAdapter[_] => adapter.provider.akkaSystem
+          case adapter: ActorSystemAdapter[_] => adapter.provider.addressString
           case _                              => ctx.system.name
         }
 
-      new LoggingContext(logger, tagsString, akkaSource, akkaSystem, hasCustomName = false)
+      val sourceActorSystem = ctx.system.name
+
+      new LoggingContext(logger, tagsString, akkaSource, sourceActorSystem, akkaAddress, hasCustomName = false)
     }
   }
 
@@ -60,13 +62,14 @@ import org.slf4j.LoggerFactory
       tagsString: String,
       akkaSource: String,
       sourceActorSystem: String,
+      akkaAddress: String,
       hasCustomName: Boolean) {
     // toggled once per message if logging is used to avoid having to
     // touch the mdc thread local for cleanup in the end
     var mdcUsed = false
 
     def withLogger(logger: Logger): LoggingContext = {
-      val l = new LoggingContext(logger, tagsString, akkaSource, sourceActorSystem, hasCustomName = true)
+      val l = copy(logger = logger, hasCustomName = true)
       l.mdcUsed = mdcUsed
       l
     }
@@ -149,9 +152,7 @@ import org.slf4j.LoggerFactory
 
   override def log: Logger = {
     val logging = loggingContext()
-    // avoid access to MDC ThreadLocal if not needed, see details in LoggingContext
-    logging.mdcUsed = true
-    ActorMdc.setMdc(logging.akkaSource, logging.tagsString, logging.sourceActorSystem)
+    ActorMdc.setMdc(logging)
     logging.logger
   }
 

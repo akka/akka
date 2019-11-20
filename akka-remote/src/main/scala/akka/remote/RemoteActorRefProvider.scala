@@ -256,20 +256,9 @@ private[akka] class RemoteActorRefProvider(
 
     // this enables reception of remote requests
     transport.start()
-    _akkaSystem = OptionVal.Some(transport.defaultAddress.toString)
 
     _remoteWatcher = createOrNone[ActorRef](createRemoteWatcher(system))
     remoteDeploymentWatcher = createOrNone[ActorRef](createRemoteDeploymentWatcher(system))
-  }
-
-  // lazily initialized with fallback since it depends on transport which is not initialized up front
-  // worth caching since if it is used once in a system it will very likely be used many times
-  @volatile private var _akkaSystem: OptionVal[String] = OptionVal.None
-  override private[akka] def akkaSystem: String = {
-    _akkaSystem match {
-      case OptionVal.Some(text) => text
-      case OptionVal.None       => systemName
-    }
   }
 
   private def checkNettyOnClassPath(system: ActorSystemImpl): Unit = {

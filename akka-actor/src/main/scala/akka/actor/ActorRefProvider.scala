@@ -158,7 +158,7 @@ import akka.util.OptionVal
    * INTERNAL API
    */
   @InternalApi
-  private[akka] def akkaSystem: String
+  private[akka] def addressString: String
 
 }
 
@@ -737,5 +737,16 @@ private[akka] class LocalActorRefProvider private[akka] (
     }
   }
 
-  override private[akka] def akkaSystem: String = _systemName
+  // lazily initialized with fallback since it can depend on transport which is not initialized up front
+  // worth caching since if it is used once in a system it will very likely be used many times
+  @volatile private var _addressString: OptionVal[String] = OptionVal.None
+  override private[akka] def addressString: String = {
+    _addressString match {
+      case OptionVal.Some(addr) => addr
+      case OptionVal.None =>
+        val addr = getDefaultAddress.toString
+        _addressString = OptionVal.Some(addr)
+        addr
+    }
+  }
 }

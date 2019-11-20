@@ -32,7 +32,7 @@ class ClusterActorLoggingSpec
 
     "include host and port in sourceActorSystem mdc entry" in {
 
-      def akkaSystem = system.classicSystem.asInstanceOf[ExtendedActorSystem].provider.akkaSystem
+      def akkaSystem = system.classicSystem.asInstanceOf[ExtendedActorSystem].provider.addressString
 
       val behavior =
         Behaviors.setup[String] { context =>
