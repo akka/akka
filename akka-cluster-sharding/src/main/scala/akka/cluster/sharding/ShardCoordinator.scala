@@ -579,6 +579,7 @@ abstract class ShardCoordinator(
             val regionFuture = allocationStrategy.allocateShard(getShardHomeSender, shard, activeRegions)
             regionFuture.value match {
               case Some(Success(region)) =>
+                log.info("Shard {} allocated to {}", shard, region)
                 continueGetShardHome(shard, region, getShardHomeSender)
               case _ =>
                 // continue when future is completed
@@ -587,7 +588,9 @@ abstract class ShardCoordinator(
                     AllocateShardResult(shard, Some(region), getShardHomeSender)
                   }
                   .recover {
-                    case _ => AllocateShardResult(shard, None, getShardHomeSender)
+                    case t =>
+                      log.warning("Shard [{}] allocation failed. It will be retried. Exception: [{}]", shard, t)
+                      AllocateShardResult(shard, None, getShardHomeSender)
                   }
                   .pipeTo(self)
             }

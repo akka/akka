@@ -20,7 +20,7 @@ trait DynamicShardAllocationClient {
    *
    * @param shard The shard identifier
    * @param location Location (akka node) to allocate the shard to
-   * @return Confirmation that the update has been propagates to a majority of cluster nodes
+   * @return Confirmation that the update has been propagated to a majority of cluster nodes
    */
   def updateShardLocation(shard: ShardId, location: Address): Future[Done]
 }

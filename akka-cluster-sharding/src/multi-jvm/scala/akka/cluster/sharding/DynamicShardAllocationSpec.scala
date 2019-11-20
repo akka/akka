@@ -5,6 +5,7 @@
 package akka.cluster.sharding
 
 import akka.actor.Actor
+import akka.actor.ActorLogging
 import akka.actor.Address
 import akka.actor.PoisonPill
 import akka.actor.Props
@@ -27,7 +28,7 @@ import scala.concurrent.duration._
 object DynamicShardAllocationSpecConfig extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
-      akka.loglevel = info
+      akka.loglevel = INFO
       akka.actor.provider = "cluster"
       // FIXME create protobuf for serialization
       akka.actor.allow-java-serialization = on
@@ -71,9 +72,11 @@ object DynamicShardAllocationSpec {
     }
   }
 
-  class GiveMeYourHome extends Actor {
+  class GiveMeYourHome extends Actor with ActorLogging {
 
     val selfAddress = Cluster(context.system).selfAddress
+
+    log.info("Started on {}", selfAddress)
 
     override def receive: Receive = {
       case Get(_) =>
@@ -104,16 +107,14 @@ abstract class DynamicShardAllocationSpec
       enterBarrier("cluster-started")
     }
 
-    val allocationStrategy = new DynamicShardAllocationStrategy(system, typeName)
-
-    def shardRegion() = {
+    lazy val shardRegion = {
       ClusterSharding(system).start(
         typeName = typeName,
         entityProps = Props[GiveMeYourHome],
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId,
-        allocationStrategy,
+        () => new DynamicShardAllocationStrategy(system, typeName),
         PoisonPill)
     }
 
@@ -127,14 +128,14 @@ abstract class DynamicShardAllocationSpec
     }
 
     "start cluster sharding" in {
-      shardRegion()
+      shardRegion
       enterBarrier("shard-region-started")
     }
 
     "default to allocating a shard to the local shard region" in {
       runOn(first, second, third) {
-        shardRegion() ! Get(myself.name)
-        val actorLocation = expectMsgType[Home](10.seconds).address
+        shardRegion ! Get(myself.name)
+        val actorLocation = expectMsgType[Home](20.seconds).address
         actorLocation shouldEqual Cluster(system).selfAddress
       }
       enterBarrier("local-message-sent")
@@ -154,7 +155,7 @@ abstract class DynamicShardAllocationSpec
 
       runOn(second, third) {
         awaitAssert({
-          shardRegion() ! Get(shardToSpecifyLocation)
+          shardRegion ! Get(shardToSpecifyLocation)
           expectMsg(Home(address(first)))
         }, 10.seconds)
       }
@@ -175,7 +176,7 @@ abstract class DynamicShardAllocationSpec
       enterBarrier("forth-node-joined")
       runOn(first, second, third) {
         awaitAssert({
-          shardRegion() ! Get(initiallyOnForth)
+          shardRegion ! Get(initiallyOnForth)
           expectMsg(Home(address(forth)))
         }, 10.seconds)
       }
@@ -190,7 +191,7 @@ abstract class DynamicShardAllocationSpec
       enterBarrier("shard-moved-from-forth-to-first")
       runOn(first, second, third, forth) {
         awaitAssert({
-          shardRegion() ! Get(initiallyOnForth)
+          shardRegion ! Get(initiallyOnForth)
           expectMsg(Home(address(first)))
         }, 10.seconds)
       }

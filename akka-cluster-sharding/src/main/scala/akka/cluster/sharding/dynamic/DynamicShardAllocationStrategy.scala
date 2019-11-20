@@ -13,6 +13,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.LocalActorRef
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
+import akka.actor.Stash
 import akka.cluster.Cluster
 import akka.cluster.ddata.DistributedData
 import akka.cluster.ddata.LWWMapKey
@@ -22,64 +23,61 @@ import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.event.Logging
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
 // TODO reduce logging
-
-@silent
 object DynamicShardAllocationStrategy {
 
   type ShardRegion = ActorRef
-  sealed trait Command
 
   // local only messages
-  case class GetShardLocation(shard: ShardId) extends NoSerializationVerificationNeeded
-  case object GetShardLocations extends NoSerializationVerificationNeeded
+  private final case class GetShardLocation(shard: ShardId) extends NoSerializationVerificationNeeded
+  private final case object GetShardLocations extends NoSerializationVerificationNeeded
 
-  case class GetShardLocationsResponse(desiredAllocations: Map[ShardId, ShardLocation])
+  private final case class GetShardLocationsResponse(desiredAllocations: Map[ShardId, ShardLocation])
       extends NoSerializationVerificationNeeded
-  case class GetShardLocationResponse(address: Option[Address]) extends NoSerializationVerificationNeeded
+  private final case class GetShardLocationResponse(address: Option[Address]) extends NoSerializationVerificationNeeded
 
-  // TODO serializer, datatype used with ddata
-  case class ShardLocation(address: Address)
+  // TODO serializer, datatype used with ddata, use a normal class to evolve
+  final case class ShardLocation(address: Address)
 
-  object DDataStateActor {
+  private object DDataStateActor {
     def props(typeName: String) = Props(new DDataStateActor(typeName))
   }
 
-  class DDataStateActor(typeName: String) extends Actor with ActorLogging {
-
+  private class DDataStateActor(typeName: String) extends Actor with ActorLogging with Stash {
     private val DataKey = LWWMapKey[ShardId, ShardLocation](s"dynamic-sharding-$typeName")
-
     // it's own replicator or configurable?
     private val replicator = DistributedData(context.system).replicator
 
     override def preStart(): Unit = {
-      // TODO only do this once we are the oldest member for the correct role
+      log.info("Starting ddata state actor for {}", typeName)
       replicator ! Subscribe(DataKey, self)
     }
 
     var currentLocations: Map[ShardId, ShardLocation] = Map.empty
 
-    // TODO don't answer questions until the initial state is received
-    override def receive: Receive = {
+    override def receive: Receive = active
+
+    private def active: Receive = {
       case c @ Changed(`DataKey`) =>
         currentLocations = c.get(DataKey).entries
         log.info("Received updated shard locations {}", currentLocations)
       case GetShardLocation(shard) =>
+        log.info("GetShardLocation {}", shard)
         val shardLocation = currentLocations.get(shard).map(_.address)
         sender() ! GetShardLocationResponse(shardLocation)
       case GetShardLocations =>
+        log.info("GetShardLocations")
         sender() ! GetShardLocationsResponse(currentLocations)
     }
   }
 }
-@silent
-class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
+
+class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String, allowNonLocalAllocations: Boolean = false)
     extends ShardCoordinator.ShardAllocationStrategy {
 
   import DynamicShardAllocationStrategy._
@@ -93,7 +91,7 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
 
   private val shardState = system
     .asInstanceOf[ExtendedActorSystem]
-    .systemActorOf(Props(new DDataStateActor(typeName)), s"dynamic-allocation-state-$typeName")
+    .systemActorOf(DDataStateActor.props(typeName), s"dynamic-allocation-state-$typeName")
 
   private val cluster = Cluster(system)
 
@@ -103,12 +101,12 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
       currentShardAllocations: Map[ShardRegion, immutable.IndexedSeq[ShardId]]): Future[ShardRegion] = {
 
     // TODO debug or remove
-    log.info("allocateShard {} {} {}", shardId, requester, currentShardAllocations)
+    log.debug("allocateShard {} {} {}", shardId, requester, currentShardAllocations)
 
     // current shard allocations include all current shard regions
     val allocation: Future[ShardRegion] = (shardState ? GetShardLocation(shardId)).mapTo[GetShardLocationResponse].map {
       case GetShardLocationResponse(None) =>
-        log.info("No specific location for shard {}. Allocating to requestor {}", shardId, requester)
+        log.debug("No specific location for shard {}. Allocating to requester {}", shardId, requester)
         requester
       case GetShardLocationResponse(Some(address)) =>
         // if it is the local address, convert it so it is found in the shards
@@ -118,7 +116,7 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
               log.warning("unable to find local shard in currentShardAllocation. Using requester")
               requester
             case Some(localShardRegion) =>
-              log.info("allocating to local shard")
+              log.debug("allocating to local shard")
               localShardRegion
           }
         } else {
@@ -131,13 +129,20 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
                 currentShardAllocations.keys.mkString(","))
               requester
             case Some(location) =>
-              log.info("Moving shard to dynamic location {}", location)
+              log.debug("Moving shard to location {}", location)
+              if (!allowNonLocalAllocations && location.path.address != requester.path.address) {
+                // sanity check during initial testing
+//                throw new RuntimeException(
+//                  s"Tried to allocate shard ${shardId} to ${location} but request coming from ${requester}")
+              }
+
               location
           }
         }
 
     }
 
+    // TODO map the AskException even tho it is local
     allocation
   }
 
@@ -146,7 +151,7 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
       rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
     // return any shard that has moved
 
-    log.info("rebalance {} {}", currentShardAllocations, rebalanceInProgress)
+    log.debug("rebalance {} {}", currentShardAllocations, rebalanceInProgress)
 
     // TODO should we deal with failure?
     val currentAllocationByAddress: Map[Address, immutable.IndexedSeq[ShardId]] = currentShardAllocations.map {
@@ -155,7 +160,7 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
       case (key, value) => (key.path.address, value)
     }
 
-    log.info("Current allocations by address: " + currentAllocationByAddress)
+    log.debug("Current allocations by address: " + currentAllocationByAddress)
 
     // this will currently return shards that are not allocated. This could be checked by looking in
     // all the currentShardAllocations but probably not worth it as shard coordinator will ignore
@@ -163,12 +168,12 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
     val shardsThatNeedRebalanced: Future[Set[ShardId]] = for {
       desiredMappings <- (shardState ? GetShardLocations).mapTo[GetShardLocationsResponse]
     } yield {
-      log.info("desired allocations: {}", desiredMappings.desiredAllocations)
+      log.debug("desired allocations: {}", desiredMappings.desiredAllocations)
       desiredMappings.desiredAllocations.filterNot {
-        case (shardId, expectedLocation) => // if currentShards.contains(shardId) =>
+        case (shardId, expectedLocation) =>
           currentAllocationByAddress.get(expectedLocation.address) match {
             case None =>
-              log.info(
+              log.debug(
                 "Shard {} desired location {} is not part of the cluster, not rebalancing",
                 shardId,
                 expectedLocation)
@@ -177,16 +182,12 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
               val inCorrectLocation = shards.contains(shardId)
               inCorrectLocation
           }
-//        case (shardId, _) =>
-//           TODO t
-//          log.info("ShardId {} not allocated yet so not rebalancing", shardId)
-//          true
       }
     }.keys.toSet
 
     // TODO debug or remove
     shardsThatNeedRebalanced.map { done =>
-      log.info("Shards not currently in their desired location {}", done)
+      log.debug("Shards not currently in their desired location {}", done)
       done
     }
   }

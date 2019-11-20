@@ -10,6 +10,7 @@ import akka.Done
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.annotation.InternalApi
 import akka.cluster.ddata.DistributedData
 import akka.cluster.ddata.LWWMap
 import akka.cluster.ddata.LWWMapKey
@@ -26,7 +27,11 @@ import akka.util.Timeout
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSystem, typeName: String)
+/**
+ * INTERNAL API
+ */
+@InternalApi
+final private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSystem, typeName: String)
     extends akka.cluster.sharding.dynamic.scaladsl.DynamicShardAllocationClient
     with akka.cluster.sharding.dynamic.javadsl.DynamicShardAllocationClient {
 
@@ -36,11 +41,11 @@ private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSystem, typ
   private val self: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   private val DataKey: LWWMapKey[ShardId, ShardLocation] =
     LWWMapKey[ShardId, ShardLocation](s"dynamic-sharding-$typeName")
+
+  // TODO configurable consistency, timeout etc
   private val timeout = 5.seconds
   private implicit val askTimeout = Timeout(timeout * 2)
   private implicit val ec = system.dispatcher
-
-  // TODO configurable consistency, timeout etc
 
   override def updateShardLocation(shard: ShardId, location: Address): Future[Done] = {
     // TODO debug or remove
@@ -53,7 +58,7 @@ private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSystem, typ
         existing.put(self, shard, ShardLocation(address = location))
     }).flatMap {
       case UpdateSuccess(_, _) => Future.successful(Done)
-      case UpdateTimeout       => Future.failed(new RuntimeException("oh noes"))
+      case UpdateTimeout       => Future.failed(new RuntimeException("oh noes")) // TODO specific exception
     }
   }
 
