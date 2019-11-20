@@ -5,8 +5,8 @@
 package akka.cluster.sharding
 
 import akka.actor._
-import akka.cluster.sharding.ShardRegion.{ ClusterShardingStats, GetClusterShardingStats }
 import akka.cluster.MultiNodeClusterSpec
+import akka.cluster.sharding.ShardRegion.{ ClusterShardingStats, GetClusterShardingStats }
 import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
 import akka.testkit._
@@ -74,11 +74,14 @@ object ClusterShardingMinMembersPerRoleNotConfiguredConfig extends ClusterShardi
 
 object ClusterShardingMinMembersPerRoleConfiguredConfig extends ClusterShardingMinMembersPerRoleConfig {
 
-  nodeConfig(first, second, third)(
-    ConfigFactory.parseString("akka.cluster.role.R1.min-nr-of-members = 3").withFallback(r1Config))
+  val commonRoleConfig = ConfigFactory.parseString("""
+    akka.cluster.role.R1.min-nr-of-members = 3
+    akka.cluster.role.R2.min-nr-of-members = 2
+    """)
 
-  nodeConfig(fourth, fifth)(
-    ConfigFactory.parseString("akka.cluster.role.R2.min-nr-of-members = 2").withFallback(r2Config))
+  nodeConfig(first, second, third)(r1Config.withFallback(commonRoleConfig))
+
+  nodeConfig(fourth, fifth)(r2Config.withFallback(commonRoleConfig))
 }
 
 abstract class ClusterShardingMinMembersPerRoleNotConfiguredSpec
@@ -119,31 +122,29 @@ abstract class ClusterShardingRolePartitioningSpec(config: ClusterShardingMinMem
   "Cluster Sharding with roles" must {
 
     "start the cluster, await convergence, init sharding on every node: 2 data types, 'akka.cluster.min-nr-of-members=2', partition shard location by 2 roles" in {
+      // start sharding early
+      ClusterSharding(system).start(
+        typeName = E1.TypeKey,
+        entityProps = TestActors.echoActorProps,
+        // nodes 1,2,3: role R1, shard region E1, proxy region E2
+        settings = ClusterShardingSettings(system).withRole("R1"),
+        extractEntityId = E1.extractEntityId,
+        extractShardId = E1.extractShardId)
+
+      // when run on first, second and third (role R1) proxy region is started
+      ClusterSharding(system).start(
+        typeName = E2.TypeKey,
+        entityProps = TestActors.echoActorProps,
+        // nodes 4,5: role R2, shard region E2, proxy region E1
+        settings = ClusterShardingSettings(system).withRole("R2"),
+        extractEntityId = E2.extractEntityId,
+        extractShardId = E2.extractShardId)
+
       awaitClusterUp(first, second, third, fourth, fifth)
-      enterBarrier(s"${roles.size}-roles-up")
-
-      runOn(first, second, third, fourth, fifth) {
-        ClusterSharding(system).start(
-          typeName = E1.TypeKey,
-          entityProps = TestActors.echoActorProps,
-          // nodes 1,2,3: role R1, shard region E1, proxy region E2
-          settings = ClusterShardingSettings(system).withRole("R1"),
-          extractEntityId = E1.extractEntityId,
-          extractShardId = E1.extractShardId)
-
-        // when run on first, second and third (role R1) proxy region is started
-        ClusterSharding(system).start(
-          typeName = E2.TypeKey,
-          entityProps = TestActors.echoActorProps,
-          // nodes 4,5: role R2, shard region E2, proxy region E1
-          settings = ClusterShardingSettings(system).withRole("R2"),
-          extractEntityId = E2.extractEntityId,
-          extractShardId = E2.extractShardId)
-      }
+      enterBarrier(s"${roles.size}-up")
     }
 
-    // NOTE the following passes without the change for https://github.com/akka/akka/issues/28177
-    // so we just confirm the test case
+    // https://github.com/akka/akka/issues/28177
     "access role R2 (nodes 4,5) from one of the proxy nodes (1,2,3)" in {
       runOn(first) {
 
