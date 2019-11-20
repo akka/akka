@@ -181,7 +181,13 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
     }
 
     def resolve(name: String, requestType: RequestType = Ip()): DnsProtocol.Resolved = {
-      (IO(Dns) ? DnsProtocol.Resolve(name, requestType)).mapTo[DnsProtocol.Resolved].futureValue
+      try {
+        (IO(Dns) ? DnsProtocol.Resolve(name, requestType)).mapTo[DnsProtocol.Resolved].futureValue
+      } catch {
+        case e: Throwable =>
+          dumpNameserverLogs()
+          throw e
+      }
     }
 
   }
