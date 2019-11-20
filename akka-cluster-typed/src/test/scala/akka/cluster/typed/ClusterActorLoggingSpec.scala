@@ -8,6 +8,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.internal.ActorMdc
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import org.scalatest.Matchers
@@ -32,7 +33,7 @@ class ClusterActorLoggingSpec
 
     "include host and port in sourceActorSystem mdc entry" in {
 
-      def akkaSystem = system.classicSystem.asInstanceOf[ExtendedActorSystem].provider.addressString
+      def addressString = system.classicSystem.asInstanceOf[ExtendedActorSystem].provider.addressString
 
       val behavior =
         Behaviors.setup[String] { context =>
@@ -43,9 +44,9 @@ class ClusterActorLoggingSpec
       LoggingTestKit
         .info("Starting")
         .withCustom { event =>
-          event.mdc("sourceActorSystem") == akkaSystem
+          event.mdc(ActorMdc.AkkaAddressKey) == addressString
         }
-        .intercept {
+        .expect {
           spawn(behavior)
         }
     }
