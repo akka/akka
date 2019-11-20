@@ -52,7 +52,6 @@ abstract class ClusterShardingMinMembersPerRoleConfig extends MultiNodeConfig {
   commonConfig(
     ConfigFactory
       .parseString("""
-        akka.cluster.min-nr-of-members = 2
         akka.actor.provider = "cluster"
         akka.cluster.sharding.state-store-mode = "ddata"
         akka.cluster.sharding.distributed-data.durable.lmdb {
@@ -67,14 +66,18 @@ abstract class ClusterShardingMinMembersPerRoleConfig extends MultiNodeConfig {
 
 object ClusterShardingMinMembersPerRoleNotConfiguredConfig extends ClusterShardingMinMembersPerRoleConfig {
 
-  nodeConfig(first, second, third)(r1Config)
+  val commonRoleConfig: Config = ConfigFactory.parseString("akka.cluster.min-nr-of-members = 2")
 
-  nodeConfig(fourth, fifth)(r2Config)
+  nodeConfig(first, second, third)(r1Config.withFallback(commonRoleConfig))
+
+  nodeConfig(fourth, fifth)(r2Config.withFallback(commonRoleConfig))
 }
 
 object ClusterShardingMinMembersPerRoleConfiguredConfig extends ClusterShardingMinMembersPerRoleConfig {
 
-  val commonRoleConfig = ConfigFactory.parseString("""
+  val commonRoleConfig =
+    ConfigFactory.parseString("""
+    akka.cluster.min-nr-of-members = 3                                                  
     akka.cluster.role.R1.min-nr-of-members = 3
     akka.cluster.role.R2.min-nr-of-members = 2
     """)
