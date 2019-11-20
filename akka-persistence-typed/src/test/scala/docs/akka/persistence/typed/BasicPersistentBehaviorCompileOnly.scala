@@ -200,9 +200,7 @@ object BasicPersistentBehaviorCompileOnly {
           emptyState = State(),
           commandHandler = CommandHandler.command { cmd =>
             context.log.info("Got command {}", cmd)
-            Effect.persist(cmd).thenRun { state =>
-              context.log.info("event persisted, new state {}", state)
-            }
+            Effect.none
           },
           eventHandler = {
             case (state, _) => state

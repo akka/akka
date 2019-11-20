@@ -7,7 +7,7 @@ package akka
 import sbt._
 import sbt.Keys._
 import java.io.File
-import com.typesafe.sbt.pgp.PgpKeys.publishSigned
+import com.jsuereth.sbtpgp.PgpKeys.publishSigned
 import sbtunidoc.BaseUnidocPlugin.autoImport.unidoc
 import com.lightbend.paradox.sbt.ParadoxKeys
 

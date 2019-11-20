@@ -6,6 +6,8 @@ package akka.discovery.dns
 
 import java.net.InetAddress
 
+import akka.actor.ActorRef
+
 import scala.concurrent.duration._
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
@@ -25,6 +27,7 @@ import scala.collection.{ immutable => im }
 import scala.util.Failure
 import scala.util.Success
 import akka.io.dns.internal.AsyncDnsManager
+import akka.pattern.AskTimeoutException
 import akka.util.OptionVal
 import akka.util.Timeout
 
@@ -71,12 +74,17 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
   import ServiceDiscovery._
 
   private val log = Logging(system, getClass)
-  private val dns = if (system.settings.config.getString("akka.io.dns.resolver") == "async-dns") {
-    log.debug("using system resolver as it is set to async-dns")
-    IO(Dns)(system)
-  } else {
-    log.debug("system resolver is not async-dns. Loading isolated resolver")
-    Dns(system).loadAsyncDns("SD-DNS")
+  private val dns = initializeDns()
+
+  // exposed for testing
+  private[dns] def initializeDns(): ActorRef = {
+    if (system.settings.config.getString("akka.io.dns.resolver") == "async-dns") {
+      log.debug("using system resolver as it is set to async-dns")
+      IO(Dns)(system)
+    } else {
+      log.debug("system resolver is not async-dns. Loading isolated resolver")
+      Dns(system).loadAsyncDns("SD-DNS")
+    }
   }
 
   // updated from ask AsyncDnsManager.GetCache, but doesn't have to volatile since will still work when unset
@@ -110,14 +118,17 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
     val mode = Srv
 
     def askResolve(): Future[Resolved] = {
-      dns.ask(DnsProtocol.Resolve(srvRequest, mode))(resolveTimeout).map {
-        case resolved: DnsProtocol.Resolved =>
-          log.debug("{} lookup result: {}", mode, resolved)
-          srvRecordsToResolved(srvRequest, resolved)
-        case resolved =>
-          log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
-          Resolved(srvRequest, Nil)
-      }
+      dns
+        .ask(DnsProtocol.Resolve(srvRequest, mode))(resolveTimeout)
+        .map {
+          case resolved: DnsProtocol.Resolved =>
+            log.debug("{} lookup result: {}", mode, resolved)
+            srvRecordsToResolved(srvRequest, resolved)
+          case resolved =>
+            log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
+            Resolved(srvRequest, Nil)
+        }
+        .recoverWith(convertToTimeout(resolveTimeout))
     }
 
     asyncDnsCache match {
@@ -135,6 +146,12 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
     }
   }
 
+  private def convertToTimeout(timeout: FiniteDuration): PartialFunction[Throwable, Future[Resolved]] = {
+    case _: AskTimeoutException =>
+      import akka.util.PrettyDuration._
+      Future.failed(new DiscoveryTimeoutException(s"Dns resolve did not respond within ${timeout.pretty}"))
+  }
+
   private def lookupIp(lookup: Lookup, resolveTimeout: FiniteDuration) = {
     log.debug("Lookup[{}] translated to A/AAAA lookup as does not have portName and protocol", lookup)
     val mode = Ip()
@@ -148,15 +165,17 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
     }
 
     def askResolve(): Future[Resolved] = {
-      dns.ask(DnsProtocol.Resolve(lookup.serviceName, mode))(resolveTimeout).map {
-        case resolved: DnsProtocol.Resolved =>
-          log.debug("{} lookup result: {}", mode, resolved)
-          ipRecordsToResolved(resolved)
-        case resolved =>
-          log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
-          Resolved(lookup.serviceName, Nil)
-
-      }
+      dns
+        .ask(DnsProtocol.Resolve(lookup.serviceName, mode))(resolveTimeout)
+        .map {
+          case resolved: DnsProtocol.Resolved =>
+            log.debug("{} lookup result: {}", mode, resolved)
+            ipRecordsToResolved(resolved)
+          case resolved =>
+            log.warning("Resolved UNEXPECTED (resolving to Nil): {}", resolved.getClass)
+            Resolved(lookup.serviceName, Nil)
+        }
+        .recoverWith(convertToTimeout(resolveTimeout))
     }
 
     asyncDnsCache match {

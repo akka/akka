@@ -62,7 +62,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogC
             Behaviors.stopped
         }
       }
-      LoggingTestKit.error[ActorInitializationException].intercept {
+      LoggingTestKit.error[ActorInitializationException].expect {
         spawn(behv)
         probe.expectMessage(Started)
         probe.expectMessage(Pong)
@@ -138,7 +138,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogC
           Behaviors.same
         }
       }
-      LoggingTestKit.error[ActorInitializationException].intercept {
+      LoggingTestKit.error[ActorInitializationException].expect {
         val ref = spawn(behv)
         probe.expectTerminated(ref, probe.remainingOrDefault)
       }
