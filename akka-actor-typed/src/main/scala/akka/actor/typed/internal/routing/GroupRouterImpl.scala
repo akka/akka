@@ -22,30 +22,27 @@ import akka.annotation.InternalApi
 @InternalApi
 private[akka] final case class GroupRouterBuilder[T] private[akka] (
     key: ServiceKey[T],
-    logicFactory: () => RoutingLogic[T] = () => new RoutingLogics.RandomLogic[T]())
+    logicFactory: ActorSystem[_] => RoutingLogic[T] = (_: ActorSystem[_]) => new RoutingLogics.RandomLogic[T]())
     extends javadsl.GroupRouter[T]
     with scaladsl.GroupRouter[T] {
 
   // deferred creation of the actual router
-  def apply(ctx: TypedActorContext[T]): Behavior[T] = new InitialGroupRouterImpl[T](ctx.asScala, key, logicFactory())
+  def apply(ctx: TypedActorContext[T]): Behavior[T] =
+    new InitialGroupRouterImpl[T](ctx.asScala, key, logicFactory(ctx.asScala.system))
 
-  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RandomLogic[T]())
+  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = _ => new RoutingLogics.RandomLogic[T]())
 
-  def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RoundRobinLogic[T])
+  def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = _ => new RoutingLogics.RoundRobinLogic[T])
 
-  override def withConsistentHashingRouting(
+  def withConsistentHashingRouting(
       virtualNodesFactor: Int,
-      mapping: function.Function[T, String],
-      system: ActorSystem[T]): GroupRouterBuilder[T] =
-    withConsistentHashingRouting(virtualNodesFactor, mapping.apply(_), system)
+      mapping: function.Function[T, String]): GroupRouterBuilder[T] =
+    withConsistentHashingRouting(virtualNodesFactor, mapping.apply(_))
 
-  override def withConsistentHashingRouting(
-      virtualNodesFactor: Int,
-      mapping: T => String,
-      system: ActorSystem[T]): GroupRouterBuilder[T] = {
+  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: T => String): GroupRouterBuilder[T] = {
     import akka.actor.typed.scaladsl.adapter._
     copy(
-      logicFactory = () =>
+      logicFactory = system =>
         new RoutingLogics.ConsistentHashingLogic[T](
           virtualNodesFactor,
           mapping,

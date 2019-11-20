@@ -19,32 +19,26 @@ import akka.annotation.InternalApi
 private[akka] final case class PoolRouterBuilder[T](
     poolSize: Int,
     behavior: Behavior[T],
-    logicFactory: () => RoutingLogic[T] = () => new RoutingLogics.RoundRobinLogic[T])
+    logicFactory: ActorSystem[_] => RoutingLogic[T] = (_: ActorSystem[_]) => new RoutingLogics.RoundRobinLogic[T])
     extends javadsl.PoolRouter[T]
     with scaladsl.PoolRouter[T] {
   if (poolSize < 1) throw new IllegalArgumentException(s"pool size must be positive, was $poolSize")
 
   // deferred creation of the actual router
   def apply(ctx: TypedActorContext[T]): Behavior[T] =
-    new PoolRouterImpl[T](ctx.asScala, poolSize, behavior, logicFactory())
+    new PoolRouterImpl[T](ctx.asScala, poolSize, behavior, logicFactory(ctx.asScala.system))
 
-  def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RandomLogic[T]())
+  def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = _ => new RoutingLogics.RandomLogic[T]())
 
-  def withRoundRobinRouting(): PoolRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RoundRobinLogic[T])
+  def withRoundRobinRouting(): PoolRouterBuilder[T] = copy(logicFactory = _ => new RoutingLogics.RoundRobinLogic[T])
 
-  override def withConsistentHashingRouting(
-      virtualNodesFactor: Int,
-      mapping: function.Function[T, String],
-      system: ActorSystem[T]): PoolRouter[T] =
-    withConsistentHashingRouting(virtualNodesFactor, mapping.apply(_), system)
+  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: function.Function[T, String]): PoolRouter[T] =
+    withConsistentHashingRouting(virtualNodesFactor, mapping.apply(_))
 
-  def withConsistentHashingRouting(
-      virtualNodesFactor: Int,
-      mapping: T => String,
-      system: ActorSystem[T]): PoolRouterBuilder[T] = {
+  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: T => String): PoolRouterBuilder[T] = {
     import akka.actor.typed.scaladsl.adapter._
     copy(
-      logicFactory = () =>
+      logicFactory = system =>
         new RoutingLogics.ConsistentHashingLogic[T](
           virtualNodesFactor,
           mapping,

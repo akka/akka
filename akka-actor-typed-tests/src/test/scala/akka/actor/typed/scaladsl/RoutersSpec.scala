@@ -10,7 +10,7 @@ import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.routing.{ GroupRouterImpl, RoutingLogics }
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, ActorSystem => TypedActorSystem, Behavior }
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.{ ActorSystem, Dropped }
 import org.scalatest.{ Matchers, WordSpecLike }
 
@@ -26,12 +26,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
 
     Routers.pool(10)(Behaviors.empty[Any]).withRandomRouting()
     Routers.pool(10)(Behaviors.empty[Any]).withRoundRobinRouting()
-    Routers
-      .pool(10)(Behaviors.empty[Any])
-      .withConsistentHashingRouting(
-        1,
-        (msg: Any) => msg.toString,
-        TypedActorSystem(Behaviors.empty[Any], "emptySystem"))
+    Routers.pool(10)(Behaviors.empty[Any]).withConsistentHashingRouting(1, (msg: Any) => msg.toString)
   }
 
   "The router pool" must {

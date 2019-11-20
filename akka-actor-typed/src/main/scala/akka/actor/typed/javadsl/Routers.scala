@@ -4,7 +4,7 @@
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.{ ActorSystem, Behavior }
+import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
@@ -92,8 +92,7 @@ abstract class GroupRouter[T] extends DeferredBehavior[T] {
    */
   def withConsistentHashingRouting(
       virtualNodesFactor: Int,
-      mapping: java.util.function.Function[T, String],
-      system: ActorSystem[T]): GroupRouter[T]
+      mapping: java.util.function.Function[T, String]): GroupRouter[T]
 
 }
 
@@ -148,8 +147,7 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    */
   def withConsistentHashingRouting(
       virtualNodesFactor: Int,
-      mapping: java.util.function.Function[T, String],
-      system: ActorSystem[T]): PoolRouter[T]
+      mapping: java.util.function.Function[T, String]): PoolRouter[T]
 
   /**
    * Set a new pool size from the one set at construction
