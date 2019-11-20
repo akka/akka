@@ -1,7 +1,6 @@
 # Source.unfoldResourceAsync
 
-Wrap any resource that can be opened, queried for next element and closed in an asynchronous way with three distinct functions into a source.
-It is the equivalent of @ref[unfoldResource](unfoldResource.md) but for resources with asynchronous APIs.
+Wrap any resource that can be opened, queried for next element and closed in an asynchronous way.
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -14,6 +13,8 @@ It is the equivalent of @ref[unfoldResource](unfoldResource.md) but for resource
 @@@
 
 ## Description
+
+Wrap any resource that can be opened, queried for next element and closed in an asynchronous way with three distinct functions into a source. This operator is the equivalent of @ref[unfoldResource](unfoldResource.md) but for resources with asynchronous APIs.
 
 `Source.unfoldResourceAsync` allows us to safely extract stream elements from resource with an async API by providing it with 
 three functions that all return a @scala[`Future`]@java[`CompletionStage`]: 
