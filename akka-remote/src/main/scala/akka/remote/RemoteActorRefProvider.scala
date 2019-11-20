@@ -622,6 +622,7 @@ private[akka] class RemoteActorRefProvider(
   def quarantine(address: Address, uid: Option[Long], reason: String): Unit =
     transport.quarantine(address, uid, reason)
 
+  override private[akka] def addressString = local.addressString
 }
 
 private[akka] trait RemoteRef extends ActorRefScope {
