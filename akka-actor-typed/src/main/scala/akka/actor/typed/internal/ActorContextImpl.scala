@@ -10,12 +10,12 @@ import java.util.ArrayList
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
+import akka.actor.Address
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
-
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.util.{ BoxedType, Timeout }
@@ -48,7 +48,7 @@ import org.slf4j.LoggerFactory
       val akkaAddress =
         ctx.system match {
           case adapter: ActorSystemAdapter[_] => adapter.provider.addressString
-          case _                              => ctx.system.name
+          case _                              => Address("akka", ctx.system.name).toString
         }
 
       val sourceActorSystem = ctx.system.name
