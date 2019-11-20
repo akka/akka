@@ -257,6 +257,7 @@ private[akka] class RemoteActorRefProvider(
     // this enables reception of remote requests
     transport.start()
 
+    _addressString = OptionVal.Some(_internals.transport.defaultAddress.toString)
     _remoteWatcher = createOrNone[ActorRef](createRemoteWatcher(system))
     remoteDeploymentWatcher = createOrNone[ActorRef](createRemoteDeploymentWatcher(system))
   }
@@ -622,7 +623,17 @@ private[akka] class RemoteActorRefProvider(
   def quarantine(address: Address, uid: Option[Long], reason: String): Unit =
     transport.quarantine(address, uid, reason)
 
-  override private[akka] def addressString = local.addressString
+  // lazily initialized with fallback since it can depend on transport which is not initialized up front
+  // worth caching since if it is used once in a system it will very likely be used many times
+  @volatile private var _addressString: OptionVal[String] = OptionVal.None
+  override private[akka] def addressString: String = {
+    _addressString match {
+      case OptionVal.Some(addr) => addr
+      case OptionVal.None       =>
+        // not initialized yet, fallback
+        local.addressString
+    }
+  }
 }
 
 private[akka] trait RemoteRef extends ActorRefScope {

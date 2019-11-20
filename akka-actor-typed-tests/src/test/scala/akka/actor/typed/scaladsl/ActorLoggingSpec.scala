@@ -485,7 +485,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
           event.mdc should contain allElementsOf (
             Map(
               ActorMdc.AkkaAddressKey -> system.classicSystem.asInstanceOf[ExtendedActorSystem].provider.addressString,
-              ActorMdc.AkkaSourceKey -> actorPath.get.toStringWithoutAddress,
+              ActorMdc.AkkaSourceKey -> actorPath.get.toString,
               ActorMdc.SourceActorSystemKey -> system.name)
           )
           true

@@ -43,7 +43,7 @@ import org.slf4j.LoggerFactory
           // on each log entry or message, so do that up front here
           tags.mkString(",")
 
-      val akkaSource = ctx.self.path.toStringWithoutAddress
+      val akkaSource = ctx.self.path.toString
 
       val akkaAddress =
         ctx.system match {
