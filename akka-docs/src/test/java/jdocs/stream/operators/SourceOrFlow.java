@@ -308,20 +308,20 @@ class SourceOrFlow {
   }
 
   void takeExample() {
-     // #take
-     Source.from(Arrays.asList(1, 2, 3, 4, 5)).take(3).runForeach(System.out::println, system);
-     // this will print:
-     // 1
-     // 2
-     // 3
-     // #take
+    // #take
+    Source.from(Arrays.asList(1, 2, 3, 4, 5)).take(3).runForeach(System.out::println, system);
+    // this will print:
+    // 1
+    // 2
+    // 3
+    // #take
   }
 
   void takeWhileExample() {
     // #take-while
     Source.from(Arrays.asList(1, 2, 3, 4, 5))
-            .takeWhile(i -> i < 3)
-            .runForeach(System.out::println, system);
+        .takeWhile(i -> i < 3)
+        .runForeach(System.out::println, system);
     // this will print:
     // 1
     // 2
