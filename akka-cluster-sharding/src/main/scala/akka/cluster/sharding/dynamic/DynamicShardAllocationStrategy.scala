@@ -28,6 +28,8 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
+// TODO reduce logging
+
 @silent
 object DynamicShardAllocationStrategy {
 
@@ -42,7 +44,7 @@ object DynamicShardAllocationStrategy {
       extends NoSerializationVerificationNeeded
   case class GetShardLocationResponse(address: Option[Address]) extends NoSerializationVerificationNeeded
 
-  // TODO serializer, datatype used with ddate
+  // TODO serializer, datatype used with ddata
   case class ShardLocation(address: Address)
 
   object DDataStateActor {
@@ -66,10 +68,8 @@ object DynamicShardAllocationStrategy {
     // TODO don't answer questions until the initial state is received
     override def receive: Receive = {
       case c @ Changed(`DataKey`) =>
-        // new case
-        // TODO changed case
         currentLocations = c.get(DataKey).entries
-        log.info("Updated shard locations {}", currentLocations)
+        log.info("Received updated shard locations {}", currentLocations)
       case GetShardLocation(shard) =>
         val shardLocation = currentLocations.get(shard).map(_.address)
         sender() ! GetShardLocationResponse(shardLocation)
@@ -97,7 +97,6 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
 
   private val cluster = Cluster(system)
 
-  // TODO is there a way go go from an actor ref to an UniqueAddress
   override def allocateShard(
       requester: ShardRegion,
       shardId: ShardId,
@@ -150,31 +149,44 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)
     log.info("rebalance {} {}", currentShardAllocations, rebalanceInProgress)
 
     // TODO should we deal with failure?
-    // this doesn't work as local address isn't comparable to remote address
-    val byAddress: Map[Address, immutable.IndexedSeq[ShardId]] = currentShardAllocations.map {
-      case (_: LocalActorRef, value) => (Cluster(system).selfAddress, value)
-      case (key, value)              => (key.path.address, value)
+    val currentAllocationByAddress: Map[Address, immutable.IndexedSeq[ShardId]] = currentShardAllocations.map {
+      case (_: LocalActorRef, value) =>
+        (Cluster(system).selfAddress, value) // so it can be compared to a address with host and port
+      case (key, value) => (key.path.address, value)
     }
 
-    log.info("By address: " + byAddress)
+    log.info("Current allocations by address: " + currentAllocationByAddress)
+
+    // this will currently return shards that are not allocated. This could be checked by looking in
+    // all the currentShardAllocations but probably not worth it as shard coordinator will ignore
+    // rebalance requests for shards it hasn't seen yet
     val shardsThatNeedRebalanced: Future[Set[ShardId]] = for {
       desiredMappings <- (shardState ? GetShardLocations).mapTo[GetShardLocationsResponse]
     } yield {
-      println("desired allocations: " + desiredMappings.desiredAllocations)
+      log.info("desired allocations: {}", desiredMappings.desiredAllocations)
       desiredMappings.desiredAllocations.filterNot {
-        case (shardId, expectedLocation) =>
-          byAddress.get(expectedLocation.address) match {
+        case (shardId, expectedLocation) => // if currentShards.contains(shardId) =>
+          currentAllocationByAddress.get(expectedLocation.address) match {
             case None =>
+              log.info(
+                "Shard {} desired location {} is not part of the cluster, not rebalancing",
+                shardId,
+                expectedLocation)
               true // not a current allocation so don't rebalance yet
             case Some(shards) =>
-              shards.contains(shardId)
+              val inCorrectLocation = shards.contains(shardId)
+              inCorrectLocation
           }
+//        case (shardId, _) =>
+//           TODO t
+//          log.info("ShardId {} not allocated yet so not rebalancing", shardId)
+//          true
       }
     }.keys.toSet
 
     // TODO debug or remove
     shardsThatNeedRebalanced.map { done =>
-      println("Rebalancing shards " + done)
+      log.info("Shards not currently in their desired location {}", done)
       done
     }
   }
