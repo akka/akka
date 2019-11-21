@@ -132,7 +132,7 @@ import akka.util.Timeout
       entity.stopMessage,
       settingsWithDataCenter,
       extractor,
-      entity.allocationStrategy)
+      entity.allocationStrategyFactory)
   }
 
   // javadsl impl
@@ -147,7 +147,7 @@ import akka.util.Timeout
         entityProps = entity.entityProps,
         settings = entity.settings.asScala,
         messageExtractor = entity.messageExtractor.asScala,
-        allocationStrategy = entity.allocationStrategy.asScala,
+        allocationStrategyFactory = entity.allocationStrategyFactory.asScala,
         role = entity.role.asScala,
         dataCenter = entity.dataCenter.asScala))
   }
