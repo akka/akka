@@ -386,7 +386,7 @@ now run on the internal dispatcher by default.
 The dispatcher can be configured through `akka.actor.internal-dispatcher`.
 
 For maximum performance, you might want to use a single shared dispatcher for all non-blocking,
-asynchronous actors, user actors and Akka internal actors. In that case, can configure the
+asynchronous actors, user actors and Akka internal actors. In that case, you can configure the
 `akka.actor.internal-dispatcher` with a string value of `akka.actor.default-dispatcher`.
 This reinstantiates the behavior from previous Akka versions but also removes the isolation between
 user and Akka internals. So, use at your own risk!
