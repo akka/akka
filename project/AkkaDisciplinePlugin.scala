@@ -10,7 +10,6 @@ import sbt.plugins.JvmPlugin
 
 object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
-  import scoverage.ScoverageKeys._
   import scalafix.sbt.ScalafixPlugin
 
   override def trigger: PluginTrigger = allRequirements
@@ -24,9 +23,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
   lazy val scalaFixSettings = Seq(Compile / scalacOptions += "-Yrangepos")
 
-  lazy val scoverageSettings =
-    Seq(coverageMinimum := 70, coverageFailOnMinimum := false, coverageOutputHTML := true, coverageHighlighting := true)
-
   lazy val silencerSettings = {
     val silencerVersion = "1.4.4"
     Seq(
@@ -37,8 +33,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
   lazy val disciplineSettings =
     scalaFixSettings ++
-    silencerSettings ++
-    scoverageSettings ++ Seq(
+    silencerSettings ++ Seq(
       Compile / scalacOptions ++= (
           if (!nonFatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
           else Seq.empty
