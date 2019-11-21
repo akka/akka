@@ -7,6 +7,7 @@ package akka.cluster.sharding.dynamic.scaladsl
 import akka.Done
 import akka.actor.Address
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.dynamic.ShardLocations
 
 import scala.concurrent.Future
 
@@ -23,4 +24,9 @@ trait DynamicShardAllocationClient {
    * @return Confirmation that the update has been propagated to a majority of cluster nodes
    */
   def updateShardLocation(shard: ShardId, location: Address): Future[Done]
+
+  /**
+   * Get all the current shard locations that have been set via updateShardLocation
+   */
+  def shardLocations(): Future[ShardLocations]
 }

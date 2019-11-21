@@ -9,6 +9,7 @@ import java.util.concurrent.CompletionStage
 import akka.Done
 import akka.actor.Address
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.dynamic.ShardLocations
 
 trait DynamicShardAllocationClient {
 
@@ -23,4 +24,9 @@ trait DynamicShardAllocationClient {
    * @return Confirmation that the update has been propagated to a majority of cluster nodes
    */
   def setShardLocation(shard: ShardId, location: Address): CompletionStage[Done]
+
+  /**
+   * Get all the current shard locations that have been set via setShardLocation
+   */
+  def getShardLocations(): CompletionStage[ShardLocations]
 }

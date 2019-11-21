@@ -244,9 +244,16 @@ final class Entity[M, E] private[akka] (
     val entityProps: Props,
     val settings: Option[ClusterShardingSettings],
     val messageExtractor: Option[ShardingMessageExtractor[E, M]],
-    val allocationStrategy: Option[() => ShardAllocationStrategy],
+    val allocationStrategyFactory: Option[() => ShardAllocationStrategy],
     val role: Option[String],
     val dataCenter: Option[DataCenter]) {
+
+  /**
+   * Returns the allocation strategy, warning that calling this will instantiate the allocation
+   * strategy if it has been created with factory
+   * For bincompat
+   */
+  def allocationStrategy = allocationStrategyFactory.map(_.apply())
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -285,7 +292,7 @@ final class Entity[M, E] private[akka] (
       entityProps,
       settings,
       Option(newExtractor),
-      allocationStrategy,
+      allocationStrategyFactory,
       role,
       dataCenter)
 
@@ -326,7 +333,7 @@ final class Entity[M, E] private[akka] (
       stopMessage: Option[M] = stopMessage,
       entityProps: Props = entityProps,
       settings: Option[ClusterShardingSettings] = settings,
-      allocationStrategy: Option[() => ShardAllocationStrategy] = allocationStrategy,
+      allocationStrategy: Option[() => ShardAllocationStrategy] = allocationStrategyFactory,
       role: Option[String] = role,
       dataCenter: Option[DataCenter] = dataCenter): Entity[M, E] = {
     new Entity(
