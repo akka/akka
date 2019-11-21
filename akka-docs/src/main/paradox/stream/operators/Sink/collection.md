@@ -1,6 +1,6 @@
 # Sink.collection
 
-@scala[Collect all values emitted from the stream into a collection.]@java[Operator only available in the Scala API. The closest operator in the Java API is [`Sink.seq`](seq.html)].
+@scala[Collect all values emitted from the stream into a collection.]@java[Operator only available in the Scala API. The closest operator in the Java API is @ref[`Sink.seq`](seq.md)].
 
 @ref[Sink operators](../index.md#sink-operators)
 
