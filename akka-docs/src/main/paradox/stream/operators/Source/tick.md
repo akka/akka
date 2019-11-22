@@ -23,14 +23,14 @@ The source materializes a @apidoc[Cancellable] that can be used to complete the 
 
 @@@note
 
-The element must be immutable as the source can be materialized several times and may pass between threads, see second 
+The element must be immutable as the source can be materialized several times and may pass it between threads, see the second 
 example for achieving a periodical element that changes over time.
 
 @@@
 
 ## Examples
 
-Let's start with a simple sample, just printing to standard out periodically:
+This first example prints to standard out periodically:
 
 Scala
 :   @@snip [Tick.scala](/akka-docs/src/test/scala/docs/stream/operators/source/Tick.scala) { #simple }
@@ -66,4 +66,3 @@ Java
 **completes** when the materialized `Cancellable` is cancelled
 
 @@@
-
