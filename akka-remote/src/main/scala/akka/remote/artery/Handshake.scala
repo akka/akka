@@ -19,8 +19,6 @@ import akka.Done
 import akka.actor.Address
 import akka.dispatch.ExecutionContexts
 
-import scala.util.Try
-
 /**
  * INTERNAL API
  */
@@ -130,6 +128,7 @@ private[remote] class OutboundHandshake(
               // when it receives the HandshakeRsp reply
               implicit val ec = materializer.executionContext
               uniqueRemoteAddress.foreach {
+
                 getAsyncCallback[UniqueAddress] { _ =>
                   if (handshakeState != Completed) {
                     handshakeCompleted()
@@ -220,6 +219,10 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
     new TimerGraphStageLogic(shape) with OutHandler with StageLogging {
       import OutboundHandshake._
 
+      private val runInStage = getAsyncCallback[() => Unit] { thunk =>
+        thunk()
+      }
+
       // InHandler
       if (inControlStream)
         setHandler(
@@ -235,7 +238,7 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
                   // that the other system is alive.
                   inboundContext.association(from.address).associationState.lastUsedTimestamp.set(System.nanoTime())
 
-                  after(inboundContext.completeHandshake(from)) {
+                  after(inboundContext.completeHandshake(from)) { () =>
                     pull(in)
                   }
                 case _ =>
@@ -257,7 +260,7 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
 
       private def onHandshakeReq(from: UniqueAddress, to: Address): Unit = {
         if (to == inboundContext.localAddress.address) {
-          after(inboundContext.completeHandshake(from)) {
+          after(inboundContext.completeHandshake(from)) { () =>
             inboundContext.sendControl(from.address, HandshakeRsp(inboundContext.localAddress))
             pull(in)
           }
@@ -276,16 +279,15 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
         }
       }
 
-      private def after(first: Future[Done])(thenInside: => Unit): Unit = {
+      private def after(first: Future[Done])(thenInside: () => Unit): Unit = {
         first.value match {
           case Some(_) =>
             // This in the normal case (all but the first). The future will be completed
             // because handshake was already completed. Note that we send those HandshakeReq
             // periodically.
-            thenInside
+            thenInside()
           case None =>
-            val callback = getAsyncCallback[Try[Done]](_ => thenInside)
-            first.onComplete(callback.invoke)(ExecutionContexts.sameThreadExecutionContext)
+            first.onComplete(_ => runInStage.invoke(thenInside))(ExecutionContexts.sameThreadExecutionContext)
         }
 
       }
