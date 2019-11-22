@@ -751,7 +751,7 @@ object Source {
     })
 
   /**
-   * Combines two sources with fan-in strategy like `Merge` or `Concat` and returns `Source` with a materialized value.
+   * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]] with a materialized value.
    */
   def combineMat[T, U, M1, M2, M](first: Source[T, M1], second: Source[T, M2])(
       strategy: Int => Graph[UniformFanInShape[T, U], NotUsed])(matF: (M1, M2) => M): Source[U, M] = {

@@ -43,6 +43,15 @@ object Combine {
     val sources = Source.combine(source1, source2, source3)(Concat(_))
     sources.runForeach(println)
     // prints (order is deterministic)
+    // 1
+    // 2
+    // 3
+    // 8
+    // 9
+    // 10
+    // 12
+    // 13
+    // 14
     // #source-combine-concat
   }
 }
