@@ -626,7 +626,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       case null =>
         proxies.get(proxyName(typeName, None)) match {
           case null =>
-            throw new IllegalArgumentException(s"Shard type [$typeName] must be started first")
+            throw new IllegalStateException(s"Shard type [$typeName] must be started first")
           case ref => ref
         }
       case ref => ref
@@ -643,7 +643,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def shardRegionProxy(typeName: String, dataCenter: DataCenter): ActorRef = {
     proxies.get(proxyName(typeName, Some(dataCenter))) match {
       case null =>
-        throw new IllegalArgumentException(s"Shard type [$typeName] must be started first")
+        throw new IllegalStateException(s"Shard type [$typeName] must be started first")
       case ref => ref
     }
   }
