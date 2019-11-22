@@ -484,7 +484,7 @@ When the `ActorSystem` was shutting down and the `Scheduler` was closed all outs
 which was needed for some internals in Akka but a surprising behavior for end users. Therefore this behavior has
 changed in Akka 2.6.x and outstanding tasks are not run when the system is terminated.
 
-Instead, `system.registerOnTermination` or `CoordinatedShutdown` can be used for running such tasks when the shutting
+Instead, `system.registerOnTermination` or `CoordinatedShutdown` can be used for running such tasks when shutting
 down.
 
 ### IOSources & FileIO
