@@ -1266,6 +1266,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * the Actor will be terminated as well. The entity backing the [[StageActorRef]] is not a real Actor,
    * but the [[GraphStageLogic]] itself, therefore it does not react to [[PoisonPill]].
    *
+   * To be thread safe this method must only be called from either the constructor of the graph operator during
+   * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
+   *
    * @param receive callback that will be called upon receiving of a message by this special Actor
    * @return minimal actor with watch method
    */
@@ -1274,6 +1277,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
 
   /**
    * INTERNAL API
+   *
+   * To be thread safe this method must only be called from either the constructor of the graph operator during
+   * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
    */
   @InternalApi
   protected[akka] def getEagerStageActor(
@@ -1370,6 +1376,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * connected to a Sink that is available for materialization (e.g. using
    * the `subFusingMaterializer`). Care needs to be taken to cancel this Inlet
    * when the operator shuts down lest the corresponding Sink be left hanging.
+   *
+   * To be thread safe this method must only be called from either the constructor of the graph operator during
+   * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
    */
   class SubSinkInlet[T](name: String) {
     import ActorSubscriberMessage._
@@ -1438,6 +1447,9 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
    * hanging. It is good practice to use the `timeout` method to cancel this
    * Outlet in case the corresponding Source is not materialized within a
    * given time limit, see e.g. ActorMaterializerSettings.
+   *
+   * To be thread safe this method must only be called from either the constructor of the graph operator during
+   * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
    */
   class SubSourceOutlet[T](name: String) {
 
@@ -1560,6 +1572,12 @@ trait AsyncCallback[T] {
   def invokeWithFeedback(t: T): Future[Done]
 }
 
+/**
+ * Provides timer related facilities to a [[GraphStageLogic]].
+ *
+ * To be thread safe the methods of this class must only be called from either the constructor of the graph operator during
+ * materialization or one of the methods invoked by the graph operator machinery, such as `onPush` and `onPull`.
+ */
 abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shape) {
   import TimerMessages._
 
@@ -1610,9 +1628,9 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
   final protected def scheduleOnce(timerKey: Any, delay: FiniteDuration): Unit = {
     cancelTimer(timerKey)
     val id = timerIdGen.next()
-    val task = interpreter.materializer.scheduleOnce(delay, new Runnable {
-      def run() = getTimerAsyncCallback.invoke(Scheduled(timerKey, id, repeating = false))
-    })
+    val callback = getTimerAsyncCallback
+    val task =
+      interpreter.materializer.scheduleOnce(delay, () => callback.invoke(Scheduled(timerKey, id, repeating = false)))
     keyToTimers(timerKey) = Timer(id, task)
   }
 
@@ -1638,9 +1656,11 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
       delay: FiniteDuration): Unit = {
     cancelTimer(timerKey)
     val id = timerIdGen.next()
-    val task = interpreter.materializer.scheduleWithFixedDelay(initialDelay, delay, new Runnable {
-      def run() = getTimerAsyncCallback.invoke(Scheduled(timerKey, id, repeating = true))
-    })
+    val callback = getTimerAsyncCallback
+    val task = interpreter.materializer.scheduleWithFixedDelay(
+      initialDelay,
+      delay,
+      () => callback.invoke(Scheduled(timerKey, id, repeating = true)))
     keyToTimers(timerKey) = Timer(id, task)
   }
 
@@ -1670,9 +1690,11 @@ abstract class TimerGraphStageLogic(_shape: Shape) extends GraphStageLogic(_shap
       interval: FiniteDuration): Unit = {
     cancelTimer(timerKey)
     val id = timerIdGen.next()
-    val task = interpreter.materializer.scheduleAtFixedRate(initialDelay, interval, new Runnable {
-      def run() = getTimerAsyncCallback.invoke(Scheduled(timerKey, id, repeating = true))
-    })
+    val callback = getTimerAsyncCallback
+    val task = interpreter.materializer.scheduleAtFixedRate(
+      initialDelay,
+      interval,
+      () => callback.invoke(Scheduled(timerKey, id, repeating = true)))
     keyToTimers(timerKey) = Timer(id, task)
   }
 
