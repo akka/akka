@@ -21,7 +21,7 @@ If downstream is applying backpressure when the time period has passed the tick 
 
 The source materializes a @apidoc[Cancellable] that can be used to complete the source.
 
-@@@Note
+@@@note
 
 The element must be immutable as the source can be materialized several times and may pass between threads, see second 
 example for achieving a periodical element that changes over time.
