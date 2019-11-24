@@ -6,8 +6,7 @@ package akka.actor.typed
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
-import akka.actor.ClassicActorSystemProvider
-import akka.actor.BootstrapSetup
+import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
@@ -18,6 +17,7 @@ import akka.util.Helpers.Requiring
 import akka.{ Done, actor => classic }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.slf4j.Logger
+
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
@@ -164,6 +164,19 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    */
   def eventStream: ActorRef[EventStream.Command] =
     EventStreamExtension(this).ref
+
+  /**
+   * Obtain the address which is to be used within sender references when
+   * sending to the given other address or none if the other address cannot be
+   * reached from this system (i.e. no means of communication known; no
+   * attempt is made to verify actual reachability).
+   */
+  def getExternalAddressFor(addr: Address): Option[Address]
+
+  /**
+   * Obtain the external address of the default transport.
+   */
+  def getDefaultAddress: Address
 
 }
 

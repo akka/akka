@@ -1,0 +1,2 @@
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.ActorSystem.getExternalAddressFor")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.ActorSystem.getDefaultAddress")
