@@ -129,8 +129,6 @@ object AkkaBuild {
   lazy val defaultSettings: Seq[Setting[_]] = Def.settings(
     resolverSettings,
     TestExtras.Filter.settings,
-    Protobuf.settings,
-
     // compile options
     scalacOptions in Compile ++= DefaultScalacOptions,
     scalacOptions in Compile ++=
