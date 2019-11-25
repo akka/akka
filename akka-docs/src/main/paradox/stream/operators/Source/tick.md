@@ -40,7 +40,7 @@ Java
 
 You can also use the tick to periodically emit a value, in this sample we use the tick to trigger a query to an
 actor using @ref:[ask](../../../typed/interaction-patterns.md#outside-ask) and emit the response downstream. For this
-usage we don't really care about the actual tick value, only that it was emitted:
+usage, what is important is that it was emitted, not the actual tick value.
 
 Scala
 :   @@snip [Tick.scala](/akka-docs/src/test/scala/docs/stream/operators/source/Tick.scala) { #poll-actor }
