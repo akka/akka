@@ -288,9 +288,11 @@ class SourceOrFlow {
     // #grouped
   }
 
+  // #scan-async
   CompletionStage<Integer> asyncFunction(int acc, int next) {
     return CompletableFuture.supplyAsync(() -> acc + next);
   }
+  // #scan-async
 
   void scanAsyncExample() {
     // #scan-async
