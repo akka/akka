@@ -644,7 +644,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
   parameter list.
 * `EventSourcedBehavior.withEnforcedReplies` signature changed. Command is not required to extend `ExpectingReply`
   anymore. `ExpectingReply` has therefore been removed.
-* `ActorContext` is now a mandatory constructor parameter in `AbstractBehavior`. Create via `Behaviors.setup.
+* `ActorContext` is now a mandatory constructor parameter in `AbstractBehavior`. Create via `Behaviors.setup`.
   The reason is to encourage right usage and detect mistakes like not creating a new instance (via `setup`)
   when the behavior is supervised and restarted.    
 * `LoggingEventFilter` has been renamed to `LoggingTestKit` and its `intercept` method renamed to `assert`
