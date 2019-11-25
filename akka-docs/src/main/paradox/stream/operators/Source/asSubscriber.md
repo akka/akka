@@ -23,7 +23,7 @@ Integration with Reactive Streams, materializes into a `org.reactivestreams.Subs
 If you want to create a @apidoc[Source] that gets its elements from another library that supports
 [Reactive Streams](https://www.reactive-streams.org/), you can use `JavaFlowSupport.Source.asSubscriber`.
 Each time this @apidoc[Source] is materialized, it produces a materialized value of type
-@javadoc[java.util.concurrent.Subscriber](java.util.concurrent.Flow.Subscriber).
+@javadoc[java.util.concurrent.Flow.Subscriber](java.util.concurrent.Flow.Subscriber).
 This @javadoc[Subscriber](java.util.concurrent.Flow.Subscriber) can be attached to a
 [Reactive Streams](https://www.reactive-streams.org/) @javadoc[Publisher](java.util.concurrent.Flow.Publisher)
 to populate it.
