@@ -41,13 +41,13 @@ An example of this can be found in @ref:[Bubble failures up through the hierarch
 
 An actor system will during its creation start at least two actors. 
 
-### `/user`: the user guardian cator
+### `/user`: the user guardian actor
 
 This is the top level user provided actor, meant to bootstrap the application
 by spawning subsystems as children. When the user guardian stops the entire
 actor system is shut down.
 
-### `/system`: the system guardian
+### `/system`: the system guardian actor
 
 This special guardian has been introduced in order to achieve an orderly
 shut-down sequence where logging remains active while all normal actors
