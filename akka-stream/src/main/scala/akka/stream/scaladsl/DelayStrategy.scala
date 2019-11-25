@@ -7,8 +7,10 @@ package akka.stream.scaladsl
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
- * Allows to manage delay and can be stateful to compute delay for any sequence of elements,
- * all elements go through nextDelay() updating state and returning delay for each element
+ * Allows to manage delay. Can be stateful to compute delay for any sequence
+ * of elements, as instances are not shared among running streams and all
+ * elements go through nextDelay(), updating state and returning delay for that
+ * element.
  */
 trait DelayStrategy[-T] {
 
@@ -49,16 +51,12 @@ object DelayStrategy {
 
     new DelayStrategy[T] {
 
-      private[this] var delay = initialDelay
+      private[this] var delay: FiniteDuration = initialDelay
 
       override def nextDelay(elem: T): FiniteDuration = {
         if (needsIncrease(elem)) {
-          val next = delay + increaseStep
-          if (next < maxDelay) {
-            delay = next
-          } else {
-            delay = maxDelay.asInstanceOf[FiniteDuration]
-          }
+          // minimum of a finite and an infinite duration is finite
+          delay = Seq(delay + increaseStep, maxDelay).min.asInstanceOf[FiniteDuration]
         } else {
           delay = initialDelay
         }

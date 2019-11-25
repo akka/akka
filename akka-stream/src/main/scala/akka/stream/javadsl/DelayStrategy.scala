@@ -4,6 +4,7 @@
 
 package akka.stream.javadsl
 
+import akka.annotation.InternalApi
 import akka.stream.scaladsl
 import akka.util.JavaDurationConverters.JavaDurationOps
 
@@ -24,6 +25,8 @@ trait DelayStrategy[T] {
 
 object DelayStrategy {
 
+  /** INTERNAL API */
+  @InternalApi
   private[javadsl] def asScala[T](delayStrategy: DelayStrategy[T]) = new scaladsl.DelayStrategy[T] {
     override def nextDelay(elem: T): FiniteDuration = delayStrategy.nextDelay(elem).asScala
   }
@@ -78,7 +81,7 @@ object DelayStrategy {
       initialDelay: java.time.Duration,
       maxDelay: java.time.Duration): DelayStrategy[T] = {
     require(increaseStep.compareTo(java.time.Duration.ZERO) > 0, "Increase step must be positive")
-    require(maxDelay.compareTo(initialDelay) > 0, "Max delay must be bigger than initial delay")
+    require(maxDelay.compareTo(initialDelay) >= 0, "Initial delay may not exceed max delay")
 
     new DelayStrategy[T] {
 
