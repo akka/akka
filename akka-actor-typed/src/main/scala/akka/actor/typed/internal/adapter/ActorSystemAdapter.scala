@@ -22,6 +22,7 @@ import akka.actor.typed.Dispatchers
 import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
 import akka.actor.typed.Settings
+import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.internal.ActorRefImpl
 import akka.actor.typed.internal.ExtensionsImpl
 import akka.actor.typed.internal.InternalRecipientRef
@@ -29,6 +30,7 @@ import akka.actor.typed.internal.PropsImpl.DispatcherDefault
 import akka.actor.typed.internal.PropsImpl.DispatcherFromConfig
 import akka.actor.typed.internal.PropsImpl.DispatcherSameAsParent
 import akka.actor.typed.internal.SystemMessage
+import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.{ actor => classic }
 import org.slf4j.{ Logger, LoggerFactory }
@@ -107,7 +109,12 @@ import org.slf4j.{ Logger, LoggerFactory }
     FutureConverters.toJava(whenTerminated)
 
   override def systemActorOf[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
-    val ref = system.systemActorOf(PropsAdapter(() => behavior, props), name)
+    val ref = system.systemActorOf(
+      PropsAdapter(
+        () => Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        props,
+        rethrowTypedFailure = false),
+      name)
     ActorRefAdapter(ref)
   }
 

@@ -262,7 +262,8 @@ object ActorSystem {
       appConfig,
       cl,
       executionContext,
-      Some(PropsAdapter[Any](() => GuardianStartupBehavior(guardianBehavior), guardianProps)),
+      Some(
+        PropsAdapter[Any](() => GuardianStartupBehavior(guardianBehavior), guardianProps, rethrowTypedFailure = false)),
       setup)
     system.start()
 
