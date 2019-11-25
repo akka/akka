@@ -15,14 +15,14 @@ object Dependencies {
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
   val junitVersion = "4.12"
-  val slf4jVersion = "1.7.28"
+  val slf4jVersion = "1.7.29"
   // check agrona version when updating this
   val aeronVersion = "1.22.1"
   // needs to be inline with the aeron version
   val agronaVersion = "1.0.8"
   val nettyVersion = "3.10.6.Final"
-  val jacksonVersion = "2.10.0"
-  val jacksonDatabindVersion = "2.10.0"
+  val jacksonVersion = "2.10.1"
+  val jacksonDatabindVersion = "2.10.1"
   val protobufJavaVersion = "3.10.0"
   val logbackVersion = "1.2.3"
 
@@ -31,7 +31,7 @@ object Dependencies {
 
   val reactiveStreamsVersion = "1.0.3"
 
-  val sslConfigVersion = "0.4.0"
+  val sslConfigVersion = "0.4.1"
 
   val Versions = Seq(
     crossScalaVersions := Seq(scala212Version, scala213Version),
@@ -103,7 +103,7 @@ object Dependencies {
 
     object Docs {
       val sprayJson = "io.spray" %% "spray-json" % "1.3.5" % "test"
-      val gson = "com.google.code.gson" % "gson" % "2.8.5" % "test"
+      val gson = "com.google.code.gson" % "gson" % "2.8.6" % "test"
     }
 
     object Test {
@@ -127,8 +127,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.0" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.0" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.1" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.1" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.11" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)

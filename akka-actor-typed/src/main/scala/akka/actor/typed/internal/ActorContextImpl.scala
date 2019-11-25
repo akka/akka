@@ -13,9 +13,10 @@ import java.util.concurrent.CompletionStage
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.reflect.ClassTag
 import scala.util.Try
+
 import akka.annotation.InternalApi
-import akka.util.OptionVal
-import akka.util.Timeout
+import akka.dispatch.ExecutionContexts
+import akka.util.{ BoxedType, OptionVal, Timeout }
 import akka.util.JavaDurationConverters._
 import com.github.ghik.silencer.silent
 import org.slf4j.Logger
@@ -28,7 +29,7 @@ import org.slf4j.LoggerFactory
 
   // single context for logging as there are a few things that are initialized
   // together
-  final class LoggingContext(val logger: Logger, tags: Set[String]) {
+  final class LoggingContext(val logger: Logger, tags: Set[String], val hasCustomName: Boolean) {
     // toggled once per message if logging is used to avoid having to
     // touch the mdc thread local for cleanup in the end
     var mdcUsed = false
@@ -41,7 +42,7 @@ import org.slf4j.LoggerFactory
         tags.mkString(",")
 
     def withLogger(logger: Logger): LoggingContext = {
-      val l = new LoggingContext(logger, tags)
+      val l = new LoggingContext(logger, tags, hasCustomName = true)
       l.mdcUsed = mdcUsed
       l
     }
@@ -116,7 +117,7 @@ import org.slf4j.LoggerFactory
       case OptionVal.None =>
         val logClass = LoggerClass.detectLoggerClassFromStack(classOf[Behavior[_]])
         val logger = LoggerFactory.getLogger(logClass.getName)
-        val l = new LoggingContext(logger, classicActorContext.props.deploy.tags)
+        val l = new LoggingContext(logger, classicActorContext.props.deploy.tags, hasCustomName = false)
         _logging = OptionVal.Some(l)
         l
     }
@@ -138,6 +139,8 @@ import org.slf4j.LoggerFactory
 
   override def setLoggerName(clazz: Class[_]): Unit =
     setLoggerName(clazz.getName)
+
+  def hasCustomLoggerName: Boolean = loggingContext().hasCustomName
 
   // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message
   override private[akka] def clearMdc(): Unit = {
@@ -183,7 +186,8 @@ import org.slf4j.LoggerFactory
 
   // Scala API impl
   def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit = {
-    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))
+    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))(
+      ExecutionContexts.sameThreadExecutionContext)
   }
 
   // Java API impl
@@ -220,8 +224,9 @@ import org.slf4j.LoggerFactory
   private def internalMessageAdapter[U](messageClass: Class[U], f: U => T): ActorRef[U] = {
     // replace existing adapter for same class, only one per class is supported to avoid unbounded growth
     // in case "same" adapter is added repeatedly
-    _messageAdapters = (messageClass, f.asInstanceOf[Any => T]) ::
-      _messageAdapters.filterNot { case (cls, _) => cls == messageClass }
+    val boxedMessageClass = BoxedType(messageClass).asInstanceOf[Class[U]]
+    _messageAdapters = (boxedMessageClass, f.asInstanceOf[Any => T]) ::
+      _messageAdapters.filterNot { case (cls, _) => cls == boxedMessageClass }
     val ref = messageAdapterRef match {
       case OptionVal.Some(ref) => ref.asInstanceOf[ActorRef[U]]
       case OptionVal.None      =>

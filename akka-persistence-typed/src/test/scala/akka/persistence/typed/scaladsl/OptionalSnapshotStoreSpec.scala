@@ -54,7 +54,7 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
 
   "Persistence extension" must {
     "initialize properly even in absence of configured snapshot store" in {
-      LoggingTestKit.warn("No default snapshot store configured").intercept {
+      LoggingTestKit.warn("No default snapshot store configured").expect {
         val stateProbe = TestProbe[State]()
         spawn(persistentBehavior(stateProbe))
         stateProbe.expectNoMessage()
@@ -62,8 +62,8 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     "fail if PersistentActor tries to saveSnapshot without snapshot-store available" in {
-      LoggingTestKit.error("No snapshot store configured").intercept {
-        LoggingTestKit.warn("Failed to save snapshot").intercept {
+      LoggingTestKit.error("No snapshot store configured").expect {
+        LoggingTestKit.warn("Failed to save snapshot").expect {
           val stateProbe = TestProbe[State]()
           val persistentActor = spawn(persistentBehavior(stateProbe))
           persistentActor ! AnyCommand

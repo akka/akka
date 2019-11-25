@@ -27,7 +27,7 @@ import org.slf4j.event.Level
    * Number of events the testkit is supposed to match. By default 1.
    *
    * When occurrences > 0 it will not look for excess messages that are logged asynchronously
-   * outside (after) the `intercept` thunk and it has already found expected number.
+   * outside (after) the `expect` thunk and it has already found expected number.
    *
    * When occurrences is 0 it will look for unexpected matching events, and then it will
    * also look for excess messages during the configured `akka.actor.testkit.typed.expect-no-message-default`
@@ -86,12 +86,22 @@ import org.slf4j.event.Level
   def matches(event: LoggingEvent): Boolean
 
   /**
-   * Apply this filter while executing the given code block.
-   * Assert that this filter has matched as often as requested by its
-   * `occurrences` parameter specifies.
+   * Run the given code block and assert that the criteria of this `LoggingTestKit` has
+   * matched within the configured `akka.actor.testkit.typed.filter-leeway`
+   * as often as requested by its `occurrences` parameter specifies.
    *
-   * Care is taken to remove the filter when the block is finished or aborted.
+   * Care is taken to remove the testkit when the block is finished or aborted.
    */
+  def expect[T](code: => T)(implicit system: ActorSystem[_]): T
+
+  /**
+   * Run the given code block and assert that the criteria of this `LoggingTestKit` has
+   * matched within the configured `akka.actor.testkit.typed.filter-leeway`
+   * as often as requested by its `occurrences` parameter specifies.
+   *
+   * Care is taken to remove the testkit when the block is finished or aborted.
+   */
+  @deprecated("Use except instead.", "2.6.0")
   def intercept[T](code: => T)(implicit system: ActorSystem[_]): T
 
 }

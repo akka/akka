@@ -4,6 +4,7 @@
 
 package jdocs.stream.operators;
 
+import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
 import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
@@ -45,6 +46,7 @@ import java.util.Comparator;
 
 class SourceOrFlow {
   private static Materializer materializer = null;
+  private static ActorSystem system = null;
 
   void logExample() {
     Flow.of(String.class)
@@ -270,5 +272,41 @@ class SourceOrFlow {
     // 15  (= 4 + 5 + 6)
     // 7   (= 7)
     // #grouped
+  }
+
+  static
+  // #fold
+  class Histogram {
+    final long low;
+    final long high;
+
+    private Histogram(long low, long high) {
+      this.low = low;
+      this.high = high;
+    }
+
+    // Immutable start value
+    public static Histogram INSTANCE = new Histogram(0L, 0L);
+
+    public Histogram add(int number) {
+      if (number < 100) {
+        return new Histogram(low + 1L, high);
+      } else {
+        return new Histogram(low, high + 1L);
+      }
+    }
+  }
+  // #fold
+
+  void foldExample() {
+    // #fold
+
+    // Folding over the numbers from 1 to 150:
+    Source.range(1, 150)
+        .fold(Histogram.INSTANCE, (acc, n) -> acc.add(n))
+        .runForeach(h -> System.out.println("Histogram(" + h.low + ", " + h.high + ")"), system);
+
+    // Prints: Histogram(99, 51)
+    // #fold
   }
 }

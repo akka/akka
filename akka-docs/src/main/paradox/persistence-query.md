@@ -350,8 +350,8 @@ TODO, not available yet.
 
 ## Example project
 
-@java[@extref[CQRS example project](samples:akka-sample-cqrs-java)]
-@scala[@extref[CQRS example project](samples:akka-sample-cqrs-scala)]
+@java[@extref[CQRS example project](samples:akka-samples-cqrs-java)]
+@scala[@extref[CQRS example project](samples:akka-samples-cqrs-scala)]
 is an example project that can be downloaded, and with instructions of how to run.
 
 This project contains a Shopping Cart sample illustrating how to use Akka Persistence.

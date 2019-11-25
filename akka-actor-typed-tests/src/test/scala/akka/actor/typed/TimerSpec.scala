@@ -175,7 +175,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       probe.expectMessage(Tock(1))
 
       val latch = new CountDownLatch(1)
-      LoggingTestKit.error[Exc].intercept {
+      LoggingTestKit.error[Exc].expect {
         // next Tock(1) is enqueued in mailbox, but should be discarded by new incarnation
         ref ! SlowThenThrow(latch, new Exc)
 
@@ -205,7 +205,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
 
       probe.expectMessage(Tock(2))
 
-      LoggingTestKit.error[Exc].intercept {
+      LoggingTestKit.error[Exc].expect {
         val latch = new CountDownLatch(1)
         // next Tock(2) is enqueued in mailbox, but should be discarded by new incarnation
         ref ! SlowThenThrow(latch, new Exc)
@@ -226,7 +226,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
         target(probe.ref, timer, 1)
       }
       val ref = spawn(behv)
-      LoggingTestKit.error[Exc].intercept {
+      LoggingTestKit.error[Exc].expect {
         ref ! Throw(new Exc)
         probe.expectMessage(GotPostStop(false))
       }
@@ -305,7 +305,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
           }
         }
       })
-      LoggingTestKit.info("stopping").intercept {
+      LoggingTestKit.info("stopping").expect {
         ref ! "stop"
       }
       probe.expectTerminated(ref)
@@ -344,7 +344,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
           Behaviors.unhandled
       }
 
-    LoggingTestKit.error[TestException].intercept {
+    LoggingTestKit.error[TestException].expect {
       val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
       ref ! Tick(-1)
       probe.expectMessage(Tock(-1))
@@ -379,7 +379,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
         Behaviors.unhandled
     }
 
-    LoggingTestKit.error[TestException].intercept {
+    LoggingTestKit.error[TestException].expect {
       val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
       ref ! Tick(-1)
       probe.expectMessage(Tock(-1))

@@ -175,7 +175,7 @@ class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCaptur
 
       LoggingTestKit
         .error("Exception thrown out of adapter. Stopping myself.")
-        .intercept {
+        .expect {
           replyRef2 ! 42L
         }(system)
 

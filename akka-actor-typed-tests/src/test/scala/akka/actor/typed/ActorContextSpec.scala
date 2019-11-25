@@ -139,7 +139,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
 
       val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.restart)
       val actor = spawn(behavior)
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         actor ! Fail
       }
       probe.expectMessage(ReceivedSignal(PreRestart))
@@ -203,7 +203,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
 
       val parentRef = spawn(parent)
       val childRef = probe.expectMessageType[ChildMade].ref
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         childRef ! Fail
       }
       probe.expectMessage(GotChildSignal(PreRestart))
@@ -260,7 +260,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(1)
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         actor ! Fail
       }
       actor ! Ping
@@ -286,7 +286,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(1)
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         actor ! Fail
       }
       actor ! Ping
@@ -328,7 +328,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       probe.expectMessage(Pong)
       watcher ! Ping
       probe.expectMessage(Pong)
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         actorToWatch ! Fail
       }
       probe.expectMessage(ReceivedSignal(PostStop))
@@ -513,7 +513,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecL
       val childRef = probe.expectMessageType[ChildMade].ref
       actor ! Inert
       probe.expectMessage(InertEvent)
-      LoggingTestKit.error[DeathPactException].intercept {
+      LoggingTestKit.error[DeathPactException].expect {
         childRef ! Stop
         probe.expectMessage(GotChildSignal(PostStop))
         probe.expectMessage(ReceivedSignal(PostStop))
