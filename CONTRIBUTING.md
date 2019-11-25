@@ -312,6 +312,16 @@ akka-docs/paradox
 
 The generated html documentation is in `akka-docs/target/paradox/site/main/index.html`.
 
+Alternatively, use `akka-docs/paradoxBrowse` to open the generated docs in your default web browser.
+
+### Links to API documentation
+
+Akka Paradox supports directives to link to the Scaladoc- and Javadoc-generated API documentation:
+
+* `@apidoc[Flow]` searches for the class name and creates links to Scaladoc and Javadoc (see variants in [sbt-paradox-apidoc](https://github.com/lightbend/sbt-paradox-apidoc#examples))
+* `@scaladoc[Flow](akka.stream.scaladsl.Flow)` (see [Paradox docs](https://developer.lightbend.com/docs/paradox/current/directives/linking.html#scaladoc-directive))
+* `@javadoc[Flow](akka.stream.javadsl.Flow)` (see [Paradox docs](https://developer.lightbend.com/docs/paradox/current/directives/linking.html#javadoc-directive))
+
 ### Scaladoc
 
 Akka generates class diagrams for the API documentation using ScalaDoc. 
