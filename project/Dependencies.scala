@@ -21,7 +21,7 @@ object Dependencies {
   // needs to be inline with the aeron version
   val agronaVersion = "1.0.8"
   val nettyVersion = "3.10.6.Final"
-  val jacksonVersion = "2.10.0"
+  val jacksonVersion = "2.10.1"
   val protobufJavaVersion = "3.10.0"
   val logbackVersion = "1.2.3"
 
