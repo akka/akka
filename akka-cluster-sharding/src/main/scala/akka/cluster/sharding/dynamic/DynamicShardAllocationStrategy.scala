@@ -149,7 +149,6 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String, allo
   override def rebalance(
       currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
       rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
-    // return any shard that has moved
 
     log.debug("rebalance {} {}", currentShardAllocations, rebalanceInProgress)
 

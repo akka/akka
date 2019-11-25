@@ -19,7 +19,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
-import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
@@ -47,8 +46,6 @@ object DynamicShardAllocationSpecConfig extends MultiNodeConfig {
   val second = role("second")
   val third = role("third")
   val forth = role("forth")
-//  val fifth = role("fifth")
-
 }
 
 class DynamicShardAllocationSpecMultiJvmNode1 extends DynamicShardAllocationSpec
@@ -85,7 +82,6 @@ object DynamicShardAllocationSpec {
   }
 }
 
-@silent
 abstract class DynamicShardAllocationSpec
     extends MultiNodeSpec(DynamicShardAllocationSpecConfig)
     with MultiNodeClusterSpec
@@ -118,15 +114,6 @@ abstract class DynamicShardAllocationSpec
         PoisonPill)
     }
 
-    def uniqueAddress(role: RoleName) = {
-      cluster.readView.members
-        .find { m =>
-          m.address == address(role)
-        }
-        .getOrElse(throw new RuntimeException(s"Could not find ${address(role)} in ${cluster.readView.members}"))
-        .uniqueAddress
-    }
-
     "start cluster sharding" in {
       shardRegion
       enterBarrier("shard-region-started")
@@ -142,8 +129,6 @@ abstract class DynamicShardAllocationSpec
     }
 
     "move shard via distributed data" in {
-      // TODO put a small API around updating to not expose the
-      // exact DData message as public API
       val shardToSpecifyLocation = "cats"
       runOn(first) {
         DynamicShardAllocation(system)

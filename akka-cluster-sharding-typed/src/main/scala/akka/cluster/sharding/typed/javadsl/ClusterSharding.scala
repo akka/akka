@@ -315,13 +315,14 @@ final class Entity[M, E] private (
    */
   def withDataCenter(newDataCenter: String): Entity[M, E] = copy(dataCenter = Optional.ofNullable(newDataCenter))
 
-  // FIXME, deal with null
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,
    * [[ClusterSharding#defaultShardAllocationStrategy]] is used if this is not specified.
    */
   def withAllocationStrategy(newAllocationStrategy: ShardAllocationStrategy): Entity[M, E] =
-    copy(allocationStrategy = Optional.ofNullable(() => newAllocationStrategy))
+    copy(
+      allocationStrategy =
+        if (newAllocationStrategy == null) Optional.empty() else Optional.of(() => newAllocationStrategy))
 
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,

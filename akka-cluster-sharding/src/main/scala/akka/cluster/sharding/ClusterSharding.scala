@@ -246,8 +246,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
    *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
    * @param extractShardId function to determine the shard id for an incoming message, only messages
    *   that passed the `extractEntityId` will be used
-   * @param allocationStrategy possibility to use a custom shard allocation and
-   *   rebalancing logic
+   * @param allocationStrategyFactory possibility to use a custom shard allocation and
+   *   rebalancing logic. Being a factory means that it'll only be created on a node hosting the shard coordinator
    * @param handOffStopMessage the message that will be sent to entities when they are to be stopped
    *   for a rebalance or graceful shutdown of a `ShardRegion`, e.g. `PoisonPill`.
    * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
@@ -258,7 +258,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       settings: ClusterShardingSettings,
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId,
-      allocationStrategy: () => ShardAllocationStrategy,
+      allocationStrategyFactory: () => ShardAllocationStrategy,
       handOffStopMessage: Any): ActorRef = {
 
     internalStart(
@@ -267,7 +267,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       settings,
       extractEntityId,
       extractShardId,
-      allocationStrategy,
+      allocationStrategyFactory,
       handOffStopMessage)
   }
 
