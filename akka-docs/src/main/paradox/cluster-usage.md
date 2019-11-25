@@ -19,7 +19,7 @@ recommendation if you don't have other preferences or constraints.
 
 @@@
 
-## Modue info
+## Module info
 
 To use Akka Cluster add the following dependency in your project:
 
