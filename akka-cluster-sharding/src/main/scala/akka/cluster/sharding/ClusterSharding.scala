@@ -756,12 +756,13 @@ private[akka] class ClusterShardingGuardian extends Actor {
                   minBackoff = coordinatorFailureBackoff,
                   maxBackoff = coordinatorFailureBackoff * 5,
                   randomFactor = 0.2)
+                .withFinalStopMessage(_ == ShardCoordinator.Internal.Terminate)
                 .props
                 .withDeploy(Deploy.local)
             val singletonSettings = settings.coordinatorSingletonSettings.withSingletonName("singleton").withRole(role)
             context.actorOf(
               ClusterSingletonManager
-                .props(singletonProps, terminationMessage = PoisonPill, singletonSettings)
+                .props(singletonProps, terminationMessage = ShardCoordinator.Internal.Terminate, singletonSettings)
                 .withDispatcher(context.props.dispatcher),
               name = cName)
           }
