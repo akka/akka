@@ -354,9 +354,12 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
       probe.expectMsgType[DeltaPropagation]
       probe.lastSender ! WriteAck
       probe.expectMsgType[DeltaPropagation]
+      // no reply
+      probe.expectMsgType[DeltaPropagation]
       // nack
       probe.lastSender ! DeltaNack
-      probe.expectMsgType[DeltaPropagation]
+      // the nack will triggger an immediate Write
+      probe.expectMsgType[Write]
       // no reply
 
       // only 1 ack so we expect 3 full state Write
