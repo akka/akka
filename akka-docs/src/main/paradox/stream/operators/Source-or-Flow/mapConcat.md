@@ -16,6 +16,15 @@ Transform each element into zero or more elements that are individually passed d
 
 Transform each element into zero or more elements that are individually passed downstream.
 
+## Example
+
+Scala
+:  @@snip [MapConcat.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/MapConcat.scala) { #map-concat }
+
+Java
+:  @@snip [MapConcat.java](/akka-docs/src/test/java/jdocs/stream/operators/MapConcat.java) { #map-concat }
+
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
