@@ -41,7 +41,7 @@ backpressure is applied throughout the stream, preventing us from running out of
 rows are consumed slower than they are produced by the database.
 
 Scala
-:  @@snip [AsSubscriber.scala](/akka-docs/src/test/scala-jdk-9/docs/stream/operators/source/AsSubscriber.scala) { #imports #example }
+:  @@snip [AsSubscriber.scala](/akka-docs/src/test/scala-jdk9-only/docs/stream/operators/source/AsSubscriber.scala) { #imports #example }
 
 Java
-:  @@snip [AsSubscriber.java](/akka-docs/src/test/java-jdk-9/jdocs/stream/operators/source/AsSubscriber.java) { #imports #example }
+:  @@snip [AsSubscriber.java](/akka-docs/src/test/java-jdk9-only/jdocs/stream/operators/source/AsSubscriber.java) { #imports #example }
