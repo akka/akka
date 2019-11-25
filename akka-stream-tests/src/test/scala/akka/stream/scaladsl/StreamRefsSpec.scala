@@ -14,11 +14,13 @@ import akka.stream._
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit, TestProbe }
 import akka.util.ByteString
 import com.typesafe.config._
-
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
+
+import akka.stream.impl.streamref.SinkRefImpl
+import akka.stream.impl.streamref.SourceRefImpl
 
 object StreamRefsSpec {
 
@@ -164,6 +166,15 @@ object StreamRefsSpec {
       }
     }
   """).withFallback(ConfigFactory.load())
+  }
+
+  object SnitchActor {
+    def props(probe: ActorRef) = Props(new SnitchActor(probe))
+  }
+  class SnitchActor(probe: ActorRef) extends Actor {
+    def receive = {
+      case msg => probe ! msg
+    }
   }
 }
 
@@ -409,6 +420,30 @@ class StreamRefsSpec(config: Config) extends AkkaSpec(config) with ImplicitSende
       // will be cancelled immediately, since it's 2nd:
       p2.ensureSubscription()
       p2.expectCancellation()
+    }
+
+  }
+
+  "The StreamRefResolver" must {
+
+    "serialize and deserialize SourceRefs" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(StreamRefsSpec.SnitchActor.props(probe.ref))
+      val sourceRef = SourceRefImpl[String](ref)
+      val resolver = StreamRefResolver(system)
+      val result = resolver.resolveSourceRef(resolver.toSerializationFormat(sourceRef))
+      result.asInstanceOf[SourceRefImpl[String]].initialPartnerRef ! "ping"
+      probe.expectMsg("ping")
+    }
+
+    "serialize and deserialize SinkRefs" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(StreamRefsSpec.SnitchActor.props(probe.ref))
+      val sinkRef = SinkRefImpl[String](ref)
+      val resolver = StreamRefResolver(system)
+      val result = resolver.resolveSinkRef(resolver.toSerializationFormat(sinkRef))
+      result.asInstanceOf[SinkRefImpl[String]].initialPartnerRef ! "ping"
+      probe.expectMsg("ping")
     }
 
   }
