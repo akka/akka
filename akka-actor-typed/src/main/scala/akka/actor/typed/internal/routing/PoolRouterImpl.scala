@@ -36,11 +36,7 @@ private[akka] final case class PoolRouterBuilder[T](
 
   def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: T => String): PoolRouterBuilder[T] = {
     copy(
-      logicFactory = system =>
-        new RoutingLogics.ConsistentHashingLogic[T](
-          virtualNodesFactor,
-          mapping,
-          system.getDefaultAddress))
+      logicFactory = system => new RoutingLogics.ConsistentHashingLogic[T](virtualNodesFactor, mapping, system.address))
   }
 
   def withPoolSize(poolSize: Int): PoolRouterBuilder[T] = copy(poolSize = poolSize)

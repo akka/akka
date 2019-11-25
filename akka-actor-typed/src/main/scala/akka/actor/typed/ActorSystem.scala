@@ -166,17 +166,9 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
     EventStreamExtension(this).ref
 
   /**
-   * Obtain the address which is to be used within sender references when
-   * sending to the given other address or none if the other address cannot be
-   * reached from this system (i.e. no means of communication known; no
-   * attempt is made to verify actual reachability).
-   */
-  def getExternalAddressFor(addr: Address): Option[Address]
-
-  /**
    * Obtain the external address of the default transport.
    */
-  def getDefaultAddress: Address
+  def address: Address
 
 }
 

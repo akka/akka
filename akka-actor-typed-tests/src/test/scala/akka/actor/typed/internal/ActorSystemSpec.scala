@@ -161,19 +161,7 @@ class ActorSystemSpec
 
     "return default address " in {
       withSystem("address", Behaviors.empty[String]) { sys =>
-        sys.getDefaultAddress shouldBe Address("akka", "adapter-address")
-      }
-    }
-
-    "return empty external address for argument other than rootPath" in {
-      withSystem("no-address", Behaviors.empty[String]) { sys =>
-        sys.getExternalAddressFor(Address("akka", "other")) shouldBe None
-      }
-    }
-
-    "return external address for argument equal to rootPath" in {
-      withSystem("some-address", Behaviors.empty[String]) { sys =>
-        sys.getExternalAddressFor(sys.getDefaultAddress) shouldBe Some(sys.getDefaultAddress)
+        sys.address shouldBe Address("akka", "adapter-address")
       }
     }
   }

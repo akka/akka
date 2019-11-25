@@ -41,11 +41,7 @@ private[akka] final case class GroupRouterBuilder[T] private[akka] (
 
   def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: T => String): GroupRouterBuilder[T] = {
     copy(
-      logicFactory = system =>
-        new RoutingLogics.ConsistentHashingLogic[T](
-          virtualNodesFactor,
-          mapping,
-          system.getDefaultAddress))
+      logicFactory = system => new RoutingLogics.ConsistentHashingLogic[T](virtualNodesFactor, mapping, system.address))
   }
 }
 

@@ -53,7 +53,7 @@ abstract class ActorRefResolver extends Extension {
   override def toSerializationFormat[T](ref: ActorRef[T]): String = {
 
     def toSerializationFormatWithAddress =
-      ref.path.toSerializationFormatWithAddress(system.getDefaultAddress)
+      ref.path.toSerializationFormatWithAddress(system.address)
 
     ref.toClassic match {
       case a: ActorRefWithCell =>

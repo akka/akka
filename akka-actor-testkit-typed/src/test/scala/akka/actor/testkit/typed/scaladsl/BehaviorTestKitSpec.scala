@@ -200,17 +200,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
     "return default address" in {
       val testkit = BehaviorTestKit[Parent.Command](Parent.init)
-      testkit.context.asScala.system.getDefaultAddress shouldBe testKitAddress
-    }
-
-    "return None external address for parameter other than rootPath" in {
-      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
-      testkit.context.asScala.system.getExternalAddressFor(Address("akka", "somethingelse")) shouldBe None
-    }
-
-    "return rootPath address for parameter other than rootPath" in {
-      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
-      testkit.context.asScala.system.getExternalAddressFor(testKitAddress) shouldBe Some(testKitAddress)
+      testkit.context.asScala.system.address shouldBe testKitAddress
     }
   }
 

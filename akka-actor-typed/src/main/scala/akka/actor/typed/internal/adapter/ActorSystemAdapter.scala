@@ -108,9 +108,7 @@ import org.slf4j.{ Logger, LoggerFactory }
     ActorRefAdapter(ref)
   }
 
-  override def getExternalAddressFor(addr: Address): Option[Address] = system.provider.getExternalAddressFor(addr)
-
-  override def getDefaultAddress: Address = system.provider.getDefaultAddress
+  override def address: Address = system.provider.getDefaultAddress
 }
 
 private[akka] object ActorSystemAdapter {

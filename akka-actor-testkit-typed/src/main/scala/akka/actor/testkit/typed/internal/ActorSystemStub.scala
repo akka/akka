@@ -115,7 +115,5 @@ import org.slf4j.LoggerFactory
 
   override def log: Logger = LoggerFactory.getLogger(getClass)
 
-  def getExternalAddressFor(addr: Address): Option[Address] = if (addr == rootPath.address) Some(addr) else None
-
-  def getDefaultAddress: Address = rootPath.address
+  def address: Address = rootPath.address
 }
