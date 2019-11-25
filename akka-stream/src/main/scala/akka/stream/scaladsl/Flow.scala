@@ -1372,7 +1372,7 @@ trait FlowOps[+Out, +Mat] {
   def scan[T](zero: T)(f: (T, Out) => T): Repr[T] = via(Scan(zero, f))
 
   /**
-   * Similar to `scan` but with a asynchronous function,
+   * Similar to `scan` but with an asynchronous function,
    * emits its current value which starts at `zero` and then
    * applies the current and next value to the given function `f`,
    * emitting a `Future` that resolves to the next current value.
@@ -1389,7 +1389,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * Note that the `zero` value must be immutable.
    *
-   * '''Emits when''' the future returned by f` completes
+   * '''Emits when''' the future returned by `f` completes
    *
    * '''Backpressures when''' downstream backpressures
    *

@@ -26,6 +26,16 @@ when running the stream more than once.
 
 @@@
 
+## Examples
+
+Below example demonstrates how `scan` is similar to `fold`, but it keeps value from every iteration.
+
+Scala
+:  @@snip [Scan.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Scan.scala) { #scan }
+
+Java
+:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #scan }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -37,13 +47,3 @@ when running the stream more than once.
 **completes** when upstream completes
 
 @@@
-
-## Examples
-
-Below example demonstrates how `scan` is similar to `fold`, but it keeps value from every iteration.
-
-Scala
-:  @@snip [Scan.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Scan.scala) { #scan }
-
-Java
-:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #scan }

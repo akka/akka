@@ -43,6 +43,7 @@ import java.time.Duration;
 import java.util.Arrays;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 class SourceOrFlow {
   private static ActorSystem system = null;
@@ -285,6 +286,23 @@ class SourceOrFlow {
     // 15  (= 4 + 5 + 6)
     // 7   (= 7)
     // #grouped
+  }
+
+  CompletionStage<Integer> asyncFunction(int acc, int next) {
+    return CompletableFuture.supplyAsync(() -> acc + next);
+  }
+
+  void scanAsyncExample() {
+    // #scan-async
+    Source<Integer, NotUsed> source = Source.range(1, 5);
+    source.scanAsync(0, (acc, x) -> asyncFunction(acc, x)).runForeach(System.out::println, materializer);
+    // 0  (= 0)
+    // 1  (= 0 + 1)
+    // 3  (= 0 + 1 + 2)
+    // 6  (= 0 + 1 + 2 + 3)
+    // 10 (= 0 + 1 + 2 + 3 + 4)
+    // 15 (= 0 + 1 + 2 + 3 + 4 + 5)
+    // #scan-async
   }
 
   static

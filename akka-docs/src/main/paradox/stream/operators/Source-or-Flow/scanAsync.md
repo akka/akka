@@ -1,6 +1,6 @@
 # scanAsync
 
-Just like `scan` but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
+Just like @ref[`scan`](./scan.md) but receives a function that results in a @scala[`Future`] @java[`CompletionStage`] to the next value.
 
 @ref[Simple operators](../index.md#simple-operators)
 
@@ -24,6 +24,15 @@ when running the stream more than once.
 
 @@@
 
+## Example
+
+Scala
+:  @@snip [ScanAsync.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ScanAsync.scala) { #scan-async }
+
+Java
+:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #scan-async }
+
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -41,7 +50,7 @@ when running the stream more than once.
 Below example demonstrates how `scanAsync` is similar to `fold`, but it keeps value from every iteration.
 
 Scala
-:  @@snip [ScanAsync.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ScanAsync.scala) { #scanAsync }
+:  @@snip [ScanAsync.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ScanAsync.scala) { #scan-async }
 
 Java
 :  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #scanAsync }
