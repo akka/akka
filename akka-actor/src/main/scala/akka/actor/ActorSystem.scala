@@ -1179,29 +1179,25 @@ private[akka] class ActorSystemImpl(
   private def loadExtensions(): Unit = {
 
     /*
-     * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
+     * @param throwOnLoadFail
+     *  Throw exception when an extension fails to load (needed for backwards compatibility.
+     *    when the extension cannot be found at all we throw regardless of this setting)
      */
     def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
-      def handleException(fqcn: String, problem: Throwable): Unit = {
-        if (!throwOnLoadFail) log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
-        else throw new RuntimeException(s"While trying to load extension [$fqcn]", problem)
-      }
-
       immutableSeq(settings.config.getStringList(key)).foreach { fqcn =>
         dynamicAccess.getObjectFor[AnyRef](fqcn).recoverWith {
           case _ => dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil)
         } match {
           case Success(p: ExtensionIdProvider) =>
-            try registerExtension(p.lookup())
-            catch { case NonFatal(e) => handleException(fqcn, e) }
+            registerExtension(p.lookup())
           case Success(p: ExtensionId[_]) =>
-            try registerExtension(p)
-            catch { case NonFatal(e) => handleException(fqcn, e) }
+            registerExtension(p)
           case Success(_) =>
             if (!throwOnLoadFail) log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
             else throw new RuntimeException(s"[$fqcn] is not an 'ExtensionIdProvider' or 'ExtensionId'")
           case Failure(problem) =>
-            handleException(fqcn, problem)
+            if (!throwOnLoadFail) log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
+            else throw new RuntimeException(s"While trying to load extension [$fqcn]", problem)
         }
       }
     }
