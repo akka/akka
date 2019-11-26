@@ -346,7 +346,7 @@ class SourceOrFlow {
   void filterNotExample() {
     // #filterNot
     Source<String, NotUsed> words = someText();
-    Source<String, NotUsed> longWords = words.filter(w -> w.length() <= 5);
+    Source<String, NotUsed> longWords = words.filterNot(w -> w.length() <= 5);
     // #filterNot
   }
 }

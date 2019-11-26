@@ -23,7 +23,7 @@ object Filter {
   def filterNotExample(): Unit = {
     // #filterNot
     val words: Source[String, NotUsed] = someText()
-    val longWords: Source[String, NotUsed] = words.filter(_.length <= 5)
+    val longWords: Source[String, NotUsed] = words.filterNot(_.length <= 5)
     // #filterNot
   }
 }
