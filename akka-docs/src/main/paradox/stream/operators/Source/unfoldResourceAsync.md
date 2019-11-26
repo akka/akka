@@ -16,15 +16,15 @@ Wrap any resource that can be opened, queried for next element and closed in an 
 
 Wrap any resource that can be opened, queried for next element and closed in an asynchronous way with three distinct functions into a source. This operator is the equivalent of @ref[unfoldResource](unfoldResource.md) but for resources with asynchronous APIs.
 
-`Source.unfoldResourceAsync` allows us to safely extract stream elements from resource with an async API by providing it with 
+`Source.unfoldResourceAsync` allows us to safely extract stream elements from a resource with an async API by providing it with 
 three functions that all return a @scala[`Future`]@java[`CompletionStage`]: 
 
 1. `create`: Open or create the resource
 1. `read`: Fetch the next element or signal that we reached the end of the stream by completing the @scala[`Future`]@java[`CompletionStage`] with a @java[`Optional.empty`]@scala[`None`]
 1. `close`: Close the resource, invoked on end of stream or if the stream fails
 
-All exceptions thrown by create and close as well as the @scala[`Future`]@java[`CompletionStage`]s completing with failure will
-fail the stream. The supervision strategy is used to handle exceptions from read, create and from the @scala[`Future`]@java[`CompletionStage`]s.
+All exceptions thrown by `create` and `close` as well as the @scala[`Future`]@java[`CompletionStage`]s completing with failure will
+fail the stream. The supervision strategy is used to handle exceptions from `read`, `create` and from the @scala[`Future`]@java[`CompletionStage`]s.
 
 Note that there are pre-built `unfoldResourceAsync`-like operators to wrap `java.io.InputStream`s in 
 @ref:[Additional Sink and Source converters](../index.md#additional-sink-and-source-converters), 
@@ -59,4 +59,3 @@ Java
 **completes** when @scala[`Future`] @java[`CompletionStage`] from read function returns `None`
 
 @@@
-
