@@ -1038,7 +1038,8 @@ private[akka] class ActorSystemImpl(
       logDeadLetterListener = Some(systemActorOf(Props[DeadLetterListener], "deadLetterListener"))
     eventStream.startUnsubscriber()
     ManifestInfo(this).checkSameVersion("Akka", allModules, logWarning = true)
-    loadExtensions()
+    if (!terminating)
+      loadExtensions()
     if (LogConfigOnStart) logConfiguration()
     this
   } catch {
@@ -1052,7 +1053,10 @@ private[akka] class ActorSystemImpl(
   def registerOnTermination[T](code: => T): Unit = { registerOnTermination(new Runnable { def run = code }) }
   def registerOnTermination(code: Runnable): Unit = { terminationCallbacks.add(code) }
 
+  @volatile private var terminating = false
+
   override def terminate(): Future[Terminated] = {
+    terminating = true
     if (settings.CoordinatedShutdownRunByActorSystemTerminate && !aborting) {
       // Note that the combination CoordinatedShutdownRunByActorSystemTerminate==true &&
       // CoordinatedShutdownTerminateActorSystem==false is disallowed, checked in Settings.
@@ -1069,6 +1073,7 @@ private[akka] class ActorSystemImpl(
   }
 
   override private[akka] def finalTerminate(): Unit = {
+    terminating = true
     // these actions are idempotent
     if (!settings.LogDeadLettersDuringShutdown) logDeadLetterListener.foreach(stop)
     guardian.stop()
@@ -1177,18 +1182,26 @@ private[akka] class ActorSystemImpl(
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
      */
     def loadExtensions(key: String, throwOnLoadFail: Boolean): Unit = {
+      def handleException(fqcn: String, problem: Throwable): Unit = {
+        if (!throwOnLoadFail) log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
+        else throw new RuntimeException(s"While trying to load extension [$fqcn]", problem)
+      }
+
       immutableSeq(settings.config.getStringList(key)).foreach { fqcn =>
         dynamicAccess.getObjectFor[AnyRef](fqcn).recoverWith {
           case _ => dynamicAccess.createInstanceFor[AnyRef](fqcn, Nil)
         } match {
-          case Success(p: ExtensionIdProvider) => registerExtension(p.lookup())
-          case Success(p: ExtensionId[_])      => registerExtension(p)
+          case Success(p: ExtensionIdProvider) =>
+            try registerExtension(p.lookup())
+            catch { case NonFatal(e) => handleException(fqcn, e) }
+          case Success(p: ExtensionId[_]) =>
+            try registerExtension(p)
+            catch { case NonFatal(e) => handleException(fqcn, e) }
           case Success(_) =>
             if (!throwOnLoadFail) log.error("[{}] is not an 'ExtensionIdProvider' or 'ExtensionId', skipping...", fqcn)
             else throw new RuntimeException(s"[$fqcn] is not an 'ExtensionIdProvider' or 'ExtensionId'")
           case Failure(problem) =>
-            if (!throwOnLoadFail) log.error(problem, "While trying to load extension [{}], skipping...", fqcn)
-            else throw new RuntimeException(s"While trying to load extension [$fqcn]", problem)
+            handleException(fqcn, problem)
         }
       }
     }
