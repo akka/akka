@@ -70,7 +70,7 @@ private[akka] class RemoteMetricsOn(system: ExtendedActorSystem) extends RemoteM
   override def logPayloadBytes(msg: Any, payloadBytes: Int): Unit =
     if (payloadBytes >= logFrameSizeExceeding) {
       val clazz = msg match {
-        case x: ActorSelectionMessage => x.message.getClass
+        case x: ActorSelectionMessage => x.msg.getClass
         case x: RouterEnvelope        => x.message.getClass
         case _                        => msg.getClass
       }
