@@ -27,7 +27,7 @@ Scala
 :  @@snip [MapConcat.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/MapConcat.scala) { #map-concat }
 
 Java
-:  @@snip [MapConcat.java](/akka-docs/src/test/java/jdocs/stream/operators/MapConcat.java) { #map-concat }
+:  @@snip [MapConcat.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/MapConcat.java) { #map-concat }
 
 
 ## Reactive Streams semantics
