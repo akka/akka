@@ -4,20 +4,25 @@
 
 package docs.io
 
-import java.net.{ Inet6Address, InetSocketAddress, NetworkInterface, StandardProtocolFamily }
-import java.nio.channels.DatagramChannel
-import scala.util.Random
-import akka.actor.{ ActorSystem, Props }
+import java.net.Inet6Address
+import java.net.NetworkInterface
+
+import akka.actor.ActorSystem
+import akka.actor.Props
 import akka.io.Udp
-import akka.testkit.TestKit
-import org.scalatest.{ BeforeAndAfter, WordSpecLike }
-import org.scalatest.BeforeAndAfterAll
 import akka.testkit.SocketUtil
+import akka.testkit.TestKit
 import akka.util.ccompat.JavaConverters._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.Matchers
+import org.scalatest.WordSpecLike
+
+import scala.util.Random
 
 class ScalaUdpMulticastSpec
     extends TestKit(ActorSystem("ScalaUdpMulticastSpec"))
     with WordSpecLike
+    with Matchers
     with BeforeAndAfterAll {
 
   "listener" should {
@@ -63,7 +68,7 @@ class ScalaUdpMulticastSpec
             // unbind
             system.stop(listener)
           }
-        }
+        } should ===(true)
       }
 
     }
