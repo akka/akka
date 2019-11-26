@@ -44,30 +44,30 @@ public class UnfoldResourceAsync {
     Database database = null;
 
     Source<DatabaseEntry, NotUsed> queryResultSource =
-      Source.unfoldResourceAsync(
-        // open
-        database::doQuery,
-        // read
-        this::readQueryResult,
-        // close
-        queryResult -> queryResult.close().thenApply(__ -> Done.done()));
+        Source.unfoldResourceAsync(
+            // open
+            database::doQuery,
+            // read
+            this::readQueryResult,
+            // close
+            queryResult -> queryResult.close().thenApply(__ -> Done.done()));
 
     queryResultSource.runForeach(entry -> System.out.println(entry.toString()), system);
     // #unfoldResourceAsync
   }
 
   // #unfoldResourceAsync
-  private CompletionStage<Optional<DatabaseEntry>> readQueryResult(QueryResult queryResult)  {
+  private CompletionStage<Optional<DatabaseEntry>> readQueryResult(QueryResult queryResult) {
     return queryResult
-      .hasMore()
-      .thenCompose(
-         more -> {
-           if (more) {
-             return queryResult.nextEntry().thenApply(Optional::of);
-           } else {
-             return CompletableFuture.completedFuture(Optional.empty());
-           }
-         });
+        .hasMore()
+        .thenCompose(
+            more -> {
+              if (more) {
+                return queryResult.nextEntry().thenApply(Optional::of);
+              } else {
+                return CompletableFuture.completedFuture(Optional.empty());
+              }
+            });
   }
   // #unfoldResourceAsync
 }
