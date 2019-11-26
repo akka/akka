@@ -188,19 +188,23 @@ class SourceOrFlow {
     // #scan
   }
 
+  // #scan-async
+  CompletionStage<Integer> asyncFunction(int acc, int next) {
+    return CompletableFuture.supplyAsync(() -> acc + next);
+  }
+  // #scan-async
+
   void scanAsyncExample() {
-    // #scanAsync
+    // #scan-async
     Source<Integer, NotUsed> source = Source.range(1, 5);
-    source
-        .scanAsync(0, (acc, x) -> CompletableFuture.completedFuture(acc + x))
-        .runForeach(System.out::println, materializer);
+    source.scanAsync(0, (acc, x) -> asyncFunction(acc, x)).runForeach(System.out::println, system);
     // 0  (= 0)
     // 1  (= 0 + 1)
     // 3  (= 0 + 1 + 2)
     // 6  (= 0 + 1 + 2 + 3)
     // 10 (= 0 + 1 + 2 + 3 + 4)
     // 15 (= 0 + 1 + 2 + 3 + 4 + 5)
-    // #scanAsync
+    // #scan-async
   }
 
   static // #conflateWithSeed-type
@@ -286,25 +290,6 @@ class SourceOrFlow {
     // 15  (= 4 + 5 + 6)
     // 7   (= 7)
     // #grouped
-  }
-
-  // #scan-async
-  CompletionStage<Integer> asyncFunction(int acc, int next) {
-    return CompletableFuture.supplyAsync(() -> acc + next);
-  }
-  // #scan-async
-
-  void scanAsyncExample() {
-    // #scan-async
-    Source<Integer, NotUsed> source = Source.range(1, 5);
-    source.scanAsync(0, (acc, x) -> asyncFunction(acc, x)).runForeach(System.out::println, materializer);
-    // 0  (= 0)
-    // 1  (= 0 + 1)
-    // 3  (= 0 + 1 + 2)
-    // 6  (= 0 + 1 + 2 + 3)
-    // 10 (= 0 + 1 + 2 + 3 + 4)
-    // 15 (= 0 + 1 + 2 + 3 + 4 + 5)
-    // #scan-async
   }
 
   static
