@@ -24,7 +24,12 @@ three functions that all return a @scala[`Future`]@java[`CompletionStage`]:
 1. `close`: Close the resource, invoked on end of stream or if the stream fails
 
 All exceptions thrown by create and close as well as the @scala[`Future`]@java[`CompletionStage`]s completing with failure will
-fail the stream. The supervision strategy to handle exceptions from read, create and from the @scala[`Future`]@java[`CompletionStage`]s.
+fail the stream. The supervision strategy is used to handle exceptions from read, create and from the @scala[`Future`]@java[`CompletionStage`]s.
+
+Note that there are pre-built `unfoldResourceAsync`-like operators to wrap `java.io.InputStream`s in 
+@ref:[Additional Sink and Source converters](../index.md#additional-sink-and-source-converters), 
+`Iterator` in @ref:[fromIterator](fromIterator.md) and File IO in @ref:[File IO Sinks and Sources](../index.md#file-io-sinks-and-sources).
+Additional prebuilt technology specific connectors can also be found in the [Alpakka project](https://doc.akka.io/docs/alpakka/current/).
 
 ## Examples
 

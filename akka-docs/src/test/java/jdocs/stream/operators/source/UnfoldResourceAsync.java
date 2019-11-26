@@ -13,7 +13,7 @@ import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
-interface UnfoldResourceAsync {
+public class UnfoldResourceAsync {
   // imaginary async API we need to use
   // #unfoldResource-async-api
   interface Database {
@@ -36,7 +36,7 @@ interface UnfoldResourceAsync {
 
   // #unfoldResource-async-api
 
-  default void unfoldResourceExample() {
+  void unfoldResourceExample() {
     ActorSystem system = null;
 
     // #unfoldResourceAsync
