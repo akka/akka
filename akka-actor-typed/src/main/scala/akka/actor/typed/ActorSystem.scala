@@ -166,7 +166,12 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
     EventStreamExtension(this).ref
 
   /**
-   * Obtain the external address of the default transport.
+   * Obtains the external address of the default transport.
+   *
+   * Consider differences in clustered and non-clustered ActorSystems.
+   * For a non-clustered ActorSystem, this will return an address without host and port.
+   * For a clustered ActorSystem, this will return the address that other nodes can use to
+   * communicate with this node.
    */
   def address: Address
 
