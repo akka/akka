@@ -91,11 +91,13 @@ class FlowErrorDocSpec extends AkkaSpec {
   "demonstrate recover" in {
     //#recover
     Source(0 to 6)
-      .map(n =>
-        if (n < 5) n.toString
-        else throw new RuntimeException("Boom!"))
+      .map(
+        n =>
+          // assuming `4` and `5` are unexpected values that could throw exception
+          if (List(4, 5).contains(n)) throw new RuntimeException(s"Boom! Bad value found: $n")
+          else n.toString)
       .recover {
-        case _: RuntimeException => "stream truncated"
+        case e: RuntimeException => e.getMessage
       }
       .runForeach(println)
     //#recover
@@ -106,9 +108,8 @@ Output:
 0
 1
 2
-3
-4
-stream truncated
+3                         // last element before failure
+Boom! Bad value found: 4  // first element on failure
 //#recover-output
    */
   }

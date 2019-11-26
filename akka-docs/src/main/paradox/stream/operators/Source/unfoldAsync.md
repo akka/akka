@@ -19,6 +19,28 @@ complete or emit when it completes.
 
 Can be used to implement many stateful sources without having to touch the more low level @ref[`GraphStage`](../../stream-customize.md) API.
 
+## Examples
+
+In this example we are asking an imaginary actor for chunks of bytes from an offset with a protocol like this: 
+
+Scala
+:   @@snip [UnfoldAsync.scala](/akka-docs/src/test/scala/docs/stream/operators/source/UnfoldAsync.scala) { #unfoldAsync-actor-protocol }
+
+Java
+:   @@snip [UnfoldAsync.java](/akka-docs/src/test/java/jdocs/stream/operators/source/UnfoldAsync.java) { #unfoldAsync-actor-protocol }
+
+
+The actor will reply with the `Chunk` message, if we ask for an offset outside of the end of the data the actor will respond with an empty `ByteString`
+
+We want to represent this as a stream of `ByteString`s that complete when we reach the end, to achieve this we use the offset as the state passed between `unfoldAsync` invocations:
+
+Scala
+:   @@snip [UnfoldAsync.scala](/akka-docs/src/test/scala/docs/stream/operators/source/UnfoldAsync.scala) { #unfoldAsync }
+
+Java
+:   @@snip [UnfoldAsync.java](/akka-docs/src/test/java/jdocs/stream/operators/source/UnfoldAsync.java) { #unfoldAsync }
+
+
 ## Reactive Streams semantics
 
 @@@div { .callout }

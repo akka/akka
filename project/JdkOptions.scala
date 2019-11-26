@@ -34,13 +34,7 @@ object JdkOptions extends AutoPlugin {
       jdk8home,
       fullJavaHomes,
       Seq("-target:jvm-1.8"),
-      // '-release 8' is not enough, for some reason we need the 8 rt.jar
-      // explicitly. To test whether this has the desired effect, compile
-      // akka-remote and check the invocation of 'ByteBuffer.clear()' in
-      // EnvelopeBuffer.class with 'javap -c': it should refer to
-      //""java/nio/ByteBuffer.clear:()Ljava/nio/Buffer" and not
-      // "java/nio/ByteBuffer.clear:()Ljava/nio/ByteBuffer". Issue #27079
-      (java8home: File) => Seq("-release", "8", "-javabootclasspath", java8home + "/jre/lib/rt.jar")
+      _ => Seq("-release", "8")
     )
   def targetJdkJavacOptions(targetSystemJdk: Boolean, jdk8home: Option[File], fullJavaHomes: Map[String, File]): Seq[String] =
     selectOptions(

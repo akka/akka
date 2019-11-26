@@ -56,6 +56,10 @@ does not have a @scala[matching case] @java[match defined] the stream is failed.
 Recovering can be useful if you want to gracefully complete a stream on failure while letting 
 downstream know that there was a failure.
 
+Throwing an exception inside `recover` _will_ be logged on ERROR level automatically.
+
+More details in @ref[recover](./operators/Source-or-Flow/recover.md#recover)
+
 Scala
 :   @@snip [FlowErrorDocSpec.scala](/akka-docs/src/test/scala/docs/stream/FlowErrorDocSpec.scala) { #recover }
 

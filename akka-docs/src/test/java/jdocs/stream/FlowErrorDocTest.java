@@ -142,10 +142,15 @@ public class FlowErrorDocTest extends AbstractJavaTest {
     Source.from(Arrays.asList(0, 1, 2, 3, 4, 5, 6))
         .map(
             n -> {
-              if (n < 5) return n.toString();
-              else throw new RuntimeException("Boom!");
+              // assuming `4` and `5` are unexpected values that could throw exception
+              if (Arrays.asList(4, 5).contains(n))
+                throw new RuntimeException(String.format("Boom! Bad value found: %s", n));
+              else return n.toString();
             })
-        .recover(new PFBuilder().match(RuntimeException.class, ex -> "stream truncated").build())
+        .recover(
+            new PFBuilder<Throwable, String>()
+                .match(RuntimeException.class, Throwable::getMessage)
+                .build())
         .runForeach(System.out::println, system);
     // #recover
 
@@ -155,9 +160,8 @@ public class FlowErrorDocTest extends AbstractJavaTest {
     0
     1
     2
-    3
-    4
-    stream truncated
+    3                         // last element before failure
+    Boom! Bad value found: 4  // first element on failure
     //#recover-output
     */
   }
