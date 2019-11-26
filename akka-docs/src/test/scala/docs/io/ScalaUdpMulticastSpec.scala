@@ -4,20 +4,26 @@
 
 package docs.io
 
-import java.net.{ Inet6Address, InetSocketAddress, NetworkInterface, StandardProtocolFamily }
-import java.nio.channels.DatagramChannel
-import scala.util.Random
-import akka.actor.{ ActorSystem, Props }
+import java.net.Inet6Address
+import java.net.NetworkInterface
+
+import akka.Done
+import akka.actor.ActorSystem
+import akka.actor.Props
 import akka.io.Udp
-import akka.testkit.TestKit
-import org.scalatest.{ BeforeAndAfter, WordSpecLike }
-import org.scalatest.BeforeAndAfterAll
 import akka.testkit.SocketUtil
+import akka.testkit.TestKit
 import akka.util.ccompat.JavaConverters._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.Matchers
+import org.scalatest.WordSpecLike
+
+import scala.util.Random
 
 class ScalaUdpMulticastSpec
     extends TestKit(ActorSystem("ScalaUdpMulticastSpec"))
     with WordSpecLike
+    with Matchers
     with BeforeAndAfterAll {
 
   "listener" should {
@@ -37,7 +43,11 @@ class ScalaUdpMulticastSpec
         // on the platform (awsdl0 can't be used on OSX, docker[0-9] can't be used in a docker machine etc.)
         // therefore: try hard to find an interface that _does_ work, and only fail if there was any potentially
         // working interfaces but all failed
-        ipv6ifaces.exists { ipv6iface =>
+        var failures: List[AssertionError] = Nil
+        var foundOneThatWorked = false
+        val iterator = ipv6ifaces.iterator
+        while (!foundOneThatWorked && iterator.hasNext) {
+          val ipv6iface = iterator.next()
           // host assigned link local multicast address http://tools.ietf.org/html/rfc3307#section-4.3.2
           // generate a random 32 bit multicast address with the high order bit set
           val randomAddress: String = (Random.nextInt().abs.toLong | (1L << 31)).toHexString.toUpperCase
@@ -52,18 +62,21 @@ class ScalaUdpMulticastSpec
             val sender = system.actorOf(Props(classOf[Sender], iface, group, port, msg))
             // fails here, so binding succeeds but sending a message does not
             expectMsg(msg)
-            true
+            foundOneThatWorked = true
 
           } catch {
-            case _: AssertionError =>
+            case ex: AssertionError =>
               system.log.info("Failed to run test on interface {}", ipv6iface.getDisplayName)
-              false
+              failures = ex :: failures
 
           } finally {
             // unbind
             system.stop(listener)
           }
         }
+
+        if (failures.size == ipv6ifaces.size)
+          fail(s"Multicast failed on all available interfaces: ${failures}")
       }
 
     }
