@@ -55,7 +55,7 @@ class StartStopActor1 extends AbstractBehavior<String> {
   private StartStopActor1(ActorContext<String> context) {
     super(context);
     System.out.println("first started");
-    
+
     context.spawn(StartStopActor2.create(), "second");
   }
 
