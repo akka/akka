@@ -328,25 +328,43 @@ class SourceOrFlow {
     // #take-while
   }
 
-  Source<String, NotUsed> someText() {
-    return Source.from(
-        Arrays.asList(
-            ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
-                    + "ut labore et dolore magna aliqua.")
-                .split(" ")));
-  }
-
   void filterExample() {
     // #filter
-    Source<String, NotUsed> words = someText();
+    Source<String, NotUsed> words =
+        Source.from(
+            Arrays.asList(
+                ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
+                        + "ut labore et dolore magna aliqua.")
+                    .split(" ")));
+
     Source<String, NotUsed> longWords = words.filter(w -> w.length() > 6);
+
+    longWords.runWith(Sink.foreach(System.out::print), system);
+    // consectetur
+    // adipiscing
+    // eiusmod
+    // tempor
+    // incididunt
     // #filter
   }
 
   void filterNotExample() {
     // #filterNot
-    Source<String, NotUsed> words = someText();
+    Source<String, NotUsed> words =
+        Source.from(
+            Arrays.asList(
+                ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
+                        + "ut labore et dolore magna aliqua.")
+                    .split(" ")));
+
     Source<String, NotUsed> longWords = words.filterNot(w -> w.length() <= 5);
+
+    longWords.runWith(Sink.foreach(System.out::print), system);
+    // consectetur
+    // adipiscing
+    // eiusmod
+    // tempor
+    // incididunt
     // #filterNot
   }
 }
