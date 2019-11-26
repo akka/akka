@@ -70,8 +70,15 @@ private[io] class TcpListener(
       ret
     } catch {
       case NonFatal(e) =>
-        bindCommander ! bind.failureMessage.withCause(e)
-        log.error(e, "Bind failed for TCP channel on endpoint [{}]", bind.localAddress)
+        val exception = if (e.isInstanceOf[java.net.BindException]) {
+          val newException = new java.net.BindException(s"[${bind.localAddress}] ${e.getMessage}")
+          newException.setStackTrace(e.getStackTrace)
+          newException
+        } else {
+          e
+        }
+        bindCommander ! bind.failureMessage.withCause(exception)
+        log.error(exception, "Bind failed for TCP channel on endpoint [{}]", bind.localAddress)
         context.stop(self)
     }
 
