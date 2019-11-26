@@ -111,11 +111,7 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
     logEvent.mdc.foreach { case (k, v) => MDC.put(k, String.valueOf(v)) }
     try logStatement
     finally {
-      MDC.remove(mdcAkkaSourceAttributeName)
-      MDC.remove(mdcThreadAttributeName)
-      MDC.remove(mdcAkkaTimestamp)
-      MDC.remove(mdcActorSystemAttributeName)
-      logEvent.mdc.keys.foreach(k => MDC.remove(k))
+      MDC.clear()
     }
   }
 
