@@ -15,6 +15,8 @@ Transform each element into zero or more elements that are individually passed d
 ## Description
 
 Transform each element into zero or more elements that are individually passed downstream.
+Returning an empty iterable results in zero elements being passed downstream
+rather than the stream being cancelled.
 
 ## Example
 
