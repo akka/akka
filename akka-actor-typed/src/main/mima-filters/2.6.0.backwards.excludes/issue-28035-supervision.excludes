@@ -1,0 +1,3 @@
+# #28035 default to stop supervision when spawning via PropsAdapter
+
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.typed.internal.adapter.PropsAdapter.apply*")

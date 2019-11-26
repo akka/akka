@@ -118,7 +118,7 @@ object LoggingDocExamples {
     // implicit ActorSystem is needed, but that is given by ScalaTestWithActorTestKit
     //implicit val system: ActorSystem[_]
 
-    LoggingTestKit.info("Received message").intercept {
+    LoggingTestKit.info("Received message").expect {
       ref ! Message("hello")
     }
     //#test-logging
@@ -134,7 +134,7 @@ object LoggingDocExamples {
         }
       }
       .withOccurrences(2)
-      .intercept {
+      .expect {
         ref ! Message("hellö")
         ref ! Message("hejdå")
       }

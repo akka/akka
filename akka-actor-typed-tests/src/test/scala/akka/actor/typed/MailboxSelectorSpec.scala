@@ -71,7 +71,7 @@ class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
       }, MailboxSelector.bounded(2))
       actor ! "one" // actor will block here
       actor ! "two"
-      LoggingTestKit.deadLetters().intercept {
+      LoggingTestKit.deadLetters().expect {
         // one or both of these doesn't fit in mailbox
         // depending on race with how fast actor consumes
         actor ! "three"

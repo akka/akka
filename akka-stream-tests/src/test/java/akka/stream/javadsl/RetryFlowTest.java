@@ -36,7 +36,7 @@ public class RetryFlowTest extends StreamTest {
 
   public static
   // #withBackoff-signature
-  <In, InCtx, Out, OutCtx, Mat> Flow<In, Out, Mat> withBackoff(
+  <In, Out, Mat> Flow<In, Out, Mat> withBackoff(
       Duration minBackoff,
       Duration maxBackoff,
       double randomFactor,

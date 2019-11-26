@@ -27,7 +27,7 @@ These built-in sources are available from @scala[`akka.stream.scaladsl.Source`] 
 |Source|<a name="future"></a>@ref[future](Source/future.md)|Send the single value of the `Future` when it completes and there is demand.|
 |Source|<a name="futuresource"></a>@ref[futureSource](Source/futureSource.md)|Streams the elements of the given future source once it successfully completes.|
 |Source|<a name="lazily"></a>@ref[lazily](Source/lazily.md)|`lazily` has been deprecated in 2.6.0, use `Source.lazySource` instead.|
-|Source|<a name="lazilyasync"></a>@ref[lazilyAsync](Source/lazilyAsync.md)|`lazily` has been deprecated in 2.6.0, use `Source.lazyFutureSource` instead.|
+|Source|<a name="lazilyasync"></a>@ref[lazilyAsync](Source/lazilyAsync.md)|`lazilyAsync` has been deprecated in 2.6.0, use `Source.lazyFutureSource` instead.|
 |Source|<a name="lazycompletionstage"></a>@ref[lazyCompletionStage](Source/lazyCompletionStage.md)|Defers creation of a future of a single element source until there is demand.|
 |Source|<a name="lazycompletionstagesource"></a>@ref[lazyCompletionStageSource](Source/lazyCompletionStageSource.md)|Defers creation of a future source until there is demand.|
 |Source|<a name="lazyfuture"></a>@ref[lazyFuture](Source/lazyFuture.md)|Defers creation of a future of a single element source until there is demand.|
@@ -58,6 +58,7 @@ These built-in sinks are available from @scala[`akka.stream.scaladsl.Sink`] @jav
 |Sink|<a name="actorrefwithbackpressure"></a>@ref[actorRefWithBackpressure](Sink/actorRefWithBackpressure.md)|Send the elements from the stream to an `ActorRef` which must then acknowledge reception after completing a message, to provide back pressure onto the sink.|
 |Sink|<a name="aspublisher"></a>@ref[asPublisher](Sink/asPublisher.md)|Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.|
 |Sink|<a name="cancelled"></a>@ref[cancelled](Sink/cancelled.md)|Immediately cancel the stream|
+|Sink|<a name="collection"></a>@ref[collection](Sink/collection.md)|@scala[Collect all values emitted from the stream into a collection.]@java[Operator only available in the Scala API. The closest operator in the Java API is @ref[`Sink.seq`](Sink/seq.md)].|
 |Sink|<a name="combine"></a>@ref[combine](Sink/combine.md)|Combine several sinks into one using a user specified strategy|
 |Sink|<a name="completionstagesink"></a>@ref[completionStageSink](Sink/completionStageSink.md)|Streams the elements to the given future sink once it successfully completes. |
 |Sink|<a name="fold"></a>@ref[fold](Sink/fold.md)|Fold over emitted element with a function, where each invocation will get the new element and the result from the previous fold invocation.|
@@ -473,6 +474,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [lastOption](Sink/lastOption.md)
 * [takeLast](Sink/takeLast.md)
 * [seq](Sink/seq.md)
+* [collection](Sink/collection.md)
 * [asPublisher](Sink/asPublisher.md)
 * [ignore](Sink/ignore.md)
 * [foreach](Sink/foreach.md)

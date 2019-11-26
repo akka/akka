@@ -27,20 +27,20 @@ class TestAppenderSpec
 
   "TestAppender and LoggingEventFilter" must {
     "filter errors without cause" in {
-      LoggingTestKit.error("an error").withOccurrences(2).intercept {
+      LoggingTestKit.error("an error").withOccurrences(2).expect {
         log.error("an error")
         log.error("an error")
       }
     }
 
     "filter errors with cause" in {
-      LoggingTestKit.error("err").withCause[TestException].intercept {
+      LoggingTestKit.error("err").withCause[TestException].expect {
         log.error("err", TestException("an error"))
       }
     }
 
     "filter warnings" in {
-      LoggingTestKit.warn("a warning").withOccurrences(2).intercept {
+      LoggingTestKit.warn("a warning").withOccurrences(2).expect {
         log.error("an error")
         log.warn("a warning")
         log.error("an error")
@@ -50,7 +50,7 @@ class TestAppenderSpec
 
     "find excess messages" in {
       intercept[AssertionError] {
-        LoggingTestKit.warn("a warning").withOccurrences(2).intercept {
+        LoggingTestKit.warn("a warning").withOccurrences(2).expect {
           log.error("an error")
           log.warn("a warning")
           log.warn("a warning")
@@ -73,7 +73,7 @@ class TestAppenderSpec
         })
         .withOccurrences(2)
         .withLoggerName(classOf[AnotherLoggerClass].getName)
-        .intercept {
+        .expect {
           LoggerFactory.getLogger(classOf[AnotherLoggerClass]).info("Hello from right logger")
           log.info("Hello wrong logger")
           LoggerFactory.getLogger(classOf[AnotherLoggerClass]).info("Hello from right logger")
@@ -82,13 +82,13 @@ class TestAppenderSpec
     }
 
     "find unexpected events withOccurrences(0)" in {
-      LoggingTestKit.warn("a warning").withOccurrences(0).intercept {
+      LoggingTestKit.warn("a warning").withOccurrences(0).expect {
         log.error("an error")
         log.warn("another warning")
       }
 
       intercept[AssertionError] {
-        LoggingTestKit.warn("a warning").withOccurrences(0).intercept {
+        LoggingTestKit.warn("a warning").withOccurrences(0).expect {
           log.error("an error")
           log.warn("a warning")
           log.warn("another warning")
@@ -96,7 +96,7 @@ class TestAppenderSpec
       }.getMessage should include("Received 1 excess messages")
 
       intercept[AssertionError] {
-        LoggingTestKit.warn("a warning").withOccurrences(0).intercept {
+        LoggingTestKit.warn("a warning").withOccurrences(0).expect {
           log.warn("a warning")
           log.warn("a warning")
         }
@@ -107,7 +107,7 @@ class TestAppenderSpec
     "find unexpected async events withOccurrences(0)" in {
       // expect-no-message-default = 1000 ms
       intercept[AssertionError] {
-        LoggingTestKit.warn("a warning").withOccurrences(0).intercept {
+        LoggingTestKit.warn("a warning").withOccurrences(0).expect {
           Future {
             Thread.sleep(20)
             log.warn("a warning")

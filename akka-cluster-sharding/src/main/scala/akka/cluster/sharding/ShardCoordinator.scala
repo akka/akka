@@ -502,7 +502,7 @@ abstract class ShardCoordinator(
     case None =>
       cluster.settings.MinNrOfMembers
     case Some(r) =>
-      cluster.settings.MinNrOfMembersOfRole.getOrElse(r, cluster.settings.MinNrOfMembers)
+      cluster.settings.MinNrOfMembersOfRole.getOrElse(r, 1)
   }
   var allRegionsRegistered = false
 

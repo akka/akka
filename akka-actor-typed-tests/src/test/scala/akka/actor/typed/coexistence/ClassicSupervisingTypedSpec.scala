@@ -126,6 +126,26 @@ class ClassicSupervisingTypedSpec extends WordSpecLike with LogCapturing with Be
       probe.expectNoMessage()
       expectTerminated(underTest.toClassic)
     }
+
+    "default to stop for supervision of systemActorOf" in {
+      val probe = TestProbe()
+      val underTest = classicSystem.toTyped.systemActorOf(ProbedBehavior.behavior(probe.ref), "s1")
+      watch(underTest.toClassic)
+      underTest ! "throw"
+      probe.expectMsg(PostStop)
+      probe.expectNoMessage()
+      expectTerminated(underTest.toClassic)
+    }
+
+    "default to stop for PropsAdapter" in {
+      val probe = TestProbe()
+      val underTest = classicSystem.actorOf(PropsAdapter(ProbedBehavior.behavior(probe.ref)))
+      watch(underTest)
+      underTest ! "throw"
+      probe.expectMsg(PostStop)
+      probe.expectNoMessage()
+      expectTerminated(underTest)
+    }
   }
 
   override protected def afterAll(): Unit = {

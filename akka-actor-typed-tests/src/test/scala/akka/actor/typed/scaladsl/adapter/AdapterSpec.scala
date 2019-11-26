@@ -304,7 +304,7 @@ class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with Log
       // only stop supervisorStrategy
       LoggingTestKit
         .error[AdapterSpec.ThrowIt3.type]
-        .intercept {
+        .expect {
           typedRef ! "supervise-restart"
           probe.expectMsg("ok")
         }(system.toTyped)
@@ -317,7 +317,7 @@ class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with Log
 
       LoggingTestKit
         .error[ActorInitializationException]
-        .intercept {
+        .expect {
           typedRef ! "supervise-start-fail"
           probe.expectMsg("terminated")
         }(system.toTyped)
@@ -343,7 +343,7 @@ class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with Log
       val throwMsg = "sad panda"
       LoggingTestKit
         .error("sad panda")
-        .intercept {
+        .expect {
           system.spawnAnonymous(unhappyTyped(throwMsg))
           Thread.sleep(1000)
         }(system.toTyped)

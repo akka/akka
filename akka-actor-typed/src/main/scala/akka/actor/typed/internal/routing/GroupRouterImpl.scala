@@ -4,7 +4,9 @@
 
 package akka.actor.typed.internal.routing
 
-import akka.actor.Dropped
+import java.util.function
+
+import akka.actor.{ Dropped, ExtendedActorSystem }
 import akka.actor.typed._
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.receptionist.Receptionist
@@ -20,17 +22,32 @@ import akka.annotation.InternalApi
 @InternalApi
 private[akka] final case class GroupRouterBuilder[T] private[akka] (
     key: ServiceKey[T],
-    logicFactory: () => RoutingLogic[T] = () => new RoutingLogics.RandomLogic[T]())
+    logicFactory: ActorSystem[_] => RoutingLogic[T] = (_: ActorSystem[_]) => new RoutingLogics.RandomLogic[T]())
     extends javadsl.GroupRouter[T]
     with scaladsl.GroupRouter[T] {
 
   // deferred creation of the actual router
-  def apply(ctx: TypedActorContext[T]): Behavior[T] = new InitialGroupRouterImpl[T](ctx.asScala, key, logicFactory())
+  def apply(ctx: TypedActorContext[T]): Behavior[T] =
+    new InitialGroupRouterImpl[T](ctx.asScala, key, logicFactory(ctx.asScala.system))
 
-  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RandomLogic[T]())
+  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = _ => new RoutingLogics.RandomLogic[T]())
 
-  def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = () => new RoutingLogics.RoundRobinLogic[T])
+  def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = _ => new RoutingLogics.RoundRobinLogic[T])
 
+  def withConsistentHashingRouting(
+      virtualNodesFactor: Int,
+      mapping: function.Function[T, String]): GroupRouterBuilder[T] =
+    withConsistentHashingRouting(virtualNodesFactor, mapping.apply(_))
+
+  def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: T => String): GroupRouterBuilder[T] = {
+    import akka.actor.typed.scaladsl.adapter._
+    copy(
+      logicFactory = system =>
+        new RoutingLogics.ConsistentHashingLogic[T](
+          virtualNodesFactor,
+          mapping,
+          system.toClassic.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress))
+  }
 }
 
 /**
@@ -98,7 +115,7 @@ private[akka] final class GroupRouterImpl[T](
       this
     case msg: T @unchecked =>
       import akka.actor.typed.scaladsl.adapter._
-      if (!routeesEmpty) routingLogic.selectRoutee() ! msg
+      if (!routeesEmpty) routingLogic.selectRoutee(msg) ! msg
       else
         context.system.eventStream ! EventStream.Publish(
           Dropped(msg, s"No routees in group router for [$serviceKey]", context.self.toClassic))

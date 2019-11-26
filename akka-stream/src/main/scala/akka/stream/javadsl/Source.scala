@@ -630,7 +630,7 @@ object Source {
     scaladsl.Source.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
   /**
-   * Combines several sources with fan-in strategy like `Merge` or `Concat` and returns `Source`.
+   * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]].
    */
   def combine[T, U](
       first: Source[T, _ <: Any],
