@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.{KillSwitches, OverflowStrategy, ThrottleMode }
+import akka.stream.{ KillSwitches, OverflowStrategy, ThrottleMode }
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit._
