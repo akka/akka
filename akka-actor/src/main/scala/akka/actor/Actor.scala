@@ -288,6 +288,7 @@ final case class UnhandledMessage(
     @BeanProperty sender: ActorRef,
     @BeanProperty recipient: ActorRef)
     extends NoSerializationVerificationNeeded
+    with WrappedMessage
 
 /**
  * Classes for passing status back to the sender.

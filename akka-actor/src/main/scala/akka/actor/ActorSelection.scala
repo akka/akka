@@ -315,12 +315,15 @@ private[akka] final case class ActorSelectionMessage(
     elements: immutable.Iterable[SelectionPathElement],
     wildcardFanOut: Boolean)
     extends AutoReceivedMessage
-    with PossiblyHarmful {
+    with PossiblyHarmful
+    with WrappedMessage {
 
   def identifyRequest: Option[Identify] = msg match {
     case x: Identify => Some(x)
     case _           => None
   }
+
+  override def message: Any = msg
 }
 
 /**
