@@ -7,6 +7,7 @@ package docs.io
 import java.net.Inet6Address
 import java.net.NetworkInterface
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.io.Udp
@@ -42,7 +43,11 @@ class ScalaUdpMulticastSpec
         // on the platform (awsdl0 can't be used on OSX, docker[0-9] can't be used in a docker machine etc.)
         // therefore: try hard to find an interface that _does_ work, and only fail if there was any potentially
         // working interfaces but all failed
-        ipv6ifaces.flatMap { ipv6iface =>
+        var failures: List[AssertionError] = Nil
+        var foundOneThatWorked = false
+        val iterator = ipv6ifaces.iterator
+        while (!foundOneThatWorked && iterator.hasNext) {
+          val ipv6iface = iterator.next()
           // host assigned link local multicast address http://tools.ietf.org/html/rfc3307#section-4.3.2
           // generate a random 32 bit multicast address with the high order bit set
           val randomAddress: String = (Random.nextInt().abs.toLong | (1L << 31)).toHexString.toUpperCase
@@ -57,18 +62,21 @@ class ScalaUdpMulticastSpec
             val sender = system.actorOf(Props(classOf[Sender], iface, group, port, msg))
             // fails here, so binding succeeds but sending a message does not
             expectMsg(msg)
-            None // ok
+            foundOneThatWorked = true
 
           } catch {
             case ex: AssertionError =>
               system.log.info("Failed to run test on interface {}", ipv6iface.getDisplayName)
-              Some(ex)
+              failures = ex :: failures
 
           } finally {
             // unbind
             system.stop(listener)
           }
-        } should have size (0)
+        }
+
+        if (failures.size == ipv6ifaces.size)
+          fail(s"Multicast failed on all available interfaces: ${failures}")
       }
 
     }
