@@ -20,6 +20,12 @@ public class MapConcat {
       Source.from(Arrays.asList(1,2,3))
          .mapConcat(i -> duplicate(i))
          .runForeach(System.out::println, system);
+      // prints:
+      // 1
+      // 1
+      // 2
+      // 2
+      // 3
       //#map-concat
    }
 }

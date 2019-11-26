@@ -18,6 +18,8 @@ Transform each element into zero or more elements that are individually passed d
 
 ## Example
 
+The following takes a stream of integers and duplicates each element.
+
 Scala
 :  @@snip [MapConcat.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/MapConcat.scala) { #map-concat }
 
