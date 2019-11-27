@@ -216,7 +216,7 @@ it may be more efficient or interesting to query it (instead of the source event
 
 ### Materialize view to Reactive Streams compatible datastore
 
-If the read datastore exposes a [Reactive Streams](https://reactive-streams.org) interface then implementing a simple projection
+If the read datastore exposes a [Reactive Streams](http://reactive-streams.org) interface then implementing a simple projection
 is as simple as, using the read-journal and feeding it into the databases driver interface, for example like so:
 
 Scala
