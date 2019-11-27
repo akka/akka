@@ -4,7 +4,7 @@
 
 package akka.actor.typed.internal.routing
 
-import akka.actor.{ Address, ExtendedActorSystem }
+import akka.actor.Address
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.internal.routing.RoutingLogics.ConsistentHashingLogic
 import akka.actor.typed.scaladsl.Behaviors
@@ -142,10 +142,9 @@ class RoutingLogicSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
   }
 
   "The consistent hashing logic" must {
-    import akka.actor.typed.scaladsl.adapter._
     val behavior: Behavior[Int] = Behaviors.empty[Int]
     val typedSystem: ActorSystem[Int] = ActorSystem(behavior, "testSystem")
-    val selfAddress: Address = typedSystem.toClassic.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
+    val selfAddress: Address = typedSystem.address
     val modulo10Mapping: Int => String = (in: Int) => (in % 10).toString
     val messages: Map[Any, Seq[Int]] = (1 to 1000).groupBy(modulo10Mapping.apply)
 

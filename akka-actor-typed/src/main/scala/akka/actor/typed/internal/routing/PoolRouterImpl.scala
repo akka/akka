@@ -6,7 +6,6 @@ package akka.actor.typed.internal.routing
 
 import java.util.function
 
-import akka.actor.ExtendedActorSystem
 import akka.actor.typed._
 import akka.actor.typed.javadsl.PoolRouter
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
@@ -36,13 +35,8 @@ private[akka] final case class PoolRouterBuilder[T](
     withConsistentHashingRouting(virtualNodesFactor, mapping.apply(_))
 
   def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: T => String): PoolRouterBuilder[T] = {
-    import akka.actor.typed.scaladsl.adapter._
     copy(
-      logicFactory = system =>
-        new RoutingLogics.ConsistentHashingLogic[T](
-          virtualNodesFactor,
-          mapping,
-          system.toClassic.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress))
+      logicFactory = system => new RoutingLogics.ConsistentHashingLogic[T](virtualNodesFactor, mapping, system.address))
   }
 
   def withPoolSize(poolSize: Int): PoolRouterBuilder[T] = copy(poolSize = poolSize)
