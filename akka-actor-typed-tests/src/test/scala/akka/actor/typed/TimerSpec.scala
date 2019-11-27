@@ -121,7 +121,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "replace timer" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startTimerWithFixedDelay(Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
 
@@ -141,7 +141,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "cancel timer" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startTimerWithFixedDelay(Tick(1), interval)
+        timer.startTimerWithFixedDelay("T", Tick(1), interval)
         target(probe.ref, timer, 1)
       }
 
@@ -193,7 +193,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors
         .supervise(Behaviors.withTimers[Command] { timer =>
-          timer.startTimerWithFixedDelay(Tick(1), interval)
+          timer.startTimerWithFixedDelay("T", Tick(1), interval)
           target(probe.ref, timer, 1)
         })
         .onFailure[Exception](SupervisorStrategy.restart)
