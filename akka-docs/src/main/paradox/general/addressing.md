@@ -73,7 +73,7 @@ An actor reference designates a single actor and the life-cycle of the reference
 matches that actor’s life-cycle; an actor path represents a name which may or
 may not be inhabited by an actor and the path itself does not have a life-cycle,
 it never becomes invalid. You can create an actor path without creating an actor,
-but you cannot create an actor reference without creating corresponding actor.
+but you cannot create an actor reference without creating a corresponding actor.
 
 You can create an actor, terminate it, and then create a new actor with the same
 actor path. The newly created actor is a new incarnation of the actor. It is not
