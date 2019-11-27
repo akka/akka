@@ -7,7 +7,7 @@ Classic Pub Sub can be used by leveraging the `.toClassic` adapters until @githu
 
 Until the new Distributed Publish Subscribe API, see @github[#26338](#26338), 
 you can use Classic Distributed Publish Subscribe 
-[coexisting](coexisting.md) with new Cluster and actors. To do this, add following dependency in your project:
+@ref:[coexisting](coexisting.md) with new Cluster and actors. To do this, add following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
