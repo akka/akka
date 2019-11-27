@@ -15,7 +15,6 @@ import scala.collection.immutable
 
 import com.typesafe.config.Config
 import akka.event.EventStream
-import akka.event.LogMarker
 import akka.event.Logging
 import akka.util.Helpers.ConfigOps
 
@@ -150,7 +149,7 @@ class PhiAccrualFailureDetector(
                 getClass,
                 s"heartbeat interval is growing too large for address $address: $interval millis",
                 Logging.emptyMDC,
-                LogMarker("cluster.fd.growing", Map(LogMarker.Properties.RemoteAddress -> address))))
+                RemoteLogMarker.failureDetectorGrowing(address)))
           oldState.history :+ interval
         } else oldState.history
     }

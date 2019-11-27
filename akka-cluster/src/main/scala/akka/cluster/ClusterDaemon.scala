@@ -23,7 +23,6 @@ import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
 import akka.event.ActorWithLogClass
-import akka.event.LogMarker
 import akka.event.Logging
 import com.github.ghik.silencer.silent
 
@@ -324,7 +323,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   val selfDc = cluster.selfDataCenter
 
   private val gossipLogger =
-    new cluster.ClusterLogger(Logging(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterGossip)))
+    new cluster.ClusterLogger(
+      Logging.withMarker(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterGossip)))
 
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
@@ -1413,20 +1413,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
           val (exiting, nonExiting) = newlyDetectedUnreachableMembers.partition(_.status == Exiting)
           nonExiting.foreach { node =>
-            logWarning(
-              LogMarker("cluster.unreachable", Map(LogMarker.Properties.RemoteAddress -> node.address)),
-              "Marking node as UNREACHABLE [{}].",
-              node)
+            logWarning(ClusterLogMarker.unreachable(node.address), "Marking node as UNREACHABLE [{}].", node)
           }
           if (exiting.nonEmpty)
             logInfo(
               "Marking exiting node(s) as UNREACHABLE [{}]. This is expected and they will be removed.",
               exiting.mkString(", "))
           nonExiting.foreach { node =>
-            logInfo(
-              LogMarker("cluster.reachable", Map(LogMarker.Properties.RemoteAddress -> node.address)),
-              "Marking node as REACHABLE [{}].",
-              node)
+            logInfo(ClusterLogMarker.reachable(node.address), "Marking node as REACHABLE [{}].", node)
           }
 
           publishMembershipState()

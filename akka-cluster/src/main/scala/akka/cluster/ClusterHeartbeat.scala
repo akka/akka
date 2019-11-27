@@ -19,7 +19,6 @@ import akka.actor.RootActorPath
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent._
 import akka.event.ActorWithLogClass
-import akka.event.LogMarker
 import akka.event.Logging
 import akka.remote.FailureDetectorRegistry
 import akka.remote.HeartbeatMessage
@@ -42,7 +41,8 @@ private[cluster] final class ClusterHeartbeatReceiver(getCluster: () => Cluster)
   lazy val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
 
   private lazy val clusterLogger =
-    new cluster.ClusterLogger(Logging(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterHeartbeat)))
+    new cluster.ClusterLogger(
+      Logging.withMarker(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterHeartbeat)))
 
   def receive: Receive = {
     case hb: Heartbeat =>
@@ -109,7 +109,8 @@ private[cluster] class ClusterHeartbeatSender extends Actor {
   import context.dispatcher
 
   private val clusterLogger =
-    new cluster.ClusterLogger(Logging(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterHeartbeat)))
+    new cluster.ClusterLogger(
+      Logging.withMarker(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterHeartbeat)))
   import clusterLogger._
 
   val filterInternalClusterMembers: Member => Boolean =
@@ -228,7 +229,7 @@ private[cluster] class ClusterHeartbeatSender extends Actor {
     val now = System.nanoTime()
     if ((now - tickTimestamp) >= (HeartbeatInterval.toNanos * 2))
       logWarning(
-        LogMarker("cluster.fd.starvation"),
+        ClusterLogMarker.heartbeatStarvation,
         "Scheduled sending of heartbeat was delayed. " +
         "Previous heartbeat was sent [{}] ms ago, expected interval is [{}] ms. This may cause failure detection " +
         "to mark members as unreachable. The reason can be thread starvation, e.g. by running blocking tasks on the " +

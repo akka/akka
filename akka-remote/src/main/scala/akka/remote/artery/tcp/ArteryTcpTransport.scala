@@ -24,9 +24,9 @@ import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.dispatch.ExecutionContexts
-import akka.event.LogMarker
 import akka.event.Logging
 import akka.remote.RemoteActorRefProvider
+import akka.remote.RemoteLogMarker
 import akka.remote.RemoteTransportException
 import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.compress._
@@ -149,13 +149,9 @@ private[remote] class ArteryTcpTransport(
       def logConnected(): Unit = {
         if (log.isDebugEnabled)
           log.debug(
-            LogMarker(
-              "remote.outbound",
-              Map(
-                LogMarker.Properties.RemoteAddress -> outboundContext.remoteAddress,
-                LogMarker.Properties.RemoteAddressUid -> outboundContext.associationState
-                  .uniqueRemoteAddressValue()
-                  .getOrElse(""))),
+            RemoteLogMarker.connected(
+              outboundContext.remoteAddress,
+              outboundContext.associationState.uniqueRemoteAddressValue().map(_.uid)),
             "Outbound connection opened to [{}]",
             outboundContext.remoteAddress)
       }
@@ -163,13 +159,9 @@ private[remote] class ArteryTcpTransport(
       def logDisconnected(): Unit = {
         if (log.isDebugEnabled)
           log.debug(
-            LogMarker(
-              "remote.outbound",
-              Map(
-                LogMarker.Properties.RemoteAddress -> outboundContext.remoteAddress,
-                LogMarker.Properties.RemoteAddressUid -> outboundContext.associationState
-                  .uniqueRemoteAddressValue()
-                  .getOrElse(""))),
+            RemoteLogMarker.disconnected(
+              outboundContext.remoteAddress,
+              outboundContext.associationState.uniqueRemoteAddressValue().map(_.uid)),
             "Outbound connection closed to [{}]",
             outboundContext.remoteAddress)
       }

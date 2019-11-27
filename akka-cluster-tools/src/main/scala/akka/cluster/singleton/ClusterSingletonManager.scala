@@ -816,7 +816,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       }
     case Event(Terminated(ref), AcquiringLeaseData(_, Some(singleton))) if ref == singleton =>
       logInfo(
-        LogMarker("cluster.singleton.terminated"),
+        ClusterLogMarker.singletonTerminated,
         "Singleton actor terminated. Trying to acquire lease again before re-creating.")
       // tryAcquireLease sets the state to None for singleton actor
       tryAcquireLease()
@@ -850,7 +850,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   @InternalStableApi
   def gotoOldest(): State = {
     logInfo(
-      LogMarker("cluster.singleton.started"),
+      ClusterLogMarker.singletonStarted,
       "Singleton manager starting singleton actor [{}]",
       self.path / singletonName)
     val singleton = context.watch(context.actorOf(singletonProps, singletonName))
@@ -892,7 +892,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       stay
 
     case Event(Terminated(ref), d @ OldestData(Some(singleton))) if ref == singleton =>
-      logInfo(LogMarker("cluster.singleton.terminated"), "Singleton actor [{}] was terminated", singleton.path)
+      logInfo(ClusterLogMarker.singletonTerminated, "Singleton actor [{}] was terminated", singleton.path)
       stay.using(d.copy(singleton = None))
 
     case Event(SelfExiting, _) =>
@@ -952,7 +952,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
       gotoHandingOver(singleton, None)
 
     case Event(Terminated(ref), d @ WasOldestData(singleton, _)) if singleton.contains(ref) =>
-      logInfo(LogMarker("cluster.singleton.terminated"), "Singleton actor [{}] was terminated", ref.path)
+      logInfo(ClusterLogMarker.singletonTerminated, "Singleton actor [{}] was terminated", ref.path)
       stay.using(d.copy(singleton = None))
 
     case Event(SelfExiting, _) =>
@@ -1003,7 +1003,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
   def handOverDone(handOverTo: Option[ActorRef]): State = {
     val newOldest = handOverTo.map(_.path.address)
     logInfo(
-      LogMarker("cluster.singleton.terminated"),
+      ClusterLogMarker.singletonTerminated,
       "Singleton terminated, hand-over done [{} -> {}]",
       cluster.selfAddress,
       newOldest)

@@ -433,6 +433,14 @@ With Logback the timestamp is available with `%X{akkaTimestamp}` specifier withi
   </encoder>
 ```
 
+### Markers
+
+Akka is logging some events with markers. Some of these events also include structured MDC properties. 
+
+* The "SECURITY" marker is used for highlighting security related events or incidents.
+* Akka Cluster is using the markers defined in @apidoc[akka.cluster.ClusterLogMarker].
+* Akka Remoting is using the markers defined in @apidoc[akka.remote.RemoteLogMarker]
+
 ### Logger names
 
 It can be useful to enable debug level or other SLF4J backend configuration for certain modules of Akka when
