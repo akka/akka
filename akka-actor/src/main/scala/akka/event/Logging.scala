@@ -1671,6 +1671,7 @@ object LogMarker {
    * INTERNAL API
    */
   @InternalApi private[akka] object Properties {
+    val MessageClass = "akkaMessageClass"
     val RemoteAddress = "akkaRemoteAddress"
     val RemoteAddressUid = "akkaRemoteAddressUid"
   }

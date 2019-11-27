@@ -578,6 +578,7 @@ A more advanced (including most Akka added information) example pattern would be
 Akka is logging some events with markers. Some of these events also include structured MDC properties. 
 
 * The "SECURITY" marker is used for highlighting security related events or incidents.
+* Akka Actor is using the markers defined in @apidoc[akka.actor.ActorLogMarker].
 * Akka Cluster is using the markers defined in @apidoc[akka.cluster.ClusterLogMarker].
 * Akka Remoting is using the markers defined in @apidoc[akka.remote.RemoteLogMarker]
 

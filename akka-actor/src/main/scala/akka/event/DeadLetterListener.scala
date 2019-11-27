@@ -8,6 +8,7 @@ import scala.concurrent.duration.Deadline
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.Actor
+import akka.actor.ActorLogMarker
 import akka.actor.ActorRef
 import akka.actor.AllDeadLetters
 import akka.actor.DeadLetter
@@ -116,7 +117,9 @@ class DeadLetterListener extends Actor {
         d.recipient.getClass,
         logMessage +
         "This logging can be turned off or adjusted with configuration settings 'akka.log-dead-letters' " +
-        "and 'akka.log-dead-letters-during-shutdown'."))
+        "and 'akka.log-dead-letters-during-shutdown'.",
+        Logging.emptyMDC,
+        ActorLogMarker.deadLetter(messageStr)))
   }
 
   private def isReal(snd: ActorRef): Boolean = {
