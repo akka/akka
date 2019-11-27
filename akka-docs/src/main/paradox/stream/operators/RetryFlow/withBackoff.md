@@ -12,6 +12,9 @@ Scala
 Java
 :   @@snip [RetryFlowTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/RetryFlowTest.java) { #withBackoff-signature }
 
+## API documentation
+
+@apidoc[RetryFlow$]
 
 ## Description
 

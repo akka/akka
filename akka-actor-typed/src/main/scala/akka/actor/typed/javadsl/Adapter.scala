@@ -11,6 +11,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Scheduler
+import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.internal.adapter.ActorContextAdapter
 import akka.japi.Creator
 
@@ -143,7 +144,10 @@ object Adapter {
    * example of that.
    */
   def props[T](behavior: Creator[Behavior[T]], deploy: Props): akka.actor.Props =
-    akka.actor.typed.internal.adapter.PropsAdapter(() => behavior.create(), deploy)
+    akka.actor.typed.internal.adapter.PropsAdapter(
+      () => Behaviors.supervise(behavior.create()).onFailure(SupervisorStrategy.stop),
+      deploy,
+      rethrowTypedFailure = false)
 
   /**
    * Wrap [[akka.actor.typed.Behavior]] in a classic [[akka.actor.Props]], i.e. when

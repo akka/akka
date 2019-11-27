@@ -211,7 +211,7 @@ interface StyleGuideDocExamples {
                 name,
                 command.interval,
                 n);
-        timers.startTimerWithFixedDelay("repeat", Increment.INSTANCE, command.interval);
+        timers.startTimerWithFixedDelay(Increment.INSTANCE, command.interval);
         return Behaviors.same();
       }
 
@@ -306,7 +306,7 @@ interface StyleGuideDocExamples {
                 setup.name,
                 command.interval,
                 n);
-        setup.timers.startTimerWithFixedDelay("repeat", Increment.INSTANCE, command.interval);
+        setup.timers.startTimerWithFixedDelay(Increment.INSTANCE, command.interval);
         return Behaviors.same();
       }
 
@@ -394,7 +394,7 @@ interface StyleGuideDocExamples {
                 name,
                 command.interval,
                 n);
-        timers.startTimerWithFixedDelay("repeat", Increment.INSTANCE, command.interval);
+        timers.startTimerWithFixedDelay(Increment.INSTANCE, command.interval);
         return Behaviors.same();
       }
 
@@ -552,7 +552,7 @@ interface StyleGuideDocExamples {
             context ->
                 Behaviors.withTimers(
                     timers -> {
-                      timers.startTimerWithFixedDelay("tick", Tick.INSTANCE, tickInterval);
+                      timers.startTimerWithFixedDelay(Tick.INSTANCE, tickInterval);
                       return new Counter(name, context);
                     }));
       }
@@ -688,7 +688,7 @@ interface StyleGuideDocExamples {
                 (ActorContext<Message> context) ->
                     Behaviors.withTimers(
                         timers -> {
-                          timers.startTimerWithFixedDelay("tick", Tick.INSTANCE, tickInterval);
+                          timers.startTimerWithFixedDelay(Tick.INSTANCE, tickInterval);
                           return new Counter(name, context);
                         }))
             .narrow(); // note narrow here

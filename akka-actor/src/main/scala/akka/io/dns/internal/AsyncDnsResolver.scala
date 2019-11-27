@@ -13,8 +13,10 @@ import akka.io.dns.CachePolicy.{ Never, Ttl }
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.io.dns.internal.DnsClient._
 import akka.io.dns._
+import akka.pattern.AskTimeoutException
 import akka.pattern.{ ask, pipe }
 import akka.util.{ Helpers, Timeout }
+import akka.util.PrettyDuration._
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -102,7 +104,12 @@ private[io] final class AsyncDnsResolver(
         case head :: tail =>
           resolveWithSearch(name, requestType, head).recoverWith {
             case NonFatal(t) =>
-              log.error(t, "Resolve failed. Trying next name server")
+              t match {
+                case _: AskTimeoutException =>
+                  log.info("Resolve of {} timed out after {}. Trying next name server", name, timeout.duration.pretty)
+                case _ =>
+                  log.info("Resolve of {} failed. Trying next name server {}", name, t.getMessage)
+              }
               resolveWithResolvers(name, requestType, tail)
           }
       }

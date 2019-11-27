@@ -230,7 +230,7 @@ an error like this:
 In such situations it's good to consult with a core team member whether the violation can be safely ignored or if it would indeed
 break binary compatibility. If the violation can be ignored add exclude statements from the mima output to
 a new file named `<module>/src/main/mima-filters/<last-version>.backwards.excludes/<pr-or-issue>-<issue-number>-<description>.excludes`,
-e.g. `akka-actor/src/main/mima-filters/2.5.x.backwards.excludes/pr-12345-rename-internal-classes.excludes`. Make sure to add a comment
+e.g. `akka-actor/src/main/mima-filters/2.6.0.backwards.excludes/pr-12345-rename-internal-classes.excludes`. Make sure to add a comment
 in the file that describes briefly why the incompatibility can be ignored.
 
 Situations when it may be fine to ignore a MiMa issued warning include:

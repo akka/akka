@@ -45,6 +45,8 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
 
   import InternalProtocol._
 
+  onRecoveryStart(setup.context)
+
   def createBehavior(receivedPoisonPillInPreviousPhase: Boolean): Behavior[InternalProtocol] = {
     // protect against snapshot stalling forever because of journal overloaded and such
     setup.startRecoveryTimer(snapshot = true)
@@ -100,6 +102,8 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
     throw new JournalFailureException(msg, cause)
   }
 
+  @InternalStableApi
+  def onRecoveryStart(@unused context: ActorContext[_]): Unit = ()
   @InternalStableApi
   def onRecoveryFailed(@unused context: ActorContext[_], @unused reason: Throwable): Unit = ()
 

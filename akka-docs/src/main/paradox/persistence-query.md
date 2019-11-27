@@ -43,7 +43,7 @@ query types for the most common query scenarios, that most journals are likely t
 ## Read Journals
 
 In order to issue queries one has to first obtain an instance of a `ReadJournal`.
-Read journals are implemented as [Community plugins](http://akka.io/community/#plugins-to-akka-persistence-query), each targeting a specific datastore (for example Cassandra or JDBC
+Read journals are implemented as [Community plugins](https://akka.io/community/#plugins-to-akka-persistence-query), each targeting a specific datastore (for example Cassandra or JDBC
 databases). For example, given a library that provides a `akka.persistence.query.my-read-journal` obtaining the related
 journal is as simple as:
 
@@ -56,7 +56,7 @@ Java
 Journal implementers are encouraged to put this identifier in a variable known to the user, such that one can access it via
 @scala[`readJournalFor[NoopJournal](NoopJournal.identifier)`]@java[`getJournalFor(NoopJournal.class, NoopJournal.identifier)`], however this is not enforced.
 
-Read journal implementations are available as [Community plugins](http://akka.io/community/#plugins-to-akka-persistence-query).
+Read journal implementations are available as [Community plugins](https://akka.io/community/#plugins-to-akka-persistence-query).
 
 ### Predefined queries
 
@@ -273,7 +273,7 @@ Java
 ## Query plugins
 
 Query plugins are various (mostly community driven) `ReadJournal` implementations for all kinds
-of available datastores. The complete list of available plugins is maintained on the Akka Persistence Query [Community Plugins](http://akka.io/community/#plugins-to-akka-persistence-query) page.
+of available datastores. The complete list of available plugins is maintained on the Akka Persistence Query [Community Plugins](https://akka.io/community/#plugins-to-akka-persistence-query) page.
 
 The plugin for LevelDB is described in @ref:[Persistence Query for LevelDB](persistence-query-leveldb.md).
 

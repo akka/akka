@@ -196,6 +196,20 @@ A starting point for configuration of `logback.xml` for production:
 
 @@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-prod.xml)
 
+Note that the `AsyncAppender` may drop log events if the queue becomes full, which may happen if the
+logging backend can't keep up with the throughput of produced log events. Dropping log events is necessary
+if you want to gracefully degrade your application if only your logging backend or filesystem is experiencing
+issues. 
+
+An alternative of the Logback `AsyncAppender` with better performance is the [Logstash async appender](https://github.com/logstash/logstash-logback-encoder#async-appenders).
+
+The ELK-stack is commonly used as logging infrastructure for production:
+
+* [Logstash Logback encoder](https://github.com/logstash/logstash-logback-encoder)
+* [Logstash](https://www.elastic.co/guide/en/logstash/current/index.html)
+* [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
+* [Kibana](https://www.elastic.co/guide/en/kibana/current/index.html)
+
 For development you might want to log to standard out, but also have all debug level logging to file, like
 in this example:
 

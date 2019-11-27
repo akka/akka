@@ -34,7 +34,7 @@ class ActorRefResolverSpec extends WordSpec with ScalaFutures with Matchers {
 
         val minRef1: akka.actor.ActorRef = new MinimalActorRef {
           override def provider: ActorRefProvider = system1.toClassic.asInstanceOf[ActorSystemImpl].provider
-          override def path: ActorPath = RootActorPath(provider.getDefaultAddress) / "minRef1"
+          override def path: ActorPath = RootActorPath(system1.address) / "minRef1"
         }
 
         val minRef1Serialized = ActorRefResolver(system2).toSerializationFormat(minRef1)

@@ -136,11 +136,11 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
         // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
         // which is possible for OR CRDTs - done with an adapter to leverage the existing NodesRemoved message
-        timers.startTimerWithFixedDelay("remove-nodes", RemoveTick, setup.settings.pruningInterval)
+        timers.startTimerWithFixedDelay(RemoveTick, setup.settings.pruningInterval)
 
         // default tomstone keepalive is 24h (based on prune-gossip-tombstones-after) and keeping the actorrefs
         // around isn't very costly so don't prune often
-        timers.startTimerWithFixedDelay("prune-tombstones", PruneTombstonesTick, setup.keepTombstonesFor / 24)
+        timers.startTimerWithFixedDelay(PruneTombstonesTick, setup.keepTombstonesFor / 24)
 
         behavior(setup, registry, TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV])
       }
