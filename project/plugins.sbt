@@ -20,6 +20,6 @@ addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.7")
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
 addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.26")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.3.0") // for maintenance of copyright file header
+addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.3.1") // for maintenance of copyright file header
 addSbtPlugin("com.hpe.sbt" % "sbt-pull-request-validator" % "1.0.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.22")
