@@ -12,7 +12,7 @@ This documentation page touches upon @ref[Akka Persistence](persistence.md), so 
 
 ## Introduction
 
-When working on long running projects using @ref:[Persistence](persistence.md), or any kind of [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html) architectures,
+When working on long running projects using @ref:[Persistence](persistence.md), or any kind of [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) architectures,
 schema evolution becomes one of the more important technical aspects of developing your application.
 The requirements as well as our own understanding of the business domain may (and will) change in time.
 
@@ -40,7 +40,7 @@ In recent years we have observed a tremendous move towards immutable append-only
 the prime technique successfully being used in these settings. For an excellent overview why and how immutable data makes scalability
 and systems design much simpler you may want to read Pat Helland's excellent [Immutability Changes Everything](http://cidrdb.org/cidr2015/Papers/CIDR15_Paper16.pdf) whitepaper.
 
-Since with [Event Sourcing](http://martinfowler.com/eaaDev/EventSourcing.html) the **events are immutable** and usually never deleted – the way schema evolution is handled
+Since with [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) the **events are immutable** and usually never deleted – the way schema evolution is handled
 differs from how one would go about it in a mutable database setting (e.g. in typical CRUD database applications).
 
 The system needs to be able to continue to work in the presence of "old" events which were stored under the "old" schema.
@@ -92,11 +92,11 @@ Binary serialization formats that we have seen work well for long-lived applicat
 single fields focused like in protobuf or thrift, and usually requires using some kind of schema registry.
 
 Users who want their data to be human-readable directly in the write-side
-datastore may opt to use plain-old [JSON](http://json.org) as the storage format, though that comes at a cost of lacking support for schema
+datastore may opt to use plain-old [JSON](https://json.org) as the storage format, though that comes at a cost of lacking support for schema
 evolution and relatively large marshalling latency.
 
 There are plenty excellent blog posts explaining the various trade-offs between popular serialization formats,
-one post we would like to highlight is the very well illustrated [Schema evolution in Avro, Protocol Buffers and Thrift](http://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html)
+one post we would like to highlight is the very well illustrated [Schema evolution in Avro, Protocol Buffers and Thrift](https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html)
 by Martin Kleppmann.
 
 ### Provided default serializers
@@ -451,7 +451,7 @@ Java
 This technique only applies if the Akka Persistence plugin you are using provides this capability.
 Check the documentation of your favourite plugin to see if it supports this style of persistence.
 
-If it doesn't, you may want to skim the [list of existing journal plugins](http://akka.io/community/#journal-plugins), just in case some other plugin
+If it doesn't, you may want to skim the [list of existing journal plugins](https://akka.io/community/#journal-plugins), just in case some other plugin
 for your favourite datastore *does* provide this capability.
 
 @@@
