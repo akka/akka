@@ -208,6 +208,7 @@ These operators process elements using timers, delaying, dropping or grouping el
 | |Operator|Description|
 |--|--|--|
 |Source/Flow|<a name="delay"></a>@ref[delay](Source-or-Flow/delay.md)|Delay every element passed through with a specific duration.|
+|Source/Flow|<a name="delaywith"></a>@ref[delayWith](Source-or-Flow/delayWith.md)|Delay every element passed through with a duration that can be controlled dynamically.|
 |Source/Flow|<a name="dropwithin"></a>@ref[dropWithin](Source-or-Flow/dropWithin.md)|Drop elements until a timeout has fired|
 |Source/Flow|<a name="groupedweightedwithin"></a>@ref[groupedWeightedWithin](Source-or-Flow/groupedWeightedWithin.md)|Chunk up this stream into groups of elements received within a time window, or limited by the weight of the elements, whatever happens first.|
 |Source/Flow|<a name="groupedwithin"></a>@ref[groupedWithin](Source-or-Flow/groupedWithin.md)|Chunk up this stream into groups of elements received within a time window, or limited by the number of the elements, whatever happens first.|
@@ -424,6 +425,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [groupedWithin](Source-or-Flow/groupedWithin.md)
 * [groupedWeightedWithin](Source-or-Flow/groupedWeightedWithin.md)
 * [delay](Source-or-Flow/delay.md)
+* [delayWith](Source-or-Flow/delayWith.md)
 * [drop](Source-or-Flow/drop.md)
 * [dropWithin](Source-or-Flow/dropWithin.md)
 * [takeWhile](Source-or-Flow/takeWhile.md)
