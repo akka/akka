@@ -15,7 +15,7 @@ To use Akka Actors, add the following dependency in your project:
   version=$akka.version$
 }
 
-Both the Java and Scala DSLs of Akka modules bundled in the same JAR. For a smooth development experience,
+Both the Java and Scala DSLs of Akka modules are bundled in the same JAR. For a smooth development experience,
 when using an IDE such as Eclipse or IntelliJ, you can disable the auto-importer from suggesting `javadsl`
 imports when working in Scala, or viceversa. See @ref:[IDE Tips](../additional/ide.md). 
 
