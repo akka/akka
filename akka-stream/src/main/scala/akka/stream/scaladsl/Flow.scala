@@ -1601,8 +1601,10 @@ trait FlowOps[+Out, +Mat] {
    * @param of time to shift all messages
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def delay(of: FiniteDuration, strategy: DelayOverflowStrategy = DelayOverflowStrategy.dropTail): Repr[Out] =
-    via(new Delay[Out](() => DelayStrategy.fixedDelay(of), strategy))
+  def delay(of: FiniteDuration, strategy: DelayOverflowStrategy = DelayOverflowStrategy.dropTail): Repr[Out] = {
+    val fixedDelay = DelayStrategy.fixedDelay(of)
+    via(new Delay[Out](() => fixedDelay, strategy))
+  }
 
   /**
    * Shifts elements emission in time by an amount individually determined through delay strategy a specified amount.

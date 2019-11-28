@@ -1700,33 +1700,38 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class Delay[T](
-    private[this] val delayStrategySupplier: () => DelayStrategy[_ >: T],
-    private[this] val overflowStrategy: DelayOverflowStrategy)
-    extends SimpleLinearGraphStage[T] {
-  private[this] def timerName = "DelayedTimer"
+@InternalApi object Delay {
+  private val TimerName = "DelayedTimer"
+  private val DelayPrecisionMS = 10
+}
 
-  private[this] val DelayPrecisionMS = 10
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class Delay[T](
+    delayStrategySupplier: () => DelayStrategy[T],
+    overflowStrategy: DelayOverflowStrategy)
+    extends SimpleLinearGraphStage[T] {
 
   override def initialAttributes: Attributes = DefaultAttributes.delay
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+      import Delay._
+
       private[this] val size = inheritedAttributes.mandatoryAttribute[InputBuffer].max
 
       private[this] val delayStrategy = delayStrategySupplier()
 
-      private[this] var buffer
-          : BufferImpl[(Long, T)] = _ // buffer has pairs timestamp of expected push with upstream element
-
-      override def preStart(): Unit = buffer = BufferImpl(size, inheritedAttributes)
+      // buffer has pairs of timestamp of expected push and element
+      private[this] val buffer = BufferImpl[(Long, T)](size, inheritedAttributes)
 
       private[this] val onPushWhenBufferFull: () => Unit = overflowStrategy match {
         case EmitEarly =>
           () => {
             if (isAvailable(out)) {
-              if (isTimerActive(timerName)) {
-                cancelTimer(timerName)
+              if (isTimerActive(TimerName)) {
+                cancelTimer(TimerName)
               }
 
               push(out, buffer.dequeue()._2)
@@ -1772,13 +1777,13 @@ private[stream] object Collect {
           onPushWhenBufferFull()
         else {
           grabAndPull()
-          if (!isTimerActive(timerName)) {
+          if (!isTimerActive(TimerName)) {
             val waitTime = nextElementWaitTime()
             if (waitTime <= DelayPrecisionMS && isAvailable(out)) {
               push(out, buffer.dequeue()._2)
               completeIfReady()
             } else
-              scheduleOnce(timerName, waitTime.millis)
+              scheduleOnce(TimerName, waitTime.millis)
           }
         }
       }
@@ -1798,12 +1803,12 @@ private[stream] object Collect {
         completeIfReady()
 
       def onPull(): Unit = {
-        if (!isTimerActive(timerName) && !buffer.isEmpty) {
+        if (!isTimerActive(TimerName) && !buffer.isEmpty) {
           val waitTime = nextElementWaitTime()
           if (waitTime <= DelayPrecisionMS)
             push(out, buffer.dequeue()._2)
           else
-            scheduleOnce(timerName, waitTime.millis)
+            scheduleOnce(TimerName, waitTime.millis)
         }
 
         if (!isClosed(in) && !hasBeenPulled(in) && shouldPull)
