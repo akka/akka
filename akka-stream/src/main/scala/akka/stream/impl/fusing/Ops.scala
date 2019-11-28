@@ -1725,12 +1725,16 @@ private[stream] object Collect {
         case EmitEarly =>
           () => {
             if (isAvailable(out)) {
-              if (isTimerActive(timerName))
+              if (isTimerActive(timerName)) {
                 cancelTimer(timerName)
+              }
 
               push(out, buffer.dequeue()._2)
               grabAndPull()
               completeIfReady()
+            } else {
+              throw new IllegalStateException(
+                "Was configured to emitEarly and got element when out is not ready and buffer is full, should not be possible.")
             }
           }
         case _: DropHead =>
@@ -1746,7 +1750,7 @@ private[stream] object Collect {
         case _: DropNew =>
           () => {
             grab(in)
-            if (pullCondition) pull(in)
+            if (shouldPull) pull(in)
           }
         case _: DropBuffer =>
           () => {
@@ -1779,13 +1783,15 @@ private[stream] object Collect {
         }
       }
 
-      private def pullCondition: Boolean =
-        !overflowStrategy.isBackpressure || buffer.used < size
+      private def shouldPull: Boolean =
+        buffer.used < size || !overflowStrategy.isBackpressure ||
+        // we can only emit early if output is ready
+        (overflowStrategy == EmitEarly && isAvailable(out))
 
       private def grabAndPull(): Unit = {
         val element = grab(in)
         buffer.enqueue((System.nanoTime() + delayStrategy.nextDelay(element).toNanos, element))
-        if (pullCondition) pull(in)
+        if (shouldPull) pull(in)
       }
 
       override def onUpstreamFinish(): Unit =
@@ -1800,7 +1806,7 @@ private[stream] object Collect {
             scheduleOnce(timerName, waitTime.millis)
         }
 
-        if (!isClosed(in) && !hasBeenPulled(in) && pullCondition)
+        if (!isClosed(in) && !hasBeenPulled(in) && shouldPull)
           pull(in)
 
         completeIfReady()
