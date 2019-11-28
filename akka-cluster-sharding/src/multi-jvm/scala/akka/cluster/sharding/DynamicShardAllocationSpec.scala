@@ -15,7 +15,6 @@ import akka.cluster.sharding.DynamicShardAllocationSpec.GiveMeYourHome.Get
 import akka.cluster.sharding.DynamicShardAllocationSpec.GiveMeYourHome.Home
 import akka.cluster.sharding.dynamic.DynamicShardAllocation
 import akka.cluster.sharding.dynamic.DynamicShardAllocationStrategy
-import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
