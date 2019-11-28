@@ -340,7 +340,7 @@ import scala.util.control.NonFatal
         // Allocates one additional element to hold stream
         // closed/failure indicators
         buffer = Buffer(maxBuffer + 1, inheritedAttributes)
-        currentRequests = Buffer(maxConcurrentPulls, materializer)
+        currentRequests = Buffer(maxConcurrentPulls, inheritedAttributes)
         setKeepGoing(true)
         pull(in)
       }

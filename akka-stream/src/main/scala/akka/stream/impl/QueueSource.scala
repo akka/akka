@@ -49,7 +49,7 @@ import scala.concurrent.{ Future, Promise }
 
       override def preStart(): Unit = {
         if (maxBuffer > 0) buffer = Buffer(maxBuffer, inheritedAttributes)
-        pendingOffers = Buffer(maxConcurrentOffers, materializer)
+        pendingOffers = Buffer(maxConcurrentOffers, inheritedAttributes)
       }
       override def postStop(): Unit = {
         val exception = new StreamDetachedException()
