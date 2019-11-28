@@ -21,8 +21,10 @@ import scala.util.control.NoStackTrace
 import akka.Done
 import akka.testkit.TimingTest
 
-class FlowThrottleSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(1, 1))
+class FlowThrottleSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   def genByteString(length: Int) =
     ByteString(new Random().shuffle(0 to 255).take(length).map(_.toByte).toArray)
@@ -313,7 +315,11 @@ class FlowThrottleSpec extends StreamSpec {
       val expectedMinRate = new AtomicInteger
       val expectedMaxRate = new AtomicInteger
       val (ref, done) = Source
-        .actorRef[Int](bufferSize = 100000, OverflowStrategy.fail)
+        .actorRef[Int](
+          { case "done" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
+          PartialFunction.empty,
+          bufferSize = 100000,
+          OverflowStrategy.fail)
         .throttle(300, 1000.millis)
         .toMat(Sink.foreach { elem =>
           val now = System.nanoTime()
@@ -364,7 +370,7 @@ class FlowThrottleSpec extends StreamSpec {
           }
         }
       }
-      ref ! akka.actor.Status.Success("done")
+      ref ! "done"
 
       Await.result(done, 20.seconds) should ===(Done)
     }

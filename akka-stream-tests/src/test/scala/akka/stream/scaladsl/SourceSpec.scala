@@ -4,27 +4,27 @@
 
 package akka.stream.scaladsl
 
+import akka.stream.testkit.Utils.TE
 import akka.testkit.DefaultTimeout
-import org.scalatest.time.{ Millis, Span }
+import com.github.ghik.silencer.silent
+import org.scalatest.time.Millis
+import org.scalatest.time.Span
 
 import scala.concurrent.Future
-import akka.stream.testkit.Utils.TE
-import com.github.ghik.silencer.silent
 //#imports
 import akka.stream._
 
 //#imports
-import akka.stream.testkit._
 import akka.NotUsed
-import akka.testkit.EventFilter
-import scala.collection.immutable
-
+import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.EventFilter
+
+import scala.collection.immutable
 
 @silent // tests assigning to typed val
 class SourceSpec extends StreamSpec with DefaultTimeout {
 
-  implicit val materializer = ActorMaterializer()
   implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Single Source" must {
@@ -162,16 +162,10 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     }
 
     "combine using Concat strategy two inputs with simplified API" in {
-      //#combine
       val sources = immutable.Seq(Source(List(1, 2, 3)), Source(List(10, 20, 30)))
 
-      Source
-        .combine(sources(0), sources(1))(Concat(_))
-        .runWith(Sink.seq)
-        // This will produce the Seq(1, 2, 3, 10, 20, 30)
-        //#combine
-        .futureValue should ===(immutable.Seq(1, 2, 3, 10, 20, 30))
-
+      Source.combine(sources(0), sources(1))(Concat(_)).runWith(Sink.seq).futureValue should ===(
+        immutable.Seq(1, 2, 3, 10, 20, 30))
     }
 
     "combine from two inputs with combinedMat and take a materialized value" in {

@@ -116,21 +116,6 @@ final class ClusterSettings(val config: Config, val systemName: String) {
     cc.getMillisDuration(key).requiring(_ >= Duration.Zero, key + " >= 0s")
   }
 
-  // specific to the [[akka.cluster.DefaultDowningProvider]]
-  val AutoDownUnreachableAfter: Duration = {
-    val key = "auto-down-unreachable-after"
-    toRootLowerCase(cc.getString(key)) match {
-      case "off" => Duration.Undefined
-      case _     => cc.getMillisDuration(key).requiring(_ >= Duration.Zero, key + " >= 0s, or off")
-    }
-  }
-
-  /**
-   * @deprecated Specific to [[akka.cluster.AutoDown]] should not be used anywhere else, instead
-   *   ``Cluster.downingProvider.downRemovalMargin`` should be used as it allows the downing provider to decide removal
-   *   margins
-   */
-  @deprecated("Use Cluster.downingProvider.downRemovalMargin", since = "2.4.5")
   val DownRemovalMargin: FiniteDuration = {
     val key = "down-removal-margin"
     toRootLowerCase(cc.getString(key)) match {
@@ -142,7 +127,6 @@ final class ClusterSettings(val config: Config, val systemName: String) {
   val DowningProviderClassName: String = {
     val name = cc.getString("downing-provider-class")
     if (name.nonEmpty) name
-    else if (AutoDownUnreachableAfter.isFinite) classOf[AutoDowning].getName
     else classOf[NoDowning].getName
   }
 

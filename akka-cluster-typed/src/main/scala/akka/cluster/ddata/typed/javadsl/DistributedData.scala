@@ -65,7 +65,7 @@ object DistributedData extends ExtensionId[DistributedData] {
  *
  * This is using the same underlying `Replicator` instance as
  * [[akka.cluster.ddata.DistributedData]] and that means that typed
- * and untyped actors can share the same data.
+ * and classic actors can share the same data.
  *
  * This class is not intended for user extension other than for test purposes (e.g.
  * stub implementation). More methods may be added in the future and that may break
@@ -99,9 +99,7 @@ abstract class DistributedData extends Extension {
 
 object DistributedDataSetup {
   def apply[T <: Extension](createExtension: ActorSystem[_] => DistributedData): DistributedDataSetup =
-    new DistributedDataSetup(new java.util.function.Function[ActorSystem[_], DistributedData] {
-      override def apply(sys: ActorSystem[_]): DistributedData = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+    new DistributedDataSetup(createExtension(_))
 
 }
 

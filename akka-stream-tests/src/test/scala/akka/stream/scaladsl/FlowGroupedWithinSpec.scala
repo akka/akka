@@ -4,22 +4,18 @@
 
 package akka.stream.scaladsl
 
-import scala.collection.immutable
-import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom.{ current => random }
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ThrottleMode }
+import akka.stream.ThrottleMode
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-
 import akka.testkit.TimingTest
 import akka.util.ConstantFun
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+
 class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
-
-  val settings = ActorMaterializerSettings(system)
-
-  implicit val materializer = ActorMaterializer()
 
   "A GroupedWithin" must {
 
@@ -168,7 +164,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
         Script(TestConfig.RandomTestRange.map { _ =>
           val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z))
         }: _*)
-      TestConfig.RandomTestRange.foreach(_ => runScript(script, settings)(_.groupedWithin(3, 10.minutes)))
+      TestConfig.RandomTestRange.foreach(_ => runScript(script)(_.groupedWithin(3, 10.minutes)))
     }
 
     "group with rest" taggedAs TimingTest in {
@@ -177,7 +173,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
           val x, y, z = random.nextInt(); Seq(x, y, z) -> Seq(immutable.Seq(x, y, z))
         }
         :+ { val x = random.nextInt(); Seq(x) -> Seq(immutable.Seq(x)) }): _*)
-      TestConfig.RandomTestRange.foreach(_ => runScript(script, settings)(_.groupedWithin(3, 10.minutes)))
+      TestConfig.RandomTestRange.foreach(_ => runScript(script)(_.groupedWithin(3, 10.minutes)))
     }
 
     "group with small groups with backpressure" taggedAs TimingTest in {

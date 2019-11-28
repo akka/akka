@@ -6,8 +6,6 @@ package jdocs.stream.javadsl.cookbook;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 import akka.testkit.javadsl.TestKit;
 import akka.util.ByteString;
@@ -19,19 +17,16 @@ import java.time.Duration;
 
 public class RecipeKeepAlive extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeKeepAlive");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   class Tick {}

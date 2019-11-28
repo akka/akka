@@ -1,0 +1,2 @@
+# Diverging but internal
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.FSM#Timer.unapply")

@@ -120,13 +120,14 @@ object SerializationDocSpec {
     #//#date-time
     akka.serialization.jackson.serialization-features {
       WRITE_DATES_AS_TIMESTAMPS = on
+      WRITE_DURATIONS_AS_TIMESTAMPS = on
     }
     #//#date-time
     """
 
   val configWhitelist = """
     #//#whitelist-class-prefix
-    akka.serialization.jackson.whitelist-class-prefix = 
+    akka.serialization.jackson.whitelist-class-prefix =
       ["com.myservice.event.OrderAdded", "com.myservice.command"]
     #//#whitelist-class-prefix
   """
@@ -144,7 +145,7 @@ class SerializationDocSpec
         "jdoc.akka.serialization.jackson.v2c.ItemAdded" = "jdoc.akka.serialization.jackson.v2c.ItemAddedMigration"
         "jdoc.akka.serialization.jackson.v2a.Customer" = "jdoc.akka.serialization.jackson.v2a.CustomerMigration"
         "jdoc.akka.serialization.jackson.v1.OrderAdded" = "jdoc.akka.serialization.jackson.v2a.OrderPlacedMigration"
-        
+
         # migrations for Scala classes
         "doc.akka.serialization.jackson.v2b.ItemAdded" = "doc.akka.serialization.jackson.v2b.ItemAddedMigration"
         "doc.akka.serialization.jackson.v2c.ItemAdded" = "doc.akka.serialization.jackson.v2c.ItemAddedMigration"

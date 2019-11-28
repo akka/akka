@@ -6,12 +6,8 @@ package akka.remote.artery
 
 import java.util.Queue
 
-import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.Props
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestSubscriber
@@ -19,6 +15,8 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
+
+import scala.concurrent.duration._
 
 object SendQueueSpec {
 
@@ -50,11 +48,11 @@ object SendQueueSpec {
   }
 }
 
-class SendQueueSpec extends AkkaSpec("akka.actor.serialize-messages = off") with ImplicitSender {
+class SendQueueSpec extends AkkaSpec("""
+    akka.stream.materializer.debug.fuzzing-mode = on
+    akka.stream.secret-test-fuzzing-warning-disable = yep
+  """) with ImplicitSender {
   import SendQueueSpec._
-
-  val matSettings = ActorMaterializerSettings(system).withFuzzing(true)
-  implicit val mat = ActorMaterializer(matSettings)(system)
 
   def sendToDeadLetters[T](pending: Vector[T]): Unit =
     pending.foreach(system.deadLetters ! _)

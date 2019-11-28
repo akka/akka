@@ -4,17 +4,18 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.AbruptTerminationException
+import akka.stream.Materializer
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
 
 import scala.collection.immutable
-import scala.concurrent.{ Await, Future }
+import scala.concurrent.Await
+import scala.concurrent.Future
 
-class CollectionSinkSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val mat = ActorMaterializer(settings)
+class CollectionSinkSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   "Sink.collection" when {
     "using Seq as Collection" must {
@@ -33,7 +34,7 @@ class CollectionSinkSpec extends StreamSpec {
       }
 
       "fail the future on abrupt termination" in {
-        val mat = ActorMaterializer()
+        val mat = Materializer(system)
         val probe = TestPublisher.probe()
         val future = Source.fromPublisher(probe).runWith(Sink.collection[Unit, Seq[Unit]])(mat)
         mat.shutdown()
@@ -54,14 +55,6 @@ class CollectionSinkSpec extends StreamSpec {
           Source.fromIterator(() => input.iterator).runWith(Sink.collection[Int, Vector[Int]])
         val result: immutable.Vector[Int] = Await.result(future, remainingOrDefault)
         result should be(Vector.empty[Int])
-      }
-
-      "fail the future on abrupt termination" in {
-        val mat = ActorMaterializer()
-        val probe = TestPublisher.probe()
-        val future = Source.fromPublisher(probe).runWith(Sink.collection[Unit, Seq[Unit]])(mat)
-        mat.shutdown()
-        future.failed.futureValue shouldBe an[AbruptTerminationException]
       }
     }
   }

@@ -20,7 +20,7 @@ such as [HTTP](https://doc.akka.io/docs/akka-http/current/),
 
 @@@
 
-## Dependency
+## Module info
 
 To use Akka Remoting, you must add the following dependency in your project:
 
@@ -29,6 +29,8 @@ To use Akka Remoting, you must add the following dependency in your project:
   artifact=akka-remote_$scala.binary_version$
   version=$akka.version$
 }
+
+@@project-info{ projectId="akka-remote" }
 
 Classic remoting depends on Netty. This needs to be explicitly added as a dependency so that users
 not using classic remoting do not have to have Netty on the classpath:
@@ -47,7 +49,8 @@ to your `application.conf` file:
 ```
 akka {
   actor {
-    provider = remote
+    # provider=remote is possible, but prefer cluster
+    provider = cluster
   }
   remote.artery.enabled = false
   remote.classic {
@@ -62,7 +65,7 @@ akka {
 
 As you can see in the example above there are five things you need to add to get started:
 
- * Change provider from `local` to `remote`
+ * Change provider from `local`. We recommend using @ref:[Akka Cluster](cluster-usage.md) over using remoting directly.
  * Disable artery remoting. Artery is the default remoting implementation since `2.6.0`
  * Add host name - the machine you want to run the actor system on; this host
 name is exactly what is passed to remote systems in order to identify this
@@ -80,7 +83,7 @@ listening for connections and handling messages as not to interfere with other a
 @@@
 
 The example above only illustrates the bare minimum of properties you have to add to enable remoting.
-All settings are described in [Remote Configuration](#remote-configuration).
+All settings are described in @ref:[Remote Configuration](#remote-configuration).
 
 ## Introduction
 
@@ -312,58 +315,26 @@ Watching a remote actor is not different than watching a local actor, as describ
 
 ### Failure Detector
 
-Under the hood remote death watch uses heartbeat messages and a failure detector to generate `Terminated`
-message from network failures and JVM crashes, in addition to graceful termination of watched
-actor.
+Please see:
 
-The heartbeat arrival times is interpreted by an implementation of
-[The Phi Accrual Failure Detector](http://www.jaist.ac.jp/~defago/files/pdf/IS_RR_2004_010.pdf).
+* @ref:[Phi Accrual Failure Detector](typed/failure-detector.md) implementation for details
+* @ref:[Using the Failure Detector](#using-the-failure-detector) below for usage 
 
-The suspicion level of failure is given by a value called *phi*.
-The basic idea of the phi failure detector is to express the value of *phi* on a scale that
-is dynamically adjusted to reflect current network conditions.
-
-The value of *phi* is calculated as:
+### Using the Failure Detector
+ 
+Remoting uses the `akka.remote.PhiAccrualFailureDetector` failure detector by default, or you can provide your by
+implementing the `akka.remote.FailureDetector` and configuring it:
 
 ```
-phi = -log10(1 - F(timeSinceLastHeartbeat))
-```
+akka.remote.watch-failure-detector.implementation-class = "com.example.CustomFailureDetector"
+``` 
+ 
+In the @ref:[Remote Configuration](#remote-configuration) you may want to adjust these
+depending on you environment:
 
-where F is the cumulative distribution function of a normal distribution with mean
-and standard deviation estimated from historical heartbeat inter-arrival times.
-
-In the [Remote Configuration](#remote-configuration) you can adjust the `akka.remote.watch-failure-detector.threshold`
-to define when a *phi* value is considered to be a failure.
-
-A low `threshold` is prone to generate many false positives but ensures
-a quick detection in the event of a real crash. Conversely, a high `threshold`
-generates fewer mistakes but needs more time to detect actual crashes. The
-default `threshold` is 10 and is appropriate for most situations. However in
-cloud environments, such as Amazon EC2, the value could be increased to 12 in
-order to account for network issues that sometimes occur on such platforms.
-
-The following chart illustrates how *phi* increase with increasing time since the
-previous heartbeat.
-
-![phi1.png](./images/phi1.png)
-
-Phi is calculated from the mean and standard deviation of historical
-inter arrival times. The previous chart is an example for standard deviation
-of 200 ms. If the heartbeats arrive with less deviation the curve becomes steeper,
-i.e. it is possible to determine failure more quickly. The curve looks like this for
-a standard deviation of 100 ms.
-
-![phi2.png](./images/phi2.png)
-
-To be able to survive sudden abnormalities, such as garbage collection pauses and
-transient network failures the failure detector is configured with a margin,
-`akka.remote.watch-failure-detector.acceptable-heartbeat-pause`. You may want to
-adjust the [Remote Configuration](#remote-configuration) of this depending on you environment.
-This is how the curve looks like for `acceptable-heartbeat-pause` configured to
-3 seconds.
-
-![phi3.png](./images/phi3.png)
-
+* When a *phi* value is considered to be a failure `akka.remote.watch-failure-detector.threshold`
+* Margin of error for sudden abnormalities `akka.remote.watch-failure-detector.acceptable-heartbeat-pause`  
+ 
 ## Serialization
 
 You need to enable @ref:[serialization](serialization.md) for your actor messages.
@@ -614,7 +585,7 @@ marking them `PossiblyHarmful` so that a client cannot forge them.
 ## Remote Configuration
 
 There are lots of configuration properties that are related to remoting in Akka. We refer to the
-@ref:[reference configuration](general/configuration.md#config-akka-remote) for more information.
+@ref:[reference configuration](general/configuration-reference.md#config-akka-remote) for more information.
 
 @@@ note
 
@@ -650,8 +621,3 @@ Keep in mind that local.address will most likely be in one of private network ra
  * *192.168.0.0 - 192.168.255.255* (network class C)
 
 For further details see [RFC 1597](https://tools.ietf.org/html/rfc1597) and [RFC 1918](https://tools.ietf.org/html/rfc1918).
-
-You can look at the
-@java[@extref[Cluster with docker-compse example project](samples:akka-sample-cluster-docker-compose-java)]
-@scala[@extref[Cluster with docker-compose example project](samples:akka-sample-cluster-docker-compose-scala)]
-to see what this looks like in practice.

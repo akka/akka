@@ -91,7 +91,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * which is restricted to sending to and receiving from the given `remoteAddress`.
    * All received datagrams will be sent to the designated `handler` actor.
    */
-  @silent
+  @silent("deprecated")
   final case class Connect(
       handler: ActorRef,
       remoteAddress: InetSocketAddress,

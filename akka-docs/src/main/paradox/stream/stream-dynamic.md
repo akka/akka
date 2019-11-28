@@ -175,7 +175,7 @@ Java
 
 The resulting Flow now has a type of `Flow[String, String, UniqueKillSwitch]` representing a publish-subscribe
 channel which can be used any number of times to attach new producers or consumers. In addition, it materializes
-to a `UniqueKillSwitch` (see [UniqueKillSwitch](#unique-kill-switch)) that can be used to deregister a single user externally:
+to a `UniqueKillSwitch` (see @ref:[UniqueKillSwitch](#unique-kill-switch)) that can be used to deregister a single user externally:
 
 Scala
 :   @@snip [HubsDocSpec.scala](/akka-docs/src/test/scala/docs/stream/HubsDocSpec.scala) { #pub-sub-4 }

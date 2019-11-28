@@ -6,15 +6,15 @@ package akka.remote.artery
 
 import java.util.concurrent.Executors
 
-import scala.concurrent.duration._
 import akka.actor._
-import akka.remote.{ RemoteActorRefProvider, RemotingMultiNodeSpec }
+import akka.remote.artery.MaxThroughputSpec._
 import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.PerfFlamesSupport
+import akka.remote.testkit.{ MultiNodeConfig, PerfFlamesSupport }
+import akka.remote.{ RemoteActorRefProvider, RemotingMultiNodeSpec }
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
-import akka.remote.artery.MaxThroughputSpec._
+
+import scala.concurrent.duration._
 
 object FanInThroughputSpec extends MultiNodeConfig {
   val totalNumberOfNodes =
@@ -129,9 +129,7 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
     runOn(roles.head) {
       val rep = reporter(testName)
       val receivers = (1 to sendingNodes.size).map { n =>
-        system.actorOf(
-          receiverProps(rep, payloadSize, printTaskRunnerMetrics = n == 1, senderReceiverPairs),
-          receiverName + "-" + n)
+        system.actorOf(receiverProps(rep, payloadSize, senderReceiverPairs), receiverName + "-" + n)
       }
       enterBarrier(receiverName + "-started")
       enterBarrier(testName + "-done")
@@ -151,13 +149,7 @@ abstract class FanInThroughputSpec extends RemotingMultiNodeSpec(FanInThroughput
       val receiver = receivers(idx)
       val plotProbe = TestProbe()
       val snd = system.actorOf(
-        senderProps(
-          receiver,
-          receivers,
-          testSettings,
-          plotProbe.ref,
-          printTaskRunnerMetrics = idx == 0,
-          resultReporter),
+        senderProps(receiver, receivers, testSettings, plotProbe.ref, resultReporter),
         testName + "-snd" + idx)
       val terminationProbe = TestProbe()
       terminationProbe.watch(snd)

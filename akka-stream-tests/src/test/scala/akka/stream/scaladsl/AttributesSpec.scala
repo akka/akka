@@ -420,7 +420,7 @@ class AttributesSpec
           // this is now just for map since there already is one in-between stage and map
           .async
           .addAttributes(ActorAttributes.dispatcher("my-dispatcher"))
-          .runWith(javadsl.Sink.head(), materializer)
+          .runWith(javadsl.Sink.head[String](), materializer)
 
       val dispatcher = dispatcherF.toCompletableFuture.get(remainingOrDefault.toMillis, TimeUnit.MILLISECONDS)
 
@@ -433,7 +433,7 @@ class AttributesSpec
           .fromGraph(new ThreadNameSnitchingStage(ActorAttributes.IODispatcher.dispatcher))
           .async
           .withAttributes(ActorAttributes.dispatcher("my-dispatcher"))
-          .runWith(javadsl.Sink.head(), materializer)
+          .runWith(javadsl.Sink.head[String](), materializer)
 
       val dispatcher = dispatcherF.toCompletableFuture.get(remainingOrDefault.toMillis, TimeUnit.MILLISECONDS)
 

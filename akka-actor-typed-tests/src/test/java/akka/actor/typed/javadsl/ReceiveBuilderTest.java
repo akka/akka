@@ -4,10 +4,13 @@
 
 package akka.actor.typed.javadsl;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
+import akka.actor.typed.PostStop;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -21,12 +24,14 @@ public class ReceiveBuilderTest extends JUnitSuite {
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
+
   @Test
   public void testMutableCounter() {
     Behavior<BehaviorBuilderTest.CounterMessage> mutable =
         Behaviors.setup(
             context ->
-                new AbstractBehavior<BehaviorBuilderTest.CounterMessage>() {
+                new AbstractBehavior<BehaviorBuilderTest.CounterMessage>(context) {
                   int currentValue = 0;
 
                   private Behavior<BehaviorBuilderTest.CounterMessage> receiveIncrease(
@@ -49,28 +54,6 @@ public class ReceiveBuilderTest extends JUnitSuite {
                         .build();
                   }
                 });
-  }
-
-  private static class MyAbstractBehavior
-      extends AbstractBehavior<BehaviorBuilderTest.CounterMessage> {
-    private int value;
-
-    public MyAbstractBehavior(int initialValue) {
-      super();
-      this.value = initialValue;
-    }
-
-    @Override
-    public Receive<BehaviorBuilderTest.CounterMessage> createReceive() {
-      assertEquals(42, value);
-      return newReceiveBuilder().build();
-    }
-  }
-
-  @Test
-  public void testInitializationOrder() throws Exception {
-    MyAbstractBehavior mutable = new MyAbstractBehavior(42);
-    assertEquals(Behaviors.unhandled(), mutable.receive(null, new BehaviorBuilderTest.Increase()));
   }
 
   @Test
@@ -134,5 +117,43 @@ public class ReceiveBuilderTest extends JUnitSuite {
     ActorRef<Object> ref = testKit.spawn(behavior);
     ref.tell("message");
     probe.expectMessage("message");
+  }
+
+  public void compileOnlyHandlerAllowedToThrowCheckedException() {
+    Behavior<Object> behavior =
+        ReceiveBuilder.create()
+            .onMessageEquals(
+                "exactly",
+                () -> {
+                  throw new Exception("checked");
+                })
+            .onMessage(
+                String.class,
+                msg -> {
+                  throw new Exception("checked");
+                })
+            .onMessage(
+                Integer.class,
+                msg -> true,
+                msg -> {
+                  throw new Exception("checked");
+                })
+            .onSignalEquals(
+                PostStop.instance(),
+                () -> {
+                  throw new Exception("checked");
+                })
+            .onSignal(
+                PostStop.class,
+                (signal) -> {
+                  throw new Exception("checked");
+                })
+            .onSignal(
+                PostStop.class,
+                signal -> true,
+                signal -> {
+                  throw new Exception("checked");
+                })
+            .build();
   }
 }

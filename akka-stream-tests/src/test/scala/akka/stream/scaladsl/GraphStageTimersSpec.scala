@@ -5,17 +5,19 @@
 package akka.stream.scaladsl
 
 import akka.actor.ActorRef
-import akka.stream.{ ActorMaterializer, Attributes }
+import akka.stream.Attributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
-import akka.stream.stage.{ AsyncCallback, InHandler, OutHandler, TimerGraphStageLogic }
+import akka.stream.stage.AsyncCallback
+import akka.stream.stage.InHandler
+import akka.stream.stage.OutHandler
+import akka.stream.stage.TimerGraphStageLogic
+import akka.stream.testkit.Utils._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestDuration
 
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-
-import akka.stream.testkit._
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 
 object GraphStageTimersSpec {
   case object TestSingleTimer
@@ -39,8 +41,6 @@ object GraphStageTimersSpec {
 
 class GraphStageTimersSpec extends StreamSpec {
   import GraphStageTimersSpec._
-
-  implicit val materializer = ActorMaterializer()
 
   class TestStage(probe: ActorRef, sideChannel: SideChannel) extends SimpleLinearGraphStage[Int] {
     override def createLogic(inheritedAttributes: Attributes) = new TimerGraphStageLogic(shape) {
@@ -160,7 +160,7 @@ class GraphStageTimersSpec extends StreamSpec {
 
         setHandler(out, new OutHandler {
           override def onPull() = () // Do nothing
-          override def onDownstreamFinish() = completeStage()
+          override def onDownstreamFinish(cause: Throwable) = completeStage()
         })
 
         setHandler(in, new InHandler {

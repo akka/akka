@@ -5,13 +5,11 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.{ ActorMaterializer, Attributes }
-import akka.stream.testkit.StreamSpec
+import akka.stream.Attributes
 import akka.stream.javadsl
+import akka.stream.testkit.StreamSpec
 
 class RunnableGraphSpec extends StreamSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "A RunnableGraph" must {
 
@@ -26,7 +24,7 @@ class RunnableGraphSpec extends StreamSpec {
 
     "allow conversion from scala to java" in {
       val runnable: javadsl.RunnableGraph[NotUsed] = Source.empty.to(Sink.ignore).asJava
-      runnable.run(materializer) shouldBe NotUsed
+      runnable.run(system) shouldBe NotUsed
     }
 
     "allow conversion from java to scala" in {

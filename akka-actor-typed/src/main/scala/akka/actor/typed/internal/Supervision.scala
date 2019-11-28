@@ -25,12 +25,19 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.util.OptionVal
 import akka.util.unused
+import org.slf4j.event.Level
 
 /**
  * INTERNAL API
  */
 @InternalApi private[akka] object Supervisor {
   def apply[T, Thr <: Throwable: ClassTag](initialBehavior: Behavior[T], strategy: SupervisorStrategy): Behavior[T] = {
+    if (initialBehavior.isInstanceOf[scaladsl.AbstractBehavior[_]] || initialBehavior
+          .isInstanceOf[javadsl.AbstractBehavior[_]]) {
+      throw new IllegalArgumentException(
+        "The supervised Behavior must not be a AbstractBehavior instance directly," +
+        "because a different instance should be created when it is restarted. Wrap in Behaviors.setup.")
+    }
 
     strategy match {
       case r: RestartOrBackoff =>
@@ -79,20 +86,23 @@ private abstract class AbstractSupervisor[I, Thr <: Throwable](strategy: Supervi
   def log(ctx: TypedActorContext[_], t: Throwable): Unit = {
     if (strategy.loggingEnabled) {
       val unwrapped = UnstashException.unwrap(t)
+      val logMessage = s"Supervisor $this saw failure: ${unwrapped.getMessage}"
+      val logger = ctx.asScala.log
       strategy.logLevel match {
-        case Logging.ErrorLevel =>
-          ctx.asScala.log.error(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
-        case Logging.WarningLevel =>
-          ctx.asScala.log.warning(unwrapped, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
-        case level => ctx.asScala.log.log(level, "Supervisor {} saw failure: {}", this, unwrapped.getMessage)
+        case Level.ERROR => logger.error(logMessage, unwrapped)
+        case Level.WARN  => logger.warn(logMessage, unwrapped)
+        case Level.INFO  => logger.info(logMessage, unwrapped)
+        case Level.DEBUG => logger.debug(logMessage, unwrapped)
+        case Level.TRACE => logger.trace(logMessage, unwrapped)
+        case other       => throw new IllegalArgumentException(s"Unknown log level [$other].")
       }
     }
   }
 
   def dropped(ctx: TypedActorContext[_], signalOrMessage: Any): Unit = {
     import akka.actor.typed.scaladsl.adapter._
-    ctx.asScala.system.toUntyped.eventStream
-      .publish(Dropped(signalOrMessage, s"Stash is full in [${getClass.getSimpleName}]", ctx.asScala.self.toUntyped))
+    ctx.asScala.system.toClassic.eventStream
+      .publish(Dropped(signalOrMessage, s"Stash is full in [${getClass.getSimpleName}]", ctx.asScala.self.toClassic))
   }
 
   protected def handleExceptionOnStart(ctx: TypedActorContext[Any], target: PreStartTarget[I]): Catcher[Behavior[I]]
@@ -311,7 +321,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
       } else {
         try signalRestart(t)
         catch {
-          case NonFatal(ex) => ctx.asScala.log.error(ex, "failure during PreRestart")
+          case NonFatal(ex) => ctx.asScala.log.error("failure during PreRestart", ex)
         }
 
         prepareRestart(ctx, t)

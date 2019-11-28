@@ -10,7 +10,10 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.util.OptionVal
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+import org.reactivestreams.Processor
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
@@ -176,10 +179,10 @@ import scala.util.control.NonFatal
                 case _     => pub.subscribe(subscriber.asInstanceOf[Subscriber[Any]])
               }
           }
-        case _ =>
+        case state @ _ =>
           if (VirtualProcessor.Debug) println(s"VirtualPublisher#$hashCode(_).onSubscribe.rec($s) spec violation")
           // spec violation
-          tryCancel(s)
+          tryCancel(s, new IllegalStateException(s"VirtualProcessor in wrong state [$state]. Spec violation"))
       }
     }
 
@@ -223,7 +226,7 @@ import scala.util.control.NonFatal
             set(Inert)
 
           case Inert =>
-            tryCancel(subscription)
+            tryCancel(subscription, new IllegalStateException("VirtualProcessor was already subscribed to."))
 
           case other =>
             throw new IllegalStateException(
@@ -234,7 +237,7 @@ import scala.util.control.NonFatal
     } catch {
       case NonFatal(ex) =>
         set(Inert)
-        tryCancel(subscription)
+        tryCancel(subscription, ex)
         tryOnError(establishing.subscriber, ex)
     }
   }
@@ -397,7 +400,7 @@ import scala.util.control.NonFatal
       if (n < 1) {
         if (VirtualProcessor.Debug)
           println(s"VirtualPublisher#${VirtualProcessor.this.hashCode}.WrappedSubscription($real).request($n)")
-        tryCancel(real)
+        tryCancel(real, new IllegalArgumentException(s"Demand must not be < 1 but was $n"))
         VirtualProcessor.this.getAndSet(Inert) match {
           case Both(subscriber)  => rejectDueToNonPositiveDemand(subscriber)
           case est: Establishing => rejectDueToNonPositiveDemand(est.subscriber)
@@ -499,11 +502,11 @@ import scala.util.control.NonFatal
 
   // this is when the subscription timeout hits, implemented like this to
   // avoid allocating a separate object for that
-  def onSubscriptionTimeout(am: ActorMaterializer): Unit = {
+  def onSubscriptionTimeout(am: Materializer, mode: StreamSubscriptionTimeoutTerminationMode): Unit = {
     import StreamSubscriptionTimeoutTerminationMode._
     get() match {
       case null | _: Publisher[_] =>
-        am.settings.subscriptionTimeoutSettings.mode match {
+        mode match {
           case CancelTermination => subscribe(new CancellingSubscriber[T])
           case WarnTermination =>
             am.logger.warning("Subscription timeout for {}", this)

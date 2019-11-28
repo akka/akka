@@ -5,15 +5,20 @@
 package docs.akka.typed
 
 //#imports
+import akka.Done
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
+import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
+//#imports
+
+import akka.NotUsed
+import akka.actor.typed.Terminated
+
 import java.net.URLEncoder
 import java.nio.charset.StandardCharsets
 
-import akka.actor.typed._
-import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors }
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.WordSpecLike
-//#imports
 
 object OOIntroSpec {
 
@@ -43,7 +48,7 @@ object OOIntroSpec {
     def apply(): Behavior[RoomCommand] =
       Behaviors.setup(context => new ChatRoomBehavior(context))
 
-    class ChatRoomBehavior(context: ActorContext[RoomCommand]) extends AbstractBehavior[RoomCommand] {
+    class ChatRoomBehavior(context: ActorContext[RoomCommand]) extends AbstractBehavior[RoomCommand](context) {
       private var sessions: List[ActorRef[SessionCommand]] = List.empty
 
       override def onMessage(message: RoomCommand): Behavior[RoomCommand] = {
@@ -51,7 +56,7 @@ object OOIntroSpec {
           case GetSession(screenName, client) =>
             // create a child actor for further interaction with the client
             val ses = context.spawn(
-              new SessionBehavior(context.self, screenName, client),
+              SessionBehavior(context.self, screenName, client),
               name = URLEncoder.encode(screenName, StandardCharsets.UTF_8.name))
             client ! SessionGranted(ses)
             sessions = ses :: sessions
@@ -64,11 +69,20 @@ object OOIntroSpec {
       }
     }
 
+    object SessionBehavior {
+      def apply(
+          room: ActorRef[PublishSessionMessage],
+          screenName: String,
+          client: ActorRef[SessionEvent]): Behavior[SessionCommand] =
+        Behaviors.setup(ctx => new SessionBehavior(ctx, room, screenName, client))
+    }
+
     private class SessionBehavior(
+        context: ActorContext[SessionCommand],
         room: ActorRef[PublishSessionMessage],
         screenName: String,
         client: ActorRef[SessionEvent])
-        extends AbstractBehavior[SessionCommand] {
+        extends AbstractBehavior[SessionCommand](context) {
 
       override def onMessage(msg: SessionCommand): Behavior[SessionCommand] = {
         msg match {
@@ -100,44 +114,45 @@ object OOIntroSpec {
             handle ! PostMessage("Hello World!")
             Behaviors.same
           case MessagePosted(screenName, message) =>
-            context.log.info("message has been posted by '{}': {}", screenName, message)
+            context.log.info2("message has been posted by '{}': {}", screenName, message)
             Behaviors.stopped
         }
       }
     //#chatroom-gabbler
   }
 
+  //#chatroom-main
+  object Main {
+    def apply(): Behavior[NotUsed] =
+      Behaviors.setup { context =>
+        val chatRoom = context.spawn(ChatRoom(), "chatroom")
+        val gabblerRef = context.spawn(Gabbler(), "gabbler")
+        context.watch(gabblerRef)
+        chatRoom ! ChatRoom.GetSession("ol’ Gabbler", gabblerRef)
+
+        Behaviors.receiveSignal {
+          case (_, Terminated(_)) =>
+            Behaviors.stopped
+        }
+      }
+
+    def main(args: Array[String]): Unit = {
+      ActorSystem(Main(), "ChatRoomDemo")
+    }
+
+  }
+  //#chatroom-main
+
 }
 
-class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class OOIntroSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import OOIntroSpec._
 
-  "A chat room" must {
+  "Intro sample" must {
     "chat" in {
-      //#chatroom-main
-      val main: Behavior[String] =
-        Behaviors.setup { context =>
-          val chatRoom = context.spawn(ChatRoom(), "chatroom")
-          val gabblerRef = context.spawn(Gabbler(), "gabbler")
-          context.watch(gabblerRef)
-
-          Behaviors
-            .receiveMessagePartial[String] {
-              case "go" =>
-                chatRoom ! ChatRoom.GetSession("ol’ Gabbler", gabblerRef)
-                Behaviors.same
-            }
-            .receiveSignal {
-              case (_, Terminated(_)) =>
-                context.log.info("Stopping guardian")
-                Behaviors.stopped
-            }
-        }
-
-      val system = ActorSystem(main, "ChatRoomDemo")
-      system ! "go"
-      //#chatroom-main
+      val system = ActorSystem(Main(), "ChatRoomDemo")
+      system.whenTerminated.futureValue should ===(Done)
     }
   }
 }

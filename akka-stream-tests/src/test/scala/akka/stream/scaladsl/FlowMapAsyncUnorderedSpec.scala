@@ -4,29 +4,26 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
-import akka.stream.ActorMaterializer
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.testkit.TestLatch
-import akka.testkit.TestProbe
-import akka.stream.ActorAttributes.supervisionStrategy
-import akka.stream.Supervision.resumingDecider
+import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.Promise
-import java.util.concurrent.LinkedBlockingQueue
+import akka.stream.ActorAttributes.supervisionStrategy
+import akka.stream.Supervision.resumingDecider
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl._
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.annotation.tailrec
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 class FlowMapAsyncUnorderedSpec extends StreamSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "A Flow with mapAsyncUnordered" must {
 

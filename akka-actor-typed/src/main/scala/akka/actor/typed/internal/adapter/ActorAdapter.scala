@@ -9,7 +9,7 @@ package adapter
 import java.lang.reflect.InvocationTargetException
 
 import akka.actor.{ ActorInitializationException, ActorRefWithCell }
-import akka.{ actor => untyped }
+import akka.{ actor => classic }
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
@@ -39,8 +39,13 @@ import akka.util.OptionVal
    */
   final case class TypedActorFailedException(cause: Throwable) extends RuntimeException
 
-  private val DummyReceive: untyped.Actor.Receive = {
+  private val DummyReceive: classic.Actor.Receive = {
     case _ => throw new RuntimeException("receive should never be called on the typed ActorAdapter")
+  }
+
+  private val classicSupervisorDecider: Throwable => classic.SupervisorStrategy.Directive = { exc =>
+    // ActorInitializationException => Stop in defaultDecider
+    classic.SupervisorStrategy.defaultDecider.applyOrElse(exc, (_: Throwable) => classic.SupervisorStrategy.Restart)
   }
 
 }
@@ -49,8 +54,7 @@ import akka.util.OptionVal
  * INTERNAL API
  */
 @InternalApi private[typed] final class ActorAdapter[T](_initialBehavior: Behavior[T], rethrowTypedFailure: Boolean)
-    extends untyped.Actor
-    with untyped.ActorLogging {
+    extends classic.Actor {
 
   private var behavior: Behavior[T] = _initialBehavior
   def currentBehavior: Behavior[T] = behavior
@@ -64,42 +68,44 @@ import akka.util.OptionVal
   }
 
   /**
-   * Failures from failed children, that were stopped through untyped supervision, this is what allows us to pass
+   * Failures from failed children, that were stopped through classic supervision, this is what allows us to pass
    * child exception in Terminated for direct children.
    */
-  private var failures: Map[untyped.ActorRef, Throwable] = Map.empty
+  private var failures: Map[classic.ActorRef, Throwable] = Map.empty
 
   def receive: Receive = ActorAdapter.DummyReceive
 
   override protected[akka] def aroundReceive(receive: Receive, msg: Any): Unit = {
-    // as we know we never become in "normal" typed actors, it is just the current behavior that
-    // changes, we can avoid some overhead with the partial function/behavior stack of untyped entirely
-    // we also know that the receive is total, so we can avoid the orElse part as well.
-    msg match {
-      case untyped.Terminated(ref) =>
-        val msg =
-          if (failures contains ref) {
-            val ex = failures(ref)
-            failures -= ref
-            ChildFailed(ActorRefAdapter(ref), ex)
-          } else Terminated(ActorRefAdapter(ref))
-        handleSignal(msg)
-      case untyped.ReceiveTimeout =>
-        handleMessage(ctx.receiveTimeoutMsg)
-      case wrapped: AdaptMessage[Any, T] @unchecked =>
-        withSafelyAdapted(() => wrapped.adapt()) {
-          case AdaptWithRegisteredMessageAdapter(msg) =>
-            adaptAndHandle(msg)
-          case msg: T @unchecked =>
-            handleMessage(msg)
-        }
-      case AdaptWithRegisteredMessageAdapter(msg) =>
-        adaptAndHandle(msg)
-      case signal: Signal =>
-        handleSignal(signal)
-      case msg: T @unchecked =>
-        handleMessage(msg)
-    }
+    try {
+      // as we know we never become in "normal" typed actors, it is just the current behavior that
+      // changes, we can avoid some overhead with the partial function/behavior stack of untyped entirely
+      // we also know that the receive is total, so we can avoid the orElse part as well.
+      msg match {
+        case classic.Terminated(ref) =>
+          val msg =
+            if (failures contains ref) {
+              val ex = failures(ref)
+              failures -= ref
+              ChildFailed(ActorRefAdapter(ref), ex)
+            } else Terminated(ActorRefAdapter(ref))
+          handleSignal(msg)
+        case classic.ReceiveTimeout =>
+          handleMessage(ctx.receiveTimeoutMsg)
+        case wrapped: AdaptMessage[Any, T] @unchecked =>
+          withSafelyAdapted(() => wrapped.adapt()) {
+            case AdaptWithRegisteredMessageAdapter(msg) =>
+              adaptAndHandle(msg)
+            case msg: T @unchecked =>
+              handleMessage(msg)
+          }
+        case AdaptWithRegisteredMessageAdapter(msg) =>
+          adaptAndHandle(msg)
+        case signal: Signal =>
+          handleSignal(signal)
+        case msg: T @unchecked =>
+          handleMessage(msg)
+      }
+    } finally ctx.clearMdc()
   }
 
   private def handleMessage(msg: T): Unit = {
@@ -146,7 +152,7 @@ import akka.util.OptionVal
         unhandled(msg)
       case BehaviorTags.FailedBehavior =>
         val f = b.asInstanceOf[BehaviorImpl.FailedBehavior]
-        // For the parent untyped supervisor to pick up the exception
+        // For the parent classic supervisor to pick up the exception
         if (rethrowTypedFailure) throw TypedActorFailedException(f.cause)
         else context.stop(self)
       case BehaviorTags.StoppedBehavior =>
@@ -179,7 +185,7 @@ import akka.util.OptionVal
       case Success(a) =>
         body(a)
       case Failure(ex) =>
-        log.error(ex, "Exception thrown out of adapter. Stopping myself.")
+        ctx.log.error(s"Exception thrown out of adapter. Stopping myself. ${ex.getMessage}", ex)
         context.stop(self)
     }
   }
@@ -196,11 +202,11 @@ import akka.util.OptionVal
       super.unhandled(other)
   }
 
-  override val supervisorStrategy = untyped.OneForOneStrategy(loggingEnabled = false) {
+  override val supervisorStrategy = classic.OneForOneStrategy(loggingEnabled = false) {
     case TypedActorFailedException(cause) =>
       // These have already been optionally logged by typed supervision
       recordChildFailure(cause)
-      untyped.SupervisorStrategy.Stop
+      classic.SupervisorStrategy.Stop
     case ex =>
       val isTypedActor = sender() match {
         case afwc: ActorRefWithCell =>
@@ -218,48 +224,56 @@ import akka.util.OptionVal
         case e => e.getMessage
       }
       // log at Error as that is what the supervision strategy would have done.
-      log.error(ex, logMessage)
+      ctx.log.error(logMessage, ex)
       if (isTypedActor)
-        untyped.SupervisorStrategy.Stop
+        classic.SupervisorStrategy.Stop
       else
-        untyped.SupervisorStrategy.Restart
+        ActorAdapter.classicSupervisorDecider(ex)
   }
 
   private def recordChildFailure(ex: Throwable): Unit = {
     val ref = sender()
-    if (context.asInstanceOf[untyped.ActorCell].isWatching(ref)) {
+    if (context.asInstanceOf[classic.ActorCell].isWatching(ref)) {
       failures = failures.updated(ref, ex)
     }
   }
 
   override def preStart(): Unit = {
-    if (Behavior.isAlive(behavior)) {
-      behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
-    }
-    // either was stopped initially or became stopped on start
-    if (!Behavior.isAlive(behavior)) context.stop(self)
+    try {
+      if (Behavior.isAlive(behavior)) {
+        behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+      }
+      // either was stopped initially or became stopped on start
+      if (!Behavior.isAlive(behavior)) context.stop(self)
+    } finally ctx.clearMdc()
   }
 
   override def preRestart(reason: Throwable, message: Option[Any]): Unit = {
-    ctx.cancelAllTimers()
-    Behavior.interpretSignal(behavior, ctx, PreRestart)
-    behavior = BehaviorImpl.stopped
+    try {
+      ctx.cancelAllTimers()
+      Behavior.interpretSignal(behavior, ctx, PreRestart)
+      behavior = BehaviorImpl.stopped
+    } finally ctx.clearMdc()
   }
 
   override def postRestart(reason: Throwable): Unit = {
-    ctx.cancelAllTimers()
-    behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
-    if (!Behavior.isAlive(behavior)) context.stop(self)
+    try {
+      ctx.cancelAllTimers()
+      behavior = Behavior.validateAsInitial(Behavior.start(behavior, ctx))
+      if (!Behavior.isAlive(behavior)) context.stop(self)
+    } finally ctx.clearMdc()
   }
 
   override def postStop(): Unit = {
-    ctx.cancelAllTimers()
-    behavior match {
-      case _: DeferredBehavior[_] =>
-      // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
-      case b => Behavior.interpretSignal(b, ctx, PostStop)
-    }
-    behavior = BehaviorImpl.stopped
+    try {
+      ctx.cancelAllTimers()
+      behavior match {
+        case _: DeferredBehavior[_] =>
+        // Do not undefer a DeferredBehavior as that may cause creation side-effects, which we do not want on termination.
+        case b => Behavior.interpretSignal(b, ctx, PostStop)
+      }
+      behavior = BehaviorImpl.stopped
+    } finally ctx.clearMdc()
   }
 
 }

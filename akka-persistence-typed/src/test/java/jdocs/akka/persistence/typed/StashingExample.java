@@ -15,10 +15,10 @@ import akka.persistence.typed.javadsl.EventSourcedBehavior;
 import java.time.Duration;
 import java.util.Optional;
 
-public class StashingExample {
+public interface StashingExample {
 
   // #stashing
-  public static class TaskManager
+  public class TaskManager
       extends EventSourcedBehavior<TaskManager.Command, TaskManager.Event, TaskManager.State> {
 
     public interface Command {}
@@ -85,7 +85,7 @@ public class StashingExample {
       }
     }
 
-    public static Behavior<Command> createBehavior(PersistenceId persistenceId) {
+    public static Behavior<Command> create(PersistenceId persistenceId) {
       return new TaskManager(persistenceId);
     }
 

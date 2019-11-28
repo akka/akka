@@ -22,11 +22,13 @@ Materializes into a @scala[`Future`] @java[`CompletionStage`] that will complete
 This operator allows combining values into a result without a global mutable state by instead passing the state along
 between invocations.
 
+## Reactive Streams semantics
+
 @@@div { .callout }
 
 **cancels** never
 
 **backpressures** when the previous fold function invocation has not yet completed
 
-@@@div
+@@@
 

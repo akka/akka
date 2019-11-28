@@ -83,13 +83,12 @@ object RemotingSpec {
 
     akka {
       actor.provider = remote
-      actor.serialize-messages = off
       # test is using Java serialization and not priority to rewrite
       actor.allow-java-serialization = on
       actor.warn-about-java-serializer-usage = off
 
       remote {
-        use-unsafe-remote-features-without-cluster = on
+        use-unsafe-remote-features-outside-cluster = on
         artery.enabled = off
         classic {
           retry-gate-closed-for = 1 s
@@ -503,9 +502,6 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       val config = ConfigFactory
         .parseString(
           """
-            # Additional internal serialization verification need so be off, otherwise it triggers two error messages
-            # instead of one: one for the internal check, and one for the actual remote send -- tripping off this test
-            akka.actor.serialize-messages = off
             akka.remote.classic.enabled-transports = ["akka.remote.classic.test", "akka.remote.classic.netty.tcp"]
             akka.remote.classic.test.local-address = "test://other-system@localhost:12347"
           """)
@@ -656,7 +652,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         }
 
         val handshakePacket =
-          AkkaPduProtobufCodec.constructAssociate(HandshakeInfo(rawRemoteAddress, uid = 0, cookie = None))
+          AkkaPduProtobufCodec.constructAssociate(HandshakeInfo(rawRemoteAddress, uid = 0))
         val brokenPacket = AkkaPduProtobufCodec.constructPayload(ByteString(0, 1, 2, 3, 4, 5, 6))
 
         // Finish the inbound handshake so now it is handed up to Remoting
@@ -738,7 +734,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
         }
 
         val handshakePacket =
-          AkkaPduProtobufCodec.constructAssociate(HandshakeInfo(rawRemoteAddress, uid = remoteUID, cookie = None))
+          AkkaPduProtobufCodec.constructAssociate(HandshakeInfo(rawRemoteAddress, uid = remoteUID))
 
         // Finish the inbound handshake so now it is handed up to Remoting
         inboundHandle.write(handshakePacket)

@@ -20,10 +20,8 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 import akka.actor.ActorSystem;
-import akka.stream.*;
 import akka.stream.javadsl.*;
 import akka.stream.javadsl.Tcp.*;
-import akka.stream.stage.*;
 import akka.testkit.SocketUtil;
 import akka.testkit.TestProbe;
 import akka.util.ByteString;
@@ -31,19 +29,16 @@ import akka.util.ByteString;
 public class StreamTcpDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("StreamTcpDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   final SilenceSystemOut.System System = SilenceSystemOut.get();
@@ -88,9 +83,9 @@ public class StreamTcpDocTest extends AbstractJavaTest {
                     .map(s -> s + "!!!\n")
                     .map(ByteString::fromString);
 
-            connection.handleWith(echo, mat);
+            connection.handleWith(echo, system);
           },
-          mat);
+          system);
       // #echo-server-simple-handle
     }
   }
@@ -141,9 +136,9 @@ public class StreamTcpDocTest extends AbstractJavaTest {
                               .map(s -> s + "\n")
                               .map(ByteString::fromString);
 
-                      connection.handleWith(serverLogic, mat);
+                      connection.handleWith(serverLogic, system);
                     }))
-            .run(mat);
+            .run(system);
     // #welcome-banner-chat-server
 
     // make sure server is bound before we do anything else
@@ -179,7 +174,7 @@ public class StreamTcpDocTest extends AbstractJavaTest {
               .map(elem -> readLine("> "))
               .via(replParser);
 
-      CompletionStage<OutgoingConnection> connectionCS = connection.join(repl).run(mat);
+      CompletionStage<OutgoingConnection> connectionCS = connection.join(repl).run(system);
       // #repl-client
 
       // make sure it got connected (or fails the test)

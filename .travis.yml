@@ -3,14 +3,11 @@ language: scala
 sudo: false
 
 scala:
-  - "2.12.8"
+  - "2.12.9"
   - "2.13.0"
 
-before_install:
-  # using jabba for custom jdk management
-  - curl -sL https://raw.githubusercontent.com/shyiko/jabba/0.11.2/install.sh | bash && . ~/.jabba/jabba.sh
-  - jabba install $TRAVIS_JDK
-install: jabba use "$TRAVIS_JDK" && java -Xmx32m -version
+before_install: curl -Ls https://git.io/jabba | bash && . ~/.jabba/jabba.sh
+install: jabba install "adopt@~1.$TRAVIS_JDK.0-0" && jabba use "$_" && java -Xmx32m -version
 
 addons:
   apt:
@@ -23,8 +20,9 @@ before_cache:
 
 cache:
   directories:
+    - $HOME/.cache/coursier
     - $HOME/.ivy2/cache
-    - $HOME/.sbt/boot
+    - $HOME/.sbt
     - $HOME/.jabba/jdk
 
 # script for the default 'test' stage:
@@ -38,13 +36,13 @@ jobs:
 
 stages:
   - name: whitesource
-    if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v) AND env(TRAVIS_SCALA_VERSION) = "2.12.8"
+    if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v) AND env(TRAVIS_SCALA_VERSION) =~ ^2.12
   - name: test
     if: type == pull_request OR NOT tag =~ ^v
 
 env:
   global:
-    - TRAVIS_JDK=adopt@~1.8.202-08
+    - TRAVIS_JDK=8
     # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
     - secure: "BCWtUqKG7trI7n5OZE2ReCGXQE/f5P8kXpfcpa5DXJeautBnpH/jettY5ermB5JLl12CisG6S4nS3BSKP4Uf8WPpPeSq402CZYTCbUxMWCvS+9N+kEQrHU7iwYqHQBL/RMy6eIyWPRD+JqxKuvlgfNuSEry9pMagwW7mNQrZgYU="
 

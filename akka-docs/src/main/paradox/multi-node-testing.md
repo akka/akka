@@ -1,6 +1,9 @@
+---
+project.description: Multi node testing of distributed systems built with Akka.
+---
 # Multi Node Testing
 
-## Dependency
+## Module info
 
 To use Multi Node Testing, you must add the following dependency in your project:
 
@@ -10,21 +13,17 @@ To use Multi Node Testing, you must add the following dependency in your project
   version=$akka.version$
 }
 
-## Sample project
-
-You can look at the
-@extref[Multi Node example project](samples:akka-samples-multi-node-scala)
-to see what this looks like in practice.
+@@project-info{ projectId="akka-multi-node-testkit" }
 
 ## Multi Node Testing Concepts
 
 When we talk about multi node testing in Akka we mean the process of running coordinated tests on multiple actor
 systems in different JVMs. The multi node testing kit consist of three main parts.
 
- * [The Test Conductor](#the-test-conductor). that coordinates and controls the nodes under test.
- * [The Multi Node Spec](#the-multi-node-spec). that is a convenience wrapper for starting the `TestConductor` and letting all
+ * @ref:[The Test Conductor](#the-test-conductor). that coordinates and controls the nodes under test.
+ * @ref:[The Multi Node Spec](#the-multi-node-spec). that is a convenience wrapper for starting the `TestConductor` and letting all
 nodes connect to it.
- * [The SbtMultiJvm Plugin](#the-sbtmultijvm-plugin). that starts tests in multiple JVMs possibly on multiple machines.
+ * @ref:[The SbtMultiJvm Plugin](#the-sbtmultijvm-plugin). that starts tests in multiple JVMs possibly on multiple machines.
 
 ## The Test Conductor
 
@@ -181,10 +180,6 @@ message send/receive.
 
 @@snip [MultiNodeSample.scala](/akka-remote-tests/src/multi-jvm/scala/akka/remote/sample/MultiNodeSample.scala) { #package #spec }
 
-The easiest way to run this example yourself is to download the ready to run
-@extref[Akka Multi-Node Testing Sample with Scala](ecs:akka-samples-multi-node-scala)
-together with the tutorial. The source code of this sample can be found in the @extref[Akka Samples Repository](samples:akka-sample-multi-node-scala).
-
 ## Things to Keep in Mind
 
 There are a couple of things to keep in mind when writing multi node tests or else your tests might behave in
@@ -202,4 +197,4 @@ thread. This also means that you shouldn't use them from inside an actor, a futu
 ## Configuration
 
 There are several configuration properties for the Multi-Node Testing module, please refer
-to the @ref:[reference configuration](general/configuration.md#config-akka-multi-node-testkit).
+to the @ref:[reference configuration](general/configuration-reference.md#config-akka-multi-node-testkit).

@@ -7,15 +7,19 @@ package docs.akka.typed
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import docs.akka.typed.IntroSpec.HelloWorld
 import org.scalatest.WordSpecLike
+import com.github.ghik.silencer.silent
 
 //#imports1
 import akka.actor.typed.Behavior
 import akka.actor.typed.SpawnProtocol
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 
 //#imports1
 
@@ -24,26 +28,27 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Props
 import akka.util.Timeout
-import akka.actor.typed.Scheduler
 
 //#imports2
 
 object SpawnProtocolDocSpec {
 
+  // Silent because we want to name the unused 'context' parameter
+  @silent("never used")
   //#main
   object HelloWorldMain {
-    val main: Behavior[SpawnProtocol] =
+    def apply(): Behavior[SpawnProtocol.Command] =
       Behaviors.setup { context =>
         // Start initial tasks
         // context.spawn(...)
 
-        SpawnProtocol.behavior
+        SpawnProtocol()
       }
   }
   //#main
 }
 
-class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   import SpawnProtocolDocSpec._
 
@@ -51,25 +56,24 @@ class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike {
     "be able to spawn actors" in {
       //#system-spawn
 
-      val system: ActorSystem[SpawnProtocol] =
-        ActorSystem(HelloWorldMain.main, "hello")
+      implicit val system: ActorSystem[SpawnProtocol.Command] =
+        ActorSystem(HelloWorldMain(), "hello")
 
       // needed in implicit scope for ask (?)
       import akka.actor.typed.scaladsl.AskPattern._
       implicit val ec: ExecutionContext = system.executionContext
       implicit val timeout: Timeout = Timeout(3.seconds)
-      implicit val scheduler: Scheduler = system.scheduler
 
       val greeter: Future[ActorRef[HelloWorld.Greet]] =
-        system.ask(SpawnProtocol.Spawn(behavior = HelloWorld(), name = "greeter", props = Props.empty))
+        system.ask(SpawnProtocol.Spawn(behavior = HelloWorld(), name = "greeter", props = Props.empty, _))
 
       val greetedBehavior = Behaviors.receive[HelloWorld.Greeted] { (context, message) =>
-        context.log.info("Greeting for {} from {}", message.whom, message.from)
+        context.log.info2("Greeting for {} from {}", message.whom, message.from)
         Behaviors.stopped
       }
 
       val greetedReplyTo: Future[ActorRef[HelloWorld.Greeted]] =
-        system.ask(SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty))
+        system.ask(SpawnProtocol.Spawn(greetedBehavior, name = "", props = Props.empty, _))
 
       for (greeterRef <- greeter; replyToRef <- greetedReplyTo) {
         greeterRef ! HelloWorld.Greet("Akka", replyToRef)

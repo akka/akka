@@ -12,6 +12,7 @@ import scala.concurrent.Future
 import akka.actor.BootstrapSetup
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
@@ -72,7 +73,7 @@ akka.actor.typed {
    """).resolve()
 }
 
-class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
   "The extensions subsystem" must {
     "return the same instance for the same id" in
@@ -188,13 +189,13 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
       (instance1 should be).theSameInstanceAs(instance2)
     }
 
-    "load registered typed extensions eagerly even for untyped system" in {
+    "load registered extensions eagerly even for classic system" in {
       import akka.actor.typed.scaladsl.adapter._
       val beforeCreation = InstanceCountingExtension.createCount.get()
-      val untypedSystem = akka.actor.ActorSystem("as", ExtensionsSpec.config)
+      val classicSystem = akka.actor.ActorSystem("as", ExtensionsSpec.config)
       try {
         val before = InstanceCountingExtension.createCount.get()
-        InstanceCountingExtension(untypedSystem.toTyped)
+        InstanceCountingExtension(classicSystem.toTyped)
         val after = InstanceCountingExtension.createCount.get()
 
         // should have been loaded even before it was accessed in the test because InstanceCountingExtension is listed
@@ -202,21 +203,21 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with WordSpecLike {
         before shouldEqual beforeCreation + 1
         after shouldEqual before
       } finally {
-        untypedSystem.terminate().futureValue
+        classicSystem.terminate().futureValue
       }
     }
 
     "not create an extension multiple times when using the ActorSystemAdapter" in {
       import akka.actor.typed.scaladsl.adapter._
-      val untypedSystem = akka.actor.ActorSystem()
+      val classicSystem = akka.actor.ActorSystem()
       try {
-        val ext1 = DummyExtension1(untypedSystem.toTyped)
-        val ext2 = DummyExtension1(untypedSystem.toTyped)
+        val ext1 = DummyExtension1(classicSystem.toTyped)
+        val ext2 = DummyExtension1(classicSystem.toTyped)
 
         (ext1 should be).theSameInstanceAs(ext2)
 
       } finally {
-        untypedSystem.terminate().futureValue
+        classicSystem.terminate().futureValue
       }
     }
 

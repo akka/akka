@@ -13,6 +13,7 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 object ClusterApiSpec {
@@ -25,9 +26,6 @@ object ClusterApiSpec {
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
       akka.coordinated-shutdown.terminate-actor-system = off
       akka.coordinated-shutdown.run-by-actor-system-terminate = off
-      akka.actor {
-        serialize-messages = off
-      }
       # generous timeout for cluster forming probes
       akka.actor.testkit.typed.default-timeout = 10s
       # disable this or we cannot be sure to observe node end state on the leaving side
@@ -35,11 +33,11 @@ object ClusterApiSpec {
     """)
 }
 
-class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) with WordSpecLike {
+class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) with WordSpecLike with LogCapturing {
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
-  val untypedSystem1 = system.toUntyped
+  val classicSystem1 = system.toClassic
 
   "A typed Cluster" must {
 

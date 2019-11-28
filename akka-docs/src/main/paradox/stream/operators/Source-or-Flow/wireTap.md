@@ -18,6 +18,7 @@ Attaches the given `Sink` to this `Flow` as a wire tap, meaning that elements th
 through will also be sent to the wire-tap `Sink`, without the latter affecting the mainline flow.
 If the wire-tap `Sink` backpressures, elements that would've been sent to it will be dropped instead.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

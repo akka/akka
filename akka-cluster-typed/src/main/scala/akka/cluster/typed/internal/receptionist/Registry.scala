@@ -23,7 +23,7 @@ import scala.concurrent.duration.Deadline
       val key = ORMultiMapKey[ServiceKey[_], Entry](s"ReceptionistKey_$n")
       key -> new ServiceRegistry(EmptyORMultiMap)
     }.toMap
-    new ShardedServiceRegistry(emptyRegistries, Map.empty, Set.empty)
+    new ShardedServiceRegistry(emptyRegistries, Map.empty, Set.empty, Set.empty)
   }
 
 }
@@ -42,7 +42,8 @@ import scala.concurrent.duration.Deadline
 @InternalApi private[akka] final case class ShardedServiceRegistry(
     serviceRegistries: Map[DDataKey, ServiceRegistry],
     tombstones: Map[ActorRef[_], Deadline],
-    nodes: Set[UniqueAddress]) {
+    nodes: Set[UniqueAddress],
+    unreachable: Set[UniqueAddress]) {
 
   private val keys = serviceRegistries.keySet.toArray
 
@@ -63,14 +64,34 @@ import scala.concurrent.duration.Deadline
     serviceRegistries(ddataKey).actorRefsFor(key)
   }
 
-  def activeActorRefsFor[T](key: ServiceKey[T], selfUniqueAddress: UniqueAddress): Set[ActorRef[T]] = {
+  /**
+   * @return keys that has a registered service instance on the given `address`
+   */
+  def keysFor(address: UniqueAddress)(implicit node: SelfUniqueAddress): Set[AbstractServiceKey] =
+    serviceRegistries.valuesIterator.flatMap(_.keysFor(address)).toSet
+
+  /**
+   * @return (reachable-nodes, all)
+   */
+  def activeActorRefsFor[T](
+      key: ServiceKey[T],
+      selfUniqueAddress: UniqueAddress): (Set[ActorRef[T]], Set[ActorRef[T]]) = {
     val ddataKey = ddataKeyFor(key)
     val entries = serviceRegistries(ddataKey).entriesFor(key)
     val selfAddress = selfUniqueAddress.address
-    entries.collect {
-      case entry if nodes.contains(entry.uniqueAddress(selfAddress)) && !hasTombstone(entry.ref) =>
-        entry.ref.asInstanceOf[ActorRef[key.Protocol]]
+    val reachable = Set.newBuilder[ActorRef[T]]
+    val all = Set.newBuilder[ActorRef[T]]
+    entries.foreach { entry =>
+      val entryAddress = entry.uniqueAddress(selfAddress)
+      if (nodes.contains(entryAddress) && !hasTombstone(entry.ref)) {
+        val ref = entry.ref.asInstanceOf[ActorRef[key.Protocol]]
+        all += ref
+        if (!unreachable.contains(entryAddress)) {
+          reachable += ref
+        }
+      }
     }
+    (reachable.result(), all.result())
   }
 
   def withServiceRegistry(ddataKey: DDataKey, registry: ServiceRegistry): ShardedServiceRegistry =
@@ -113,7 +134,13 @@ import scala.concurrent.duration.Deadline
     copy(nodes = nodes + node)
 
   def removeNode(node: UniqueAddress): ShardedServiceRegistry =
-    copy(nodes = nodes - node)
+    copy(nodes = nodes - node, unreachable = unreachable - node)
+
+  def addUnreachable(uniqueAddress: UniqueAddress): ShardedServiceRegistry =
+    copy(unreachable = unreachable + uniqueAddress)
+
+  def removeUnreachable(uniqueAddress: UniqueAddress): ShardedServiceRegistry =
+    copy(unreachable = unreachable - uniqueAddress)
 
 }
 
@@ -128,6 +155,12 @@ import scala.concurrent.duration.Deadline
 
   def entriesFor(key: AbstractServiceKey): Set[Entry] =
     entries.getOrElse(key.asServiceKey, Set.empty[Entry])
+
+  def keysFor(address: UniqueAddress)(implicit node: SelfUniqueAddress): Set[ServiceKey[_]] =
+    entries.entries.collect {
+      case (key, entries) if entries.exists(_.uniqueAddress(node.uniqueAddress.address) == address) =>
+        key
+    }.toSet
 
   def addBinding[T](key: ServiceKey[T], value: Entry)(implicit node: SelfUniqueAddress): ServiceRegistry =
     copy(entries = entries.addBinding(node, key, value))

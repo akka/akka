@@ -526,37 +526,37 @@ object Backoff {
 trait BackoffOptions {
 
   /**
-   * @see [[ExtendedBackoffOptions.withAutoReset()]]
+   * @see [[ExtendedBackoffOptions.withAutoReset]]
    */
   def withAutoReset(resetBackoff: FiniteDuration): BackoffOptions
 
   /**
-   * @see [[ExtendedBackoffOptions.withManualReset()]]
+   * @see [[ExtendedBackoffOptions.withManualReset]]
    */
   def withManualReset: BackoffOptions
 
   /**
-   * @see [[ExtendedBackoffOptions.withSupervisorStrategy()]]
+   * @see [[ExtendedBackoffOptions.withSupervisorStrategy]]
    */
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy): BackoffOptions
 
   /**
-   * @see [[ExtendedBackoffOptions.withDefaultStoppingStrategy()]]
+   * @see [[ExtendedBackoffOptions.withDefaultStoppingStrategy]]
    */
   def withDefaultStoppingStrategy: BackoffOptions
 
   /**
-   * @see [[ExtendedBackoffOptions.withMaxNrOfRetries()]]
+   * @see [[ExtendedBackoffOptions.withMaxNrOfRetries]]
    */
   def withMaxNrOfRetries(maxNrOfRetries: Int): BackoffOptions
 
   /**
-   * @see [[ExtendedBackoffOptions.withReplyWhileStopped()]]
+   * @see [[ExtendedBackoffOptions.withReplyWhileStopped]]
    */
   def withReplyWhileStopped(replyWhileStopped: Any): BackoffOptions
 
   /**
-   * @see [[BackoffOnStopOptions.withFinalStopMessage()]]
+   * @see [[BackoffOnStopOptions.withFinalStopMessage]]
    */
   def withFinalStopMessage(isFinalStopMessage: Any => Boolean): BackoffOptions
 
@@ -566,7 +566,7 @@ trait BackoffOptions {
   private[akka] def props: Props
 }
 
-@silent
+@silent("deprecated")
 private final case class BackoffOptionsImpl(
     backoffType: BackoffType = RestartImpliesFailure,
     childProps: Props,

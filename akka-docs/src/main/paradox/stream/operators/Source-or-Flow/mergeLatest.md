@@ -4,7 +4,13 @@ Merge multiple sources.
 
 @ref[Fan-in operators](../index.md#fan-in-operators)
 
+@@@div { .group-scala }
+
 ## Signature
+
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mergeLatest }
+
+@@@
 
 ## Description
 
@@ -13,6 +19,7 @@ i-th element in list is the latest emitted element from i-th input stream.
 MergeLatest emits list for each element emitted from some input stream,
 but only after each input stream emitted at least one element
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

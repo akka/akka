@@ -17,6 +17,7 @@ Materializes to a @scala[`Future`] @java[`CompletionStage`] that will be complet
 Materializes to a @scala[`Future`] @java[`CompletionStage`] that will be completed with Done or failed depending whether the upstream of the operators has been completed or failed.
 The operators otherwise passes through elements unchanged.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

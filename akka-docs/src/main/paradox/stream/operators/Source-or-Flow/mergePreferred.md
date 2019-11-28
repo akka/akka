@@ -8,8 +8,9 @@ Merge multiple sources.
 
 ## Description
 
-Merge multiple sources. Prefer one source if all sources has elements ready.
+Merge multiple sources. Prefer one source if all sources have elements ready.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -102,15 +102,15 @@ object ActorFlow {
   def ask[I, Q, A](parallelism: Int)(ref: ActorRef[Q])(makeMessage: (I, ActorRef[A]) => Q)(
       implicit timeout: Timeout): Flow[I, A, NotUsed] = {
     import akka.actor.typed.scaladsl.adapter._
-    val untypedRef = ref.toUntyped
+    val classicRef = ref.toClassic
 
     val askFlow = Flow[I]
-      .watch(untypedRef)
+      .watch(classicRef)
       .mapAsync(parallelism) { el =>
-        val res = akka.pattern.extended.ask(untypedRef, (replyTo: akka.actor.ActorRef) => makeMessage(el, replyTo))
+        val res = akka.pattern.extended.ask(classicRef, (replyTo: akka.actor.ActorRef) => makeMessage(el, replyTo))
         // we need to cast manually (yet safely, by construction!) since otherwise we need a ClassTag,
         // which in Scala is fine, but then we would force JavaDSL to create one, which is a hassle in the Akka Typed DSL,
-        // since one may say "but I already specified the type!", and that we have to go via the untyped ask is an implementation detail
+        // since one may say "but I already specified the type!", and that we have to go via the classic ask is an implementation detail
         res.asInstanceOf[Future[A]]
       }
       .mapError {

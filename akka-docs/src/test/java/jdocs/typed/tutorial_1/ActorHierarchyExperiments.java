@@ -24,14 +24,12 @@ import akka.actor.typed.javadsl.Receive;
 
 class PrintMyActorRefActor extends AbstractBehavior<String> {
 
-  static Behavior<String> createBehavior() {
+  static Behavior<String> create() {
     return Behaviors.setup(PrintMyActorRefActor::new);
   }
 
-  private final ActorContext<String> context;
-
   private PrintMyActorRefActor(ActorContext<String> context) {
-    this.context = context;
+    super(context);
   }
 
   @Override
@@ -40,7 +38,7 @@ class PrintMyActorRefActor extends AbstractBehavior<String> {
   }
 
   private Behavior<String> printIt() {
-    ActorRef<String> secondRef = context.spawn(Behaviors.empty(), "second-actor");
+    ActorRef<String> secondRef = getContext().spawn(Behaviors.empty(), "second-actor");
     System.out.println("Second: " + secondRef);
     return this;
   }
@@ -50,23 +48,26 @@ class PrintMyActorRefActor extends AbstractBehavior<String> {
 // #start-stop
 class StartStopActor1 extends AbstractBehavior<String> {
 
-  static Behavior<String> createBehavior() {
-    return Behaviors.setup(context -> new StartStopActor1());
+  static Behavior<String> create() {
+    return Behaviors.setup(StartStopActor1::new);
   }
 
-  private StartStopActor1() {
+  private StartStopActor1(ActorContext<String> context) {
+    super(context);
     System.out.println("first started");
+
+    context.spawn(StartStopActor2.create(), "second");
   }
 
   @Override
   public Receive<String> createReceive() {
     return newReceiveBuilder()
         .onMessageEquals("stop", Behaviors::stopped)
-        .onSignal(PostStop.class, signal -> postStop())
+        .onSignal(PostStop.class, signal -> onPostStop())
         .build();
   }
 
-  private Behavior<String> postStop() {
+  private Behavior<String> onPostStop() {
     System.out.println("first stopped");
     return this;
   }
@@ -74,20 +75,21 @@ class StartStopActor1 extends AbstractBehavior<String> {
 
 class StartStopActor2 extends AbstractBehavior<String> {
 
-  static Behavior<String> createBehavior() {
-    return Behaviors.setup(context -> new StartStopActor2());
+  static Behavior<String> create() {
+    return Behaviors.setup(StartStopActor2::new);
   }
 
-  private StartStopActor2() {
+  private StartStopActor2(ActorContext<String> context) {
+    super(context);
     System.out.println("second started");
   }
 
   @Override
   public Receive<String> createReceive() {
-    return newReceiveBuilder().onSignal(PostStop.class, signal -> postStop()).build();
+    return newReceiveBuilder().onSignal(PostStop.class, signal -> onPostStop()).build();
   }
 
-  private Behavior<String> postStop() {
+  private Behavior<String> onPostStop() {
     System.out.println("second stopped");
     return this;
   }
@@ -97,26 +99,26 @@ class StartStopActor2 extends AbstractBehavior<String> {
 // #supervise
 class SupervisingActor extends AbstractBehavior<String> {
 
-  static Behavior<String> createBehavior() {
+  static Behavior<String> create() {
     return Behaviors.setup(SupervisingActor::new);
   }
 
   private final ActorRef<String> child;
 
   private SupervisingActor(ActorContext<String> context) {
+    super(context);
     child =
         context.spawn(
-            Behaviors.supervise(SupervisedActor.createBehavior())
-                .onFailure(SupervisorStrategy.restart()),
+            Behaviors.supervise(SupervisedActor.create()).onFailure(SupervisorStrategy.restart()),
             "supervised-actor");
   }
 
   @Override
   public Receive<String> createReceive() {
-    return newReceiveBuilder().onMessageEquals("failChild", this::failChild).build();
+    return newReceiveBuilder().onMessageEquals("failChild", this::onFailChild).build();
   }
 
-  private Behavior<String> failChild() {
+  private Behavior<String> onFailChild() {
     child.tell("fail");
     return this;
   }
@@ -124,11 +126,12 @@ class SupervisingActor extends AbstractBehavior<String> {
 
 class SupervisedActor extends AbstractBehavior<String> {
 
-  static Behavior<String> createBehavior() {
-    return Behaviors.setup(context -> new SupervisedActor());
+  static Behavior<String> create() {
+    return Behaviors.setup(SupervisedActor::new);
   }
 
-  private SupervisedActor() {
+  private SupervisedActor(ActorContext<String> context) {
+    super(context);
     System.out.println("supervised actor started");
   }
 
@@ -162,14 +165,12 @@ class SupervisedActor extends AbstractBehavior<String> {
 
 class Main extends AbstractBehavior<String> {
 
-  static Behavior<String> createBehavior() {
+  static Behavior<String> create() {
     return Behaviors.setup(Main::new);
   }
 
-  private final ActorContext<String> context;
-
   private Main(ActorContext<String> context) {
-    this.context = context;
+    super(context);
   }
 
   @Override
@@ -178,7 +179,7 @@ class Main extends AbstractBehavior<String> {
   }
 
   private Behavior<String> start() {
-    ActorRef<String> firstRef = context.spawn(PrintMyActorRefActor.createBehavior(), "first-actor");
+    ActorRef<String> firstRef = getContext().spawn(PrintMyActorRefActor.create(), "first-actor");
 
     System.out.println("First: " + firstRef);
     firstRef.tell("printit");
@@ -188,7 +189,7 @@ class Main extends AbstractBehavior<String> {
 
 public class ActorHierarchyExperiments {
   public static void main(String[] args) {
-    ActorRef<String> testSystem = ActorSystem.create(Main.createBehavior(), "testSystem");
+    ActorRef<String> testSystem = ActorSystem.create(Main.create(), "testSystem");
     testSystem.tell("start");
   }
 }
@@ -201,7 +202,7 @@ class ActorHierarchyExperimentsTest extends JUnitSuite {
   @Test
   public void testStartAndStopActors() {
     // #start-stop-main
-    ActorRef<String> first = testKit.spawn(StartStopActor1.createBehavior(), "first");
+    ActorRef<String> first = testKit.spawn(StartStopActor1.create(), "first");
     first.tell("stop");
     // #start-stop-main
   }
@@ -210,7 +211,7 @@ class ActorHierarchyExperimentsTest extends JUnitSuite {
   public void testSuperviseActors() throws Exception {
     // #supervise-main
     ActorRef<String> supervisingActor =
-        testKit.spawn(SupervisingActor.createBehavior(), "supervising-actor");
+        testKit.spawn(SupervisingActor.create(), "supervising-actor");
     supervisingActor.tell("failChild");
     // #supervise-main
     Thread.sleep(200); // allow for the println/logging to complete

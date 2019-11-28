@@ -28,11 +28,13 @@ object RestartFirstSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed3 = role("seed3")
 
   commonConfig(
-    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-      akka.cluster.auto-down-unreachable-after = off
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
+      akka.cluster.testkit.auto-down-unreachable-after = off
       akka.cluster.retry-unsuccessful-join-after = 3s
       akka.cluster.allow-weakly-up-members = off
-      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 }
 
 class RestartFirstSeedNodeMultiJvmNode1 extends RestartFirstSeedNodeSpec

@@ -18,7 +18,6 @@ import scala.concurrent.duration._
 @BenchmarkMode(Array(Mode.Throughput))
 class InvokeWithFeedbackBenchmark {
   implicit val system = ActorSystem("InvokeWithFeedbackBenchmark")
-  val materializerSettings = ActorMaterializerSettings(system).withDispatcher("akka.test.stream-dispatcher")
 
   var sourceQueue: SourceQueueWithComplete[Int] = _
   var sinkQueue: SinkQueueWithCancel[Int] = _
@@ -27,10 +26,6 @@ class InvokeWithFeedbackBenchmark {
 
   @Setup
   def setup(): Unit = {
-    val settings = ActorMaterializerSettings(system)
-
-    implicit val materializer = ActorMaterializer(settings)
-
     // these are currently the only two built in stages using invokeWithFeedback
     val (in, out) =
       Source

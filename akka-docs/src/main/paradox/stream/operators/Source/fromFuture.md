@@ -1,6 +1,6 @@
 # fromFuture
 
-Send the single value of the `Future` when it completes and there is demand.
+`fromFuture` has been deprecated in 2.6.0, use `Source.future` instead.
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -14,9 +14,12 @@ Send the single value of the `Future` when it completes and there is demand.
 
 ## Description
 
+`fromFuture` has been deprecated in 2.6.0, use @ref:[future](future.md) instead.
+
 Send the single value of the `Future` when it completes and there is demand.
 If the future fails the stream is failed with that exception.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 
@@ -27,6 +30,4 @@ If the future fails the stream is failed with that exception.
 @@@
 
 ## Example
-Scala
-:  @@snip [SourceFromFuture.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOperators.scala) { #sourceFromFuture }
 

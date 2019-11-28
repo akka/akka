@@ -4,19 +4,17 @@
 
 package akka.stream.scaladsl
 
-import scala.concurrent.{ Future, Promise }
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import com.github.ghik.silencer.silent
 
+import scala.concurrent.duration._
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.util.control.NoStackTrace
+
+@silent("deprecated") // testing deprecated API
 class FlowFromFutureSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   "A Flow based on a Future" must {
     "produce one element from already successful Future" in assertAllStagesStopped {

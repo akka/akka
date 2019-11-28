@@ -8,9 +8,9 @@ import akka.util.ccompat.JavaConverters._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.japi.function
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.internal.SideEffect
 import akka.persistence.typed.internal._
+import akka.actor.typed.ActorRef
 
 /**
  * INTERNAL API: see `class EffectFactories`
@@ -32,7 +32,7 @@ import akka.persistence.typed.internal._
 
   /**
    * Persist all of a the given events. Each event will be applied through `applyEffect` separately but not until
-   * all events has been persisted. If `callback` is added through [[Effect#thenRun]] that will invoked
+   * all events has been persisted. If `callback` is added through [[EffectBuilder.thenRun]] that will invoked
    * after all the events has been persisted.
    */
   final def persist(events: java.util.List[Event]): EffectBuilder[Event, State] = PersistAll(events.asScala.toVector)
@@ -73,16 +73,16 @@ import akka.persistence.typed.internal._
    * commands will not be processed by this `unstashAll` effect and have to be unstashed
    * by another `unstashAll`.
    *
-   * @see [[Effect.thenUnstashAll]]
+   * @see [[EffectBuilder.thenUnstashAll]]
    */
   def unstashAll(): Effect[Event, State] =
     none().thenUnstashAll()
 
   /**
-   * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
-   * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
+   * Send a reply message to the command. The type of the
+   * reply message must conform to the type specified by the passed replyTo `ActorRef`.
    *
-   * This has the same semantics as `cmd.replyTo.tell`.
+   * This has the same semantics as `replyTo.tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
    * when the `EventSourcedBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
@@ -90,10 +90,8 @@ import akka.persistence.typed.internal._
    * The reply message will be sent also if `withEnforcedReplies` isn't used, but then the compiler will not help
    * finding mistakes.
    */
-  def reply[ReplyMessage](
-      cmd: ExpectingReply[ReplyMessage],
-      replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
-    none().thenReply[ReplyMessage](cmd, new function.Function[State, ReplyMessage] {
+  def reply[ReplyMessage](replyTo: ActorRef[ReplyMessage], replyWithMessage: ReplyMessage): ReplyEffect[Event, State] =
+    none().thenReply[ReplyMessage](replyTo, new function.Function[State, ReplyMessage] {
       override def apply(param: State): ReplyMessage = replyWithMessage
     })
 
@@ -160,10 +158,10 @@ import akka.persistence.typed.internal._
   def thenUnstashAll(): Effect[Event, State]
 
   /**
-   * Send a reply message to the command, which implements [[ExpectingReply]]. The type of the
-   * reply message must conform to the type specified in [[ExpectingReply.replyTo]] `ActorRef`.
+   * Send a reply message to the command. The type of the
+   * reply message must conform to the type specified by the passed replyTo `ActorRef`.
    *
-   * This has the same semantics as `cmd.replyTo().tell`.
+   * This has the same semantics as `replyTo.tell`.
    *
    * It is provided as a convenience (reducing boilerplate) and a way to enforce that replies are not forgotten
    * when the `EventSourcedBehavior` is created with [[EventSourcedBehaviorWithEnforcedReplies]]. When
@@ -172,9 +170,9 @@ import akka.persistence.typed.internal._
    * finding mistakes.
    */
   def thenReply[ReplyMessage](
-      cmd: ExpectingReply[ReplyMessage],
+      replyTo: ActorRef[ReplyMessage],
       replyWithMessage: function.Function[State, ReplyMessage]): ReplyEffect[Event, State] =
-    CompositeEffect(this, SideEffect[State](newState => cmd.replyTo ! replyWithMessage(newState)))
+    CompositeEffect(this, SideEffect[State](newState => replyTo ! replyWithMessage(newState)))
 
   /**
    * When [[EventSourcedBehaviorWithEnforcedReplies]] is used there will be compilation errors if the returned effect
@@ -188,7 +186,7 @@ import akka.persistence.typed.internal._
 /**
  * [[EventSourcedBehaviorWithEnforcedReplies]] can be used to enforce that replies are not forgotten.
  * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
- * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
+ * created with `Effects().reply`, `Effects().noReply`, [[EffectBuilder.thenReply]], or [[EffectBuilder.thenNoReply]].
  */
 @DoNotInherit trait ReplyEffect[+Event, State] extends Effect[Event, State] {
   self: EffectImpl[Event, State] =>

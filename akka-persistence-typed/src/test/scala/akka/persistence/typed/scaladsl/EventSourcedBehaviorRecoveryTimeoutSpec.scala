@@ -17,8 +17,6 @@ import akka.persistence.journal.SteppingInmemJournal
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.internal.JournalFailureException
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -35,7 +33,6 @@ object EventSourcedBehaviorRecoveryTimeoutSpec {
         """))
       .withFallback(ConfigFactory.parseString(s"""
         akka.loglevel = INFO
-        akka.loggers = [akka.testkit.TestEventListener]
         """))
 
   def testBehavior(persistenceId: PersistenceId, probe: ActorRef[AnyRef]): Behavior[String] =
@@ -54,18 +51,17 @@ object EventSourcedBehaviorRecoveryTimeoutSpec {
 
 class EventSourcedBehaviorRecoveryTimeoutSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorRecoveryTimeoutSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
 
   import EventSourcedBehaviorRecoveryTimeoutSpec._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   import akka.actor.typed.scaladsl.adapter._
   // needed for SteppingInmemJournal.step
-  private implicit val untypedSystem: akka.actor.ActorSystem = system.toUntyped
-
-  untypedSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+  private implicit val classicSystem: akka.actor.ActorSystem = system.toClassic
 
   "The recovery timeout" must {
 
@@ -89,8 +85,10 @@ class EventSourcedBehaviorRecoveryTimeoutSpec
 
       // now replay, but don't give the journal any tokens to replay events
       // so that we cause the timeout to trigger
-      EventFilter[JournalFailureException](pattern = "Exception during recovery.*Replay timed out", occurrences = 1)
-        .intercept {
+      LoggingTestKit
+        .error[JournalFailureException]
+        .withMessageRegex("Exception during recovery.*Replay timed out")
+        .expect {
           val replaying = spawn(testBehavior(pid, probe.ref))
 
           // initial read highest

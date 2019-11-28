@@ -17,6 +17,7 @@ Accumulate incoming events until the specified number of elements have been accu
 Accumulate incoming events until the specified number of elements have been accumulated and then pass the collection of
 elements downstream.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 
@@ -28,3 +29,13 @@ elements downstream.
 
 @@@
 
+## Examples
+
+Below example demonstrates how `grouped` groups the accumulated elements into @scala[`Seq`] @java[`List`]
+and maps with other operation.
+
+Scala
+:  @@snip [Grouped.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Grouped.scala) { #grouped }
+
+Java
+:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #grouped }

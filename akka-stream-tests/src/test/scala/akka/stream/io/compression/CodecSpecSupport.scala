@@ -5,10 +5,11 @@
 package akka.stream.io.compression
 
 import akka.actor.ActorSystem
-import akka.stream.ActorMaterializer
 import akka.testkit.TestKit
 import akka.util.ByteString
-import org.scalatest.{ BeforeAndAfterAll, Matchers, Suite }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.Matchers
+import org.scalatest.Suite
 
 trait CodecSpecSupport extends Matchers with BeforeAndAfterAll { self: Suite =>
 
@@ -73,7 +74,6 @@ est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscin
       "\n")
 
   implicit val system = ActorSystem(getClass.getSimpleName)
-  implicit val materializer = ActorMaterializer()
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 }

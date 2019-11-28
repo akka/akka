@@ -17,8 +17,6 @@ class GraphDSLDocSpec extends AkkaSpec {
 
   implicit val ec = system.dispatcher
 
-  implicit val materializer = ActorMaterializer()
-
   "build simple graph" in {
     //format: OFF
     //#simple-graph-dsl

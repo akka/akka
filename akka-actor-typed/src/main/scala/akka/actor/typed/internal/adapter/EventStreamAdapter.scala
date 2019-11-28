@@ -18,7 +18,7 @@ import akka.annotation.InternalApi
 
   private[akka] val behavior: Behavior[EventStream.Command] =
     Behaviors.setup { ctx =>
-      val eventStream = ctx.system.toUntyped.eventStream
+      val eventStream = ctx.system.toClassic.eventStream
       eventStreamBehavior(eventStream)
     }
 
@@ -28,10 +28,10 @@ import akka.annotation.InternalApi
         eventStream.publish(event)
         Behaviors.same
       case s @ EventStream.Subscribe(subscriber) =>
-        eventStream.subscribe(subscriber.toUntyped, s.topic)
+        eventStream.subscribe(subscriber.toClassic, s.topic)
         Behaviors.same
       case EventStream.Unsubscribe(subscriber) =>
-        eventStream.unsubscribe(subscriber.toUntyped)
+        eventStream.unsubscribe(subscriber.toClassic)
         Behaviors.same
     }
 

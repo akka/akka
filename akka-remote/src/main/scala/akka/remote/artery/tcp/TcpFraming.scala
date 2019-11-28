@@ -59,8 +59,12 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TcpFraming(flightRecorder: EventSink) extends ByteStringParser[EnvelopeBuffer] {
+@InternalApi private[akka] class TcpFraming extends ByteStringParser[EnvelopeBuffer] {
+
+  val flightRecorder = IgnoreEventSink
+
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new ParsingLogic {
+
     abstract class Step extends ParseStep[EnvelopeBuffer]
     startWith(ReadMagic)
 

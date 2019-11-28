@@ -1,15 +1,7 @@
 # Classic Cluster Aware Routers
 
-@@@ note
-
-Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
-known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
-the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
-ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
-
-For the new API see @ref[routers](typed/routers.md).
-
-@@@
+@@include[includes.md](includes.md) { #actor-api }
+For the full documentation of this feature and for new projects see @ref:[routers](typed/routers.md).
 
 All @ref:[routers](routing.md) can be made aware of member nodes in the cluster, i.e.
 deploying new routees or looking up routees on nodes in the cluster.
@@ -18,7 +10,7 @@ automatically unregistered from the router. When new nodes join the cluster, add
 routees are added to the router, according to the configuration. Routees are also added
 when a node becomes reachable again, after having been unreachable.
 
-Cluster aware routers make use of members with status [WeaklyUp](#weakly-up) if that feature
+Cluster aware routers make use of members with status @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up) if that feature
 is enabled.
 
 There are two distinct types of routers.
@@ -88,7 +80,7 @@ Scala
 Java
 :  @@snip [StatsService.java](/akka-docs/src/test/java/jdocs/cluster/StatsService.java) { #router-lookup-in-code }
 
-See @ref:[reference configuration](general/configuration.md#config-akka-cluster) for further descriptions of the settings.
+See @ref:[reference configuration](general/configuration-reference.md#config-akka-cluster) for further descriptions of the settings.
 
 ### Router Example with Group of Routees
 
@@ -153,10 +145,6 @@ akka.actor.deployment {
 
 This means that user requests can be sent to `StatsService` on any node and it will use
 `StatsWorker` on all nodes.
-
-The easiest way to run **Router Example with Group of Routees** example yourself is to try the
-@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
-It contains instructions on how to run the **Router Example with Group of Routees** sample.
  
 ## Router with Pool of Remote Deployed Routees
 
@@ -193,7 +181,7 @@ Scala
 Java
 :  @@snip [StatsService.java](/akka-docs/src/test/java/jdocs/cluster/StatsService.java) { #router-deploy-in-code }
 
-See @ref:[reference configuration](general/configuration.md#config-akka-cluster) for further descriptions of the settings.
+See @ref:[reference configuration](general/configuration-reference.md#config-akka-cluster) for further descriptions of the settings.
 
 When using a pool of remote deployed routees you must ensure that all parameters of the `Props` can
 be @ref:[serialized](serialization.md).

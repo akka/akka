@@ -32,19 +32,16 @@ import static org.junit.Assert.assertArrayEquals;
 public class BidiFlowDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("FlowDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   // #codec
@@ -261,7 +258,7 @@ public class BidiFlowDocTest extends AbstractJavaTest {
             .<Message>map(id -> new Ping(id))
             .via(flow)
             .grouped(10)
-            .runWith(Sink.<List<Message>>head(), mat);
+            .runWith(Sink.<List<Message>>head(), system);
     assertArrayEquals(
         new Message[] {new Pong(0), new Pong(1), new Pong(2)},
         result.toCompletableFuture().get(1, TimeUnit.SECONDS).toArray(new Message[0]));

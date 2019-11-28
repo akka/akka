@@ -9,13 +9,15 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 class ServiceKeySerializationSpec
     extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
 
-  val serialization = SerializationExtension(system.toUntyped)
+  val serialization = SerializationExtension(system.toClassic)
 
   "ServiceKey[T]" must {
     "be serialized and deserialized by ServiceKeySerializer" in {

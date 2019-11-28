@@ -10,13 +10,13 @@ import java.util.Properties
 import java.time.format.DateTimeFormatter
 import java.time.ZonedDateTime
 import java.time.ZoneOffset
+import com.lightbend.paradox.projectinfo.ParadoxProjectInfoPluginKeys._
+import com.typesafe.sbt.MultiJvmPlugin.autoImport.MultiJvm
+import sbtassembly.AssemblyPlugin.autoImport._
 
-// Overriding CrossJava imports #26935
-import sbt.Keys.{fullJavaHomes=>_,_}
+import sbt.Keys._
 import sbt._
-
-import CrossJava.autoImport._
-import org.scalafmt.sbt.ScalafmtPlugin.autoImport._
+import JdkOptions.autoImport._
 import scala.collection.breakOut
 
 object AkkaBuild {
@@ -66,7 +66,9 @@ object AkkaBuild {
     UnidocRoot.akkaSettings,
     Protobuf.settings,
     parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-      version in ThisBuild := akkaVersion
+    version in ThisBuild := akkaVersion,
+    // used for linking to API docs (overwrites `project-info.version`)
+    ThisBuild / projectInfoVersion := { if (isSnapshot.value) "snapshot" else version.value }
   )
 
   lazy val mayChangeSettings = Seq(
@@ -127,19 +129,17 @@ object AkkaBuild {
   lazy val defaultSettings: Seq[Setting[_]] = Def.settings(
     resolverSettings,
     TestExtras.Filter.settings,
-    Protobuf.settings,
-
     // compile options
     scalacOptions in Compile ++= DefaultScalacOptions,
     scalacOptions in Compile ++=
-      CrossJava.targetJdkScalacOptions(targetSystemJdk.value, fullJavaHomes.value),
+      JdkOptions.targetJdkScalacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
     scalacOptions in Compile ++= (if (allWarnings) Seq("-deprecation") else Nil),
     scalacOptions in Test := (scalacOptions in Test).value.filterNot(opt =>
       opt == "-Xlog-reflective-calls" || opt.contains("genjavadoc")),
     javacOptions in compile ++= DefaultJavacOptions ++
-      CrossJava.targetJdkJavacOptions(targetSystemJdk.value, fullJavaHomes.value),
+      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
     javacOptions in test ++= DefaultJavacOptions ++
-      CrossJava.targetJdkJavacOptions(targetSystemJdk.value, fullJavaHomes.value),
+      JdkOptions.targetJdkJavacOptions(targetSystemJdk.value, optionalDir(jdk8home.value), fullJavaHomes.value),
     javacOptions in compile ++= (if (allWarnings) Seq("-Xlint:deprecation") else Nil),
     javacOptions in doc ++= Seq(),
 
@@ -160,7 +160,11 @@ object AkkaBuild {
     licenses := Seq(("Apache-2.0", url("https://www.apache.org/licenses/LICENSE-2.0.html"))),
     homepage := Some(url("https://akka.io/")),
     description := "Akka is a toolkit for building highly concurrent, distributed, and resilient message-driven applications for Java and Scala.",
-
+    scmInfo := Some(ScmInfo(
+      url("https://github.com/akka/akka"),
+      "scm:git:https://github.com/akka/akka.git",
+      "scm:git:git@github.com:akka/akka.git",
+    )),
     apiURL := Some(url(s"https://doc.akka.io/api/akka/${version.value}")),
 
     initialCommands :=
@@ -246,14 +250,30 @@ object AkkaBuild {
 
     mavenLocalResolverSettings,
     docLintingSettings,
-    CrossJava.crossJavaSettings,
+    JdkOptions.targetJdkSettings,
+
+    // a workaround for https://github.com/akka/akka/issues/27661
+    // see also project/Protobuf.scala that introduces /../ to make "intellij happy"
+    MultiJvm / assembly / fullClasspath := {
+      val old = (MultiJvm / assembly / fullClasspath).value.toVector
+      val files = old.map(_.data.getCanonicalFile).distinct
+      files map { x => Attributed.blank(x) }
+    },
   )
+
+  private def optionalDir(path: String): Option[File] =
+    Option(path).filter(_.nonEmpty).map { path =>
+      val dir = new File(path)
+      if (!dir.exists)
+        throw new IllegalArgumentException(s"Path [$path] not found")
+      dir
+    }
 
   lazy val docLintingSettings = Seq(
     javacOptions in compile ++= Seq("-Xdoclint:none"),
     javacOptions in test ++= Seq("-Xdoclint:none"),
     javacOptions in doc ++= {
-      if (JavaVersion.isJdk8) Seq("-Xdoclint:none")
+      if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
       else Seq("-Xdoclint:none", "--ignore-source-errors")
     }
   )

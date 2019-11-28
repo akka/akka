@@ -96,12 +96,12 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * Java API: roles that this member has
    */
-  @silent
+  @silent("deprecated")
   def getSelfRoles: java.util.Set[String] =
     scala.collection.JavaConverters.setAsJavaSetConverter(selfRoles).asJava
 
   private val _isTerminated = new AtomicBoolean(false)
-  private val log = Logging(system, getClass.getName)
+  private val log = Logging(system, ClusterLogClass.ClusterCore)
   // ClusterJmx is initialized as the last thing in the constructor
   private var clusterJmx: Option[ClusterJmx] = None
 
@@ -125,8 +125,19 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   }
 
   // needs to be lazy to allow downing provider impls to access Cluster (if not we get deadlock)
-  lazy val downingProvider: DowningProvider =
+  lazy val downingProvider: DowningProvider = {
+    checkAutoDownUsage()
     DowningProvider.load(settings.DowningProviderClassName, system)
+  }
+
+  private def checkAutoDownUsage(): Unit = {
+    if (settings.DowningProviderClassName == "akka.cluster.AutoDowning" ||
+        (settings.config.hasPath("auto-down-unreachable-after") && settings.config.getString(
+          "auto-down-unreachable-after") != "off"))
+      logWarning(
+        "auto-down has been removed in Akka 2.6.0. See " +
+        "https://doc.akka.io/docs/akka/2.6/typed/cluster.html#downing for alternatives.")
+  }
 
   // ========================================================
   // ===================== WORK DAEMONS =====================
@@ -164,7 +175,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
 
         override def maxFrequency: Double = systemScheduler.maxFrequency
 
-        @silent
+        @silent("deprecated")
         override def schedule(initialDelay: FiniteDuration, interval: FiniteDuration, runnable: Runnable)(
             implicit executor: ExecutionContext): Cancellable =
           systemScheduler.schedule(initialDelay, interval, runnable)
@@ -452,7 +463,12 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
   /**
    * INTERNAL API
    */
-  private[cluster] object ClusterLogger {
+  private[cluster] object ClusterLogger extends ClusterLogger(log)
+
+  /**
+   * INTERNAL API
+   */
+  private[cluster] class ClusterLogger(log: LoggingAdapter) {
     def isDebugEnabled: Boolean =
       log.isDebugEnabled
 

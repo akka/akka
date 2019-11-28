@@ -4,6 +4,10 @@
 
 package akka.stream.impl.fusing
 
+import akka.actor.ActorSystem
+import akka.actor.Cancellable
+import akka.actor.Props
+import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream.Supervision.Decider
 import akka.stream._
@@ -19,6 +23,60 @@ import akka.stream.testkit.Utils.TE
 import com.github.ghik.silencer.silent
 
 import scala.collection.{ Map => SMap }
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration.FiniteDuration
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object NoMaterializer extends Materializer {
+  override def withNamePrefix(name: String): Materializer =
+    throw new UnsupportedOperationException("NoMaterializer cannot be named")
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat]): Mat =
+    throw new UnsupportedOperationException("NoMaterializer cannot materialize")
+  override def materialize[Mat](runnable: Graph[ClosedShape, Mat], defaultAttributes: Attributes): Mat =
+    throw new UnsupportedOperationException("NoMaterializer cannot materialize")
+
+  override def executionContext: ExecutionContextExecutor =
+    throw new UnsupportedOperationException("NoMaterializer does not provide an ExecutionContext")
+
+  def scheduleOnce(delay: FiniteDuration, task: Runnable): Cancellable =
+    throw new UnsupportedOperationException("NoMaterializer cannot schedule a single event")
+
+  def schedulePeriodically(initialDelay: FiniteDuration, interval: FiniteDuration, task: Runnable): Cancellable =
+    throw new UnsupportedOperationException("NoMaterializer cannot schedule a repeated event")
+
+  override def scheduleWithFixedDelay(
+      initialDelay: FiniteDuration,
+      delay: FiniteDuration,
+      task: Runnable): Cancellable =
+    throw new UnsupportedOperationException("NoMaterializer cannot scheduleWithFixedDelay")
+
+  override def scheduleAtFixedRate(
+      initialDelay: FiniteDuration,
+      interval: FiniteDuration,
+      task: Runnable): Cancellable =
+    throw new UnsupportedOperationException("NoMaterializer cannot scheduleAtFixedRate")
+
+  override def shutdown(): Unit = throw new UnsupportedOperationException("NoMaterializer cannot shutdown")
+
+  override def isShutdown: Boolean = throw new UnsupportedOperationException("NoMaterializer cannot shutdown")
+
+  override def system: ActorSystem =
+    throw new UnsupportedOperationException("NoMaterializer does not have an actorsystem")
+
+  override private[akka] def logger = throw new UnsupportedOperationException("NoMaterializer does not have a logger")
+
+  override private[akka] def supervisor =
+    throw new UnsupportedOperationException("NoMaterializer does not have a supervisor")
+
+  override private[akka] def actorOf(context: MaterializationContext, props: Props) =
+    throw new UnsupportedOperationException("NoMaterializer cannot spawn actors")
+
+  override def settings: ActorMaterializerSettings =
+    throw new UnsupportedOperationException("NoMaterializer does not have settings")
+}
 
 @silent
 object GraphInterpreterSpecKit {
@@ -37,10 +95,13 @@ object GraphInterpreterSpecKit {
       stages: Array[GraphStageWithMaterializedValue[_ <: Shape, _]],
       upstreams: Array[UpstreamBoundaryStageLogic[_]],
       downstreams: Array[DownstreamBoundaryStageLogic[_]],
-      attributes: Array[Attributes] = Array.empty)
+      attributes: Array[Attributes] = Array.empty)(implicit system: ActorSystem)
       : (Array[GraphStageLogic], SMap[Inlet[_], GraphStageLogic], SMap[Outlet[_], GraphStageLogic]) = {
     if (attributes.nonEmpty && attributes.length != stages.length)
       throw new IllegalArgumentException("Attributes must be either empty or one per stage")
+
+    @silent("deprecated")
+    val defaultAttributes = ActorMaterializerSettings(system).toAttributes
 
     var inOwners = SMap.empty[Inlet[_], GraphStageLogic]
     var outOwners = SMap.empty[Outlet[_], GraphStageLogic]
@@ -50,6 +111,7 @@ object GraphInterpreterSpecKit {
 
     while (idx < upstreams.length) {
       val upstream = upstreams(idx)
+      upstream.attributes = defaultAttributes
       upstream.stageId = idx
       logics(idx) = upstream
       upstream.out.id = 0
@@ -62,11 +124,13 @@ object GraphInterpreterSpecKit {
       val stage = stages(stageIdx)
       setPortIds(stage.shape)
 
-      val stageAttributes =
+      val stageAttributes = defaultAttributes and {
         if (attributes.nonEmpty) stage.traversalBuilder.attributes and attributes(stageIdx)
         else stage.traversalBuilder.attributes
+      }
 
       val logic = stage.createLogicAndMaterializedValue(stageAttributes)._1
+      logic.attributes = stageAttributes
       logic.stageId = idx
 
       var inletIdx = 0
@@ -93,6 +157,7 @@ object GraphInterpreterSpecKit {
     var downstreamIdx = 0
     while (downstreamIdx < downstreams.length) {
       val downstream = downstreams(downstreamIdx)
+      downstream.attributes = defaultAttributes
       downstream.stageId = idx
       logics(idx) = downstream
       downstream.in.id = 0
@@ -185,6 +250,8 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
   import GraphInterpreterSpecKit._
   val logger = Logging(system, "InterpreterSpecKit")
+  @silent("deprecated")
+  val defaultAttributes = ActorMaterializerSettings(system).toAttributes
 
   abstract class Builder {
     private var _interpreter: GraphInterpreter = _
@@ -254,6 +321,11 @@ trait GraphInterpreterSpecKit extends StreamSpec {
     }
 
     def manualInit(logics: Array[GraphStageLogic], connections: Array[Connection]): Unit = {
+      // set some default attributes where missing
+      logics.foreach { l =>
+        if (l.attributes == Attributes.none) l.attributes = defaultAttributes
+      }
+
       _interpreter = new GraphInterpreter(
         NoMaterializer,
         logger,
@@ -277,7 +349,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
     }
 
     case class OnComplete(source: GraphStageLogic) extends TestEvent
-    case class Cancel(source: GraphStageLogic) extends TestEvent
+    case class Cancel(source: GraphStageLogic, cause: Throwable) extends TestEvent
     case class OnError(source: GraphStageLogic, cause: Throwable) extends TestEvent
     case class OnNext(source: GraphStageLogic, elem: Any) extends TestEvent
     case class RequestOne(source: GraphStageLogic) extends TestEvent
@@ -301,7 +373,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
       setHandler(out, new OutHandler {
         override def onPull(): Unit = lastEvent += RequestOne(UpstreamProbe.this)
-        override def onDownstreamFinish(): Unit = lastEvent += Cancel(UpstreamProbe.this)
+        override def onDownstreamFinish(cause: Throwable): Unit = lastEvent += Cancel(UpstreamProbe.this, cause)
         override def toString = s"${UpstreamProbe.this.toString}.outHandler"
       })
 
@@ -367,7 +439,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
           override def onPull(): Unit = pull(in)
           override def onUpstreamFinish(): Unit = complete(out)
           override def onUpstreamFailure(ex: Throwable): Unit = fail(out, ex)
-          override def onDownstreamFinish(): Unit = cancel(in)
+          override def onDownstreamFinish(cause: Throwable): Unit = cancel(in, cause)
 
           setHandlers(in, out, this)
         }
@@ -467,7 +539,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
 
       setHandler(stageout, new OutHandler {
         override def onPull(): Unit = mayFail(pull(stagein))
-        override def onDownstreamFinish(): Unit = mayFail(completeStage())
+        override def onDownstreamFinish(cause: Throwable): Unit = mayFail(completeStage())
         override def toString = "insideOutStage.stageout"
       })
 
@@ -509,7 +581,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
     sealed trait TestEvent
 
     case object OnComplete extends TestEvent
-    case object Cancel extends TestEvent
+    case class Cancel(cause: Throwable) extends TestEvent
     case class OnError(cause: Throwable) extends TestEvent
     case class OnNext(elem: Any) extends TestEvent
     case object RequestOne extends TestEvent
@@ -546,7 +618,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
             else lastEvent += RequestOne
           }
 
-          override def onDownstreamFinish(): Unit = lastEvent += Cancel
+          override def onDownstreamFinish(cause: Throwable): Unit = lastEvent += Cancel(cause)
         })
 
       def onNext(elem: TT): Unit = {
@@ -591,7 +663,7 @@ trait GraphInterpreterSpecKit extends StreamSpec {
       }
 
       def cancel(): Unit = {
-        cancel(in)
+        cancel(in, SubscriptionWithCancelException.NoMoreElementsNeeded)
         run()
       }
 

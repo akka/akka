@@ -4,36 +4,14 @@
 
 package akka.remote.artery
 
-import java.net.InetSocketAddress
-import java.nio.channels.DatagramChannel
-import java.nio.channels.FileChannel
-import java.nio.channels.ServerSocketChannel
-import java.nio.file.Path
 import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicBoolean
-import java.util.concurrent.atomic.AtomicLong
-import java.util.concurrent.atomic.AtomicReference
+import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong, AtomicReference }
 
-import scala.annotation.tailrec
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import scala.util.control.NoStackTrace
-import scala.util.control.NonFatal
-
-import akka.Done
-import akka.NotUsed
-import akka.actor.Actor
-import akka.actor.Props
-import akka.actor._
+import akka.{ Done, NotUsed }
+import akka.actor.{ Actor, ActorRef, Address, CoordinatedShutdown, Dropped, ExtendedActorSystem, Props }
 import akka.annotation.InternalStableApi
 import akka.dispatch.Dispatchers
-import akka.event.Logging
-import akka.event.LoggingAdapter
+import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.AddressUidExtension
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
@@ -41,24 +19,21 @@ import akka.remote.RemoteTransport
 import akka.remote.UniqueAddress
 import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.Encoder.OutboundCompressionAccess
-import akka.remote.artery.InboundControlJunction.ControlMessageObserver
-import akka.remote.artery.InboundControlJunction.ControlMessageSubject
+import akka.remote.artery.InboundControlJunction.{ ControlMessageObserver, ControlMessageSubject }
 import akka.remote.artery.OutboundControlJunction.OutboundControlIngress
 import akka.remote.artery.compress.CompressionProtocol.CompressionMessage
 import akka.remote.artery.compress._
-import akka.remote.transport.ThrottlerTransportAdapter.Blackhole
-import akka.remote.transport.ThrottlerTransportAdapter.SetThrottle
-import akka.remote.transport.ThrottlerTransportAdapter.Unthrottled
-import akka.stream.AbruptTerminationException
-import akka.stream.ActorMaterializer
-import akka.stream.KillSwitches
-import akka.stream.Materializer
-import akka.stream.SharedKillSwitch
-import akka.stream.scaladsl.Flow
-import akka.stream.scaladsl.Keep
-import akka.stream.scaladsl.Sink
+import akka.remote.transport.ThrottlerTransportAdapter.{ Blackhole, SetThrottle, Unthrottled }
+import akka.stream._
+import akka.stream.scaladsl.{ Flow, Keep, Sink }
 import akka.util.{ unused, OptionVal, WildcardIndex }
 import com.github.ghik.silencer.silent
+
+import scala.annotation.tailrec
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.{ NoStackTrace, NonFatal }
 
 /**
  * INTERNAL API
@@ -333,12 +308,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
 
-  override val log: LoggingAdapter = Logging(system, getClass.getName)
-
-  val (afrFileChannel, afrFile, flightRecorder) = initializeFlightRecorder() match {
-    case None            => (None, None, None)
-    case Some((c, f, r)) => (Some(c), Some(f), Some(r))
-  }
+  override val log: LoggingAdapter = Logging(system, getClass)
 
   /**
    * Compression tables must be created once, such that inbound lane restarts don't cause dropping of the tables.
@@ -348,7 +318,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
    */
   protected val _inboundCompressions = {
     if (settings.Advanced.Compression.Enabled) {
-      val eventSink = createFlightRecorderEventSink(synchr = false)
+      val eventSink = IgnoreEventSink
       new InboundCompressionsImpl(system, this, settings.Advanced.Compression, eventSink)
     } else NoInboundCompressions
   }
@@ -407,22 +377,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     capacity =
       settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
-  /**
-   * Thread-safe flight recorder for top level events.
-   */
-  val topLevelFlightRecorder: EventSink =
-    createFlightRecorderEventSink(synchr = true)
-
-  def createFlightRecorderEventSink(synchr: Boolean = false): EventSink = {
-    flightRecorder match {
-      case Some(f) =>
-        val eventSink = f.createEventSink()
-        if (synchr) new SynchronizedEventSink(eventSink)
-        else eventSink
-      case None =>
-        IgnoreEventSink
-    }
-  }
+  val topLevelFlightRecorder: EventSink = IgnoreEventSink
 
   private val associationRegistry = new AssociationRegistry(
     remoteAddress =>
@@ -447,17 +402,17 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     startTransport()
     topLevelFlightRecorder.loFreq(Transport_Started, NoMetaData)
 
-    val udp = settings.Transport == ArterySettings.AeronUpd
-    val port =
-      if (settings.Canonical.Port == 0) {
-        if (settings.Bind.Port != 0) settings.Bind.Port // if bind port is set, use bind port instead of random
-        else ArteryTransport.autoSelectPort(settings.Canonical.Hostname, udp)
-      } else settings.Canonical.Port
+    val systemMaterializer = SystemMaterializer(system)
+    materializer =
+      systemMaterializer.createAdditionalLegacySystemMaterializer("remote", settings.Advanced.MaterializerSettings)
+    controlMaterializer = systemMaterializer.createAdditionalLegacySystemMaterializer(
+      "remoteControl",
+      settings.Advanced.ControlStreamMaterializerSettings)
 
-    val bindPort = if (settings.Bind.Port == 0) {
-      if (settings.Canonical.Port == 0) port // canonical and bind ports are zero. Use random port for both
-      else ArteryTransport.autoSelectPort(settings.Bind.Hostname, udp)
-    } else settings.Bind.Port
+    messageDispatcher = new MessageDispatcher(system, provider)
+    topLevelFlightRecorder.loFreq(Transport_MaterializerStarted, NoMetaData)
+
+    val (port, boundPort) = bindInboundStreams()
 
     _localAddress = UniqueAddress(
       Address(ArteryTransport.ProtocolName, system.name, settings.Canonical.Hostname, port),
@@ -465,20 +420,13 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     _addresses = Set(_localAddress.address)
 
     _bindAddress = UniqueAddress(
-      Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, bindPort),
+      Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, boundPort),
       AddressUidExtension(system).longAddressUid)
 
-    // TODO: This probably needs to be a global value instead of an event as events might rotate out of the log
     topLevelFlightRecorder.loFreq(Transport_UniqueAddressSet, _localAddress.toString())
 
-    materializer = ActorMaterializer.systemMaterializer(settings.Advanced.MaterializerSettings, "remote", system)
-    controlMaterializer =
-      ActorMaterializer.systemMaterializer(settings.Advanced.ControlStreamMaterializerSettings, "remoteControl", system)
+    runInboundStreams(port, boundPort)
 
-    messageDispatcher = new MessageDispatcher(system, provider)
-    topLevelFlightRecorder.loFreq(Transport_MaterializerStarted, NoMetaData)
-
-    runInboundStreams()
     topLevelFlightRecorder.loFreq(Transport_StartupFinished, NoMetaData)
 
     startRemoveQuarantinedAssociationTask()
@@ -496,12 +444,25 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         bindAddress.address,
         localAddress.uid)
     }
-
   }
 
   protected def startTransport(): Unit
 
-  protected def runInboundStreams(): Unit
+  /**
+   * Bind to the ports for inbound streams. If '0' is specified, this will also select an
+   * arbitrary free local port. For UDP, we only select the port and leave the actual
+   * binding to Aeron when running the inbound stream.
+   *
+   * After calling this method the 'localAddress' and 'bindAddress' fields can be set.
+   */
+  protected def bindInboundStreams(): (Int, Int)
+
+  /**
+   * Run the inbound streams that have been previously bound.
+   *
+   * Before calling this method the 'localAddress' and 'bindAddress' should have been set.
+   */
+  protected def runInboundStreams(port: Int, bindPort: Int): Unit
 
   private def startRemoveQuarantinedAssociationTask(): Unit = {
     val removeAfter = settings.Advanced.RemoveQuarantinedAssociationAfter
@@ -627,6 +588,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
               // and can result in forming two separate clusters (cluster split).
               // Instead, the downing strategy should act on ThisActorSystemQuarantinedEvent, e.g.
               // use it as a STONITH signal.
+              @silent("deprecated")
               val lifecycleEvent = ThisActorSystemQuarantinedEvent(localAddress, from)
               system.eventStream.publish(lifecycleEvent)
 
@@ -709,9 +671,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       _inboundCompressionAccess = OptionVal.None
 
       topLevelFlightRecorder.loFreq(Transport_FlightRecorderClose, NoMetaData)
-      flightRecorder.foreach(_.close())
-      afrFileChannel.foreach(_.force(true))
-      afrFileChannel.foreach(_.close())
       Done
     }
   }
@@ -965,17 +924,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       .toMat(messageDispatcherSink)(Keep.both)
   }
 
-  private def initializeFlightRecorder(): Option[(FileChannel, Path, FlightRecorder)] = {
-    if (settings.Advanced.FlightRecorderEnabled) {
-      val afrFile = FlightRecorder.createFlightRecorderFile(settings.Advanced.FlightRecorderDestination)
-      log.info("Flight recorder enabled, output can be found in '{}'", afrFile)
-
-      val fileChannel = FlightRecorder.prepareFileForFlightRecorder(afrFile)
-      Some((fileChannel, afrFile, new FlightRecorder(fileChannel)))
-    } else
-      None
-  }
-
   def outboundTestFlow(outboundContext: OutboundContext): Flow[OutboundEnvelope, OutboundEnvelope, NotUsed] =
     if (settings.Advanced.TestMode) Flow.fromGraph(new OutboundTestStage(outboundContext, testState))
     else Flow[OutboundEnvelope]
@@ -1018,22 +966,6 @@ private[remote] object ArteryTransport {
   object ShuttingDown extends RuntimeException with NoStackTrace
 
   final case class InboundStreamMatValues[LifeCycle](lifeCycle: LifeCycle, completed: Future[Done])
-
-  def autoSelectPort(hostname: String, udp: Boolean): Int = {
-    if (udp) {
-      val socket = DatagramChannel.open().socket()
-      socket.bind(new InetSocketAddress(hostname, 0))
-      val port = socket.getLocalPort
-      socket.close()
-      port
-    } else {
-      val socket = ServerSocketChannel.open().socket()
-      socket.bind(new InetSocketAddress(hostname, 0))
-      val port = socket.getLocalPort
-      socket.close()
-      port
-    }
-  }
 
   val ControlStreamId = 1
   val OrdinaryStreamId = 2

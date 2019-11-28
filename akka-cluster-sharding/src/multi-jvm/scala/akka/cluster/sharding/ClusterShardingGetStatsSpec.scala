@@ -4,15 +4,20 @@
 
 package akka.cluster.sharding
 
-import akka.actor._
-import akka.cluster.{ Cluster, MemberStatus, MultiNodeClusterSpec }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
-import akka.testkit.{ TestDuration, TestProbe }
-import com.typesafe.config.ConfigFactory
 import scala.concurrent.duration._
 
+import akka.actor._
+import akka.cluster.Cluster
+import akka.cluster.MemberStatus
+import akka.cluster.MultiNodeClusterSpec
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.testkit.MultiNodeSpec
+import akka.remote.testkit.STMultiNodeSpec
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.TestDuration
+import akka.testkit.TestProbe
+import com.typesafe.config.ConfigFactory
 
 object ClusterShardingGetStatsSpec {
   case object Stop extends CborSerializable
@@ -51,7 +56,8 @@ object ClusterShardingGetStatsSpecConfig extends MultiNodeConfig {
     akka.actor.provider = "cluster"
     akka.remote.classic.log-remote-lifecycle-events = off
     akka.log-dead-letters-during-shutdown = off
-    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = 0s
     akka.cluster.sharding {
       state-store-mode = "ddata"
       updating-state-timeout = 2s
@@ -142,6 +148,7 @@ abstract class ClusterShardingGetStatsSpec
           shardStats.regions.size should ===(3)
           shardStats.regions.values.map(_.stats.size).sum should ===(0)
           shardStats.regions.keys.forall(_.hasGlobalScope) should ===(true)
+          shardStats.regions.values.forall(_.failed.isEmpty) shouldBe true
         }
       }
 
@@ -165,7 +172,7 @@ abstract class ClusterShardingGetStatsSpec
       enterBarrier("sharded actors started")
     }
 
-    "get shard state" in {
+    "get shard stats" in {
       within(10.seconds) {
         awaitAssert {
           val probe = TestProbe()
@@ -174,11 +181,11 @@ abstract class ClusterShardingGetStatsSpec
           val regions = probe.expectMsgType[ShardRegion.ClusterShardingStats].regions
           regions.size shouldEqual 3
           regions.values.flatMap(_.stats.values).sum shouldEqual 4
-          regions.keys.forall(_.hasGlobalScope) should be(true)
+          regions.values.forall(_.failed.isEmpty) shouldBe true
+          regions.keys.forall(_.hasGlobalScope) shouldBe true
         }
       }
-      enterBarrier("got shard state")
-      system.log.info("got shard state")
+      enterBarrier("received shard stats")
     }
 
     "return stats after a node leaves" in {

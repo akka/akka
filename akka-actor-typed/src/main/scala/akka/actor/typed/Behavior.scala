@@ -162,7 +162,8 @@ object Behavior {
    * and then the resulting behavior is returned.
    */
   def start[T](behavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = {
-    // TODO can this be made @tailrec?
+    // note that this can't be @tailrec, but normal stack of interceptors and similar shouldn't be
+    // that deep, and if they are it's most likely a bug which will be seen as StackOverflowError
     behavior match {
       case innerDeferred: DeferredBehavior[T]          => start(innerDeferred(ctx), ctx)
       case wrapped: InterceptorImpl[T, Any] @unchecked =>

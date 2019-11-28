@@ -4,6 +4,7 @@
 
 package jdocs.akka.cluster.sharding.typed;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
@@ -11,9 +12,11 @@ import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.sharding.typed.javadsl.Entity;
 import akka.cluster.typed.Cluster;
 import akka.cluster.typed.Join;
+import akka.persistence.typed.PersistenceId;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -33,6 +36,8 @@ public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
+
   private ClusterSharding _sharding = null;
 
   private ClusterSharding sharding() {
@@ -43,9 +48,13 @@ public class HelloWorldEventSourcedEntityExampleTest extends JUnitSuite {
 
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
       sharding.init(
-          Entity.ofEventSourcedEntity(
+          Entity.of(
               HelloWorld.ENTITY_TYPE_KEY,
-              ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
+              entityContext ->
+                  HelloWorld.create(
+                      entityContext.getEntityId(),
+                      PersistenceId.of(
+                          entityContext.getEntityTypeKey().name(), entityContext.getEntityId()))));
       _sharding = sharding;
     }
     return _sharding;

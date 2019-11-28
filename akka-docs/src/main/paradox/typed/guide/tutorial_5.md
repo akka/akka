@@ -41,7 +41,7 @@ Scala
 :   @@snip [DeviceGroup.scala](/akka-docs/src/test/scala/typed/tutorial_5/DeviceManager.scala) { #query-protocol }
 
 Java
-:   @@snip [DeviceGroup.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/DeviceManagerProtocol.java) { #query-protocol }
+:   @@snip [DeviceGroup.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/DeviceManager.java) { #query-protocol }
 
 ## Implementing the query
 
@@ -103,7 +103,24 @@ Scala
 Java
 :   @@snip [DeviceGroupQuery.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/DeviceGroupQuery.java) { #query-state }
 
-For `RespondTemperature` and `DeviceTerminated` we keep track of the replies by updating `repliesSoFar` and remove the actor from `stillWaiting`, and then delegate to a method `respondWhenAllCollected`, which we will discuss soon.
+For `RespondTemperature` and `DeviceTerminated` we keep track of the replies by updating `repliesSoFar` and remove the actor from `stillWaiting`. For this, we can use the actor's identifier already present in the `DeviceTerminated` message. For our `RespondTemperature` message we will need to add this information as follows:
+
+Scala
+:   @@snip [DeviceGroupQuery.scala](/akka-docs/src/test/scala/typed/tutorial_5/Device.scala) { #respond-declare }
+
+Java
+:   @@snip [DeviceGroupQuery.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/Device.java) { #respond-declare }
+
+And:
+
+Scala
+:   @@snip [DeviceGroupQuery.scala](/akka-docs/src/test/scala/typed/tutorial_5/Device.scala) { #respond-reply }
+
+Java
+:   @@snip [DeviceGroupQuery.java](/akka-docs/src/test/java/jdocs/typed/tutorial_5/Device.java) { #respond-reply }
+
+
+After processing each message we delegate to a method `respondWhenAllCollected`, which we will discuss soon.
 
 In the case of timeout, we need to take all the actors that have not yet replied (the members of the set `stillWaiting`) and put a `DeviceTimedOut` as the status in the final reply.
 
@@ -211,7 +228,7 @@ In the context of the IoT system, this guide introduced the following concepts, 
 
 To continue your journey with Akka, we recommend:
 
-* Start building your own applications with Akka, make sure you [get involved in our amazing community](http://akka.io/get-involved) for help if you get stuck.
+* Start building your own applications with Akka, make sure you [get involved in our amazing community](https://akka.io/get-involved) for help if you get stuck.
 * If you’d like some additional background, and detail, read the rest of the @ref:[reference documentation](../actors.md) and check out some of the @ref:[books and videos](../../additional/books.md) on Akka.
 * If you are interested in functional programming, read how actors can be defined in a @ref:[functional style](../actors.md#functional-style). In this guide the object-oriented style was used, but you can mix both as you like.
 

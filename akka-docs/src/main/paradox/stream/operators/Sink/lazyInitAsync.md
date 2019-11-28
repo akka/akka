@@ -1,6 +1,6 @@
 # Sink.lazyInitAsync
 
-Creates a real `Sink` upon receiving the first element. 
+`lazyInitAsync` has been deprecated in 2.6.0, use `Sink.lazyFutureSink` 
 
 @ref[Sink operators](../index.md#sink-operators)
 
@@ -14,6 +14,8 @@ Creates a real `Sink` upon receiving the first element.
 
 ## Description
 
+`lazyInitAsync` has been deprecated in 2.6.0, use @ref:[lazyFutureSink](lazyFutureSink.md) instead.
+
 Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
 because of completion or error.
 
@@ -21,6 +23,8 @@ because of completion or error.
 - If upstream fails before an element was received, `sinkFactory` throws an exception, or materialization of the internal
   sink fails then the @scala[`Future`]@java[`CompletionStage`] is completed with the exception.
 - Otherwise the @scala[`Future`]@java[`CompletionStage`] is completed with the materialized value of the internal sink.
+
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -4,19 +4,24 @@
 
 package akka.stream
 
-import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.TimeUnit
 
 import akka.NotUsed
-import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
-import akka.remote.artery.{ BenchTestSource, LatchSink }
+import akka.actor.Actor
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.Props
+import akka.remote.artery.BenchTestSource
+import akka.remote.artery.LatchSink
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.StreamTestKit
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
 
 object AskBenchmark {
   final val OperationsPerInvocation = 100000
@@ -40,8 +45,6 @@ class AskBenchmark {
   implicit val system = ActorSystem("MapAsyncBenchmark", config)
   import system.dispatcher
 
-  var materializer: ActorMaterializer = _
-
   var testSource: Source[java.lang.Integer, NotUsed] = _
 
   var actor: ActorRef = _
@@ -56,15 +59,14 @@ class AskBenchmark {
 
   @Setup
   def setup(): Unit = {
-    val settings = ActorMaterializerSettings(system)
-    materializer = ActorMaterializer(settings)
-
     testSource = Source.fromGraph(new BenchTestSource(OperationsPerInvocation))
     actor = system.actorOf(Props(new Actor {
       override def receive = {
         case element => sender() ! element
       }
     }))
+    // eager init of materializer
+    SystemMaterializer(system).materializer
   }
 
   @TearDown
@@ -77,14 +79,14 @@ class AskBenchmark {
   def mapAsync(): Unit = {
     val latch = new CountDownLatch(1)
 
-    testSource.ask[Int](parallelism)(actor).runWith(new LatchSink(OperationsPerInvocation, latch))(materializer)
+    testSource.ask[Int](parallelism)(actor).runWith(new LatchSink(OperationsPerInvocation, latch))
 
     awaitLatch(latch)
   }
 
   private def awaitLatch(latch: CountDownLatch): Unit = {
     if (!latch.await(30, TimeUnit.SECONDS)) {
-      StreamTestKit.printDebugDump(materializer.supervisor)
+      StreamTestKit.printDebugDump(SystemMaterializer(system).materializer.supervisor)
       throw new RuntimeException("Latch didn't complete in time")
     }
   }

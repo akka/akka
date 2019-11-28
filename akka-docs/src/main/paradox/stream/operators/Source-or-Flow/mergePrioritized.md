@@ -11,6 +11,7 @@ Merge multiple sources.
 Merge multiple sources. Prefer sources depending on priorities if all sources has elements ready. If a subset of all
 sources has elements ready the relative priorities for those sources are used to prioritise.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

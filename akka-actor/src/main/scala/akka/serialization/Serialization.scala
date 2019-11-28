@@ -434,7 +434,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   private[akka] val bindings: immutable.Seq[ClassSerializer] = {
     val fromConfig = for {
       (className: String, alias: String) <- settings.SerializationBindings
-      if alias != "none" && checkGoogleProtobuf(className)
+      if alias != "none" && checkGoogleProtobuf(className) && checkAkkaProtobuf(className)
     } yield (system.dynamicAccess.getClassFor[Any](className).get, serializers(alias))
 
     val fromSettings = serializerDetails.flatMap { detail =>
@@ -469,8 +469,14 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   // i.e. com.google.protobuf dependency has been added in the application project.
   // The reason for this special case is for backwards compatibility so that we still can
   // include "com.google.protobuf.GeneratedMessage" = proto in configured serialization-bindings.
-  private def checkGoogleProtobuf(className: String): Boolean =
-    (!className.startsWith("com.google.protobuf") || system.dynamicAccess.getClassFor[Any](className).isSuccess)
+  private def checkGoogleProtobuf(className: String): Boolean = checkClass("com.google.protobuf", className)
+
+  // akka-protobuf is now not a dependency of remote so only load if user has explicitly added it
+  // remove in 2.7
+  private def checkAkkaProtobuf(className: String): Boolean = checkClass("akka.protobuf", className)
+
+  private def checkClass(prefix: String, className: String): Boolean =
+    !className.startsWith(prefix) || system.dynamicAccess.getClassFor[Any](className).isSuccess
 
   /**
    * Sort so that subtypes always precede their supertypes, but without

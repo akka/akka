@@ -44,7 +44,7 @@ object MovieWatchList {
 
   def behavior(userId: String): Behavior[Command] = {
     EventSourcedBehavior[Command, Event, MovieList](
-      persistenceId = PersistenceId(s"movies-$userId"),
+      persistenceId = PersistenceId("movies", userId),
       emptyState = MovieList(Set.empty),
       commandHandler,
       eventHandler = (state, event) => state.applyEvent(event))

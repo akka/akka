@@ -4,12 +4,13 @@
 
 package akka.persistence.typed.internal
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence.typed.scaladsl.RetentionCriteria
 import org.scalatest.Matchers
 import org.scalatest.TestSuite
 import org.scalatest.WordSpecLike
 
-class RetentionCriteriaSpec extends TestSuite with Matchers with WordSpecLike {
+class RetentionCriteriaSpec extends TestSuite with Matchers with WordSpecLike with LogCapturing {
 
   "RetentionCriteria" must {
 

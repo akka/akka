@@ -77,7 +77,7 @@ private[akka] trait HeartbeatMessage extends PriorityMessage
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] object Remoting {
 
   final val EndpointManagerName = "endpointManager"
@@ -133,7 +133,7 @@ private[remote] object Remoting {
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 @ccompatUsedUntil213
 private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteActorRefProvider)
     extends RemoteTransport(_system, _provider) {
@@ -156,7 +156,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
   override def localAddressForRemote(remote: Address): Address =
     Remoting.localAddressForRemote(transportMapping, remote)
 
-  val log: LoggingAdapter = Logging(system.eventStream, getClass.getName)
+  val log: LoggingAdapter = Logging(system.eventStream, getClass)
   val eventPublisher = new EventPublisher(system, log, RemoteLifecycleEventsLogLevel)
 
   private def notifyError(msg: String, cause: Throwable): Unit =
@@ -287,7 +287,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] object EndpointManager {
 
   // Messages between Remoting and EndpointManager
@@ -480,7 +480,7 @@ private[remote] object EndpointManager {
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     extends Actor
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
@@ -779,7 +779,7 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
     case ShutdownAndFlush =>
       // Shutdown all endpoints and signal to sender() when ready (and whether all endpoints were shut down gracefully)
 
-      @silent
+      @silent("deprecated")
       def shutdownAll[T](resources: IterableOnce[T])(shutdown: T => Future[Boolean]): Future[Boolean] = {
         Future.sequence(resources.toList.map(shutdown)).map(_.forall(identity)).recover {
           case NonFatal(_) => false

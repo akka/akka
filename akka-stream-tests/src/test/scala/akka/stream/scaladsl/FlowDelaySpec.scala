@@ -7,21 +7,23 @@ package akka.stream.scaladsl
 import akka.Done
 import akka.stream.Attributes._
 import akka.stream.OverflowStrategies.EmitEarly
+import akka.stream._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.stream._
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.testkit.TimingTest
+import akka.testkit.TestDuration
 import org.scalatest.concurrent.PatienceConfiguration
-import org.scalatest.time.{ Milliseconds, Span }
+import org.scalatest.time.Milliseconds
+import org.scalatest.time.Span
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 class FlowDelaySpec extends StreamSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "A Delay" must {
 
@@ -265,6 +267,74 @@ class FlowDelaySpec extends StreamSpec {
           .futureValue
 
       result should ===((1 to 9).toSeq)
+    }
+
+    "work with empty source" in {
+      Source.empty[Int].delay(Duration.Zero).runWith(TestSink.probe).request(1).expectComplete()
+    }
+
+    "work with fixed delay" in {
+
+      val fixedDelay = 1.second
+
+      val elems = 1 to 10
+
+      val probe = Source(elems)
+        .map(_ => System.nanoTime())
+        .delay(fixedDelay)
+        .map(start => System.nanoTime() - start)
+        .runWith(TestSink.probe)
+
+      elems.foreach(_ => {
+        val next = probe.request(1).expectNext(fixedDelay + fixedDelay.dilated)
+        next should be >= fixedDelay.toNanos
+      })
+
+      probe.expectComplete()
+
+    }
+
+    "work without delay" in {
+
+      val elems = Vector(1, 2, 3, 4, 5, 6, 7, 8, 9, 0)
+
+      Source(elems).delay(Duration.Zero).runWith(TestSink.probe).request(elems.size).expectNextN(elems).expectComplete()
+    }
+
+    "work with linear increasing delay" taggedAs TimingTest in {
+
+      val elems = 1 to 10
+      val step = 1.second
+      val initial = 1.second
+      val max = 5.seconds
+
+      def incWhile(i: (Int, Long)): Boolean = i._1 < 7
+
+      val probe = Source(elems)
+        .map(e => (e, System.nanoTime()))
+        .delayWith(
+          () => DelayStrategy.linearIncreasingDelay(step, incWhile, initial, max),
+          OverflowStrategy.backpressure)
+        .map(start => System.nanoTime() - start._2)
+        .runWith(TestSink.probe)
+
+      elems.foreach(e =>
+        if (incWhile((e, 1L))) {
+          val afterIncrease = initial + e * step
+          val delay = if (afterIncrease < max) {
+            afterIncrease
+          } else {
+            max
+          }
+          val next = probe.request(1).expectNext(delay + delay.dilated)
+          next should be >= delay.toNanos
+        } else {
+          val next = probe.request(1).expectNext(initial + initial.dilated)
+          next should be >= initial.toNanos
+        })
+
+      probe.expectComplete()
+
     }
   }
 }

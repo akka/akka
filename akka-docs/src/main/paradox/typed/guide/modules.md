@@ -4,15 +4,15 @@ Before delving into some best practices for writing actors, it will be helpful t
 
 The following capabilities are included with Akka OSS and are introduced later on this page:
 
-* [Actor library](#actor-library)
-* [Remoting](#remoting)
-* [Cluster](#cluster)
-* [Cluster Sharding](#cluster-sharding)
-* [Cluster Singleton](#cluster-singleton)
-* [Persistence](#persistence)
-* [Distributed Data](#distributed-data)
-* [Streams](#streams)
-* [HTTP](#http)
+* @ref:[Actor library](#actor-library)
+* @ref:[Remoting](#remoting)
+* @ref:[Cluster](#cluster)
+* @ref:[Cluster Sharding](#cluster-sharding)
+* @ref:[Cluster Singleton](#cluster-singleton)
+* @ref:[Persistence](#persistence)
+* @ref:[Distributed Data](#distributed-data)
+* @ref:[Streams](#streams)
+* @ref:[HTTP](#http)
 
 With a [Lightbend Platform Subscription](https://www.lightbend.com/platform/subscription), you can use [Akka Enhancements](https://doc.akka.io/docs/akka-enhancements/current/) that includes:
 

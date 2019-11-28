@@ -14,8 +14,10 @@ import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.PostStop
 import akka.actor.typed.Signal
 import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.internal.ActorContextImpl
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation._
 import akka.persistence.JournalProtocol
 import akka.persistence.Recovery
@@ -82,7 +84,11 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val ctx = context.asScala
-    ctx.setLoggerClass(loggerClass)
+    val hasCustomLoggerName = ctx match {
+      case internalCtx: ActorContextImpl[_] => internalCtx.hasCustomLoggerName
+      case _                                => false
+    }
+    if (!hasCustomLoggerName) ctx.setLoggerName(loggerClass)
     val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
 
     // stashState outside supervise because StashState should survive restarts due to persist failures
@@ -93,19 +99,19 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       case (_, SnapshotCompleted(meta)) =>
         ctx.log.debug("Save snapshot successful, snapshot metadata [{}].", meta)
       case (_, SnapshotFailed(meta, failure)) =>
-        ctx.log.error(failure, "Save snapshot failed, snapshot metadata [{}].", meta)
+        ctx.log.error(s"Save snapshot failed, snapshot metadata [$meta] due to: ${failure.getMessage}", failure)
       case (_, DeleteSnapshotsCompleted(DeletionTarget.Individual(meta))) =>
         ctx.log.debug("Persistent snapshot [{}] deleted successfully.", meta)
       case (_, DeleteSnapshotsCompleted(DeletionTarget.Criteria(criteria))) =>
         ctx.log.debug("Persistent snapshots given criteria [{}] deleted successfully.", criteria)
       case (_, DeleteSnapshotsFailed(DeletionTarget.Individual(meta), failure)) =>
-        ctx.log.warning("Failed to delete snapshot with meta [{}] due to [{}].", meta, failure)
+        ctx.log.warn2("Failed to delete snapshot with meta [{}] due to: {}", meta, failure.getMessage)
       case (_, DeleteSnapshotsFailed(DeletionTarget.Criteria(criteria), failure)) =>
-        ctx.log.warning("Failed to delete snapshots given criteria [{}] due to [{}].", criteria, failure)
+        ctx.log.warn2("Failed to delete snapshots given criteria [{}] due to: {}", criteria, failure.getMessage)
       case (_, DeleteEventsCompleted(toSequenceNr)) =>
         ctx.log.debug("Events successfully deleted to sequence number [{}].", toSequenceNr)
       case (_, DeleteEventsFailed(toSequenceNr, failure)) =>
-        ctx.log.warning("Failed to delete events to sequence number [{}] due to [{}].", toSequenceNr, failure)
+        ctx.log.warn2("Failed to delete events to sequence number [{}] due to: {}", toSequenceNr, failure.getMessage)
     }
 
     // do this once, even if the actor is restarted
@@ -192,7 +198,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def withSnapshotSelectionCriteria(
       selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State] = {
-    copy(recovery = Recovery(selection.toUntyped))
+    copy(recovery = Recovery(selection.toClassic))
   }
 
   override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =

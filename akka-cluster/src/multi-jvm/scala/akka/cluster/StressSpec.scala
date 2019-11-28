@@ -116,12 +116,11 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
       exercise-actors = on
     }
 
-    akka.actor.serialize-messages = off
-    akka.actor.serialize-creators = off
     akka.actor.provider = cluster
     akka.cluster {
       failure-detector.acceptable-heartbeat-pause =  10s
-      auto-down-unreachable-after = 1s
+      downing-provider-class = akka.cluster.testkit.AutoDowning
+      testkit.auto-down-unreachable-after = 1s
       publish-stats-interval = 1s
     }
     akka.loggers = ["akka.testkit.TestEventListener"]
@@ -130,8 +129,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
     akka.remote.artery.advanced.aeron {
       idle-cpu-level = 1
-      embedded-media-driver = off
-      aeron-dir = "target/aeron-StressSpec"
     }
 
     akka.actor.default-dispatcher.fork-join-executor {
@@ -679,11 +676,7 @@ class StressMultiJvmNode12 extends StressSpec
 class StressMultiJvmNode13 extends StressSpec
 
 abstract class StressSpec
-    extends MultiNodeSpec({
-      // Aeron media driver must be started before ActorSystem
-      SharedMediaDriverSupport.startMediaDriver(StressMultiJvmSpec)
-      StressMultiJvmSpec
-    })
+    extends MultiNodeSpec(StressMultiJvmSpec)
     with MultiNodeClusterSpec
     with BeforeAndAfterEach
     with ImplicitSender {

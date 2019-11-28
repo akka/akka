@@ -9,11 +9,11 @@ import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.stream._
-import akka.stream.actor.{ RequestStrategy, WatermarkRequestStrategy }
 import akka.stream.impl.FixedSizeBuffer
 import akka.stream.scaladsl.Source
 import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
+import com.github.ghik.silencer.silent
 
 /** INTERNAL API: Implementation class, not intended to be touched directly by end-users */
 @InternalApi
@@ -27,6 +27,43 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
  */
 @InternalApi private[stream] object SourceRefStageImpl {
   private sealed trait ActorRefStage { def ref: ActorRef }
+
+  object WatermarkRequestStrategy {
+
+    /**
+     * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
+     * the specified `highWatermark`.
+     */
+    def apply(highWatermark: Int): WatermarkRequestStrategy = new WatermarkRequestStrategy(highWatermark)
+  }
+
+  /**
+   * Requests up to the `highWatermark` when the `remainingRequested` is
+   * below the `lowWatermark`. This a good strategy when the actor performs work itself.
+   */
+  final case class WatermarkRequestStrategy(highWatermark: Int, lowWatermark: Int) {
+    require(lowWatermark >= 0, "lowWatermark must be >= 0")
+    require(highWatermark >= lowWatermark, "highWatermark must be >= lowWatermark")
+
+    /**
+     * Create [[WatermarkRequestStrategy]] with `lowWatermark` as half of
+     * the specified `highWatermark`.
+     */
+    def this(highWatermark: Int) = this(highWatermark, lowWatermark = math.max(1, highWatermark / 2))
+
+    /**
+     * Invoked after each incoming message to determine how many more elements to request from the stream.
+     *
+     * @param remainingRequested current remaining number of elements that
+     *   have been requested from upstream but not received yet
+     * @return demand of more elements from the stream, returning 0 means that no
+     *   more elements will be requested for now
+     */
+    def requestDemand(remainingRequested: Int): Int =
+      if (remainingRequested < lowWatermark)
+        highWatermark - remainingRequested
+      else 0
+  }
 }
 
 /**
@@ -39,6 +76,7 @@ private[stream] final case class SourceRefImpl[T](initialPartnerRef: ActorRef) e
 private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: OptionVal[ActorRef])
     extends GraphStageWithMaterializedValue[SourceShape[Out], SinkRef[Out]] { stage =>
   import SourceRefStageImpl.ActorRefStage
+  import SourceRefStageImpl.WatermarkRequestStrategy
 
   val out: Outlet[Out] = Outlet[Out](s"${Logging.simpleName(getClass)}.out")
   override def shape = SourceShape.of(out)
@@ -57,14 +95,35 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       eagerMaterializer: Materializer): (GraphStageLogic, SinkRef[Out]) = {
 
     val logic = new TimerGraphStageLogic(shape) with StageLogging with ActorRefStage with OutHandler {
-      private[this] val streamRefsMaster = StreamRefsMaster(ActorMaterializerHelper.downcast(eagerMaterializer).system)
+      override protected def logSource: Class[_] = classOf[SourceRefStageImpl[_]]
+
+      private[this] val streamRefsMaster = StreamRefsMaster(eagerMaterializer.system)
 
       // settings ---
       import StreamRefAttributes._
-      private[this] val settings = ActorMaterializerHelper.downcast(eagerMaterializer).settings.streamRefSettings
+      @silent("deprecated") // can't remove this settings access without breaking compat
+      private[this] val settings = eagerMaterializer.settings.streamRefSettings
 
+      @silent("deprecated") // can't remove this settings access without breaking compat
       private[this] val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
         SubscriptionTimeout(settings.subscriptionTimeout))
+
+      @silent("deprecated") // can't remove this settings access without breaking compat
+      private[this] val bufferCapacity = inheritedAttributes
+        .get[StreamRefAttributes.BufferCapacity](StreamRefAttributes.BufferCapacity(settings.bufferCapacity))
+        .capacity
+
+      @silent("deprecated") // can't remove this settings access without breaking compat
+      private[this] val demandRedeliveryInterval = inheritedAttributes
+        .get[StreamRefAttributes.DemandRedeliveryInterval](DemandRedeliveryInterval(settings.demandRedeliveryInterval))
+        .timeout
+
+      @silent("deprecated") // can't remove this settings access without breaking compat
+      private[this] val finalTerminationSignalDeadline =
+        inheritedAttributes
+          .get[StreamRefAttributes.FinalTerminationSignalDeadline](
+            FinalTerminationSignalDeadline(settings.finalTerminationSignalDeadline))
+          .timeout
       // end of settings ---
 
       override protected val stageActorName: String = streamRefsMaster.nextSourceRefStageName()
@@ -84,10 +143,10 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       private var localCumulativeDemand: Long = 0L
       private var localRemainingRequested: Int = 0
 
-      private var receiveBuffer
-          : FixedSizeBuffer.FixedSizeBuffer[Out] = _ // initialized in preStart since depends on settings
+      private val receiveBuffer = FixedSizeBuffer[Out](bufferCapacity)
 
-      private var requestStrategy: RequestStrategy = _ // initialized in preStart since depends on receiveBuffer's size
+      private val requestStrategy: WatermarkRequestStrategy = WatermarkRequestStrategy(
+        highWatermark = receiveBuffer.capacity)
       // end of demand management ---
 
       // initialized with the originRef if present, that means we're the "remote" for an already active Source on the other side (the "origin")
@@ -96,16 +155,13 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       private def getPartnerRef = partnerRef.get
 
       override def preStart(): Unit = {
-        receiveBuffer = FixedSizeBuffer[Out](settings.bufferCapacity)
-        requestStrategy = WatermarkRequestStrategy(highWatermark = receiveBuffer.capacity)
-
         log.debug("[{}] Allocated receiver: {}", stageActorName, self.ref)
         if (initialPartnerRef.isDefined) // this will set the partnerRef
           observeAndValidateSender(
             initialPartnerRef.get,
             "Illegal initialPartnerRef! This would be a bug in the SourceRef usage or impl.")
 
-        //this timer will be cancelled if we receive the handshake from the remote SinkRef
+        // This timer will be cancelled if we receive the handshake from the remote SinkRef
         // either created in this method and provided as self.ref as initialPartnerRef
         // or as the response to first CumulativeDemand request sent to remote SinkRef
         scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
@@ -135,7 +191,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
       }
 
       def scheduleDemandRedelivery(): Unit =
-        scheduleOnce(DemandRedeliveryTimerKey, settings.demandRedeliveryInterval)
+        scheduleOnce(DemandRedeliveryTimerKey, demandRedeliveryInterval)
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
         case SubscriptionTimeoutTimerKey =>
@@ -195,7 +251,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
               // we need to start a delayed shutdown in case we were network partitioned and the final signal complete/fail
               // will never reach us; so after the given timeout we need to forcefully terminate this side of the stream ref
               // the other (sending) side terminates by default once it gets a Terminated signal so no special handling is needed there.
-              scheduleOnce(TerminationDeadlineTimerKey, settings.finalTerminationSignalDeadline)
+              scheduleOnce(TerminationDeadlineTimerKey, finalTerminationSignalDeadline)
 
             case _ =>
               // this should not have happened! It should be impossible that we watched some other actor

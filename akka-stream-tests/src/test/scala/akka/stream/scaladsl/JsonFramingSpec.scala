@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.ActorMaterializer
 import akka.stream.impl.JsonObjectParser
 import akka.stream.scaladsl.Framing.FramingException
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
 import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
 
@@ -17,8 +17,6 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class JsonFramingSpec extends AkkaSpec {
-
-  implicit val mat = ActorMaterializer()
 
   "collecting multiple json" should {
     "parse json array" in {
@@ -42,6 +40,30 @@ class JsonFramingSpec extends AkkaSpec {
         """{ "name" : "john" }""",
         """{ "name" : "Ég get etið gler án þess að meiða mig" }""",
         """{ "name" : "jack" }""")
+    }
+
+    "parse multiple arrays" in {
+      val input1 =
+        """
+          |[
+          | { "name" : "john" }
+          |]
+          |""".stripMargin
+
+      val input2 =
+        """
+          |[
+          | { "name" : "jack" }
+          |]
+          |""".stripMargin
+
+      val result = Source(List(ByteString(input1), ByteString(input2)))
+        .via(JsonFraming.objectScanner(Int.MaxValue))
+        .runFold(Seq.empty[String]) {
+          case (acc, entry) => acc ++ Seq(entry.utf8String)
+        }
+
+      result.futureValue shouldBe Seq("""{ "name" : "john" }""", """{ "name" : "jack" }""")
     }
 
     "emit single json element from string" in {

@@ -8,10 +8,11 @@ import java.net.URLEncoder
 import java.util.Optional
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util.control.NonFatal
+
+import akka.util.ccompat.JavaConverters._
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -279,6 +280,9 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       extractShardId: ShardRegion.ExtractShardId,
       allocationStrategy: ShardAllocationStrategy,
       handOffStopMessage: Any): ActorRef = {
+
+    if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+      log.warning("Cluster Sharding has been set to use the deprecated `persistence` state store mode.")
 
     if (settings.shouldHostShard(cluster)) {
       regions.get(typeName) match {
@@ -622,7 +626,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       case null =>
         proxies.get(proxyName(typeName, None)) match {
           case null =>
-            throw new IllegalArgumentException(s"Shard type [$typeName] must be started first")
+            throw new IllegalStateException(s"Shard type [$typeName] must be started first")
           case ref => ref
         }
       case ref => ref
@@ -639,7 +643,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
   def shardRegionProxy(typeName: String, dataCenter: DataCenter): ActorRef = {
     proxies.get(proxyName(typeName, Some(dataCenter))) match {
       case null =>
-        throw new IllegalArgumentException(s"Shard type [$typeName] must be started first")
+        throw new IllegalStateException(s"Shard type [$typeName] must be started first")
       case ref => ref
     }
   }
@@ -752,12 +756,13 @@ private[akka] class ClusterShardingGuardian extends Actor {
                   minBackoff = coordinatorFailureBackoff,
                   maxBackoff = coordinatorFailureBackoff * 5,
                   randomFactor = 0.2)
+                .withFinalStopMessage(_ == ShardCoordinator.Internal.Terminate)
                 .props
                 .withDeploy(Deploy.local)
             val singletonSettings = settings.coordinatorSingletonSettings.withSingletonName("singleton").withRole(role)
             context.actorOf(
               ClusterSingletonManager
-                .props(singletonProps, terminationMessage = PoisonPill, singletonSettings)
+                .props(singletonProps, terminationMessage = ShardCoordinator.Internal.Terminate, singletonSettings)
                 .withDispatcher(context.props.dispatcher),
               name = cName)
           }

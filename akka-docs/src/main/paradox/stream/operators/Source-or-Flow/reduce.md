@@ -17,6 +17,7 @@ Start with first element and then apply the current and next value to the given 
 Start with first element and then apply the current and next value to the given function, when upstream
 complete the current value is emitted downstream. Similar to `fold`.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

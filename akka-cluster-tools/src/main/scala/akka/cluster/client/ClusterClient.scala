@@ -5,8 +5,10 @@
 package akka.cluster.client
 
 import java.net.URLEncoder
+
 import scala.collection.immutable
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
@@ -41,6 +43,9 @@ import akka.util.ccompat._
 import scala.collection.immutable.{ HashMap, HashSet }
 
 @ccompatUsedUntil213
+@deprecated(
+  "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+  since = "2.6.0")
 object ClusterClientSettings {
 
   /**
@@ -109,6 +114,9 @@ object ClusterClientSettings {
  *   to watch it from another actor and possibly acquire a new list of initialContacts from some
  *   external service registry
  */
+@deprecated(
+  "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+  since = "2.6.0")
 final class ClusterClientSettings(
     val initialContacts: Set[ActorPath],
     val establishingGetContactsInterval: FiniteDuration,
@@ -271,15 +279,24 @@ final case class ContactPoints(contactPoints: Set[ActorPath]) {
     contactPoints.asJava
 }
 
+@deprecated(
+  "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+  since = "2.6.0")
 object ClusterClient {
 
   /**
    * Scala API: Factory method for `ClusterClient` [[akka.actor.Props]].
    */
+  @deprecated(
+    "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+    since = "2.6.0")
   def props(settings: ClusterClientSettings): Props =
     Props(new ClusterClient(settings)).withDeploy(Deploy.local)
 
   @SerialVersionUID(1L)
+  @deprecated(
+    "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+    since = "2.6.0")
   final case class Send(path: String, msg: Any, localAffinity: Boolean) {
 
     /**
@@ -288,8 +305,15 @@ object ClusterClient {
     def this(path: String, msg: Any) = this(path, msg, localAffinity = false)
   }
   @SerialVersionUID(1L)
+  @deprecated(
+    "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+    since = "2.6.0")
   final case class SendToAll(path: String, msg: Any)
+
   @SerialVersionUID(1L)
+  @deprecated(
+    "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+    since = "2.6.0")
   final case class Publish(topic: String, msg: Any)
 
   /**
@@ -344,6 +368,9 @@ object ClusterClient {
  * Note that this is a best effort implementation: messages can always be lost due to the distributed
  * nature of the actors involved.
  */
+@deprecated(
+  "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+  since = "2.6.0")
 final class ClusterClient(settings: ClusterClientSettings) extends Actor with ActorLogging {
 
   import ClusterClient._
@@ -525,6 +552,9 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
   }
 }
 
+@deprecated(
+  "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+  since = "2.6.0")
 object ClusterClientReceptionist extends ExtensionId[ClusterClientReceptionist] with ExtensionIdProvider {
   override def get(system: ActorSystem): ClusterClientReceptionist = super.get(system)
 
@@ -539,6 +569,9 @@ object ClusterClientReceptionist extends ExtensionId[ClusterClientReceptionist] 
  * with settings defined in config section `akka.cluster.client.receptionist`.
  * The [[akka.cluster.pubsub.DistributedPubSubMediator]] is started by the [[akka.cluster.pubsub.DistributedPubSub]] extension.
  */
+@deprecated(
+  "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+  since = "2.6.0")
 final class ClusterClientReceptionist(system: ExtendedActorSystem) extends Extension {
 
   private val config = system.settings.config.getConfig("akka.cluster.client.receptionist")
@@ -614,6 +647,9 @@ final class ClusterClientReceptionist(system: ExtendedActorSystem) extends Exten
     receptionist
 }
 
+@deprecated(
+  "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+  since = "2.6.0")
 object ClusterReceptionistSettings {
 
   /**
@@ -663,6 +699,9 @@ object ClusterReceptionistSettings {
  * @param responseTunnelReceiveTimeout The actor that tunnel response messages to the
  *   client will be stopped after this time of inactivity.
  */
+@deprecated(
+  "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+  since = "2.6.0")
 final class ClusterReceptionistSettings(
     val role: Option[String],
     val numberOfContacts: Int,
@@ -822,6 +861,9 @@ final case class ClusterClients(clusterClients: Set[ActorRef]) {
     clusterClients.asJava
 }
 
+@deprecated(
+  "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+  since = "2.6.0")
 object ClusterReceptionist {
 
   /**
@@ -897,6 +939,9 @@ object ClusterReceptionist {
  * the client is supposed to communicate directly to the actor in the cluster.
  *
  */
+@deprecated(
+  "Use Akka gRPC instead, see https://doc.akka.io/docs/akka/2.6/cluster-client.html#migration-to-akka-grpc",
+  since = "2.6.0")
 final class ClusterReceptionist(pubSubMediator: ActorRef, settings: ClusterReceptionistSettings)
     extends Actor
     with ActorLogging {

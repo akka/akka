@@ -17,6 +17,7 @@ import akka.actor._
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
@@ -184,6 +185,7 @@ class JacksonSerializationBench {
   var system: ActorSystem = _
   var serialization: Serialization = _
 
+  @silent("immutable val") // JMH updates this via reflection
   @Param(Array("jackson-json", "jackson-cbor")) // "java"
   private var serializerName: String = _
 
@@ -199,12 +201,14 @@ class JacksonSerializationBench {
             }
           }
           serialization.jackson {
-            compress-larger-than = 100000 b
-            
             serialization-features {
               #WRITE_DATES_AS_TIMESTAMPS = off
             }
           }
+        }
+        akka.serialization.jackson.jackson-json.compression {
+          algorithm = off
+          compress-larger-than = 100 b
         }
       """)
 

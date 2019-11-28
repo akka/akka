@@ -18,8 +18,6 @@ import scala.concurrent.duration._
 @BenchmarkMode(Array(Mode.Throughput))
 class FlatMapMergeBenchmark {
   implicit val system = ActorSystem("FlatMapMergeBenchmark")
-  val materializerSettings = ActorMaterializerSettings(system).withDispatcher("akka.test.stream-dispatcher")
-  implicit val materializer = ActorMaterializer(materializerSettings)
 
   val NumberOfElements = 100000
 
@@ -42,6 +40,8 @@ class FlatMapMergeBenchmark {
         Source.repeat(()).take(n).flatMapMerge(n, _ => subSource)
     }
     graph = Source.fromGraph(source).toMat(Sink.ignore)(Keep.right)
+    // eager init of materializer
+    SystemMaterializer(system).materializer
   }
 
   @TearDown

@@ -10,12 +10,6 @@ To use Akka in OSGi, you must add the following dependency in your project:
   version=$akka.version$
 }
 
-## Sample project
-
-You can look at the
-@extref[OSGi Dining Hakkers example project](samples:akka-samples-osgi-dining-hakkers)
-to see what this looks like in practice.
-
 ## Background
 
 [OSGi](http://www.osgi.org/developer) is a mature packaging and deployment standard for component-based systems. It
@@ -86,7 +80,7 @@ in an application composed of multiple JARs to reside under a single package nam
 might scan all classes from `com.example.plugins` for specific service implementations with that package existing in
 several contributed JARs.
    While it is possible to support overlapping packages with complex manifest headers, it's much better to use non-overlapping
-package spaces and facilities such as @ref:[Akka Cluster](../common/cluster.md)
+package spaces and facilities such as @ref:[Akka Cluster](../typed/cluster-concepts.md)
 for service discovery. Stylistically, many organizations opt to use the root package path as the name of the bundle
 distribution file.
 

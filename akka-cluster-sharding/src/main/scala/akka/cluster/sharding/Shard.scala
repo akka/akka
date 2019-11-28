@@ -124,31 +124,31 @@ private[akka] object Shard {
       handOffStopMessage: Any,
       replicator: ActorRef,
       majorityMinCap: Int): Props = {
-    if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
-      Props(
-        new DDataShard(
-          typeName,
-          shardId,
-          entityProps,
-          settings,
-          extractEntityId,
-          extractShardId,
-          handOffStopMessage,
-          replicator,
-          majorityMinCap)).withDeploy(Deploy.local)
-    } else if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
-      Props(
-        new PersistentShard(
-          typeName,
-          shardId,
-          entityProps,
-          settings,
-          extractEntityId,
-          extractShardId,
-          handOffStopMessage)).withDeploy(Deploy.local)
-    else
-      Props(new Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
-        .withDeploy(Deploy.local)
+    (if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
+       Props(
+         new DDataShard(
+           typeName,
+           shardId,
+           entityProps,
+           settings,
+           extractEntityId,
+           extractShardId,
+           handOffStopMessage,
+           replicator,
+           majorityMinCap))
+     } else if (settings.rememberEntities && settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+       Props(
+         new PersistentShard(
+           typeName,
+           shardId,
+           entityProps,
+           settings,
+           extractEntityId,
+           extractShardId,
+           handOffStopMessage))
+     else {
+       Props(new Shard(typeName, shardId, entityProps, settings, extractEntityId, extractShardId, handOffStopMessage))
+     }).withDeploy(Deploy.local)
   }
 
   case object PassivateIdleTick extends NoSerializationVerificationNeeded
@@ -198,7 +198,7 @@ private[akka] class Shard(
   private var handOffStopper: Option[ActorRef] = None
 
   import context.dispatcher
-  val passivateIdleTask = if (settings.passivateIdleEntityAfter > Duration.Zero && !settings.rememberEntities) {
+  val passivateIdleTask = if (settings.shouldPassivateIdleEntities) {
     val idleInterval = settings.passivateIdleEntityAfter / 2
     Some(context.system.scheduler.scheduleWithFixedDelay(idleInterval, idleInterval, self, PassivateIdleTick))
   } else {
@@ -252,7 +252,7 @@ private[akka] class Shard(
   def processChange[E <: StateChange](event: E)(handler: E => Unit): Unit =
     handler(event)
 
-  def receive = receiveCommand
+  def receive: Receive = receiveCommand
 
   // Don't send back ShardInitialized so that messages are buffered in the ShardRegion
   // while awaiting the lease
@@ -359,8 +359,9 @@ private[akka] class Shard(
     case None =>
       log.debug("HandOff shard [{}]", shardId)
 
-      if (state.entities.nonEmpty) {
+      if (idByRef.nonEmpty) {
         val entityHandOffTimeout = (settings.tuningParameters.handOffTimeout - 5.seconds).max(1.seconds)
+        log.debug("Starting HandOffStopper for shard [{}] to terminate [{}] entities.", shardId, idByRef.keySet.size)
         handOffStopper = Some(
           context.watch(context.actorOf(
             handOffStopperProps(shardId, replyTo, idByRef.keySet, handOffStopMessage, entityHandOffTimeout))))
@@ -1019,6 +1020,6 @@ final class ConstantRateEntityRecoveryStrategy(
       }
       ._2
 
-  private def scheduleEntities(interval: FiniteDuration, entityIds: Set[EntityId]) =
+  private def scheduleEntities(interval: FiniteDuration, entityIds: Set[EntityId]): Future[Set[EntityId]] =
     after(interval, actorSystem.scheduler)(Future.successful[Set[EntityId]](entityIds))
 }

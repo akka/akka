@@ -4,30 +4,32 @@
 
 package akka.stream.scaladsl
 
-import java.util
+import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.atomic.AtomicInteger
 
-import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.stream.Attributes._
-import akka.stream.impl.SinkModule
-import akka.util.ByteString
-
-import scala.annotation.tailrec
-import scala.concurrent.{ Await, Promise }
-import scala.concurrent.duration._
-import akka.stream._
 import akka.stream.Supervision.resumingDecider
+import akka.stream._
+import akka.stream.impl.SinkModule
 import akka.stream.impl.fusing.GroupBy
-import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
+import akka.testkit.TestLatch
+import akka.util.ByteString
+import akka.Done
+import akka.NotUsed
 import org.reactivestreams.Publisher
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
-import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.scaladsl.TestSink
-import java.util.concurrent.ThreadLocalRandom
 
-import akka.testkit.TestLatch
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Promise
 
 object FlowGroupBySpec {
 
@@ -38,12 +40,11 @@ object FlowGroupBySpec {
 
 }
 
-class FlowGroupBySpec extends StreamSpec {
+class FlowGroupBySpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
   import FlowGroupBySpec._
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
 
   case class StreamPuppet(p: Publisher[Int]) {
     val probe = TestSubscriber.manualProbe[Int]()
@@ -126,7 +127,7 @@ class FlowGroupBySpec extends StreamSpec {
       }
     }
 
-    "work in normal user scenario" in {
+    "work in normal user scenario" in assertAllStagesStopped {
       Source(List("Aaa", "Abb", "Bcc", "Cdd", "Cee"))
         .groupBy(3, _.substring(0, 1))
         .grouped(10)
@@ -137,7 +138,7 @@ class FlowGroupBySpec extends StreamSpec {
         .sortBy(_.head) should ===(List(List("Aaa", "Abb"), List("Bcc"), List("Cdd", "Cee")))
     }
 
-    "fail when key function return null" in {
+    "fail when key function return null" in assertAllStagesStopped {
       val down = Source(List("Aaa", "Abb", "Bcc", "Cdd", "Cee"))
         .groupBy(3, e => if (e.startsWith("A")) null else e.substring(0, 1))
         .grouped(10)
@@ -266,7 +267,7 @@ class FlowGroupBySpec extends StreamSpec {
       upstreamSubscription.expectCancellation()
     }
 
-    "resume stream when groupBy function throws" in {
+    "resume stream when groupBy function throws" in assertAllStagesStopped {
       val publisherProbeProbe = TestPublisher.manualProbe[Int]()
       val exc = TE("test")
       val publisher = Source
@@ -340,9 +341,10 @@ class FlowGroupBySpec extends StreamSpec {
       val ex = down.expectError()
       ex.getMessage should include("too many substreams")
       s1.expectError(ex)
+      up.expectCancellation()
     }
 
-    "resume when exceeding maxSubstreams" in {
+    "resume when exceeding maxSubstreams" in assertAllStagesStopped {
       val (up, down) = Flow[Int]
         .groupBy(0, identity)
         .mergeSubstreams
@@ -353,6 +355,8 @@ class FlowGroupBySpec extends StreamSpec {
 
       up.sendNext(1)
       down.expectNoMessage(1.second)
+      up.sendComplete()
+      down.expectComplete()
     }
 
     "emit subscribe before completed" in assertAllStagesStopped {
@@ -549,26 +553,19 @@ class FlowGroupBySpec extends StreamSpec {
     }
 
     "work with random demand" in assertAllStagesStopped {
-      val mat = ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1))
-
-      var blockingNextElement: ByteString = null.asInstanceOf[ByteString]
-
-      val probes = new java.util.ArrayList[Promise[TestSubscriber.Probe[ByteString]]](100)
-      (0 to 99).foreach(_ => probes.add(Promise[TestSubscriber.Probe[ByteString]]()))
-
-      var probesWriterTop = 0
-      var probesReaderTop = 0
-
-      case class SubFlowState(probe: TestSubscriber.Probe[ByteString], hasDemand: Boolean, firstElement: ByteString)
-      val map = new util.HashMap[Int, SubFlowState]()
+      val probes = IndexedSeq.fill(100)(Promise[TestSubscriber.Probe[ByteString]]())
 
       final class ProbeSink(val attributes: Attributes, shape: SinkShape[ByteString])(implicit system: ActorSystem)
           extends SinkModule[ByteString, TestSubscriber.Probe[ByteString]](shape) {
+
+        // materialized on demand by GroupBy so we need thread safety here
+        val materializationCounter = new AtomicInteger(0)
+
         override def create(context: MaterializationContext) = {
-          val promise = probes.get(probesWriterTop)
+          val index = materializationCounter.getAndIncrement()
+          val promise = probes(index)
           val probe = TestSubscriber.probe[ByteString]()
           promise.success(probe)
-          probesWriterTop += 1
           (probe, probe)
         }
         override protected def newInstance(
@@ -578,12 +575,15 @@ class FlowGroupBySpec extends StreamSpec {
           new ProbeSink(attr, amendShape(attr))
       }
 
+      case class SubFlowState(probe: TestSubscriber.Probe[ByteString], hasDemand: Boolean, firstElement: ByteString)
+      val map = mutable.Map.empty[Int, SubFlowState]
+      var blockingNextElement: ByteString = null.asInstanceOf[ByteString]
       @tailrec
       def randomDemand(): Unit = {
-        val nextIndex = ThreadLocalRandom.current().nextInt(0, map.size())
-        val key = new util.ArrayList(map.keySet()).get(nextIndex)
-        if (!map.get(key).hasDemand) {
-          val state = map.get(key)
+        val nextIndex = ThreadLocalRandom.current().nextInt(0, map.size)
+        val key = map.keySet.toIndexedSeq(nextIndex)
+        if (!map(key).hasDemand) {
+          val state = map(key)
           map.put(key, SubFlowState(state.probe, true, state.firstElement))
 
           state.probe.request(1)
@@ -604,14 +604,16 @@ class FlowGroupBySpec extends StreamSpec {
       }
 
       val publisherProbe = TestPublisher.manualProbe[ByteString]()
-      Source
+      val runnable = Source
         .fromPublisher[ByteString](publisherProbe)
         .groupBy(100, elem => Math.abs(elem.head % 100))
         .to(Sink.fromGraph(new ProbeSink(none, SinkShape(Inlet("ProbeSink.in")))))
-        .run()(mat)
+
+      runnable.withAttributes(Attributes.inputBuffer(1, 1)).run()
 
       val upstreamSubscription = publisherProbe.expectSubscription()
 
+      var probeIndex = 0
       for (_ <- 1 to 400) {
         val byteString = randomByteString(10)
         val index = Math.abs(byteString.head % 100)
@@ -619,13 +621,13 @@ class FlowGroupBySpec extends StreamSpec {
         upstreamSubscription.expectRequest()
         upstreamSubscription.sendNext(byteString)
 
-        if (map.get(index) == null) {
-          val probe: TestSubscriber.Probe[ByteString] = Await.result(probes.get(probesReaderTop).future, 300.millis)
-          probesReaderTop += 1
+        if (!map.contains(index)) {
+          val probe: TestSubscriber.Probe[ByteString] = Await.result(probes(probeIndex).future, 300.millis)
+          probeIndex += 1
           map.put(index, SubFlowState(probe, false, byteString))
           //stream automatically requests next element
         } else {
-          val state = map.get(index)
+          val state = map(index)
           if (state.firstElement != null) { //first element in subFlow
             if (!state.hasDemand) blockingNextElement = byteString
             randomDemand()
@@ -641,7 +643,16 @@ class FlowGroupBySpec extends StreamSpec {
           }
         }
       }
-      upstreamSubscription.sendComplete()
+
+      // complete has some try to feed downstream logic, we're not testing that here
+      // we just want to kill all substreams so lets fail the stream instead
+      upstreamSubscription.sendError(TE("killing this stream"))
+      map.values.foreach { subFlowState =>
+        // not all may have seen a subscription because random selection above
+        subFlowState.probe.ensureSubscription()
+        subFlowState.probe.expectError()
+
+      }
     }
 
     "not block all substreams when one is blocked but has a buffer in front" in assertAllStagesStopped {

@@ -16,17 +16,16 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.Dropped
+import akka.actor.UnhandledMessage
 import akka.actor.typed.PostStop
 import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.javadsl.StashOverflowException
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -34,7 +33,6 @@ import org.scalatest.WordSpecLike
 object EventSourcedBehaviorStashSpec {
   def conf: Config = ConfigFactory.parseString(s"""
     #akka.loglevel = DEBUG
-    akka.loggers = [akka.testkit.TestEventListener]
     #akka.persistence.typed.log-stashing = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.plugin = "failure-journal"
@@ -46,22 +44,21 @@ object EventSourcedBehaviorStashSpec {
     }
     """).withFallback(ConfigFactory.defaultReference()).resolve()
 
-  sealed trait Command[ReplyMessage] extends ExpectingReply[ReplyMessage]
+  sealed trait Command[ReplyMessage]
   // Unstash and change to active mode
-  final case class Activate(id: String, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class Activate(id: String, val replyTo: ActorRef[Ack]) extends Command[Ack]
   // Change to active mode, stash incoming Increment
-  final case class Deactivate(id: String, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class Deactivate(id: String, val replyTo: ActorRef[Ack]) extends Command[Ack]
   // Persist Incremented if in active mode, otherwise stashed
-  final case class Increment(id: String, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class Increment(id: String, val replyTo: ActorRef[Ack]) extends Command[Ack]
   // Persist ValueUpdated, independent of active/inactive
-  final case class UpdateValue(id: String, value: Int, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class UpdateValue(id: String, value: Int, val replyTo: ActorRef[Ack]) extends Command[Ack]
   // Retrieve current state, independent of active/inactive
   final case class GetValue(replyTo: ActorRef[State]) extends Command[State]
   final case class Unhandled(replyTo: ActorRef[NotUsed]) extends Command[NotUsed]
-  final case class Throw(id: String, t: Throwable, override val replyTo: ActorRef[Ack]) extends Command[Ack]
-  final case class IncrementThenThrow(id: String, t: Throwable, override val replyTo: ActorRef[Ack])
-      extends Command[Ack]
-  final case class Slow(id: String, latch: CountDownLatch, override val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class Throw(id: String, t: Throwable, val replyTo: ActorRef[Ack]) extends Command[Ack]
+  final case class IncrementThenThrow(id: String, t: Throwable) extends Command[Ack]
+  final case class Slow(id: String, latch: CountDownLatch, val replyTo: ActorRef[Ack]) extends Command[Ack]
 
   final case class Ack(id: String)
 
@@ -116,27 +113,27 @@ object EventSourcedBehaviorStashSpec {
 
   private def active(state: State, command: Command[_]): ReplyEffect[Event, State] = {
     command match {
-      case cmd: Increment =>
-        Effect.persist(Incremented(1)).thenReply(cmd)(_ => Ack(cmd.id))
-      case cmd @ UpdateValue(_, value, _) =>
-        Effect.persist(ValueUpdated(value)).thenReply(cmd)(_ => Ack(cmd.id))
-      case query: GetValue =>
-        Effect.reply(query)(state)
-      case cmd: Deactivate =>
-        Effect.persist(Deactivated).thenReply(cmd)(_ => Ack(cmd.id))
-      case cmd: Activate =>
+      case Increment(id, replyTo) =>
+        Effect.persist(Incremented(1)).thenReply(replyTo)(_ => Ack(id))
+      case UpdateValue(id, value, replyTo) =>
+        Effect.persist(ValueUpdated(value)).thenReply(replyTo)(_ => Ack(id))
+      case GetValue(replyTo) =>
+        Effect.reply(replyTo)(state)
+      case Deactivate(id, replyTo) =>
+        Effect.persist(Deactivated).thenReply(replyTo)(_ => Ack(id))
+      case Activate(id, replyTo) =>
         // already active
-        Effect.reply(cmd)(Ack(cmd.id))
+        Effect.reply(replyTo)(Ack(id))
       case _: Unhandled =>
         Effect.unhandled.thenNoReply()
       case Throw(id, t, replyTo) =>
         replyTo ! Ack(id)
         throw t
-      case cmd: IncrementThenThrow =>
-        Effect.persist(Incremented(1)).thenRun((_: State) => throw cmd.t).thenNoReply()
-      case cmd: Slow =>
-        cmd.latch.await(30, TimeUnit.SECONDS)
-        Effect.reply(cmd)(Ack(cmd.id))
+      case IncrementThenThrow(_, throwable) =>
+        Effect.persist(Incremented(1)).thenRun((_: State) => throw throwable).thenNoReply()
+      case Slow(id, latch, replyTo) =>
+        latch.await(30, TimeUnit.SECONDS)
+        Effect.reply(replyTo)(Ack(id))
     }
   }
 
@@ -144,15 +141,15 @@ object EventSourcedBehaviorStashSpec {
     command match {
       case _: Increment =>
         Effect.stash()
-      case cmd @ UpdateValue(_, value, _) =>
-        Effect.persist(ValueUpdated(value)).thenReply(cmd)(_ => Ack(cmd.id))
-      case query: GetValue =>
-        Effect.reply(query)(state)
-      case cmd: Deactivate =>
+      case UpdateValue(id, value, replyTo) =>
+        Effect.persist(ValueUpdated(value)).thenReply(replyTo)(_ => Ack(id))
+      case GetValue(replyTo) =>
+        Effect.reply(replyTo)(state)
+      case Deactivate(id, replyTo) =>
         // already inactive
-        Effect.reply(cmd)(Ack(cmd.id))
-      case cmd: Activate =>
-        Effect.persist(Activated).thenReply(cmd)((_: State) => Ack(cmd.id)).thenUnstashAll()
+        Effect.reply(replyTo)(Ack(id))
+      case Activate(id, replyTo) =>
+        Effect.persist(Activated).thenReply(replyTo)((_: State) => Ack(id)).thenUnstashAll()
       case _: Unhandled =>
         Effect.unhandled.thenNoReply()
       case Throw(id, t, replyTo) =>
@@ -168,17 +165,13 @@ object EventSourcedBehaviorStashSpec {
 
 class EventSourcedBehaviorStashSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorStashSpec.conf)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
 
   import EventSourcedBehaviorStashSpec._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
-
-  // Needed for the untyped event filter
-  implicit val untyped = system.toUntyped
-
-  untyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   "A typed persistent actor that is stashing commands" must {
 
@@ -280,6 +273,8 @@ class EventSourcedBehaviorStashSpec
       val ackProbe = TestProbe[Ack]
       val stateProbe = TestProbe[State]
       val notUsedProbe = TestProbe[NotUsed]
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
 
       (1 to 100).foreach { n =>
         c ! Increment(s"inc-1-$n", ackProbe.ref)
@@ -295,41 +290,41 @@ class EventSourcedBehaviorStashSpec
         c ! Increment(s"inc-3-$n", ackProbe.ref)
       }
 
-      EventFilter.warning(start = "unhandled message", occurrences = 10).intercept {
-        c ! GetValue(stateProbe.ref)
+      c ! GetValue(stateProbe.ref)
 
-        (1 to 5).foreach { n =>
-          c ! UpdateValue(s"upd-4-$n", n * 1000, ackProbe.ref)
-        }
-
-        (1 to 3).foreach { n =>
-          c ! Activate(s"act-5-$n", ackProbe.ref)
-        }
-
-        (1 to 100).foreach { n =>
-          c ! Increment(s"inc-6-$n", ackProbe.ref)
-        }
-
-        c ! GetValue(stateProbe.ref)
-
-        (6 to 8).foreach { n =>
-          c ! UpdateValue(s"upd-7-$n", n * 1000, ackProbe.ref)
-        }
-
-        (1 to 3).foreach { n =>
-          c ! Deactivate(s"deact-8-$n", ackProbe.ref)
-        }
-
-        (1 to 100).foreach { n =>
-          c ! Increment(s"inc-9-$n", ackProbe.ref)
-        }
-
-        (1 to 3).foreach { n =>
-          c ! Activate(s"act-10-$n", ackProbe.ref)
-        }
-
-        c ! GetValue(stateProbe.ref)
+      (1 to 5).foreach { n =>
+        c ! UpdateValue(s"upd-4-$n", n * 1000, ackProbe.ref)
       }
+
+      (1 to 3).foreach { n =>
+        c ! Activate(s"act-5-$n", ackProbe.ref)
+      }
+
+      (1 to 100).foreach { n =>
+        c ! Increment(s"inc-6-$n", ackProbe.ref)
+      }
+
+      c ! GetValue(stateProbe.ref)
+
+      (6 to 8).foreach { n =>
+        c ! UpdateValue(s"upd-7-$n", n * 1000, ackProbe.ref)
+      }
+
+      (1 to 3).foreach { n =>
+        c ! Deactivate(s"deact-8-$n", ackProbe.ref)
+      }
+
+      (1 to 100).foreach { n =>
+        c ! Increment(s"inc-9-$n", ackProbe.ref)
+      }
+
+      (1 to 3).foreach { n =>
+        c ! Activate(s"act-10-$n", ackProbe.ref)
+      }
+
+      c ! GetValue(stateProbe.ref)
+
+      unhandledProbe.receiveMessages(10)
 
       val value1 = stateProbe.expectMessageType[State](5.seconds).value
       val value2 = stateProbe.expectMessageType[State](5.seconds).value
@@ -432,7 +427,7 @@ class EventSourcedBehaviorStashSpec
 
       (1 to 10).foreach { n =>
         if (n == 3)
-          c ! IncrementThenThrow(s"inc-$n", new TestException("test"), ackProbe.ref)
+          c ! IncrementThenThrow(s"inc-$n", new TestException("test"))
         else
           c ! Increment(s"inc-$n", ackProbe.ref)
       }
@@ -452,7 +447,7 @@ class EventSourcedBehaviorStashSpec
     }
 
     "preserve internal stash when persist failed" in {
-      val c = spawn(counter(PersistenceId("fail-fifth-a")))
+      val c = spawn(counter(PersistenceId.ofUniqueId("fail-fifth-a")))
       val ackProbe = TestProbe[Ack]
       val stateProbe = TestProbe[State]
 
@@ -470,7 +465,7 @@ class EventSourcedBehaviorStashSpec
     }
 
     "preserve user stash when persist failed" in {
-      val c = spawn(counter(PersistenceId("fail-fifth-b")))
+      val c = spawn(counter(PersistenceId.ofUniqueId("fail-fifth-b")))
       val ackProbe = TestProbe[Ack]
       val stateProbe = TestProbe[State]
 
@@ -504,10 +499,10 @@ class EventSourcedBehaviorStashSpec
 
     "discard when stash has reached limit with default dropped setting" in {
       val probe = TestProbe[AnyRef]()
-      system.toUntyped.eventStream.subscribe(probe.ref.toUntyped, classOf[Dropped])
+      system.toClassic.eventStream.subscribe(probe.ref.toClassic, classOf[Dropped])
       val behavior = Behaviors.setup[String] { context =>
         EventSourcedBehavior[String, String, Boolean](
-          persistenceId = PersistenceId("stash-is-full-drop"),
+          persistenceId = PersistenceId.ofUniqueId("stash-is-full-drop"),
           emptyState = false,
           commandHandler = { (state, command) =>
             state match {
@@ -547,7 +542,7 @@ class EventSourcedBehaviorStashSpec
       c ! "start-stashing"
 
       val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
-      EventFilter.warning(start = "Stash buffer is full, dropping message").intercept {
+      LoggingTestKit.warn("Stash buffer is full, dropping message").expect {
         (0 to limit).foreach { n =>
           c ! s"cmd-$n" // limit triggers overflow
         }
@@ -572,18 +567,20 @@ class EventSourcedBehaviorStashSpec
         ConfigFactory
           .parseString("akka.persistence.typed.stash-overflow-strategy=fail")
           .withFallback(EventSourcedBehaviorStashSpec.conf))
-      failStashTestKit.system.toUntyped.eventStream
-        .publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
       try {
         val probe = failStashTestKit.createTestProbe[AnyRef]()
         val behavior =
-          EventSourcedBehavior[String, String, String](PersistenceId("stash-is-full-fail"), "", commandHandler = {
-            case (_, "ping") =>
-              probe.ref ! "pong"
-              Effect.none
-            case (_, _) =>
-              Effect.stash()
-          }, (state, _) => state)
+          EventSourcedBehavior[String, String, String](
+            PersistenceId.ofUniqueId("stash-is-full-fail"),
+            "",
+            commandHandler = {
+              case (_, "ping") =>
+                probe.ref ! "pong"
+                Effect.none
+              case (_, _) =>
+                Effect.stash()
+            },
+            (state, _) => state)
 
         val c = failStashTestKit.spawn(behavior)
 
@@ -591,13 +588,15 @@ class EventSourcedBehaviorStashSpec
         c ! "ping"
         probe.expectMessage("pong")
 
-        EventFilter[StashOverflowException](occurrences = 1).intercept {
-          val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
-          (0 to limit).foreach { n =>
-            c ! s"cmd-$n" // limit triggers overflow
-          }
-          probe.expectTerminated(c, 10.seconds)
-        }(failStashTestKit.system.toUntyped)
+        LoggingTestKit
+          .error[StashOverflowException]
+          .expect {
+            val limit = system.settings.config.getInt("akka.persistence.typed.stash-capacity")
+            (0 to limit).foreach { n =>
+              c ! s"cmd-$n" // limit triggers overflow
+            }
+            probe.expectTerminated(c, 10.seconds)
+          }(failStashTestKit.system)
       } finally {
         failStashTestKit.shutdownTestKit()
       }
@@ -617,13 +616,15 @@ class EventSourcedBehaviorStashSpec
       c ! Increment("3", ackProbe.ref)
       c ! Increment("4", ackProbe.ref)
 
-      c.toUntyped ! PoisonPill
+      c.toClassic ! PoisonPill
       ackProbe.expectTerminated(c)
     }
 
     "stop from PoisonPill after unstashing completed" in {
       val c = spawn(counter(nextPid()))
       val ackProbe = TestProbe[Ack]
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
 
       c ! Increment("1", ackProbe.ref)
       ackProbe.expectMessage(Ack("1"))
@@ -635,20 +636,20 @@ class EventSourcedBehaviorStashSpec
       c ! Increment("3", ackProbe.ref)
       c ! Increment("4", ackProbe.ref)
 
-      EventFilter.warning(start = "unhandled message", occurrences = 1).intercept {
-        // start unstashing
-        c ! Activate("5", ackProbe.ref)
-        c.toUntyped ! PoisonPill
-        // 6 shouldn't make it, already stopped
-        c ! Increment("6", ackProbe.ref)
+      // start unstashing
+      c ! Activate("5", ackProbe.ref)
+      c.toClassic ! PoisonPill
+      // 6 shouldn't make it, already stopped
+      c ! Increment("6", ackProbe.ref)
 
-        ackProbe.expectMessage(Ack("5"))
-        // not stopped before 3 and 4 were processed
-        ackProbe.expectMessage(Ack("3"))
-        ackProbe.expectMessage(Ack("4"))
+      ackProbe.expectMessage(Ack("5"))
+      // not stopped before 3 and 4 were processed
+      ackProbe.expectMessage(Ack("3"))
+      ackProbe.expectMessage(Ack("4"))
 
-        ackProbe.expectTerminated(c)
-      }
+      ackProbe.expectTerminated(c)
+
+      unhandledProbe.receiveMessage()
 
       // 6 shouldn't make it, already stopped
       ackProbe.expectNoMessage(100.millis)
@@ -666,22 +667,17 @@ class EventSourcedBehaviorStashSpec
       ackProbe.expectMessage(Ack("2"))
       ackProbe.expectMessage(Ack("3"))
 
-      // silence some dead letters that may, or may not, occur depending on timing
-      system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "unhandled message", occurrences = 100)))
-      system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "received dead letter", occurrences = 100)))
-      system.toUntyped.eventStream.publish(Mute(EventFilter.info(pattern = ".*was not delivered.*", occurrences = 100)))
-
       val signalProbe = TestProbe[String]
       val c2 = spawn(counter(pid, Some(signalProbe.ref)))
       // this PoisonPill will most likely be received in RequestingRecoveryPermit since it's sent immediately
-      c2.toUntyped ! PoisonPill
+      c2.toClassic ! PoisonPill
       signalProbe.expectMessage("RecoveryCompleted-3")
       signalProbe.expectMessage("PostStop")
 
       val c3 = spawn(counter(pid, Some(signalProbe.ref)))
       // this PoisonPill will most likely be received in RequestingRecoveryPermit since it's sent slightly afterwards
       Thread.sleep(1)
-      c3.toUntyped ! PoisonPill
+      c3.toClassic ! PoisonPill
       c3 ! Increment("4", ackProbe.ref)
       signalProbe.expectMessage("RecoveryCompleted-3")
       signalProbe.expectMessage("PostStop")
@@ -690,7 +686,7 @@ class EventSourcedBehaviorStashSpec
       val c4 = spawn(counter(pid, Some(signalProbe.ref)))
       signalProbe.expectMessage("RecoveryCompleted-3")
       // this PoisonPill will be received in Running
-      c4.toUntyped ! PoisonPill
+      c4.toClassic ! PoisonPill
       c4 ! Increment("4", ackProbe.ref)
       signalProbe.expectMessage("PostStop")
       ackProbe.expectNoMessage(20.millis)
@@ -700,7 +696,7 @@ class EventSourcedBehaviorStashSpec
       c5 ! Increment("4", ackProbe.ref)
       c5 ! Increment("5", ackProbe.ref)
       // this PoisonPill will most likely be received in PersistingEvents
-      c5.toUntyped ! PoisonPill
+      c5.toClassic ! PoisonPill
       c5 ! Increment("6", ackProbe.ref)
       ackProbe.expectMessage(Ack("4"))
       ackProbe.expectMessage(Ack("5"))

@@ -10,41 +10,30 @@ import sbt.plugins.JvmPlugin
 
 object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
-  import scoverage.ScoverageKeys._
   import scalafix.sbt.ScalafixPlugin
 
   override def trigger: PluginTrigger = allRequirements
   override def requires: Plugins = JvmPlugin && ScalafixPlugin
   override lazy val projectSettings = disciplineSettings
 
-  val nonFatalWarningsFor = Set(
-    // We allow warnings in docs to get the 'snippets' right
-    "akka-docs",
-    // To be reviewed
-    "akka-actor-typed-tests",
-    "akka-bench-jmh",
-    "akka-bench-jmh-typed",
-    "akka-stream-tests-tck")
+  // We allow warnings in docs to get the 'snippets' right
+  val nonFatalWarningsFor = Set("akka-docs")
 
   val strictProjects = Set("akka-discovery", "akka-protobuf", "akka-coordination")
 
   lazy val scalaFixSettings = Seq(Compile / scalacOptions += "-Yrangepos")
 
-  lazy val scoverageSettings =
-    Seq(coverageMinimum := 70, coverageFailOnMinimum := false, coverageOutputHTML := true, coverageHighlighting := true)
-
   lazy val silencerSettings = {
-    val silencerVersion = "1.4.1"
+    val silencerVersion = "1.4.4"
     Seq(
       libraryDependencies ++= Seq(
-          compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion),
-          "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided))
+          compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion cross CrossVersion.full),
+          "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided cross CrossVersion.full))
   }
 
   lazy val disciplineSettings =
     scalaFixSettings ++
-    silencerSettings ++
-    scoverageSettings ++ Seq(
+    silencerSettings ++ Seq(
       Compile / scalacOptions ++= (
           if (!nonFatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
           else Seq.empty

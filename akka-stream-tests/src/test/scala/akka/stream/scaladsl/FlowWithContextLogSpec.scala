@@ -6,16 +6,14 @@ package akka.stream.scaladsl
 
 import akka.event.Logging
 import akka.stream.Attributes.LogLevels
-import akka.stream.testkit.{ ScriptedTest, StreamSpec }
 import akka.stream._
+import akka.stream.testkit.ScriptedTest
+import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe
 
 class FlowWithContextLogSpec extends StreamSpec("""
      akka.loglevel = DEBUG # test verifies logging
-     akka.actor.serialize-messages = off
      """) with ScriptedTest {
-
-  implicit val mat: Materializer = ActorMaterializer()
 
   val logProbe = {
     val p = TestProbe()
@@ -25,7 +23,7 @@ class FlowWithContextLogSpec extends StreamSpec("""
 
   "log() from FlowWithContextOps" must {
 
-    val supervisorPath = ActorMaterializerHelper.downcast(mat).supervisor.path
+    val supervisorPath = (SystemMaterializer(system).materializer).supervisor.path
     val LogSrc = s"akka.stream.Log($supervisorPath)"
     val LogClazz = classOf[Materializer]
 

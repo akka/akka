@@ -43,7 +43,6 @@ public class IntegrationDocTest extends AbstractJavaTest {
   private static final SilenceSystemOut.System System = SilenceSystemOut.get();
 
   static ActorSystem system;
-  static Materializer mat;
   static ActorRef ref;
 
   @BeforeClass
@@ -60,8 +59,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
                 + "}                                      \n"
                 + "akka.actor.default-mailbox.mailbox-type = akka.dispatch.UnboundedMailbox\n");
 
-    system = ActorSystem.create("ActorPublisherDocTest", config);
-    mat = ActorMaterializer.create(system);
+    system = ActorSystem.create("IntegrationDocTest", config);
     ref = system.actorOf(Props.create(Translator.class));
   }
 
@@ -69,7 +67,6 @@ public class IntegrationDocTest extends AbstractJavaTest {
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
     ref = null;
   }
 
@@ -323,7 +320,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
   }
   // #ask-actor
 
-  // #actorRefWithAck-actor
+  // #actorRefWithBackpressure-actor
   enum Ack {
     INSTANCE;
   }
@@ -384,7 +381,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
           .build();
     }
   }
-  // #actorRefWithAck-actor
+  // #actorRefWithBackpressure-actor
 
   @SuppressWarnings("unchecked")
   @Test
@@ -397,13 +394,13 @@ public class IntegrationDocTest extends AbstractJavaTest {
         .ask(5, ref, String.class, askTimeout)
         // continue processing of the replies from the actor
         .map(elem -> elem.toLowerCase())
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // #ask
   }
 
   @Test
-  public void actorRefWithAckExample() throws Exception {
-    // #actorRefWithAck
+  public void actorRefWithBackpressure() throws Exception {
+    // #actorRefWithBackpressure
     Source<String, NotUsed> words = Source.from(Arrays.asList("hello", "hi"));
 
     final TestKit probe = new TestKit(system);
@@ -411,20 +408,20 @@ public class IntegrationDocTest extends AbstractJavaTest {
     ActorRef receiver = system.actorOf(Props.create(AckingReceiver.class, probe.getRef()));
 
     Sink<String, NotUsed> sink =
-        Sink.<String>actorRefWithAck(
+        Sink.<String>actorRefWithBackpressure(
             receiver,
             new StreamInitialized(),
             Ack.INSTANCE,
             new StreamCompleted(),
             ex -> new StreamFailure(ex));
 
-    words.map(el -> el.toLowerCase()).runWith(sink, mat);
+    words.map(el -> el.toLowerCase()).runWith(sink, system);
 
     probe.expectMsg("Stream initialized");
     probe.expectMsg("hello");
     probe.expectMsg("hi");
     probe.expectMsg("Stream completed");
-    // #actorRefWithAck
+    // #actorRefWithBackpressure
   }
 
   @Test
@@ -457,7 +454,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
                     4, address -> emailServer.send(new Email(address, "Akka", "I like your tweet")))
                 .to(Sink.ignore());
 
-        sendEmails.run(mat);
+        sendEmails.run(system);
         // #send-emails
 
         probe.expectMsg("rolandkuhn@somewhere.com");
@@ -519,7 +516,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
                     4, address -> emailServer.send(new Email(address, "Akka", "I like your tweet")))
                 .to(Sink.ignore());
 
-        sendEmails.run(mat);
+        sendEmails.run(system);
         // #external-service-mapAsyncUnordered
       }
     };
@@ -555,7 +552,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
                             blockingEc))
                 .to(Sink.ignore());
 
-        sendTextMessages.run(mat);
+        sendTextMessages.run(system);
         // #blocking-mapAsync
 
         final List<Object> got = receiveN(7);
@@ -597,7 +594,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
                 .withAttributes(ActorAttributes.dispatcher("blocking-dispatcher"));
         final RunnableGraph<?> sendTextMessages = phoneNumbers.via(send).to(Sink.ignore());
 
-        sendTextMessages.run(mat);
+        sendTextMessages.run(system);
         // #blocking-map
 
         probe.expectMsg(String.valueOf("rolandkuhn".hashCode()));
@@ -630,7 +627,7 @@ public class IntegrationDocTest extends AbstractJavaTest {
                 .to(Sink.ignore());
         // #save-tweets
 
-        saveTweets.run(mat);
+        saveTweets.run(system);
 
         probe.expectMsg("rolandkuhn");
         probe.expectMsg("patriknw");
@@ -666,10 +663,6 @@ public class IntegrationDocTest extends AbstractJavaTest {
         final Executor blockingEc = system.dispatchers().lookup("blocking-dispatcher");
         final SometimesSlowService service = new SometimesSlowService(blockingEc);
 
-        final ActorMaterializer mat =
-            ActorMaterializer.create(
-                ActorMaterializerSettings.create(system).withInputBuffer(4, 4), system);
-
         Source.from(Arrays.asList("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
             .map(
                 elem -> {
@@ -677,7 +670,9 @@ public class IntegrationDocTest extends AbstractJavaTest {
                   return elem;
                 })
             .mapAsync(4, service::convert)
-            .runForeach(elem -> System.out.println("after: " + elem), mat);
+            .to(Sink.foreach(elem -> System.out.println("after: " + elem)))
+            .withAttributes(Attributes.inputBuffer(4, 4))
+            .run(system);
         // #sometimes-slow-mapAsync
 
         probe.expectMsg("after: A");
@@ -716,10 +711,6 @@ public class IntegrationDocTest extends AbstractJavaTest {
         final Executor blockingEc = system.dispatchers().lookup("blocking-dispatcher");
         final SometimesSlowService service = new SometimesSlowService(blockingEc);
 
-        final ActorMaterializer mat =
-            ActorMaterializer.create(
-                ActorMaterializerSettings.create(system).withInputBuffer(4, 4), system);
-
         Source.from(Arrays.asList("a", "B", "C", "D", "e", "F", "g", "H", "i", "J"))
             .map(
                 elem -> {
@@ -727,7 +718,9 @@ public class IntegrationDocTest extends AbstractJavaTest {
                   return elem;
                 })
             .mapAsyncUnordered(4, service::convert)
-            .runForeach(elem -> System.out.println("after: " + elem), mat);
+            .to(Sink.foreach(elem -> System.out.println("after: " + elem)))
+            .withAttributes(Attributes.inputBuffer(4, 4))
+            .run(system);
         // #sometimes-slow-mapAsyncUnordered
 
         final List<Object> got = receiveN(10);
@@ -760,11 +753,11 @@ public class IntegrationDocTest extends AbstractJavaTest {
                 .throttle(elementsToProcess, Duration.ofSeconds(3))
                 .map(x -> x * x)
                 .to(Sink.foreach(x -> System.out.println("got: " + x)))
-                .run(mat);
+                .run(system);
 
         Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
 
-        source.map(x -> sourceQueue.offer(x)).runWith(Sink.ignore(), mat);
+        source.map(x -> sourceQueue.offer(x)).runWith(Sink.ignore(), system);
 
         // #source-queue
       }
@@ -782,7 +775,10 @@ public class IntegrationDocTest extends AbstractJavaTest {
             Source.actorRef(
                 bufferSize, OverflowStrategy.dropHead()); // note: backpressure is not supported
         ActorRef actorRef =
-            source.map(x -> x * x).to(Sink.foreach(x -> System.out.println("got: " + x))).run(mat);
+            source
+                .map(x -> x * x)
+                .to(Sink.foreach(x -> System.out.println("got: " + x)))
+                .run(system);
 
         actorRef.tell(1, ActorRef.noSender());
         actorRef.tell(2, ActorRef.noSender());

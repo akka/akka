@@ -4,36 +4,43 @@
 
 package jdocs.akka.typed;
 
-import akka.actor.typed.ActorSystem;
-import akka.actor.typed.internal.adapter.ActorSystemAdapter;
-import akka.testkit.javadsl.EventFilter;
-import com.typesafe.config.ConfigFactory;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
+import akka.actor.testkit.typed.javadsl.TestProbe;
+import akka.actor.typed.ActorRef;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
-import java.util.concurrent.TimeUnit;
+import java.time.Duration;
+
+import static jdocs.akka.typed.BubblingSample.Boss;
+import static jdocs.akka.typed.BubblingSample.Protocol;
 
 public class BubblingSampleTest extends JUnitSuite {
 
+  @ClassRule
+  public static final TestKitJunitResource testKit =
+      new TestKitJunitResource("akka.loglevel = off");
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
+
   @Test
   public void testBubblingSample() throws Exception {
+    ActorRef<Protocol.Command> boss = testKit.spawn(Boss.create(), "upper-management");
+    TestProbe<String> replyProbe = testKit.createTestProbe(String.class);
+    boss.tell(new Protocol.Hello("hi 1", replyProbe.getRef()));
+    replyProbe.expectMessage("hi 1");
+    boss.tell(new Protocol.Fail("ping"));
 
-    final ActorSystem<BubblingSample.Message> system =
-        ActorSystem.create(
-            BubblingSample.bossBehavior,
-            "boss",
-            ConfigFactory.parseString(
-                "akka.loggers = [ akka.testkit.TestEventListener ]\n" + "akka.loglevel=warning"));
-
-    // actual exception and then the deathpacts
-    new EventFilter(Exception.class, ActorSystemAdapter.toUntyped(system))
-        .occurrences(4)
-        .intercept(
-            () -> {
-              system.tell(new BubblingSample.Fail("boom"));
-              return null;
-            });
-
-    system.getWhenTerminated().toCompletableFuture().get(5, TimeUnit.SECONDS);
+    // message may be lost when MiddleManagement is stopped, but eventually it will be functional
+    // again
+    replyProbe.awaitAssert(
+        () -> {
+          boss.tell(new Protocol.Hello("hi 2", replyProbe.getRef()));
+          replyProbe.expectMessage(Duration.ofMillis(200), "hi 2");
+          return null;
+        });
   }
 }

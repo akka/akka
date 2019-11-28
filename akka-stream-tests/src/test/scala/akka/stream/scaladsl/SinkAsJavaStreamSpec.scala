@@ -6,19 +6,17 @@ package akka.stream.scaladsl
 
 import java.util.stream.Collectors
 
-import akka.actor.ActorSystem
 import akka.stream._
-import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.util.ByteString
 
 class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
 
   "Java Stream Sink" must {
 
@@ -51,37 +49,25 @@ class SinkAsJavaStreamSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "allow overriding the dispatcher using Attributes" in assertAllStagesStopped {
-      val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-      val materializer = ActorMaterializer()(sys)
-
-      try {
-        TestSource
-          .probe[ByteString]
-          .runWith(
-            StreamConverters.asJavaStream().addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))(
-            materializer)
-        materializer
-          .asInstanceOf[PhasedFusingActorMaterializer]
-          .supervisor
-          .tell(StreamSupervisor.GetChildren, testActor)
-        val ref = expectMsgType[Children].children.find(_.path.toString contains "asJavaStream").get
-        assertDispatcher(ref, "akka.actor.default-dispatcher")
-      } finally shutdown(sys)
+      val probe = TestSource
+        .probe[ByteString]
+        .to(StreamConverters.asJavaStream().addAttributes(ActorAttributes.dispatcher("akka.actor.default-dispatcher")))
+        .run()
+      SystemMaterializer(system).materializer
+        .asInstanceOf[PhasedFusingActorMaterializer]
+        .supervisor
+        .tell(StreamSupervisor.GetChildren, testActor)
+      val ref = expectMsgType[Children].children.find(_.path.toString contains "asJavaStream").get
+      assertDispatcher(ref, "akka.actor.default-dispatcher")
+      probe.sendComplete()
     }
 
     "work in separate IO dispatcher" in assertAllStagesStopped {
-      val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-      val materializer = ActorMaterializer()(sys)
-
-      try {
-        TestSource.probe[ByteString].runWith(StreamConverters.asJavaStream())(materializer)
-        materializer
-          .asInstanceOf[PhasedFusingActorMaterializer]
-          .supervisor
-          .tell(StreamSupervisor.GetChildren, testActor)
-        val ref = expectMsgType[Children].children.find(_.path.toString contains "asJavaStream").get
-        assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
-      } finally shutdown(sys)
+      val materializer = Materializer.createMaterializer(system)
+      TestSource.probe[ByteString].runWith(StreamConverters.asJavaStream())(materializer)
+      materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+      val ref = expectMsgType[Children].children.find(_.path.toString contains "asJavaStream").get
+      assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
     }
   }
 }

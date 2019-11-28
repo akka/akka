@@ -4,15 +4,14 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
+
 import scala.concurrent.duration._
 
-class FlowBatchWeightedSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowBatchWeightedSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   "BatchWeighted" must {
     "Not aggregate heavy elements" in {

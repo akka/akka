@@ -25,6 +25,8 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import javax.net.ssl.SSLEngine
 
+import akka.testkit.EventFilter
+
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 
 class TlsTcpWithSHA1PRNGSpec
@@ -183,22 +185,68 @@ class TlsTcpWithHostnameVerificationSpec
     akka.remote.artery.ssl.config-ssl-engine {
       hostname-verification = on
     }
+    akka.remote.use-unsafe-remote-features-outside-cluster = on
+
+    akka.loggers = ["akka.testkit.TestEventListener"]
     """).withFallback(TlsTcpSpec.config))
     with ImplicitSender {
 
-  val systemB = newRemoteSystem(name = Some("systemB"))
-  val addressB = address(systemB)
-  val rootB = RootActorPath(addressB)
-
   "Artery with TLS/TCP and hostname-verification=on" must {
-    "reject invalid" in {
+    "fail when the name in the server certificate does not match" in {
       // this test only makes sense with tls-tcp transport
       if (!arteryTcpTlsEnabled())
         pending
 
+      val systemB = newRemoteSystem(
+        // The subjectAltName is 'localhost', so connecting to '127.0.0.1' should not
+        // work when using hostname verification:
+        extraConfig = Some("""akka.remote.artery.canonical.hostname = "127.0.0.1""""),
+        name = Some("systemB"))
+
+      val addressB = address(systemB)
+      val rootB = RootActorPath(addressB)
+
+      systemB.actorOf(TestActors.echoActorProps, "echo")
+      // The detailed warning message is either 'General SSLEngine problem'
+      // or 'No subject alternative names matching IP address 127.0.0.1 found'
+      // depending on JRE version.
+      EventFilter
+        .warning(
+          pattern =
+            "outbound connection to \\[akka://systemB@127.0.0.1:.*" +
+            "Upstream failed, cause: SSLHandshakeException: .*",
+          occurrences = 3)
+        .intercept {
+          system.actorSelection(rootB / "user" / "echo") ! Identify("echo")
+        }
+      expectNoMessage(2.seconds)
+      systemB.terminate()
+    }
+    "succeed when the name in the server certificate matches" in {
+      if (!arteryTcpTlsEnabled())
+        pending
+
+      val systemB = newRemoteSystem(
+        extraConfig = Some("""
+          // The subjectAltName is 'localhost', so this is how we want to be known:
+          akka.remote.artery.canonical.hostname = "localhost"
+
+          // Though we will still bind to 127.0.0.1 (make sure it's not ipv6)
+          akka.remote.artery.bind.hostname = "127.0.0.1"
+        """),
+        name = Some("systemB"))
+
+      val addressB = address(systemB)
+      val rootB = RootActorPath(addressB)
+
       systemB.actorOf(TestActors.echoActorProps, "echo")
       system.actorSelection(rootB / "user" / "echo") ! Identify("echo")
-      expectNoMessage(2.seconds)
+      val id = expectMsgType[ActorIdentity]
+
+      id.ref.get ! "42"
+      expectMsg("42")
+
+      systemB.terminate()
     }
   }
 }

@@ -9,8 +9,8 @@ import akka.actor.{ ActorRef, Address, AddressFromURIString, InternalActorRef }
 import akka.remote.WireFormats._
 import akka.remote._
 import akka.util.ByteString
-import akka.protobuf.InvalidProtocolBufferException
-import akka.protobuf.{ ByteString => PByteString }
+import akka.protobufv3.internal.InvalidProtocolBufferException
+import akka.protobufv3.internal.{ ByteString => PByteString }
 import akka.util.OptionVal
 import com.github.ghik.silencer.silent
 
@@ -26,7 +26,7 @@ private[remote] class PduCodecException(msg: String, cause: Throwable) extends A
  * Companion object of the [[akka.remote.transport.AkkaPduCodec]] trait. Contains the representation case classes
  * of decoded Akka Protocol Data Units (PDUs).
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] object AkkaPduCodec {
 
   /**
@@ -57,7 +57,7 @@ private[remote] object AkkaPduCodec {
  *
  * A Codec that is able to convert Akka PDUs (Protocol Data Units) from and to [[akka.util.ByteString]]s.
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] trait AkkaPduCodec {
   import AkkaPduCodec._
 
@@ -117,7 +117,7 @@ private[remote] trait AkkaPduCodec {
 /**
  * INTERNAL API
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
   import AkkaPduCodec._
 
@@ -173,7 +173,6 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
 
   override def constructAssociate(info: HandshakeInfo): ByteString = {
     val handshakeInfo = AkkaHandshakeInfo.newBuilder.setOrigin(serializeAddress(info.origin)).setUid(info.uid.toLong)
-    info.cookie.foreach(handshakeInfo.setCookie)
     constructControlMessagePdu(WireFormats.CommandType.ASSOCIATE, Some(handshakeInfo))
   }
 
@@ -240,12 +239,11 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
     controlPdu.getCommandType match {
       case CommandType.ASSOCIATE if controlPdu.hasHandshakeInfo =>
         val handshakeInfo = controlPdu.getHandshakeInfo
-        val cookie = if (handshakeInfo.hasCookie) Some(handshakeInfo.getCookie) else None
         Associate(
           HandshakeInfo(
             decodeAddress(handshakeInfo.getOrigin),
-            handshakeInfo.getUid.toInt, // 64 bits are allocated in the wire formats, but we use only 32 for now
-            cookie))
+            handshakeInfo.getUid.toInt // 64 bits are allocated in the wire formats, but we use only 32 for now
+          ))
       case CommandType.DISASSOCIATE               => Disassociate(AssociationHandle.Unknown)
       case CommandType.DISASSOCIATE_SHUTTING_DOWN => Disassociate(AssociationHandle.Shutdown)
       case CommandType.DISASSOCIATE_QUARANTINED   => Disassociate(AssociationHandle.Quarantined)

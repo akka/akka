@@ -1,0 +1,4 @@
+# #27411 changes not caught by previous mima versions
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.Persistence.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.fsm.SnapshotAfter.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.journal.PersistencePluginProxyExtension.get")

@@ -11,19 +11,26 @@ import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance.SpecViolation
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.InHandler
+import akka.stream.stage.OutHandler
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
-import akka.testkit.{ EventFilter, TestLatch }
+import akka.testkit.EventFilter
+import akka.testkit.TestLatch
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
 
-import scala.concurrent.{ Await, Promise }
+import scala.concurrent.Await
+import scala.concurrent.Promise
 import scala.concurrent.duration._
-import org.reactivestreams.{ Publisher, Subscriber, Subscription }
 
 class ActorGraphInterpreterSpec extends StreamSpec {
-  implicit val materializer = ActorMaterializer()
-
   "ActorGraphInterpreter" must {
 
     "be able to interpret a simple identity graph stage" in assertAllStagesStopped {
@@ -62,12 +69,12 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
           setHandler(out1, new OutHandler {
             override def onPull(): Unit = pull(in1)
-            override def onDownstreamFinish(): Unit = cancel(in1)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
           })
 
           setHandler(out2, new OutHandler {
             override def onPull(): Unit = pull(in2)
-            override def onDownstreamFinish(): Unit = cancel(in2)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
           })
         }
 
@@ -108,13 +115,13 @@ class ActorGraphInterpreterSpec extends StreamSpec {
           setHandler(out1, new OutHandler {
             override def onPull(): Unit = pull(in1)
 
-            override def onDownstreamFinish(): Unit = cancel(in1)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
           })
 
           setHandler(out2, new OutHandler {
             override def onPull(): Unit = pull(in2)
 
-            override def onDownstreamFinish(): Unit = cancel(in2)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
           })
         }
 
@@ -157,13 +164,13 @@ class ActorGraphInterpreterSpec extends StreamSpec {
           setHandler(out1, new OutHandler {
             override def onPull(): Unit = pull(in1)
 
-            override def onDownstreamFinish(): Unit = cancel(in1)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
           })
 
           setHandler(out2, new OutHandler {
             override def onPull(): Unit = pull(in2)
 
-            override def onDownstreamFinish(): Unit = cancel(in2)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
           })
         }
 
@@ -209,13 +216,13 @@ class ActorGraphInterpreterSpec extends StreamSpec {
           setHandler(out1, new OutHandler {
             override def onPull(): Unit = pull(in2)
 
-            override def onDownstreamFinish(): Unit = cancel(in2)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in2, cause)
           })
 
           setHandler(out2, new OutHandler {
             override def onPull(): Unit = pull(in1)
 
-            override def onDownstreamFinish(): Unit = cancel(in1)
+            override def onDownstreamFinish(cause: Throwable): Unit = cancel(in1, cause)
           })
         }
 
@@ -266,10 +273,6 @@ class ActorGraphInterpreterSpec extends StreamSpec {
     }
 
     "be able to properly handle case where a stage fails before subscription happens" in assertAllStagesStopped {
-
-      // Fuzzing needs to be off, so that the failure can propagate to the output boundary before the ExposedPublisher
-      // message.
-      val noFuzzMat = ActorMaterializer(ActorMaterializerSettings(system).withFuzzing(false))
 
       val te = TE("Test failure in preStart")
 
@@ -323,7 +326,10 @@ class ActorGraphInterpreterSpec extends StreamSpec {
 
           ClosedShape
         })
-        .run()(noFuzzMat)
+        // Fuzzing needs to be off, so that the failure can propagate to the output boundary before the ExposedPublisher
+        // message.
+        .withAttributes(ActorAttributes.fuzzingMode(false))
+        .run()
 
       evilLatch.countDown()
       downstream0.expectSubscriptionAndError(te)
@@ -397,7 +403,7 @@ class ActorGraphInterpreterSpec extends StreamSpec {
     }
 
     "trigger postStop in all stages when abruptly terminated (and no upstream boundaries)" in {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val gotStop = TestLatch(1)
 
       object PostStopSnitchFlow extends SimpleLinearGraphStage[String] {

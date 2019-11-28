@@ -9,6 +9,7 @@ import akka.actor.setup.ActorSystemSetup
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -39,7 +40,10 @@ object DispatcherSelectorSpec {
 
 }
 
-class DispatcherSelectorSpec extends ScalaTestWithActorTestKit(DispatcherSelectorSpec.config) with WordSpecLike {
+class DispatcherSelectorSpec
+    extends ScalaTestWithActorTestKit(DispatcherSelectorSpec.config)
+    with WordSpecLike
+    with LogCapturing {
   import DispatcherSelectorSpec.PingPong
   import DispatcherSelectorSpec.PingPong._
 
@@ -55,7 +59,7 @@ class DispatcherSelectorSpec extends ScalaTestWithActorTestKit(DispatcherSelecto
     }
 
     "select same dispatcher as parent" in {
-      val parent = spawn(SpawnProtocol.behavior, Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
+      val parent = spawn(SpawnProtocol(), Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
       val childProbe = createTestProbe[ActorRef[Ping]]()
       parent ! SpawnProtocol.Spawn(PingPong(), "child", Props.empty.withDispatcherSameAsParent, childProbe.ref)
 
@@ -68,10 +72,10 @@ class DispatcherSelectorSpec extends ScalaTestWithActorTestKit(DispatcherSelecto
     }
 
     "select same dispatcher as parent, several levels" in {
-      val grandParent = spawn(SpawnProtocol.behavior, Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
+      val grandParent = spawn(SpawnProtocol(), Props.empty.withDispatcherFromConfig("ping-pong-dispatcher"))
       val parentProbe = createTestProbe[ActorRef[SpawnProtocol.Spawn[Ping]]]()
       grandParent ! SpawnProtocol.Spawn(
-        SpawnProtocol.behavior,
+        SpawnProtocol(),
         "parent",
         Props.empty.withDispatcherSameAsParent,
         parentProbe.ref)

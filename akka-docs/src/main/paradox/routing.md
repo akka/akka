@@ -1,15 +1,7 @@
 # Classic Routing
 
-@@@ note
-
-Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
-known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
-the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
-ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
-
-For the new API see @ref[routers](typed/routers.md).
-
-@@@
+@@include[includes.md](includes.md) { #actor-api }
+For the documentation of the new API of this feature and for new projects see @ref:[routers](typed/routers.md).
 
 ## Dependency
 
@@ -29,7 +21,7 @@ routees yourselves or use a self contained router actor with configuration capab
 
 Different routing strategies can be used, according to your application's needs. Akka comes with
 several useful routing strategies right out of the box. But, as you will see in this chapter, it is
-also possible to [create your own](#custom-router).
+also possible to @ref:[create your own](#custom-router).
 
 <a id="simple-router"></a>
 ## A Simple Router
@@ -67,9 +59,9 @@ outside of actors.
 @@@ note
 
 In general, any message sent to a router will be sent onwards to its routees, but there is one exception.
-The special [Broadcast Messages](#broadcast-messages) will send to *all* of a router's routees.
-However, do not use [Broadcast Messages](#broadcast-messages) when you use [BalancingPool](#balancing-pool) for routees
-as described in [Specially Handled Messages](#router-special-messages).
+The special @ref:[Broadcast Messages](#broadcast-messages) will send to *all* of a router's routees.
+However, do not use @ref:[Broadcast Messages](#broadcast-messages) when you use @ref:[BalancingPool](#balancing-pool) for routees
+as described in @ref:[Specially Handled Messages](#router-special-messages).
 
 @@@
 
@@ -99,13 +91,13 @@ original sender, not to the router actor.
 @@@ note
 
 In general, any message sent to a router will be sent onwards to its routees, but there are a
-few exceptions. These are documented in the [Specially Handled Messages](#router-special-messages) section below.
+few exceptions. These are documented in the @ref:[Specially Handled Messages](#router-special-messages) section below.
 
 @@@
 
 ### Pool
 
-The following code and configuration snippets show how to create a [round-robin](#round-robin-router) router that forwards messages to five `Worker` routees. The
+The following code and configuration snippets show how to create a @ref:[round-robin](#round-robin-router) router that forwards messages to five `Worker` routees. The
 routees will be created as the router's children.
 
 @@snip [RouterDocSpec.scala](/akka-docs/src/test/scala/docs/routing/RouterDocSpec.scala) { #config-round-robin-pool }
@@ -206,7 +198,7 @@ a resizer.
 Sometimes, rather than having the router actor create its routees, it is desirable to create routees
 separately and provide them to the router for its use. You can do this by passing in
 paths of the routees to the router's configuration. Messages will be sent with `ActorSelection` 
-to these paths, wildcards can be and will result in the same @ref:[semantics as explicitly using `ActorSelection`](general/addressing.md#querying-the-logical-actor-hierarchy).
+to these paths, wildcards can be and will result in the same semantics as explicitly using `ActorSelection`.
 
 The example below shows how to create a router by providing it with the path strings of three
 routee actors. 
@@ -357,7 +349,7 @@ right actor in most cases. Therefore you cannot use it for workflows that
 require state to be kept within the routee, you would in this case have to
 include the whole state in the messages.
 
-With a [SmallestMailboxPool](#smallestmailboxpool) you can have a vertically scaling service that
+With a @ref:[SmallestMailboxPool](#smallestmailboxpool) you can have a vertically scaling service that
 can interact in a stateful fashion with other services in the back-end before
 replying to the original client. The other advantage is that it does not place
 a restriction on the message queue implementation as BalancingPool does.
@@ -366,8 +358,8 @@ a restriction on the message queue implementation as BalancingPool does.
 
 @@@ note
 
-Do not use [Broadcast Messages](#broadcast-messages) when you use [BalancingPool](#balancing-pool) for routers,
-as described in [Specially Handled Messages](#router-special-messages).
+Do not use @ref:[Broadcast Messages](#broadcast-messages) when you use @ref:[BalancingPool](#balancing-pool) for routers,
+as described in @ref:[Specially Handled Messages](#router-special-messages).
 
 @@@
 
@@ -692,7 +684,7 @@ However there are a few types of messages that have special behavior.
 
 Note that these special messages, except for the `Broadcast` message, are only handled by 
 self contained router actors and not by the `akka.routing.Router` component described 
-in [A Simple Router](#simple-router).
+in @ref:[A Simple Router](#simple-router).
 
 ### Broadcast Messages
 
@@ -715,8 +707,8 @@ routees. It is up to each routee actor to handle the received payload message.
 
 @@@ note
 
-Do not use [Broadcast Messages](#broadcast-messages) when you use [BalancingPool](#balancing-pool) for routers.
-Routees on [BalancingPool](#balancing-pool) shares the same mailbox instance, thus some routees can
+Do not use @ref:[Broadcast Messages](#broadcast-messages) when you use @ref:[BalancingPool](#balancing-pool) for routers.
+Routees on @ref:[BalancingPool](#balancing-pool) shares the same mailbox instance, thus some routees can
 possibly get the broadcast message multiple times, while other routees get no broadcast message.
 
 @@@
@@ -957,7 +949,7 @@ Java
 :  @@snip [CustomRouterDocTest.java](/akka-docs/src/test/java/jdocs/routing/CustomRouterDocTest.java) { #unit-test-logic }
 
 You could stop here and use the `RedundancyRoutingLogic` with a `akka.routing.Router`
-as described in [A Simple Router](#simple-router).
+as described in @ref:[A Simple Router](#simple-router).
 
 Let us continue and make this into a self contained, configurable, router actor.
 

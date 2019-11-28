@@ -16,15 +16,16 @@ object Publish extends AutoPlugin {
   override def trigger = allRequirements
 
   override lazy val projectSettings = Seq(
-    crossPaths := false,
     pomExtra := akkaPomExtra,
     publishTo := akkaPublishTo.value,
     credentials ++= akkaCredentials,
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com")),
     publishMavenStyle := true,
-    pomIncludeRepository := { x => false },
-    defaultPublishTo := crossTarget.value / "repository")
+    pomIncludeRepository := { x =>
+      false
+    },
+    defaultPublishTo := target.value / "repository")
 
   def akkaPomExtra = {
     <inceptionYear>2009</inceptionYear>
@@ -39,14 +40,14 @@ object Publish extends AutoPlugin {
   }
 
   private def akkaPublishTo = Def.setting {
-    sonatypeRepo(version.value) orElse localRepo(defaultPublishTo.value)
+    sonatypeRepo(version.value).orElse(localRepo(defaultPublishTo.value))
   }
 
   private def sonatypeRepo(version: String): Option[Resolver] =
-    Option(sys.props("publish.maven.central")) filter (_.toLowerCase == "true") map { _ =>
+    Option(sys.props("publish.maven.central")).filter(_.toLowerCase == "true").map { _ =>
       val nexus = "https://oss.sonatype.org/"
-      if (version endsWith "-SNAPSHOT") "snapshots" at nexus + "content/repositories/snapshots"
-      else "releases" at nexus + "service/local/staging/deploy/maven2"
+      if (version.endsWith("-SNAPSHOT")) "snapshots".at(nexus + "content/repositories/snapshots")
+      else "releases".at(nexus + "service/local/staging/deploy/maven2")
     }
 
   private def localRepo(repository: File) =
@@ -57,16 +58,13 @@ object Publish extends AutoPlugin {
 }
 
 /**
-  * For projects that are not to be published.
-  */
+ * For projects that are not to be published.
+ */
 object NoPublish extends AutoPlugin {
   override def requires = plugins.JvmPlugin
 
-  override def projectSettings = Seq(
-    skip in publish := true,
-    sources in (Compile, doc) := Seq.empty,
-    whitesourceIgnore := true
-  )
+  override def projectSettings =
+    Seq(skip in publish := true, sources in (Compile, doc) := Seq.empty, whitesourceIgnore := true)
 }
 
 object DeployRsync extends AutoPlugin {
@@ -83,12 +81,11 @@ object DeployRsync extends AutoPlugin {
   object autoImport extends Keys
   import autoImport._
 
-  override def projectSettings = Seq(
-    deployRsync := {
+  override def projectSettings =
+    Seq(deployRsync := {
       val (_, host) = (Space ~ StringBasic).parsed
       deployRsyncArtifact.value.foreach {
-        case (from, to) => s"rsync -rvz $from/ $host:$to"!
+        case (from, to) => s"rsync -rvz $from/ $host:$to" !
       }
-    }
-  )
+    })
 }

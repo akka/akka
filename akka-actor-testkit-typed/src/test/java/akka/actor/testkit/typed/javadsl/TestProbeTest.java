@@ -11,6 +11,7 @@ import java.util.List;
 import akka.actor.testkit.typed.scaladsl.TestProbeSpec;
 import akka.actor.testkit.typed.scaladsl.TestProbeSpec.*;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -19,6 +20,8 @@ import static org.junit.Assert.*;
 public class TestProbeTest extends JUnitSuite {
 
   @ClassRule public static TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   @Test
   public void testReceiveMessage() {

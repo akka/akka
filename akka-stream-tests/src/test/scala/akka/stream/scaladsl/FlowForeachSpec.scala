@@ -4,17 +4,16 @@
 
 package akka.stream.scaladsl
 
-import scala.util.control.NoStackTrace
-import akka.stream.ActorMaterializer
-import akka.stream.testkit._
 import akka.stream.testkit.Utils._
+import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 class FlowForeachSpec extends StreamSpec {
 
-  implicit val materializer = ActorMaterializer()
   import system.dispatcher
 
   "A runForeach" must {

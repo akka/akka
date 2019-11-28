@@ -4,16 +4,21 @@
 
 package akka.stream.impl.fusing
 
-import akka.stream.scaladsl.{ Sink, Source }
 import akka.stream._
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.Source
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.InHandler
+import akka.stream.stage.OutHandler
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.testkit.AkkaSpec
 
-class ChasingEventsSpec extends AkkaSpec {
-
-  implicit val materializer = ActorMaterializer(ActorMaterializerSettings(system).withFuzzing(false))
+class ChasingEventsSpec extends AkkaSpec("""
+    akka.stream.materializer.debug.fuzzing-mode = off
+  """) {
 
   class CancelInChasedPull extends GraphStage[FlowShape[Int, Int]] {
     val in = Inlet[Int]("Propagate.in")

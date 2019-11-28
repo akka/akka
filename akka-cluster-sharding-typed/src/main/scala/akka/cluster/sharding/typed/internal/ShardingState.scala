@@ -14,13 +14,12 @@ import akka.cluster.sharding.typed.{ ClusterShardingQuery, GetShardRegionState }
 /**
  * INTERNAL API
  */
-@InternalApi
-object ShardingState {
+@InternalApi private[akka] object ShardingState {
 
-  def behavior(untypedSharding: ClusterSharding): Behavior[ClusterShardingQuery] = Behaviors.receiveMessage {
+  def behavior(classicSharding: ClusterSharding): Behavior[ClusterShardingQuery] = Behaviors.receiveMessage {
     case GetShardRegionState(key, replyTo) =>
-      if (untypedSharding.getShardTypeNames.contains(key.name)) {
-        untypedSharding.shardRegion(key.name).tell(ShardRegion.GetShardRegionState, replyTo.toUntyped)
+      if (classicSharding.getShardTypeNames.contains(key.name)) {
+        classicSharding.shardRegion(key.name).tell(ShardRegion.GetShardRegionState, replyTo.toClassic)
       } else {
         replyTo ! CurrentShardRegionState(Set.empty)
       }

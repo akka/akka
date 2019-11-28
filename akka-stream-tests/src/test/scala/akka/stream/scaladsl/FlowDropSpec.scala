@@ -5,15 +5,12 @@
 package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom.{ current => random }
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
+
 import akka.stream.testkit._
 
-class FlowDropSpec extends StreamSpec with ScriptedTest {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowDropSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) with ScriptedTest {
 
   "A Drop" must {
 
@@ -24,7 +21,7 @@ class FlowDropSpec extends StreamSpec with ScriptedTest {
         }: _*)
       TestConfig.RandomTestRange.foreach { _ =>
         val d = Math.min(Math.max(random.nextInt(-10, 60), 0), 50)
-        runScript(script(d), settings)(_.drop(d))
+        runScript(script(d))(_.drop(d))
       }
     }
 

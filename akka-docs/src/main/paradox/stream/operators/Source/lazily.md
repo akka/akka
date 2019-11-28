@@ -1,6 +1,6 @@
 # lazily
 
-Defers creation and materialization of a `Source` until there is demand.
+`lazily` has been deprecated in 2.6.0, use `Source.lazySource` instead.
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -14,8 +14,11 @@ Defers creation and materialization of a `Source` until there is demand.
 
 ## Description
 
+`lazily` has been deprecated in 2.6.0, use @ref:[lazySource](lazySource.md) instead.
+
 Defers creation and materialization of a `Source` until there is demand.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -14,25 +14,23 @@ import akka.actor.typed.javadsl.Receive;
 
 public class IotSupervisor extends AbstractBehavior<Void> {
 
-  public static Behavior<Void> createBehavior() {
+  public static Behavior<Void> create() {
     return Behaviors.setup(IotSupervisor::new);
   }
 
-  private final ActorContext<Void> context;
-
-  public IotSupervisor(ActorContext<Void> context) {
-    this.context = context;
+  private IotSupervisor(ActorContext<Void> context) {
+    super(context);
     context.getLog().info("IoT Application started");
   }
 
   // No need to handle any messages
   @Override
   public Receive<Void> createReceive() {
-    return newReceiveBuilder().onSignal(PostStop.class, signal -> postStop()).build();
+    return newReceiveBuilder().onSignal(PostStop.class, signal -> onPostStop()).build();
   }
 
-  private IotSupervisor postStop() {
-    context.getLog().info("IoT Application stopped");
+  private IotSupervisor onPostStop() {
+    getContext().getLog().info("IoT Application stopped");
     return this;
   }
 }

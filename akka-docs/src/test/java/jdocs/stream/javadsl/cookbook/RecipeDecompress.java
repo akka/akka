@@ -6,8 +6,6 @@ package jdocs.stream.javadsl.cookbook;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Compression;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -23,19 +21,16 @@ import java.util.concurrent.TimeUnit;
 public class RecipeDecompress extends RecipeTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeDecompress");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -52,7 +47,7 @@ public class RecipeDecompress extends RecipeTest {
 
     ByteString decompressedData =
         decompressedStream
-            .runFold(emptyByteString(), ByteString::concat, mat)
+            .runFold(emptyByteString(), ByteString::concat, system)
             .toCompletableFuture()
             .get(1, TimeUnit.SECONDS);
     String decompressedString = decompressedData.utf8String();

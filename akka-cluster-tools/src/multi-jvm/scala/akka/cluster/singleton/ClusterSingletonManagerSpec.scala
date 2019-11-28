@@ -40,7 +40,8 @@ object ClusterSingletonManagerSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = 0s
                                           """))
 
   nodeConfig(first, second, third, fourth, fifth, sixth)(ConfigFactory.parseString("akka.cluster.roles =[worker]"))
@@ -241,7 +242,7 @@ class ClusterSingletonManagerSpec
     val proxyDcB = system.actorOf(
       ClusterSingletonProxy.props(
         singletonManagerPath = "/user/consumer",
-        settings = ClusterSingletonProxySettings(system).withRole("worker").withDataCenter("B")),
+        settings = ClusterSingletonProxySettings(system).withDataCenter("B")),
       name = "consumerProxyDcB")
     //#create-singleton-proxy-dc
     proxyDcB

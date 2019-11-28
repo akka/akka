@@ -5,19 +5,21 @@
 package akka.cluster.sharding.typed.javadsl;
 
 import akka.Done;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.cluster.typed.Cluster;
 import akka.cluster.typed.Join;
-import akka.persistence.typed.ExpectingReply;
+import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
-import akka.util.Timeout;
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -36,6 +38,8 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
+
   interface Command {}
 
   static class Add implements Command {
@@ -46,18 +50,13 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
   }
 
-  static class AddWithConfirmation implements Command, ExpectingReply<Done> {
-    final String s;
-    private final ActorRef<Done> replyTo;
+  static class AddWithConfirmation implements Command {
+    public final String s;
+    public final ActorRef<Done> replyTo;
 
     AddWithConfirmation(String s, ActorRef<Done> replyTo) {
       this.s = s;
       this.replyTo = replyTo;
-    }
-
-    @Override
-    public ActorRef<Done> replyTo() {
-      return replyTo;
     }
   }
 
@@ -69,13 +68,15 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
   }
 
-  static class TestPersistentEntity extends EventSourcedEntity<Command, String, String> {
+  static class TestPersistentEntity extends EventSourcedBehavior<Command, String, String> {
 
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
         EntityTypeKey.create(Command.class, "HelloWorld");
+    private final String entityId;
 
-    public TestPersistentEntity(String entityId) {
-      super(ENTITY_TYPE_KEY, entityId);
+    public TestPersistentEntity(String entityId, PersistenceId persistenceId) {
+      super(persistenceId);
+      this.entityId = entityId;
     }
 
     @Override
@@ -98,11 +99,11 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
     }
 
     private Effect<String, String> addWithConfirmation(String state, AddWithConfirmation cmd) {
-      return Effect().persist(cmd.s).thenReply(cmd, newState -> Done.getInstance());
+      return Effect().persist(cmd.s).thenReply(cmd.replyTo, newState -> Done.getInstance());
     }
 
     private Effect<String, String> getState(String state, Get cmd) {
-      cmd.replyTo.tell(entityId() + ":" + state);
+      cmd.replyTo.tell(entityId + ":" + state);
       return Effect().none();
     }
 
@@ -128,9 +129,13 @@ public class ClusterShardingPersistenceTest extends JUnitSuite {
       ClusterSharding sharding = ClusterSharding.get(testKit.system());
 
       sharding.init(
-          Entity.ofEventSourcedEntity(
+          Entity.of(
               TestPersistentEntity.ENTITY_TYPE_KEY,
-              entityContext -> new TestPersistentEntity(entityContext.getEntityId())));
+              entityContext ->
+                  new TestPersistentEntity(
+                      entityContext.getEntityId(),
+                      PersistenceId.of(
+                          entityContext.getEntityTypeKey().name(), entityContext.getEntityId()))));
 
       _sharding = sharding;
     }

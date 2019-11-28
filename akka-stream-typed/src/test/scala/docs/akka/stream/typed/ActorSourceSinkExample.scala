@@ -7,13 +7,10 @@ package docs.akka.stream.typed
 import akka.NotUsed
 import akka.actor.typed.{ ActorRef, ActorSystem }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.stream.typed.scaladsl.ActorMaterializer
 
 object ActorSourceSinkExample {
 
-  val system: ActorSystem[_] = ActorSystem(Behaviors.empty, "ActorSourceSinkExample")
-
-  implicit val mat: ActorMaterializer = ActorMaterializer()(system)
+  implicit val system: ActorSystem[_] = ActorSystem(Behaviors.empty, "ActorSourceSinkExample")
 
   {
     // #actor-source-ref
@@ -72,7 +69,7 @@ object ActorSourceSinkExample {
 
     def targetActor(): ActorRef[Protocol] = ???
 
-    // #actor-sink-ref-with-ack
+    // #actor-sink-ref-with-backpressure
     import akka.actor.typed.ActorRef
     import akka.stream.scaladsl.{ Sink, Source }
     import akka.stream.typed.scaladsl.ActorSink
@@ -88,7 +85,7 @@ object ActorSourceSinkExample {
 
     val actor: ActorRef[Protocol] = targetActor()
 
-    val sink: Sink[String, NotUsed] = ActorSink.actorRefWithAck(
+    val sink: Sink[String, NotUsed] = ActorSink.actorRefWithBackpressure(
       ref = actor,
       onCompleteMessage = Complete,
       onFailureMessage = Fail.apply,
@@ -97,6 +94,6 @@ object ActorSourceSinkExample {
       ackMessage = Ack)
 
     Source.single("msg1").runWith(sink)
-    // #actor-sink-ref-with-ack
+    // #actor-sink-ref-with-backpressure
   }
 }

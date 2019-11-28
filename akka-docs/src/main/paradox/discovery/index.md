@@ -1,29 +1,45 @@
+---
+project.description: Service discovery with Akka using DNS, Kubernetes, AWS, Consul or Marathon.
+---
 # Discovery
 
-Akka Discovery provides an interface around various ways of locating services. The built in methods are:
+The Akka Discovery API enables **service discovery** to be provided by different technologies. 
+It allows to delegate endpoint lookup so that services can be configured depending on the environment by other means than configuration files. 
 
-* Configuration
-* DNS
-* Aggregate
+Implementations provided by the Akka Discovery module are 
 
-In addition [Akka Management](https://doc.akka.io/docs/akka-management/current/) contains methods such as:
+* @ref:[Configuration](#discovery-method-configuration) (HOCON)
+* @ref:[DNS](#discovery-method-dns) (SRV records)
+* @ref:[Aggregate](#discovery-method-aggregate-multiple-discovery-methods) multiple discovery methods
 
-* Kubernetes API
-* AWS
-* Consul
-* Marathon API
+In addition the @extref:[Akka Management](akka-management:) toolbox contains Akka Discovery implementations for
+
+* @extref:[Kubernetes API](akka-management:discovery/kubernetes.html)
+* @extref:[AWS API: EC2 Tag-Based Discovery](akka-management:discovery/aws.html#discovery-method-aws-api-ec2-tag-based-discovery)
+* @extref:[AWS API: ECS Discovery](akka-management:discovery/aws.html#discovery-method-aws-api-ecs-discovery)
+* @extref:[Consul](akka-management:discovery/consul.html)
+* @extref:[Marathon API](akka-management:discovery/marathon.html)
+
+
+@@@ note
 
 Discovery used to be part of Akka Management but has become an Akka module as of `2.5.19` of Akka and version `1.0.0`
 of Akka Management. If you're also using Akka Management for other service discovery methods or bootstrap make
 sure you are using at least version `1.0.0` of Akka Management.
 
-## Dependency
+See @ref:[Migration hints](#migrating-from-akka-management-discovery-before-1-0-0-)
+
+@@@
+
+## Module info
 
 @@dependency[sbt,Gradle,Maven] {
   group="com.typesafe.akka"
   artifact="akka-discovery_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-discovery" }
 
 ## How it works
 

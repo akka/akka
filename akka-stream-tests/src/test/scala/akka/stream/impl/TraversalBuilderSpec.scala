@@ -7,11 +7,8 @@ package akka.stream.impl
 import akka.NotUsed
 import akka.stream._
 import akka.stream.impl.TraversalTestUtils._
-import akka.stream.scaladsl.{ BidiFlow, Flow, Keep, Sink, Source }
-import akka.stream.testkit.{ TestPublisher, TestSubscriber }
+import akka.stream.scaladsl.Keep
 import akka.testkit.AkkaSpec
-
-import scala.concurrent.Await
 
 class TraversalBuilderSpec extends AkkaSpec {
 
@@ -438,98 +435,6 @@ class TraversalBuilderSpec extends AkkaSpec {
           (flow1, Attributes.name("test") and Attributes.name("flow"), TestIsland1),
           (sink, Attributes.none, TestDefaultIsland)))
     }
-
-    //TODO: Dummy test cases just for smoke-testing. Should be removed.
-
-    "foo" in {
-      implicit val mat = PhasedFusingActorMaterializer()
-      import scala.concurrent.duration._
-
-      val graph = Source.repeat(1).take(10).toMat(Sink.fold(0)(_ + _))(Keep.right)
-
-      Await.result(graph.run(), 3.seconds) should ===(10)
-    }
-
-    "islands 1" in {
-      implicit val mat = PhasedFusingActorMaterializer()
-      val sub = TestSubscriber.probe[Int]()
-      val graph = Source.repeat(1).take(10).toMat(Sink.asPublisher(false))(Keep.right)
-
-      graph.run().subscribe(sub)
-
-      sub.request(10)
-      sub.expectNextN(List(1, 1, 1, 1, 1, 1, 1, 1, 1, 1))
-      sub.expectComplete()
-    }
-
-    "islands 2" in {
-      implicit val mat = PhasedFusingActorMaterializer()
-      val pub = TestPublisher.probe[Int]()
-      import scala.concurrent.duration._
-
-      val graph = Source.asSubscriber[Int].toMat(Sink.fold(0)(_ + _))(Keep.both)
-
-      val (sub, future) = graph.run()
-      pub.subscribe(sub)
-
-      pub.sendNext(0)
-      pub.sendNext(1)
-      pub.sendNext(2)
-      pub.sendNext(3)
-      pub.sendComplete()
-
-      Await.result(future, 3.seconds) should ===(6)
-    }
-
-    "islands 3" in {
-      implicit val mat = PhasedFusingActorMaterializer()
-      val sub = TestSubscriber.probe[Int]()
-      Source.repeat(1).take(10).runWith(Sink.fromSubscriber(sub))
-
-      sub.request(10)
-      sub.expectNextN(List(1, 1, 1, 1, 1, 1, 1, 1, 1, 1))
-      sub.expectComplete()
-    }
-
-    "islands 4" in {
-      implicit val mat = PhasedFusingActorMaterializer()
-      val pub = TestPublisher.probe[Int]()
-      import scala.concurrent.duration._
-
-      val future = Source.fromPublisher(pub).runWith(Sink.fold(0)(_ + _))
-      pub.sendNext(0)
-      pub.sendNext(1)
-      pub.sendNext(2)
-      pub.sendNext(3)
-      pub.sendComplete()
-
-      Await.result(future, 3.seconds) should ===(6)
-    }
-
-    "bidiflow1" in {
-      implicit val mat = PhasedFusingActorMaterializer()
-      val flow1 = Flow.fromGraph(fusing.Map((x: Int) => x + 1))
-      val flow2 = Flow.fromGraph(fusing.Map((x: Int) => x + 1))
-
-      val bidi = BidiFlow.fromFlowsMat(flow1, flow2)(Keep.none)
-
-      val flow = bidi.join(Flow[Int])
-
-      Source.single(1).via(flow).runWith(Sink.ignore)
-    }
-
-    "bidiflow reverse" in {
-      implicit val mat = PhasedFusingActorMaterializer()
-      val flow1 = Flow.fromGraph(new fusing.Map((x: Int) => x + 1))
-      val flow2 = Flow.fromGraph(new fusing.Map((x: Int) => x + 1))
-
-      val bidi = BidiFlow.fromFlowsMat(flow1, flow2)(Keep.none)
-
-      val flow = Flow[Int].join(bidi.reversed)
-
-      Source.single(1).via(flow).runWith(Sink.ignore)
-    }
-
   }
 
 }

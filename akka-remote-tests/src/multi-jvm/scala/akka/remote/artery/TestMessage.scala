@@ -7,7 +7,7 @@ package akka.remote.artery
 import akka.actor.ExtendedActorSystem
 import akka.serialization.SerializerWithStringManifest
 import akka.remote.artery.protobuf.{ TestMessages => proto }
-import akka.protobuf.ByteString
+import akka.protobufv3.internal.ByteString
 
 object TestMessage {
   final case class Item(id: Long, name: String)

@@ -1,3 +1,6 @@
+---
+project.description: Serialization with Jackson for Akka.
+---
 # Serialization with Jackson
 
 ## Dependency
@@ -359,13 +362,19 @@ Java compiler option is enabled.
 
 ### Compression
 
-JSON can be rather verbose and for large messages it can be beneficial compress large payloads. Messages larger
-than the following configuration are compressed with GZIP.
+JSON can be rather verbose and for large messages it can be beneficial to compress large payloads. For
+the `jackson-json` binding the default configuration is:
 
 @@snip [reference.conf](/akka-serialization-jackson/src/main/resources/reference.conf) { #compression }
 
-Compression can be disabled by setting this configuration property to `off`. It will still be able to decompress
+Messages larger than the `compress-larger-than` property are compressed with GZIP.
+
+Compression can be disabled by setting the `algorithm` property to `off`. It will still be able to decompress
 payloads that were compressed when serialized, e.g. if this configuration is changed.
+
+For the `jackson-cbor` and custom bindings other than `jackson-json` compression is by default disabled,
+but can be enabled in the same way as the configuration shown above but replacing `jackson-json` with
+the binding name (for example `jackson-cbor`).
 
 ## Additional configuration
 
@@ -391,7 +400,7 @@ Jackson are used aside from the the following that are changed in Akka's default
 
 ### Date/time format
 
-`WRITE_DATES_AS_TIMESTAMPS` is by default disabled, which means that date/time fields are serialized in
+`WRITE_DATES_AS_TIMESTAMPS` and `WRITE_DURATIONS_AS_TIMESTAMPS` are by default disabled, which means that date/time fields are serialized in
 ISO-8601 (rfc3339) `yyyy-MM-dd'T'HH:mm:ss.SSSZ` format instead of numeric arrays. This is better for
 interoperability but it is slower. If you don't need the ISO format for interoperability with external systems
 you can change the following configuration for better performance of date/time fields.

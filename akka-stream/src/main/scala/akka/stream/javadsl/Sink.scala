@@ -5,24 +5,25 @@
 package akka.stream.javadsl
 
 import java.util.Optional
+import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
+import java.util.function.BiFunction
 
-import akka.{ japi, Done, NotUsed }
-import akka.actor.{ ActorRef, Props }
+import akka.actor.{ ActorRef, ClassicActorSystemProvider, Status }
 import akka.dispatch.ExecutionContexts
+import akka._
 import akka.japi.function
+import akka.japi.function.Creator
 import akka.stream.impl.LinearTraversalBuilder
 import akka.stream.{ javadsl, scaladsl, _ }
 import org.reactivestreams.{ Publisher, Subscriber }
 
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
-import java.util.concurrent.CompletionStage
-import java.util.function.BiFunction
-
-import scala.collection.immutable
-import scala.annotation.unchecked.uncheckedVariance
-import scala.compat.java8.FutureConverters._
 
 /** Java API */
 object Sink {
@@ -240,7 +241,7 @@ object Sink {
    *
    */
   def actorRef[In](ref: ActorRef, onCompleteMessage: Any): Sink[In, NotUsed] =
-    new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage))
+    new Sink(scaladsl.Sink.actorRef[In](ref, onCompleteMessage, (t: Throwable) => Status.Failure(t)))
 
   /**
    * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
@@ -255,6 +256,33 @@ object Sink {
    * When the stream is completed with failure - result of `onFailureMessage(throwable)`
    * message will be sent to the destination actor.
    */
+  def actorRefWithBackpressure[In](
+      ref: ActorRef,
+      onInitMessage: Any,
+      ackMessage: Any,
+      onCompleteMessage: Any,
+      onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
+    new Sink(
+      scaladsl.Sink
+        .actorRefWithBackpressure[In](ref, onInitMessage, ackMessage, onCompleteMessage, t => onFailureMessage(t)))
+
+  /**
+   * Sends the elements of the stream to the given `ActorRef` that sends back back-pressure signal.
+   * First element is always `onInitMessage`, then stream is waiting for acknowledgement message
+   * `ackMessage` from the given actor which means that it is ready to process
+   * elements. It also requires `ackMessage` message after each stream element
+   * to make backpressure work.
+   *
+   * If the target actor terminates the stream will be canceled.
+   * When the stream is completed successfully the given `onCompleteMessage`
+   * will be sent to the destination actor.
+   * When the stream is completed with failure - result of `onFailureMessage(throwable)`
+   * message will be sent to the destination actor.
+   *
+   * @deprecated Use actorRefWithBackpressure instead
+   */
+  @Deprecated
+  @deprecated("Use actorRefWithBackpressure instead", "2.6.0")
   def actorRefWithAck[In](
       ref: ActorRef,
       onInitMessage: Any,
@@ -262,20 +290,8 @@ object Sink {
       onCompleteMessage: Any,
       onFailureMessage: function.Function[Throwable, Any]): Sink[In, NotUsed] =
     new Sink(
-      scaladsl.Sink.actorRefWithAck[In](ref, onInitMessage, ackMessage, onCompleteMessage, onFailureMessage.apply _))
-
-  /**
-   * Creates a `Sink` that is materialized to an [[akka.actor.ActorRef]] which points to an Actor
-   * created according to the passed in [[akka.actor.Props]]. Actor created by the `props` should
-   * be [[akka.stream.actor.ActorSubscriber]].
-   *
-   * @deprecated Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.
-   */
-  @deprecated(
-    "Use `akka.stream.stage.GraphStage` and `fromGraph` instead, it allows for all operations an Actor would and is more type-safe as well as guaranteed to be ReactiveStreams compliant.",
-    since = "2.5.0")
-  def actorSubscriber[T](props: Props): Sink[T, ActorRef] =
-    new Sink(scaladsl.Sink.actorSubscriber(props))
+      scaladsl.Sink
+        .actorRefWithBackpressure[In](ref, onInitMessage, ackMessage, onCompleteMessage, t => onFailureMessage(t)))
 
   /**
    * A graph with the shape of a sink logically is a sink, this method makes
@@ -289,9 +305,18 @@ object Sink {
 
   /**
    * Defers the creation of a [[Sink]] until materialization. The `factory` function
+   * exposes [[Materializer]] which is going to be used during materialization and
+   * [[Attributes]] of the [[Sink]] returned by this method.
+   */
+  def fromMaterializer[T, M](factory: BiFunction[Materializer, Attributes, Sink[T, M]]): Sink[T, CompletionStage[M]] =
+    scaladsl.Sink.fromMaterializer((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
+
+  /**
+   * Defers the creation of a [[Sink]] until materialization. The `factory` function
    * exposes [[ActorMaterializer]] which is going to be used during materialization and
    * [[Attributes]] of the [[Sink]] returned by this method.
    */
+  @deprecated("Use 'fromMaterializer' instead", "2.6.0")
   def setup[T, M](factory: BiFunction[ActorMaterializer, Attributes, Sink[T, M]]): Sink[T, CompletionStage[M]] =
     scaladsl.Sink.setup((mat, attr) => factory(mat, attr).asScala).mapMaterializedValue(_.toJava).asJava
 
@@ -356,10 +381,7 @@ object Sink {
    * sink fails then the `Future` is completed with the exception.
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
-  @Deprecated
-  @deprecated(
-    "Use lazyInitAsync instead. (lazyInitAsync no more needs a fallback function and the materialized value more clearly indicates if the internal sink was materialized or not.)",
-    "2.5.11")
+  @deprecated("Use 'Sink.lazyCompletionStageSink' in combination with 'Flow.prefixAndTail(1)' instead", "2.6.0")
   def lazyInit[T, M](
       sinkFactory: function.Function[T, CompletionStage[Sink[T, M]]],
       fallback: function.Creator[M]): Sink[T, CompletionStage[M]] =
@@ -379,6 +401,7 @@ object Sink {
    * sink fails then the `Future` is completed with the exception.
    * Otherwise the `Future` is completed with the materialized value of the internal sink.
    */
+  @deprecated("Use 'Sink.lazyCompletionStageSink' instead", "2.6.0")
   def lazyInitAsync[T, M](
       sinkFactory: function.Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[Optional[M]]] = {
     val sSink = scaladsl.Sink
@@ -391,6 +414,42 @@ object Sink {
             .toJava)
     new Sink(sSink)
   }
+
+  /**
+   * Turn a `Future[Sink]` into a Sink that will consume the values of the source when the future completes successfully.
+   * If the `Future` is completed with a failure the stream is failed.
+   *
+   * The materialized future value is completed with the materialized value of the future sink or failed with a
+   * [[NeverMaterializedException]] if upstream fails or downstream cancels before the future has completed.
+   */
+  def completionStageSink[T, M](future: CompletionStage[Sink[T, M]]): Sink[T, CompletionStage[M]] =
+    lazyCompletionStageSink[T, M](() => future)
+
+  /**
+   * Defers invoking the `create` function to create a sink until there is a first element passed from upstream.
+   *
+   * The materialized future value is completed with the materialized value of the created sink when that has successfully
+   * been materialized.
+   *
+   * If the `create` function throws or returns or the stream fails to materialize, in this
+   * case the materialized future value is failed with a [[akka.stream.NeverMaterializedException]].
+   */
+  def lazySink[T, M](create: Creator[Sink[T, M]]): Sink[T, CompletionStage[M]] =
+    lazyCompletionStageSink(() => CompletableFuture.completedFuture(create.create))
+
+  /**
+   * Defers invoking the `create` function to create a future sink until there is a first element passed from upstream.
+   *
+   * The materialized future value is completed with the materialized value of the created sink when that has successfully
+   * been materialized.
+   *
+   * If the `create` function throws or returns a future that is failed, or the stream fails to materialize, in this
+   * case the materialized future value is failed with a [[akka.stream.NeverMaterializedException]].
+   */
+  def lazyCompletionStageSink[T, M](create: Creator[CompletionStage[Sink[T, M]]]): Sink[T, CompletionStage[M]] =
+    new Sink(scaladsl.Sink.lazyFutureSink { () =>
+      create.create().toScala.map(_.asScala)((ExecutionContexts.sameThreadExecutionContext))
+    }).mapMaterializedValue(_.toJava)
 }
 
 /**
@@ -410,6 +469,14 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
    * Converts this Sink to its Scala DSL counterpart.
    */
   def asScala: scaladsl.Sink[In, Mat] = delegate
+
+  /**
+   * Connect this `Sink` to a `Source` and run it.
+   *
+   * Note that the `ActorSystem` can be used as the `systemProvider` parameter.
+   */
+  def runWith[M](source: Graph[SourceShape[In], M], systemProvider: ClassicActorSystemProvider): M =
+    asScala.runWith(source)(SystemMaterializer(systemProvider.classicSystem).materializer)
 
   /**
    * Connect this `Sink` to a `Source` and run it.
@@ -439,6 +506,22 @@ final class Sink[In, Mat](delegate: scaladsl.Sink[In, Mat]) extends Graph[SinkSh
    * that can be consume elements 'into' the pre-materialized one.
    *
    * Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
+   *
+   * Note that the `ActorSystem` can be used as the `systemProvider` parameter.
+   */
+  def preMaterialize(systemProvider: ClassicActorSystemProvider)
+      : japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {
+    val (mat, sink) = delegate.preMaterialize()(SystemMaterializer(systemProvider.classicSystem).materializer)
+    akka.japi.Pair(mat, sink.asJava)
+  }
+
+  /**
+   * Materializes this Sink, immediately returning (1) its materialized value, and (2) a new Sink
+   * that can be consume elements 'into' the pre-materialized one.
+   *
+   * Useful for when you need a materialized value of a Sink when handing it out to someone to materialize it for you.
+   *
+   * Prefer the method taking an ActorSystem unless you have special requirements.
    */
   def preMaterialize(
       materializer: Materializer): japi.Pair[Mat @uncheckedVariance, Sink[In @uncheckedVariance, NotUsed]] = {

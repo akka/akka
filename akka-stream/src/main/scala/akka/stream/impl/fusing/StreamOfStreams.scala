@@ -9,24 +9,24 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.NotUsed
 import akka.annotation.InternalApi
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
+import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
-import akka.stream.stage._
+import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.scaladsl._
-import akka.stream.actor.ActorSubscriberMessage
+import akka.stream.stage._
 import akka.util.OptionVal
+import akka.util.ccompat.JavaConverters._
+
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
-import scala.annotation.tailrec
-
-import akka.stream.impl.{ Buffer => BufferImpl }
-import akka.util.ccompat.JavaConverters._
-
-import akka.stream.impl.TraversalBuilder
-import akka.stream.impl.fusing.GraphStages.SingleSource
 
 /**
  * INTERNAL API
@@ -48,7 +48,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     // SubSinkInlet[T] or SingleSource
     var queue: BufferImpl[AnyRef] = _
 
-    override def preStart(): Unit = queue = BufferImpl(breadth, materializer)
+    override def preStart(): Unit = queue = BufferImpl(breadth, enclosingAttributes)
 
     def pushOut(): Unit = {
       queue.dequeue() match {
@@ -144,7 +144,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
   override def initialAttributes = DefaultAttributes.prefixAndTail
 
-  private final class PrefixAndTailLogic(_shape: Shape)
+  private final class PrefixAndTailLogic(_shape: Shape, inheritedAttributes: Attributes)
       extends TimerGraphStageLogic(_shape)
       with OutHandler
       with InHandler {
@@ -158,11 +158,11 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     private val SubscriptionTimer = "SubstreamSubscriptionTimer"
 
     override protected def onTimer(timerKey: Any): Unit = {
-      val materializer = ActorMaterializerHelper.downcast(interpreter.materializer)
-      val timeoutSettings = materializer.settings.subscriptionTimeoutSettings
-      val timeout = timeoutSettings.timeout
+      val materializer = interpreter.materializer
+      val StreamSubscriptionTimeout(timeout, mode) =
+        inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout]
 
-      timeoutSettings.mode match {
+      mode match {
         case StreamSubscriptionTimeoutTerminationMode.CancelTermination =>
           tailSource.timeout(timeout)
           if (tailSource.isClosed) completeStage()
@@ -190,8 +190,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     }
 
     private def openSubstream(): Source[T, NotUsed] = {
-      val timeout =
-        ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
+      val timeout = inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
       tailSource = new SubSourceOutlet[T]("TailSource")
       tailSource.setHandler(subHandler)
       setKeepGoing(true)
@@ -236,15 +235,16 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
       } else failStage(ex)
     }
 
-    override def onDownstreamFinish(): Unit = {
-      if (!prefixComplete) completeStage()
+    override def onDownstreamFinish(cause: Throwable): Unit = {
+      if (!prefixComplete) cancelStage(cause)
       // Otherwise substream is open, ignore
     }
 
     setHandlers(in, out, this)
   }
 
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new PrefixAndTailLogic(shape)
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    new PrefixAndTailLogic(shape, inheritedAttributes)
 
   override def toString: String = s"PrefixAndTail($n)"
 }
@@ -271,7 +271,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
       private val closedSubstreams =
         if (allowClosedSubstreamRecreation) Collections.unmodifiableSet(Collections.emptySet[Any])
         else new java.util.HashSet[Any]()
-      private var timeout: FiniteDuration = _
+      private val timeout: FiniteDuration =
+        inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
       private var substreamWaitingToBePushed: Option[SubstreamSource] = None
       private var nextElementKey: K = null.asInstanceOf[K]
       private var nextElementValue: T = null.asInstanceOf[T]
@@ -297,10 +298,10 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
           true
         } else false
 
-      private def tryCancel(): Boolean =
+      private def tryCancel(cause: Throwable): Boolean =
         // if there's no active substreams or there's only one but it's not been pushed yet
         if (activeSubstreamsMap.isEmpty || (activeSubstreamsMap.size == 1 && substreamWaitingToBePushed.isDefined)) {
-          completeStage()
+          cancelStage(cause)
           true
         } else false
 
@@ -311,10 +312,6 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
       private def needToPull: Boolean =
         !(hasBeenPulled(in) || isClosed(in) || hasNextElement || substreamWaitingToBePushed.nonEmpty)
-
-      override def preStart(): Unit =
-        timeout =
-          ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
 
       override def onPull(): Unit = {
         substreamWaitingToBePushed match {
@@ -337,7 +334,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
       override def onUpstreamFinish(): Unit = if (!tryCompleteAll()) setKeepGoing(true)
 
-      override def onDownstreamFinish(): Unit = if (!tryCancel()) setKeepGoing(true)
+      override def onDownstreamFinish(cause: Throwable): Unit = if (!tryCancel(cause)) setKeepGoing(true)
 
       override def onPush(): Unit =
         try {
@@ -430,11 +427,11 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
           tryCompleteHandler()
         }
 
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
           if (hasNextElement && nextElementKey == key) clearNextElement()
           if (firstPush()) firstPushCounter -= 1
           completeSubStream()
-          if (parent.isClosed(out)) tryCancel()
+          if (parent.isClosed(out)) tryCancel(cause)
           if (parent.isClosed(in)) tryCompleteAll() else if (needToPull) pull(in)
         }
 
@@ -491,14 +488,11 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
     private val SubscriptionTimer = "SubstreamSubscriptionTimer"
 
-    private var timeout: FiniteDuration = _
+    private val timeout: FiniteDuration =
+      inheritedAttributes.mandatoryAttribute[ActorAttributes.StreamSubscriptionTimeout].timeout
     private var substreamSource: SubSourceOutlet[T] = null
     private var substreamWaitingToBePushed = false
     private var substreamCancelled = false
-
-    override def preStart(): Unit = {
-      timeout = ActorMaterializerHelper.downcast(interpreter.materializer).settings.subscriptionTimeoutSettings.timeout
-    }
 
     setHandler(
       out,
@@ -510,9 +504,9 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
           } else if (substreamWaitingToBePushed) pushSubstreamSource()
         }
 
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
           // If the substream is already cancelled or it has not been handed out, we can go away
-          if ((substreamSource eq null) || substreamWaitingToBePushed || substreamCancelled) completeStage()
+          if ((substreamSource eq null) || substreamWaitingToBePushed || substreamCancelled) cancelStage(cause)
         }
       })
 
@@ -594,10 +588,10 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
         } else pull(in)
       }
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         substreamCancelled = true
         if (isClosed(in) || propagateSubstreamCancel) {
-          completeStage()
+          cancelStage(cause)
         } else {
           // Start draining
           if (!hasBeenPulled(in)) pull(in)
@@ -661,7 +655,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   case object RequestOneScheduledBeforeMaterialization extends CommandScheduledBeforeMaterialization(RequestOne)
 
   /** A Cancel command was scheduled before materialization */
-  case object CancelScheduledBeforeMaterialization extends CommandScheduledBeforeMaterialization(Cancel)
+  case class CancelScheduledBeforeMaterialization(cause: Throwable)
+      extends CommandScheduledBeforeMaterialization(Cancel(cause))
 
   /** Steady state: sink has been materialized, commands can be delivered through the callback */
   // Represented in unwrapped form as AsyncCallback[Command] directly to prevent a level of indirection
@@ -669,7 +664,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
   sealed trait Command
   case object RequestOne extends Command
-  case object Cancel extends Command
+  case class Cancel(cause: Throwable) extends Command
 }
 
 /**
@@ -687,7 +682,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
   private val status = new AtomicReference[ /* State */ AnyRef](Uninitialized)
 
   def pullSubstream(): Unit = dispatchCommand(RequestOneScheduledBeforeMaterialization)
-  def cancelSubstream(): Unit = dispatchCommand(CancelScheduledBeforeMaterialization)
+  def cancelSubstream(): Unit = cancelSubstream(SubscriptionWithCancelException.NoMoreElementsNeeded)
+  def cancelSubstream(cause: Throwable): Unit = dispatchCommand(CancelScheduledBeforeMaterialization(cause))
 
   @tailrec
   private def dispatchCommand(newState: CommandScheduledBeforeMaterialization): Unit =
@@ -697,7 +693,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
         if (!status.compareAndSet(Uninitialized, newState))
           dispatchCommand(newState) // changed to materialized in the meantime
 
-      case RequestOneScheduledBeforeMaterialization if newState == CancelScheduledBeforeMaterialization =>
+      case RequestOneScheduledBeforeMaterialization if newState.isInstanceOf[CancelScheduledBeforeMaterialization] =>
         // cancellation is allowed to replace pull
         if (!status.compareAndSet(RequestOneScheduledBeforeMaterialization, newState))
           dispatchCommand(RequestOneScheduledBeforeMaterialization)
@@ -735,8 +731,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 
     override def preStart(): Unit =
       setCallback {
-        case RequestOne => tryPull(in)
-        case Cancel     => completeStage()
+        case RequestOne    => tryPull(in)
+        case Cancel(cause) => cancelStage(cause)
       }
   }
 
@@ -807,7 +803,7 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
     }
 
     override def onPull(): Unit = externalCallback.invoke(RequestOne)
-    override def onDownstreamFinish(): Unit = externalCallback.invoke(Cancel)
+    override def onDownstreamFinish(cause: Throwable): Unit = externalCallback.invoke(Cancel(cause))
   }
 
   override def toString: String = name

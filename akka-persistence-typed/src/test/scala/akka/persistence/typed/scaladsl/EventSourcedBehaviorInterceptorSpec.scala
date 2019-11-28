@@ -13,8 +13,6 @@ import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.TypedActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -25,7 +23,6 @@ object EventSourcedBehaviorInterceptorSpec {
 
   def config: Config = ConfigFactory.parseString(s"""
         akka.loglevel = INFO
-        akka.loggers = [akka.testkit.TestEventListener]
         akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
         akka.persistence.journal.inmem.test-serialization = on
         """)
@@ -47,18 +44,13 @@ object EventSourcedBehaviorInterceptorSpec {
 
 class EventSourcedBehaviorInterceptorSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorTimersSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
 
   import EventSourcedBehaviorInterceptorSpec._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
-
-  import akka.actor.typed.scaladsl.adapter._
-  // needed for the untyped event filter
-  private implicit val untypedSystem: akka.actor.ActorSystem = system.toUntyped
-
-  untypedSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   "EventSourcedBehavior interceptor" must {
 
@@ -101,10 +93,11 @@ class EventSourcedBehaviorInterceptorSpec
       val probe = createTestProbe[String]()
       val pid = nextPid()
       val ref = spawn(Behaviors.setup[String] { _ =>
-        Behaviors
-          .withMdc(staticMdc = Map("pid" -> pid), mdcForMessage = (msg: String) => Map("msg" -> msg.toUpperCase())) {
-            testBehavior(pid, probe.ref)
-          }
+        Behaviors.withMdc(
+          staticMdc = Map("pid" -> pid.toString),
+          mdcForMessage = (msg: String) => Map("msg" -> msg.toUpperCase())) {
+          testBehavior(pid, probe.ref)
+        }
       })
 
       ref ! "a"

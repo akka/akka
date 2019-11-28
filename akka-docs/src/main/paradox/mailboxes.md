@@ -1,15 +1,7 @@
 # Classic Mailboxes
 
-@@@ note
-
-Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
-known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
-the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
-ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
-
-For the new API see (FIXME https://github.com/akka/akka/issues/27124).
-
-@@@
+@@include[includes.md](includes.md) { #actor-api }
+For the full documentation of this feature and for new projects see @ref:[mailboxes](typed/mailboxes.md).
 
 ## Dependency
 
@@ -27,7 +19,26 @@ An Akka `Mailbox` holds the messages that are destined for an `Actor`.
 Normally each `Actor` has its own mailbox, but with for example a `BalancingPool`
 all routees will share a single mailbox instance.
 
+For more details on advanced mailbox config and custom mailbox implementations, see @ref[Mailboxes](typed/mailboxes.md#mailbox-implementations).
+
 ## Mailbox Selection
+
+### Default Mailbox
+
+The default mailbox is used when the mailbox is not specified.
+This is an unbounded mailbox, backed by a
+`java.util.concurrent.ConcurrentLinkedQueue`.
+
+`SingleConsumerOnlyUnboundedMailbox` is an even more efficient mailbox, and
+it can be used as the default mailbox, but it cannot be used with a BalancingDispatcher.
+
+Configuration of `SingleConsumerOnlyUnboundedMailbox` as default mailbox:
+
+```
+akka.actor.default-mailbox {
+  mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
+}
+```
 
 ### Requiring a Message Queue Type for an Actor
 
@@ -39,7 +50,7 @@ Scala
 :   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #required-mailbox-class }
 
 Java
-:   @@snip [MyBoundedActor.java](/akka-docs/src/test/java/jdocs/actor/MyBoundedActor.java) { #my-bounded-untyped-actor }
+:   @@snip [MyBoundedActor.java](/akka-docs/src/test/java/jdocs/actor/MyBoundedActor.java) { #my-bounded-classic-actor }
 
 The type parameter to the `RequiresMessageQueue` @scala[trait]@java[interface] needs to be mapped to a mailbox in
 configuration like this:
@@ -60,10 +71,9 @@ The type of the queue in the mailbox created for an actor will be checked agains
 ### Requiring a Message Queue Type for a Dispatcher
 
 A dispatcher may also have a requirement for the mailbox type used by the
-actors running on it. An example is the BalancingDispatcher which requires a
+actors running on it. An example is the @apidoc[BalancingDispatcher] which requires a
 message queue that is thread-safe for multiple concurrent consumers. Such a
-requirement is formulated within the dispatcher configuration section like
-this:
+requirement is formulated within the dispatcher configuration section:
 
 ```
 my-dispatcher {
@@ -72,7 +82,7 @@ my-dispatcher {
 ```
 
 The given requirement names a class or interface which will then be ensured to
-be a supertype of the message queue’s implementation. In case of a
+be a supertype of the message queue's implementation. In case of a
 conflict—e.g. if the actor requires a mailbox type which does not satisfy this
 requirement—then actor creation will fail.
 
@@ -81,127 +91,20 @@ requirement—then actor creation will fail.
 When an actor is created, the `ActorRefProvider` first determines the
 dispatcher which will execute it. Then the mailbox is determined as follows:
 
- 1. If the actor’s deployment configuration section contains a `mailbox` key
-then that names a configuration section describing the mailbox type to be
-used.
- 2. If the actor’s `Props` contains a mailbox selection—i.e. `withMailbox`
-was called on it—then that names a configuration section describing the
-mailbox type to be used (note that this needs to be an absolute config path, 
-for example `myapp.special-mailbox`, and is not nested inside the `akka` namespace).
- 3. If the dispatcher’s configuration section contains a `mailbox-type` key
+ 1. If the actor's deployment configuration section contains a `mailbox` key,
+this refers to a configuration section describing the mailbox type.
+ 2. If the actor's `Props` contains a mailbox selection then that names a configuration section describing the
+mailbox type to be used. This needs to be an absolute config path,
+for example `myapp.special-mailbox`, and is not nested inside the `akka` namespace.
+ 3. If the dispatcher's configuration section contains a `mailbox-type` key
 the same section will be used to configure the mailbox type.
  4. If the actor requires a mailbox type as described above then the mapping for
 that requirement will be used to determine the mailbox type to be used; if
-that fails then the dispatcher’s requirement—if any—will be tried instead.
+that fails then the dispatcher's requirement—if any—will be tried instead.
  5. If the dispatcher requires a mailbox type as described above then the
 mapping for that requirement will be used to determine the mailbox type to
 be used.
  6. The default mailbox `akka.actor.default-mailbox` will be used.
-
-### Default Mailbox
-
-When the mailbox is not specified as described above the default mailbox
-is used. By default it is an unbounded mailbox, which is backed by a
-`java.util.concurrent.ConcurrentLinkedQueue`.
-
-`SingleConsumerOnlyUnboundedMailbox` is an even more efficient mailbox, and
-it can be used as the default mailbox, but it cannot be used with a BalancingDispatcher.
-
-Configuration of `SingleConsumerOnlyUnboundedMailbox` as default mailbox:
-
-```
-akka.actor.default-mailbox {
-  mailbox-type = "akka.dispatch.SingleConsumerOnlyUnboundedMailbox"
-}
-```
-
-### Which Configuration is passed to the Mailbox Type
-
-Each mailbox type is implemented by a class which extends `MailboxType`
-and takes two constructor arguments: a `ActorSystem.Settings` object and
-a `Config` section. The latter is computed by obtaining the named
-configuration section from the actor system’s configuration, overriding its
-`id` key with the configuration path of the mailbox type and adding a
-fall-back to the default mailbox configuration section.
-
-## Builtin Mailbox Implementations
-
-Akka comes shipped with a number of mailbox implementations:
-
- * 
-   **UnboundedMailbox** (default)
-    * The default mailbox
-    * Backed by a `java.util.concurrent.ConcurrentLinkedQueue`
-    * Blocking: No
-    * Bounded: No
-    * Configuration name: `"unbounded"` or `"akka.dispatch.UnboundedMailbox"`
- * 
-   **SingleConsumerOnlyUnboundedMailbox**
-   This queue may or may not be faster than the default one depending on your use-case—be sure to benchmark properly!
-    * Backed by a Multiple-Producer Single-Consumer queue, cannot be used with `BalancingDispatcher`
-    * Blocking: No
-    * Bounded: No
-    * Configuration name: `"akka.dispatch.SingleConsumerOnlyUnboundedMailbox"`
- * 
-   **NonBlockingBoundedMailbox**
-    * Backed by a very efficient Multiple-Producer Single-Consumer queue
-    * Blocking: No (discards overflowing messages into deadLetters)
-    * Bounded: Yes
-    * Configuration name: `"akka.dispatch.NonBlockingBoundedMailbox"`
- * 
-   **UnboundedControlAwareMailbox**
-    * Delivers messages that extend `akka.dispatch.ControlMessage` with higher priority
-    * Backed by two `java.util.concurrent.ConcurrentLinkedQueue`
-    * Blocking: No
-    * Bounded: No
-    * Configuration name: "akka.dispatch.UnboundedControlAwareMailbox"
- * 
-   **UnboundedPriorityMailbox**
-    * Backed by a `java.util.concurrent.PriorityBlockingQueue`
-    * Delivery order for messages of equal priority is undefined - contrast with the UnboundedStablePriorityMailbox
-    * Blocking: No
-    * Bounded: No
-    * Configuration name: "akka.dispatch.UnboundedPriorityMailbox"
- * 
-   **UnboundedStablePriorityMailbox**
-    * Backed by a `java.util.concurrent.PriorityBlockingQueue` wrapped in an `akka.util.PriorityQueueStabilizer`
-    * FIFO order is preserved for messages of equal priority - contrast with the UnboundedPriorityMailbox
-    * Blocking: No
-    * Bounded: No
-    * Configuration name: "akka.dispatch.UnboundedStablePriorityMailbox"
-
-Other bounded mailbox implementations which will block the sender if the capacity is reached and
-configured with non-zero `mailbox-push-timeout-time`. 
-
-@@@ note
-
-The following mailboxes should only be used with zero `mailbox-push-timeout-time`.
-
-@@@
-
- * **BoundedMailbox**
-    * Backed by a `java.util.concurrent.LinkedBlockingQueue`
-    * Blocking: Yes if used with non-zero `mailbox-push-timeout-time`, otherwise No
-    * Bounded: Yes
-    * Configuration name: "bounded" or "akka.dispatch.BoundedMailbox"
- * **BoundedPriorityMailbox**
-    * Backed by a `java.util.PriorityQueue` wrapped in an `akka.util.BoundedBlockingQueue`
-    * Delivery order for messages of equal priority is undefined - contrast with the `BoundedStablePriorityMailbox`
-    * Blocking: Yes if used with non-zero `mailbox-push-timeout-time`, otherwise No
-    * Bounded: Yes
-    * Configuration name: `"akka.dispatch.BoundedPriorityMailbox"`
- * **BoundedStablePriorityMailbox**
-    * Backed by a `java.util.PriorityQueue` wrapped in an `akka.util.PriorityQueueStabilizer` and an `akka.util.BoundedBlockingQueue`
-    * FIFO order is preserved for messages of equal priority - contrast with the BoundedPriorityMailbox
-    * Blocking: Yes if used with non-zero `mailbox-push-timeout-time`, otherwise No
-    * Bounded: Yes
-    * Configuration name: "akka.dispatch.BoundedStablePriorityMailbox"
- * **BoundedControlAwareMailbox**
-    * Delivers messages that extend `akka.dispatch.ControlMessage` with higher priority
-    * Backed by two `java.util.concurrent.ConcurrentLinkedQueue` and blocking on enqueue if capacity has been reached
-    * Blocking: Yes if used with non-zero `mailbox-push-timeout-time`, otherwise No
-    * Bounded: Yes
-    * Configuration name: "akka.dispatch.BoundedControlAwareMailbox"
 
 ## Mailbox configuration examples
 
@@ -275,50 +178,6 @@ Scala
 
 Java
 :   @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #control-aware-dispatcher }
-
-## Creating your own Mailbox type
-
-An example is worth a thousand quacks:
-
-Scala
-:   @@snip [MyUnboundedMailbox.scala](/akka-docs/src/test/scala/docs/dispatcher/MyUnboundedMailbox.scala) { #mailbox-marker-interface }
-
-Java
-:   @@snip [MyUnboundedMessageQueueSemantics.java](/akka-docs/src/test/java/jdocs/dispatcher/MyUnboundedMessageQueueSemantics.java) { #mailbox-marker-interface }
-
-
-Scala
-:   @@snip [MyUnboundedMailbox.scala](/akka-docs/src/test/scala/docs/dispatcher/MyUnboundedMailbox.scala) { #mailbox-implementation-example }
-
-Java
-:   @@snip [MyUnboundedMailbox.java](/akka-docs/src/test/java/jdocs/dispatcher/MyUnboundedMailbox.java) { #mailbox-implementation-example }
-
-And then you specify the FQCN of your MailboxType as the value of the "mailbox-type" in the dispatcher
-configuration, or the mailbox configuration.
-
-@@@ note
-
-Make sure to include a constructor which takes
-`akka.actor.ActorSystem.Settings` and `com.typesafe.config.Config`
-arguments, as this constructor is invoked reflectively to construct your
-mailbox type. The config passed in as second argument is that section from
-the configuration which describes the dispatcher or mailbox setting using
-this mailbox type; the mailbox type will be instantiated once for each
-dispatcher or mailbox setting using it.
-
-@@@
-
-You can also use the mailbox as a requirement on the dispatcher like this:
-
-@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #custom-mailbox-config-java }
-
-Or by defining the requirement on your actor class like this:
-
-Scala
-:   @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #require-mailbox-on-actor }
-
-Java
-:   @@snip [DispatcherDocTest.java](/akka-docs/src/test/java/jdocs/dispatcher/DispatcherDocTest.java) { #require-mailbox-on-actor }
 
 ## Special Semantics of `system.actorOf`
 

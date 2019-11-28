@@ -9,13 +9,13 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.serialization.{ JavaSerializer, SerializationExtension }
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object ActorRefSerializationSpec {
   def config = ConfigFactory.parseString("""
       akka.actor {
-        serialize-messages = off
         # test is verifying Java serialization of ActorRef
         allow-java-serialization = on
         warn-about-java-serializer-usage = off
@@ -27,9 +27,12 @@ object ActorRefSerializationSpec {
   case class MessageWrappingActorRef(s: String, ref: ActorRef[Unit]) extends java.io.Serializable
 }
 
-class ActorRefSerializationSpec extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config) with WordSpecLike {
+class ActorRefSerializationSpec
+    extends ScalaTestWithActorTestKit(ActorRefSerializationSpec.config)
+    with WordSpecLike
+    with LogCapturing {
 
-  val serialization = SerializationExtension(system.toUntyped)
+  val serialization = SerializationExtension(system.toClassic)
 
   "ActorRef[T]" must {
     "be serialized and deserialized by MiscMessageSerializer" in {

@@ -225,7 +225,7 @@ abstract class MessageDispatcher(val configurator: MessageDispatcherConfigurator
     mailBox.cleanUp()
   }
 
-  private val shutdownAction = new Runnable {
+  private val shutdownAction = new Scheduler.TaskRunOnClose {
     @tailrec
     final def run(): Unit = {
       shutdownSchedule match {

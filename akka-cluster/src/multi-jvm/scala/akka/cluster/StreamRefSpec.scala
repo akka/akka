@@ -4,22 +4,13 @@
 
 package akka.cluster
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
-
 import akka.Done
-import akka.actor.Actor
-import akka.actor.ActorIdentity
-import akka.actor.ActorRef
-import akka.actor.Identify
-import akka.actor.Props
+import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, Identify, Props }
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
-import akka.stream.ActorMaterializer
+import akka.stream.Materializer
 import akka.stream.RemoteStreamRefActorTerminatedException
 import akka.stream.SinkRef
 import akka.stream.SourceRef
@@ -32,30 +23,40 @@ import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit._
 import com.typesafe.config.ConfigFactory
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+import akka.util.JavaDurationConverters._
+
 object StreamRefSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString("""
+  commonConfig(
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
+        akka.stream.materializer.stream-ref.subscription-timeout = 10 s
         akka.cluster {
-          auto-down-unreachable-after = 1s
-        }""")).withFallback(MultiNodeClusterSpec.clusterConfig))
+          downing-provider-class = akka.cluster.testkit.AutoDowning
+          testkit.auto-down-unreachable-after = 1s
+        }"""))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   testTransport(on = true)
 
   case class RequestLogs(streamId: Int) extends CborSerializable
-  // Using Java serialization until issue #27304 is fixed
-  case class LogsOffer(streamId: Int, sourceRef: SourceRef[String]) extends JavaSerializable
+  case class LogsOffer(streamId: Int, sourceRef: SourceRef[String]) extends CborSerializable
 
   object DataSource {
     def props(streamLifecycleProbe: ActorRef): Props =
       Props(new DataSource(streamLifecycleProbe))
   }
 
-  class DataSource(streamLifecycleProbe: ActorRef) extends Actor {
+  class DataSource(streamLifecycleProbe: ActorRef) extends Actor with ActorLogging {
     import context.dispatcher
-    implicit val mat = ActorMaterializer()(context)
+    implicit val mat = Materializer(context)
 
     def receive = {
       case RequestLogs(streamId) =>
@@ -73,8 +74,11 @@ object StreamRefSpec extends MultiNodeConfig {
             .run()
 
         done.onComplete {
-          case Success(_) => streamLifecycleProbe ! s"completed-$streamId"
-          case Failure(_) => streamLifecycleProbe ! s"failed-$streamId"
+          case Success(_) =>
+            streamLifecycleProbe ! s"completed-$streamId"
+          case Failure(ex) =>
+            log.info("Source stream completed with failure: {}", ex)
+            streamLifecycleProbe ! s"failed-$streamId"
         }
 
         // wrap the SourceRef in some domain message, such that the sender knows what source it is
@@ -95,10 +99,10 @@ object StreamRefSpec extends MultiNodeConfig {
       Props(new DataReceiver(streamLifecycleProbe))
   }
 
-  class DataReceiver(streamLifecycleProbe: ActorRef) extends Actor {
+  class DataReceiver(streamLifecycleProbe: ActorRef) extends Actor with ActorLogging {
 
     import context.dispatcher
-    implicit val mat = ActorMaterializer()(context)
+    implicit val mat = Materializer(context)
 
     def receive = {
       case PrepareUpload(nodeId) =>
@@ -116,7 +120,9 @@ object StreamRefSpec extends MultiNodeConfig {
 
         done.onComplete {
           case Success(_) => streamLifecycleProbe ! s"completed-$nodeId"
-          case Failure(_) => streamLifecycleProbe ! s"failed-$nodeId"
+          case Failure(ex) =>
+            log.info("Sink stream completed with failure: {}", ex)
+            streamLifecycleProbe ! s"failed-$nodeId"
         }
 
         // wrap the SinkRef in some domain message, such that the sender knows what source it is
@@ -136,8 +142,6 @@ class StreamRefMultiJvmNode3 extends StreamRefSpec
 
 abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec) with MultiNodeClusterSpec with ImplicitSender {
   import StreamRefSpec._
-
-  private implicit val mat: ActorMaterializer = ActorMaterializer()
 
   "A cluster with Stream Refs" must {
 
@@ -189,8 +193,8 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec) with MultiNode
         destinationForSource.expectError().getClass should ===(classOf[RemoteStreamRefActorTerminatedException])
       }
       runOn(second) {
-        // it will be cancelled, i.e. competed
-        dataSourceLifecycle.expectMsg("completed-1337")
+        // it will be cancelled with a failure
+        dataSourceLifecycle.expectMsg("failed-1337")
       }
 
       enterBarrier("after-2")
@@ -242,10 +246,18 @@ abstract class StreamRefSpec extends MultiNodeSpec(StreamRefSpec) with MultiNode
       enterBarrier("members-removed")
 
       runOn(first) {
-        streamLifecycle1.expectMsg("completed-system-42-tmp")
+        // failure propagated upstream
+        streamLifecycle1.expectMsg("failed-system-42-tmp")
       }
       runOn(third) {
-        streamLifecycle3.expectMsg("failed-system-42-tmp")
+        // there's a race here, we know the SourceRef actor was started but we don't know if it
+        // got the remote actor ref and watched it terminate or if we cut connection before that
+        // and it triggered the subscription timeout. Therefore we must wait more than the
+        // the subscription timeout for a failure
+        val timeout = system.settings.config
+            .getDuration("akka.stream.materializer.stream-ref.subscription-timeout")
+            .asScala + 2.seconds
+        streamLifecycle3.expectMsg(timeout, "failed-system-42-tmp")
       }
 
       enterBarrier("after-3")

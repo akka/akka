@@ -4,6 +4,7 @@
 
 package akka.persistence.typed.javadsl;
 
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
@@ -14,6 +15,7 @@ import akka.persistence.typed.RecoveryCompleted;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -25,6 +27,8 @@ public class PrimitiveStateTest extends JUnitSuite {
               + "akka.persistence.journal.inmem.test-serialization = on \n");
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   static class PrimitiveState extends EventSourcedBehavior<Integer, Integer, Integer> {
 
@@ -72,7 +76,7 @@ public class PrimitiveStateTest extends JUnitSuite {
   public void handleIntegerState() throws Exception {
     TestProbe<String> probe = testKit.createTestProbe();
     Behavior<Integer> b =
-        Behaviors.setup(ctx -> new PrimitiveState(new PersistenceId("a"), probe.ref()));
+        Behaviors.setup(ctx -> new PrimitiveState(PersistenceId.ofUniqueId("a"), probe.ref()));
     ActorRef<Integer> ref1 = testKit.spawn(b);
     probe.expectMessage("onRecoveryCompleted:0");
     ref1.tell(1);

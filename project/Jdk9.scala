@@ -8,7 +8,7 @@ import sbt._
 import sbt.Keys._
 
 object Jdk9 extends AutoPlugin {
-  import JavaVersion.notOnJdk8
+  import JdkOptions.notOnJdk8
 
   lazy val CompileJdk9 = config("CompileJdk9").extend(Compile)
 

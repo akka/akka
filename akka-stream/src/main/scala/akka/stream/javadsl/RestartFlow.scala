@@ -79,7 +79,7 @@ object RestartFlow {
    *   In order to skip this additional delay pass in `0`.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  @silent
+  @silent("deprecated")
   def withBackoff[In, Out](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
@@ -154,7 +154,7 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  @silent
+  @silent("deprecated")
   def withBackoff[In, Out](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,
@@ -230,7 +230,7 @@ object RestartFlow {
    *   Passing `0` will cause no restarts and a negative number will not cap the amount of restarts.
    * @param flowFactory A factory for producing the [[Flow]] to wrap.
    */
-  @silent
+  @silent("deprecated")
   def onFailuresWithBackoff[In, Out](
       minBackoff: java.time.Duration,
       maxBackoff: java.time.Duration,

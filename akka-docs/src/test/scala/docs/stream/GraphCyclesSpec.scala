@@ -4,13 +4,11 @@
 
 package docs.stream
 
-import akka.stream.{ ActorMaterializer, ClosedShape, OverflowStrategy }
+import akka.stream.{ ClosedShape, OverflowStrategy }
 import akka.stream.scaladsl._
 import akka.testkit.AkkaSpec
 
 class GraphCyclesSpec extends AkkaSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "Cycle demonstration" must {
     val source = Source.fromIterator(() => Iterator.from(0))

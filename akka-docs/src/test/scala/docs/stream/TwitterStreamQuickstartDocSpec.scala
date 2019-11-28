@@ -8,7 +8,7 @@ package docs.stream
 
 import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
-import akka.stream.{ ActorMaterializer, ClosedShape, OverflowStrategy }
+import akka.stream.{ ClosedShape, OverflowStrategy }
 import akka.stream.scaladsl._
 import scala.concurrent.Await
 import scala.concurrent.Future
@@ -22,7 +22,6 @@ object TwitterStreamQuickstartDocSpec {
   //#fiddle_code
   import akka.NotUsed
   import akka.actor.ActorSystem
-  import akka.stream.ActorMaterializer
   import akka.stream.scaladsl._
 
   //#model
@@ -79,16 +78,13 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
   trait Example1 {
     //#fiddle_code
     //#first-sample
-    //#materializer-setup
+    //#system-setup
     implicit val system = ActorSystem("reactive-tweets")
-    implicit val materializer = ActorMaterializer()
-    //#materializer-setup
+    //#system-setup
     //#first-sample
 
     //#fiddle_code
   }
-
-  implicit val materializer = ActorMaterializer()
 
   "filter and map" in {
     //#first-sample
@@ -161,7 +157,6 @@ class TwitterStreamQuickstartDocSpec extends AkkaSpec {
       .mapConcat(identity) // Flatten the set of hashtags to a stream of hashtags
       .map(_.name.toUpperCase) // Convert all hashtags to upper case
       .runWith(Sink.foreach(println)) // Attach the Flow to a Sink that will finally print the hashtags
-
       //#fiddle_code
       .value
   }

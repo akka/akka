@@ -4,6 +4,7 @@
 
 package akka.actor.typed
 
+import akka.actor.ActorRefWithCell
 import akka.actor.ExtendedActorSystem
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -35,7 +36,7 @@ abstract class ActorRefResolver extends Extension {
   def toSerializationFormat[T](ref: ActorRef[T]): String
 
   /**
-   * Deserialize an `ActorRef` in the [[#toSerializationFormat]].
+   * Deserialize an `ActorRef` in the [[ActorRefResolver#toSerializationFormat]].
    */
   def resolveActorRef[T](serializedActorRef: String): ActorRef[T]
 
@@ -47,20 +48,40 @@ abstract class ActorRefResolver extends Extension {
 @InternalApi private[akka] class ActorRefResolverImpl(system: ActorSystem[_]) extends ActorRefResolver {
   import akka.actor.typed.scaladsl.adapter._
 
-  private val untypedSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
+  private val classicSystem = system.toClassic.asInstanceOf[ExtendedActorSystem]
 
-  override def toSerializationFormat[T](ref: ActorRef[T]): String =
-    ref.path.toSerializationFormatWithAddress(untypedSystem.provider.getDefaultAddress)
+  override def toSerializationFormat[T](ref: ActorRef[T]): String = {
+
+    def toSerializationFormatWithAddress =
+      ref.path.toSerializationFormatWithAddress(system.address)
+
+    ref.toClassic match {
+      case a: ActorRefWithCell =>
+        val originSystem = a.underlying.system.asInstanceOf[ExtendedActorSystem]
+        if (originSystem eq classicSystem)
+          toSerializationFormatWithAddress
+        else
+          throw new IllegalArgumentException(
+            s"ActorRefResolver for ActorSystem [${classicSystem.provider.getDefaultAddress}] shouldn't be used for " +
+            "serialization of ActorRef that originates from another ActorSystem " +
+            s"[${originSystem.provider.getDefaultAddress}]. Use the ActorRefResolver for that system instead.")
+
+      case _ =>
+        // no origin system information for RemoteActorRef or MinimalActorRef, so just use the
+        // one for this extension. That is correct for RemoteActorRef, but MinimalActorRef
+        // could be wrong. However, since we don't allow usage of "wrong" ActorSystem for
+        // ordinary ActorRef the users will learn not to make that mistake.
+        toSerializationFormatWithAddress
+    }
+  }
 
   override def resolveActorRef[T](serializedActorRef: String): ActorRef[T] =
-    untypedSystem.provider.resolveActorRef(serializedActorRef)
+    classicSystem.provider.resolveActorRef(serializedActorRef)
 }
 
 object ActorRefResolverSetup {
   def apply[T <: Extension](createExtension: ActorSystem[_] => ActorRefResolver): ActorRefResolverSetup =
-    new ActorRefResolverSetup(new java.util.function.Function[ActorSystem[_], ActorRefResolver] {
-      override def apply(sys: ActorSystem[_]): ActorRefResolver = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+    new ActorRefResolverSetup(sys => createExtension(sys))
 
 }
 

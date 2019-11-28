@@ -4,16 +4,27 @@
 
 package akka.persistence.query.journal.leveldb
 
+import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
-import akka.persistence.JournalProtocol.{ RecoverySuccess, ReplayMessages, ReplayMessagesFailure, ReplayedMessage }
+import akka.persistence.JournalProtocol.RecoverySuccess
+import akka.persistence.JournalProtocol.ReplayMessages
+import akka.persistence.JournalProtocol.ReplayMessagesFailure
+import akka.persistence.JournalProtocol.ReplayedMessage
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.LeveldbJournal
 import akka.persistence.journal.leveldb.LeveldbJournal.EventAppended
-import akka.persistence.query.{ EventEnvelope, Sequence }
+import akka.persistence.query.EventEnvelope
+import akka.persistence.query.Sequence
 import akka.persistence.query.journal.leveldb.EventsByPersistenceIdStage.Continue
-import akka.stream.{ ActorMaterializer, Attributes, Outlet, SourceShape }
-import akka.stream.stage.{ GraphStage, GraphStageLogic, OutHandler, TimerGraphStageLogicWithLogging }
+import akka.stream.Attributes
+import akka.stream.Materializer
+import akka.stream.Outlet
+import akka.stream.SourceShape
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.stage.OutHandler
+import akka.stream.stage.TimerGraphStageLogicWithLogging
 
 import scala.concurrent.duration.FiniteDuration
 
@@ -36,11 +47,17 @@ final private[akka] class EventsByPersistenceIdStage(
     maxBufSize: Int,
     writeJournalPluginId: String,
     refreshInterval: Option[FiniteDuration],
-    mat: ActorMaterializer)
+    mat: Materializer)
     extends GraphStage[SourceShape[EventEnvelope]] {
   val out: Outlet[EventEnvelope] = Outlet("EventsByPersistenceIdSource")
   override def shape: SourceShape[EventEnvelope] = SourceShape(out)
-  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = {
+
+  override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
+    throw new UnsupportedOperationException("Not used")
+
+  override private[akka] def createLogicAndMaterializedValue(
+      inheritedAttributes: Attributes,
+      materializer: Materializer): (GraphStageLogic, NotUsed) = {
     val logic = new TimerGraphStageLogicWithLogging(shape) with OutHandler with Buffer[EventEnvelope] {
       val journal: ActorRef = Persistence(mat.system).journalFor(writeJournalPluginId)
       var currSeqNo = fromSequenceNr
@@ -50,6 +67,8 @@ final private[akka] class EventsByPersistenceIdStage(
 
       var nextSequenceNr = fromSequenceNr
       var toSequenceNr = initialToSequenceNr
+
+      override protected def logSource: Class[_] = classOf[EventsByPersistenceIdStage]
 
       override def preStart(): Unit = {
         stageActorRef = getStageActor(journalInteraction).ref
@@ -100,6 +119,7 @@ final private[akka] class EventsByPersistenceIdStage(
             if (highestSeqNr < toSequenceNr && isCurrentQuery()) {
               toSequenceNr = highestSeqNr
             }
+
             log.debug(
               "Replay complete. From sequenceNr {} currentSequenceNr {} toSequenceNr {} buffer size {}",
               fromSequenceNr,
@@ -140,7 +160,7 @@ final private[akka] class EventsByPersistenceIdStage(
 
       setHandler(out, this)
     }
-    logic
+    (logic, NotUsed)
   }
 
 }

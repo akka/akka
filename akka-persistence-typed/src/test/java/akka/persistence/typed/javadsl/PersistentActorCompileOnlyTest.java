@@ -94,7 +94,8 @@ public class PersistentActorCompileOnlyTest {
     }
 
     public static EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> pb =
-        new EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState>(new PersistenceId("p1")) {
+        new EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState>(
+            PersistenceId.ofUniqueId("p1")) {
 
           @Override
           public SimpleState emptyState() {
@@ -139,7 +140,7 @@ public class PersistentActorCompileOnlyTest {
         extends EventSourcedBehavior<SimpleCommand, SimpleEvent, SimpleState> {
 
       public AdditionalSettings(PersistenceId persistenceId) {
-        super(new PersistenceId("p1"));
+        super(PersistenceId.ofUniqueId("p1"));
       }
 
       @Override
@@ -181,11 +182,11 @@ public class PersistentActorCompileOnlyTest {
 
     public static class Cmd implements MyCommand {
       private final String data;
-      private final ActorRef<Ack> sender;
+      private final ActorRef<Ack> replyTo;
 
-      public Cmd(String data, ActorRef<Ack> sender) {
+      public Cmd(String data, ActorRef<Ack> replyTo) {
         this.data = data;
-        this.sender = sender;
+        this.replyTo = replyTo;
       }
     }
 
@@ -211,17 +212,16 @@ public class PersistentActorCompileOnlyTest {
     // #commonChainedEffects
 
     private EventSourcedBehavior<MyCommand, MyEvent, ExampleState> pa =
-        new EventSourcedBehavior<MyCommand, MyEvent, ExampleState>(new PersistenceId("pa")) {
+        new EventSourcedBehavior<MyCommand, MyEvent, ExampleState>(PersistenceId.ofUniqueId("pa")) {
 
           @Override
           public ExampleState emptyState() {
             return new ExampleState();
           }
 
+          // #commonChainedEffects
           @Override
           public CommandHandler<MyCommand, MyEvent, ExampleState> commandHandler() {
-
-            // #commonChainedEffects
             return newCommandHandlerBuilder()
                 .forStateType(ExampleState.class)
                 .onCommand(
@@ -229,11 +229,11 @@ public class PersistentActorCompileOnlyTest {
                     (state, cmd) ->
                         Effect()
                             .persist(new Evt(cmd.data))
-                            .thenRun(() -> cmd.sender.tell(new Ack()))
+                            .thenRun(() -> cmd.replyTo.tell(new Ack()))
                             .thenRun(commonChainedEffect))
                 .build();
-            // #commonChainedEffects
           }
+          // #commonChainedEffects
 
           @Override
           public EventHandler<ExampleState, MyEvent> eventHandler() {

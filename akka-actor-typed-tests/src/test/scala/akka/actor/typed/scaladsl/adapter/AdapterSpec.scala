@@ -4,7 +4,6 @@
 
 package akka.actor.typed.scaladsl.adapter
 
-import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 import akka.actor.InvalidMessageException
@@ -17,60 +16,78 @@ import akka.actor.typed.Terminated
 import akka.testkit._
 import akka.Done
 import akka.NotUsed
-import akka.{ actor => untyped }
+import akka.actor.ActorInitializationException
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.typed.internal.adapter.SchedulerAdapter
+import akka.{ actor => classic }
+import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
 
 object AdapterSpec {
-  val untyped1: untyped.Props = untyped.Props(new Untyped1)
+  val classic1: classic.Props = classic.Props(new Classic1)
 
-  class Untyped1 extends untyped.Actor {
+  class Classic1 extends classic.Actor {
     def receive = {
       case "ping"     => sender() ! "pong"
       case t: ThrowIt => throw t
     }
   }
 
-  def untypedForwarder(ref: untyped.ActorRef): untyped.Props = untyped.Props(new UntypedForwarder(ref))
+  val classicFailInConstructor: classic.Props = classic.Props(new ClassicFailInConstructor)
 
-  class UntypedForwarder(ref: untyped.ActorRef) extends untyped.Actor {
+  class ClassicFailInConstructor extends classic.Actor {
+    throw new TestException("Exception in constructor")
+    def receive = {
+      case "ping" => sender() ! "pong"
+    }
+  }
+
+  def classicForwarder(ref: classic.ActorRef): classic.Props = classic.Props(new ClassicForwarder(ref))
+
+  class ClassicForwarder(ref: classic.ActorRef) extends classic.Actor {
     def receive = {
       case a: String => ref ! a
     }
   }
 
-  def typed1(ref: untyped.ActorRef, probe: ActorRef[String]): Behavior[String] =
+  def typed1(ref: classic.ActorRef, probe: ActorRef[String]): Behavior[String] =
     Behaviors
       .receive[String] { (context, message) =>
         message match {
           case "send" =>
-            val replyTo = context.self.toUntyped
+            val replyTo = context.self.toClassic
             ref.tell("ping", replyTo)
             Behaviors.same
           case "pong" =>
             probe ! "ok"
             Behaviors.same
           case "actorOf" =>
-            val child = context.actorOf(untyped1)
-            child.tell("ping", context.self.toUntyped)
+            val child = context.actorOf(classic1)
+            child.tell("ping", context.self.toClassic)
             Behaviors.same
           case "watch" =>
             context.watch(ref)
             Behaviors.same
           case "supervise-restart" =>
             // restart is the default
-            val child = context.actorOf(untyped1)
+            val child = context.actorOf(classic1)
             context.watch(child)
             child ! ThrowIt3
-            child.tell("ping", context.self.toUntyped)
+            child.tell("ping", context.self.toClassic)
+            Behaviors.same
+          case "supervise-start-fail" =>
+            val child = context.actorOf(classicFailInConstructor)
+            context.watch(child)
             Behaviors.same
           case "stop-child" =>
-            val child = context.actorOf(untyped1)
+            val child = context.actorOf(classic1)
             context.watch(child)
             context.stop(child)
             Behaviors.same
         }
       }
       .receiveSignal {
-        case (context, Terminated(ref)) =>
+        case (_, Terminated(_)) =>
           probe ! "terminated"
           Behaviors.same
       }
@@ -91,24 +108,24 @@ object AdapterSpec {
   case object ThrowIt2 extends ThrowIt
   case object ThrowIt3 extends ThrowIt
 
-  def untyped2(ref: ActorRef[Ping], probe: ActorRef[String]): untyped.Props =
-    untyped.Props(new Untyped2(ref, probe))
+  def classic2(ref: ActorRef[Ping], probe: ActorRef[String]): classic.Props =
+    classic.Props(new Classic2(ref, probe))
 
-  class Untyped2(ref: ActorRef[Ping], probe: ActorRef[String]) extends untyped.Actor {
+  class Classic2(ref: ActorRef[Ping], probe: ActorRef[String]) extends classic.Actor {
 
-    override val supervisorStrategy = untyped.OneForOneStrategy() {
+    override val supervisorStrategy = classic.OneForOneStrategy() {
       ({
         case ThrowIt1 =>
           probe ! "thrown-stop"
-          untyped.SupervisorStrategy.Stop
+          classic.SupervisorStrategy.Stop
         case ThrowIt2 =>
           probe ! "thrown-resume"
-          untyped.SupervisorStrategy.Resume
+          classic.SupervisorStrategy.Resume
         case ThrowIt3 =>
           probe ! "thrown-restart"
           // TODO Restart will not really restart the behavior
-          untyped.SupervisorStrategy.Restart
-      }: untyped.SupervisorStrategy.Decider).orElse(untyped.SupervisorStrategy.defaultDecider)
+          classic.SupervisorStrategy.Restart
+      }: classic.SupervisorStrategy.Decider).orElse(classic.SupervisorStrategy.defaultDecider)
     }
 
     def receive = {
@@ -123,21 +140,21 @@ object AdapterSpec {
         child ! Ping(self)
       case "watch" =>
         context.watch(ref)
-      case untyped.Terminated(_) =>
+      case classic.Terminated(_) =>
         probe ! "terminated"
       case "supervise-stop" =>
-        testSupervice(ThrowIt1)
+        testSupervise(ThrowIt1)
       case "supervise-resume" =>
-        testSupervice(ThrowIt2)
+        testSupervise(ThrowIt2)
       case "supervise-restart" =>
-        testSupervice(ThrowIt3)
+        testSupervise(ThrowIt3)
       case "stop-child" =>
         val child = context.spawnAnonymous(typed2)
         context.watch(child)
         context.stop(child)
     }
 
-    private def testSupervice(t: ThrowIt): Unit = {
+    private def testSupervise(t: ThrowIt): Unit = {
       val child = context.spawnAnonymous(typed2)
       context.watch(child)
       child ! t
@@ -146,7 +163,7 @@ object AdapterSpec {
   }
 
   def typed2: Behavior[Typed2Msg] =
-    Behaviors.receive { (context, message) =>
+    Behaviors.receive { (_, message) =>
       message match {
         case Ping(replyTo) =>
           replyTo ! "pong"
@@ -158,14 +175,14 @@ object AdapterSpec {
       }
     }
 
-  def typed2Props: untyped.Props = PropsAdapter(typed2)
+  def typed2Props: classic.Props = PropsAdapter(typed2)
 
 }
 
-class AdapterSpec extends AkkaSpec("""
-   akka.loggers = [akka.testkit.TestEventListener]
-  """) {
+class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
   import AdapterSpec._
+
+  implicit val system = akka.actor.ActorSystem("AdapterSpec")
 
   "ActorSystem adaption" must {
     "only happen once for a given actor system" in {
@@ -177,20 +194,20 @@ class AdapterSpec extends AkkaSpec("""
 
     "not crash if guardian is stopped" in {
       for { _ <- 0 to 10 } {
-        var system: akka.actor.typed.ActorSystem[NotUsed] = null
+        var systemN: akka.actor.typed.ActorSystem[NotUsed] = null
         try {
-          system = ActorSystem.create(
+          systemN = ActorSystem.create(
             Behaviors.setup[NotUsed](_ => Behaviors.stopped[NotUsed]),
             "AdapterSpec-stopping-guardian")
-        } finally if (system != null) shutdown(system.toUntyped)
+        } finally if (system != null) TestKit.shutdownActorSystem(systemN.toClassic)
       }
     }
 
     "not crash if guardian is stopped very quickly" in {
       for { _ <- 0 to 10 } {
-        var system: akka.actor.typed.ActorSystem[Done] = null
+        var systemN: akka.actor.typed.ActorSystem[Done] = null
         try {
-          system = ActorSystem.create(Behaviors.receive[Done] { (context, message) =>
+          systemN = ActorSystem.create(Behaviors.receive[Done] { (context, message) =>
             context.self ! Done
             message match {
               case Done => Behaviors.stopped
@@ -198,104 +215,125 @@ class AdapterSpec extends AkkaSpec("""
 
           }, "AdapterSpec-stopping-guardian-2")
 
-        } finally if (system != null) shutdown(system.toUntyped)
+        } finally if (system != null) TestKit.shutdownActorSystem(systemN.toClassic)
       }
+    }
+
+    "convert Scheduler" in {
+      val typedScheduler = system.scheduler.toTyped
+      typedScheduler.getClass should ===(classOf[SchedulerAdapter])
+      (typedScheduler.toClassic should be).theSameInstanceAs(system.scheduler)
     }
   }
 
   "Adapted actors" must {
 
-    "send message from typed to untyped" in {
+    "send message from typed to classic" in {
       val probe = TestProbe()
-      val untypedRef = system.actorOf(untyped1)
-      val typedRef = system.spawnAnonymous(typed1(untypedRef, probe.ref))
+      val classicRef = system.actorOf(classic1)
+      val typedRef = system.spawnAnonymous(typed1(classicRef, probe.ref))
       typedRef ! "send"
       probe.expectMsg("ok")
     }
 
-    "not send null message from typed to untyped" in {
+    "not send null message from typed to classic" in {
       val probe = TestProbe()
-      val untypedRef = system.actorOf(untyped1)
-      val typedRef = system.spawnAnonymous(typed1(untypedRef, probe.ref))
+      val classicRef = system.actorOf(classic1)
+      val typedRef = system.spawnAnonymous(typed1(classicRef, probe.ref))
       intercept[InvalidMessageException] {
         typedRef ! null
       }
     }
 
-    "send message from untyped to typed" in {
+    "send message from classic to typed" in {
       val probe = TestProbe()
       val typedRef = system.spawnAnonymous(typed2)
-      val untypedRef = system.actorOf(untyped2(typedRef, probe.ref))
-      untypedRef ! "send"
+      val classicRef = system.actorOf(classic2(typedRef, probe.ref))
+      classicRef ! "send"
       probe.expectMsg("ok")
     }
 
-    "spawn typed child from untyped parent" in {
+    "spawn typed child from classic parent" in {
       val probe = TestProbe()
       val ign = system.spawnAnonymous(Behaviors.ignore[Ping])
-      val untypedRef = system.actorOf(untyped2(ign, probe.ref))
-      untypedRef ! "spawn"
+      val classicRef = system.actorOf(classic2(ign, probe.ref))
+      classicRef ! "spawn"
       probe.expectMsg("ok")
     }
 
-    "actorOf typed child via Props from untyped parent" in {
+    "actorOf typed child via Props from classic parent" in {
       val probe = TestProbe()
       val ign = system.spawnAnonymous(Behaviors.ignore[Ping])
-      val untypedRef = system.actorOf(untyped2(ign, probe.ref))
-      untypedRef ! "actorOf-props"
+      val classicRef = system.actorOf(classic2(ign, probe.ref))
+      classicRef ! "actorOf-props"
       probe.expectMsg("ok")
     }
 
-    "actorOf untyped child from typed parent" in {
+    "actorOf classic child from typed parent" in {
       val probe = TestProbe()
-      val ignore = system.actorOf(untyped.Props.empty)
+      val ignore = system.actorOf(classic.Props.empty)
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
       typedRef ! "actorOf"
       probe.expectMsg("ok")
     }
 
-    "watch typed from untyped" in {
+    "watch typed from classic" in {
       val probe = TestProbe()
       val typedRef = system.spawnAnonymous(typed2)
-      val untypedRef = system.actorOf(untyped2(typedRef, probe.ref))
-      untypedRef ! "watch"
+      val classicRef = system.actorOf(classic2(typedRef, probe.ref))
+      classicRef ! "watch"
       typedRef ! StopIt
       probe.expectMsg("terminated")
     }
 
-    "watch untyped from typed" in {
+    "watch classic from typed" in {
       val probe = TestProbe()
-      val untypedRef = system.actorOf(untyped1)
-      val typedRef = system.spawnAnonymous(typed1(untypedRef, probe.ref))
+      val classicRef = system.actorOf(classic1)
+      val typedRef = system.spawnAnonymous(typed1(classicRef, probe.ref))
       typedRef ! "watch"
-      untypedRef ! untyped.PoisonPill
+      classicRef ! classic.PoisonPill
       probe.expectMsg("terminated")
     }
 
-    "supervise untyped child from typed parent" in {
-      // FIXME there's a warning with null logged from the untyped empty child here, where does that come from?
+    "supervise classic child from typed parent" in {
+      // FIXME there's a warning with null logged from the classic empty child here, where does that come from?
       val probe = TestProbe()
-      val ignore = system.actorOf(untyped.Props.empty)
+      val ignore = system.actorOf(classic.Props.empty)
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
 
       // only stop supervisorStrategy
-      EventFilter[AdapterSpec.ThrowIt3.type](occurrences = 1).intercept {
-        typedRef ! "supervise-restart"
-        probe.expectMsg("ok")
-      }
+      LoggingTestKit
+        .error[AdapterSpec.ThrowIt3.type]
+        .expect {
+          typedRef ! "supervise-restart"
+          probe.expectMsg("ok")
+        }(system.toTyped)
     }
 
-    "stop typed child from untyped parent" in {
+    "supervise classic child that throws in constructor from typed parent" in {
+      val probe = TestProbe()
+      val ignore = system.actorOf(classic.Props.empty)
+      val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
+
+      LoggingTestKit
+        .error[ActorInitializationException]
+        .expect {
+          typedRef ! "supervise-start-fail"
+          probe.expectMsg("terminated")
+        }(system.toTyped)
+    }
+
+    "stop typed child from classic parent" in {
       val probe = TestProbe()
       val ignore = system.spawnAnonymous(Behaviors.ignore[Ping])
-      val untypedRef = system.actorOf(untyped2(ignore, probe.ref))
-      untypedRef ! "stop-child"
+      val classicRef = system.actorOf(classic2(ignore, probe.ref))
+      classicRef ! "stop-child"
       probe.expectMsg("terminated")
     }
 
-    "stop untyped child from typed parent" in {
+    "stop classic child from typed parent" in {
       val probe = TestProbe()
-      val ignore = system.actorOf(untyped.Props.empty)
+      val ignore = system.actorOf(classic.Props.empty)
       val typedRef = system.spawnAnonymous(typed1(ignore, probe.ref))
       typedRef ! "stop-child"
       probe.expectMsg("terminated")
@@ -303,10 +341,17 @@ class AdapterSpec extends AkkaSpec("""
 
     "log exception if not by handled typed supervisor" in {
       val throwMsg = "sad panda"
-      EventFilter.warning(pattern = ".*sad panda.*").intercept {
-        system.spawnAnonymous(unhappyTyped(throwMsg))
-        Thread.sleep(1000)
-      }
+      LoggingTestKit
+        .error("sad panda")
+        .expect {
+          system.spawnAnonymous(unhappyTyped(throwMsg))
+          Thread.sleep(1000)
+        }(system.toTyped)
     }
+  }
+
+  override protected def afterAll(): Unit = {
+    super.afterAll()
+    TestKit.shutdownActorSystem(system)
   }
 }

@@ -6,14 +6,15 @@ package akka.actor.typed
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.WordSpecLike
 import scala.concurrent.duration._
 
 import akka.actor.ActorInitializationException
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.PoisonPillInterceptor
 
@@ -74,15 +75,9 @@ object InterceptSpec {
   }
 }
 
-class InterceptSpec extends ScalaTestWithActorTestKit("""
-      akka.loggers = [akka.testkit.TestEventListener]
-    """) with WordSpecLike {
+class InterceptSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
   import BehaviorInterceptor._
   import InterceptSpec._
-
-  // FIXME #24348: eventfilter support in typed testkit
-  import scaladsl.adapter._
-  implicit val untypedSystem = system.toUntyped
 
   private def snitchingInterceptor(probe: ActorRef[String]) = new BehaviorInterceptor[String, String] {
     override def aroundReceive(
@@ -287,7 +282,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[String]()
       val interceptor = snitchingInterceptor(probe.ref)
 
-      EventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingTestKit.error[ActorInitializationException].expect {
         val ref = spawn(Behaviors.intercept(() => interceptor)(Behaviors.setup[String] { _ =>
           Behaviors.same[String]
         }))

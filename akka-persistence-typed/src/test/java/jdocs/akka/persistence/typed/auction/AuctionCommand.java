@@ -6,7 +6,6 @@ package jdocs.akka.persistence.typed.auction;
 
 import akka.Done;
 import akka.actor.typed.ActorRef;
-import akka.persistence.typed.ExpectingReply;
 
 import java.util.UUID;
 
@@ -14,67 +13,39 @@ import java.util.UUID;
 public interface AuctionCommand {
 
   /** Start the auction. */
-  final class StartAuction implements AuctionCommand, ExpectingReply<Done> {
+  final class StartAuction implements AuctionCommand {
 
     /** The auction to start. */
-    private final Auction auction;
+    public final Auction auction;
 
-    private final ActorRef<Done> replyTo;
+    public final ActorRef<Done> replyTo;
 
     public StartAuction(Auction auction, ActorRef<Done> replyTo) {
       this.auction = auction;
       this.replyTo = replyTo;
     }
-
-    @Override
-    public ActorRef<Done> replyTo() {
-      return replyTo;
-    }
-
-    public Auction getAuction() {
-      return auction;
-    }
   }
 
   /** Cancel the auction. */
-  final class CancelAuction implements AuctionCommand, ExpectingReply<Done> {
-    private final ActorRef<Done> replyTo;
+  final class CancelAuction implements AuctionCommand {
+    public final ActorRef<Done> replyTo;
 
     public CancelAuction(ActorRef<Done> replyTo) {
       this.replyTo = replyTo;
     }
-
-    @Override
-    public ActorRef<Done> replyTo() {
-      return replyTo;
-    }
   }
 
   /** Place a bid on the auction. */
-  final class PlaceBid implements AuctionCommand, ExpectingReply<PlaceBidReply> {
+  final class PlaceBid implements AuctionCommand {
 
-    private final int bidPrice;
-    private final UUID bidder;
-
-    private final ActorRef<PlaceBidReply> replyTo;
+    public final int bidPrice;
+    public final UUID bidder;
+    public final ActorRef<PlaceBidReply> replyTo;
 
     public PlaceBid(int bidPrice, UUID bidder, ActorRef<PlaceBidReply> replyTo) {
       this.bidPrice = bidPrice;
       this.bidder = bidder;
       this.replyTo = replyTo;
-    }
-
-    @Override
-    public ActorRef<PlaceBidReply> replyTo() {
-      return replyTo;
-    }
-
-    public int getBidPrice() {
-      return bidPrice;
-    }
-
-    public UUID getBidder() {
-      return bidder;
     }
   }
 
@@ -167,31 +138,21 @@ public interface AuctionCommand {
   }
 
   /** Finish bidding. */
-  final class FinishBidding implements AuctionCommand, ExpectingReply<Done> {
+  final class FinishBidding implements AuctionCommand {
 
-    private final ActorRef<Done> replyTo;
+    public final ActorRef<Done> replyTo;
 
     FinishBidding(ActorRef<Done> replyTo) {
       this.replyTo = replyTo;
     }
-
-    @Override
-    public ActorRef<Done> replyTo() {
-      return replyTo;
-    }
   }
 
   /** Get the auction. */
-  final class GetAuction implements AuctionCommand, ExpectingReply<AuctionState> {
-    private final ActorRef<AuctionState> replyTo;
+  final class GetAuction implements AuctionCommand {
+    public final ActorRef<AuctionState> replyTo;
 
     public GetAuction(ActorRef<AuctionState> replyTo) {
       this.replyTo = replyTo;
-    }
-
-    @Override
-    public ActorRef<AuctionState> replyTo() {
-      return replyTo;
     }
   }
 }

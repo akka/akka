@@ -61,7 +61,8 @@ object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
     akka.cluster {
       debug.verbose-heartbeat-logging = on
       debug.verbose-gossip-logging = on
-      auto-down-unreachable-after = 0s
+      downing-provider-class = akka.cluster.testkit.AutoDowning
+      testkit.auto-down-unreachable-after = 0s
       sharding {
         retry-interval = 200ms
       }

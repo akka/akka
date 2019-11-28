@@ -22,7 +22,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
-import akka.stream.ActorMaterializer
 import akka.stream.KillSwitches
 import akka.stream.ThrottleMode
 import akka.stream.scaladsl.Flow
@@ -52,8 +51,6 @@ object AeronStreamLatencySpec extends MultiNodeConfig {
          testconductor.barrier-timeout = ${barrierTimeout.toSeconds}s
          actor {
            provider = remote
-           serialize-creators = false
-           serialize-messages = false
          }
          remote.artery {
            enabled = off
@@ -105,8 +102,6 @@ abstract class AeronStreamLatencySpec
     r.start()
     r
   }
-
-  lazy implicit val mat = ActorMaterializer()(system)
 
   override def initialParticipants = roles.size
 

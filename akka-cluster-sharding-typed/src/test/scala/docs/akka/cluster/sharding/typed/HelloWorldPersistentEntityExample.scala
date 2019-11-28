@@ -9,6 +9,9 @@ import scala.concurrent.duration._
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.serialization.jackson.CborSerializable
 
 object HelloWorldPersistentEntityExample {
@@ -21,18 +24,17 @@ object HelloWorldPersistentEntityExample {
   class HelloWorldService(system: ActorSystem[_]) {
     import system.executionContext
 
-    // registration at startup
     private val sharding = ClusterSharding(system)
 
-    sharding.init(
-      Entity(
-        typeKey = HelloWorld.entityTypeKey,
-        createBehavior = entityContext => HelloWorld.persistentEntity(entityContext.entityId)))
+    // registration at startup
+    sharding.init(Entity(typeKey = HelloWorld.TypeKey) { entityContext =>
+      HelloWorld(entityContext.entityId, PersistenceId(entityContext.entityTypeKey.name, entityContext.entityId))
+    })
 
     private implicit val askTimeout: Timeout = Timeout(5.seconds)
 
     def greet(worldId: String, whom: String): Future[Int] = {
-      val entityRef = sharding.entityRefFor(HelloWorld.entityTypeKey, worldId)
+      val entityRef = sharding.entityRefFor(HelloWorld.TypeKey, worldId)
       val greeting = entityRef ? HelloWorld.Greet(whom)
       greeting.map(_.numberOfPeople)
     }
@@ -43,7 +45,6 @@ object HelloWorldPersistentEntityExample {
   //#persistent-entity
   import akka.actor.typed.Behavior
   import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-  import akka.cluster.sharding.typed.scaladsl.EventSourcedEntity
   import akka.persistence.typed.scaladsl.Effect
 
   object HelloWorld {
@@ -77,16 +78,15 @@ object HelloWorldPersistentEntityExample {
       state.add(evt.whom)
     }
 
-    val entityTypeKey: EntityTypeKey[Command] =
+    val TypeKey: EntityTypeKey[Command] =
       EntityTypeKey[Command]("HelloWorld")
 
-    def persistentEntity(entityId: String): Behavior[Command] =
-      EventSourcedEntity(
-        entityTypeKey = entityTypeKey,
-        entityId = entityId,
-        emptyState = KnownPeople(Set.empty),
-        commandHandler,
-        eventHandler)
+    def apply(entityId: String, persistenceId: PersistenceId): Behavior[Command] = {
+      Behaviors.setup { context =>
+        context.log.info("Starting HelloWorld {}", entityId)
+        EventSourcedBehavior(persistenceId, emptyState = KnownPeople(Set.empty), commandHandler, eventHandler)
+      }
+    }
 
   }
   //#persistent-entity

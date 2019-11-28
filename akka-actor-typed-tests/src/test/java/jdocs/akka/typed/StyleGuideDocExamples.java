@@ -110,12 +110,10 @@ interface StyleGuideDocExamples {
         return Behaviors.setup(Counter::new);
       }
 
-      private final ActorContext<Counter.Command> context;
-
       private int n;
 
       private Counter(ActorContext<Command> context) {
-        this.context = context;
+        super(context);
       }
 
       @Override
@@ -130,7 +128,7 @@ interface StyleGuideDocExamples {
 
       private Behavior<Command> onIncrement() {
         n++;
-        context.getLog().debug("Incremented counter to [{}]", n);
+        getContext().getLog().debug("Incremented counter to [{}]", n);
         return this;
       }
 
@@ -213,7 +211,7 @@ interface StyleGuideDocExamples {
                 name,
                 command.interval,
                 n);
-        timers.startTimerWithFixedDelay("repeat", Increment.INSTANCE, command.interval);
+        timers.startTimerWithFixedDelay(Increment.INSTANCE, command.interval);
         return Behaviors.same();
       }
 
@@ -308,7 +306,7 @@ interface StyleGuideDocExamples {
                 setup.name,
                 command.interval,
                 n);
-        setup.timers.startTimerWithFixedDelay("repeat", Increment.INSTANCE, command.interval);
+        setup.timers.startTimerWithFixedDelay(Increment.INSTANCE, command.interval);
         return Behaviors.same();
       }
 
@@ -396,7 +394,7 @@ interface StyleGuideDocExamples {
                 name,
                 command.interval,
                 n);
-        timers.startTimerWithFixedDelay("repeat", Increment.INSTANCE, command.interval);
+        timers.startTimerWithFixedDelay(Increment.INSTANCE, command.interval);
         return Behaviors.same();
       }
 
@@ -426,13 +424,15 @@ interface StyleGuideDocExamples {
 
       // factory for the initial `Behavior`
       public static Behavior<Command> create(int countDownFrom, ActorRef<Done> notifyWhenZero) {
-        return Behaviors.setup(context -> new CountDown(countDownFrom, notifyWhenZero));
+        return Behaviors.setup(context -> new CountDown(context, countDownFrom, notifyWhenZero));
       }
 
       private final ActorRef<Done> notifyWhenZero;
       private int remaining;
 
-      private CountDown(int countDownFrom, ActorRef<Done> notifyWhenZero) {
+      private CountDown(
+          ActorContext<Command> context, int countDownFrom, ActorRef<Done> notifyWhenZero) {
+        super(context);
         this.remaining = countDownFrom;
         this.notifyWhenZero = notifyWhenZero;
       }
@@ -552,18 +552,17 @@ interface StyleGuideDocExamples {
             context ->
                 Behaviors.withTimers(
                     timers -> {
-                      timers.startTimerWithFixedDelay("tick", Tick.INSTANCE, tickInterval);
+                      timers.startTimerWithFixedDelay(Tick.INSTANCE, tickInterval);
                       return new Counter(name, context);
                     }));
       }
 
       private final String name;
-      private final ActorContext<Command> context;
       private int count;
 
       private Counter(String name, ActorContext<Command> context) {
+        super(context);
         this.name = name;
-        this.context = context;
       }
 
       // #on-message-lambda
@@ -589,14 +588,16 @@ interface StyleGuideDocExamples {
       // #on-message-lambda
       private Behavior<Command> onIncrement() {
         count++;
-        context.getLog().debug("[{}] Incremented counter to [{}]", name, count);
+        getContext().getLog().debug("[{}] Incremented counter to [{}]", name, count);
         return this;
       }
       // #on-message-lambda
 
       private Behavior<Command> onTick() {
         count++;
-        context.getLog().debug("[{}] Incremented counter by background tick to [{}]", name, count);
+        getContext()
+            .getLog()
+            .debug("[{}] Incremented counter by background tick to [{}]", name, count);
         return this;
       }
 
@@ -616,14 +617,14 @@ interface StyleGuideDocExamples {
                 Increment.class,
                 notUsed -> {
                   count++;
-                  context.getLog().debug("[{}] Incremented counter to [{}]", name, count);
+                  getContext().getLog().debug("[{}] Incremented counter to [{}]", name, count);
                   return this;
                 })
             .onMessage(
                 Tick.class,
                 notUsed -> {
                   count++;
-                  context
+                  getContext()
                       .getLog()
                       .debug("[{}] Incremented counter by background tick to [{}]", name, count);
                   return this;
@@ -646,11 +647,13 @@ interface StyleGuideDocExamples {
   interface PublicVsPrivateMessages2 {
     // #public-private-messages-2
     // above example is preferred, but this is possible and not wrong
-    public class Counter extends AbstractBehavior<Counter.PrivateCommand> {
+    public class Counter extends AbstractBehavior<Counter.Message> {
 
-      public interface PrivateCommand {}
+      // The type of all public and private messages the Counter actor handles
+      public interface Message {}
 
-      public interface Command extends PrivateCommand {}
+      /** Counter's public message protocol type. */
+      public interface Command extends Message {}
 
       public enum Increment implements Command {
         INSTANCE
@@ -672,33 +675,35 @@ interface StyleGuideDocExamples {
         }
       }
 
-      // Tick is a PrivateCommand so can't be sent to an ActorRef<Command>
+      // The type of the Counter actor's internal messages.
+      interface PrivateCommand extends Message {}
+
+      // Tick is a private command so can't be sent to an ActorRef<Command>
       enum Tick implements PrivateCommand {
         INSTANCE
       }
 
       public static Behavior<Command> create(String name, Duration tickInterval) {
         return Behaviors.setup(
-                (ActorContext<PrivateCommand> context) ->
+                (ActorContext<Message> context) ->
                     Behaviors.withTimers(
                         timers -> {
-                          timers.startTimerWithFixedDelay("tick", Tick.INSTANCE, tickInterval);
+                          timers.startTimerWithFixedDelay(Tick.INSTANCE, tickInterval);
                           return new Counter(name, context);
                         }))
             .narrow(); // note narrow here
       }
 
       private final String name;
-      private final ActorContext<PrivateCommand> context;
       private int count;
 
-      private Counter(String name, ActorContext<PrivateCommand> context) {
+      private Counter(String name, ActorContext<Message> context) {
+        super(context);
         this.name = name;
-        this.context = context;
       }
 
       @Override
-      public Receive<PrivateCommand> createReceive() {
+      public Receive<Message> createReceive() {
         return newReceiveBuilder()
             .onMessage(Increment.class, notUsed -> onIncrement())
             .onMessage(Tick.class, notUsed -> onTick())
@@ -706,19 +711,21 @@ interface StyleGuideDocExamples {
             .build();
       }
 
-      private Behavior<PrivateCommand> onIncrement() {
+      private Behavior<Message> onIncrement() {
         count++;
-        context.getLog().debug("[{}] Incremented counter to [{}]", name, count);
+        getContext().getLog().debug("[{}] Incremented counter to [{}]", name, count);
         return this;
       }
 
-      private Behavior<PrivateCommand> onTick() {
+      private Behavior<Message> onTick() {
         count++;
-        context.getLog().debug("[{}] Incremented counter by background tick to [{}]", name, count);
+        getContext()
+            .getLog()
+            .debug("[{}] Incremented counter by background tick to [{}]", name, count);
         return this;
       }
 
-      private Behavior<PrivateCommand> onGetValue(GetValue command) {
+      private Behavior<Message> onGetValue(GetValue command) {
         command.replyTo.tell(new Value(count));
         return this;
       }

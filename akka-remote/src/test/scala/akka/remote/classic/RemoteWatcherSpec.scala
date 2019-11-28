@@ -67,7 +67,7 @@ object RemoteWatcherSpec {
 
 }
 
-@silent // deprecated
+@silent("deprecated")
 class RemoteWatcherSpec extends AkkaSpec("""
      akka {
        loglevel = INFO
@@ -78,7 +78,7 @@ class RemoteWatcherSpec extends AkkaSpec("""
          port = 0
        }
        remote.artery.enabled = off
-       remote.use-unsafe-remote-features-without-cluster = on
+       remote.use-unsafe-remote-features-outside-cluster = on
      }
      # test is using Java serialization and not priority to rewrite
      akka.actor.allow-java-serialization = on

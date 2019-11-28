@@ -11,8 +11,10 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.compat.java8.FutureConverters._
+
 import akka.util.JavaDurationConverters._
 import scala.concurrent.Future
+
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
@@ -28,10 +30,11 @@ import akka.actor.typed.internal.adapter.ActorRefAdapter
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
+import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.ShardRegion
-import akka.cluster.sharding.ShardRegion.{ StartEntity => UntypedStartEntity }
+import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
 import akka.cluster.sharding.typed.scaladsl.EntityContext
 import akka.cluster.typed.Cluster
 import akka.event.Logging
@@ -39,7 +42,6 @@ import akka.event.LoggingAdapter
 import akka.japi.function.{ Function => JFunction }
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
-import akka.persistence.typed.PersistenceId
 import akka.util.ByteString
 import akka.util.Timeout
 
@@ -52,8 +54,8 @@ import akka.util.Timeout
     extends ShardingMessageExtractor[Any, M] {
   override def entityId(message: Any): String = {
     message match {
-      case ShardingEnvelope(entityId, _) => entityId //also covers UntypedStartEntity in ShardingEnvelope
-      case UntypedStartEntity(entityId)  => entityId
+      case ShardingEnvelope(entityId, _) => entityId //also covers ClassicStartEntity in ShardingEnvelope
+      case ClassicStartEntity(entityId)  => entityId
       case msg: E @unchecked             => delegate.entityId(msg)
     }
   }
@@ -63,9 +65,9 @@ import akka.util.Timeout
   override def unwrapMessage(message: Any): M = {
     message match {
       case ShardingEnvelope(_, msg: M @unchecked) =>
-        //also covers UntypedStartEntity in ShardingEnvelope
+        //also covers ClassicStartEntity in ShardingEnvelope
         msg
-      case msg: UntypedStartEntity =>
+      case msg: ClassicStartEntity =>
         // not really of type M, but erased and StartEntity is only handled internally, not delivered to the entity
         msg.asInstanceOf[M]
       case msg: E @unchecked =>
@@ -79,43 +81,9 @@ import akka.util.Timeout
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object EntityTypeKeyImpl {
-
-  /**
-   * Default separator character used for concatenating EntityTypeKey with entityId to construct unique persistenceId.
-   * This must be same as in Lagom's `scaladsl.PersistentEntity`, for compatibility. No separator is used
-   * in Lagom's `javadsl.PersistentEntity` so for compatibility with that the `""` separator must be defined
-   * `withEntityIdSeparator`.
-   */
-  val EntityIdSeparator = "|"
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi private[akka] final case class EntityTypeKeyImpl[T](
-    name: String,
-    messageClassName: String,
-    entityIdSeparator: String = EntityTypeKeyImpl.EntityIdSeparator)
+@InternalApi private[akka] final case class EntityTypeKeyImpl[T](name: String, messageClassName: String)
     extends javadsl.EntityTypeKey[T]
     with scaladsl.EntityTypeKey[T] {
-
-  if (!entityIdSeparator.isEmpty && name.contains(entityIdSeparator))
-    throw new IllegalArgumentException(
-      s"EntityTypeKey.name [$name] contains [$entityIdSeparator] which is " +
-      "a reserved character")
-
-  override def persistenceIdFrom(entityId: String): PersistenceId = {
-    if (!entityIdSeparator.isEmpty && entityId.contains(entityIdSeparator))
-      throw new IllegalArgumentException(
-        s"entityId [$entityId] contains [$entityIdSeparator] which is " +
-        "a reserved character")
-
-    PersistenceId(name + entityIdSeparator + entityId)
-  }
-
-  override def withEntityIdSeparator(separator: String): EntityTypeKeyImpl[T] =
-    EntityTypeKeyImpl[T](name, messageClassName, separator)
 
   override def toString: String = s"EntityTypeKey[$messageClassName]($name)"
 }
@@ -129,12 +97,12 @@ import akka.util.Timeout
 
   require(
     system.isInstanceOf[ActorSystemAdapter[_]],
-    "only adapted untyped actor systems can be used for cluster features")
+    "only adapted classic actor systems can be used for cluster features")
 
   private val cluster = Cluster(system)
-  private val untypedSystem: ExtendedActorSystem = system.toUntyped.asInstanceOf[ExtendedActorSystem]
-  private val untypedSharding = akka.cluster.sharding.ClusterSharding(untypedSystem)
-  private val log: LoggingAdapter = Logging(untypedSystem, classOf[scaladsl.ClusterSharding])
+  private val classicSystem: ExtendedActorSystem = system.toClassic.asInstanceOf[ExtendedActorSystem]
+  private val classicSharding = akka.cluster.sharding.ClusterSharding(classicSystem)
+  private val log: LoggingAdapter = Logging(classicSystem, classOf[scaladsl.ClusterSharding])
 
   // typeKey.name to messageClassName
   private val regions: ConcurrentHashMap[String, String] = new ConcurrentHashMap
@@ -154,12 +122,15 @@ import akka.util.Timeout
       case Some(e) => e
     }).asInstanceOf[ShardingMessageExtractor[E, M]]
 
+    val settingsWithRole = entity.role.fold(settings)(settings.withRole)
+    val settingsWithDataCenter = entity.dataCenter.fold(settingsWithRole)(settingsWithRole.withDataCenter)
+
     internalInit(
       entity.createBehavior,
       entity.entityProps,
       entity.typeKey,
       entity.stopMessage,
-      settings,
+      settingsWithDataCenter,
       extractor,
       entity.allocationStrategy)
   }
@@ -169,20 +140,20 @@ import akka.util.Timeout
     import scala.compat.java8.OptionConverters._
     init(
       new scaladsl.Entity(
-        createBehavior = (ctx: EntityContext) =>
-          Behaviors.setup[M] { actorContext =>
-            entity.createBehavior(new javadsl.EntityContext[M](ctx.entityId, ctx.shard, actorContext.asJava))
-          },
+        createBehavior = (ctx: EntityContext[M]) =>
+          entity.createBehavior(new javadsl.EntityContext[M](entity.typeKey, ctx.entityId, ctx.shard)),
         typeKey = entity.typeKey.asScala,
         stopMessage = entity.stopMessage.asScala,
         entityProps = entity.entityProps,
         settings = entity.settings.asScala,
         messageExtractor = entity.messageExtractor.asScala,
-        allocationStrategy = entity.allocationStrategy.asScala))
+        allocationStrategy = entity.allocationStrategy.asScala,
+        role = entity.role.asScala,
+        dataCenter = entity.dataCenter.asScala))
   }
 
   private def internalInit[M, E](
-      behavior: EntityContext => Behavior[M],
+      behavior: EntityContext[M] => Behavior[M],
       entityProps: Props,
       typeKey: scaladsl.EntityTypeKey[M],
       stopMessage: Option[M],
@@ -212,8 +183,8 @@ import akka.util.Timeout
             typeKey.name,
             new java.util.function.Function[String, ActorRef[scaladsl.ClusterSharding.ShardCommand]] {
               override def apply(t: String): ActorRef[scaladsl.ClusterSharding.ShardCommand] = {
-                // using untyped.systemActorOf to avoid the Future[ActorRef]
-                system.toUntyped
+                // using classic.systemActorOf to avoid the Future[ActorRef]
+                system.toClassic
                   .asInstanceOf[ExtendedActorSystem]
                   .systemActorOf(
                     PropsAdapter(ShardCommandActor.behavior(stopMessage.getOrElse(PoisonPill))),
@@ -228,14 +199,14 @@ import akka.util.Timeout
           }
         }
 
-        val untypedEntityPropsFactory: String => akka.actor.Props = { entityId =>
-          val behv = behavior(new EntityContext(entityId, shardCommandDelegator))
+        val classicEntityPropsFactory: String => akka.actor.Props = { entityId =>
+          val behv = behavior(new EntityContext(typeKey, entityId, shardCommandDelegator))
           PropsAdapter(poisonPillInterceptor(behv), entityProps)
         }
-        untypedSharding.internalStart(
+        classicSharding.internalStart(
           typeKey.name,
-          untypedEntityPropsFactory,
-          ClusterShardingSettings.toUntypedSettings(settings),
+          classicEntityPropsFactory,
+          ClusterShardingSettings.toClassicSettings(settings),
           extractEntityId,
           extractShardId,
           allocationStrategy.getOrElse(defaultShardAllocationStrategy(settings)),
@@ -248,7 +219,7 @@ import akka.util.Timeout
           settings.role,
           settings.dataCenter)
 
-        untypedSharding.startProxy(
+        classicSharding.startProxy(
           typeKey.name,
           settings.role,
           dataCenter = settings.dataCenter,
@@ -271,16 +242,42 @@ import akka.util.Timeout
 
   override def entityRefFor[M](typeKey: scaladsl.EntityTypeKey[M], entityId: String): scaladsl.EntityRef[M] = {
     new EntityRefImpl[M](
-      untypedSharding.shardRegion(typeKey.name),
+      classicSharding.shardRegion(typeKey.name),
       entityId,
       typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
+  override def entityRefFor[M](
+      typeKey: scaladsl.EntityTypeKey[M],
+      entityId: String,
+      dataCenter: DataCenter): scaladsl.EntityRef[M] = {
+    if (dataCenter == cluster.selfMember.dataCenter)
+      entityRefFor(typeKey, entityId)
+    else
+      new EntityRefImpl[M](
+        classicSharding.shardRegionProxy(typeKey.name, dataCenter),
+        entityId,
+        typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+  }
+
   override def entityRefFor[M](typeKey: javadsl.EntityTypeKey[M], entityId: String): javadsl.EntityRef[M] = {
     new EntityRefImpl[M](
-      untypedSharding.shardRegion(typeKey.name),
+      classicSharding.shardRegion(typeKey.name),
       entityId,
       typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
+  }
+
+  override def entityRefFor[M](
+      typeKey: javadsl.EntityTypeKey[M],
+      entityId: String,
+      dataCenter: String): javadsl.EntityRef[M] = {
+    if (dataCenter == cluster.selfMember.dataCenter)
+      entityRefFor(typeKey, entityId)
+    else
+      new EntityRefImpl[M](
+        classicSharding.shardRegionProxy(typeKey.name, dataCenter),
+        entityId,
+        typeKey.asInstanceOf[EntityTypeKeyImpl[M]])
   }
 
   override def defaultShardAllocationStrategy(settings: ClusterShardingSettings): ShardAllocationStrategy = {
@@ -291,8 +288,8 @@ import akka.util.Timeout
 
   override lazy val shardState: ActorRef[ClusterShardingQuery] = {
     import akka.actor.typed.scaladsl.adapter._
-    val behavior = ShardingState.behavior(untypedSharding)
-    untypedSystem.systemActorOf(PropsAdapter(behavior), "typedShardState")
+    val behavior = ShardingState.behavior(classicSharding)
+    classicSystem.systemActorOf(PropsAdapter(behavior), "typedShardState")
   }
 
 }
@@ -324,20 +321,20 @@ import akka.util.Timeout
 
   /** Similar to [[akka.actor.typed.scaladsl.AskPattern.PromiseRef]] but for an `EntityRef` target. */
   @InternalApi
-  private final class EntityPromiseRef[U](untyped: InternalActorRef, timeout: Timeout) {
+  private final class EntityPromiseRef[U](classic: InternalActorRef, timeout: Timeout) {
     import akka.actor.typed.internal.{ adapter => adapt }
 
     // Note: _promiseRef mustn't have a type pattern, since it can be null
     private[this] val (_ref: ActorRef[U], _future: Future[U], _promiseRef) =
-      if (untyped.isTerminated)
+      if (classic.isTerminated)
         (
-          adapt.ActorRefAdapter[U](untyped.provider.deadLetters),
+          adapt.ActorRefAdapter[U](classic.provider.deadLetters),
           Future.failed[U](
             new AskTimeoutException(s"Recipient shard region of [${EntityRefImpl.this}] had already been terminated.")),
           null)
       else if (timeout.duration.length <= 0)
         (
-          adapt.ActorRefAdapter[U](untyped.provider.deadLetters),
+          adapt.ActorRefAdapter[U](classic.provider.deadLetters),
           Future.failed[U](
             new IllegalArgumentException(
               s"Timeout length must be positive, question not sent to [${EntityRefImpl.this}]")),
@@ -345,7 +342,7 @@ import akka.util.Timeout
       else {
         // note that the real messageClassName will be set afterwards, replyTo pattern
         val a =
-          PromiseActorRef(untyped.provider, timeout, targetName = EntityRefImpl.this, messageClassName = "unknown")
+          PromiseActorRef(classic.provider, timeout, targetName = EntityRefImpl.this, messageClassName = "unknown")
         val b = adapt.ActorRefAdapter[U](a)
         (b, a.result.future.asInstanceOf[Future[U]], a)
       }
@@ -376,21 +373,21 @@ import akka.util.Timeout
  */
 @InternalApi private[akka] object ShardCommandActor {
   import akka.actor.typed.scaladsl.adapter._
-  import akka.cluster.sharding.ShardRegion.{ Passivate => UntypedPassivate }
+  import akka.cluster.sharding.ShardRegion.{ Passivate => ClassicPassivate }
 
   def behavior(stopMessage: Any): Behavior[scaladsl.ClusterSharding.ShardCommand] = {
-    def sendUntypedPassivate(entity: ActorRef[_], ctx: TypedActorContext[_]): Unit = {
-      val pathToShard = entity.toUntyped.path.elements.take(4).mkString("/")
-      ctx.asScala.system.toUntyped.actorSelection(pathToShard).tell(UntypedPassivate(stopMessage), entity.toUntyped)
+    def sendClassicPassivate(entity: ActorRef[_], ctx: TypedActorContext[_]): Unit = {
+      val pathToShard = entity.toClassic.path.elements.take(4).mkString("/")
+      ctx.asScala.system.toClassic.actorSelection(pathToShard).tell(ClassicPassivate(stopMessage), entity.toClassic)
     }
 
     Behaviors.receive { (ctx, msg) =>
       msg match {
         case scaladsl.ClusterSharding.Passivate(entity) =>
-          sendUntypedPassivate(entity, ctx)
+          sendClassicPassivate(entity, ctx)
           Behaviors.same
         case javadsl.ClusterSharding.Passivate(entity) =>
-          sendUntypedPassivate(entity, ctx)
+          sendClassicPassivate(entity, ctx)
           Behaviors.same
         case _ =>
           Behaviors.unhandled

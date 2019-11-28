@@ -17,6 +17,7 @@ Take up to *n* elements from the stream (less than *n* only if the upstream comp
 Take up to *n* elements from the stream (less than *n* only if the upstream completes before emitting *n* elements)
 and returns a pair containing a strict sequence of the taken element and a stream representing the remaining elements.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

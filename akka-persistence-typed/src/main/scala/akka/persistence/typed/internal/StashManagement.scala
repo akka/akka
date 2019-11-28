@@ -9,6 +9,7 @@ import akka.actor.Dropped
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.StashOverflowException
 import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.StashBuffer
 import akka.annotation.InternalApi
 import akka.util.ConstantFun
@@ -45,14 +46,12 @@ private[akka] trait StashManagement[C, E, S] {
       case e: StashOverflowException =>
         setup.settings.stashOverflowStrategy match {
           case StashOverflowStrategy.Drop =>
-            if (context.log.isWarningEnabled) {
-              val dropName = msg match {
-                case InternalProtocol.IncomingCommand(actual) => actual.getClass.getName
-                case other                                    => other.getClass.getName
-              }
-              context.log.warning("Stash buffer is full, dropping message [{}]", dropName)
+            val dropName = msg match {
+              case InternalProtocol.IncomingCommand(actual) => actual.getClass.getName
+              case other                                    => other.getClass.getName
             }
-            context.system.toUntyped.eventStream.publish(Dropped(msg, "Stash buffer is full", context.self.toUntyped))
+            context.log.warn("Stash buffer is full, dropping message [{}]", dropName)
+            context.system.toClassic.eventStream.publish(Dropped(msg, "Stash buffer is full", context.self.toClassic))
           case StashOverflowStrategy.Fail =>
             throw e
         }
@@ -97,7 +96,7 @@ private[akka] trait StashManagement[C, E, S] {
 
   private def logStashMessage(msg: InternalProtocol, buffer: StashBuffer[InternalProtocol]): Unit = {
     if (setup.settings.logOnStashing)
-      setup.log.debug(
+      setup.log.debugN(
         "Stashing message to {} stash: [{}] ",
         if (buffer eq stashState.internalStashBuffer) "internal" else "user",
         msg)
@@ -105,7 +104,7 @@ private[akka] trait StashManagement[C, E, S] {
 
   private def logUnstashMessage(buffer: StashBuffer[InternalProtocol]): Unit = {
     if (setup.settings.logOnStashing)
-      setup.log.debug(
+      setup.log.debugN(
         "Unstashing message from {} stash: [{}]",
         if (buffer eq stashState.internalStashBuffer) "internal" else "user",
         buffer.head)
@@ -113,7 +112,7 @@ private[akka] trait StashManagement[C, E, S] {
 
   private def logUnstashAll(): Unit = {
     if (setup.settings.logOnStashing)
-      setup.log.debug(
+      setup.log.debug2(
         "Unstashing all [{}] messages from user stash, first is: [{}]",
         stashState.userStashBuffer.size,
         stashState.userStashBuffer.head)

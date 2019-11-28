@@ -4,34 +4,34 @@
 
 package akka.stream.io
 
-import java.io.{ IOException, InputStream }
+import java.io.IOException
+import java.io.InputStream
+import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.TimeoutException
 
-import akka.actor.ActorSystem
-import akka.stream._
 import akka.stream.Attributes.inputBuffer
+import akka.stream._
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.impl.io.InputStreamSinkStage
-import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
-import akka.stream.scaladsl.{ Keep, Source, StreamConverters }
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Source
+import akka.stream.scaladsl.StreamConverters
 import akka.stream.testkit.Utils._
+import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit._
 import akka.testkit.TestProbe
 import akka.util.ByteString
 
+import scala.concurrent.Await
+import scala.concurrent.Future
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-
-import scala.concurrent.{ Await, Future }
 import scala.util.control.NoStackTrace
 
 class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   import system.dispatcher
-
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
 
   val timeout = 300.milliseconds
   def randomByteString(size: Int): ByteString = {
@@ -214,17 +214,12 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "use dedicated default-blocking-io-dispatcher by default" in assertAllStagesStopped {
-      val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-      val materializer = ActorMaterializer()(sys)
-      try {
-        TestSource.probe[ByteString].runWith(StreamConverters.asInputStream())(materializer)
-        materializer
-          .asInstanceOf[PhasedFusingActorMaterializer]
-          .supervisor
-          .tell(StreamSupervisor.GetChildren, testActor)
-        val ref = expectMsgType[Children].children.find(_.path.toString contains "inputStreamSink").get
-        assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
-      } finally shutdown(sys)
+      // use a separate materializer to ensure we know what child is our stream
+      implicit val materializer = Materializer(system)
+      TestSource.probe[ByteString].runWith(StreamConverters.asInputStream())
+      materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+      val ref = expectMsgType[Children].children.find(_.path.toString contains "inputStreamSink").get
+      assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
     }
 
     "work when more bytes pulled from InputStream than available" in assertAllStagesStopped {
@@ -256,7 +251,7 @@ class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "throw from inputstream read if terminated abruptly" in {
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val probe = TestPublisher.probe[ByteString]()
       val inputStream = Source.fromPublisher(probe).runWith(StreamConverters.asInputStream())(mat)
       mat.shutdown()

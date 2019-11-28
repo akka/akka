@@ -12,9 +12,11 @@ import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
@@ -24,12 +26,13 @@ import akka.cluster.sharding.ShardRegion.CurrentShardRegionState
 import akka.cluster.sharding.ShardRegion.GetShardRegionState
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding.Passivate
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding.ShardCommand
-import akka.cluster.sharding.{ ClusterSharding => UntypedClusterSharding }
+import akka.cluster.sharding.{ ClusterSharding => ClassicClusterSharding }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
-import akka.persistence.typed.ExpectingReply
+import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.scaladsl.Effect
+import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
@@ -50,12 +53,8 @@ object ClusterShardingPersistenceSpec {
 
   sealed trait Command
   final case class Add(s: String) extends Command
-  final case class AddWithConfirmation(s: String)(override val replyTo: ActorRef[Done])
-      extends Command
-      with ExpectingReply[Done]
-  final case class PassivateAndPersist(s: String)(override val replyTo: ActorRef[Done])
-      extends Command
-      with ExpectingReply[Done]
+  final case class AddWithConfirmation(s: String)(val replyTo: ActorRef[Done]) extends Command
+  final case class PassivateAndPersist(s: String)(val replyTo: ActorRef[Done]) extends Command
   final case class Get(replyTo: ActorRef[String]) extends Command
   final case class Echo(msg: String, replyTo: ActorRef[String]) extends Command
   final case class Block(latch: CountDownLatch) extends Command
@@ -63,7 +62,7 @@ object ClusterShardingPersistenceSpec {
   case object UnstashAll extends Command
   case object UnstashAllAndPassivate extends Command
 
-  val typeKey = EntityTypeKey[Command]("test")
+  val TypeKey = EntityTypeKey[Command]("test")
 
   val lifecycleProbes = new ConcurrentHashMap[String, ActorRef[String]]
 
@@ -81,9 +80,8 @@ object ClusterShardingPersistenceSpec {
       // transient state (testing purpose)
       var stashing = false
 
-      EventSourcedEntity[Command, String, String](
-        entityTypeKey = typeKey,
-        entityId = entityId,
+      EventSourcedBehavior[Command, String, String](
+        PersistenceId(TypeKey.name, entityId),
         emptyState = "",
         commandHandler = (state, cmd) =>
           cmd match {
@@ -97,7 +95,7 @@ object ClusterShardingPersistenceSpec {
               if (stashing)
                 Effect.stash()
               else
-                Effect.persist(s).thenReply(cmd)(_ => Done)
+                Effect.persist(s).thenReply(cmd.replyTo)(_ => Done)
 
             case Get(replyTo) =>
               replyTo ! s"$entityId:$state"
@@ -105,7 +103,7 @@ object ClusterShardingPersistenceSpec {
 
             case cmd @ PassivateAndPersist(s) =>
               shard ! Passivate(ctx.self)
-              Effect.persist(s).thenReply(cmd)(_ => Done)
+              Effect.persist(s).thenReply(cmd.replyTo)(_ => Done)
 
             case Echo(msg, replyTo) =>
               Effect.none.thenRun(_ => replyTo ! msg)
@@ -147,7 +145,8 @@ object ClusterShardingPersistenceSpec {
 
 class ClusterShardingPersistenceSpec
     extends ScalaTestWithActorTestKit(ClusterShardingPersistenceSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
   import ClusterShardingPersistenceSpec._
 
   private var _entityId = 0
@@ -164,9 +163,9 @@ class ClusterShardingPersistenceSpec
     // FIXME #24466: rewrite this with Typed API when region queries are supported
     import akka.actor.typed.scaladsl.adapter._
     val regionStateProbe = TestProbe[CurrentShardRegionState]()
-    val untypedRegion = UntypedClusterSharding(system.toUntyped)
+    val classicRegion = ClassicClusterSharding(system.toClassic)
     regionStateProbe.awaitAssert {
-      untypedRegion.shardRegion(typeKey.name).tell(GetShardRegionState, regionStateProbe.ref.toUntyped)
+      classicRegion.shardRegion(TypeKey.name).tell(GetShardRegionState, regionStateProbe.ref.toClassic)
       regionStateProbe.receiveMessage().shards.foreach { shardState =>
         shardState.entityIds should not contain entityId
       }
@@ -175,7 +174,7 @@ class ClusterShardingPersistenceSpec
 
   "Typed cluster sharding with persistent actor" must {
 
-    ClusterSharding(system).init(Entity(typeKey, ctx => persistentEntity(ctx.entityId, ctx.shard)))
+    ClusterSharding(system).init(Entity(TypeKey)(ctx => persistentEntity(ctx.entityId, ctx.shard)))
 
     Cluster(system).manager ! Join(Cluster(system).selfMember.address)
 
@@ -183,7 +182,7 @@ class ClusterShardingPersistenceSpec
       val entityId = nextEntityId()
       val p = TestProbe[String]()
 
-      val ref = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      val ref = ClusterSharding(system).entityRefFor(TypeKey, entityId)
       ref ! Add("a")
       ref ! Add("b")
       ref ! Add("c")
@@ -195,7 +194,7 @@ class ClusterShardingPersistenceSpec
       val entityId = nextEntityId()
       val p = TestProbe[String]()
 
-      val ref = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      val ref = ClusterSharding(system).entityRefFor(TypeKey, entityId)
       val done1 = ref ? AddWithConfirmation("a")
       done1.futureValue should ===(Done)
 
@@ -212,7 +211,7 @@ class ClusterShardingPersistenceSpec
       lifecycleProbes.put(entityId, lifecycleProbe.ref)
 
       val p1 = TestProbe[Done]()
-      val ref = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      val ref = ClusterSharding(system).entityRefFor(TypeKey, entityId)
 
       (1 to 10).foreach { n =>
         ref ! PassivateAndPersist(n.toString)(p1.ref)
@@ -235,7 +234,7 @@ class ClusterShardingPersistenceSpec
       val lifecycleProbe = TestProbe[String]()
       lifecycleProbes.put(entityId, lifecycleProbe.ref)
 
-      val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      val entityRef = ClusterSharding(system).entityRefFor(TypeKey, entityId)
       // this will wakeup the entity, and complete the entityActorRefPromise
       entityRef ! AddWithConfirmation("a")(addProbe.ref)
       addProbe.expectMessage(Done)
@@ -283,7 +282,7 @@ class ClusterShardingPersistenceSpec
       val lifecycleProbe = TestProbe[String]()
       lifecycleProbes.put(entityId, lifecycleProbe.ref)
 
-      val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      val entityRef = ClusterSharding(system).entityRefFor(TypeKey, entityId)
       // this will wakeup the entity, and complete the entityActorRefPromise
       entityRef ! AddWithConfirmation("a")(addProbe.ref)
       addProbe.expectMessage(Done)
@@ -335,7 +334,7 @@ class ClusterShardingPersistenceSpec
       val lifecycleProbe = TestProbe[String]()
       lifecycleProbes.put(entityId, lifecycleProbe.ref)
 
-      val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      val entityRef = ClusterSharding(system).entityRefFor(TypeKey, entityId)
       // this will wakeup the entity, and complete the entityActorRefPromise
       entityRef ! AddWithConfirmation("a")(addProbe.ref)
       addProbe.expectMessage(Done)
@@ -372,7 +371,7 @@ class ClusterShardingPersistenceSpec
       val lifecycleProbe = TestProbe[String]()
       lifecycleProbes.put(entityId, lifecycleProbe.ref)
 
-      val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      val entityRef = ClusterSharding(system).entityRefFor(TypeKey, entityId)
       val ignoreFirstEchoProbe = TestProbe[String]()
       val echoProbe = TestProbe[String]()
       // first echo will wakeup the entity, and complete the entityActorRefPromise
@@ -407,7 +406,7 @@ class ClusterShardingPersistenceSpec
       val lifecycleProbe = TestProbe[String]()
       lifecycleProbes.put(entityId, lifecycleProbe.ref)
 
-      val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      val entityRef = ClusterSharding(system).entityRefFor(TypeKey, entityId)
       val addProbe = TestProbe[Done]()
       val ignoreFirstEchoProbe = TestProbe[String]()
       val echoProbe = TestProbe[String]()
@@ -456,7 +455,7 @@ class ClusterShardingPersistenceSpec
       lifecycleProbes.put(entityId, lifecycleProbe.ref)
 
       val p1 = TestProbe[Done]()
-      val ref = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      val ref = ClusterSharding(system).entityRefFor(TypeKey, entityId)
       ref ! Add("1")
       ref ! Add("2")
       ref ! BeginStashingAddCommands
@@ -482,7 +481,7 @@ class ClusterShardingPersistenceSpec
       val lifecycleProbe = TestProbe[String]()
       lifecycleProbes.put(entityId, lifecycleProbe.ref)
 
-      val ref = ClusterSharding(system).entityRefFor(typeKey, entityId)
+      val ref = ClusterSharding(system).entityRefFor(TypeKey, entityId)
       ref ! Add("1")
       lifecycleProbe.expectMessage(max = 10.seconds, "recoveryCompleted:")
       ref ! BeginStashingAddCommands

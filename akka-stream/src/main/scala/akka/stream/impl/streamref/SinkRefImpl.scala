@@ -13,6 +13,7 @@ import akka.stream._
 import akka.stream.scaladsl.Sink
 import akka.stream.stage._
 import akka.util.{ OptionVal, PrettyDuration }
+import com.github.ghik.silencer.silent
 
 import scala.util.{ Failure, Success, Try }
 
@@ -58,15 +59,18 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       eagerMaterializer: Materializer): (GraphStageLogic, SourceRef[In]) = {
 
     val logic = new TimerGraphStageLogic(shape) with StageLogging with ActorRefStage with InHandler {
+      override protected def logSource: Class[_] = classOf[SinkRefStageImpl[_]]
 
-      private[this] val streamRefsMaster = StreamRefsMaster(ActorMaterializerHelper.downcast(eagerMaterializer).system)
+      private[this] val streamRefsMaster = StreamRefsMaster(eagerMaterializer.system)
 
       // settings ---
-      import StreamRefAttributes._
-      private[this] val settings = ActorMaterializerHelper.downcast(eagerMaterializer).settings.streamRefSettings
-
-      private[this] val subscriptionTimeout = inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
-        SubscriptionTimeout(settings.subscriptionTimeout))
+      @silent("deprecated") // can't remove this settings access without breaking compat
+      private[this] val subscriptionTimeout = {
+        import StreamRefAttributes._
+        val settings = eagerMaterializer.settings.streamRefSettings
+        inheritedAttributes.get[StreamRefAttributes.SubscriptionTimeout](
+          SubscriptionTimeout(settings.subscriptionTimeout))
+      }
       // end of settings ---
 
       override protected val stageActorName: String = streamRefsMaster.nextSinkRefStageName()

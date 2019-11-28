@@ -11,7 +11,7 @@ import akka.actor.{ Address, ExtendedActorSystem }
 import akka.cluster._
 import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
 import akka.serialization._
-import akka.protobuf.{ ByteString, MessageLite }
+import akka.protobufv3.internal.{ ByteString, MessageLite }
 
 import scala.annotation.tailrec
 import scala.collection.immutable
@@ -189,7 +189,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     builder.build()
   }
 
-  @silent
+  @silent("deprecated")
   private def clusterRouterPoolSettingsToProto(settings: ClusterRouterPoolSettings): cm.ClusterRouterPoolSettings = {
     val builder = cm.ClusterRouterPoolSettings.newBuilder()
     builder
@@ -273,7 +273,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
 
       InternalClusterAction.InitJoinAck(addressFromProto(i.getAddress), configCheck)
     } catch {
-      case _: akka.protobuf.InvalidProtocolBufferException =>
+      case _: akka.protobufv3.internal.InvalidProtocolBufferException =>
         // nodes previous to 2.5.9 sends just an address
         InternalClusterAction.InitJoinAck(addressFromBinary(bytes), UncheckedConfig)
     }
@@ -400,7 +400,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       cm.Member.newBuilder
         .setAddressIndex(mapUniqueAddress(member.uniqueAddress))
         .setUpNumber(member.upNumber)
-        .setStatus(cm.MemberStatus.valueOf(memberStatusToInt(member.status)))
+        .setStatus(cm.MemberStatus.forNumber(memberStatusToInt(member.status)))
         .addAllRolesIndexes(member.roles.map(mapRole).asJava)
 
     def reachabilityToProto(reachability: Reachability): Iterable[cm.ObserverReachability.Builder] = {
@@ -413,7 +413,7 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
                 cm.SubjectReachability
                   .newBuilder()
                   .setAddressIndex(mapUniqueAddress(r.subject))
-                  .setStatus(cm.ReachabilityStatus.valueOf(reachabilityStatusToInt(r.status)))
+                  .setStatus(cm.ReachabilityStatus.forNumber(reachabilityStatusToInt(r.status)))
                   .setVersion(r.version))
           cm.ObserverReachability
             .newBuilder()

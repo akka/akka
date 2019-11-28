@@ -29,7 +29,7 @@ class ClusterWatcherNoClusterWatcheeConfig(val useUnsafe: Boolean, artery: Boole
   val remoting = role("remoting")
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
-      akka.remote.use-unsafe-remote-features-without-cluster = $useUnsafe
+      akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
       akka.remote.artery.advanced.flight-recorder.enabled = off

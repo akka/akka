@@ -6,16 +6,16 @@ package akka.stream.scaladsl
 
 import akka.Done
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ ActorMaterializer, ClosedShape, KillSwitches }
-import akka.stream.testkit.scaladsl.{ TestSink, TestSource }
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.testkit.scaladsl.TestSource
+import akka.stream.ClosedShape
+import akka.stream.KillSwitches
 
 import scala.concurrent.duration._
 
 class FlowKillSwitchSpec extends StreamSpec {
-
-  implicit val mat = ActorMaterializer()
 
   "A UniqueKillSwitch" must {
 

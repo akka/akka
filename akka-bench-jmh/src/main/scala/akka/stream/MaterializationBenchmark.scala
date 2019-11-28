@@ -5,14 +5,16 @@
 package akka.stream
 
 import java.util.concurrent.TimeUnit
+
+import akka.Done
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.scaladsl._
 import org.openjdk.jmh.annotations._
+
 import scala.concurrent.Await
-import scala.concurrent.duration._
 import scala.concurrent.Future
-import akka.Done
+import scala.concurrent.duration._
 
 object MaterializationBenchmark {
 
@@ -48,7 +50,7 @@ object MaterializationBenchmark {
 
       val broadcast = b.add(Broadcast[Unit](numOfJunctions))
       val merge = b.add(Merge[Unit](numOfJunctions))
-      for (i <- 0 until numOfJunctions) {
+      for (_ <- 0 until numOfJunctions) {
         broadcast ~> merge
       }
 
@@ -62,7 +64,7 @@ object MaterializationBenchmark {
       import GraphDSL.Implicits._
       val flow = Flow[Unit].map(identity)
       var out: Outlet[Unit] = source.out
-      for (i <- 0 until numOfFlows) {
+      for (_ <- 0 until numOfFlows) {
         val flowShape = b.add(flow)
         out ~> flowShape
         out = flowShape.outlet
@@ -95,7 +97,6 @@ class MaterializationBenchmark {
   import MaterializationBenchmark._
 
   implicit val system = ActorSystem("MaterializationBenchmark")
-  implicit val materializer = ActorMaterializer()
 
   var flowWithMap: RunnableGraph[NotUsed] = _
   var graphWithJunctionsGradual: RunnableGraph[NotUsed] = _

@@ -21,10 +21,12 @@ object QuickRestartMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(
-    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-      akka.cluster.auto-down-unreachable-after = off
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
+      akka.cluster.testkit.auto-down-unreachable-after = off
       akka.cluster.allow-weakly-up-members = off
-      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
 }
 

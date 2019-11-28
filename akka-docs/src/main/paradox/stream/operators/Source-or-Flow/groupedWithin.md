@@ -18,6 +18,7 @@ Chunk up this stream into groups of elements received within a time window, or l
 whatever happens first. Empty groups will not be emitted if no elements are received from upstream.
 The last group before end-of-stream will contain the buffered elements since the previously emitted group.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

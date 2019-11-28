@@ -32,14 +32,8 @@ private[akka] object Buffer {
   val FixedQueueSize = 128
   val FixedQueueMask = 127
 
-  def apply[T](size: Int, settings: ActorMaterializerSettings): Buffer[T] =
-    apply(size, settings.maxFixedBufferSize)
-
-  def apply[T](size: Int, materializer: Materializer): Buffer[T] =
-    materializer match {
-      case m: ActorMaterializer => apply(size, m.settings.maxFixedBufferSize)
-      case _                    => apply(size, 1000000000)
-    }
+  def apply[T](size: Int, effectiveAttributes: Attributes): Buffer[T] =
+    apply(size, effectiveAttributes.mandatoryAttribute[ActorAttributes.MaxFixedBufferSize].size)
 
   def apply[T](size: Int, max: Int): Buffer[T] =
     if (size < FixedQueueSize || size < max) FixedSizeBuffer(size)

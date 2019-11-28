@@ -15,21 +15,19 @@ import akka.util.ccompat.JavaConverters._
 import akka.actor.typed.ExtensionSetup
 
 /**
- * Actor system extensions registry
- *
  * INTERNAL API
+ *
+ * Actor system extensions registry
  */
 @InternalApi
-trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
+private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
 
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
   /**
-   * INTERNAL API
-   *
    * Hook for ActorSystem to load extensions on startup
    */
-  @InternalApi private[akka] def loadExtensions(): Unit = {
+  def loadExtensions(): Unit = {
 
     /*
      * @param throwOnLoadFail Throw exception when an extension fails to load (needed for backwards compatibility)
@@ -49,7 +47,7 @@ trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
             else throw new RuntimeException(s"[$extensionIdFQCN] is not an 'ExtensionId'")
           case Failure(problem) =>
             if (!throwOnLoadFail)
-              log.error(problem, "While trying to load extension [{}], skipping...", extensionIdFQCN)
+              log.error(s"While trying to load extension $extensionIdFQCN, skipping...", problem)
             else throw new RuntimeException(s"While trying to load extension [$extensionIdFQCN]", problem)
         }
       }

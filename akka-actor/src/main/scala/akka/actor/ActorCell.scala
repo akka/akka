@@ -44,7 +44,7 @@ import com.github.ghik.silencer.silent
  *
  * Where no name is given explicitly, one will be automatically generated.
  */
-trait ActorContext extends ActorRefFactory {
+trait ActorContext extends ActorRefFactory with ClassicActorContextProvider {
 
   /**
    * The ActorRef representing this actor
@@ -404,7 +404,7 @@ private[akka] object ActorCell {
  * supported APIs in this place. This is not the API you were looking
  * for! (waves hand)
  */
-@silent
+@silent("deprecated")
 private[akka] class ActorCell(
     val system: ActorSystemImpl,
     val self: InternalActorRef,
@@ -427,6 +427,8 @@ private[akka] class ActorCell(
   protected final def guardian = self
   protected final def lookupRoot = self
   final def provider = system.provider
+
+  override final def classicActorContext: ActorContext = this
 
   protected def uid: Int = self.path.uid
   private[this] var _actor: Actor = _
@@ -535,9 +537,10 @@ private[akka] class ActorCell(
     val timeoutBeforeReceive = cancelReceiveTimeoutIfNeeded(msg)
     try {
       currentMessage = messageHandle
-      msg match {
-        case _: AutoReceivedMessage => autoReceiveMessage(messageHandle)
-        case msg                    => receiveMessage(msg)
+      if (msg.isInstanceOf[AutoReceivedMessage]) {
+        autoReceiveMessage(messageHandle)
+      } else {
+        receiveMessage(msg)
       }
       currentMessage = null // reset current message after successful invocation
     } catch handleNonFatalOrInterruptedException { e =>

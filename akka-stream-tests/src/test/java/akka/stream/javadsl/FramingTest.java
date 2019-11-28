@@ -27,6 +27,6 @@ public class FramingTest extends StreamTest {
     in.via(
             Framing.delimiter(
                 ByteString.fromString(","), Integer.MAX_VALUE, FramingTruncation.ALLOW))
-        .runWith(Sink.ignore(), materializer);
+        .runWith(Sink.ignore(), system);
   }
 }

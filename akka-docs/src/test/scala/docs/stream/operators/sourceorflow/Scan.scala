@@ -8,10 +8,8 @@ import akka.stream.scaladsl.Source
 object Scan {
   def scanExample(): Unit = {
     import akka.actor.ActorSystem
-    import akka.stream.ActorMaterializer
 
     implicit val system: ActorSystem = ActorSystem()
-    implicit val materializer: ActorMaterializer = ActorMaterializer()
 
     //#scan
     val source = Source(1 to 5)

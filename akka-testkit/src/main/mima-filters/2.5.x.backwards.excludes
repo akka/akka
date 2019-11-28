@@ -1,7 +1,0 @@
-# Remove JavaTestKit https://github.com/akka/akka/issues/26189
-ProblemFilters.exclude[MissingClassProblem]("akka.testkit.JavaTestKit")
-ProblemFilters.exclude[MissingClassProblem]("akka.testkit.JavaTestKit$*")
-ProblemFilters.exclude[MissingClassProblem]("akka.testkit.CachingPartialFunction")
-
-# #22333 Disable Java serialization
-ProblemFilters.exclude[MissingClassProblem]("akka.testkit.TestMessageSerializer")

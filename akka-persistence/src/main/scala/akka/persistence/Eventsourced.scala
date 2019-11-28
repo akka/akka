@@ -88,7 +88,7 @@ private[persistence] trait Eventsourced
 
   private var journalBatch = Vector.empty[PersistentEnvelope]
   // no longer used, but kept for binary compatibility
-  @silent
+  @silent("never used")
   private val maxMessageBatchSize = {
     val journalPluginConfig = this match {
       case c: RuntimePluginConfig => c.journalPluginConfig
@@ -744,9 +744,10 @@ private[persistence] trait Eventsourced
                 finally context.stop(self)
                 returnRecoveryPermit()
             }
-          case RecoverySuccess(highestSeqNr) =>
+          case RecoverySuccess(highestJournalSeqNr) =>
             timeoutCancellable.cancel()
             onReplaySuccess() // callback for subclass implementation
+            val highestSeqNr = Math.max(highestJournalSeqNr, lastSequenceNr)
             sequenceNr = highestSeqNr
             setLastSequenceNr(highestSeqNr)
             _recoveryRunning = false

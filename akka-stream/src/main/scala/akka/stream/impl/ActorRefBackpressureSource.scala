@@ -29,7 +29,7 @@ private object ActorRefBackpressureSource {
   val out: Outlet[T] = Outlet[T]("actorRefSource.out")
 
   override val shape: SourceShape[T] = SourceShape.of(out)
-  override def initialAttributes: Attributes = DefaultAttributes.actorRefWithAckSource
+  override def initialAttributes: Attributes = DefaultAttributes.actorRefWithBackpressureSource
 
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, ActorRef) =
     throw new IllegalStateException("Not supported")
@@ -37,8 +37,9 @@ private object ActorRefBackpressureSource {
   private[akka] override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes,
       eagerMaterializer: Materializer): (GraphStageLogic, ActorRef) = {
-    val stage: GraphStageLogic with StageLogging with ActorRefStage = new GraphStageLogic(shape) with StageLogging
-    with ActorRefStage {
+    val stage: GraphStageLogic with StageLogging with ActorRefStage = new GraphStageLogic(shape)
+      with StageLogging
+      with ActorRefStage {
       override protected def logSource: Class[_] = classOf[ActorRefSource[_]]
 
       private var isCompleting: Boolean = false

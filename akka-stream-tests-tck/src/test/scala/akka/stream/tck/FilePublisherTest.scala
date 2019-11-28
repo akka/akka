@@ -31,7 +31,7 @@ class FilePublisherTest extends AkkaPublisherVerification[ByteString] {
     val chunk = "x" * ChunkSize
 
     val fw = Files.newBufferedWriter(f)
-    for (i <- 1 to Elements) fw.append(chunk)
+    List.fill(Elements)(chunk).foreach(fw.append)
     fw.close()
     f
   }

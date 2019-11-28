@@ -8,32 +8,95 @@ import java.net._
 import java.security.SecureRandom
 import java.util.concurrent.atomic.AtomicInteger
 
-import javax.net.ssl.{ KeyManagerFactory, SSLContext, TrustManagerFactory }
-import akka.actor.{ ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Kill }
+import akka.Done
+import akka.NotUsed
+import akka.actor.Actor
+import akka.actor.ActorIdentity
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.Identify
+import akka.actor.Kill
+import akka.io.Dns
+import akka.io.DnsProvider
+import akka.io.SimpleDnsCache
 import akka.io.Tcp._
+import akka.io.dns.DnsProtocol
 import akka.stream._
-import akka.stream.scaladsl.Tcp.{ IncomingConnection, ServerBinding }
-import akka.stream.scaladsl.{ Flow, _ }
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.scaladsl.Flow
+import akka.stream.scaladsl.Tcp.IncomingConnection
+import akka.stream.scaladsl.Tcp.ServerBinding
+import akka.stream.scaladsl._
 import akka.stream.testkit._
-import akka.testkit.{ EventFilter, TestKit, TestLatch, TestProbe }
-import akka.testkit.SocketUtil.temporaryServerAddress
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.EventFilter
+import akka.testkit.SocketUtil.{ temporaryServerAddress, temporaryServerHostnameAndPort }
+import akka.testkit.TestKit
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
 import akka.util.ByteString
-import akka.{ Done, NotUsed }
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.PatienceConfiguration
 import org.scalatest.concurrent.PatienceConfiguration.Timeout
 
 import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import com.github.ghik.silencer.silent
+
+@silent("never used")
+class NonResolvingDnsActor(cache: SimpleDnsCache, config: Config) extends Actor {
+  def receive = {
+    case msg =>
+      throw new RuntimeException(s"Unexpected resolve message $msg")
+  }
+}
+
+@silent("never used")
+class NonResolvingDnsManager(ext: akka.io.DnsExt) extends Actor {
+
+  def receive = {
+    case msg =>
+      throw new RuntimeException(s"Unexpected resolve message $msg")
+  }
+}
+
+@silent("deprecated")
+class FailingDnsResolver extends DnsProvider {
+  override val cache: Dns = new Dns {
+    override def cached(name: String): Option[Dns.Resolved] = None
+    override def resolve(name: String)(system: ActorSystem, sender: ActorRef): Option[Dns.Resolved] = {
+      // tricky impl detail this is actually where the resolve response is triggered
+      // we fake that it fails directly from here
+      sender ! Dns.Resolved(name, immutable.Seq.empty, immutable.Seq.empty)
+      None
+    }
+    override def cached(request: DnsProtocol.Resolve): Option[DnsProtocol.Resolved] = None
+    override def resolve(
+        request: DnsProtocol.Resolve,
+        system: ActorSystem,
+        sender: ActorRef): Option[DnsProtocol.Resolved] = {
+      sender ! DnsProtocol.Resolved(request.name, immutable.Seq.empty, immutable.Seq.empty)
+      None
+    }
+  }
+  override def actorClass = classOf[NonResolvingDnsActor]
+  override def managerClass = classOf[NonResolvingDnsManager]
+}
 
 class TcpSpec extends StreamSpec("""
     akka.loglevel = debug
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.tcp.trace-logging = true
     akka.stream.materializer.subscription-timeout.timeout = 2s
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
   """) with TcpHelper with WithLogCapturing {
 
   "Outgoing TCP stream" must {
@@ -461,12 +524,11 @@ class TcpSpec extends StreamSpec("""
         """).withFallback(system.settings.config))
 
       try {
-        val mat2 = ActorMaterializer.create(system2)
+        implicit val materializer = SystemMaterializer(system2).materializer
 
         val serverAddress = temporaryServerAddress()
-        val binding = Tcp(system2)
-          .bindAndHandle(Flow[ByteString], serverAddress.getHostString, serverAddress.getPort)(mat2)
-          .futureValue
+        val binding =
+          Tcp(system2).bindAndHandle(Flow[ByteString], serverAddress.getHostString, serverAddress.getPort).futureValue
 
         val probe = TestProbe()
         val testMsg = ByteString(0)
@@ -477,7 +539,7 @@ class TcpSpec extends StreamSpec("""
             .via(Tcp(system2).outgoingConnection(serverAddress))
             .runForeach { msg =>
               probe.ref ! msg
-            }(mat2)
+            }
 
         // Ensure first that the actor is there
         probe.expectMsg(testMsg)
@@ -505,17 +567,27 @@ class TcpSpec extends StreamSpec("""
     }
 
     "provide full exceptions when connection attempt fails because name cannot be resolved" in {
-      val unknownHostName = "abcdefghijklmnopkuh"
+      val systemWithBrokenDns = ActorSystem(
+        "TcpSpec-resolution-failure",
+        ConfigFactory.parseString("""
+          akka.io.dns.inet-address.provider-object = akka.stream.io.FailingDnsResolver
+          """).withFallback(system.settings.config))
+      try {
+        val unknownHostName = "abcdefghijklmnopkuh"
 
-      val test =
-        Source.maybe
-          .viaMat(Tcp().outgoingConnection(unknownHostName, 12345))(Keep.right)
-          .to(Sink.ignore)
-          .run()
-          .failed
-          .futureValue
+        val test =
+          Source.maybe
+            .viaMat(Tcp(systemWithBrokenDns).outgoingConnection(unknownHostName, 12345))(Keep.right)
+            .to(Sink.ignore)
+            .run()(SystemMaterializer(systemWithBrokenDns).materializer)
+            .failed
+            .futureValue
 
-      test.getCause shouldBe a[UnknownHostException]
+        test.getCause shouldBe a[UnknownHostException]
+
+      } finally {
+        TestKit.shutdownActorSystem(systemWithBrokenDns)
+      }
     }
   }
 
@@ -611,15 +683,11 @@ class TcpSpec extends StreamSpec("""
       val config = ConfigFactory.parseString("""
         akka.actor.serializer-messages = off
         akka.io.tcp.register-timeout = 42s
+        akka.stream.materializer.subscription-timeout.mode = cancel
+        akka.stream.materializer.subscription-timeout.timeout = 42s
       """)
       val serverSystem = ActorSystem("server", config)
       val clientSystem = ActorSystem("client", config)
-      val serverMaterializer = ActorMaterializer(
-        ActorMaterializerSettings(serverSystem).withSubscriptionTimeoutSettings(
-          StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(serverSystem)
-      val clientMaterializer = ActorMaterializer(
-        ActorMaterializerSettings(clientSystem).withSubscriptionTimeoutSettings(
-          StreamSubscriptionTimeoutSettings(StreamSubscriptionTimeoutTerminationMode.cancel, 42.seconds)))(clientSystem)
 
       try {
 
@@ -656,7 +724,7 @@ class TcpSpec extends StreamSpec("""
               }
             }
             .to(Sink.ignore)
-            .run()(serverMaterializer)
+            .run()(SystemMaterializer(serverSystem).materializer)
 
         // make sure server is running first
         futureBinding.futureValue
@@ -664,7 +732,7 @@ class TcpSpec extends StreamSpec("""
         // then connect once, which should lead to the server cancelling
         val total = Source(immutable.Iterable.fill(100)(ByteString(0)))
           .via(Tcp(clientSystem).outgoingConnection(address))
-          .runFold(0)(_ + _.size)(clientMaterializer)
+          .runFold(0)(_ + _.size)(SystemMaterializer(clientSystem).materializer)
 
         serverGotRequest.future.futureValue
         // this can take a bit of time worst case but is often swift
@@ -753,12 +821,11 @@ class TcpSpec extends StreamSpec("""
 
     "not thrown on unbind after system has been shut down" in {
       val sys2 = ActorSystem("shutdown-test-system")
-      val mat2 = ActorMaterializer()(sys2)
-
+      implicit val materializer = SystemMaterializer(sys2).materializer
       try {
         val address = temporaryServerAddress()
 
-        val bindingFuture = Tcp().bindAndHandle(Flow[ByteString], address.getHostString, address.getPort)(mat2)
+        val bindingFuture = Tcp().bindAndHandle(Flow[ByteString], address.getHostString, address.getPort)
 
         // Ensure server is running
         bindingFuture.futureValue
@@ -772,11 +839,114 @@ class TcpSpec extends StreamSpec("""
       } finally sys2.terminate()
     }
 
+    "show host and port in bind exception message" in EventFilter[BindException](occurrences = 1).intercept {
+      val (host, port) = temporaryServerHostnameAndPort()
+      val bind = Tcp(system).bind(host, port)
+
+      val probe1 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
+      val binding1 = bind.to(Sink.fromSubscriber(probe1)).run().futureValue
+
+      probe1.expectSubscription()
+
+      val probe2 = TestSubscriber.manualProbe[Tcp.IncomingConnection]()
+      val binding2 = bind.to(Sink.fromSubscriber(probe2)).run()
+
+      val thrown = the[BindFailedException] thrownBy Await.result(binding2, 3.seconds)
+      thrown.getMessage should include(host)
+      thrown.getMessage should include(port.toString)
+
+      // clean up
+      binding1.unbind().futureValue
+    }
   }
 
-  "TLS client and server convenience methods" should {
+  "TLS client and server convenience methods with SSLEngine setup" should {
 
-    "allow for 'simple' TLS" in {
+    "allow for TLS" in {
+      // cert is valid until 2025, so if this tests starts failing after that you need to create a new one
+      val address = temporaryServerAddress()
+
+      Tcp()
+        .bindAndHandleWithTls(
+          // just echo charactes until we reach '\n', then complete stream
+          // also - byte is our framing
+          Flow[ByteString].mapConcat(_.utf8String.toList).takeWhile(_ != '\n').map(c => ByteString(c)),
+          address.getHostName,
+          address.getPort,
+          () => createSSLEngine(TLSRole.server))
+        .futureValue
+      system.log.info(s"Server bound to ${address.getHostString}:${address.getPort}")
+
+      val connectionFlow =
+        Tcp().outgoingConnectionWithTls(address, () => createSSLEngine(TLSRole.client))
+
+      val chars = "hello\n".toList.map(_.toString)
+      val (connectionF, result) =
+        Source(chars)
+          .map(c => ByteString(c))
+          .concat(Source.maybe) // do not complete it from our side
+          .viaMat(connectionFlow)(Keep.right)
+          .map(_.utf8String)
+          .toMat(Sink.fold("")(_ + _))(Keep.both)
+          .run()
+
+      connectionF.futureValue
+      system.log.info(s"Client connected to ${address.getHostString}:${address.getPort}")
+
+      result.futureValue(PatienceConfiguration.Timeout(10.seconds)) should ===("hello")
+    }
+
+    // #setting-up-ssl-engine
+    import java.security.KeyStore
+    import javax.net.ssl.SSLEngine
+    import javax.net.ssl.TrustManagerFactory
+    import javax.net.ssl.KeyManagerFactory
+    import javax.net.ssl.SSLContext
+    import akka.stream.TLSRole
+
+    // initialize SSLContext once
+    lazy val sslContext: SSLContext = {
+      // Don't hardcode your password in actual code
+      val password = "abcdef".toCharArray
+
+      // trust store and keys in one keystore
+      val keyStore = KeyStore.getInstance("PKCS12")
+      keyStore.load(getClass.getResourceAsStream("/tcp-spec-keystore.p12"), password)
+
+      val trustManagerFactory = TrustManagerFactory.getInstance("SunX509")
+      trustManagerFactory.init(keyStore)
+
+      val keyManagerFactory = KeyManagerFactory.getInstance("SunX509")
+      keyManagerFactory.init(keyStore, password)
+
+      // init ssl context
+      val context = SSLContext.getInstance("TLSv1.2")
+      context.init(keyManagerFactory.getKeyManagers, trustManagerFactory.getTrustManagers, new SecureRandom)
+      context
+    }
+
+    // create new SSLEngine from the SSLContext, which was initialized once
+    def createSSLEngine(role: TLSRole): SSLEngine = {
+      val engine = sslContext.createSSLEngine()
+
+      engine.setUseClientMode(role == akka.stream.Client)
+      engine.setEnabledCipherSuites(Array("TLS_RSA_WITH_AES_128_CBC_SHA"))
+      engine.setEnabledProtocols(Array("TLSv1.2"))
+
+      engine
+    }
+    // #setting-up-ssl-engine
+
+  }
+
+  "TLS client and server convenience methods with deprecated SSLContext setup" should {
+
+    "allow for TLS" in {
+      test()
+    }
+
+    @silent("deprecated")
+    def test(): Unit = {
       // cert is valid until 2025, so if this tests starts failing after that you need to create a new one
       val (sslContext, firstSession) = initSslMess()
       val address = temporaryServerAddress()
@@ -811,12 +981,14 @@ class TcpSpec extends StreamSpec("""
       result.futureValue(PatienceConfiguration.Timeout(10.seconds)) should ===("hello")
     }
 
+    @silent("deprecated")
     def initSslMess() = {
       // #setting-up-ssl-context
+      import java.security.KeyStore
+
       import akka.stream.TLSClientAuth
       import akka.stream.TLSProtocol
       import com.typesafe.sslconfig.akka.AkkaSSLConfig
-      import java.security.KeyStore
       import javax.net.ssl._
 
       val sslConfig = AkkaSSLConfig()

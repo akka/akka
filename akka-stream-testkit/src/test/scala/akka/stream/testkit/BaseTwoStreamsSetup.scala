@@ -4,19 +4,18 @@
 
 package akka.stream.testkit
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.scaladsl._
-import org.reactivestreams.Publisher
-import scala.collection.immutable
-import scala.util.control.NoStackTrace
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.AkkaSpec
+import org.reactivestreams.Publisher
 
-abstract class BaseTwoStreamsSetup extends AkkaSpec {
+import scala.collection.immutable
+import scala.util.control.NoStackTrace
 
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 2)
-
-  implicit val materializer = ActorMaterializer(settings)
+abstract class BaseTwoStreamsSetup extends AkkaSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+    akka.stream.materializer.max-input-buffer-size = 2
+  """) {
 
   val TestException = new RuntimeException("test") with NoStackTrace
 

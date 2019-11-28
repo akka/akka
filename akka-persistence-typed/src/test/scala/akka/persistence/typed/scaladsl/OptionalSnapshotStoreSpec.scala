@@ -6,13 +6,13 @@ package akka.persistence.typed.scaladsl
 
 import java.util.UUID
 
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.typed.scaladsl.adapter.TypedActorSystemOps
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 
 object OptionalSnapshotStoreSpec {
@@ -27,7 +27,7 @@ object OptionalSnapshotStoreSpec {
 
   def persistentBehavior(probe: TestProbe[State], name: String = UUID.randomUUID().toString) =
     EventSourcedBehavior[Command, Event, State](
-      persistenceId = PersistenceId(name),
+      persistenceId = PersistenceId.ofUniqueId(name),
       emptyState = State(),
       commandHandler = CommandHandler.command { _ =>
         Effect.persist(Event()).thenRun(probe.ref ! _)
@@ -42,23 +42,19 @@ object OptionalSnapshotStoreSpec {
 }
 
 class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
-    akka.loggers = [akka.testkit.TestEventListener]
     akka.persistence.publish-plugin-commands = on
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     akka.persistence.journal.inmem.test-serialization = on
 
     # snapshot store plugin is NOT defined, things should still work
     akka.persistence.snapshot-store.local.dir = "target/snapshots-${classOf[OptionalSnapshotStoreSpec].getName}/"
-    """) with WordSpecLike {
+    """) with WordSpecLike with LogCapturing {
 
   import OptionalSnapshotStoreSpec._
 
-  // Needed for the untyped event filter
-  implicit val untyped = system.toUntyped
-
   "Persistence extension" must {
     "initialize properly even in absence of configured snapshot store" in {
-      EventFilter.warning(start = "No default snapshot store configured", occurrences = 1).intercept {
+      LoggingTestKit.warn("No default snapshot store configured").expect {
         val stateProbe = TestProbe[State]()
         spawn(persistentBehavior(stateProbe))
         stateProbe.expectNoMessage()
@@ -66,8 +62,8 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     "fail if PersistentActor tries to saveSnapshot without snapshot-store available" in {
-      EventFilter.error(pattern = ".*No snapshot store configured.*", occurrences = 1).intercept {
-        EventFilter.warning(pattern = ".*Failed to save snapshot.*", occurrences = 1).intercept {
+      LoggingTestKit.error("No snapshot store configured").expect {
+        LoggingTestKit.warn("Failed to save snapshot").expect {
           val stateProbe = TestProbe[State]()
           val persistentActor = spawn(persistentBehavior(stateProbe))
           persistentActor ! AnyCommand

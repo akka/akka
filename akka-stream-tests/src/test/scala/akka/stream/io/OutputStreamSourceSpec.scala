@@ -11,10 +11,12 @@ import java.util.concurrent.TimeoutException
 import akka.stream.Attributes.inputBuffer
 import akka.stream._
 import akka.stream.impl.io.OutputStreamSourceStage
-import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
+import akka.stream.scaladsl.Keep
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.StreamConverters
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
 
@@ -27,9 +29,6 @@ import scala.util.Random
 class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   import system.dispatcher
-
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
 
   val timeout = 3.seconds
   val bytesArray = Array.fill[Byte](3)(Random.nextInt(1024).asInstanceOf[Byte])
@@ -168,7 +167,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       assertNoBlockedThreads()
 
       val (_, probe) =
-        StreamConverters.asOutputStream(timeout).toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer)
+        StreamConverters.asOutputStream(timeout).toMat(TestSink.probe[ByteString])(Keep.both).run()
 
       val sub = probe.expectSubscription()
 
@@ -181,7 +180,7 @@ class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "not leave blocked threads when materializer shutdown" in {
-      val materializer2 = ActorMaterializer(settings)
+      val materializer2 = Materializer(system)
       val (_, probe) =
         StreamConverters.asOutputStream(timeout).toMat(TestSink.probe[ByteString])(Keep.both).run()(materializer2)
 

@@ -5,21 +5,19 @@
 package akka.persistence.typed.javadsl;
 
 import akka.actor.testkit.typed.TestException;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
-import akka.actor.typed.Signal;
 import akka.actor.typed.SupervisorStrategy;
-import akka.japi.function.Effect;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.RecoveryCompleted;
 import akka.persistence.typed.RecoveryFailed;
-import akka.testkit.EventFilter;
-import akka.testkit.TestEvent;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
@@ -88,6 +86,8 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource(config);
 
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
+
   public static Behavior<String> fail(
       PersistenceId pid, ActorRef<String> probe, ActorRef<Throwable> recoveryFailureProbe) {
     return new FailingEventSourcedActor(pid, probe, recoveryFailureProbe);
@@ -97,30 +97,15 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
     return fail(pid, probe, testKit.<Throwable>createTestProbe().ref());
   }
 
-  public EventSourcedActorFailureTest() {
-    // FIXME ##24348 silence logging in a proper way
-    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
-        .eventStream()
-        .publish(
-            new TestEvent.Mute(
-                akka.japi.Util.immutableSeq(
-                    new EventFilter[] {
-                      EventFilter.warning(null, null, "No default snapshot store", null, 1)
-                    })));
-    akka.actor.typed.javadsl.Adapter.toUntyped(testKit.system())
-        .eventStream()
-        .publish(
-            new TestEvent.Mute(
-                akka.japi.Util.immutableSeq(
-                    new EventFilter[] {EventFilter.error(null, null, "", ".*saw failure.*", 1)})));
-  }
-
   @Test
   public void notifyRecoveryFailure() {
     TestProbe<String> probe = testKit.createTestProbe();
     TestProbe<Throwable> recoveryFailureProbe = testKit.createTestProbe();
     Behavior<String> p1 =
-        fail(new PersistenceId("fail-recovery-once"), probe.ref(), recoveryFailureProbe.ref());
+        fail(
+            PersistenceId.ofUniqueId("fail-recovery-once"),
+            probe.ref(),
+            recoveryFailureProbe.ref());
     testKit.spawn(p1);
     recoveryFailureProbe.expectMessageClass(TestException.class);
   }
@@ -128,7 +113,7 @@ public class EventSourcedActorFailureTest extends JUnitSuite {
   @Test
   public void persistEvents() throws Exception {
     TestProbe<String> probe = testKit.createTestProbe();
-    Behavior<String> p1 = fail(new PersistenceId("fail-first-2"), probe.ref());
+    Behavior<String> p1 = fail(PersistenceId.ofUniqueId("fail-first-2"), probe.ref());
     ActorRef<String> c = testKit.spawn(p1);
     probe.expectMessage("starting");
     // fail

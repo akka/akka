@@ -4,14 +4,12 @@
 
 package akka.cluster.sharding
 
-import akka.actor.{ Actor, ExtendedActorSystem, NoSerializationVerificationNeeded, PoisonPill, Props }
+import akka.actor.{ Actor, ActorRef, ExtendedActorSystem, NoSerializationVerificationNeeded, PoisonPill, Props }
+import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator.Internal.ShardStopped
-import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
-import akka.cluster.sharding.ShardRegion.HandOffStopper
+import akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy
+import akka.cluster.sharding.ShardRegion.{ ExtractEntityId, ExtractShardId, HandOffStopper, Msg }
 import akka.testkit.{ AkkaSpec, TestProbe }
-import org.mockito.ArgumentMatchers
-import org.mockito.Mockito._
-import org.scalatestplus.mockito.MockitoSugar
 
 import scala.concurrent.duration._
 
@@ -32,22 +30,38 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
     |akka.actor.provider = cluster
     |akka.remote.classic.netty.tcp.port = 0
     |akka.remote.artery.canonical.port = 0
-    |akka.cluster.sharding.shard-region-query-timeout = 10 s
-    |""".stripMargin) with MockitoSugar {
+    |""".stripMargin) {
   import ClusterShardingInternalsSpec._
 
-  val clusterSharding = spy(new ClusterSharding(system.asInstanceOf[ExtendedActorSystem]))
+  case class StartingProxy(
+      typeName: String,
+      role: Option[String],
+      dataCenter: Option[DataCenter],
+      extractEntityId: ExtractEntityId,
+      extractShardId: ExtractShardId)
+
+  val probe = TestProbe()
+
+  val clusterSharding = new ClusterSharding(system.asInstanceOf[ExtendedActorSystem]) {
+    override def startProxy(
+        typeName: String,
+        role: Option[String],
+        dataCenter: Option[DataCenter],
+        extractEntityId: ExtractEntityId,
+        extractShardId: ExtractShardId): ActorRef = {
+      probe.ref ! StartingProxy(typeName, role, dataCenter, extractEntityId, extractShardId)
+      ActorRef.noSender
+    }
+  }
 
   "ClusterSharding" must {
-    "have a configurable shard region query timeout" in {
-      ClusterShardingSettings(system).shardRegionQueryTimeout shouldEqual 10.seconds
-    }
+
     "start a region in proxy mode in case of node role mismatch" in {
 
       val settingsWithRole = ClusterShardingSettings(system).withRole("nonExistingRole")
       val typeName = "typeName"
-      val extractEntityId = mock[ShardRegion.ExtractEntityId]
-      val extractShardId = mock[ShardRegion.ExtractShardId]
+      val extractEntityId: ExtractEntityId = { case msg: Msg => ("42", msg) }
+      val extractShardId: ExtractShardId = _ => "37"
 
       clusterSharding.start(
         typeName = typeName,
@@ -55,18 +69,13 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
         settings = settingsWithRole,
         extractEntityId = extractEntityId,
         extractShardId = extractShardId,
-        allocationStrategy = mock[ShardAllocationStrategy],
+        allocationStrategy = new LeastShardAllocationStrategy(3, 4),
         handOffStopMessage = PoisonPill)
 
-      verify(clusterSharding).startProxy(
-        ArgumentMatchers.eq(typeName),
-        ArgumentMatchers.eq(settingsWithRole.role),
-        ArgumentMatchers.eq(None),
-        ArgumentMatchers.eq(extractEntityId),
-        ArgumentMatchers.eq(extractShardId))
+      probe.expectMsg(StartingProxy(typeName, settingsWithRole.role, None, extractEntityId, extractShardId))
     }
 
-    "HandOffStopper must stop the entity even if the entity doesn't handle handOffStopMessage" in {
+    "stop entities from HandOffStopper even if the entity doesn't handle handOffStopMessage" in {
       val probe = TestProbe()
       val shardName = "test"
       val emptyHandlerActor = system.actorOf(Props(new EmptyHandlerActor))
@@ -77,6 +86,7 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
       expectTerminated(emptyHandlerActor, 1.seconds)
 
       probe.expectMsg(1.seconds, ShardStopped(shardName))
+      probe.lastSender shouldEqual handOffStopper
 
       watch(handOffStopper)
       expectTerminated(handOffStopper, 1.seconds)

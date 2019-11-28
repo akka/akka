@@ -14,7 +14,7 @@ import akka.serialization.Serializers
  */
 class SerializationTestKit(system: ActorSystem[_]) {
 
-  private val serialization = SerializationExtension(system.toUntyped)
+  private val serialization = SerializationExtension(system.toClassic)
 
   /**
    * Verify serialization roundtrip.

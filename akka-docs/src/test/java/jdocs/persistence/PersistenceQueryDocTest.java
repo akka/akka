@@ -4,21 +4,19 @@
 
 package jdocs.persistence;
 
-import static akka.pattern.Patterns.ask;
-
 import java.sql.Connection;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.Set;
 
 import akka.NotUsed;
+import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.persistence.query.Sequence;
 import akka.persistence.query.Offset;
 import com.typesafe.config.Config;
 
 import akka.actor.*;
 import akka.persistence.query.*;
-import akka.stream.ActorMaterializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 
@@ -28,12 +26,10 @@ import org.reactivestreams.Subscriber;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.TimeUnit;
 
 public class PersistenceQueryDocTest {
 
   final ActorSystem system = ActorSystem.create();
-  final ActorMaterializer mat = ActorMaterializer.create(system);
 
   public
   // #advanced-journal-query-types
@@ -61,6 +57,8 @@ public class PersistenceQueryDocTest {
     }
   }
   // #advanced-journal-query-types
+
+  interface OrderCompleted {}
 
   public
   // #my-read-journal
@@ -217,8 +215,7 @@ public class PersistenceQueryDocTest {
         readJournal.eventsByPersistenceId("user-1337", 0, Long.MAX_VALUE);
 
     // materialize stream, consuming events
-    ActorMaterializer mat = ActorMaterializer.create(system);
-    source.runForeach(event -> System.out.println("Event: " + event), mat);
+    source.runForeach(event -> System.out.println("Event: " + event), system);
     // #basic-usage
   }
 
@@ -261,7 +258,6 @@ public class PersistenceQueryDocTest {
 
   void demonstrateEventsByTag() {
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
 
     final MyJavadslReadJournal readJournal =
         PersistenceQuery.get(system)
@@ -270,13 +266,14 @@ public class PersistenceQueryDocTest {
 
     // #events-by-tag
     // assuming journal is able to work with numeric offsets we can:
-    final Source<EventEnvelope, NotUsed> blueThings =
-        readJournal.eventsByTag("blue", new Sequence(0L));
+    final Source<EventEnvelope, NotUsed> completedOrders =
+        readJournal.eventsByTag("order-completed", new Sequence(0L));
 
-    // find top 10 blue things:
-    final CompletionStage<List<Object>> top10BlueThings =
-        blueThings
+    // find first 10 completed orders:
+    final CompletionStage<List<OrderCompleted>> firstCompleted =
+        completedOrders
             .map(EventEnvelope::event)
+            .collectType(OrderCompleted.class)
             .take(10) // cancels the query stream after pulling 10 elements
             .runFold(
                 new ArrayList<>(10),
@@ -284,16 +281,16 @@ public class PersistenceQueryDocTest {
                   acc.add(e);
                   return acc;
                 },
-                mat);
+                system);
 
     // start another query, from the known offset
-    Source<EventEnvelope, NotUsed> blue = readJournal.eventsByTag("blue", new Sequence(10));
+    Source<EventEnvelope, NotUsed> furtherOrders =
+        readJournal.eventsByTag("order-completed", new Sequence(10));
     // #events-by-tag
   }
 
   void demonstrateMaterializedQueryValues() {
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
 
     final MyJavadslReadJournal readJournal =
         PersistenceQuery.get(system)
@@ -326,7 +323,7 @@ public class PersistenceQueryDocTest {
               System.out.println("Event payload: " + event.payload);
               return event.payload;
             })
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
 
     // #advanced-journal-query-usage
   }
@@ -339,7 +336,6 @@ public class PersistenceQueryDocTest {
 
   void demonstrateWritingIntoDifferentStore() {
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
 
     final MyJavadslReadJournal readJournal =
         PersistenceQuery.get(system)
@@ -355,12 +351,12 @@ public class PersistenceQueryDocTest {
         .eventsByPersistenceId("user-1337", 0L, Long.MAX_VALUE)
         .map(envelope -> envelope.event())
         .grouped(20) // batch inserts into groups of 20
-        .runWith(Sink.fromSubscriber(dbBatchWriter), mat); // write batches to read-side database
+        .runWith(Sink.fromSubscriber(dbBatchWriter), system); // write batches to read-side database
     // #projection-into-different-store-rs
   }
 
   // #projection-into-different-store-simple-classes
-  class ExampleStore {
+  static class ExampleStore {
     CompletionStage<Void> save(Object any) {
       // ...
       // #projection-into-different-store-simple-classes
@@ -372,7 +368,6 @@ public class PersistenceQueryDocTest {
 
   void demonstrateWritingIntoDifferentStoreWithMapAsync() {
     final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
 
     final MyJavadslReadJournal readJournal =
         PersistenceQuery.get(system)
@@ -385,12 +380,12 @@ public class PersistenceQueryDocTest {
     readJournal
         .eventsByTag("bid", new Sequence(0L))
         .mapAsync(1, store::save)
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // #projection-into-different-store-simple
   }
 
   // #projection-into-different-store
-  class MyResumableProjection {
+  static class MyResumableProjection {
     private final String name;
 
     public MyResumableProjection(String name) {
@@ -413,41 +408,7 @@ public class PersistenceQueryDocTest {
   }
   // #projection-into-different-store
 
-  void demonstrateWritingIntoDifferentStoreWithResumableProjections() throws Exception {
-    final ActorSystem system = ActorSystem.create();
-    final ActorMaterializer mat = ActorMaterializer.create(system);
-
-    final MyJavadslReadJournal readJournal =
-        PersistenceQuery.get(system)
-            .getReadJournalFor(
-                MyJavadslReadJournal.class, "akka.persistence.query.my-read-journal");
-
-    // #projection-into-different-store-actor-run
-    final Duration timeout = Duration.ofSeconds(3);
-
-    final MyResumableProjection bidProjection = new MyResumableProjection("bid");
-
-    final Props writerProps = Props.create(TheOneWhoWritesToQueryJournal.class, "bid");
-    final ActorRef writer = system.actorOf(writerProps, "bid-projection-writer");
-
-    long startFromOffset =
-        bidProjection.latestOffset().toCompletableFuture().get(3, TimeUnit.SECONDS);
-
-    readJournal
-        .eventsByTag("bid", new Sequence(startFromOffset))
-        .mapAsync(
-            8,
-            envelope -> {
-              final CompletionStage<Object> f = ask(writer, envelope.event(), timeout);
-              return f.thenApplyAsync(in -> envelope.offset(), system.dispatcher());
-            })
-        .mapAsync(1, offset -> bidProjection.saveProgress(offset))
-        .runWith(Sink.ignore(), mat);
-  }
-
-  // #projection-into-different-store-actor-run
-
-  class ComplexState {
+  static class ComplexState {
 
     boolean readyToSave() {
       return false;
@@ -459,35 +420,4 @@ public class PersistenceQueryDocTest {
       return new Record();
     }
   }
-
-  // #projection-into-different-store-actor
-  final class TheOneWhoWritesToQueryJournal extends AbstractActor {
-    private final ExampleStore store;
-
-    private ComplexState state = new ComplexState();
-
-    public TheOneWhoWritesToQueryJournal() {
-      store = new ExampleStore();
-    }
-
-    @Override
-    public Receive createReceive() {
-      return receiveBuilder()
-          .matchAny(
-              message -> {
-                state = updateState(state, message);
-
-                // example saving logic that requires state to become ready:
-                if (state.readyToSave()) store.save(Record.of(state));
-              })
-          .build();
-    }
-
-    ComplexState updateState(ComplexState state, Object msg) {
-      // some complicated aggregation logic here ...
-      return state;
-    }
-  }
-  // #projection-into-different-store-actor
-
 }

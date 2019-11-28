@@ -1,8 +1,13 @@
-# Persistence - snapshotting
+---
+project.description: Append only event logs, snapshots and recovery with Akka event sourced actors.
+---
+# Snapshotting
+
+For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
 
 ## Snapshots
 
-As you model your domain using @ref:[persistent actors](persistence.md), you may notice that some actors may be
+As you model your domain using @ref:[event sourced actors](persistence.md), you may notice that some actors may be
 prone to accumulating extremely long event logs and experiencing long recovery times. Sometimes, the right approach
 may be to split out into a set of shorter lived actors. However, when this is not an option, you can use snapshots
 to reduce recovery times drastically.
@@ -38,7 +43,8 @@ recovery like this:
 Scala
 :  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #snapshotSelection }
 
-TODO #26273 include corresponding example in Java
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #snapshotSelection }
 
 To disable snapshot-based recovery, applications can use @scala[`SnapshotSelectionCriteria.None`]@java[`SnapshotSelectionCriteria.none()`].
 A recovery where no saved snapshot matches the specified `SnapshotSelectionCriteria` will replay all journaled
@@ -46,7 +52,7 @@ events. This can be useful if snapshot serialization format has changed in an in
 not be used when events have been deleted.
 
 In order to use snapshots, a default snapshot-store (`akka.persistence.snapshot-store.plugin`) must be configured,
-or you can pick a snapshot store for for a specific `EventSourcedBehavior by
+or you can pick a snapshot store for for a specific `EventSourcedBehavior` by
 @scala[defining it with `withSnapshotPluginId` of the `EventSourcedBehavior`]@java[overriding `snapshotPluginId` in
 the `EventSourcedBehavior`].
 

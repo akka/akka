@@ -31,7 +31,6 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
     akka.io.dns.async-dns.nameservers = ["localhost:${AsyncDnsResolverIntegrationSpec.dockerDnsServerPort}"]
     akka.io.dns.async-dns.search-domains = ["foo.test", "test"]
     akka.io.dns.async-dns.ndots = 2
-//    akka.io.dns.async-dns.nameservers = default
   """) with DockerBindDnsService with WithLogCapturing {
   val duration = 10.seconds
   implicit val timeout = Timeout(duration)
@@ -182,7 +181,13 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
     }
 
     def resolve(name: String, requestType: RequestType = Ip()): DnsProtocol.Resolved = {
-      (IO(Dns) ? DnsProtocol.Resolve(name, requestType)).mapTo[DnsProtocol.Resolved].futureValue
+      try {
+        (IO(Dns) ? DnsProtocol.Resolve(name, requestType)).mapTo[DnsProtocol.Resolved].futureValue
+      } catch {
+        case e: Throwable =>
+          dumpNameserverLogs()
+          throw e
+      }
     }
 
   }

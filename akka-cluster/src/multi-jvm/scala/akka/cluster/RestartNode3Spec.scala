@@ -29,7 +29,7 @@ object RestartNode3MultiJvmSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
-      akka.cluster.auto-down-unreachable-after = off
+      akka.cluster.testkit.auto-down-unreachable-after = off
       akka.cluster.allow-weakly-up-members = off
       # test is using Java serialization and not priority to rewrite
       akka.actor.allow-java-serialization = on

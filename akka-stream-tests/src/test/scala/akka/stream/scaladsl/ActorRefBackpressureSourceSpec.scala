@@ -8,7 +8,7 @@ import akka.actor.Status
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.ActorMaterializer
+import akka.stream.CompletionStrategy
 import akka.stream.testkit.StreamSpec
 import akka.testkit.TestProbe
 
@@ -21,13 +21,16 @@ private object ActorRefBackpressureSourceSpec {
 class ActorRefBackpressureSourceSpec extends StreamSpec {
   import ActorRefBackpressureSourceSpec._
 
-  private implicit val materializer: ActorMaterializer = ActorMaterializer()
-
-  "An Source.actorRefWithAck" must {
+  "An Source.actorRefWithBackpressure" must {
 
     "emit received messages to the stream and ack" in assertAllStagesStopped {
       val probe = TestProbe()
-      val (ref, s) = Source.actorRefWithAck[Int](AckMsg).toMat(TestSink.probe[Int])(Keep.both).run()
+      val (ref, s) = Source
+        .actorRefWithBackpressure[Int](
+          AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
+          PartialFunction.empty)
+        .toMat(TestSink.probe[Int])(Keep.both)
+        .run()
 
       val sub = s.expectSubscription()
       sub.request(10)
@@ -41,12 +44,15 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
 
       s.expectNoMessage(50.millis)
 
-      ref ! Status.Success("ok")
+      ref ! "ok"
       s.expectComplete()
     }
 
     "fail when consumer does not await ack" in assertAllStagesStopped {
-      val (ref, s) = Source.actorRefWithAck[Int](AckMsg).toMat(TestSink.probe[Int])(Keep.both).run()
+      val (ref, s) = Source
+        .actorRefWithBackpressure[Int](AckMsg, PartialFunction.empty, PartialFunction.empty)
+        .toMat(TestSink.probe[Int])(Keep.both)
+        .run()
 
       val sub = s.expectSubscription()
       for (n <- 1 to 20) ref ! n
@@ -68,7 +74,12 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
 
     "complete after receiving Status.Success" in assertAllStagesStopped {
       val probe = TestProbe()
-      val (ref, s) = Source.actorRefWithAck[Int](AckMsg).toMat(TestSink.probe[Int])(Keep.both).run()
+      val (ref, s) = Source
+        .actorRefWithBackpressure[Int](
+          AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
+          PartialFunction.empty)
+        .toMat(TestSink.probe[Int])(Keep.both)
+        .run()
 
       val sub = s.expectSubscription()
       sub.request(10)
@@ -76,14 +87,19 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       s.expectNext(1)
       probe.expectMsg(AckMsg)
 
-      ref ! Status.Success("ok")
+      ref ! "ok"
 
       s.expectComplete()
     }
 
     "fail after receiving Status.Failure" in assertAllStagesStopped {
       val probe = TestProbe()
-      val (ref, s) = Source.actorRefWithAck[Int](AckMsg).toMat(TestSink.probe[Int])(Keep.both).run()
+      val (ref, s) = Source
+        .actorRefWithBackpressure[Int](
+          AckMsg,
+          PartialFunction.empty, { case Status.Failure(f) => f }: PartialFunction[Any, Throwable])
+        .toMat(TestSink.probe[Int])(Keep.both)
+        .run()
 
       val sub = s.expectSubscription()
       sub.request(10)
@@ -98,7 +114,12 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
 
     "not buffer elements after receiving Status.Success" in assertAllStagesStopped {
       val probe = TestProbe()
-      val (ref, s) = Source.actorRefWithAck[Int](AckMsg).toMat(TestSink.probe[Int])(Keep.both).run()
+      val (ref, s) = Source
+        .actorRefWithBackpressure[Int](
+          AckMsg, { case "ok" => CompletionStrategy.draining }: PartialFunction[Any, CompletionStrategy],
+          PartialFunction.empty)
+        .toMat(TestSink.probe[Int])(Keep.both)
+        .run()
 
       val sub = s.expectSubscription()
       sub.request(10)
@@ -110,7 +131,7 @@ class ActorRefBackpressureSourceSpec extends StreamSpec {
       s.expectNext(2)
       probe.expectMsg(AckMsg)
 
-      ref ! Status.Success("ok")
+      ref ! "ok"
 
       probe.send(ref, 100)
       probe.send(ref, 100)

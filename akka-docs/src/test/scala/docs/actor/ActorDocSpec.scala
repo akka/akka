@@ -735,6 +735,35 @@ class ActorDocSpec extends AkkaSpec("""
     }
     //#coordinated-shutdown-addTask
 
+    {
+      def cleanup(): Unit = {}
+      import system.dispatcher
+      //#coordinated-shutdown-cancellable
+      val c = CoordinatedShutdown(system).addCancellableTask(CoordinatedShutdown.PhaseBeforeServiceUnbind, "cleanup") {
+        () =>
+          Future {
+            cleanup()
+            Done
+          }
+      }
+
+      // much later...
+      c.cancel()
+      //#coordinated-shutdown-cancellable
+    }
+
+    {
+      val someActor = system.actorOf(Props(classOf[Replier], this))
+      someActor ! PoisonPill
+      //#coordinated-shutdown-addActorTerminationTask
+      CoordinatedShutdown(system).addActorTerminationTask(
+        CoordinatedShutdown.PhaseBeforeServiceUnbind,
+        "someTaskName",
+        someActor,
+        Some("stop"))
+      //#coordinated-shutdown-addActorTerminationTask
+    }
+
     //#coordinated-shutdown-jvm-hook
     CoordinatedShutdown(system).addJvmShutdownHook {
       println("custom JVM shutdown hook...")

@@ -19,7 +19,7 @@ import akka.pattern.ask
 import com.github.ghik.silencer.silent
 
 @silent
-class RestartStrategySpec extends AkkaSpec("akka.actor.serialize-messages = off") with DefaultTimeout {
+class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
   override def atStartup: Unit = {
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))

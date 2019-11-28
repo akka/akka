@@ -1,4 +1,7 @@
-# Akka Extensions
+---
+project.description: How to extend Akka with Akka Extensions.
+---
+# Classic Akka Extensions
 
 If you want to add features to Akka, there is a very elegant, but powerful mechanism for doing so.
 It's called Akka Extensions and is comprised of 2 basic components: an `Extension` and an `ExtensionId`.
@@ -80,7 +83,7 @@ Java
 ## Applicability
 
 The sky is the limit!
-By the way, did you know that Akka's `Typed Actors`, `Serialization` and other features are implemented as Akka Extensions?
+By the way, did you know that Akka `Cluster`, `Serialization` and other features are implemented as Akka Extensions?
 
 <a id="extending-akka-settings"></a>
 ### Application specific settings

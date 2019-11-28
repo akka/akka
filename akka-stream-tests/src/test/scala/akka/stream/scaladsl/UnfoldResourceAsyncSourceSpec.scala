@@ -7,17 +7,24 @@ package akka.stream.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.Done
-import akka.actor.ActorSystem
+import akka.stream.ActorAttributes
+import akka.stream.Materializer
+import akka.stream.Supervision
 import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.impl.StreamSupervisor
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.{ StreamSpec, TestSubscriber }
-import akka.stream.{ ActorMaterializer, _ }
-import akka.testkit.{ TestLatch, TestProbe }
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.Promise
 
 object UnfoldResourceAsyncSourceSpec {
 
@@ -60,9 +67,6 @@ object UnfoldResourceAsyncSourceSpec {
 class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   import UnfoldResourceAsyncSourceSpec._
-
-  val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
   import system.dispatcher
 
   "Unfold Resource Async Source" must {
@@ -310,29 +314,25 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
     }
 
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {
-      val sys = ActorSystem("dispatcher-testing", UnboundedMailboxConfig)
-      val materializer = ActorMaterializer()(sys)
-      try {
-        Source
-          .unfoldResourceAsync[String, Unit](
-            () => Promise[Unit].future, // never complete
-            _ => ???,
-            _ => ???)
-          .runWith(Sink.ignore)(materializer)
+      // use a separate materializer to ensure we know what child is our stream
+      implicit val materializer = Materializer(system)
 
-        materializer
-          .asInstanceOf[PhasedFusingActorMaterializer]
-          .supervisor
-          .tell(StreamSupervisor.GetChildren, testActor)
-        val ref = expectMsgType[Children].children.find(_.path.toString contains "unfoldResourceSourceAsync").get
-        assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
-      } finally shutdown(sys)
+      Source
+        .unfoldResourceAsync[String, Unit](
+          () => Promise[Unit].future, // never complete
+          _ => ???,
+          _ => ???)
+        .runWith(Sink.ignore)
+
+      materializer.asInstanceOf[PhasedFusingActorMaterializer].supervisor.tell(StreamSupervisor.GetChildren, testActor)
+      val ref = expectMsgType[Children].children.find(_.path.toString contains "unfoldResourceSourceAsync").get
+      assertDispatcher(ref, ActorAttributes.IODispatcher.dispatcher)
     }
 
     "close resource when stream is abruptly terminated" in {
       import system.dispatcher
       val closeLatch = TestLatch(1)
-      val mat = ActorMaterializer()
+      val mat = Materializer(system)
       val p = Source
         .unfoldResourceAsync[String, Unit](
           () => Future.successful(()),

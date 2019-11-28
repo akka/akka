@@ -34,7 +34,8 @@ object RestartNodeMultiJvmSpec extends MultiNodeConfig {
   commonConfig(
     debugConfig(on = false)
       .withFallback(ConfigFactory.parseString("""
-      akka.cluster.auto-down-unreachable-after = 5s
+      akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+      akka.cluster.testkit.auto-down-unreachable-after = 5s
       akka.cluster.allow-weakly-up-members = off
       #akka.remote.use-passive-connections = off
       # test is using Java serialization and not priority to rewrite

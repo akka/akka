@@ -23,19 +23,16 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
   static class Job {}
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("StreamBuffersDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   final SilenceSystemOut.System System = SilenceSystemOut.get();
@@ -62,19 +59,13 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
               return i;
             })
         .async()
-        .runWith(Sink.ignore(), mat);
+        .runWith(Sink.ignore(), system);
     // #pipelining
   }
 
   @Test
   @SuppressWarnings("unused")
   public void demonstrateBufferSizes() {
-    // #materializer-buffer
-    final Materializer materializer =
-        ActorMaterializer.create(
-            ActorMaterializerSettings.create(system).withInputBuffer(64, 64), system);
-    // #materializer-buffer
-
     // #section-buffer
     final Flow<Integer, Integer, NotUsed> flow1 =
         Flow.of(Integer.class)
@@ -84,7 +75,13 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
     final Flow<Integer, Integer, NotUsed> flow2 =
         flow1
             .via(Flow.of(Integer.class).map(elem -> elem / 2))
-            .async(); // the buffer size of this map is the default
+            .async(); // the buffer size of this map is the value from the surrounding graph it is
+    // used in
+    final RunnableGraph<NotUsed> runnableGraph =
+        Source.range(1, 10).via(flow1).to(Sink.foreach(elem -> System.out.println(elem)));
+
+    final RunnableGraph<NotUsed> withOverridenDefaults =
+        runnableGraph.withAttributes(Attributes.inputBuffer(64, 64));
     // #section-buffer
   }
 
@@ -109,7 +106,7 @@ public class StreamBuffersRateDocTest extends AbstractJavaTest {
                   b.from(zipper.out()).to(b.add(Sink.foreach(elem -> System.out.println(elem))));
                   return ClosedShape.getInstance();
                 }))
-        .run(mat);
+        .run(system);
     // #buffering-abstraction-leak
   }
 

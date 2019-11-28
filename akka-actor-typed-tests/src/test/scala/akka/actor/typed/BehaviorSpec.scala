@@ -6,20 +6,22 @@ package akka.actor.typed
 
 import akka.actor.typed.scaladsl.{ Behaviors => SBehaviors }
 import akka.actor.typed.scaladsl.{ AbstractBehavior => SAbstractBehavior }
-import akka.actor.typed.javadsl.{ ActorContext => JActorContext, Behaviors => JBehaviors }
-import akka.japi.function.{ Function => F1e, Function2 => F2, Procedure2 => P2 }
+import akka.actor.typed.javadsl.{ Behaviors => JBehaviors }
 import akka.japi.pf.{ FI, PFBuilder }
 import java.util.function.{ Function => F1 }
 
 import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
 import org.scalactic.TypeCheckedTripleEquals
 import org.scalatest.Matchers
 import org.scalatest.WordSpecLike
+import com.github.ghik.silencer.silent
 
 object BehaviorSpec {
   sealed trait Command {
+    @silent
     def expectedResponse(context: TypedActorContext[Command]): Seq[Event] = Nil
   }
   case object GetSelf extends Command {
@@ -67,10 +69,12 @@ object BehaviorSpec {
     override def next = StateA
   }
 
-  trait Common extends WordSpecLike with Matchers with TypeCheckedTripleEquals {
+  trait Common extends WordSpecLike with Matchers with TypeCheckedTripleEquals with LogCapturing {
     type Aux >: Null <: AnyRef
     def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux)
+    @silent("never used")
     def checkAux(signal: Signal, aux: Aux): Unit = ()
+    @silent("never used")
     def checkAux(command: Command, aux: Aux): Unit = ()
 
     case class Init(behv: Behavior[Command], inbox: TestInbox[Event], aux: Aux) {
@@ -94,7 +98,7 @@ object BehaviorSpec {
       Init(behv, inbox, aux)
     }
 
-    def mkCtx(requirePreStart: Boolean = false): Setup =
+    def mkCtx(): Setup =
       init().mkCtx()
 
     implicit class Check(val setup: Setup) {
@@ -187,7 +191,7 @@ object BehaviorSpec {
   trait Lifecycle extends Common {
     "Lifecycle" must {
       "must react to PreStart" in {
-        mkCtx(requirePreStart = true)
+        pending
       }
 
       "must react to PostStop" in {
@@ -437,7 +441,7 @@ class MutableScalaBehaviorSpec extends Messages with Become with Stoppable {
 
   def behv(monitor: ActorRef[Event]): Behavior[Command] =
     SBehaviors.setup[Command] { context =>
-      new SAbstractBehavior[Command] {
+      new SAbstractBehavior[Command](context) {
         private var state: State = StateA
 
         override def onMessage(message: Command): Behavior[Command] = {

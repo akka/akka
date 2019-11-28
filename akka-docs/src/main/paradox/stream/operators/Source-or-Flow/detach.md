@@ -16,6 +16,7 @@ Detach upstream demand from downstream demand without detaching the stream rates
 
 Detach upstream demand from downstream demand without detaching the stream rates.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

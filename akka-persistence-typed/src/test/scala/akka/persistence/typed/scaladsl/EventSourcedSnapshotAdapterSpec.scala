@@ -7,14 +7,17 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
-import akka.persistence.typed.{ PersistenceId, SnapshotAdapter }
+import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.SnapshotAdapter
 import akka.serialization.jackson.CborSerializable
-import akka.stream.ActorMaterializer
-import com.typesafe.config.{ Config, ConfigFactory }
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object EventSourcedSnapshotAdapterSpec {
@@ -32,15 +35,16 @@ object EventSourcedSnapshotAdapterSpec {
 
 class EventSourcedSnapshotAdapterSpec
     extends ScalaTestWithActorTestKit(EventSourcedSnapshotAdapterSpec.conf)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
   import EventSourcedSnapshotAdapterSpec._
   import akka.actor.typed.scaladsl.adapter._
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
-  implicit val materializer = ActorMaterializer()(system.toUntyped)
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
+
   val queries: LeveldbReadJournal =
-    PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+    PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   private def behavior(pid: PersistenceId, probe: ActorRef[State]): EventSourcedBehavior[Command, Event, State] =
     EventSourcedBehavior[Command, Event, State](

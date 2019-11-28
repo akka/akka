@@ -11,10 +11,10 @@ import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.Behaviors;
-import akka.event.Logging;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
+import org.slf4j.event.Level;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -70,10 +70,10 @@ public class BehaviorTestKitTest extends JUnitSuite {
 
   public static class CreateMessageAdapter implements Command {
     private final Class<Object> clazz;
-    private final Function<Object, Command> f;
+    private final akka.japi.function.Function<Object, Command> f;
 
     @SuppressWarnings("unchecked")
-    public CreateMessageAdapter(Class clazz, Function<Object, Command> f) {
+    public CreateMessageAdapter(Class clazz, akka.japi.function.Function<Object, Command> f) {
       this.clazz = clazz;
       this.f = f;
     }
@@ -250,7 +250,7 @@ public class BehaviorTestKitTest extends JUnitSuite {
     test.run(new Log(what));
     final List<CapturedLogEvent> allLogEntries = test.getAllLogEntries();
     assertEquals(1, allLogEntries.size());
-    assertEquals(new CapturedLogEvent(Logging.InfoLevel(), what), allLogEntries.get(0));
+    assertEquals(new CapturedLogEvent(Level.INFO, what), allLogEntries.get(0));
   }
 
   @Test

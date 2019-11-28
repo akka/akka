@@ -38,7 +38,7 @@ object SignalHandlerBuilder {
 /**
  * Mutable builder for handling signals in [[EventSourcedBehavior]]
  *
- * Not for user instantiation, use [[EventSourcedBehavior#newSignalHandlerBuilder()]] to get an instance.
+ * Not for user instantiation, use [[EventSourcedBehavior.newSignalHandlerBuilder]] to get an instance.
  */
 final class SignalHandlerBuilder[State] {
 

@@ -10,16 +10,19 @@ import java.util
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.io.dns.CachePolicy.{ CachePolicy, Forever, Never, Ttl }
 import akka.io.dns.internal.{ ResolvConf, ResolvConfParser }
 import akka.util.Helpers
+import akka.util.Helpers.Requiring
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.{ Config, ConfigValueType }
-
 import akka.util.ccompat.JavaConverters._
+import akka.util.ccompat._
+import com.typesafe.config.{ Config, ConfigValueType }
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.{ Failure, Success, Try }
-import akka.util.ccompat._
+
+import akka.event.Logging
 
 /** INTERNAL API */
 @InternalApi
@@ -50,6 +53,20 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
 
   val ResolveTimeout: FiniteDuration = c.getDuration("resolve-timeout").asScala
 
+  val PositiveCachePolicy: CachePolicy = getTtl("positive-ttl")
+  val NegativeCachePolicy: CachePolicy = getTtl("negative-ttl")
+
+  private def getTtl(path: String): CachePolicy =
+    c.getString(path) match {
+      case "forever" => Forever
+      case "never"   => Never
+      case _ =>
+        val finiteTtl = c
+          .getDuration(path)
+          .requiring(!_.isNegative, s"akka.io.dns.$path must be 'default', 'forever', 'never' or positive duration")
+        Ttl.fromPositive(finiteTtl)
+    }
+
   private lazy val resolvConf: Option[ResolvConf] = {
     val etcResolvConf = new File("/etc/resolv.conf")
     // Avoid doing the check on Windows, no point
@@ -60,8 +77,9 @@ private[dns] final class DnsSettings(system: ExtendedActorSystem, c: Config) {
       parsed match {
         case Success(value) => Some(value)
         case Failure(exception) =>
-          if (system.log.isWarningEnabled) {
-            system.log.error(exception, "Error parsing /etc/resolv.conf, ignoring.")
+          val log = Logging(system, getClass)
+          if (log.isWarningEnabled) {
+            log.error(exception, "Error parsing /etc/resolv.conf, ignoring.")
           }
           None
       }

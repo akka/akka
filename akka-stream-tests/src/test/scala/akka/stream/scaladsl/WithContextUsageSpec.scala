@@ -4,17 +4,14 @@
 
 package akka.stream.scaladsl
 
-import scala.collection.immutable
 import akka.NotUsed
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.testkit.TestSubscriber.Probe
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber.Probe
+import akka.stream.testkit.scaladsl.TestSink
+
+import scala.collection.immutable
 
 class WithContextUsageSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system)
-  implicit val materializer = ActorMaterializer(settings)
 
   "Context propagation used for committing offsets" must {
 

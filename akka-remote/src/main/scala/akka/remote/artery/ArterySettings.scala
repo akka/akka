@@ -7,8 +7,8 @@ package akka.remote.artery
 import java.net.InetAddress
 
 import akka.util.ccompat.JavaConverters._
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import akka.NotUsed
 import akka.japi.Util.immutableSeq
 import akka.stream.ActorMaterializerSettings
@@ -16,6 +16,7 @@ import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import akka.util.Helpers.toRootLowerCase
 import akka.util.WildcardIndex
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
@@ -95,8 +96,10 @@ private[akka] final class ArterySettings private (config: Config) {
     val TestMode: Boolean = getBoolean("test-mode")
     val Dispatcher: String = getString("use-dispatcher")
     val ControlStreamDispatcher: String = getString("use-control-stream-dispatcher")
+    @silent("deprecated")
     val MaterializerSettings: ActorMaterializerSettings =
       ActorMaterializerSettings(config.getConfig("materializer")).withDispatcher(Dispatcher)
+    @silent("deprecated")
     val ControlStreamMaterializerSettings: ActorMaterializerSettings =
       ActorMaterializerSettings(config.getConfig("materializer")).withDispatcher(ControlStreamDispatcher)
 
@@ -163,8 +166,6 @@ private[akka] final class ArterySettings private (config: Config) {
         .getMillisDuration("outbound-restart-timeout")
         .requiring(interval => interval > Duration.Zero, "outbound-restart-timeout must be more than zero")
     val OutboundMaxRestarts: Int = getInt("outbound-max-restarts")
-    val FlightRecorderEnabled: Boolean = getBoolean("flight-recorder.enabled")
-    val FlightRecorderDestination: String = getString("flight-recorder.destination")
     val Compression = new Compression(getConfig("compression"))
 
     final val MaximumFrameSize: Int = math

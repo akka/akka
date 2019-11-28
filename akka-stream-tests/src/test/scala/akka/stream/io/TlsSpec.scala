@@ -6,16 +6,16 @@ package akka.stream.io
 
 import java.security.KeyStore
 import java.security.SecureRandom
+import java.security.cert.CertificateException
 import java.util.concurrent.TimeoutException
 
 import akka.NotUsed
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
+
 import akka.pattern.{ after => later }
 import akka.stream._
 import akka.stream.TLSProtocol._
@@ -32,7 +32,10 @@ object TlsSpec {
 
   val rnd = new Random
 
-  def initWithTrust(trustPath: String) = {
+  val SSLEnabledAlgorithms: Set[String] = Set("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_128_CBC_SHA")
+  val SSLProtocol: String = "TLSv1.2"
+
+  def initWithTrust(trustPath: String): SSLContext = {
     val password = "changeme"
 
     val keyStore = KeyStore.getInstance(KeyStore.getDefaultType)
@@ -47,7 +50,7 @@ object TlsSpec {
     val trustManagerFactory = TrustManagerFactory.getInstance(TrustManagerFactory.getDefaultAlgorithm)
     trustManagerFactory.init(trustStore)
 
-    val context = SSLContext.getInstance("TLS")
+    val context = SSLContext.getInstance(SSLProtocol)
     context.init(keyManagerFactory.getKeyManagers, trustManagerFactory.getTrustManagers, new SecureRandom)
     context
   }
@@ -96,11 +99,8 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
   import TlsSpec._
 
   import system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   import GraphDSL.Implicits._
-
-  val sslConfig: Option[AkkaSSLConfig] = None // no special settings to be applied here
 
   "SslTls" must {
 
@@ -114,11 +114,42 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       x
     }
 
-    val cipherSuites =
-      NegotiateNewSession.withCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA", "TLS_RSA_WITH_AES_128_CBC_SHA")
-    def clientTls(closing: TLSClosing) = TLS(sslContext, None, cipherSuites, Client, closing)
-    def badClientTls(closing: TLSClosing) = TLS(initWithTrust("/badtruststore"), None, cipherSuites, Client, closing)
-    def serverTls(closing: TLSClosing) = TLS(sslContext, None, cipherSuites, Server, closing)
+    def createSSLEngine(context: SSLContext, role: TLSRole): SSLEngine =
+      createSSLEngine2(context, role, hostnameVerification = false, hostInfo = None)
+
+    def createSSLEngine2(
+        context: SSLContext,
+        role: TLSRole,
+        hostnameVerification: Boolean,
+        hostInfo: Option[(String, Int)]): SSLEngine = {
+
+      val engine = hostInfo match {
+        case None =>
+          if (hostnameVerification)
+            throw new IllegalArgumentException("hostInfo must be defined for hostnameVerification to work.")
+          context.createSSLEngine()
+        case Some((hostname, port)) => context.createSSLEngine(hostname, port)
+      }
+
+      if (hostnameVerification && role == akka.stream.Client) {
+        val sslParams = sslContext.getDefaultSSLParameters
+        sslParams.setEndpointIdentificationAlgorithm("HTTPS")
+        engine.setSSLParameters(sslParams)
+      }
+
+      engine.setUseClientMode(role == akka.stream.Client)
+      engine.setEnabledCipherSuites(SSLEnabledAlgorithms.toArray)
+      engine.setEnabledProtocols(Array(SSLProtocol))
+
+      engine
+    }
+
+    def clientTls(closing: TLSClosing) =
+      TLS(() => createSSLEngine(sslContext, Client), closing)
+    def badClientTls(closing: TLSClosing) =
+      TLS(() => createSSLEngine(initWithTrust("/badtruststore"), Client), closing)
+    def serverTls(closing: TLSClosing) =
+      TLS(() => createSSLEngine(sslContext, Server), closing)
 
     trait Named {
       def name: String =
@@ -378,8 +409,8 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
                   override def onPush() = push(out, grab(in))
                   override def onPull() = pull(in)
 
-                  override def onDownstreamFinish() = {
-                    system.log.debug("me cancelled")
+                  override def onDownstreamFinish(cause: Throwable) = {
+                    system.log.debug(s"me cancelled, cause {}", cause)
                     completeStage()
                   }
                 }
@@ -508,7 +539,10 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
           case SessionTruncated   => SendBytes(ByteString.empty)
           case SessionBytes(_, b) => SendBytes(b)
         }
-        val clientTls = TLS(sslContext, None, cipherSuites, Client, EagerClose, Some((hostName, 80)))
+        val clientTls = TLS(
+          () => createSSLEngine2(sslContext, Client, hostnameVerification = true, hostInfo = Some((hostName, 80))),
+          EagerClose)
+
         val flow = clientTls.atop(serverTls(EagerClose).reversed).join(rhs)
 
         Source.single(SendBytes(ByteString.empty)).via(flow).runWith(Sink.ignore)
@@ -517,7 +551,19 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       val cause = intercept[Exception] {
         Await.result(run("unknown.example.org"), 3.seconds)
       }
-      cause.getMessage should ===("Hostname verification failed! Expected session to be for unknown.example.org")
+
+      val rootCause =
+        if (JavaVersion.majorVersion >= 11) {
+          cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+          cause.getCause
+        } else {
+          cause.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+          val cause2 = cause.getCause
+          cause2.getClass should ===(classOf[SSLHandshakeException]) //General SSLEngine problem
+          cause2.getCause
+        }
+      rootCause.getClass should ===(classOf[CertificateException])
+      rootCause.getMessage should ===("No name matching unknown.example.org found")
     }
 
   }

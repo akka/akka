@@ -1,14 +1,19 @@
+---
+project.description: A distributed lock with Akka Coordination using a pluggable lease API.
+---
 # Coordination
 
 Akka Coordination is a set of tools for distributed coordination.
 
-## Dependency
+## Module info
 
 @@dependency[sbt,Gradle,Maven] {
   group="com.typesafe.akka"
   artifact="akka-coordination_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-coordination" }
 
 ## Lease
 

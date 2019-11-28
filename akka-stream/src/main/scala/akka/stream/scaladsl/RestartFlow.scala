@@ -12,9 +12,10 @@ import akka.stream._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl.RestartWithBackoffFlow.Delay
 import akka.stream.stage._
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import akka.stream.Attributes.LogLevels
+import akka.util.OptionVal
 
 /**
  * A RestartFlow wraps a [[Flow]] that gets restarted when it completes or fails.
@@ -230,6 +231,8 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
   // don't want to restart the sub inlet when it finishes, we just finish normally.
   var finishing = false
 
+  override protected def logSource: Class[_] = classOf[RestartWithBackoffLogic[_]]
+
   protected def startGraph(): Unit
   protected def backoff(): Unit
 
@@ -272,9 +275,9 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
 
     setHandler(out, new OutHandler {
       override def onPull() = sinkIn.pull()
-      override def onDownstreamFinish() = {
+      override def onDownstreamFinish(cause: Throwable) = {
         finishing = true
-        sinkIn.cancel()
+        sinkIn.cancel(cause)
       }
     })
     sinkIn
@@ -303,9 +306,9 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
        * Can either be a failure or a cancel in the wrapped state.
        * onlyOnFailures is thus racy so a delay to cancellation is added in the case of a flow.
        */
-      override def onDownstreamFinish() = {
+      override def onDownstreamFinish(cause: Throwable) = {
         if (finishing || maxRestartsReached() || onlyOnFailures) {
-          cancel(in)
+          cancel(in, cause)
         } else {
           scheduleRestartTimer()
         }
@@ -384,13 +387,17 @@ object RestartWithBackoffFlow {
 
     override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
       new TimerGraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
+        override protected def logSource: Class[_] = classOf[DelayCancellationStage[_]]
+
+        private var cause: OptionVal[Throwable] = OptionVal.None
 
         setHandlers(in, out, this)
 
         def onPush(): Unit = push(out, grab(in))
         def onPull(): Unit = pull(in)
 
-        override def onDownstreamFinish(): Unit = {
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          this.cause = OptionVal.Some(cause)
           scheduleOnce("CompleteState", delay)
           setHandler(in, new InHandler {
             def onPush(): Unit = {}
@@ -399,7 +406,13 @@ object RestartWithBackoffFlow {
 
         override protected def onTimer(timerKey: Any): Unit = {
           log.debug(s"Stage was canceled after delay of $delay")
-          completeStage()
+          cause match {
+            case OptionVal.Some(ex) =>
+              cancelStage(ex)
+            case OptionVal.None =>
+              throw new IllegalStateException("Timer hitting without first getting a cancel cannot happen")
+          }
+
         }
       }
   }

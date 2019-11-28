@@ -34,13 +34,19 @@ import scala.util.control.NonFatal
     val matPromise = Promise[M]()
     val logic = new GraphStageLogic(shape) with OutHandler {
 
-      override def onDownstreamFinish(): Unit = {
-        matPromise.failure(new RuntimeException("Downstream canceled without triggering lazy source materialization"))
+      override def onDownstreamFinish(cause: Throwable): Unit = {
+        matPromise.failure(new NeverMaterializedException(cause))
         completeStage()
       }
 
       override def onPull(): Unit = {
-        val source = sourceFactory()
+        val source = try {
+          sourceFactory()
+        } catch {
+          case NonFatal(ex) =>
+            matPromise.tryFailure(ex)
+            throw ex
+        }
         val subSink = new SubSinkInlet[T]("LazySource")
         subSink.pull()
 
@@ -49,8 +55,8 @@ import scala.util.control.NonFatal
             subSink.pull()
           }
 
-          override def onDownstreamFinish(): Unit = {
-            subSink.cancel()
+          override def onDownstreamFinish(cause: Throwable): Unit = {
+            subSink.cancel(cause)
             completeStage()
           }
         })
@@ -75,7 +81,7 @@ import scala.util.control.NonFatal
       setHandler(out, this)
 
       override def postStop() = {
-        matPromise.tryFailure(new RuntimeException("LazySource stopped without completing the materialized future"))
+        if (!matPromise.isCompleted) matPromise.tryFailure(new AbruptStageTerminationException(this))
       }
     }
 

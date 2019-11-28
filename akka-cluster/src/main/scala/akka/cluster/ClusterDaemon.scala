@@ -22,6 +22,8 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.control.NonFatal
 
+import akka.event.ActorWithLogClass
+import akka.event.Logging
 import com.github.ghik.silencer.silent
 
 /**
@@ -320,6 +322,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   val selfDc = cluster.selfDataCenter
 
+  private val gossipLogger =
+    new cluster.ClusterLogger(Logging(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterGossip)))
+
   protected def selfUniqueAddress = cluster.selfUniqueAddress
 
   val vclockNode = VectorClock.Node(Gossip.vclockName(selfUniqueAddress))
@@ -406,12 +411,17 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   override def preStart(): Unit = {
     subscribeQuarantinedEvent()
 
-    cluster.downingProvider.downingActorProps.foreach { props =>
-      val propsWithDispatcher =
-        if (props.dispatcher == Deploy.NoDispatcherGiven) props.withDispatcher(context.props.dispatcher)
-        else props
+    cluster.downingProvider.downingActorProps match {
+      case Some(props) =>
+        val propsWithDispatcher =
+          if (props.dispatcher == Deploy.NoDispatcherGiven) props.withDispatcher(context.props.dispatcher)
+          else props
 
-      context.actorOf(propsWithDispatcher, name = "downingProvider")
+        context.actorOf(propsWithDispatcher, name = "downingProvider")
+      case None =>
+        logInfo(
+          "No downing-provider-class configured, manual cluster downing required, see " +
+          "https://doc.akka.io/docs/akka/current/typed/cluster.html#downing")
     }
 
     if (seedNodes.isEmpty) {
@@ -420,13 +430,13 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       else
         logInfo(
           "No seed-nodes configured, manual cluster join required, see " +
-          "https://doc.akka.io/docs/akka/current/cluster-usage.html#joining-to-seed-nodes")
+          "https://doc.akka.io/docs/akka/current/typed/cluster.html#joining")
     } else {
       self ! JoinSeedNodes(seedNodes)
     }
   }
 
-  @silent
+  @silent("deprecated")
   private def subscribeQuarantinedEvent(): Unit = {
     context.system.eventStream.subscribe(self, classOf[QuarantinedEvent])
     context.system.eventStream.subscribe(self, classOf[ClassicQuarantinedEvent])
@@ -936,9 +946,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
   def receiveGossipStatus(status: GossipStatus): Unit = {
     val from = status.from
     if (!latestGossip.hasMember(from))
-      logInfo("Ignoring received gossip status from unknown [{}]", from)
+      gossipLogger.logInfo("Ignoring received gossip status from unknown [{}]", from)
     else if (!latestGossip.isReachable(selfUniqueAddress, from))
-      logInfo("Ignoring received gossip status from unreachable [{}] ", from)
+      gossipLogger.logInfo("Ignoring received gossip status from unreachable [{}] ", from)
     else {
       status.version.compareTo(latestGossip.version) match {
         case VectorClock.Same  => // same version
@@ -968,19 +978,22 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     val localGossip = latestGossip
 
     if (remoteGossip eq Gossip.empty) {
-      logDebug("Ignoring received gossip from [{}] to protect against overload", from)
+      gossipLogger.logDebug("Ignoring received gossip from [{}] to protect against overload", from)
       Ignored
     } else if (envelope.to != selfUniqueAddress) {
-      logInfo("Ignoring received gossip intended for someone else, from [{}] to [{}]", from.address, envelope.to)
+      gossipLogger.logInfo(
+        "Ignoring received gossip intended for someone else, from [{}] to [{}]",
+        from.address,
+        envelope.to)
       Ignored
     } else if (!localGossip.hasMember(from)) {
-      logInfo("Ignoring received gossip from unknown [{}]", from)
+      gossipLogger.logInfo("Ignoring received gossip from unknown [{}]", from)
       Ignored
     } else if (!localGossip.isReachable(selfUniqueAddress, from)) {
-      logInfo("Ignoring received gossip from unreachable [{}] ", from)
+      gossipLogger.logInfo("Ignoring received gossip from unreachable [{}] ", from)
       Ignored
     } else if (remoteGossip.members.forall(_.uniqueAddress != selfUniqueAddress)) {
-      logInfo("Ignoring received gossip that does not contain myself, from [{}]", from)
+      gossipLogger.logInfo("Ignoring received gossip that does not contain myself, from [{}]", from)
       Ignored
     } else {
       val comparison = remoteGossip.version.compareTo(localGossip.version)
@@ -1005,14 +1018,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           // Removal of member itself is handled in merge (pickHighestPriority)
           val prunedLocalGossip = localGossip.members.foldLeft(localGossip) { (g, m) =>
             if (removeUnreachableWithMemberStatus(m.status) && !remoteGossip.members.contains(m)) {
-              logDebug("Pruned conflicting local gossip: {}", m)
+              gossipLogger.logDebug("Pruned conflicting local gossip: {}", m)
               g.prune(VectorClock.Node(Gossip.vclockName(m.uniqueAddress)))
             } else
               g
           }
           val prunedRemoteGossip = remoteGossip.members.foldLeft(remoteGossip) { (g, m) =>
             if (removeUnreachableWithMemberStatus(m.status) && !localGossip.members.contains(m)) {
-              logDebug("Pruned conflicting remote gossip: {}", m)
+              gossipLogger.logDebug("Pruned conflicting remote gossip: {}", m)
               g.prune(VectorClock.Node(Gossip.vclockName(m.uniqueAddress)))
             } else
               g
@@ -1038,10 +1051,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         }
       }
 
-      logDebug("Receiving gossip from [{}]", from)
+      gossipLogger.logDebug("Receiving gossip from [{}]", from)
 
       if (comparison == VectorClock.Concurrent && cluster.settings.Debug.VerboseGossipLogging) {
-        logDebug(
+        gossipLogger.logDebug(
           """Couldn't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merged them into [{}]""",
           remoteGossip,
           localGossip,
@@ -1122,7 +1135,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
             gossipTo(peer)
         case None => // nothing to see here
           if (cluster.settings.Debug.VerboseGossipLogging)
-            logDebug("will not gossip this round")
+            gossipLogger.logDebug("will not gossip this round")
 
       }
     }
@@ -1316,7 +1329,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     if (targets.nonEmpty) {
 
       if (isDebugEnabled)
-        logDebug(
+        gossipLogger.logDebug(
           "Gossip exiting members [{}] to the two oldest (per role) [{}] (singleton optimization).",
           exitingMembers.mkString(", "),
           targets.mkString(", "))
@@ -1474,7 +1487,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
   def publishMembershipState(): Unit = {
     if (cluster.settings.Debug.VerboseGossipLogging)
-      logDebug("New gossip published [{}]", membershipState.latestGossip)
+      gossipLogger.logDebug("New gossip published [{}]", membershipState.latestGossip)
 
     publisher ! PublishChanges(membershipState)
     if (PublishStatsInterval == Duration.Zero) publishInternalStats()

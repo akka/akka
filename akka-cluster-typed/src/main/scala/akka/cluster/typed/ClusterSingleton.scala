@@ -4,12 +4,11 @@
 
 package akka.cluster.typed
 
-import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.singleton.{
   ClusterSingletonProxySettings,
-  ClusterSingletonManagerSettings => UntypedClusterSingletonManagerSettings
+  ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings
 }
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
@@ -50,8 +49,7 @@ final class ClusterSingletonSettings(
     val singletonIdentificationInterval: FiniteDuration,
     val removalMargin: FiniteDuration,
     val handOverRetryInterval: FiniteDuration,
-    val bufferSize: Int)
-    extends NoSerializationVerificationNeeded {
+    val bufferSize: Int) {
 
   def withRole(role: String): ClusterSingletonSettings = copy(role = Some(role))
 
@@ -91,8 +89,8 @@ final class ClusterSingletonSettings(
    * INTERNAL API:
    */
   @InternalApi
-  private[akka] def toManagerSettings(singletonName: String): UntypedClusterSingletonManagerSettings =
-    new UntypedClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
+  private[akka] def toManagerSettings(singletonName: String): ClassicClusterSingletonManagerSettings =
+    new ClassicClusterSingletonManagerSettings(singletonName, role, removalMargin, handOverRetryInterval)
 
   /**
    * INTERNAL API:
@@ -213,7 +211,7 @@ object ClusterSingletonManagerSettings {
    */
   def apply(system: ActorSystem[_]): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
-      .withRemovalMargin(akka.cluster.Cluster(system.toUntyped).downingProvider.downRemovalMargin)
+      .withRemovalMargin(akka.cluster.Cluster(system.toClassic).downingProvider.downRemovalMargin)
 
   /**
    * Create settings from a configuration with the same layout as
@@ -270,13 +268,12 @@ final class ClusterSingletonManagerSettings(
     val singletonName: String,
     val role: Option[String],
     val removalMargin: FiniteDuration,
-    val handOverRetryInterval: FiniteDuration)
-    extends NoSerializationVerificationNeeded {
+    val handOverRetryInterval: FiniteDuration) {
 
   def withSingletonName(name: String): ClusterSingletonManagerSettings = copy(singletonName = name)
 
   def withRole(role: String): ClusterSingletonManagerSettings =
-    copy(role = UntypedClusterSingletonManagerSettings.roleOption(role))
+    copy(role = ClassicClusterSingletonManagerSettings.roleOption(role))
 
   def withRole(role: Option[String]): ClusterSingletonManagerSettings = copy(role = role)
 
@@ -300,9 +297,7 @@ final class ClusterSingletonManagerSettings(
 
 object ClusterSingletonSetup {
   def apply[T <: Extension](createExtension: ActorSystem[_] => ClusterSingleton): ClusterSingletonSetup =
-    new ClusterSingletonSetup(new java.util.function.Function[ActorSystem[_], ClusterSingleton] {
-      override def apply(sys: ActorSystem[_]): ClusterSingleton = createExtension(sys)
-    }) // TODO can be simplified when compiled only with Scala >= 2.12
+    new ClusterSingletonSetup(createExtension(_))
 
 }
 

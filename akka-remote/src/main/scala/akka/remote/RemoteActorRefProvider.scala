@@ -246,7 +246,6 @@ private[akka] class RemoteActorRefProvider(
         case ArterySettings.Tcp      => new ArteryTcpTransport(system, this, tlsEnabled = false)
         case ArterySettings.TlsTcp   => new ArteryTcpTransport(system, this, tlsEnabled = true)
       } else new Remoting(system, this))
-
     _internals = internals
     remotingTerminator ! internals
 
@@ -258,6 +257,7 @@ private[akka] class RemoteActorRefProvider(
     // this enables reception of remote requests
     transport.start()
 
+    _addressString = OptionVal.Some(_internals.transport.defaultAddress.toString)
     _remoteWatcher = createOrNone[ActorRef](createRemoteWatcher(system))
     remoteDeploymentWatcher = createOrNone[ActorRef](createRemoteDeploymentWatcher(system))
   }
@@ -333,7 +333,7 @@ private[akka] class RemoteActorRefProvider(
     if (!settings.HasCluster) {
       if (remoteSettings.UseUnsafeRemoteFeaturesWithoutCluster)
         log.info(
-          "Akka Cluster not in use - enabling unsafe features anyway because `akka.remote.use-unsafe-remote-features-without-cluster` has been enabled.")
+          "Akka Cluster not in use - enabling unsafe features anyway because `akka.remote.use-unsafe-remote-features-outside-cluster` has been enabled.")
       else
         log.warning("Akka Cluster not in use - Using Akka Cluster is recommended if you need remote watch and deploy.")
     }
@@ -343,7 +343,7 @@ private[akka] class RemoteActorRefProvider(
     else log.debug(message)
 
   /** Logs if deathwatch message is intentionally dropped. To disable
-   * warnings set `akka.remote.warn-unsafe-watch-without-cluster` to `off`
+   * warnings set `akka.remote.warn-unsafe-watch-outside-cluster` to `off`
    * or use Akka Cluster.
    */
   private[akka] def warnIfUnsafeDeathwatchWithoutCluster(watchee: ActorRef, watcher: ActorRef, action: String): Unit =
@@ -623,6 +623,17 @@ private[akka] class RemoteActorRefProvider(
   def quarantine(address: Address, uid: Option[Long], reason: String): Unit =
     transport.quarantine(address, uid, reason)
 
+  // lazily initialized with fallback since it can depend on transport which is not initialized up front
+  // worth caching since if it is used once in a system it will very likely be used many times
+  @volatile private var _addressString: OptionVal[String] = OptionVal.None
+  override private[akka] def addressString: String = {
+    _addressString match {
+      case OptionVal.Some(addr) => addr
+      case OptionVal.None       =>
+        // not initialized yet, fallback
+        local.addressString
+    }
+  }
 }
 
 private[akka] trait RemoteRef extends ActorRefScope {
@@ -659,7 +670,7 @@ private[akka] class RemoteActorRef private[akka] (
   // used by artery to direct messages to separate specialized streams
   @volatile private[remote] var cachedSendQueueIndex: Int = -1
 
-  @silent
+  @silent("deprecated")
   def getChild(name: Iterator[String]): InternalActorRef = {
     val s = name.toStream
     s.headOption match {

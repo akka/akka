@@ -4,21 +4,20 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, ClosedShape, OverflowStrategy }
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import scala.concurrent.Await
-import scala.concurrent.duration._
-
 import akka.stream.ActorAttributes
 import akka.stream.Supervision
 import akka.stream.testkit.Utils.TE
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.ClosedShape
+import akka.stream.OverflowStrategy
 
-class GraphPartitionSpec extends StreamSpec {
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class GraphPartitionSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   "A partition" must {
     import GraphDSL.Implicits._

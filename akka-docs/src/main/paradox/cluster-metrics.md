@@ -1,6 +1,6 @@
 # Classic Cluster Metrics Extension
 
-## Dependency
+## Module info
 
 To use Cluster Metrics Extension, you must add the following dependency in your project:
 
@@ -17,6 +17,8 @@ and add the following configuration stanza to your `application.conf`
 akka.extensions = [ "akka.cluster.metrics.ClusterMetricsExtension" ]
 ```
 
+@@project-info{ projectId="akka-cluster-metrics" }
+
 ## Introduction
 
 
@@ -27,7 +29,7 @@ Cluster metrics information is primarily used for load-balancing routers,
 and can also be used to implement advanced metrics-based node life cycles,
 such as "Node Let-it-crash" when CPU steal time becomes excessive.
 
-Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up), if that feature is enabled,
+Cluster members with status @ref:[WeaklyUp](typed/cluster-membership.md#weaklyup-members), if that feature is enabled,
 will participate in Cluster Metrics collection and dissemination.
 
 ## Metrics Collector
@@ -177,10 +179,6 @@ Scala
 
 Java
 :  @@snip [FactorialFrontend.java](/akka-docs/src/test/java/jdocs/cluster/FactorialFrontend.java) { #router-lookup-in-code #router-deploy-in-code }
-
-The easiest way to run the **Adaptive Load Balancing** example yourself is to try the
-@scala[@extref[Akka Cluster Sample with Scala](samples:akka-samples-cluster-scala)]@java[@extref[Akka Cluster Sample with Java](samples:akka-samples-cluster-java)].
-It contains instructions on how to run the **Adaptive Load Balancing** sample.
 
 ## Subscribe to Metrics Events
 

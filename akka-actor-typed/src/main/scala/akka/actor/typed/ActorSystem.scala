@@ -6,7 +6,7 @@ package akka.actor.typed
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
-import akka.actor.BootstrapSetup
+import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
@@ -14,9 +14,10 @@ import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBe
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
-import akka.util.Timeout
-import akka.{ Done, actor => untyped }
+import akka.{ Done, actor => classic }
 import com.typesafe.config.{ Config, ConfigFactory }
+import org.slf4j.Logger
+
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
@@ -29,7 +30,8 @@ import scala.concurrent.{ ExecutionContextExecutor, Future }
  * Not for user extension.
  */
 @DoNotInherit
-abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: InternalRecipientRef[T] =>
+abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicActorSystemProvider {
+  this: InternalRecipientRef[T] =>
 
   /**
    * The name of this actor system, used to distinguish multiple ones within
@@ -48,7 +50,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
   def logConfiguration(): Unit
 
   /**
-   * A [[akka.actor.typed.Logger]] that can be used to emit log messages
+   * A [[org.slf4j.Logger]] that can be used to emit log messages
    * without specifying a more detailed source. Typically it is desirable to
    * use the dedicated `Logger` available from each Actor’s [[TypedActorContext]]
    * as that ties the log entries to the actor.
@@ -77,7 +79,7 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    * set on all threads created by the ActorSystem, if one was set during
    * creation.
    */
-  def dynamicAccess: untyped.DynamicAccess
+  def dynamicAccess: classic.DynamicAccess
 
   /**
    * A generic scheduler that can initiate the execution of tasks after some delay.
@@ -145,12 +147,10 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    * Create an actor in the "/system" namespace. This actor will be shut down
    * during system.terminate only after all user actors have terminated.
    *
-   * The returned Future of [[ActorRef]] may be converted into an [[ActorRef]]
-   * to which messages can immediately be sent by using the `ActorRef.apply`
-   * method.
+   * This is only intended to be used by libraries (and Akka itself).
+   * Applications should use ordinary `spawn`.
    */
-  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = Props.empty)(
-      implicit timeout: Timeout): Future[ActorRef[U]]
+  def systemActorOf[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U]
 
   /**
    * Return a reference to this system’s [[akka.actor.typed.receptionist.Receptionist]].
@@ -164,6 +164,16 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: Inter
    */
   def eventStream: ActorRef[EventStream.Command] =
     EventStreamExtension(this).ref
+
+  /**
+   * Obtains the external address of the default transport.
+   *
+   * Consider differences in clustered and non-clustered ActorSystems.
+   * For a non-clustered ActorSystem, this will return an address without host and port.
+   * For a clustered ActorSystem, this will return the address that other nodes can use to
+   * communicate with this node.
+   */
+  def address: Address
 
 }
 
@@ -180,6 +190,12 @@ object ActorSystem {
    */
   def apply[T](guardianBehavior: Behavior[T], name: String, config: Config): ActorSystem[T] =
     createInternal(name, guardianBehavior, Props.empty, ActorSystemSetup.create(BootstrapSetup(config)))
+
+  /**
+   * Scala API: Create an ActorSystem
+   */
+  def apply[T](guardianBehavior: Behavior[T], name: String, config: Config, guardianProps: Props): ActorSystem[T] =
+    createInternal(name, guardianBehavior, guardianProps, ActorSystemSetup.create(BootstrapSetup(config)))
 
   /**
    * Scala API: Creates a new actor system with the specified name and settings
@@ -213,6 +229,12 @@ object ActorSystem {
     apply(guardianBehavior, name, config)
 
   /**
+   * Java API: Create an ActorSystem
+   */
+  def create[T](guardianBehavior: Behavior[T], name: String, config: Config, guardianProps: Props): ActorSystem[T] =
+    createInternal(name, guardianBehavior, guardianProps, ActorSystemSetup.create(BootstrapSetup(config)))
+
+  /**
    * Java API: Creates a new actor system with the specified name and settings
    * The core actor system settings are defined in [[BootstrapSetup]]
    */
@@ -227,9 +249,9 @@ object ActorSystem {
     create(guardianBehavior, name, ActorSystemSetup.create(bootstrapSetup))
 
   /**
-   * Create an ActorSystem based on the untyped [[akka.actor.ActorSystem]]
+   * Create an ActorSystem based on the classic [[akka.actor.ActorSystem]]
    * which runs Akka Typed [[Behavior]] on an emulation layer. In this
-   * system typed and untyped actors can coexist.
+   * system typed and classic actors can coexist.
    */
   private def createInternal[T](
       name: String,
@@ -245,12 +267,13 @@ object ActorSystem {
     val appConfig = bootstrapSettings.flatMap(_.config).getOrElse(ConfigFactory.load(cl))
     val executionContext = bootstrapSettings.flatMap(_.defaultExecutionContext)
 
-    val system = new untyped.ActorSystemImpl(
+    val system = new classic.ActorSystemImpl(
       name,
       appConfig,
       cl,
       executionContext,
-      Some(PropsAdapter[Any](() => new GuardianStartupBehavior(guardianBehavior), guardianProps)),
+      Some(
+        PropsAdapter[Any](() => GuardianStartupBehavior(guardianBehavior), guardianProps, rethrowTypedFailure = false)),
       setup)
     system.start()
 
@@ -259,28 +282,22 @@ object ActorSystem {
   }
 
   /**
-   * Wrap an untyped [[akka.actor.ActorSystem]] such that it can be used from
+   * Wrap a classic [[akka.actor.ActorSystem]] such that it can be used from
    * Akka Typed [[Behavior]].
    */
-  def wrap(system: untyped.ActorSystem): ActorSystem[Nothing] =
-    ActorSystemAdapter.AdapterExtension(system.asInstanceOf[untyped.ActorSystemImpl]).adapter
+  def wrap(system: classic.ActorSystem): ActorSystem[Nothing] =
+    ActorSystemAdapter.AdapterExtension(system.asInstanceOf[classic.ActorSystemImpl]).adapter
 }
 
 /**
  * The configuration settings that were parsed from the config by an [[ActorSystem]].
  * This class is immutable.
  */
-final class Settings(val config: Config, val untypedSettings: untyped.ActorSystem.Settings, val name: String) {
-  def this(classLoader: ClassLoader, config: Config, name: String) =
-    this({
-      val cfg = config.withFallback(ConfigFactory.defaultReference(classLoader))
-      cfg.checkValid(ConfigFactory.defaultReference(classLoader), "akka")
-      cfg
-    }, new untyped.ActorSystem.Settings(classLoader, config, name), name)
+final class Settings(val config: Config, val classicSettings: classic.ActorSystem.Settings, val name: String) {
 
-  def this(settings: untyped.ActorSystem.Settings) = this(settings.config, settings, settings.name)
+  def this(settings: classic.ActorSystem.Settings) = this(settings.config, settings, settings.name)
 
-  def setup: ActorSystemSetup = untypedSettings.setup
+  def setup: ActorSystemSetup = classicSettings.setup
 
   /**
    * Returns the String representation of the Config that this Settings is backed by

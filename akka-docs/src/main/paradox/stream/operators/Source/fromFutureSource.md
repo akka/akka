@@ -1,6 +1,6 @@
 # fromFutureSource
 
-Streams the elements of the given future source once it successfully completes.
+`fromFutureSource` has been deprecated in 2.6.0, use `Source.futureSource` instead.
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -14,9 +14,12 @@ Streams the elements of the given future source once it successfully completes.
 
 ## Description
 
+`fromFutureSource` has been deprecated in 2.6.0, use @ref:[futureSource](futureSource.md) instead.
+
 Streams the elements of the given future source once it successfully completes. 
 If the future fails the stream is failed.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

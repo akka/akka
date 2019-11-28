@@ -12,9 +12,8 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 23
-  // No 2.6 has been released yet. Update to '0' after releasing 2.6.0
-  private val latestPatchOf26 = -1
+  private val latestPatchOf25 = 26
+  private val latestPatchOf26 = 0
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
@@ -28,27 +27,24 @@ object MiMa extends AutoPlugin {
       scalaBinaryVersion: String): Set[sbt.ModuleID] = {
 
     val versions: Seq[String] = {
-      scalaBinaryVersion match {
-        case "2.12" =>
-          val firstPatchOf25 =
-            if (projectName.contains("discovery")) 19
-            else if (projectName.contains("coordination")) 22
-            else 0
+      val firstPatchOf25 =
+        if (scalaBinaryVersion.startsWith("2.13")) 25
+        else if (projectName.contains("discovery")) 19
+        else if (projectName.contains("coordination")) 22
+        else 0
 
-          if (!projectName.contains("typed")) {
-            expandVersions(2, 5, firstPatchOf25 to latestPatchOf25)
-          } else {
-            Nil
-          } ++ expandVersions(2, 6, 0 to latestPatchOf26)
-        case v if v.startsWith("2.13") =>
-          // When 2.13.0 is actually out, release 2.5.latestPatchOf25 for that
-          // and add it here. https://github.com/akka/akka/issues/26764
-          expandVersions(2, 6, 0 to latestPatchOf26)
-      }
+      if (!(projectName.contains("typed") || projectName.contains("jackson"))) {
+        // 2.5.18 is the only release built with Scala 2.12.7, which due to
+        // https://github.com/scala/bug/issues/11207 produced many more
+        // static methods than expected. These are hard to filter out, so
+        // we exclude it here and rely on the checks for 2.5.17 and 2.5.19.
+        expandVersions(2, 5, ((firstPatchOf25 to latestPatchOf25).toSet - 18).toList)
+      } else {
+        Nil
+      } ++ expandVersions(2, 6, 0 to latestPatchOf26)
     }
 
     val akka25PromotedArtifacts = Set("akka-distributed-data")
-    val akkaTypedModules = Set("akka-actor-typed")
 
     // check against all binary compatible artifacts
     versions.map { v =>

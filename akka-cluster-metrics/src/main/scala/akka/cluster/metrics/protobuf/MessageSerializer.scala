@@ -13,7 +13,7 @@ import akka.cluster.metrics.protobuf.msg.{ ClusterMetricsMessages => cm }
 import akka.cluster.metrics._
 import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest, Serializers }
 import akka.util.ClassLoaderObjectInputStream
-import akka.protobuf.{ ByteString, MessageLite }
+import akka.protobufv3.internal.{ ByteString, MessageLite }
 import akka.util.ccompat._
 
 import scala.annotation.tailrec

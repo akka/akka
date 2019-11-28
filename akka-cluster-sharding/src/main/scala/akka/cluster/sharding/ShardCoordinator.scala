@@ -4,14 +4,13 @@
 
 package akka.cluster.sharding
 
-import akka.util.Timeout
-
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
 import akka.actor._
 import akka.actor.DeadLetterSuppression
+import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.ddata.LWWRegister
@@ -26,6 +25,8 @@ import akka.cluster.ddata.GSetKey
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.util.Timeout
+import com.github.ghik.silencer.silent
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -38,6 +39,7 @@ object ShardCoordinator {
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor.
    */
+  @silent("deprecated")
   private[akka] def props(
       typeName: String,
       settings: ClusterShardingSettings,
@@ -215,6 +217,11 @@ object ShardCoordinator {
   private[akka] object Internal {
 
     /**
+     * Used as a special termination message from [[ClusterSharding]]
+     */
+    @InternalApi private[cluster] case object Terminate extends DeadLetterSuppression
+
+    /**
      * Messages sent to the coordinator
      */
     sealed trait CoordinatorCommand extends ClusterShardingSerializable
@@ -329,6 +336,8 @@ object ShardCoordinator {
         rememberEntities: Boolean = false)
         extends ClusterShardingSerializable {
 
+      override def toString = s"State($shards)"
+
       def withRememberEntities(enabled: Boolean): State = {
         if (enabled)
           copy(rememberEntities = enabled)
@@ -414,17 +423,21 @@ object ShardCoordinator {
    * INTERNAL API. Rebalancing process is performed by this actor.
    * It sends `BeginHandOff` to all `ShardRegion` actors followed by
    * `HandOff` to the `ShardRegion` responsible for the shard.
-   * When the handoff is completed it sends [[akka.cluster.sharding.RebalanceDone]] to its
-   * parent `ShardCoordinator`. If the process takes longer than the
-   * `handOffTimeout` it also sends [[akka.cluster.sharding.RebalanceDone]].
+   * When the handoff is completed it sends [[akka.cluster.sharding.ShardCoordinator.RebalanceDone]]
+   * to its parent `ShardCoordinator`. If the process takes longer than the
+   * `handOffTimeout` it also sends [[akka.cluster.sharding.ShardCoordinator.RebalanceDone]].
    */
   private[akka] class RebalanceWorker(
       shard: String,
       from: ActorRef,
       handOffTimeout: FiniteDuration,
-      regions: Set[ActorRef])
-      extends Actor {
+      regions: Set[ActorRef],
+      shuttingDownRegions: Set[ActorRef])
+      extends Actor
+      with ActorLogging {
     import Internal._
+
+    shuttingDownRegions.foreach(context.watch)
     regions.foreach(_ ! BeginHandOff(shard))
     var remaining = regions
 
@@ -433,12 +446,22 @@ object ShardCoordinator {
 
     def receive = {
       case BeginHandOffAck(`shard`) =>
-        remaining -= sender()
-        if (remaining.isEmpty) {
-          from ! HandOff(shard)
-          context.become(stoppingShard, discardOld = true)
-        }
+        log.debug("BeginHandOffAck for shard [{}] received from {}.", shard, sender())
+        acked(sender())
+      case Terminated(shardRegion) =>
+        log.debug("ShardRegion {} terminated while waiting for BeginHandOffAck for shard [{}].", shardRegion, shard)
+        acked(shardRegion)
       case ReceiveTimeout => done(ok = false)
+    }
+
+    private def acked(shardRegion: ActorRef) = {
+      context.unwatch(shardRegion)
+      remaining -= shardRegion
+      if (remaining.isEmpty) {
+        log.debug("All shard regions acked, handing off shard [{}].", shard)
+        from ! HandOff(shard)
+        context.become(stoppingShard, discardOld = true)
+      }
     }
 
     def stoppingShard: Receive = {
@@ -456,9 +479,12 @@ object ShardCoordinator {
       shard: String,
       from: ActorRef,
       handOffTimeout: FiniteDuration,
-      regions: Set[ActorRef]): Props =
-    Props(new RebalanceWorker(shard, from, handOffTimeout, regions))
-
+      regions: Set[ActorRef],
+      // Note: must be a subset of regions
+      shuttingDownRegions: Set[ActorRef]): Props = {
+    require(shuttingDownRegions.size <= regions.size, "'shuttingDownRegions' must be a subset of 'regions'.")
+    Props(new RebalanceWorker(shard, from, handOffTimeout, regions, shuttingDownRegions))
+  }
 }
 
 /**
@@ -482,7 +508,7 @@ abstract class ShardCoordinator(
     case None =>
       cluster.settings.MinNrOfMembers
     case Some(r) =>
-      cluster.settings.MinNrOfMembersOfRole.getOrElse(r, cluster.settings.MinNrOfMembers)
+      cluster.settings.MinNrOfMembersOfRole.getOrElse(r, 1)
   }
   var allRegionsRegistered = false
 
@@ -689,6 +715,9 @@ abstract class ShardCoordinator(
         })
         sender() ! reply
 
+      case ShardCoordinator.Internal.Terminate =>
+        log.debug("Received termination message")
+        context.stop(self)
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
   private def clearRebalanceInProgress(shard: String): Unit = {
@@ -884,7 +913,8 @@ abstract class ShardCoordinator(
                 shard,
                 rebalanceFromRegion,
                 handOffTimeout,
-                state.regions.keySet.union(state.regionProxies)).withDispatcher(context.props.dispatcher))
+                state.regions.keySet.union(state.regionProxies),
+                gracefulShutdownInProgress).withDispatcher(context.props.dispatcher))
           case None =>
             log.debug("Rebalance of non-existing shard [{}] is ignored", shard)
         }
@@ -900,6 +930,7 @@ abstract class ShardCoordinator(
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
+@deprecated("Use `ddata` mode, persistence mode is deprecated.", "2.6.0")
 class PersistentShardCoordinator(
     typeName: String,
     settings: ClusterShardingSettings,
@@ -959,6 +990,10 @@ class PersistentShardCoordinator(
 
   def waitingForStateInitialized: Receive =
     ({
+      case ShardCoordinator.Internal.Terminate =>
+        log.debug("Received termination message before state was initialized")
+        context.stop(self)
+
       case StateInitialized =>
         stateInitialized()
         context.become(active.orElse[Any, Unit](receiveSnapshotResult))
@@ -1030,7 +1065,7 @@ class DDataShardCoordinator(
     if (rememberEntities) Set(CoordinatorStateKey, AllShardsKey) else Set(CoordinatorStateKey)
 
   var shards = Set.empty[String]
-
+  var terminating = false
   var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
 
   if (rememberEntities)
@@ -1049,6 +1084,7 @@ class DDataShardCoordinator(
     ({
       case g @ GetSuccess(CoordinatorStateKey, _) =>
         state = g.get(CoordinatorStateKey).value.withRememberEntities(settings.rememberEntities)
+        log.debug("Received initial coordinator state [{}]", state)
         val newRemainingKeys = remainingKeys - CoordinatorStateKey
         if (newRemainingKeys.isEmpty)
           becomeWaitingForStateInitialized()
@@ -1093,6 +1129,9 @@ class DDataShardCoordinator(
         else
           context.become(waitingForState(newRemainingKeys))
 
+      case ShardCoordinator.Internal.Terminate =>
+        log.debug("Received termination message while waiting for state")
+        context.stop(self)
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
   private def becomeWaitingForStateInitialized(): Unit = {
@@ -1118,6 +1157,10 @@ class DDataShardCoordinator(
     case g: GetShardHome =>
       stashGetShardHomeRequest(sender(), g)
 
+    case ShardCoordinator.Internal.Terminate =>
+      log.debug("Received termination message while waiting for state initialized")
+      context.stop(self)
+
     case _ => stash()
   }
 
@@ -1136,12 +1179,17 @@ class DDataShardCoordinator(
 
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) =>
       log.error(
-        "The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis (retrying). " +
+        "The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis ({}). " +
         "Perhaps the ShardRegion has not started on all active nodes yet? event={}",
         writeMajority.timeout.toMillis,
+        if (terminating) "terminating" else "retrying",
         evt)
-      // repeat until UpdateSuccess
-      sendCoordinatorStateUpdate(evt)
+      if (terminating) {
+        context.stop(self)
+      } else {
+        // repeat until UpdateSuccess
+        sendCoordinatorStateUpdate(evt)
+      }
 
     case UpdateSuccess(AllShardsKey, Some(newShard: String)) =>
       log.debug("The coordinator shards state was successfully updated with {}", newShard)
@@ -1153,24 +1201,40 @@ class DDataShardCoordinator(
 
     case UpdateTimeout(AllShardsKey, Some(newShard: String)) =>
       log.error(
-        "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis (retrying), event={}",
+        "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis ({}), event={}",
         writeMajority.timeout.toMillis,
+        if (terminating) "terminating" else "retrying",
         evt)
-      // repeat until UpdateSuccess
-      sendAllShardsUpdate(newShard)
+      if (terminating) {
+        context.stop(self)
+      } else {
+        // repeat until UpdateSuccess
+        sendAllShardsUpdate(newShard)
+      }
 
     case ModifyFailure(key, error, cause, _) =>
       log.error(
         cause,
-        "The ShardCoordinator was unable to update a distributed state {} with error {} and event {}.Coordinator will be restarted",
+        "The ShardCoordinator was unable to update a distributed state {} with error {} and event {}. {}",
         key,
         error,
-        evt)
-      throw cause
+        evt,
+        if (terminating) "Coordinator will be terminated due to Terminate message received"
+        else "Coordinator will be restarted")
+      if (terminating) {
+        context.stop(self)
+      } else {
+        throw cause
+      }
 
     case g @ GetShardHome(shard) =>
       if (!handleGetShardHome(shard))
         stashGetShardHomeRequest(sender(), g) // must wait for update that is in progress
+
+    case ShardCoordinator.Internal.Terminate =>
+      log.debug("Received termination message while waiting for update")
+      terminating = true
+      stash()
 
     case _ => stash()
   }
@@ -1178,6 +1242,7 @@ class DDataShardCoordinator(
   private def unbecomeAfterUpdate[E <: DomainEvent](evt: E, afterUpdateCallback: E => Unit): Unit = {
     context.unbecome()
     afterUpdateCallback(evt)
+    log.debug("New coordinator state after [{}]: [{}]", evt, state)
     unstashGetShardHomeRequests()
     unstashAll()
   }
@@ -1236,6 +1301,7 @@ class DDataShardCoordinator(
 
   def sendCoordinatorStateUpdate(evt: DomainEvent) = {
     val s = state.updated(evt)
+    log.debug("Publishing new coordinator state [{}]", state)
     replicator ! Update(CoordinatorStateKey, LWWRegister(selfUniqueAddress, initEmptyState), writeMajority, Some(evt)) {
       reg =>
         reg.withValueOf(s)

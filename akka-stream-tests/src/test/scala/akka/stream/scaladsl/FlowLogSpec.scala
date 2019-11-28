@@ -19,10 +19,7 @@ import scala.util.control.NoStackTrace
 
 class FlowLogSpec extends StreamSpec("""
      akka.loglevel = DEBUG # test verifies logging
-     akka.actor.serialize-messages = off
      """) with ScriptedTest {
-
-  implicit val mat: Materializer = ActorMaterializer()
 
   val logProbe = {
     val p = TestProbe()
@@ -32,7 +29,7 @@ class FlowLogSpec extends StreamSpec("""
 
   "A Log" must {
 
-    val supervisorPath = ActorMaterializerHelper.downcast(mat).supervisor.path
+    val supervisorPath = SystemMaterializer(system).materializer.supervisor.path
     val LogSrc = s"akka.stream.Log($supervisorPath)"
     val LogClazz = classOf[Materializer]
 
@@ -70,7 +67,7 @@ class FlowLogSpec extends StreamSpec("""
           .log("log-3", new akka.japi.function.Function[Integer, Integer] { def apply(i: Integer) = i }, log)
           .log("log-4", log)
 
-        javadsl.Source.single[Integer](1).via(debugging).runWith(javadsl.Sink.ignore(), mat)
+        javadsl.Source.single[Integer](1).via(debugging).runWith(javadsl.Sink.ignore[Integer](), system)
 
         var counter = 0
         var finishCounter = 0
@@ -163,7 +160,7 @@ class FlowLogSpec extends StreamSpec("""
           .log("log-2", new akka.japi.function.Function[Integer, Integer] { def apply(i: Integer) = i })
           .log("log-3", new akka.japi.function.Function[Integer, Integer] { def apply(i: Integer) = i }, log)
           .log("log-4", log)
-          .runWith(javadsl.Sink.ignore(), mat)
+          .runWith(javadsl.Sink.ignore[Integer](), system)
 
         var counter = 1
         import scala.concurrent.duration._

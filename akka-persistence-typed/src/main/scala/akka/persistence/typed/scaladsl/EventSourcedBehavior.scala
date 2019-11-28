@@ -15,7 +15,6 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.SnapshotAdapter
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
@@ -57,14 +56,14 @@ object EventSourcedBehavior {
   /**
    * Create a `Behavior` for a persistent actor that is enforcing that replies to commands are not forgotten.
    * Then there will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
-   * created with [[Effect.reply]], [[Effect.noReply]], [[Effect.thenReply]], or [[Effect.thenNoReply]].
+   * created with [[Effect.reply]], [[Effect.noReply]], [[EffectBuilder.thenReply]], or [[EffectBuilder.thenNoReply]].
    */
-  def withEnforcedReplies[Command <: ExpectingReply[_], Event, State](
+  def withEnforcedReplies[Command, Event, State](
       persistenceId: PersistenceId,
       emptyState: State,
       commandHandler: (State, Command) => ReplyEffect[Event, State],
       eventHandler: (State, Event) => State): EventSourcedBehavior[Command, Event, State] = {
-    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]])
+    val loggerClass = LoggerClass.detectLoggerClassFromStack(classOf[EventSourcedBehavior[_, _, _]], logPrefixSkipList)
     EventSourcedBehaviorImpl(persistenceId, emptyState, commandHandler, eventHandler, loggerClass)
   }
 
@@ -190,7 +189,7 @@ object EventSourcedBehavior {
 
   /**
    * Transform the state to another type before giving to the journal. Can be used to transform older
-   * state types into the current state type e.g. when migrating from Persistent FSM to Typed Persistence.
+   * state types into the current state type e.g. when migrating from Persistent FSM to Typed EventSourcedBehavior.
    */
   def snapshotAdapter(adapter: SnapshotAdapter[State]): EventSourcedBehavior[Command, Event, State]
 

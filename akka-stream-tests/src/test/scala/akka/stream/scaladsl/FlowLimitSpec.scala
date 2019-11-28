@@ -4,15 +4,14 @@
 
 package akka.stream.scaladsl
 
+import akka.stream.StreamLimitReachedException
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, StreamLimitReachedException }
+
 import scala.concurrent.Await
 
-class FlowLimitSpec extends StreamSpec {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val mat = ActorMaterializer(settings)
+class FlowLimitSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) {
 
   "Limit" must {
     "produce empty sequence when source is empty and n = 0" in {

@@ -4,11 +4,10 @@
 
 package akka.actor.typed.javadsl
 
-import java.util.function.Supplier
-
 import scala.annotation.tailrec
 
 import akka.japi.function.{ Function => JFunction }
+import akka.japi.function.Creator
 import akka.japi.function.{ Predicate => JPredicate }
 import akka.annotation.InternalApi
 import akka.actor.typed.Behavior
@@ -23,6 +22,9 @@ import akka.util.OptionVal
  *
  * When handling a message or signal, this [[Behavior]] will consider all handlers in the order they were added,
  * looking for the first handler for which both the type and the (optional) predicate match.
+ *
+ * Akka `akka.japi.function` lambda types are used throughout to allow handlers to throw checked exceptions
+ * (which will fail the actor).
  *
  * @tparam T the common superclass of all supported messages.
  */
@@ -76,13 +78,11 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
    * @param handler action to apply when the message matches
    * @return a new behavior builder with the specified handling appended
    */
-  def onMessageEquals(msg: T, handler: Supplier[Behavior[T]]): BehaviorBuilder[T] =
+  def onMessageEquals(msg: T, handler: Creator[Behavior[T]]): BehaviorBuilder[T] =
     withMessage[T](
       OptionVal.Some(msg.getClass.asInstanceOf[Class[T]]),
       OptionVal.Some(_.equals(msg)),
-      new JFunction[T, Behavior[T]] {
-        override def apply(msg: T): Behavior[T] = handler.get()
-      })
+      (_: T) => handler.create())
 
   /**
    * Add a new case to the message handling matching any message. Subsequent `onMessage` clauses will
@@ -130,12 +130,8 @@ final class BehaviorBuilder[T] private (messageHandlers: List[Case[T, T]], signa
    * @param handler action to apply when the message matches
    * @return a new behavior builder with the specified handling appended
    */
-  def onSignalEquals(signal: Signal, handler: Supplier[Behavior[T]]): BehaviorBuilder[T] =
-    withSignal(signal.getClass, OptionVal.Some(_.equals(signal)), new JFunction[Signal, Behavior[T]] {
-      override def apply(signal: Signal): Behavior[T] = {
-        handler.get()
-      }
-    })
+  def onSignalEquals(signal: Signal, handler: Creator[Behavior[T]]): BehaviorBuilder[T] =
+    withSignal(signal.getClass, OptionVal.Some(_.equals(signal)), (_: Signal) => handler.create())
 
   private def withMessage[M <: T](
       clazz: OptionVal[Class[M]],

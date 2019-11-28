@@ -30,7 +30,6 @@ public class ActorSourceSinkCompileTest {
 
   {
     final ActorSystem<String> system = null;
-    final ActorMaterializer mat = ActorMaterializerFactory.create(system);
   }
 
   {
@@ -46,7 +45,7 @@ public class ActorSourceSinkCompileTest {
 
     Source.<String>queue(10, OverflowStrategy.dropBuffer())
         .to(
-            ActorSink.actorRefWithAck(
+            ActorSink.actorRefWithBackpressure(
                 ref,
                 (sender, msg) -> new Init(),
                 (sender) -> new Msg(),

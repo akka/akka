@@ -26,7 +26,6 @@ import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.event.{ LogMarker, Logging }
 import com.github.ghik.silencer.silent
 
 @SerialVersionUID(1L)
@@ -46,10 +45,6 @@ private[remote] class AkkaProtocolSettings(config: Config) {
     TransportFailureDetectorConfig.getMillisDuration("heartbeat-interval")
   }.requiring(_ > Duration.Zero, "transport-failure-detector.heartbeat-interval must be > 0")
 
-  val RequireCookie: Boolean = getBoolean("akka.remote.classic.require-cookie")
-
-  val SecureCookie: Option[String] = if (RequireCookie) Some(getString("akka.remote.classic.secure-cookie")) else None
-
   val HandshakeTimeout: FiniteDuration = {
     val enabledTransports = config.getStringList("akka.remote.classic.enabled-transports")
     if (enabledTransports.contains("akka.remote.classic.netty.tcp"))
@@ -63,7 +58,7 @@ private[remote] class AkkaProtocolSettings(config: Config) {
   }
 }
 
-@silent // deprecated
+@silent("deprecated")
 private[remote] object AkkaProtocolTransport { //Couldn't these go into the Remoting Extension/ RemoteSettings instead?
   val AkkaScheme: String = "akka"
   val AkkaOverhead: Int = 0 //Don't know yet
@@ -76,6 +71,12 @@ private[remote] object AkkaProtocolTransport { //Couldn't these go into the Remo
       extends NoSerializationVerificationNeeded
 }
 
+object HandshakeInfo {
+  def apply(origin: Address, uid: Int): HandshakeInfo =
+    new HandshakeInfo(origin, uid, cookie = None)
+}
+
+// cookie is not used, but keeping field to avoid bin compat (Classic Remoting is deprecated anyway)
 final case class HandshakeInfo(origin: Address, uid: Int, cookie: Option[String])
 
 /**
@@ -83,7 +84,6 @@ final case class HandshakeInfo(origin: Address, uid: Int, cookie: Option[String]
  *
  * Features provided by this transport are:
  *  - Soft-state associations via the use of heartbeats and failure detectors
- *  - Secure-cookie handling
  *  - Transparent origin address handling
  *  - pluggable codecs to encode and decode Akka PDUs
  *
@@ -101,7 +101,7 @@ final case class HandshakeInfo(origin: Address, uid: Int, cookie: Option[String]
  * @param codec
  *   the codec that will be used to encode/decode Akka PDUs
  */
-@silent // deprecated
+@silent("deprecated")
 private[remote] class AkkaProtocolTransport(
     wrappedTransport: Transport,
     private val system: ActorSystem,
@@ -131,7 +131,7 @@ private[remote] class AkkaProtocolTransport(
   }
 }
 
-@silent // deprecated
+@silent("deprecated")
 private[transport] class AkkaProtocolManager(
     private val wrappedTransport: Transport,
     private val settings: AkkaProtocolSettings)
@@ -154,13 +154,13 @@ private[transport] class AkkaProtocolManager(
       val failureDetector = createTransportFailureDetector()
 
       // Using the 'int' addressUid rather than the 'long' is sufficient for Classic Remoting
-      @silent
+      @silent("deprecated")
       val addressUid = AddressUidExtension(context.system).addressUid
 
       context.actorOf(
         RARP(context.system).configureDispatcher(
           ProtocolStateActor.inboundProps(
-            HandshakeInfo(stateActorLocalAddress, addressUid, stateActorSettings.SecureCookie),
+            HandshakeInfo(stateActorLocalAddress, addressUid),
             handle,
             stateActorAssociationHandler,
             stateActorSettings,
@@ -186,13 +186,13 @@ private[transport] class AkkaProtocolManager(
     val failureDetector = createTransportFailureDetector()
 
     // Using the 'int' addressUid rather than the 'long' is sufficient for Classic Remoting
-    @silent
+    @silent("deprecated")
     val addressUid = AddressUidExtension(context.system).addressUid
 
     context.actorOf(
       RARP(context.system).configureDispatcher(
         ProtocolStateActor.outboundProps(
-          HandshakeInfo(stateActorLocalAddress, addressUid, stateActorSettings.SecureCookie),
+          HandshakeInfo(stateActorLocalAddress, addressUid),
           remoteAddress,
           statusPromise,
           stateActorWrappedTransport,
@@ -208,7 +208,7 @@ private[transport] class AkkaProtocolManager(
 
 }
 
-@silent // deprecated
+@silent("deprecated")
 private[remote] class AkkaProtocolHandle(
     _localAddress: Address,
     _remoteAddress: Address,
@@ -226,7 +226,7 @@ private[remote] class AkkaProtocolHandle(
   def disassociate(info: DisassociateInfo): Unit = stateActor ! DisassociateUnderlying(info)
 }
 
-@silent // deprecated
+@silent("deprecated")
 private[remote] object ProtocolStateActor {
   sealed trait AssociationState
 
@@ -329,7 +329,7 @@ private[remote] object ProtocolStateActor {
       failureDetector).withDeploy(Deploy.local)
 }
 
-@silent // deprecated
+@silent("deprecated")
 private[remote] class ProtocolStateActor(
     initialData: InitialProtocolStateData,
     private val localHandshakeInfo: HandshakeInfo,
@@ -340,8 +340,6 @@ private[remote] class ProtocolStateActor(
     extends Actor
     with FSM[AssociationState, ProtocolStateData]
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
-
-  private val markerLog = Logging.withMarker(this)
 
   import ProtocolStateActor._
   import context.dispatcher
@@ -480,30 +478,15 @@ private[remote] class ProtocolStateActor(
 
         // Incoming association -- implicitly ACK by a heartbeat
         case Associate(info) =>
-          if (!settings.RequireCookie || info.cookie == settings.SecureCookie) {
-            sendAssociate(wrappedHandle, localHandshakeInfo)
-            failureDetector.heartbeat()
-            initHeartbeatTimer()
-            cancelTimer(handshakeTimerKey)
-            goto(Open).using(
-              AssociatedWaitHandler(
-                notifyInboundHandler(wrappedHandle, info, associationHandler),
-                wrappedHandle,
-                immutable.Queue.empty))
-          } else {
-            if (log.isDebugEnabled)
-              log.warning(
-                s"Association attempt with mismatching cookie from [{}]. Expected [{}] but received [{}].",
-                info.origin,
-                localHandshakeInfo.cookie.getOrElse(""),
-                info.cookie.getOrElse(""))
-            else
-              markerLog.warning(
-                LogMarker.Security,
-                s"Association attempt with mismatching cookie from [{}].",
-                info.origin)
-            stop()
-          }
+          sendAssociate(wrappedHandle, localHandshakeInfo)
+          failureDetector.heartbeat()
+          initHeartbeatTimer()
+          cancelTimer(handshakeTimerKey)
+          goto(Open).using(
+            AssociatedWaitHandler(
+              notifyInboundHandler(wrappedHandle, info, associationHandler),
+              wrappedHandle,
+              immutable.Queue.empty))
 
         // Got a stray message -- explicitly reset the association (force remote endpoint to reassociate)
         case msg =>

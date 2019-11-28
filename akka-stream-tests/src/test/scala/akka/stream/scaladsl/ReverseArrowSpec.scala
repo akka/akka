@@ -4,15 +4,15 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
 import akka.stream._
+import akka.stream.testkit._
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 class ReverseArrowSpec extends StreamSpec {
   import GraphDSL.Implicits._
 
-  implicit val materializer = ActorMaterializer()
   val source = Source(List(1, 2, 3))
   val sink = Flow[Int].limit(10).toMat(Sink.seq)(Keep.right)
 

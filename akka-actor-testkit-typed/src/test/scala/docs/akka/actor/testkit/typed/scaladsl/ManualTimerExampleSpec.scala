@@ -6,13 +6,15 @@ package docs.akka.actor.testkit.typed.scaladsl
 
 //#manual-scheduling-simple
 import scala.concurrent.duration._
+
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.ManualTime
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.WordSpecLike
 
-class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config) with WordSpecLike {
+class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config) with WordSpecLike with LogCapturing {
 
   val manualTime: ManualTime = ManualTime()
 
@@ -23,7 +25,7 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
 
       val probe = TestProbe[Tock.type]()
       val behavior = Behaviors.withTimers[Tick.type] { timer =>
-        timer.startSingleTimer("T", Tick, 10.millis)
+        timer.startSingleTimer(Tick, 10.millis)
         Behaviors.receiveMessage { _ =>
           probe.ref ! Tock
           Behaviors.same
@@ -47,7 +49,7 @@ class ManualTimerExampleSpec extends ScalaTestWithActorTestKit(ManualTime.config
 
       val probe = TestProbe[Tock.type]()
       val behavior = Behaviors.withTimers[Tick.type] { timer =>
-        timer.startTimerWithFixedDelay("T", Tick, 10.millis)
+        timer.startTimerWithFixedDelay(Tick, 10.millis)
         Behaviors.receiveMessage { _ =>
           probe.ref ! Tock
           Behaviors.same

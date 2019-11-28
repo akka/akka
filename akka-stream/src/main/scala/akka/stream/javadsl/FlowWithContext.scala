@@ -67,9 +67,17 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
     viaScala(_.withAttributes(attr))
 
   /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.mapError]].
+   *
+   * @see [[akka.stream.javadsl.Flow.mapError]]
+   */
+  def mapError(pf: PartialFunction[Throwable, Throwable]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.mapError(pf))
+
+  /**
    * Context-preserving variant of [[akka.stream.javadsl.Flow.mapMaterializedValue]].
    *
-   * @see [[akka.stream.scaladsl.Flow.mapMaterializedValue]]
+   * @see [[akka.stream.javadsl.Flow.mapMaterializedValue]]
    */
   def mapMaterializedValue[Mat2](f: function.Function[Mat, Mat2]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat2] =
     new FlowWithContext(delegate.mapMaterializedValue[Mat2](f))

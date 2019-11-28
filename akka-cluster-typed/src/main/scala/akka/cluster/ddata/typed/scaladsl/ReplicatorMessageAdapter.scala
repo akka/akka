@@ -61,20 +61,21 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
 
   private implicit val askTimeout: Timeout = Timeout(unexpectedAskTimeout)
 
-  private var changedMessageAdapters: Map[Key[B], ActorRef[Replicator.Changed[B]]] = Map.empty
+  private var changedMessageAdapters: Map[Key[B], ActorRef[Replicator.SubscribeResponse[B]]] = Map.empty
 
   /**
-   * Subscribe to changes of the given `key`. The [[Replicator.Changed]] messages from
+   * Subscribe to changes of the given `key`. The [[Replicator.Changed]] and [[Replicator.Deleted]] messages from
    * the replicator are transformed to the message protocol of the requesting actor with
    * the given `responseAdapter` function.
    */
-  def subscribe(key: Key[B], responseAdapter: Replicator.Changed[B] => A): Unit = {
+  def subscribe(key: Key[B], responseAdapter: Replicator.SubscribeResponse[B] => A): Unit = {
     // unsubscribe in case it's called more than once per key
     unsubscribe(key)
     changedMessageAdapters.get(key).foreach { subscriber =>
       replicator ! Replicator.Unsubscribe(key, subscriber)
     }
-    val replyTo: ActorRef[Replicator.Changed[B]] = context.messageAdapter[Replicator.Changed[B]](responseAdapter)
+    val replyTo: ActorRef[Replicator.SubscribeResponse[B]] =
+      context.messageAdapter[Replicator.SubscribeResponse[B]](responseAdapter)
     changedMessageAdapters = changedMessageAdapters.updated(key, replyTo)
     replicator ! Replicator.Subscribe(key, replyTo)
   }
@@ -101,10 +102,11 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
   def askUpdate(
       createRequest: ActorRef[Replicator.UpdateResponse[B]] => Replicator.Update[B],
       responseAdapter: Replicator.UpdateResponse[B] => A): Unit = {
-    context.ask[Replicator.Update[B], Replicator.UpdateResponse[B]](replicator)(askReplyTo => createRequest(askReplyTo)) {
-      case Success(value) => responseAdapter(value)
-      case Failure(ex)    => throw ex // unexpected ask timeout
-    }
+    context
+      .ask[Replicator.Update[B], Replicator.UpdateResponse[B]](replicator, askReplyTo => createRequest(askReplyTo)) {
+        case Success(value) => responseAdapter(value)
+        case Failure(ex)    => throw ex // unexpected ask timeout
+      }
   }
 
   /**
@@ -119,7 +121,7 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
   def askGet(
       createRequest: ActorRef[Replicator.GetResponse[B]] => Replicator.Get[B],
       responseAdapter: Replicator.GetResponse[B] => A): Unit = {
-    context.ask[Replicator.Get[B], Replicator.GetResponse[B]](replicator)(askReplyTo => createRequest(askReplyTo)) {
+    context.ask[Replicator.Get[B], Replicator.GetResponse[B]](replicator, askReplyTo => createRequest(askReplyTo)) {
       case Success(value) => responseAdapter(value)
       case Failure(ex)    => throw ex // unexpected ask timeout
     }
@@ -137,10 +139,11 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
   def askDelete(
       createRequest: ActorRef[Replicator.DeleteResponse[B]] => Replicator.Delete[B],
       responseAdapter: Replicator.DeleteResponse[B] => A): Unit = {
-    context.ask[Replicator.Delete[B], Replicator.DeleteResponse[B]](replicator)(askReplyTo => createRequest(askReplyTo)) {
-      case Success(value) => responseAdapter(value)
-      case Failure(ex)    => throw ex // unexpected ask timeout
-    }
+    context
+      .ask[Replicator.Delete[B], Replicator.DeleteResponse[B]](replicator, askReplyTo => createRequest(askReplyTo)) {
+        case Success(value) => responseAdapter(value)
+        case Failure(ex)    => throw ex // unexpected ask timeout
+      }
   }
 
   /**
@@ -155,11 +158,11 @@ class ReplicatorMessageAdapter[A, B <: ReplicatedData](
   def askReplicaCount(
       createRequest: ActorRef[Replicator.ReplicaCount] => Replicator.GetReplicaCount,
       responseAdapter: Replicator.ReplicaCount => A): Unit = {
-    context.ask[Replicator.GetReplicaCount, Replicator.ReplicaCount](replicator)(askReplyTo =>
-      createRequest(askReplyTo)) {
-      case Success(value) => responseAdapter(value)
-      case Failure(ex)    => throw ex // unexpected ask timeout
-    }
+    context
+      .ask[Replicator.GetReplicaCount, Replicator.ReplicaCount](replicator, askReplyTo => createRequest(askReplyTo)) {
+        case Success(value) => responseAdapter(value)
+        case Failure(ex)    => throw ex // unexpected ask timeout
+      }
   }
 
 }

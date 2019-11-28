@@ -70,7 +70,7 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
       })
 
     val creation = client.createContainer(containerConfig, containerName)
-    creation.warnings() should be(null)
+    creation.warnings() should be(null).or(have(size(0)))
     id = Some(creation.id())
 
     client.startContainer(creation.id())
@@ -78,6 +78,11 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
     eventually(timeout(25.seconds)) {
       client.logs(creation.id(), LogsParam.stderr()).readFully() should include("all zones loaded")
     }
+  }
+
+  def dumpNameserverLogs(): Unit = {
+    id.foreach(id => log.info("Nameserver std out: {} ", client.logs(id, LogsParam.stdout()).readFully()))
+    id.foreach(id => log.info("Nameserver std err: {} ", client.logs(id, LogsParam.stderr()).readFully()))
   }
 
   override def afterTermination(): Unit = {

@@ -25,6 +25,8 @@ import com.google.common.jimfs.{ Configuration, Jimfs }
 import scala.concurrent.duration._
 import com.github.ghik.silencer.silent
 
+import scala.concurrent.Future
+
 object FileSourceSpec {
   final case class Settings(chunkSize: Int, readAhead: Int)
 }
@@ -240,6 +242,13 @@ class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
         f.futureValue should ===(LinesCount)
       }
+    }
+
+    "complete materialized future with a failure if upstream fails" in {
+      val matVal: Future[IOResult] =
+        FileIO.fromPath(manyLines, chunkSize = 4).map(_ => throw new RuntimeException).to(Sink.ignore).run()
+
+      matVal.failed.futureValue shouldBe a[IOOperationIncompleteException]
     }
 
     "use dedicated blocking-io-dispatcher by default" in assertAllStagesStopped {

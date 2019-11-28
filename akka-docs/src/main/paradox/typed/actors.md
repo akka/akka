@@ -1,8 +1,13 @@
-# Actors
+---
+project.description: The Actor model, managing internal state and changing behavior in Akka Actors.
+---
+# Introduction to Actors
 
-## Dependency
+For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
 
-To use Akka Actor Typed, you must add the following dependency in your project:
+## Module info
+
+To use Akka Actors, add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
@@ -10,10 +15,33 @@ To use Akka Actor Typed, you must add the following dependency in your project:
   version=$akka.version$
 }
 
-## Introduction
+Both the Java and Scala DSLs of Akka modules are bundled in the same JAR. For a smooth development experience,
+when using an IDE such as Eclipse or IntelliJ, you can disable the auto-importer from suggesting `javadsl`
+imports when working in Scala, or viceversa. See @ref:[IDE Tips](../additional/ide.md). 
+
+@@project-info{ projectId="akka-actor-typed" }
+
+## Akka Actors
+
+The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) provides a higher level of abstraction for writing concurrent
+and distributed systems. It alleviates the developer from having to deal with
+explicit locking and thread management, making it easier to write correct
+concurrent and parallel systems. Actors were defined in the 1973 paper by Carl
+Hewitt but have been popularized by the Erlang language, and used for example at
+Ericsson with great success to build highly concurrent and reliable telecom
+systems. The API of Akka’s Actors has borrowed some of its syntax from Erlang.
+ 
+## First example
+
+If you are new to Akka you might want to start with reading the @ref:[Getting Started Guide](guide/introduction.md)
+and then come back here to learn more. 
+
+It is helpful to become familiar with the foundational, external and internal
+ecosystem of your Actors, to see what you can leverage and customize as needed, see
+@ref:[Actor Systems](../general/actor-systems.md) and @ref:[Actor References, Paths and Addresses](../general/addressing.md).
 
 As discussed in @ref:[Actor Systems](../general/actor-systems.md) Actors are about
-sending messages between independent units of computation, but how does that
+sending messages between independent units of computation, but what does that
 look like?
 
 In all of the following these imports are assumed:
@@ -26,6 +54,8 @@ Java
 
 With these in place we can define our first Actor, and it will say
 hello!
+
+![hello-world1.png](./images/hello-world1.png)
 
 Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-actor }
@@ -50,9 +80,8 @@ the next behavior is "the same as the current one".
 The type of the messages handled by this behavior is declared to be of class
 `Greet`@java[.]@scala[, meaning that `message` argument is also typed as such.
 This is why we can access the `whom` and `replyTo` members without needing to use a pattern match.]
-Typically, an actor handles more than one specific message type and then there
-is one common @scala[`trait`]@java[`interface`] that all messages that the
-actor can handle @scala[`extends`]@java[`implements`].
+Typically, an actor handles more than one specific message type where all of them
+directly or indirectly @scala[`extend`]@java[`implement`] a common @scala[`trait`]@java[`interface`].
 
 On the last line we see the `HelloWorld` Actor send a message to another
 Actor, which is done using the @scala[`!` operator (pronounced “bang” or “tell”)]@java[`tell` method].
@@ -68,11 +97,13 @@ protocol but Actors can model arbitrarily complex protocols when needed. The
 protocol is bundled together with the behavior that implements it in a nicely
 wrapped scope—the `HelloWorld` @scala[object]@java[class].
 
-As Carl Hewitt said, one Actor is no Actor—it would be quite lonely with
+As Carl Hewitt said, one Actor is no Actor — it would be quite lonely with
 nobody to talk to. We need another Actor that interacts with the `Greeter`.
 Let's make a `HelloWorldBot` that receives the reply from the `Greeter` and sends a number
 of additional greeting messages and collect the replies until a given max number
 of messages have been reached.
+
+![hello-world2.png](./images/hello-world2.png)
 
 Scala
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/IntroSpec.scala) { #hello-world-bot }
@@ -139,14 +170,16 @@ The next example is more realistic and demonstrates some important patterns:
 * Using @scala[a sealed trait and case class/objects]@java[an interface and classes implementing that interface] to represent multiple messages an actor can receive
 * Handle sessions by using child actors
 * Handling state by changing behavior
-* Using multiple typed actors to represent different parts of a protocol in a type safe way
+* Using multiple actors to represent different parts of a protocol in a type safe way
+
+![chat-room.png](./images/chat-room.png)
 
 ### Functional Style
 
 First we will show this example in a functional style, and then the same example is shown with an
 @ref:[Object-oriented style](#object-oriented-style). Which style you choose to use is a matter of
 taste and both styles can be mixed depending on which is best for a specific actor. Considerations
-for the choice is provided in the @ref:[Style Guide](style-guide.md#functional-vs-object-oriented-style).
+for the choice is provided in the @ref:[Style Guide](style-guide.md#functional-versus-object-oriented-style).
 
 Consider an Actor that runs a chat room: client Actors may connect by sending
 a message that contains their screen name and then they can post messages. The
@@ -238,8 +271,8 @@ alternatively to `SessionGranted` we may also receive a
 @@@
 
 Now to try things out we must start both a chat room and a gabbler and of
-course we do this inside an Actor system. Since there can be only one guardian
-supervisor we could either start the chat room from the gabbler (which we don’t
+course we do this inside an Actor system. Since there can be only one user guardian
+we could either start the chat room from the gabbler (which we don’t
 want—it complicates its logic) or the gabbler from the chat room (which is
 nonsensical) or we start both of them from a third Actor—our only sensible
 choice:
@@ -250,7 +283,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #chatroom-main }
 
-In good tradition we call the `main` Actor what it is, it directly
+In good tradition we call the `Main` Actor what it is, it directly
 corresponds to the `main` method in a traditional Java application. This
 Actor will perform its job on its own accord, we do not need to send messages
 from the outside, so we declare it to be of type @scala[`NotUsed`]@java[`Void`]. Actors receive not
@@ -260,16 +293,16 @@ particular one using the `receive` behavior decorator. The
 provided `onSignal` function will be invoked for signals (subclasses of `Signal`)
 or the `onMessage` function for user messages.
 
-This particular `main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
+This particular `Main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
 Creation of the behavior instance is deferred until the actor is started, as opposed to `Behaviors.receive`
 that creates the behavior instance immediately before the actor is running. The factory function in
 `setup` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
-This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
+This `Main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
 gabbler is finished we will receive the `Terminated` event due to having
 called `context.watch` for it. This allows us to shut down the Actor system: when
-the main Actor terminates there is nothing more to do.
+the `Main` Actor terminates there is nothing more to do.
 
-Therefore after creating the Actor system with the `main` Actor’s
+Therefore after creating the Actor system with the `Main` Actor’s
 `Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
 the JVM alive until the root actor stops.
 
@@ -284,7 +317,7 @@ for the actor behavior is defined and mutable state is kept inside of it as fiel
 
 Which style you choose to use is a matter of taste and both styles can be mixed depending on which
 is best for a specific actor. Considerations for the choice is provided in the
-@ref:[Style Guide](style-guide.md#functional-vs-object-oriented-style).
+@ref:[Style Guide](style-guide.md#functional-versus-object-oriented-style).
 
 #### AbstractBehavior API
 
@@ -382,8 +415,8 @@ Java
 :  @@snip [OOIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OOIntroTest.java) {  #chatroom-gabbler }
 
 Now to try things out we must start both a chat room and a gabbler and of
-course we do this inside an Actor system. Since there can be only one guardian
-supervisor we could either start the chat room from the gabbler (which we don’t
+course we do this inside an Actor system. Since there can be only one user guardian
+we could either start the chat room from the gabbler (which we don’t
 want—it complicates its logic) or the gabbler from the chat room (which is
 nonsensical) or we start both of them from a third Actor—our only sensible
 choice:
@@ -395,7 +428,7 @@ Scala
 Java
 :  @@snip [OOIntroTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/OOIntroTest.java) {  #chatroom-main }
 
-In good tradition we call the `main` Actor what it is, it directly
+In good tradition we call the `Main` Actor what it is, it directly
 corresponds to the `main` method in a traditional Java application. This
 Actor will perform its job on its own accord, we do not need to send messages
 from the outside, so we declare it to be of type @scala[`NotUsed`]@java[`Void`]. Actors receive not
@@ -405,90 +438,15 @@ particular one using the `receive` behavior decorator. The
 provided `onSignal` function will be invoked for signals (subclasses of `Signal`)
 or the `onMessage` function for user messages.
 
-This particular `main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
+This particular `Main` Actor is created using `Behaviors.setup`, which is like a factory for a behavior.
 Creation of the behavior instance is deferred until the actor is started, as opposed to `Behaviors.receive`
 that creates the behavior instance immediately before the actor is running. The factory function in
 `setup` is passed the `ActorContext` as parameter and that can for example be used for spawning child actors.
-This `main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
+This `Main` Actor creates the chat room and the gabbler and the session between them is initiated, and when the
 gabbler is finished we will receive the `Terminated` event due to having
 called `context.watch` for it. This allows us to shut down the Actor system: when
-the main Actor terminates there is nothing more to do.
+the `Main` Actor terminates there is nothing more to do.
 
-Therefore after creating the Actor system with the `main` Actor’s
+Therefore after creating the Actor system with the `Main` Actor’s
 `Behavior` we can let the `main` method return, the `ActorSystem` will continue running and 
 the JVM alive until the root actor stops.
-
-
-## Relation to Akka (untyped) Actors
-
-The most prominent difference is the removal of the `sender()` functionality.
-The solution chosen in Akka Typed is to explicitly include the properly typed
-reply-to address in the message, which both burdens the user with this task but
-also places this aspect of protocol design where it belongs.
-
-The other prominent difference is the removal of the `Actor` trait. In
-order to avoid closing over unstable references from different execution
-contexts (e.g. Future transformations) we turned all remaining methods that
-were on this trait into messages: the behavior receives the
-`ActorContext` as an argument during processing and the lifecycle hooks
-have been converted into Signals.
-
-A side-effect of this is that behaviors can now be tested in isolation without
-having to be packaged into an Actor, tests can run fully synchronously without
-having to worry about timeouts and spurious failures. Another side-effect is
-that behaviors can nicely be composed and decorated, for example `Behaviors.tap`
-is not special or using something internal. New operators can be written as
-external libraries or tailor-made for each project.
-
-## A Little Bit of Theory
-
-The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) as defined by
-Hewitt, Bishop and Steiger in 1973 is a computational model that expresses
-exactly what it means for computation to be distributed. The processing
-units—Actors—can only communicate by exchanging messages and upon reception of a
-message an Actor can do the following three fundamental actions:
-
-  1. send a finite number of messages to Actors it knows
-  2. create a finite number of new Actors
-  3. designate the behavior to be applied to the next message
-
-The Akka Typed project expresses these actions using behaviors and addresses.
-Messages can be sent to an address and behind this façade there is a behavior
-that receives the message and acts upon it. The binding between address and
-behavior can change over time as per the third point above, but that is not
-visible on the outside.
-
-With this preamble we can get to the unique property of this project, namely
-that it introduces static type checking to Actor interactions: addresses are
-parameterized and only messages that are of the specified type can be sent to
-them. The association between an address and its type parameter must be made
-when the address (and its Actor) is created. For this purpose each behavior is
-also parameterized with the type of messages it is able to process. Since the
-behavior can change behind the address façade, designating the next behavior is
-a constrained operation: the successor must handle the same type of messages as
-its predecessor. This is necessary in order to not invalidate the addresses
-that refer to this Actor.
-
-What this enables is that whenever a message is sent to an Actor we can
-statically ensure that the type of the message is one that the Actor declares
-to handle—we can avoid the mistake of sending completely pointless messages.
-What we cannot statically ensure, though, is that the behavior behind the
-address will be in a given state when our message is received. The fundamental
-reason is that the association between address and behavior is a dynamic
-runtime property, the compiler cannot know it while it translates the source
-code.
-
-This is the same as for normal Java objects with internal variables: when
-compiling the program we cannot know what their value will be, and if the
-result of a method call depends on those variables then the outcome is
-uncertain to a degree—we can only be certain that the returned value is of a
-given type.
-
-We have seen above that the return type of an Actor command is described by the
-type of reply-to address that is contained within the message. This allows a
-conversation to be described in terms of its types: the reply will be of type
-A, but it might also contain an address of type B, which then allows the other
-Actor to continue the conversation by sending a message of type B to this new
-address. While we cannot statically express the “current” state of an Actor, we
-can express the current state of a protocol between two Actors, since that is
-just given by the last message type that was received or sent.

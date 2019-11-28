@@ -44,9 +44,9 @@ class DistributedData(system: ExtendedActorSystem) extends Extension {
       else
         log.warning(
           "Replicator points to dead letters. Make sure the cluster node has the proper role. " +
-          "Node has roles [], Distributed Data is configured for roles []",
+          "Node has roles [{}], Distributed Data is configured for roles [{}].",
           Cluster(system).selfRoles.mkString(","),
-          settings.roles.mkString(","))
+          settings.roles.mkString(","): Any)
       system.deadLetters
     } else {
       system.systemActorOf(Replicator.props(settings), ReplicatorSettings.name(system, None))
@@ -62,7 +62,7 @@ class DistributedData(system: ExtendedActorSystem) extends Extension {
 }
 
 /**
- * Cluster non-specific (typed vs untyped) wrapper for [[akka.cluster.UniqueAddress]].
+ * Cluster non-specific (typed vs classic) wrapper for [[akka.cluster.UniqueAddress]].
  */
 @SerialVersionUID(1L)
 final case class SelfUniqueAddress(uniqueAddress: UniqueAddress)

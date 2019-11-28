@@ -32,19 +32,15 @@ import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.Sequence
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.snapshot.SnapshotStore
-import akka.persistence.typed.ExpectingReply
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotMetadata
-import akka.persistence.{ SnapshotMetadata => UntypedSnapshotMetadata }
-import akka.persistence.{ SnapshotSelectionCriteria => UntypedSnapshotSelectionCriteria }
+import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
+import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.serialization.jackson.CborSerializable
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
@@ -53,25 +49,25 @@ object EventSourcedBehaviorSpec {
 
   class SlowInMemorySnapshotStore extends SnapshotStore {
 
-    private var state = Map.empty[String, (Any, UntypedSnapshotMetadata)]
+    private var state = Map.empty[String, (Any, ClassicSnapshotMetadata)]
 
     override def loadAsync(
         persistenceId: String,
-        criteria: UntypedSnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
+        criteria: ClassicSnapshotSelectionCriteria): Future[Option[SelectedSnapshot]] = {
       Promise().future // never completed
     }
 
-    override def saveAsync(metadata: UntypedSnapshotMetadata, snapshot: Any): Future[Unit] = {
+    override def saveAsync(metadata: ClassicSnapshotMetadata, snapshot: Any): Future[Unit] = {
       state = state.updated(metadata.persistenceId, (snapshot, metadata))
       Future.successful(())
     }
 
-    override def deleteAsync(metadata: UntypedSnapshotMetadata): Future[Unit] = {
+    override def deleteAsync(metadata: ClassicSnapshotMetadata): Future[Unit] = {
       state = state.filterNot { case (k, (_, b)) => k == metadata.persistenceId && b.sequenceNr == metadata.sequenceNr }
       Future.successful(())
     }
 
-    override def deleteAsync(persistenceId: String, criteria: UntypedSnapshotSelectionCriteria): Future[Unit] = {
+    override def deleteAsync(persistenceId: String, criteria: ClassicSnapshotSelectionCriteria): Future[Unit] = {
       val range = criteria.minSequenceNr to criteria.maxSequenceNr
       state = state.filterNot { case (k, (_, b)) => k == persistenceId && range.contains(b.sequenceNr) }
       Future.successful(())
@@ -81,7 +77,6 @@ object EventSourcedBehaviorSpec {
   // also used from PersistentActorTest
   def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
-    akka.loggers = [akka.testkit.TestEventListener]
     # akka.persistence.typed.log-stashing = on
     akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
@@ -103,9 +98,7 @@ object EventSourcedBehaviorSpec {
   final case object IncrementLater extends Command
   final case object IncrementAfterReceiveTimeout extends Command
   final case object IncrementTwiceAndThenLog extends Command
-  final case class IncrementWithConfirmation(override val replyTo: ActorRef[Done])
-      extends Command
-      with ExpectingReply[Done]
+  final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command
   final case object DoNothingAndThenLog extends Command
   final case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
@@ -202,8 +195,8 @@ object EventSourcedBehaviorSpec {
           case IncrementWithPersistAll(n) =>
             Effect.persist((0 until n).map(_ => Incremented(1)))
 
-          case cmd: IncrementWithConfirmation =>
-            Effect.persist(Incremented(1)).thenReply(cmd)(_ => Done)
+          case IncrementWithConfirmation(replyTo) =>
+            Effect.persist(Incremented(1)).thenReply(replyTo)(_ => Done)
 
           case GetValue(replyTo) =>
             replyTo ! state
@@ -212,7 +205,7 @@ object EventSourcedBehaviorSpec {
           case IncrementLater =>
             // purpose is to test signals
             val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers =>
-              timers.startSingleTimer(Tick, Tick, 10.millis)
+              timers.startSingleTimer(Tick, 10.millis)
               Behaviors.receive((_, msg) =>
                 msg match {
                   case Tick => Behaviors.stopped
@@ -284,23 +277,19 @@ object EventSourcedBehaviorSpec {
   }
 }
 
-class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf) with WordSpecLike {
+class EventSourcedBehaviorSpec
+    extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf)
+    with WordSpecLike
+    with LogCapturing {
 
   import EventSourcedBehaviorSpec._
   import akka.actor.typed.scaladsl.adapter._
 
-  implicit val materializer = ActorMaterializer()(system.toUntyped)
   val queries: LeveldbReadJournal =
-    PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
-
-  // needed for the untyped event filter
-  implicit val actorSystem = system.toUntyped
+    PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
-
-  actorSystem.eventStream.publish(Mute(EventFilter.info(pattern = ".*was not delivered.*", occurrences = 100)))
-  actorSystem.eventStream.publish(Mute(EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 100)))
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   "A typed persistent actor" must {
 
@@ -478,7 +467,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "handle scheduled message arriving before recovery completed " in {
       val c = spawn(Behaviors.withTimers[Command] { timers =>
-        timers.startSingleTimer("tick", Increment, 1.millis)
+        timers.startSingleTimer(Increment, 1.millis)
         Thread.sleep(30) // now it's probably already in the mailbox, and will be stashed
         counter(nextPid)
       })
@@ -494,7 +483,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
     "handle scheduled message arriving after recovery completed " in {
       val c = spawn(Behaviors.withTimers[Command] { timers =>
         // probably arrives after recovery completed
-        timers.startSingleTimer("tick", Increment, 200.millis)
+        timers.startSingleTimer(Increment, 200.millis)
         counter(nextPid)
       })
 
@@ -507,7 +496,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
     }
 
     "fail after recovery timeout" in {
-      EventFilter.error(start = "Persistence failure when replaying snapshot", occurrences = 1).intercept {
+      LoggingTestKit.error("Exception during recovery from snapshot").expect {
         val c = spawn(
           Behaviors.setup[Command](ctx =>
             counter(ctx, nextPid)
@@ -533,7 +522,7 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       c ! StopIt
       probe.expectTerminated(c)
 
-      EventFilter[TestException](occurrences = 1).intercept {
+      LoggingTestKit.error[TestException].expect {
         val c2 = spawn(Behaviors.setup[Command](counter(_, pid)))
         c2 ! Fail
         probe.expectTerminated(c2) // should fail
@@ -542,14 +531,14 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "fail fast if persistenceId is null" in {
       intercept[IllegalArgumentException] {
-        PersistenceId(null)
+        PersistenceId.ofUniqueId(null)
       }
       val probe = TestProbe[AnyRef]
-      EventFilter[ActorInitializationException](start = "persistenceId must not be null", occurrences = 1).intercept {
-        val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId(null))))
+      LoggingTestKit.error[ActorInitializationException].withMessageContains("persistenceId must not be null").expect {
+        val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId.ofUniqueId(null))))
         probe.expectTerminated(ref)
       }
-      EventFilter[ActorInitializationException](start = "persistenceId must not be null", occurrences = 1).intercept {
+      LoggingTestKit.error[ActorInitializationException].withMessageContains("persistenceId must not be null").expect {
         val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = null)))
         probe.expectTerminated(ref)
       }
@@ -557,29 +546,27 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "fail fast if persistenceId is empty" in {
       intercept[IllegalArgumentException] {
-        PersistenceId("")
+        PersistenceId.ofUniqueId("")
       }
       val probe = TestProbe[AnyRef]
-      EventFilter[ActorInitializationException](start = "persistenceId must not be empty", occurrences = 1).intercept {
-        val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId(""))))
+      LoggingTestKit.error[ActorInitializationException].withMessageContains("persistenceId must not be empty").expect {
+        val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId.ofUniqueId(""))))
         probe.expectTerminated(ref)
       }
     }
 
     "fail fast if default journal plugin is not defined" in {
       // new ActorSystem without persistence config
-      val testkit2 = ActorTestKit(
-        ActorTestKitBase.testNameFromCallStack(),
-        ConfigFactory.parseString("""
-          akka.loggers = [akka.testkit.TestEventListener]
-          """))
+      val testkit2 = ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(""))
       try {
-        EventFilter[ActorInitializationException](start = "Default journal plugin is not configured", occurrences = 1)
-          .intercept {
+        LoggingTestKit
+          .error[ActorInitializationException]
+          .withMessageContains("Default journal plugin is not configured")
+          .expect {
             val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
             val probe = testkit2.createTestProbe()
             probe.expectTerminated(ref)
-          }(testkit2.system.toUntyped)
+          }(testkit2.system)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -587,19 +574,16 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
 
     "fail fast if given journal plugin is not defined" in {
       // new ActorSystem without persistence config
-      val testkit2 = ActorTestKit(
-        ActorTestKitBase.testNameFromCallStack(),
-        ConfigFactory.parseString("""
-          akka.loggers = [akka.testkit.TestEventListener]
-          """))
+      val testkit2 = ActorTestKit(ActorTestKitBase.testNameFromCallStack(), ConfigFactory.parseString(""))
       try {
-        EventFilter[ActorInitializationException](
-          start = "Journal plugin [missing] configuration doesn't exist",
-          occurrences = 1).intercept {
-          val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withJournalPluginId("missing")))
-          val probe = testkit2.createTestProbe()
-          probe.expectTerminated(ref)
-        }(testkit2.system.toUntyped)
+        LoggingTestKit
+          .error[ActorInitializationException]
+          .withMessageContains("Journal plugin [missing] configuration doesn't exist")
+          .expect {
+            val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withJournalPluginId("missing")))
+            val probe = testkit2.createTestProbe()
+            probe.expectTerminated(ref)
+          }(testkit2.system)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -610,20 +594,19 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val testkit2 = ActorTestKit(
         ActorTestKitBase.testNameFromCallStack(),
         ConfigFactory.parseString(s"""
-          akka.loggers = [akka.testkit.TestEventListener]
           akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
           akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
           """))
       try {
-        EventFilter
-          .warning(start = "No default snapshot store configured", occurrences = 1)
-          .intercept {
+        LoggingTestKit
+          .warn("No default snapshot store configured")
+          .expect {
             val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
             val probe = testkit2.createTestProbe[State]()
             // verify that it's not terminated
             ref ! GetValue(probe.ref)
             probe.expectMessage(State(0, Vector.empty))
-          }(testkit2.system.toUntyped)
+          }(testkit2.system)
       } finally {
         testkit2.shutdownTestKit()
       }
@@ -634,18 +617,18 @@ class EventSourcedBehaviorSpec extends ScalaTestWithActorTestKit(EventSourcedBeh
       val testkit2 = ActorTestKit(
         ActorTestKitBase.testNameFromCallStack(),
         ConfigFactory.parseString(s"""
-          akka.loggers = [akka.testkit.TestEventListener]
           akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
           akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
           """))
       try {
-        EventFilter[ActorInitializationException](
-          start = "Snapshot store plugin [missing] configuration doesn't exist",
-          occurrences = 1).intercept {
-          val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withSnapshotPluginId("missing")))
-          val probe = testkit2.createTestProbe()
-          probe.expectTerminated(ref)
-        }(testkit2.system.toUntyped)
+        LoggingTestKit
+          .error[ActorInitializationException]
+          .withMessageContains("Snapshot store plugin [missing] configuration doesn't exist")
+          .expect {
+            val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withSnapshotPluginId("missing")))
+            val probe = testkit2.createTestProbe()
+            probe.expectTerminated(ref)
+          }(testkit2.system)
       } finally {
         testkit2.shutdownTestKit()
       }

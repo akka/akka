@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.stream.testkit.StreamSpec
-import akka.stream.{ ClosedShape, ActorMaterializer }
+import akka.stream.ClosedShape
 
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
@@ -14,8 +14,6 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 
 class FlowPublisherSinkSpec extends StreamSpec {
-
-  implicit val materializer = ActorMaterializer()
 
   "A FlowPublisherSink" must {
 

@@ -4,6 +4,8 @@
 
 package akka.cluster.typed
 
+import java.nio.charset.StandardCharsets
+
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -11,21 +13,57 @@ import scala.util.control.NonFatal
 
 import akka.Done
 import akka.actor.CoordinatedShutdown
+import akka.actor.ExtendedActorSystem
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.scaladsl.TestInbox
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.Behaviors
+import akka.serialization.SerializerWithStringManifest
 import com.typesafe.config.ConfigFactory
 import org.scalatest._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.Span
 
-class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with ScalaFutures with Eventually {
+object ActorSystemSpec {
+
+  class TestSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
+    // Reproducer of issue #24620, by eagerly creating the ActorRefResolver in serializer
+    private val actorRefResolver = ActorRefResolver(system.toTyped)
+
+    def identifier: Int = 47
+    def manifest(o: AnyRef): String =
+      "a"
+
+    def toBinary(o: AnyRef): Array[Byte] = o match {
+      case TestMessage(ref) => actorRefResolver.toSerializationFormat(ref).getBytes(StandardCharsets.UTF_8)
+      case _ =>
+        throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
+    }
+
+    def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
+      case "a" => TestMessage(actorRefResolver.resolveActorRef(new String(bytes, StandardCharsets.UTF_8)))
+      case _   => throw new IllegalArgumentException(s"Unknown manifest [$manifest]")
+    }
+  }
+
+  final case class TestMessage(ref: ActorRef[String])
+
+}
+
+class ActorSystemSpec
+    extends WordSpec
+    with Matchers
+    with BeforeAndAfterAll
+    with ScalaFutures
+    with Eventually
+    with LogCapturing {
 
   implicit val patience: PatienceConfig = PatienceConfig(3.seconds, Span(100, org.scalatest.time.Millis))
 
@@ -34,6 +72,13 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
+      
+      serializers {
+          test = "akka.cluster.typed.ActorSystemSpec$$TestSerializer"
+        }
+        serialization-bindings {
+          "akka.cluster.typed.ActorSystemSpec$$TestMessage" = test
+        }
     """)
   def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name, config)
   def suite = "adapter"
@@ -69,7 +114,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
         }
         inbox.receiveAll() should ===("hello" :: Nil)
         sys.whenTerminated.futureValue
-        CoordinatedShutdown(sys.toUntyped).shutdownReason() should ===(
+        CoordinatedShutdown(sys.toClassic).shutdownReason() should ===(
           Some(CoordinatedShutdown.ActorSystemTerminateReason))
       }
     }
@@ -105,7 +150,7 @@ class ActorSystemSpec extends WordSpec with Matchers with BeforeAndAfterAll with
       // now we know that the guardian has started, and should receive PostStop
       sys.terminate()
       sys.whenTerminated.futureValue
-      CoordinatedShutdown(sys.toUntyped).shutdownReason() should ===(
+      CoordinatedShutdown(sys.toClassic).shutdownReason() should ===(
         Some(CoordinatedShutdown.ActorSystemTerminateReason))
       inbox.receiveAll() should ===("done" :: Nil)
     }

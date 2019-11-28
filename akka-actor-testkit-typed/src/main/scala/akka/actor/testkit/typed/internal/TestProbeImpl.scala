@@ -13,12 +13,11 @@ import java.util.{ List => JList }
 
 import scala.annotation.tailrec
 import akka.util.ccompat.JavaConverters._
+
 import scala.collection.immutable
-import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
-
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.javadsl.{ TestProbe => JavaTestProbe }
@@ -27,13 +26,13 @@ import akka.actor.testkit.typed.scaladsl.{ TestProbe => ScalaTestProbe }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.Signal
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.util.BoxedType
 import akka.util.JavaDurationConverters._
 import akka.util.PrettyDuration._
-import akka.util.Timeout
 
 @InternalApi
 private[akka] object TestProbeImpl {
@@ -81,13 +80,8 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
    */
   private var lastWasNoMessage = false
 
-  private val testActor: ActorRef[M] = {
-    // FIXME arbitrary timeout?
-    implicit val timeout: Timeout = Timeout(3.seconds)
-    val futRef =
-      system.systemActorOf(TestProbeImpl.testActor(queue, terminations), s"$name-${testActorId.incrementAndGet()}")
-    Await.result(futRef, timeout.duration + 1.second)
-  }
+  private val testActor: ActorRef[M] =
+    system.systemActorOf(TestProbeImpl.testActor(queue, terminations), s"$name-${testActorId.incrementAndGet()}")
 
   override def ref: ActorRef[M] = testActor
 
@@ -160,6 +154,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     expectMessage(max.asScala, hint, obj)
 
   private def expectMessage_internal[T <: M](max: FiniteDuration, obj: T, hint: Option[String] = None): T = {
+    if (obj.isInstanceOf[Signal])
+      throw new IllegalArgumentException(
+        s"${obj.getClass.getName} is a signal, expecting signals with a TestProbe is not possible")
     val o = receiveOne_internal(max)
     val hintOrEmptyString = hint.map(": " + _).getOrElse("")
     o match {
@@ -224,6 +221,10 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     expectMessageClass_internal(max.asScala.dilated, clazz)
 
   private def expectMessageClass_internal[C](max: FiniteDuration, c: Class[C]): C = {
+    if (classOf[Signal].isAssignableFrom(c)) {
+      throw new IllegalArgumentException(
+        s"${c.getName} is a signal, expecting signals with a TestProbe is not possible")
+    }
     val o = receiveOne_internal(max)
     val bt = BoxedType(c)
     o match {

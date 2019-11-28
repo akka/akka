@@ -49,7 +49,7 @@ object ActorSink {
    * When the stream is completed with failure - result of `onFailureMessage(throwable)`
    * function will be sent to the destination actor.
    */
-  def actorRefWithAck[T, M, A](
+  def actorRefWithBackpressure[T, M, A](
       ref: ActorRef[M],
       messageAdapter: akka.japi.function.Function2[ActorRef[A], T, M],
       onInitMessage: akka.japi.function.Function[ActorRef[A], M],
@@ -57,7 +57,7 @@ object ActorSink {
       onCompleteMessage: M,
       onFailureMessage: akka.japi.function.Function[Throwable, M]): Sink[T, NotUsed] =
     typed.scaladsl.ActorSink
-      .actorRefWithAck(
+      .actorRefWithBackpressure(
         ref,
         messageAdapter.apply,
         onInitMessage.apply,

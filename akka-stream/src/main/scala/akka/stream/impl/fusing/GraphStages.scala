@@ -137,9 +137,14 @@ import scala.concurrent.{ Future, Promise }
 
         def onPull(): Unit = pull(in)
 
-        override def onDownstreamFinish(): Unit = {
-          finishPromise.success(Done)
-          completeStage()
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          cause match {
+            case _: SubscriptionWithCancelException.NonFailureCancellation =>
+              finishPromise.success(Done)
+            case ex =>
+              finishPromise.failure(ex)
+          }
+          cancelStage(cause)
         }
 
         override def postStop(): Unit = {
@@ -191,8 +196,8 @@ import scala.concurrent.{ Future, Promise }
 
         def onPull(): Unit = pull(in)
 
-        override def onDownstreamFinish(): Unit = {
-          super.onDownstreamFinish()
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          super.onDownstreamFinish(cause)
           monitor.set(Finished)
         }
 
@@ -307,16 +312,17 @@ import scala.concurrent.{ Future, Promise }
           new OutHandler {
             def onPull(): Unit = {}
 
-            override def onDownstreamFinish(): Unit = {
+            override def onDownstreamFinish(cause: Throwable): Unit = {
               if (!materialized.isCompleted) {
                 // we used to try to materialize the "inner" source here just to get
                 // the materialized value, but that is not safe and may cause the graph shell
                 // to leak/stay alive after the stage completes
 
-                materialized.tryFailure(new StreamDetachedException("Stream cancelled before Source Future completed"))
+                materialized.tryFailure(
+                  new StreamDetachedException("Stream cancelled before Source Future completed").initCause(cause))
               }
 
-              super.onDownstreamFinish()
+              super.onDownstreamFinish(cause)
             }
           })
 
@@ -328,6 +334,11 @@ import scala.concurrent.{ Future, Promise }
 
         override def onUpstreamFinish(): Unit =
           completeStage()
+
+        override def onDownstreamFinish(cause: Throwable): Unit = {
+          sinkIn.cancel(cause)
+          super.onDownstreamFinish(cause)
+        }
 
         override def postStop(): Unit =
           if (!sinkIn.isClosed) sinkIn.cancel()
@@ -370,11 +381,13 @@ import scala.concurrent.{ Future, Promise }
     override def createLogic(attr: Attributes) =
       new GraphStageLogic(shape) with OutHandler {
         def onPull(): Unit = {
-          if (future.isCompleted) {
-            onFutureCompleted(future.value.get)
-          } else {
-            val cb = getAsyncCallback[Try[T]](onFutureCompleted).invoke _
-            future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+          future.value match {
+            case Some(completed) =>
+              // optimization if the future is already completed
+              onFutureCompleted(completed)
+            case None =>
+              val cb = getAsyncCallback[Try[T]](onFutureCompleted).invoke _
+              future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
           }
 
           def onFutureCompleted(result: Try[T]): Unit = {

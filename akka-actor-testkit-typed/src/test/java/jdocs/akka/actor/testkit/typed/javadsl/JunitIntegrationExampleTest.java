@@ -4,9 +4,10 @@
 
 package jdocs.akka.actor.testkit.typed.javadsl;
 
-import static jdocs.akka.actor.testkit.typed.javadsl.AsyncTestingExampleTest.Ping;
-import static jdocs.akka.actor.testkit.typed.javadsl.AsyncTestingExampleTest.Pong;
-import static jdocs.akka.actor.testkit.typed.javadsl.AsyncTestingExampleTest.echoActor;
+import static jdocs.akka.actor.testkit.typed.javadsl.AsyncTestingExampleTest.Echo;
+
+import akka.actor.testkit.typed.javadsl.LogCapturing;
+import org.junit.Rule;
 
 // #junit-integration
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
@@ -19,12 +20,17 @@ public class JunitIntegrationExampleTest {
 
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
 
+  // #junit-integration
+  // this is shown in LogCapturingExampleTest
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
+  // #junit-integration
+
   @Test
   public void testSomething() {
-    ActorRef<Ping> pinger = testKit.spawn(echoActor(), "ping");
-    TestProbe<Pong> probe = testKit.createTestProbe();
-    pinger.tell(new Ping("hello", probe.ref()));
-    probe.expectMessage(new Pong("hello"));
+    ActorRef<Echo.Ping> pinger = testKit.spawn(Echo.create(), "ping");
+    TestProbe<Echo.Pong> probe = testKit.createTestProbe();
+    pinger.tell(new Echo.Ping("hello", probe.ref()));
+    probe.expectMessage(new Echo.Pong("hello"));
   }
 }
 // #junit-integration

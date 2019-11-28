@@ -12,9 +12,13 @@ import scala.annotation.tailrec
 import scala.reflect.{ classTag, ClassTag }
 import akka.japi.function
 import java.net.URLEncoder
+import java.time.Duration
 
+import akka.annotation.ApiMayChange
+import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.stream.impl.TraversalBuilder
+import akka.util.JavaDurationConverters._
 
 import scala.compat.java8.OptionConverters._
 import akka.util.{ ByteString, OptionVal }
@@ -25,7 +29,7 @@ import scala.concurrent.duration.FiniteDuration
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
  * or [[akka.stream.scaladsl.GraphDSL]] / [[akka.stream.javadsl.GraphDSL]] materialization.
  *
- * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
+ * Note that more attributes for the [[Materializer]] are defined in [[ActorAttributes]].
  *
  * The ``attributeList`` is ordered with the most specific attribute first, least specific last.
  * Note that the order was the opposite in Akka 2.4.x.
@@ -96,7 +100,7 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
    *
    * This is the expected way for operators to access attributes.
    *
-   * @see [[Attributes#get()]] For providing a default value if the attribute was not set
+   * @see [[Attributes#get]] For providing a default value if the attribute was not set
    */
   def get[T <: Attribute: ClassTag]: Option[T] = {
     val c = classTag[T].runtimeClass.asInstanceOf[Class[T]]
@@ -279,19 +283,164 @@ final case class Attributes(attributeList: List[Attributes.Attribute] = Nil) {
 }
 
 /**
- * Note that more attributes for the [[ActorMaterializer]] are defined in [[ActorAttributes]].
+ * Note that more attributes for the [[Materializer]] are defined in [[ActorAttributes]].
  */
 object Attributes {
 
   trait Attribute
 
+  /**
+   * Attributes that are always present (is defined with default values by the materializer)
+   *
+   * Not for user extension
+   */
+  @DoNotInherit
   sealed trait MandatoryAttribute extends Attribute
 
   final case class Name(n: String) extends Attribute
+
+  /**
+   * Each asynchronous piece of a materialized stream topology is executed by one Actor
+   * that manages an input buffer for all inlets of its shape. This attribute configures
+   * the initial and maximal input buffer in number of elements for each inlet.
+   *
+   * Use factory method [[Attributes#inputBuffer]] to create instances.
+   */
   final case class InputBuffer(initial: Int, max: Int) extends MandatoryAttribute
+
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel)
       extends Attribute
   final case object AsyncBoundary extends Attribute
+
+  /**
+   * Cancellation strategies provide a way to configure the behavior of a stage when `cancelStage` is called.
+   *
+   * It is only relevant for stream components that have more than one output and do not define a custom cancellation
+   * behavior by overriding `onDownstreamFinish`. In those cases, if the first output is cancelled, the default behavior
+   * is to call `cancelStage` which shuts down the stage completely. The given strategy will allow customization of how
+   * the shutdown procedure should be done precisely.
+   */
+  @ApiMayChange
+  final case class CancellationStrategy(strategy: CancellationStrategy.Strategy) extends MandatoryAttribute
+  @ApiMayChange
+  object CancellationStrategy {
+    private[stream] val Default: CancellationStrategy = CancellationStrategy(PropagateFailure)
+
+    sealed trait Strategy
+
+    /**
+     * Strategy that treats `cancelStage` the same as `completeStage`, i.e. all inlets are cancelled (propagating the
+     * cancellation cause) and all outlets are regularly completed.
+     *
+     * This used to be the default behavior before Akka 2.6.
+     *
+     * This behavior can be problematic in stacks of BidiFlows where different layers of the stack are both connected
+     * through inputs and outputs. In this case, an error in a doubly connected component triggers both a cancellation
+     * going upstream and an error going downstream. Since the stack might be connected to those components with inlets and
+     * outlets, a race starts whether the cancellation or the error arrives first. If the error arrives first, that's usually
+     * good because then the error can be propagated both on inlets and outlets. However, if the cancellation arrives first,
+     * the previous default behavior to complete the stage will lead other outputs to be completed regularly. The error
+     * which arrive late at the other hand will just be ignored (that connection will have been cancelled already and also
+     * the paths through which the error could propagates are already shut down).
+     */
+    @ApiMayChange
+    case object CompleteStage extends Strategy
+
+    /**
+     * Strategy that treats `cancelStage` the same as `failStage`, i.e. all inlets are cancelled (propagating the
+     * cancellation cause) and all outlets are failed propagating the cause from cancellation.
+     */
+    @ApiMayChange
+    case object FailStage extends Strategy
+
+    /**
+     * Strategy that treats `cancelStage` in different ways depending on the cause that was given to the cancellation.
+     *
+     * If the cause was a regular, active cancellation (`SubscriptionWithCancelException.NoMoreElementsNeeded`), the stage
+     * receiving this cancellation is completed regularly.
+     *
+     * If another cause was given, this is treated as an error and the behavior is the same as with `failStage`.
+     *
+     * This is a good default strategy.
+     */
+    @ApiMayChange
+    case object PropagateFailure extends Strategy
+
+    /**
+     * Strategy that allows to delay any action when `cancelStage` is invoked.
+     *
+     * The idea of this strategy is to delay any action on cancellation because it is expected that the stage is completed
+     * through another path in the meantime. The downside is that a stage and a stream may live longer than expected if no
+     * such signal is received and cancellation is invoked later on. In streams with many stages that all apply this strategy,
+     * this strategy might significantly delay the propagation of a cancellation signal because each upstream stage might impose
+     * such a delay. During this time, the stream will be mostly "silent", i.e. it cannot make progress because of backpressure,
+     * but you might still be able observe a long delay at the ultimate source.
+     */
+    @ApiMayChange
+    final case class AfterDelay(delay: FiniteDuration, strategy: Strategy) extends Strategy
+  }
+
+  /**
+   * Java API
+   *
+   * Strategy that treats `cancelStage` the same as `completeStage`, i.e. all inlets are cancelled (propagating the
+   * cancellation cause) and all outlets are regularly completed.
+   *
+   * This used to be the default behavior before Akka 2.6.
+   *
+   * This behavior can be problematic in stacks of BidiFlows where different layers of the stack are both connected
+   * through inputs and outputs. In this case, an error in a doubly connected component triggers both a cancellation
+   * going upstream and an error going downstream. Since the stack might be connected to those components with inlets and
+   * outlets, a race starts whether the cancellation or the error arrives first. If the error arrives first, that's usually
+   * good because then the error can be propagated both on inlets and outlets. However, if the cancellation arrives first,
+   * the previous default behavior to complete the stage will lead other outputs to be completed regularly. The error
+   * which arrive late at the other hand will just be ignored (that connection will have been cancelled already and also
+   * the paths through which the error could propagates are already shut down).
+   */
+  @ApiMayChange
+  def cancellationStrategyCompleteState: CancellationStrategy.Strategy = CancellationStrategy.CompleteStage
+
+  /**
+   * Java API
+   *
+   * Strategy that treats `cancelStage` the same as `failStage`, i.e. all inlets are cancelled (propagating the
+   * cancellation cause) and all outlets are failed propagating the cause from cancellation.
+   */
+  @ApiMayChange
+  def cancellationStrategyFailStage: CancellationStrategy.Strategy = CancellationStrategy.FailStage
+
+  /**
+   * Java API
+   *
+   * Strategy that treats `cancelStage` in different ways depending on the cause that was given to the cancellation.
+   *
+   * If the cause was a regular, active cancellation (`SubscriptionWithCancelException.NoMoreElementsNeeded`), the stage
+   * receiving this cancellation is completed regularly.
+   *
+   * If another cause was given, this is treated as an error and the behavior is the same as with `failStage`.
+   *
+   * This is a good default strategy.
+   */
+  @ApiMayChange
+  def cancellationStrategyPropagateFailure: CancellationStrategy.Strategy = CancellationStrategy.PropagateFailure
+
+  /**
+   * Java API
+   *
+   * Strategy that allows to delay any action when `cancelStage` is invoked.
+   *
+   * The idea of this strategy is to delay any action on cancellation because it is expected that the stage is completed
+   * through another path in the meantime. The downside is that a stage and a stream may live longer than expected if no
+   * such signal is received and cancellation is invoked later on. In streams with many stages that all apply this strategy,
+   * this strategy might significantly delay the propagation of a cancellation signal because each upstream stage might impose
+   * such a delay. During this time, the stream will be mostly "silent", i.e. it cannot make progress because of backpressure,
+   * but you might still be able observe a long delay at the ultimate source.
+   */
+  @ApiMayChange
+  def cancellationStrategyAfterDelay(
+      delay: FiniteDuration,
+      strategy: CancellationStrategy.Strategy): CancellationStrategy.Strategy =
+    CancellationStrategy.AfterDelay(delay, strategy)
 
   object LogLevels {
 
@@ -314,16 +463,16 @@ object Attributes {
   /** Java API: Use to disable logging on certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelOff: Logging.LogLevel = LogLevels.Off
 
-  /** Use to enable logging at ERROR level for certain operations when configuring [[Attributes#createLogLevels]] */
+  /** Java API: Use to enable logging at ERROR level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelError: Logging.LogLevel = LogLevels.Error
 
-  /** Use to enable logging at WARNING level for certain operations when configuring [[Attributes#createLogLevels]] */
+  /** Java API: Use to enable logging at WARNING level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelWarning: Logging.LogLevel = LogLevels.Warning
 
-  /** Use to enable logging at INFO level for certain operations when configuring [[Attributes#createLogLevels]] */
+  /** Java API: Use to enable logging at INFO level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelInfo: Logging.LogLevel = LogLevels.Info
 
-  /** Use to enable logging at DEBUG level for certain operations when configuring [[Attributes#createLogLevels]] */
+  /** Java API: Use to enable logging at DEBUG level for certain operations when configuring [[Attributes#createLogLevels]] */
   def logLevelDebug: Logging.LogLevel = LogLevels.Debug
 
   /**
@@ -349,7 +498,9 @@ object Attributes {
     else Attributes(Name(URLEncoder.encode(name, ByteString.UTF_8)))
 
   /**
-   * Specifies the initial and maximum size of the input buffer.
+   * Each asynchronous piece of a materialized stream topology is executed by one Actor
+   * that manages an input buffer for all inlets of its shape. This attribute configures
+   * the initial and maximal input buffer in number of elements for each inlet.
    */
   def inputBuffer(initial: Int, max: Int): Attributes = Attributes(InputBuffer(initial, max))
 
@@ -398,11 +549,17 @@ object Attributes {
 }
 
 /**
- * Attributes for the [[ActorMaterializer]].
+ * Attributes for the [[Materializer]].
  * Note that more attributes defined in [[Attributes]].
  */
 object ActorAttributes {
   import Attributes._
+
+  /**
+   * Configures the dispatcher to be used by streams.
+   *
+   * Use factory method [[ActorAttributes#dispatcher]] to create instances.
+   */
   final case class Dispatcher(dispatcher: String) extends MandatoryAttribute
 
   final case class SupervisionStrategy(decider: Supervision.Decider) extends MandatoryAttribute
@@ -419,6 +576,8 @@ object ActorAttributes {
    *
    * Operators supporting supervision strategies explicitly document that they do so. If a operator does not document
    * support for these, it should be assumed it does not support supervision.
+   *
+   * For the Java API see [[#withSupervisionStrategy]]
    */
   def supervisionStrategy(decider: Supervision.Decider): Attributes =
     Attributes(SupervisionStrategy(decider))
@@ -428,6 +587,8 @@ object ActorAttributes {
    *
    * Operators supporting supervision strategies explicitly document that they do so. If a operator does not document
    * support for these, it should be assumed it does not support supervision.
+   *
+   * For the Scala API see [[#supervisionStrategy]]
    */
   def withSupervisionStrategy(decider: function.Function[Throwable, Supervision.Directive]): Attributes =
     ActorAttributes.supervisionStrategy(decider.apply)
@@ -467,6 +628,97 @@ object ActorAttributes {
       onFailure: Logging.LogLevel = Logging.ErrorLevel) =
     Attributes(LogLevels(onElement, onFinish, onFailure))
 
+  /**
+   * Enables additional low level troubleshooting logging at DEBUG log level
+   *
+   * Use factory method [[#debugLogging]] to create.
+   */
+  final case class DebugLogging(enabled: Boolean) extends MandatoryAttribute
+
+  /**
+   * Enables additional low level troubleshooting logging at DEBUG log level
+   */
+  def debugLogging(enabled: Boolean): Attributes =
+    Attributes(DebugLogging(enabled))
+
+  /**
+   * Defines a timeout for stream subscription and what action to take when that hits.
+   *
+   * Use factory method `streamSubscriptionTimeout` to create.
+   */
+  final case class StreamSubscriptionTimeout(timeout: FiniteDuration, mode: StreamSubscriptionTimeoutTerminationMode)
+      extends MandatoryAttribute
+
+  /**
+   * Scala API: Defines a timeout for stream subscription and what action to take when that hits.
+   */
+  def streamSubscriptionTimeout(timeout: FiniteDuration, mode: StreamSubscriptionTimeoutTerminationMode): Attributes =
+    Attributes(StreamSubscriptionTimeout(timeout, mode))
+
+  /**
+   * Java API: Defines a timeout for stream subscription and what action to take when that hits.
+   */
+  def streamSubscriptionTimeout(timeout: Duration, mode: StreamSubscriptionTimeoutTerminationMode): Attributes =
+    streamSubscriptionTimeout(timeout.asScala, mode)
+
+  /**
+   * Maximum number of elements emitted in batch if downstream signals large demand.
+   *
+   * Use factory method [[#outputBurstLimit]] to create.
+   */
+  final case class OutputBurstLimit(limit: Int) extends MandatoryAttribute
+
+  /**
+   * Maximum number of elements emitted in batch if downstream signals large demand.
+   */
+  def outputBurstLimit(limit: Int): Attributes =
+    Attributes(OutputBurstLimit(limit))
+
+  /**
+   * Test utility: fuzzing mode means that GraphStage events are not processed
+   * in FIFO order within a fused subgraph, but randomized.
+   *
+   * Use factory method [[#fuzzingMode]] to create.
+   */
+  final case class FuzzingMode(enabled: Boolean) extends MandatoryAttribute
+
+  /**
+   * Test utility: fuzzing mode means that GraphStage events are not processed
+   * in FIFO order within a fused subgraph, but randomized.
+   */
+  def fuzzingMode(enabled: Boolean): Attributes =
+    Attributes(FuzzingMode(enabled))
+
+  /**
+   * Configure the maximum buffer size for which a FixedSizeBuffer will be preallocated.
+   * This defaults to a large value because it is usually better to fail early when
+   * system memory is not sufficient to hold the buffer.
+   *
+   * Use factory method [[#maxFixedBufferSize]] to create.
+   */
+  final case class MaxFixedBufferSize(size: Int) extends MandatoryAttribute
+
+  /**
+   * Configure the maximum buffer size for which a FixedSizeBuffer will be preallocated.
+   * This defaults to a large value because it is usually better to fail early when
+   * system memory is not sufficient to hold the buffer.
+   */
+  def maxFixedBufferSize(size: Int): Attributes =
+    Attributes(MaxFixedBufferSize(size: Int))
+
+  /**
+   * Limit for number of messages that can be processed synchronously in stream to substream communication.
+   *
+   * Use factory method [[#syncProcessingLimit]] to create.
+   */
+  final case class SyncProcessingLimit(limit: Int) extends MandatoryAttribute
+
+  /**
+   * Limit for number of messages that can be processed synchronously in stream to substream communication
+   */
+  def syncProcessingLimit(limit: Int): Attributes =
+    Attributes(SyncProcessingLimit(limit))
+
 }
 
 /**
@@ -476,14 +728,57 @@ object ActorAttributes {
 object StreamRefAttributes {
   import Attributes._
 
-  /** Attributes specific to stream refs. */
+  /** Attributes specific to stream refs.
+   *
+   * Not for user extension.
+   */
+  @DoNotInherit
   sealed trait StreamRefAttribute extends Attribute
 
   final case class SubscriptionTimeout(timeout: FiniteDuration) extends StreamRefAttribute
+  final case class BufferCapacity(capacity: Int) extends StreamRefAttribute {
+    require(capacity > 0, "Buffer capacity must be > 0")
+  }
+  final case class DemandRedeliveryInterval(timeout: FiniteDuration) extends StreamRefAttribute
+  final case class FinalTerminationSignalDeadline(timeout: FiniteDuration) extends StreamRefAttribute
 
   /**
-   * Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
+   * Scala API: Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
    */
   def subscriptionTimeout(timeout: FiniteDuration): Attributes = Attributes(SubscriptionTimeout(timeout))
+
+  /**
+   * Java API: Specifies the subscription timeout within which the remote side MUST subscribe to the handed out stream reference.
+   */
+  def subscriptionTimeout(timeout: Duration): Attributes = subscriptionTimeout(timeout.asScala)
+
+  /**
+   * Specifies the size of the buffer on the receiving side that is eagerly filled even without demand.
+   */
+  def bufferCapacity(capacity: Int): Attributes = Attributes(BufferCapacity(capacity))
+
+  /**
+   *  Scala API: If no new elements arrive within this timeout, demand is redelivered.
+   */
+  def demandRedeliveryInterval(timeout: FiniteDuration): Attributes =
+    Attributes(DemandRedeliveryInterval(timeout))
+
+  /**
+   *  Java API: If no new elements arrive within this timeout, demand is redelivered.
+   */
+  def demandRedeliveryInterval(timeout: Duration): Attributes =
+    demandRedeliveryInterval(timeout.asScala)
+
+  /**
+   * Scala API: The time between the Terminated signal being received and when the local SourceRef determines to fail itself
+   */
+  def finalTerminationSignalDeadline(timeout: FiniteDuration): Attributes =
+    Attributes(FinalTerminationSignalDeadline(timeout))
+
+  /**
+   * Java API: The time between the Terminated signal being received and when the local SourceRef determines to fail itself
+   */
+  def finalTerminationSignalDeadline(timeout: Duration): Attributes =
+    finalTerminationSignalDeadline(timeout.asScala)
 
 }

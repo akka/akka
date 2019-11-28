@@ -13,14 +13,14 @@ import akka.persistence.Persistence
 import akka.persistence.RecoveryPermitter.{ RecoveryPermitGranted, RequestRecoveryPermit, ReturnRecoveryPermit }
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
-import akka.testkit.EventFilter
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import akka.testkit.TestEvent.Mute
 import org.scalatest.WordSpecLike
 
 object RecoveryPermitterSpec {
@@ -47,7 +47,7 @@ object RecoveryPermitterSpec {
       eventProbe: TestProbe[Any],
       throwOnRecovery: Boolean = false): Behavior[Command] =
     EventSourcedBehavior[Command, Event, State](
-      persistenceId = PersistenceId(name),
+      persistenceId = PersistenceId.ofUniqueId(name),
       emptyState = EmptyState,
       commandHandler = CommandHandler.command {
         case StopActor => Effect.stop()
@@ -68,23 +68,20 @@ object RecoveryPermitterSpec {
 }
 
 class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
-      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.max-concurrent-recoveries = 3
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.journal.inmem.test-serialization = on
       akka.loggers = ["akka.testkit.TestEventListener"]
-      """) with WordSpecLike {
+      """) with WordSpecLike with LogCapturing {
 
   import RecoveryPermitterSpec._
 
-  implicit val untypedSystem = system.toUntyped
+  implicit val classicSystem = system.toClassic
 
-  untypedSystem.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
-
-  private val permitter = Persistence(untypedSystem).recoveryPermitter
+  private val permitter = Persistence(classicSystem).recoveryPermitter
 
   def requestPermit(p: TestProbe[Any]): Unit = {
-    permitter.tell(RequestRecoveryPermit, p.ref.toUntyped)
+    permitter.tell(RequestRecoveryPermit, p.ref.toClassic)
     p.expectMessage(RecoveryPermitGranted)
   }
 
@@ -100,21 +97,21 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
       requestPermit(p2)
       requestPermit(p3)
 
-      permitter.tell(RequestRecoveryPermit, p4.ref.toUntyped)
-      permitter.tell(RequestRecoveryPermit, p5.ref.toUntyped)
+      permitter.tell(RequestRecoveryPermit, p4.ref.toClassic)
+      permitter.tell(RequestRecoveryPermit, p5.ref.toClassic)
       p4.expectNoMessage(100.millis)
       p5.expectNoMessage(10.millis)
 
-      permitter.tell(ReturnRecoveryPermit, p2.ref.toUntyped)
+      permitter.tell(ReturnRecoveryPermit, p2.ref.toClassic)
       p4.expectMessage(RecoveryPermitGranted)
       p5.expectNoMessage(100.millis)
 
-      permitter.tell(ReturnRecoveryPermit, p1.ref.toUntyped)
+      permitter.tell(ReturnRecoveryPermit, p1.ref.toClassic)
       p5.expectMessage(RecoveryPermitGranted)
 
-      permitter.tell(ReturnRecoveryPermit, p3.ref.toUntyped)
-      permitter.tell(ReturnRecoveryPermit, p4.ref.toUntyped)
-      permitter.tell(ReturnRecoveryPermit, p5.ref.toUntyped)
+      permitter.tell(ReturnRecoveryPermit, p3.ref.toClassic)
+      permitter.tell(ReturnRecoveryPermit, p4.ref.toClassic)
+      permitter.tell(ReturnRecoveryPermit, p5.ref.toClassic)
     }
 
     "grant recovery when all permits not used" in {
@@ -122,7 +119,7 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
 
       spawn(persistentBehavior("p2", p2, p2))
       p2.expectMessage(Recovered)
-      permitter.tell(ReturnRecoveryPermit, p1.ref.toUntyped)
+      permitter.tell(ReturnRecoveryPermit, p1.ref.toClassic)
     }
 
     "delay recovery when all permits used" in {
@@ -134,12 +131,12 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
       persistentActor ! StopActor
       p4.expectNoMessage(200.millis)
 
-      permitter.tell(ReturnRecoveryPermit, p3.ref.toUntyped)
+      permitter.tell(ReturnRecoveryPermit, p3.ref.toClassic)
       p4.expectMessage(Recovered)
       p4.expectTerminated(persistentActor, 1.second)
 
-      permitter.tell(ReturnRecoveryPermit, p1.ref.toUntyped)
-      permitter.tell(ReturnRecoveryPermit, p2.ref.toUntyped)
+      permitter.tell(ReturnRecoveryPermit, p1.ref.toClassic)
+      permitter.tell(ReturnRecoveryPermit, p2.ref.toClassic)
     }
 
     "return permit when actor is pre-maturely terminated before holding permit" in {
@@ -150,40 +147,40 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
       val persistentActor = spawn(persistentBehavior("p4", p4, p4))
       p4.expectNoMessage(100.millis)
 
-      permitter.tell(RequestRecoveryPermit, p5.ref.toUntyped)
+      permitter.tell(RequestRecoveryPermit, p5.ref.toClassic)
       p5.expectNoMessage(100.millis)
 
       // PoisonPill is not stashed
-      persistentActor.toUntyped ! PoisonPill
+      persistentActor.toClassic ! PoisonPill
 
       // persistentActor didn't hold a permit so still
       p5.expectNoMessage(100.millis)
 
-      permitter.tell(ReturnRecoveryPermit, p1.ref.toUntyped)
+      permitter.tell(ReturnRecoveryPermit, p1.ref.toClassic)
       p5.expectMessage(RecoveryPermitGranted)
 
-      permitter.tell(ReturnRecoveryPermit, p2.ref.toUntyped)
-      permitter.tell(ReturnRecoveryPermit, p3.ref.toUntyped)
-      permitter.tell(ReturnRecoveryPermit, p5.ref.toUntyped)
+      permitter.tell(ReturnRecoveryPermit, p2.ref.toClassic)
+      permitter.tell(ReturnRecoveryPermit, p3.ref.toClassic)
+      permitter.tell(ReturnRecoveryPermit, p5.ref.toClassic)
     }
 
     "return permit when actor is pre-maturely terminated when holding permit" in {
       val actor = spawn(forwardingBehavior(p1))
-      permitter.tell(RequestRecoveryPermit, actor.toUntyped)
+      permitter.tell(RequestRecoveryPermit, actor.toClassic)
       p1.expectMessage(RecoveryPermitGranted)
 
       requestPermit(p2)
       requestPermit(p3)
 
-      permitter.tell(RequestRecoveryPermit, p4.ref.toUntyped)
+      permitter.tell(RequestRecoveryPermit, p4.ref.toClassic)
       p4.expectNoMessage(100.millis)
 
-      actor.toUntyped ! PoisonPill
+      actor.toClassic ! PoisonPill
       p4.expectMessage(RecoveryPermitGranted)
 
-      permitter.tell(ReturnRecoveryPermit, p2.ref.toUntyped)
-      permitter.tell(ReturnRecoveryPermit, p3.ref.toUntyped)
-      permitter.tell(ReturnRecoveryPermit, p4.ref.toUntyped)
+      permitter.tell(ReturnRecoveryPermit, p2.ref.toClassic)
+      permitter.tell(ReturnRecoveryPermit, p3.ref.toClassic)
+      permitter.tell(ReturnRecoveryPermit, p4.ref.toClassic)
     }
 
     "return permit when actor throws from RecoveryCompleted" in {
@@ -192,7 +189,7 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
 
       val stopProbe = createTestProbe[ActorRef[Command]]()
       val parent =
-        EventFilter.error(occurrences = 1, start = "Exception during recovery.").intercept {
+        LoggingTestKit.error("Exception during recovery.").expect {
           spawn(Behaviors.setup[Command](ctx => {
             val persistentActor =
               ctx.spawnAnonymous(persistentBehavior("p3", p3, p3, throwOnRecovery = true))
@@ -215,9 +212,9 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
 
       requestPermit(p4)
 
-      permitter.tell(ReturnRecoveryPermit, p1.ref.toUntyped)
-      permitter.tell(ReturnRecoveryPermit, p2.ref.toUntyped)
-      permitter.tell(ReturnRecoveryPermit, p4.ref.toUntyped)
+      permitter.tell(ReturnRecoveryPermit, p1.ref.toClassic)
+      permitter.tell(ReturnRecoveryPermit, p2.ref.toClassic)
+      permitter.tell(ReturnRecoveryPermit, p4.ref.toClassic)
     }
   }
 }

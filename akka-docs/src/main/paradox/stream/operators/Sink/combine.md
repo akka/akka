@@ -16,6 +16,7 @@ Combine several sinks into one using a user specified strategy
 
 Combine several sinks into one using a user specified strategy
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

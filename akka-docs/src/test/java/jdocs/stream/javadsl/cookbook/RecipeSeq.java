@@ -6,8 +6,6 @@ package jdocs.stream.javadsl.cookbook;
 
 import akka.NotUsed;
 import akka.actor.ActorSystem;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.javadsl.TestKit;
@@ -22,19 +20,16 @@ import java.util.concurrent.TimeUnit;
 
 public class RecipeSeq extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeLoggingElements");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -44,7 +39,7 @@ public class RecipeSeq extends RecipeTest {
         final Source<String, NotUsed> mySource = Source.from(Arrays.asList("1", "2", "3"));
         // #draining-to-list-unsafe
         // Dangerous: might produce a collection with 2 billion elements!
-        final CompletionStage<List<String>> strings = mySource.runWith(Sink.seq(), mat);
+        final CompletionStage<List<String>> strings = mySource.runWith(Sink.seq(), system);
         // #draining-to-list-unsafe
 
         strings.toCompletableFuture().get(3, TimeUnit.SECONDS);
@@ -63,7 +58,7 @@ public class RecipeSeq extends RecipeTest {
         // OK. Future will fail with a `StreamLimitReachedException`
         // if the number of incoming elements is larger than max
         final CompletionStage<List<String>> strings =
-            mySource.limit(MAX_ALLOWED_SIZE).runWith(Sink.seq(), mat);
+            mySource.limit(MAX_ALLOWED_SIZE).runWith(Sink.seq(), system);
         // #draining-to-list-safe
 
         strings.toCompletableFuture().get(1, TimeUnit.SECONDS);
@@ -81,7 +76,7 @@ public class RecipeSeq extends RecipeTest {
 
         // OK. Collect up until max-th elements only, then cancel upstream
         final CompletionStage<List<String>> strings =
-            mySource.take(MAX_ALLOWED_SIZE).runWith(Sink.seq(), mat);
+            mySource.take(MAX_ALLOWED_SIZE).runWith(Sink.seq(), system);
         // #draining-to-list-safe
 
         strings.toCompletableFuture().get(1, TimeUnit.SECONDS);

@@ -6,24 +6,19 @@ package akka.cluster.typed
 
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.actor.{ Address, Scheduler }
 import akka.actor.typed.ActorSystem
-import akka.remote.testkit.{ FlightRecordingSupport, MultiNodeSpec, STMultiNodeSpec }
-import akka.testkit.WatchedByCoroner
-import org.scalatest.{ Matchers, Suite }
 import akka.actor.typed.scaladsl.adapter._
+import akka.actor.{ Address, Scheduler }
 import akka.cluster.{ ClusterEvent, MemberStatus }
 import akka.remote.testconductor.RoleName
+import akka.remote.testkit.{ MultiNodeSpec, STMultiNodeSpec }
+import akka.testkit.WatchedByCoroner
+import org.scalatest.{ Matchers, Suite }
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions
 
-trait MultiNodeTypedClusterSpec
-    extends Suite
-    with STMultiNodeSpec
-    with WatchedByCoroner
-    with FlightRecordingSupport
-    with Matchers {
+trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with Matchers {
   self: MultiNodeSpec =>
 
   override def initialParticipants: Int = roles.size

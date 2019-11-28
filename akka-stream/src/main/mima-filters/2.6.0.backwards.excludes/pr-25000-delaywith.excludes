@@ -1,0 +1,6 @@
+# DelayWith (internal api changes)
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Delay.strategy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Delay.d")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.fusing.Delay.DelayPrecisionMS")
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.stream.impl.fusing.Delay.this")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.delayWith")

@@ -4,8 +4,8 @@
 
 package akka.actor.typed.internal
 
-import akka.actor.typed.DispatcherSelector
-import akka.actor.typed.Props
+import akka.actor.typed.ActorTags
+import akka.actor.typed.{ DispatcherSelector, MailboxSelector, Props }
 import akka.annotation.InternalApi
 
 /**
@@ -38,6 +38,31 @@ import akka.annotation.InternalApi
   }
   object DispatcherSameAsParent {
     val empty = DispatcherSameAsParent(EmptyProps)
+  }
+
+  final case class DefaultMailboxSelector(next: Props = Props.empty) extends MailboxSelector {
+    def withNext(next: Props): Props = copy(next = next)
+  }
+  object DefaultMailboxSelector {
+    val empty = DefaultMailboxSelector(EmptyProps)
+  }
+
+  final case class BoundedMailboxSelector(capacity: Int, next: Props = Props.empty) extends MailboxSelector {
+    def withNext(next: Props): Props = copy(next = next)
+  }
+
+  final case class MailboxFromConfigSelector(path: String, next: Props = Props.empty) extends MailboxSelector {
+    def withNext(next: Props): Props = copy(next = next)
+  }
+
+  final case class ActorTagsImpl(tags: Set[String], next: Props = Props.empty) extends ActorTags {
+    if (tags == null)
+      throw new IllegalArgumentException("Tags must not be null")
+    def withNext(next: Props): Props = copy(next = next)
+  }
+
+  object ActorTagsImpl {
+    val empty = ActorTagsImpl(Set.empty)
   }
 
 }

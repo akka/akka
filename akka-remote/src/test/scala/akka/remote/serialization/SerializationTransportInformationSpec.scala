@@ -75,7 +75,6 @@ abstract class AbstractSerializationTransportInformationSpec(config: Config)
       actor {
         provider = remote
         warn-about-java-serializer-usage = off
-        serialize-creators = off
         serializers {
           test = "akka.remote.serialization.SerializationTransportInformationSpec$TestSerializer"
         }

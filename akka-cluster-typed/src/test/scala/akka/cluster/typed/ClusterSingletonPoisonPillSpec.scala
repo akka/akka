@@ -12,8 +12,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.typed.ClusterSingletonPoisonPillSpec.GetSelf
 import org.scalatest.WordSpecLike
-
 import scala.concurrent.duration._
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 object ClusterSingletonPoisonPillSpec {
 
@@ -27,12 +28,13 @@ object ClusterSingletonPoisonPillSpec {
 
 class ClusterSingletonPoisonPillSpec
     extends ScalaTestWithActorTestKit(ClusterSingletonApiSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
 
   implicit val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
   clusterNode1.manager ! Join(clusterNode1.selfMember.address)
-  val untypedSystem1 = system.toUntyped
+  val classicSystem1 = system.toClassic
   "A typed cluster singleton" must {
 
     "support using PoisonPill to stop" in {

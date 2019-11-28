@@ -10,7 +10,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializerWithStringManifest
-import docs.akka.cluster.typed.PingPongExample._
+import docs.akka.cluster.typed.PingPongExample.PingService
 
 //#serializer
 class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
@@ -22,25 +22,31 @@ class PingSerializer(system: ExtendedActorSystem) extends SerializerWithStringMa
   override def identifier = 41
 
   override def manifest(msg: AnyRef) = msg match {
-    case _: Ping => PingManifest
-    case Pong    => PongManifest
+    case _: PingService.Ping => PingManifest
+    case PingService.Pong    => PongManifest
+    case _ =>
+      throw new IllegalArgumentException(s"Can't serialize object of type ${msg.getClass} in [${getClass.getName}]")
   }
 
   override def toBinary(msg: AnyRef) = msg match {
-    case Ping(who) =>
+    case PingService.Ping(who) =>
       actorRefResolver.toSerializationFormat(who).getBytes(StandardCharsets.UTF_8)
-    case Pong =>
+    case PingService.Pong =>
       Array.emptyByteArray
+    case _ =>
+      throw new IllegalArgumentException(s"Can't serialize object of type ${msg.getClass} in [${getClass.getName}]")
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String) = {
     manifest match {
       case PingManifest =>
         val str = new String(bytes, StandardCharsets.UTF_8)
-        val ref = actorRefResolver.resolveActorRef[Pong.type](str)
-        Ping(ref)
+        val ref = actorRefResolver.resolveActorRef[PingService.Pong.type](str)
+        PingService.Ping(ref)
       case PongManifest =>
-        Pong
+        PingService.Pong
+      case _ =>
+        throw new IllegalArgumentException(s"Unknown manifest [$manifest]")
     }
   }
 }

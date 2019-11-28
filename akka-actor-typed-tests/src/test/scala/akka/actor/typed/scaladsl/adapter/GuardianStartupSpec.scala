@@ -9,13 +9,14 @@ import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorSystemImpl
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.Matchers
 import org.scalatest.WordSpec
 import org.scalatest.concurrent.ScalaFutures
 
-class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures {
+class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures with LogCapturing {
 
   "The user guardian" must {
 
@@ -38,11 +39,11 @@ class GuardianStartupSpec extends WordSpec with Matchers with ScalaFutures {
       }
     }
 
-    "not start before untyped system initialization is complete" in {
+    "not start before classic system initialization is complete" in {
       var system: ActorSystem[String] = null
       val initialized = new CountDownLatch(1)
       val guardianBehavior = Behaviors.setup[String] { ctx =>
-        ctx.system.toUntyped.asInstanceOf[ActorSystemImpl].assertInitialized()
+        ctx.system.toClassic.asInstanceOf[ActorSystemImpl].assertInitialized()
         initialized.countDown()
         Behaviors.empty
       }

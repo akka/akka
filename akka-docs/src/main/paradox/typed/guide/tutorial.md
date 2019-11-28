@@ -5,9 +5,13 @@ when starting to build an Akka system. You might wonder: Which should be the fir
 Fortunately &#8212; unlike with prose &#8212; established best practices can guide us through these initial steps. In the remainder of this guide, we examine the core logic of a simple Akka application to introduce you to actors and show you how to formulate solutions with them. The example demonstrates common patterns that will help you kickstart your Akka projects.
 
 ## Prerequisites
-You should have already followed the instructions in the @scala[[Akka Quickstart with Scala guide](http://developer.lightbend.com/guides/akka-quickstart-scala/)] @java[[Akka Quickstart with Java guide](http://developer.lightbend.com/guides/akka-quickstart-java/)] to download and run the Hello World example. You will use this as a seed project and add the functionality described in this tutorial.
+You should have already followed the instructions in the @scala[[Akka Quickstart with Scala guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)] @java[[Akka Quickstart with Java guide](https://developer.lightbend.com/guides/akka-quickstart-java/)] to download and run the Hello World example. You will use this as a seed project and add the functionality described in this tutorial.
 
-FIXME update link to Quickstart to the Typed version, when it's ready, issue https://github.com/akka/akka/issues/25997
+@@@ note
+Both the Java and Scala DSLs of Akka modules bundled in the same JAR. For a smooth development experience,
+when using an IDE such as Eclipse or IntelliJ, you can disable the auto-importer from suggesting `javadsl`
+imports when working in Scala, or viceversa. See @ref:[IDE Tips](../../additional/ide.md). 
+@@@
 
 ## IoT example use case
 
@@ -24,7 +28,7 @@ The tutorial application consists of two main components:
 
 The following diagram illustrates the example application architecture. Since we are interested in the state of each sensor device, we will model devices as actors. The running application will create as many instances of device actors and device groups as necessary.
 
-![box diagram of the architecture](../../guide/diagrams/arch_boxes_diagram.png)
+![box diagram of the architecture](diagrams/arch_boxes_diagram.png)
 
 ## What you will learn in this tutorial
 This tutorial introduces and illustrates:

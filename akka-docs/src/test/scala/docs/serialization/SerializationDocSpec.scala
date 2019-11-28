@@ -6,6 +6,7 @@ package docs.serialization {
 
   //#imports
   import akka.actor._
+  import akka.actor.typed.scaladsl.Behaviors
   import akka.cluster.Cluster
   import akka.serialization._
 
@@ -208,6 +209,18 @@ package docs.serialization {
       back should be(original)
 
       shutdown(system)
+    }
+
+    def demonstrateTypedActorSystem(): Unit = {
+      //#programmatic-typed
+      import akka.actor.typed.ActorSystem
+      import akka.actor.typed.scaladsl.adapter._
+
+      val system = ActorSystem(Behaviors.empty, "example")
+
+      // Get the Serialization Extension
+      val serialization = SerializationExtension(system.toClassic)
+      //#programmatic-typed
     }
 
     def demonstrateSerializationOfActorRefs(): Unit = {

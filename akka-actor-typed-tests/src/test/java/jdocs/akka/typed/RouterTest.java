@@ -12,6 +12,7 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.SupervisorStrategy;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.GroupRouter;
 import akka.actor.typed.javadsl.PoolRouter;
@@ -35,20 +36,21 @@ public class RouterTest {
       }
     }
 
-    static final Behavior<Command> behavior =
-        Behaviors.setup(
-            context -> {
-              context.getLog().info("Starting worker");
+    static final Behavior<Command> create() {
+      return Behaviors.setup(
+          context -> {
+            context.getLog().info("Starting worker");
 
-              return Behaviors.receive(Command.class)
-                  .onMessage(
-                      DoLog.class,
-                      doLog -> {
-                        context.getLog().info("Got message {}", doLog.text);
-                        return Behaviors.same();
-                      })
-                  .build();
-            });
+            return Behaviors.receive(Command.class)
+                .onMessage(DoLog.class, doLog -> onDoLog(context, doLog))
+                .build();
+          });
+    }
+
+    private static Behavior<Command> onDoLog(ActorContext<Command> context, DoLog doLog) {
+      context.getLog().info("Got message {}", doLog.text);
+      return Behaviors.same();
+    }
   }
 
   // #pool
@@ -57,12 +59,12 @@ public class RouterTest {
     return Behaviors.setup(
         context -> {
           // #pool
+          int poolSize = 4;
           PoolRouter<Worker.Command> pool =
               Routers.pool(
-                  4,
-                  () ->
-                      // make sure the workers are restarted if they fail
-                      Behaviors.supervise(Worker.behavior).onFailure(SupervisorStrategy.restart()));
+                  poolSize,
+                  // make sure the workers are restarted if they fail
+                  Behaviors.supervise(Worker.create()).onFailure(SupervisorStrategy.restart()));
           ActorRef<Worker.Command> router = context.spawn(pool, "worker-pool");
 
           for (int i = 0; i < 10; i++) {
@@ -79,22 +81,23 @@ public class RouterTest {
   }
 
   static Behavior<Void> showGroupRouting() {
+    // #group
     ServiceKey<Worker.Command> serviceKey = ServiceKey.create(Worker.Command.class, "log-worker");
+
+    // #group
     return Behaviors.setup(
         context -> {
           // #group
           // this would likely happen elsewhere - if we create it locally we
           // can just as well use a pool
-          ActorRef<Worker.Command> worker = context.spawn(Worker.behavior, "worker");
+          ActorRef<Worker.Command> worker = context.spawn(Worker.create(), "worker");
           context.getSystem().receptionist().tell(Receptionist.register(serviceKey, worker));
 
           GroupRouter<Worker.Command> group = Routers.group(serviceKey);
           ActorRef<Worker.Command> router = context.spawn(group, "worker-group");
 
-          // note that since registration of workers goes through the receptionist there is no
-          // guarantee the router has seen any workers yet if we hit it directly like this and
-          // these messages may end up in dead letters - in a real application you would not use
-          // a group router like this - it is to keep the sample simple
+          // the group router will stash messages until it sees the first listing of registered
+          // services from the receptionist, so it is safe to send messages right away
           for (int i = 0; i < 10; i++) {
             router.tell(new Worker.DoLog("msg " + i));
           }

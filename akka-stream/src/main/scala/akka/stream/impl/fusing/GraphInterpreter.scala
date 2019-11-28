@@ -54,7 +54,12 @@ import akka.stream.snapshot._
    * but there is no more element to grab.
    */
   case object Empty
+
+  /** Marker class that indicates that a port was failed with a given cause and a potential outstanding element */
   final case class Failed(ex: Throwable, previousElem: Any)
+
+  /** Marker class that indicates that a port was cancelled with a given cause */
+  final case class Cancelled(cause: Throwable)
 
   abstract class UpstreamBoundaryStageLogic[T] extends GraphStageLogic(inCount = 0, outCount = 1) {
     def out: Outlet[T]
@@ -85,7 +90,16 @@ import akka.stream.snapshot._
       var outOwner: GraphStageLogic,
       var inHandler: InHandler,
       var outHandler: OutHandler) {
+
+    /** See [[GraphInterpreter]] about possible states */
     var portState: Int = InReady
+
+    /**
+     * Can either be
+     *  * an in-flight element
+     *  * a failure (with an optional in-flight element), if elem.isInstanceOf[Failed]
+     *  * a cancellation cause, if elem.isInstanceOf[Cancelled]
+     */
     var slot: Any = Empty
   }
 
@@ -119,12 +133,12 @@ import akka.stream.snapshot._
  * From an external viewpoint, the GraphInterpreter takes an assembly of graph processing stages encoded as a
  * [[GraphInterpreter#GraphAssembly]] object and provides facilities to execute and interact with this assembly.
  * The lifecycle of the Interpreter is roughly the following:
- *  - [[init()]] is called
- *  - [[execute()]] is called whenever there is need for execution, providing an upper limit on the processed events
- *  - [[finish()]] is called before the interpreter is disposed, preferably after [[isCompleted]] returned true, although
+ *  - [[init]] is called
+ *  - [[execute]] is called whenever there is need for execution, providing an upper limit on the processed events
+ *  - [[finish]] is called before the interpreter is disposed, preferably after [[isCompleted]] returned true, although
  *    in abort cases this is not strictly necessary
  *
- * The [[execute()]] method of the interpreter accepts an upper bound on the events it will process. After this limit
+ * The [[execute]] method of the interpreter accepts an upper bound on the events it will process. After this limit
  * is reached or there are no more pending events to be processed, the call returns. It is possible to inspect
  * if there are unprocessed events left via the [[isSuspended]] method. [[isCompleted]] returns true once all operators
  * reported completion inside the interpreter.
@@ -197,7 +211,6 @@ import akka.stream.snapshot._
     val onAsyncInput: (GraphStageLogic, Any, Promise[Done], (Any) => Unit) => Unit,
     val fuzzingMode: Boolean,
     val context: ActorRef) {
-
   import GraphInterpreter._
 
   private[this] val ChaseLimit = if (fuzzingMode) 0 else 16
@@ -493,7 +506,9 @@ import akka.stream.snapshot._
           s"$Name CANCEL ${inOwnerName(connection)} -> ${outOwnerName(connection)} (${connection.outHandler}) [${outLogicName(connection)}]")
       connection.portState |= OutClosed
       completeConnection(connection.outOwner.stageId)
-      connection.outHandler.onDownstreamFinish()
+      val cause = connection.slot.asInstanceOf[Cancelled].cause
+      connection.slot = Empty
+      connection.outHandler.onDownstreamFinish(cause)
     } else if ((code & (OutClosed | InClosed)) == OutClosed) {
       // COMPLETIONS
 
@@ -637,12 +652,12 @@ import akka.stream.snapshot._
   }
 
   @InternalStableApi
-  private[stream] def cancel(connection: Connection): Unit = {
+  private[stream] def cancel(connection: Connection, cause: Throwable): Unit = {
     val currentState = connection.portState
     if (Debug) println(s"$Name   cancel($connection) [$currentState]")
     connection.portState = currentState | InClosed
     if ((currentState & OutClosed) == 0) {
-      connection.slot = Empty
+      connection.slot = Cancelled(cause)
       if ((currentState & (Pulling | Pushing | InClosed)) == 0) enqueue(connection)
       else if (chasedPull eq connection) {
         // Abort chasing so Cancel is not lost (chasing does NOT decode the event but assumes it to be a PULL
@@ -675,8 +690,8 @@ import akka.stream.snapshot._
         logicSnapshots(logicIndexes(connection.inOwner)),
         logicSnapshots(logicIndexes(connection.outOwner)),
         connection.portState match {
-          case InReady                                                     => ConnectionSnapshot.ShouldPull
-          case OutReady                                                    => ConnectionSnapshot.ShouldPush
+          case InReady | Pushing                                           => ConnectionSnapshot.ShouldPull
+          case OutReady | Pulling                                          => ConnectionSnapshot.ShouldPush
           case x if (x & (InClosed | OutClosed)) == (InClosed | OutClosed) =>
             // At least one side of the connection is closed: we show it as closed
             ConnectionSnapshot.Closed

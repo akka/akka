@@ -7,7 +7,7 @@ package akka.persistence.typed
 /**
  * Facility to convert snapshots from and to a specialized data model.
  * Can be used when migration from different state types e.g. when migration
- * from Persistent FSM to Typed Persistence.
+ * from Persistent FSM to Typed EventSourcedBehavior.
  *
  * @tparam State The state type of the `EventSourcedBehavior`
  */

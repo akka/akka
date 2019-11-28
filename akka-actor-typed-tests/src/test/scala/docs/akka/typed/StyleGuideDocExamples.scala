@@ -9,6 +9,7 @@ import scala.concurrent.Future
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.ActorRef
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
 import scala.concurrent.duration.FiniteDuration
 
@@ -76,7 +77,7 @@ object StyleGuideDocExamples {
       }
     }
 
-    class Counter(context: ActorContext[Counter.Command]) extends AbstractBehavior[Counter.Command] {
+    class Counter(context: ActorContext[Counter.Command]) extends AbstractBehavior[Counter.Command](context) {
       import Counter._
 
       private var n = 0
@@ -120,13 +121,13 @@ object StyleGuideDocExamples {
               context.log.debug(
                 "[{}] Starting repeated increments with interval [{}], current count is [{}]",
                 name,
-                interval,
-                n)
-              timers.startTimerWithFixedDelay("repeat", Increment, interval)
+                interval.toString,
+                n.toString)
+              timers.startTimerWithFixedDelay(Increment, interval)
               Behaviors.same
             case Increment =>
               val newValue = n + 1
-              context.log.debug("[{}] Incremented counter to [{}]", name, newValue)
+              context.log.debug2("[{}] Incremented counter to [{}]", name, newValue)
               counter(name, timers, newValue)
             case GetValue(replyTo) =>
               replyTo ! Value(n)
@@ -160,16 +161,16 @@ object StyleGuideDocExamples {
       private def counter(setup: Setup, n: Int): Behavior[Command] =
         Behaviors.receiveMessage {
           case IncrementRepeatedly(interval) =>
-            setup.context.log.debug(
+            setup.context.log.debugN(
               "[{}] Starting repeated increments with interval [{}], current count is [{}]",
               setup.name,
               interval,
               n)
-            setup.timers.startTimerWithFixedDelay("repeat", Increment, interval)
+            setup.timers.startTimerWithFixedDelay(Increment, interval)
             Behaviors.same
           case Increment =>
             val newValue = n + 1
-            setup.context.log.debug("[{}] Incremented counter to [{}]", setup.name, newValue)
+            setup.context.log.debug2("[{}] Incremented counter to [{}]", setup.name, newValue)
             counter(setup, newValue)
           case GetValue(replyTo) =>
             replyTo ! Value(n)
@@ -207,16 +208,16 @@ object StyleGuideDocExamples {
       private def counter(n: Int): Behavior[Command] =
         Behaviors.receiveMessage {
           case IncrementRepeatedly(interval) =>
-            context.log.debug(
+            context.log.debugN(
               "[{}] Starting repeated increments with interval [{}], current count is [{}]",
               name,
               interval,
               n)
-            timers.startTimerWithFixedDelay("repeat", Increment, interval)
+            timers.startTimerWithFixedDelay(Increment, interval)
             Behaviors.same
           case Increment =>
             val newValue = n + 1
-            context.log.debug("[{}] Incremented counter to [{}]", name, newValue)
+            context.log.debug2("[{}] Incremented counter to [{}]", name, newValue)
             counter(newValue)
           case GetValue(replyTo) =>
             replyTo ! Value(n)
@@ -243,16 +244,16 @@ object StyleGuideDocExamples {
             def counter(n: Int): Behavior[Command] =
               Behaviors.receiveMessage {
                 case IncrementRepeatedly(interval) =>
-                  context.log.debug(
+                  context.log.debugN(
                     "[{}] Starting repeated increments with interval [{}], current count is [{}]",
                     name,
                     interval,
                     n)
-                  timers.startTimerWithFixedDelay("repeat", Increment, interval)
+                  timers.startTimerWithFixedDelay(Increment, interval)
                   Behaviors.same
                 case Increment =>
                   val newValue = n + 1
-                  context.log.debug("[{}] Incremented counter to [{}]", name, newValue)
+                  context.log.debug2("[{}] Incremented counter to [{}]", name, newValue)
                   counter(newValue)
                 case GetValue(replyTo) =>
                   replyTo ! Value(n)
@@ -340,7 +341,7 @@ object StyleGuideDocExamples {
       def apply(name: String, tickInterval: FiniteDuration): Behavior[Command] =
         Behaviors.setup { context =>
           Behaviors.withTimers { timers =>
-            timers.startTimerWithFixedDelay("tick", Tick, tickInterval)
+            timers.startTimerWithFixedDelay(Tick, tickInterval)
             new Counter(name, context).counter(0)
           }
         }
@@ -353,11 +354,11 @@ object StyleGuideDocExamples {
         Behaviors.receiveMessage {
           case Increment =>
             val newValue = n + 1
-            context.log.debug("[{}] Incremented counter to [{}]", name, newValue)
+            context.log.debug2("[{}] Incremented counter to [{}]", name, newValue)
             counter(newValue)
           case Tick =>
             val newValue = n + 1
-            context.log.debug("[{}] Incremented counter by background tick to [{}]", name, newValue)
+            context.log.debug2("[{}] Incremented counter by background tick to [{}]", name, newValue)
             counter(newValue)
           case GetValue(replyTo) =>
             replyTo ! Value(n)
@@ -371,20 +372,25 @@ object StyleGuideDocExamples {
     //#public-private-messages-2
     // above example is preferred, but this is possible and not wrong
     object Counter {
-      sealed trait PrivateCommand
-      sealed trait Command extends PrivateCommand
+      // The type of all public and private messages the Counter actor handles
+      sealed trait Message
+
+      /** Counter's public message protocol type. */
+      sealed trait Command extends Message
       case object Increment extends Command
       final case class GetValue(replyTo: ActorRef[Value]) extends Command
       final case class Value(n: Int)
 
-      // Tick is a PrivateCommand so can't be sent to an ActorRef[Command]
+      // The type of the Counter actor's internal messages.
+      sealed trait PrivateCommand extends Message
+      // Tick is a private command so can't be sent to an ActorRef[Command]
       case object Tick extends PrivateCommand
 
       def apply(name: String, tickInterval: FiniteDuration): Behavior[Command] = {
         Behaviors
-          .setup[Counter.PrivateCommand] { context =>
+          .setup[Counter.Message] { context =>
             Behaviors.withTimers { timers =>
-              timers.startTimerWithFixedDelay("tick", Tick, tickInterval)
+              timers.startTimerWithFixedDelay(Tick, tickInterval)
               new Counter(name, context).counter(0)
             }
           }
@@ -392,18 +398,18 @@ object StyleGuideDocExamples {
       }
     }
 
-    class Counter private (name: String, context: ActorContext[Counter.PrivateCommand]) {
+    class Counter private (name: String, context: ActorContext[Counter.Message]) {
       import Counter._
 
-      private def counter(n: Int): Behavior[PrivateCommand] =
+      private def counter(n: Int): Behavior[Message] =
         Behaviors.receiveMessage {
           case Increment =>
             val newValue = n + 1
-            context.log.debug("[{}] Incremented counter to [{}]", name, newValue)
+            context.log.debug2("[{}] Incremented counter to [{}]", name, newValue)
             counter(newValue)
           case Tick =>
             val newValue = n + 1
-            context.log.debug("[{}] Incremented counter by background tick to [{}]", name, newValue)
+            context.log.debug2("[{}] Incremented counter by background tick to [{}]", name, newValue)
             counter(newValue)
           case GetValue(replyTo) =>
             replyTo ! Value(n)
@@ -416,14 +422,13 @@ object StyleGuideDocExamples {
   object Ask {
     import Messages.CounterProtocol._
 
-    val system: ActorSystem[Nothing] = ???
+    implicit val system: ActorSystem[Nothing] = ???
 
     //#ask-1
     import akka.actor.typed.scaladsl.AskPattern._
     import akka.util.Timeout
 
     implicit val timeout = Timeout(3.seconds)
-    implicit val scheduler = system.scheduler
     val counter: ActorRef[Command] = ???
 
     val result: Future[OperationResult] = counter.ask(replyTo => Increment(delta = 2, replyTo))

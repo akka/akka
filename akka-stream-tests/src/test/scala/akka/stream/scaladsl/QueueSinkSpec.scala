@@ -7,17 +7,17 @@ package akka.stream.scaladsl
 import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream.Attributes.inputBuffer
-import akka.stream.{ ActorMaterializer, StreamDetachedException }
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.StreamDetachedException
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
-import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
+import scala.concurrent.Await
+import scala.concurrent.Promise
 import scala.util.control.NoStackTrace
 
 class QueueSinkSpec extends StreamSpec {
   implicit val ec = system.dispatcher
-  implicit val materializer = ActorMaterializer()
 
   val ex = new RuntimeException("ex") with NoStackTrace
 

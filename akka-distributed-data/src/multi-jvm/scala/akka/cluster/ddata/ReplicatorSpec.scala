@@ -4,14 +4,17 @@
 
 package akka.cluster.ddata
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import akka.pattern.ask
 import akka.cluster.Cluster
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
+import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
 
 object ReplicatorSpec extends MultiNodeConfig {
@@ -73,6 +76,8 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
     afterCounter += 1
     enterBarrier("after-" + afterCounter)
   }
+
+  private implicit val askTimeout: Timeout = 5.seconds
 
   def join(from: RoleName, to: RoleName): Unit = {
     runOn(from) {
@@ -144,13 +149,24 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
         expectMsg(DeleteSuccess(KeyX, Some(777)))
         changedProbe.expectMsg(Deleted(KeyX))
         replicator ! Get(KeyX, ReadLocal, Some(789))
-        expectMsg(DataDeleted(KeyX, Some(789)))
+        expectMsg(GetDataDeleted(KeyX, Some(789)))
         replicator ! Get(KeyX, readAll, Some(456))
-        expectMsg(DataDeleted(KeyX, Some(456)))
+        expectMsg(GetDataDeleted(KeyX, Some(456)))
+        // verify ask-mapTo for GetDataDeleted, issue #27371
+        Await
+          .result((replicator ? Get(KeyX, ReadLocal, None)).mapTo[GetResponse[GCounter]], askTimeout.duration)
+          .getClass should be(classOf[GetDataDeleted[GCounter]])
+
         replicator ! Update(KeyX, GCounter(), WriteLocal, Some(123))(_ :+ 1)
-        expectMsg(DataDeleted(KeyX, Some(123)))
+        expectMsg(UpdateDataDeleted(KeyX, Some(123)))
         replicator ! Delete(KeyX, WriteLocal, Some(555))
         expectMsg(DataDeleted(KeyX, Some(555)))
+        // verify ask-mapTo for UpdateDataDeleted, issue #27371
+        Await
+          .result(
+            (replicator ? Update(KeyX, GCounter(), WriteLocal, Some(123))(_ :+ 1)).mapTo[UpdateResponse[GCounter]],
+            askTimeout.duration)
+          .getClass should be(classOf[UpdateDataDeleted[GCounter]])
 
         replicator ! GetKeyIds
         expectMsg(GetKeyIdsResult(Set("A")))
@@ -309,7 +325,7 @@ class ReplicatorSpec extends MultiNodeSpec(ReplicatorSpec) with STMultiNodeSpec 
           c.value should be(31)
 
           replicator ! Get(KeyY, ReadLocal, Some(777))
-          expectMsg(DataDeleted(KeyY, Some(777)))
+          expectMsg(GetDataDeleted(KeyY, Some(777)))
         }
       }
       changedProbe.expectMsgPF() { case c @ Changed(KeyC) => c.get(KeyC).value } should be(31)

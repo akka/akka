@@ -17,6 +17,7 @@ Complete right away without ever emitting any elements.
 Complete right away without ever emitting any elements. Useful when you have to provide a source to
 an API but there are no elements to emit.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

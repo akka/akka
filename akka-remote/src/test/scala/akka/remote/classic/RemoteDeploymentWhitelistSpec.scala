@@ -57,7 +57,7 @@ object RemoteDeploymentWhitelistSpec {
       actor.provider = remote
       
       remote {
-        use-unsafe-remote-features-without-cluster = on
+        use-unsafe-remote-features-outside-cluster = on
         classic.enabled-transports = [
           "akka.remote.test",
           "akka.remote.classic.netty.tcp"
@@ -103,7 +103,7 @@ object RemoteDeploymentWhitelistSpec {
   }
 }
 
-@silent // deprecated
+@silent("deprecated")
 class RemoteDeploymentWhitelistSpec
     extends AkkaSpec(RemoteDeploymentWhitelistSpec.cfg)
     with ImplicitSender

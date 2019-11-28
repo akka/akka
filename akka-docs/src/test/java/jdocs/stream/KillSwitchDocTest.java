@@ -29,19 +29,16 @@ import static org.junit.Assert.assertEquals;
 class KillSwitchDocTest extends AbstractJavaTest {
 
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("GraphDSLDocTest");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -58,7 +55,7 @@ class KillSwitchDocTest extends AbstractJavaTest {
         countingSrc
             .viaMat(KillSwitches.single(), Keep.right())
             .toMat(lastSnk, Keep.both())
-            .run(mat);
+            .run(system);
 
     final UniqueKillSwitch killSwitch = stream.first();
     final CompletionStage<Integer> completionStage = stream.second();
@@ -82,7 +79,7 @@ class KillSwitchDocTest extends AbstractJavaTest {
         countingSrc
             .viaMat(KillSwitches.single(), Keep.right())
             .toMat(lastSnk, Keep.both())
-            .run(mat);
+            .run(system);
 
     final UniqueKillSwitch killSwitch = stream.first();
     final CompletionStage<Integer> completionStage = stream.second();
@@ -105,13 +102,16 @@ class KillSwitchDocTest extends AbstractJavaTest {
     final SharedKillSwitch killSwitch = KillSwitches.shared("my-kill-switch");
 
     final CompletionStage<Integer> completionStage =
-        countingSrc.viaMat(killSwitch.flow(), Keep.right()).toMat(lastSnk, Keep.right()).run(mat);
+        countingSrc
+            .viaMat(killSwitch.flow(), Keep.right())
+            .toMat(lastSnk, Keep.right())
+            .run(system);
     final CompletionStage<Integer> completionStageDelayed =
         countingSrc
             .delay(Duration.ofSeconds(1), DelayOverflowStrategy.backpressure())
             .viaMat(killSwitch.flow(), Keep.right())
             .toMat(lastSnk, Keep.right())
-            .run(mat);
+            .run(system);
 
     doSomethingElse();
     killSwitch.shutdown();
@@ -134,9 +134,15 @@ class KillSwitchDocTest extends AbstractJavaTest {
     final SharedKillSwitch killSwitch = KillSwitches.shared("my-kill-switch");
 
     final CompletionStage<Integer> completionStage1 =
-        countingSrc.viaMat(killSwitch.flow(), Keep.right()).toMat(lastSnk, Keep.right()).run(mat);
+        countingSrc
+            .viaMat(killSwitch.flow(), Keep.right())
+            .toMat(lastSnk, Keep.right())
+            .run(system);
     final CompletionStage<Integer> completionStage2 =
-        countingSrc.viaMat(killSwitch.flow(), Keep.right()).toMat(lastSnk, Keep.right()).run(mat);
+        countingSrc
+            .viaMat(killSwitch.flow(), Keep.right())
+            .toMat(lastSnk, Keep.right())
+            .run(system);
 
     final Exception error = new Exception("boom!");
     killSwitch.abort(error);

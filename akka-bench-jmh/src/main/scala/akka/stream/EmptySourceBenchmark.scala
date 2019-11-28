@@ -18,8 +18,6 @@ import scala.concurrent.duration._
 @BenchmarkMode(Array(Mode.Throughput))
 class EmptySourceBenchmark {
   implicit val system = ActorSystem("EmptySourceBenchmark")
-  val materializerSettings = ActorMaterializerSettings(system).withDispatcher("akka.test.stream-dispatcher")
-  implicit val materializer = ActorMaterializer(materializerSettings)
 
   @TearDown
   def shutdown(): Unit = {

@@ -64,7 +64,7 @@ object SnapshotMetadata {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def fromUntyped(metadata: akka.persistence.SnapshotMetadata): SnapshotMetadata =
+  @InternalApi private[akka] def fromClassic(metadata: akka.persistence.SnapshotMetadata): SnapshotMetadata =
     new SnapshotMetadata(metadata.persistenceId, metadata.sequenceNr, metadata.timestamp)
 }
 

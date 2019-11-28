@@ -4,7 +4,6 @@
 
 package akka.actor.typed
 
-import java.math.BigInteger
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorInitializationException
@@ -12,31 +11,31 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import akka.testkit.EventFilter
 import org.scalatest.WordSpecLike
 import scala.concurrent.duration._
+
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 object TransformMessagesSpec {
 
   // this is the sample from the Scaladoc
   val b: Behavior[Number] =
     Behaviors
-      .receive[String] { (ctx, msg) =>
+      .receive[String] { (_, msg) =>
         println(msg)
         Behaviors.same
       }
       .transformMessages[Number] {
-        case b: BigDecimal => s"BigDecimal(&dollar;b)"
-        case i: BigInt     => s"BigInteger(&dollar;i)"
+        case _: BigDecimal => s"BigDecimal(&dollar;b)"
+        case _: BigInt     => s"BigInteger(&dollar;i)"
         // all other kinds of Number will be `unhandled`
       }
 }
 
-class TransformMessagesSpec extends ScalaTestWithActorTestKit("""
-    akka.loggers = [akka.testkit.TestEventListener]
-    """) with WordSpecLike {
+class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
 
-  implicit val untypedSystem = system.toUntyped
+  implicit val classicSystem = system.toClassic
 
   def intToString(probe: ActorRef[String]): Behavior[Int] = {
     Behaviors
@@ -63,14 +62,11 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[String]()
       val ref = spawn(intToString(probe.ref))
 
-      // TestEventListener logs unhandled as warnings, silence that
-      EventFilter.warning(occurrences = 1).intercept {
-        ref ! 42
-        ref ! 13
-        ref ! 43
-        probe.expectMessage("42")
-        probe.expectMessage("43")
-      }
+      ref ! 42
+      ref ! 13
+      ref ! 43
+      probe.expectMessage("42")
+      probe.expectMessage("43")
     }
 
     "not build up when the same transformMessages is used many times (initially)" in {
@@ -138,7 +134,7 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit("""
           case s => s.toLowerCase
         }
 
-      EventFilter[ActorInitializationException](occurrences = 1).intercept {
+      LoggingTestKit.error[ActorInitializationException].expect {
         val ref = spawn(transform(transform(Behaviors.receiveMessage[String] { _ =>
           Behaviors.same
         })))
@@ -152,7 +148,7 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit("""
       val probe = TestProbe[String]()
       val behv = Behaviors
         .withTimers[String] { timers =>
-          timers.startSingleTimer("timer", "a", 10.millis)
+          timers.startSingleTimer("a", 10.millis)
           Behaviors.receiveMessage { msg =>
             probe.ref ! msg
             Behaviors.same
@@ -173,7 +169,7 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit("""
     "be possible to combine with outer timers" in {
       val probe = TestProbe[String]()
       val behv = Behaviors.withTimers[String] { timers =>
-        timers.startSingleTimer("timer", "a", 10.millis)
+        timers.startSingleTimer("a", 10.millis)
         Behaviors
           .receiveMessage[String] { msg =>
             probe.ref ! msg

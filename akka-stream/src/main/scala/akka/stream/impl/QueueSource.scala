@@ -48,7 +48,7 @@ import scala.concurrent.{ Future, Promise }
       var terminating = false
 
       override def preStart(): Unit = {
-        if (maxBuffer > 0) buffer = Buffer(maxBuffer, materializer)
+        if (maxBuffer > 0) buffer = Buffer(maxBuffer, inheritedAttributes)
         pendingOffers = Buffer(maxConcurrentOffers, materializer)
       }
       override def postStop(): Unit = {
@@ -154,7 +154,7 @@ import scala.concurrent.{ Future, Promise }
 
       setHandler(out, this)
 
-      override def onDownstreamFinish(): Unit = {
+      override def onDownstreamFinish(cause: Throwable): Unit = {
         while (pendingOffers.nonEmpty) pendingOffers.dequeue().promise.success(QueueOfferResult.QueueClosed)
         completion.success(Done)
         completeStage()

@@ -4,24 +4,26 @@
 
 package akka.remote.artery
 
-import akka.actor._
-import akka.Done
-import akka.NotUsed
-import akka.remote._
-import akka.remote.artery.compress._
-import akka.serialization.{ BaseSerializer, ByteBufferSerializer, SerializationExtension }
-import akka.stream.ActorMaterializer
-import akka.stream.ActorMaterializerSettings
-import akka.stream.scaladsl._
-import akka.util.OptionVal
-import com.typesafe.config.ConfigFactory
 import java.io.IOException
 import java.nio.ByteBuffer
 import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import akka.Done
+import akka.NotUsed
+import akka.actor._
+import akka.remote._
 import akka.remote.artery.Decoder.InboundCompressionAccess
+import akka.remote.artery.compress._
+import akka.serialization.BaseSerializer
+import akka.serialization.ByteBufferSerializer
+import akka.serialization.SerializationExtension
+import akka.stream.SystemMaterializer
+import akka.stream.scaladsl._
+import akka.util.OptionVal
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
 import scala.annotation.tailrec
@@ -38,10 +40,11 @@ import scala.concurrent.duration._
 class CodecBenchmark {
   import CodecBenchmark._
 
+  @silent("immutable val") // JMH updates this via reflection
   @Param(Array(Standard, RemoteInstrument))
   private var configType: String = _
 
-  var system: ActorSystem = _
+  implicit var system: ActorSystem = _
   var systemB: ActorSystem = _
 
   private val envelopePool = new EnvelopeBufferPool(1024 * 1024, 128)
@@ -66,11 +69,10 @@ class CodecBenchmark {
     override def publishDropped(inbound: InboundEnvelope, reason: String): Unit = ()
   }
 
-  private var materializer: ActorMaterializer = _
-  private var remoteRefB: RemoteActorRef = _
-  private var resolvedRef: InternalActorRef = _
-  private var senderStringA: String = _
-  private var recipientStringB: String = _
+  @silent("never used") private var remoteRefB: RemoteActorRef = _
+  @silent("never used") private var resolvedRef: InternalActorRef = _
+  @silent("never used") private var senderStringA: String = _
+  @silent("never used") private var recipientStringB: String = _
 
   private var encodeGraph: Flow[String, Unit, NotUsed] = _
   private var decodeGraph: Flow[String, Unit, NotUsed] = _
@@ -102,8 +104,8 @@ class CodecBenchmark {
     system = ActorSystem("CodecBenchmark", config)
     systemB = ActorSystem("systemB", system.settings.config)
 
-    val settings = ActorMaterializerSettings(system)
-    materializer = ActorMaterializer(settings)(system)
+    // eager init of materializer
+    SystemMaterializer(system).materializer
 
     uniqueLocalAddress = UniqueAddress(
       system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress,
@@ -112,7 +114,7 @@ class CodecBenchmark {
     val actorOnSystemA = system.actorOf(Props.empty, "a")
     senderStringA = actorOnSystemA.path.toSerializationFormatWithAddress(uniqueLocalAddress.address)
 
-    val actorOnSystemB = systemB.actorOf(Props.empty, "b")
+    systemB.actorOf(Props.empty, "b")
     val addressB = systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
     val rootB = RootActorPath(addressB)
     remoteRefB = Await
@@ -147,7 +149,7 @@ class CodecBenchmark {
           debugLogSend = false,
           version = ArteryTransport.HighestVersion))
     val encoderInput: Flow[String, OutboundEnvelope, NotUsed] =
-      Flow[String].map(msg => outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
+      Flow[String].map(_ => outboundEnvelopePool.acquire().init(OptionVal.None, payload, OptionVal.Some(remoteRefB)))
     val compressions = new InboundCompressionsImpl(system, inboundContext, inboundContext.settings.Advanced.Compression)
     val decoder: Flow[EnvelopeBuffer, InboundEnvelope, InboundCompressionAccess] =
       Flow.fromGraph(
@@ -201,7 +203,7 @@ class CodecBenchmark {
     val latch = new CountDownLatch(1)
     val N = OperationsPerInvocation
 
-    Source.fromGraph(new BenchTestSourceSameElement(N, "elem")).runWith(new LatchSink(N, latch))(materializer)
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem")).runWith(new LatchSink(N, latch))
 
     if (!latch.await(30, TimeUnit.SECONDS))
       throw new RuntimeException("Latch didn't complete in time")
@@ -213,10 +215,7 @@ class CodecBenchmark {
     val latch = new CountDownLatch(1)
     val N = OperationsPerInvocation
 
-    Source
-      .fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .via(encodeGraph)
-      .runWith(new LatchSink(N, latch))(materializer)
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem")).via(encodeGraph).runWith(new LatchSink(N, latch))
 
     if (!latch.await(30, TimeUnit.SECONDS))
       throw new RuntimeException("Latch didn't complete in time")
@@ -228,10 +227,7 @@ class CodecBenchmark {
     val latch = new CountDownLatch(1)
     val N = OperationsPerInvocation
 
-    Source
-      .fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .via(decodeGraph)
-      .runWith(new LatchSink(N, latch))(materializer)
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem")).via(decodeGraph).runWith(new LatchSink(N, latch))
 
     if (!latch.await(30, TimeUnit.SECONDS))
       throw new RuntimeException("Latch didn't complete in time")
@@ -243,10 +239,7 @@ class CodecBenchmark {
     val latch = new CountDownLatch(1)
     val N = OperationsPerInvocation
 
-    Source
-      .fromGraph(new BenchTestSourceSameElement(N, "elem"))
-      .via(encodeDecodeGraph)
-      .runWith(new LatchSink(N, latch))(materializer)
+    Source.fromGraph(new BenchTestSourceSameElement(N, "elem")).via(encodeDecodeGraph).runWith(new LatchSink(N, latch))
 
     if (!latch.await(30, TimeUnit.SECONDS))
       throw new RuntimeException("Latch didn't complete in time")

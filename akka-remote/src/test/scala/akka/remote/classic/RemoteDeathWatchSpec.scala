@@ -24,7 +24,7 @@ akka {
         }
 
     }
-    remote.use-unsafe-remote-features-without-cluster = on
+    remote.use-unsafe-remote-features-outside-cluster = on
     remote.artery.enabled = off
     remote.classic {
       retry-gate-closed-for = 1 s

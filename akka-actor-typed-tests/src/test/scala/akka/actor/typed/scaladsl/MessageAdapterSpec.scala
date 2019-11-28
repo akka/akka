@@ -4,21 +4,22 @@
 
 package akka.actor.typed.scaladsl
 
+import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.TestException
-import akka.actor.typed.scaladsl.adapter._
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.Props
-import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.typed.eventstream.EventStream
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString("""
-      akka.loggers = ["akka.testkit.TestEventListener"]
       akka.log-dead-letters = off
       ping-pong-dispatcher {
         executor = thread-pool-executor
@@ -31,9 +32,10 @@ object MessageAdapterSpec {
     """)
 }
 
-class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.config) with WordSpecLike {
-
-  implicit val untyped = system.toUntyped // FIXME #24348: eventfilter support in typed testkit
+class MessageAdapterSpec
+    extends ScalaTestWithActorTestKit(MessageAdapterSpec.config)
+    with WordSpecLike
+    with LogCapturing {
 
   "Message adapters" must {
 
@@ -83,9 +85,11 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
       trait Ping
       case class Ping1(sender: ActorRef[Pong1]) extends Ping
       case class Ping2(sender: ActorRef[Pong2]) extends Ping
+      case class Ping3(sender: ActorRef[Int]) extends Ping
       trait Response
       case class Pong1(greeting: String) extends Response
       case class Pong2(greeting: String) extends Response
+      case class Pong3(greeting: Int) extends Response
 
       case class Wrapped(qualifier: String, response: Response)
 
@@ -96,6 +100,9 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
         case Ping2(sender) =>
           sender ! Pong2("hello-2")
           Behaviors.same
+        case Ping3(sender) =>
+          sender ! 3
+          Behaviors.same
       })
 
       val probe = TestProbe[Wrapped]()
@@ -104,8 +111,11 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
         context.messageAdapter[Response](pong => Wrapped(qualifier = "wrong", pong)) // this is replaced
         val replyTo1: ActorRef[Response] = context.messageAdapter(pong => Wrapped(qualifier = "1", pong))
         val replyTo2 = context.messageAdapter[Pong2](pong => Wrapped(qualifier = "2", pong))
+        val replyTo3 =
+          context.messageAdapter[Int](intValue => Wrapped(qualifier = intValue.toString, response = Pong3(intValue)))
         pingPong ! Ping1(replyTo1)
         pingPong ! Ping2(replyTo2)
+        pingPong ! Ping3(replyTo3)
 
         Behaviors.receiveMessage { wrapped =>
           probe.ref ! wrapped
@@ -117,6 +127,7 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
       probe.expectMessage(Wrapped("1", Pong1("hello-1")))
       probe.expectMessage(Wrapped("2", Pong2("hello-2")))
+      probe.expectMessage(Wrapped("3", Pong3(3)))
     }
 
     "not break if wrong/unknown response type" in {
@@ -139,6 +150,8 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
           Behaviors.same
       })
 
+      val unhandledProbe = createTestProbe[UnhandledMessage]()
+      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
       val probe = TestProbe[Wrapped]()
 
       val snitch = Behaviors.setup[Wrapped] { context =>
@@ -155,9 +168,8 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
         }
       }
 
-      EventFilter.warning(start = "unhandled message", occurrences = 1).intercept {
-        spawn(snitch)
-      }
+      spawn(snitch)
+      unhandledProbe.receiveMessage()
 
       probe.expectMessage(Wrapped("1", Pong1("hello-1")))
       // hello-2 discarded because it was wrong type
@@ -199,11 +211,7 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
           }
       }
 
-      EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 1).intercept {
-        EventFilter[TestException](occurrences = 1).intercept {
-          spawn(snitch)
-        }
-      }
+      spawn(snitch)
 
       probe.expectMessage(Wrapped(1, Pong("hello")))
       probe.expectMessage(Wrapped(2, Pong("hello")))
@@ -234,7 +242,7 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
 
         def behv(count: Int): Behavior[Wrapped] =
           Behaviors
-            .receiveMessage[Wrapped] { wrapped =>
+            .receiveMessage[Wrapped] { _ =>
               probe.ref ! count
               if (count == 3) {
                 throw new TestException("boom")
@@ -250,11 +258,9 @@ class MessageAdapterSpec extends ScalaTestWithActorTestKit(MessageAdapterSpec.co
         behv(count = 1)
       }
 
-      EventFilter.warning(pattern = ".*received dead letter.*", occurrences = 2).intercept {
-        // Not expecting "Exception thrown out of adapter. Stopping myself"
-        EventFilter[TestException](message = "boom", occurrences = 1).intercept {
-          spawn(snitch)
-        }
+      // Not expecting "Exception thrown out of adapter. Stopping myself"
+      LoggingTestKit.error[TestException].withMessageContains("boom").expect {
+        spawn(snitch)
       }
 
       probe.expectMessage(1)

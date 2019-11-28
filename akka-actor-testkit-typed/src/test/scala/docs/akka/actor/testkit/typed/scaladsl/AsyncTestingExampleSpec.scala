@@ -4,6 +4,7 @@
 
 package docs.akka.actor.testkit.typed.scaladsl
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.Scheduler
 //#test-header
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
@@ -27,11 +28,11 @@ import scala.util.Try
 
 object AsyncTestingExampleSpec {
   //#under-test
-  case class Ping(message: String, response: ActorRef[Pong])
-  case class Pong(message: String)
+  object Echo {
+    case class Ping(message: String, response: ActorRef[Pong])
+    case class Pong(message: String)
 
-  val echoActor: Behavior[Ping] = Behaviors.receive { (_, message) =>
-    message match {
+    def apply(): Behavior[Ping] = Behaviors.receiveMessage {
       case Ping(m, replyTo) =>
         replyTo ! Pong(m)
         Behaviors.same
@@ -58,7 +59,13 @@ object AsyncTestingExampleSpec {
 }
 
 //#test-header
-class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll with Matchers {
+class AsyncTestingExampleSpec
+    extends WordSpec
+    with BeforeAndAfterAll
+    //#test-header
+    with LogCapturing
+    //#test-header
+    with Matchers {
   val testKit = ActorTestKit()
   //#test-header
 
@@ -67,35 +74,35 @@ class AsyncTestingExampleSpec extends WordSpec with BeforeAndAfterAll with Match
   "A testkit" must {
     "support verifying a response" in {
       //#test-spawn
-      val pinger = testKit.spawn(echoActor, "ping")
-      val probe = testKit.createTestProbe[Pong]()
-      pinger ! Ping("hello", probe.ref)
-      probe.expectMessage(Pong("hello"))
+      val pinger = testKit.spawn(Echo(), "ping")
+      val probe = testKit.createTestProbe[Echo.Pong]()
+      pinger ! Echo.Ping("hello", probe.ref)
+      probe.expectMessage(Echo.Pong("hello"))
       //#test-spawn
     }
 
     "support verifying a response - anonymous" in {
       //#test-spawn-anonymous
-      val pinger = testKit.spawn(echoActor)
+      val pinger = testKit.spawn(Echo())
       //#test-spawn-anonymous
-      val probe = testKit.createTestProbe[Pong]()
-      pinger ! Ping("hello", probe.ref)
-      probe.expectMessage(Pong("hello"))
+      val probe = testKit.createTestProbe[Echo.Pong]()
+      pinger ! Echo.Ping("hello", probe.ref)
+      probe.expectMessage(Echo.Pong("hello"))
     }
 
     "be able to stop actors under test" in {
       // Will fail with 'name not unique' exception if the first actor is not fully stopped
-      val probe = testKit.createTestProbe[Pong]()
+      val probe = testKit.createTestProbe[Echo.Pong]()
       //#test-stop-actors
-      val pinger1 = testKit.spawn(echoActor, "pinger")
-      pinger1 ! Ping("hello", probe.ref)
-      probe.expectMessage(Pong("hello"))
+      val pinger1 = testKit.spawn(Echo(), "pinger")
+      pinger1 ! Echo.Ping("hello", probe.ref)
+      probe.expectMessage(Echo.Pong("hello"))
       testKit.stop(pinger1) // Uses default timeout
 
       // Immediately creating an actor with the same name
-      val pinger2 = testKit.spawn(echoActor, "pinger")
-      pinger2 ! Ping("hello", probe.ref)
-      probe.expectMessage(Pong("hello"))
+      val pinger2 = testKit.spawn(Echo(), "pinger")
+      pinger2 ! Echo.Ping("hello", probe.ref)
+      probe.expectMessage(Echo.Pong("hello"))
       testKit.stop(pinger2, 10.seconds) // Custom timeout
       //#test-stop-actors
     }

@@ -10,8 +10,6 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.testkit.typed.javadsl.ManualTime;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Source;
 // #range-imports
 
@@ -24,7 +22,13 @@ import akka.stream.javadsl.Sink;
 import akka.testkit.TestProbe;
 // #actor-ref-imports
 
+// #maybe
+import akka.stream.javadsl.RunnableGraph;
+import java.util.concurrent.CompletableFuture;
+// #maybe
+
 import java.util.Arrays;
+import java.util.Optional;
 
 // #imports
 
@@ -33,25 +37,23 @@ public class SourceDocExamples {
   public static final TestKitJunitResource testKit = new TestKitJunitResource(ManualTime.config());
 
   public static void fromExample() {
-    // #source-from-example
-    final ActorSystem system = ActorSystem.create("SourceFromExample");
-    final Materializer materializer = ActorMaterializer.create(system);
+    final ActorSystem system = null;
 
+    // #source-from-example
     Source<Integer, NotUsed> ints = Source.from(Arrays.asList(0, 1, 2, 3, 4, 5));
-    ints.runForeach(System.out::println, materializer);
+    ints.runForeach(System.out::println, system);
 
     String text =
         "Perfection is finally attained not when there is no longer more to add,"
             + "but when there is no longer anything to take away.";
     Source<String, NotUsed> words = Source.from(Arrays.asList(text.split("\\s")));
-    words.runForeach(System.out::println, materializer);
+    words.runForeach(System.out::println, system);
     // #source-from-example
   }
 
   static void rangeExample() {
 
     final ActorSystem system = ActorSystem.create("Source");
-    final Materializer materializer = ActorMaterializer.create(system);
 
     // #range
 
@@ -69,20 +71,19 @@ public class SourceDocExamples {
     // #range
 
     // #run-range
-    source.runForeach(i -> System.out.println(i), materializer);
+    source.runForeach(i -> System.out.println(i), system);
     // #run-range
   }
 
   static void actorRef() {
-    // #actor-ref
+    final ActorSystem system = null;
 
-    final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+    // #actor-ref
 
     int bufferSize = 100;
     Source<Object, ActorRef> source = Source.actorRef(bufferSize, OverflowStrategy.dropHead());
 
-    ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(materializer);
+    ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(system);
     actorRef.tell("hello", ActorRef.noSender());
     actorRef.tell("hello", ActorRef.noSender());
 
@@ -91,23 +92,52 @@ public class SourceDocExamples {
     // #actor-ref
   }
 
-  static void actorRefWithAck() {
+  static void actorRefWithBackpressure() {
     final TestProbe probe = null;
+    final ActorSystem system = null;
 
-    // #actor-ref-with-ack
-    final ActorSystem system = ActorSystem.create();
-    final Materializer materializer = ActorMaterializer.create(system);
+    // #actorRefWithBackpressure
+    Source<Object, ActorRef> source =
+        Source.actorRefWithBackpressure(
+            "ack",
+            o -> {
+              if (o == "complete") return Optional.of(CompletionStrategy.draining());
+              else return Optional.empty();
+            },
+            o -> Optional.empty());
 
-    Source<Object, ActorRef> source = Source.actorRefWithAck("ack");
-
-    ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(materializer);
+    ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(system);
     probe.send(actorRef, "hello");
     probe.expectMsg("ack");
     probe.send(actorRef, "hello");
     probe.expectMsg("ack");
 
     // The stream completes successfully with the following message
-    actorRef.tell(new Success(CompletionStrategy.draining()), ActorRef.noSender());
-    // #actor-ref-with-ack
+    actorRef.tell("complete", ActorRef.noSender());
+    // #actorRefWithBackpressure
+  }
+
+  static void maybeExample() {
+    final ActorSystem system = null;
+
+    // #maybe
+    Source<Integer, CompletableFuture<Optional<Integer>>> source = Source.<Integer>maybe();
+    RunnableGraph<CompletableFuture<Optional<Integer>>> runnable =
+        source.to(Sink.foreach(System.out::println));
+
+    CompletableFuture<Optional<Integer>> completable1 = runnable.run(system);
+    completable1.complete(Optional.of(1)); // prints 1
+
+    CompletableFuture<Optional<Integer>> completable2 = runnable.run(system);
+    completable2.complete(Optional.of(2)); // prints 2
+    // #maybe
+  }
+
+  static
+  // #maybe-signature
+  <Out> Source<Out, CompletableFuture<Optional<Out>>> maybe()
+        // #maybe-signature
+      {
+    return Source.maybe();
   }
 }

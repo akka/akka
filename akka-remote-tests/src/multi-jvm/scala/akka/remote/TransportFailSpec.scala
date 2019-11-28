@@ -29,7 +29,7 @@ object TransportFailConfig extends MultiNodeConfig {
 
   commonConfig(debugConfig(on = false).withFallback(ConfigFactory.parseString(s"""
       akka.loglevel = INFO
-      akka.remote.use-unsafe-remote-features-without-cluster = on
+      akka.remote.use-unsafe-remote-features-outside-cluster = on
       akka.remote.classic {
         transport-failure-detector {
           implementation-class = "akka.remote.TransportFailSpec$$TestFailureDetector"
@@ -97,7 +97,7 @@ object TransportFailSpec {
  * This was fixed by not stopping the ReliableDeliverySupervisor so that the
  * receive buffer was preserved.
  */
-@silent // deprecated
+@silent("deprecated")
 abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConfig) {
   import TransportFailConfig._
   import TransportFailSpec._

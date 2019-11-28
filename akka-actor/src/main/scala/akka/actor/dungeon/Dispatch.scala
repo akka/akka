@@ -169,14 +169,18 @@ private[akka] trait Dispatch { this: ActorCell =>
     unwrappedMessage match {
       case _: NoSerializationVerificationNeeded => envelope
       case msg =>
-        val deserializedMsg = try {
-          serializeAndDeserializePayload(msg)
-        } catch {
-          case NonFatal(e) => throw SerializationCheckFailedException(msg, e)
-        }
-        envelope.message match {
-          case dl: DeadLetter => envelope.copy(message = dl.copy(message = deserializedMsg))
-          case _              => envelope.copy(message = deserializedMsg)
+        if (system.settings.NoSerializationVerificationNeededClassPrefix.exists(msg.getClass.getName.startsWith))
+          envelope
+        else {
+          val deserializedMsg = try {
+            serializeAndDeserializePayload(msg)
+          } catch {
+            case NonFatal(e) => throw SerializationCheckFailedException(msg, e)
+          }
+          envelope.message match {
+            case dl: DeadLetter => envelope.copy(message = dl.copy(message = deserializedMsg))
+            case _              => envelope.copy(message = deserializedMsg)
+          }
         }
     }
   }

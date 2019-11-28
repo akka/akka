@@ -6,11 +6,25 @@ Fan-out the stream to several streams.
 
 ## Signature
 
+@apidoc[Partition]
+
 ## Description
 
 Fan-out the stream to several streams. Each upstream element is emitted to one downstream consumer according to the
 partitioner function applied to the element.
 
+## Example
+
+Here is an example of using `Partition` to split a `Source` of integers to one `Sink` for the even numbers and
+another `Sink` for the odd numbers. 
+
+Scala
+:   @@snip [PartitionDocExample.scala](/akka-docs/src/test/scala/docs/stream/operators/PartitionDocExample.scala) { #partition }
+
+Java
+:   @@snip [PartitionDocExample.java](/akka-docs/src/test/java/jdocs/stream/operators/PartitionDocExample.java) { #import #partition }
+
+## Reactive Streams semantics
 
 @@@div { .callout }
 

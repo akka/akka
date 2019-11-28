@@ -4,16 +4,15 @@
 
 package akka.persistence.query.journal.leveldb
 
-import scala.concurrent.duration._
-
 import akka.actor.ActorRef
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.query.scaladsl.EventsByTagQuery
-import akka.stream.ActorMaterializer
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+
+import scala.concurrent.duration._
 
 object EventsByPersistenceIdSpec {
   val config = """
@@ -29,8 +28,6 @@ object EventsByPersistenceIdSpec {
 }
 
 class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.config) with Cleanup with ImplicitSender {
-
-  implicit val mat = ActorMaterializer()(system)
 
   val queries = PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 

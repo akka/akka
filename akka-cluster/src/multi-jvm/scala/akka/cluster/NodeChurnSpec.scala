@@ -21,8 +21,10 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
   val third = role("third")
 
   commonConfig(
-    debugConfig(on = false).withFallback(ConfigFactory.parseString("""
-      akka.cluster.auto-down-unreachable-after = 1s
+    debugConfig(on = false)
+      .withFallback(ConfigFactory.parseString("""
+      akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+      akka.cluster.testkit.auto-down-unreachable-after = 1s
       akka.cluster.prune-gossip-tombstones-after = 1s
       akka.remote.classic.log-frame-size-exceeding = 1200b
       akka.remote.artery.advanced.aeron {
@@ -30,7 +32,8 @@ object NodeChurnMultiJvmSpec extends MultiNodeConfig {
         embedded-media-driver = off
         aeron-dir = "target/aeron-NodeChurnSpec"
       }
-      """)).withFallback(MultiNodeClusterSpec.clusterConfig))
+      """))
+      .withFallback(MultiNodeClusterSpec.clusterConfig))
 
   class LogListener(testActor: ActorRef) extends Actor {
     def receive = {

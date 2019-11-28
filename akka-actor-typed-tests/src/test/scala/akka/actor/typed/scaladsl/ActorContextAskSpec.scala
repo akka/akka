@@ -4,22 +4,21 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ ActorRef, PostStop, Props }
-import akka.testkit.EventFilter
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
+
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString("""
-      akka.loggers = ["akka.testkit.TestEventListener"]
       ping-pong-dispatcher {
         executor = thread-pool-executor
         type = PinnedDispatcher
@@ -31,9 +30,10 @@ object ActorContextAskSpec {
     """)
 }
 
-class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.config) with WordSpecLike {
-
-  implicit val untyped = system.toUntyped // FIXME #24348: eventfilter support in typed testkit
+class ActorContextAskSpec
+    extends ScalaTestWithActorTestKit(ActorContextAskSpec.config)
+    with WordSpecLike
+    with LogCapturing {
 
   "The Scala DSL ActorContext" must {
 
@@ -51,7 +51,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
       val snitch = Behaviors.setup[Pong] { context =>
         // Timeout comes from TypedAkkaSpec
 
-        context.ask(pingPong)(Ping) {
+        context.ask(pingPong, Ping) {
           case Success(_)  => Pong(context.self.path.name + "1", Thread.currentThread().getName)
           case Failure(ex) => throw ex
         }
@@ -85,7 +85,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
         }))
 
       val snitch = Behaviors.setup[AnyRef] { context =>
-        context.ask(pingPong)(Ping) {
+        context.ask(pingPong, Ping) {
           case Success(message) => throw new NotImplementedError(message.toString)
           case Failure(x)       => x
         }
@@ -104,7 +104,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
           }
       }
 
-      EventFilter[NotImplementedError](occurrences = 1, start = "Pong").intercept {
+      LoggingTestKit.error[NotImplementedError].withMessageContains("Pong").expect {
         spawn(snitch)
       }
 
@@ -115,7 +115,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
     "deal with timeouts in ask" in {
       val probe = TestProbe[AnyRef]()
       val snitch = Behaviors.setup[AnyRef] { context =>
-        context.ask[String, String](system.deadLetters)(ref => "boo") {
+        context.ask[String, String](system.deadLetters, _ => "boo") {
           case Success(m) => m
           case Failure(x) => x
         }(10.millis, implicitly[ClassTag[String]])
@@ -126,11 +126,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
         }
       }
 
-      EventFilter.warning(occurrences = 1, message = "received dead letter: boo").intercept {
-        EventFilter.info(occurrences = 1, start = "Message [java.lang.String]").intercept {
-          spawn(snitch)
-        }
-      }
+      spawn(snitch)
 
       val exc = probe.expectMessageType[TimeoutException]
       exc.getMessage should include("had already been terminated")
@@ -140,7 +136,7 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
       val target = spawn(Behaviors.ignore[String])
       val probe = TestProbe[AnyRef]()
       val snitch = Behaviors.setup[AnyRef] { context =>
-        context.ask[String, String](target)(_ => "bar") {
+        context.ask[String, String](target, _ => "bar") {
           case Success(m) => m
           case Failure(x) => x
         }(10.millis, implicitly[ClassTag[String]])
@@ -158,6 +154,37 @@ class ActorContextAskSpec extends ScalaTestWithActorTestKit(ActorContextAskSpec.
       exc.getMessage should include(target.path.toString)
       exc.getMessage should include("[java.lang.String]") // message class
       exc.getMessage should include("[10 ms]") // timeout
+    }
+
+    "receive replies in same order as sent" in {
+      case class Ping(n: Int, replyTo: ActorRef[Pong])
+      case class Pong(n: Int)
+
+      val N = 100
+      val probe = TestProbe[Pong]()
+
+      val pingPong = spawn(Behaviors.receiveMessage[Ping] { message =>
+        message.replyTo ! Pong(message.n)
+        Behaviors.same
+      })
+
+      val snitch = Behaviors.setup[Pong] { context =>
+        (1 to N).foreach { n =>
+          context.ask[Ping, Pong](pingPong, Ping(n, _)) {
+            case Success(pong) => pong
+            case Failure(ex)   => throw ex
+          }
+        }
+
+        Behaviors.receiveMessage { pong =>
+          probe.ref ! pong
+          Behaviors.same
+        }
+      }
+
+      spawn(snitch)
+
+      probe.receiveMessages(N).map(_.n) should ===(1 to N)
     }
 
   }

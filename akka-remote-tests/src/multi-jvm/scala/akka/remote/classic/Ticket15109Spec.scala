@@ -46,7 +46,7 @@ object Ticket15109Spec extends MultiNodeConfig {
 class Ticket15109SpecMultiJvmNode1 extends Ticket15109Spec
 class Ticket15109SpecMultiJvmNode2 extends Ticket15109Spec
 
-@silent // deprecated
+@silent("deprecated")
 abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
 
   import Ticket15109Spec._

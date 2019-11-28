@@ -154,6 +154,73 @@ class ClusterDomainEventSpec extends WordSpec with Matchers {
         MembershipState(g2, aUp.uniqueAddress, aUp.dataCenter, crossDcConnections = 5)) should ===(Seq())
     }
 
+    "be produced correctly for scenario in issue #24955" in {
+
+      // The scenario as seen from dc2MemberC was a sequence of reachability changes
+      // - empty
+      // - C --unreachable--> A
+      // - C --unreachable--> B
+      // - empty
+      // - B --unreachable--> C
+
+      val dc1MemberA = TestMember(Address("akka", "sys", "dc2A", 2552), Up, Set.empty[String], "dc2")
+      val dc1MemberB = TestMember(Address("akka", "sys", "dc2B", 2552), Up, Set.empty[String], "dc2")
+      val dc2MemberC = TestMember(Address("akka", "sys", "dc3A", 2552), Up, Set.empty[String], "dc3")
+
+      val members = SortedSet(dc1MemberA, dc1MemberB, dc2MemberC)
+
+      val reachability1 = Reachability.empty
+      val g1 = Gossip(members, overview = GossipOverview(reachability = reachability1))
+
+      // - C --unreachable--> A
+      // cross unreachable => UnreachableDataCenter
+      val reachability2 = reachability1.unreachable(dc2MemberC.uniqueAddress, dc1MemberA.uniqueAddress)
+      val g2 = Gossip(members, overview = GossipOverview(reachability = reachability2))
+      diffUnreachableDataCenter(
+        MembershipState(g1, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
+        MembershipState(g2, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(
+        Seq(UnreachableDataCenter(dc1MemberA.dataCenter)))
+      diffReachableDataCenter(
+        MembershipState(g1, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
+        MembershipState(g2, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+
+      // - C --unreachable--> B
+      // adding one more cross unreachable to same DC shouldn't publish anything new
+      // this was the problem in issue #24955, it published another UnreachableDataCenter
+      val reachability3 = reachability2.unreachable(dc2MemberC.uniqueAddress, dc1MemberB.uniqueAddress)
+      val g3 = Gossip(members, overview = GossipOverview(reachability = reachability3))
+      diffUnreachableDataCenter(
+        MembershipState(g2, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
+        MembershipState(g3, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+      diffReachableDataCenter(
+        MembershipState(g2, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
+        MembershipState(g3, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+
+      // - empty
+      // reachable again => ReachableDataCenter
+      val reachability4 = Reachability.empty
+      val g4 = Gossip(members, overview = GossipOverview(reachability = reachability4))
+      diffUnreachableDataCenter(
+        MembershipState(g3, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
+        MembershipState(g4, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+      diffReachableDataCenter(
+        MembershipState(g3, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
+        MembershipState(g4, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(
+        Seq(ReachableDataCenter(dc1MemberA.dataCenter)))
+
+      // - B --unreachable--> C
+      // unreachable opposite direction shouldn't publish anything new
+      val reachability5 = reachability4.unreachable(dc1MemberB.uniqueAddress, dc2MemberC.uniqueAddress)
+      val g5 = Gossip(members, overview = GossipOverview(reachability = reachability5))
+      diffUnreachableDataCenter(
+        MembershipState(g4, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
+        MembershipState(g5, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+      diffReachableDataCenter(
+        MembershipState(g4, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
+        MembershipState(g5, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+
+    }
+
     "be produced for members becoming reachable after unreachable" in {
       val reachability1 = Reachability.empty
         .unreachable(aUp.uniqueAddress, cUp.uniqueAddress)

@@ -7,7 +7,7 @@ package akka.cluster
 import language.postfixOps
 import scala.collection.immutable
 import scala.collection.immutable.{ SortedSet, VectorBuilder }
-import akka.actor.{ Actor, ActorLogging, ActorRef, Address }
+import akka.actor.{ Actor, ActorRef, Address }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ClusterEvent._
 import akka.cluster.MemberStatus._
@@ -129,21 +129,21 @@ object ClusterEvent {
     /**
      * Java API: get current unreachable set.
      */
-    @silent
+    @silent("deprecated")
     def getUnreachable: java.util.Set[Member] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachable).asJava
 
     /**
      * Java API: All data centers in the cluster
      */
-    @silent
+    @silent("deprecated")
     def getUnreachableDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(unreachableDataCenters).asJava
 
     /**
      * Java API: get current “seen-by” set.
      */
-    @silent
+    @silent("deprecated")
     def getSeenBy: java.util.Set[Address] =
       scala.collection.JavaConverters.setAsJavaSetConverter(seenBy).asJava
 
@@ -171,7 +171,7 @@ object ClusterEvent {
     /**
      * Java API: All node roles in the cluster
      */
-    @silent
+    @silent("deprecated")
     def getAllRoles: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allRoles).asJava
 
@@ -183,7 +183,7 @@ object ClusterEvent {
     /**
      * Java API: All data centers in the cluster
      */
-    @silent
+    @silent("deprecated")
     def getAllDataCenters: java.util.Set[String] =
       scala.collection.JavaConverters.setAsJavaSetConverter(allDataCenters).asJava
 
@@ -437,14 +437,13 @@ object ClusterEvent {
   /**
    * Internal API
    */
-  private[cluster] def isReachable(state: MembershipState, oldUnreachableNodes: Set[UniqueAddress])(
-      otherDc: DataCenter): Boolean = {
+  private[cluster] def isDataCenterReachable(state: MembershipState)(otherDc: DataCenter): Boolean = {
     val unrelatedDcNodes = state.latestGossip.members.collect {
       case m if m.dataCenter != otherDc && m.dataCenter != state.selfDc => m.uniqueAddress
     }
 
     val reachabilityForOtherDc = state.dcReachabilityWithoutObservationsWithin.remove(unrelatedDcNodes)
-    reachabilityForOtherDc.allUnreachable.filterNot(oldUnreachableNodes).isEmpty
+    reachabilityForOtherDc.allUnreachable.isEmpty
   }
 
   /**
@@ -457,11 +456,11 @@ object ClusterEvent {
     else {
       val otherDcs = (oldState.latestGossip.allDataCenters
           .union(newState.latestGossip.allDataCenters)) - newState.selfDc
-      otherDcs
-        .filterNot(isReachable(newState, oldState.dcReachability.allUnreachableOrTerminated))
-        .iterator
-        .map(UnreachableDataCenter)
-        .to(immutable.IndexedSeq)
+
+      val oldUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(oldState))
+      val currentUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(newState))
+
+      currentUnreachableDcs.diff(oldUnreachableDcs).iterator.map(UnreachableDataCenter).to(immutable.IndexedSeq)
     }
   }
 
@@ -476,8 +475,8 @@ object ClusterEvent {
       val otherDcs = (oldState.latestGossip.allDataCenters
           .union(newState.latestGossip.allDataCenters)) - newState.selfDc
 
-      val oldUnreachableDcs = otherDcs.filterNot(isReachable(oldState, Set()))
-      val currentUnreachableDcs = otherDcs.filterNot(isReachable(newState, Set()))
+      val oldUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(oldState))
+      val currentUnreachableDcs = otherDcs.filterNot(isDataCenterReachable(newState))
 
       oldUnreachableDcs.diff(currentUnreachableDcs).iterator.map(ReachableDataCenter).to(immutable.IndexedSeq)
     }
@@ -573,7 +572,6 @@ object ClusterEvent {
  */
 private[cluster] final class ClusterDomainEventPublisher
     extends Actor
-    with ActorLogging
     with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
   import InternalClusterAction._
 
@@ -620,7 +618,7 @@ private[cluster] final class ClusterDomainEventPublisher
 
     val unreachableDataCenters: Set[DataCenter] =
       if (!membershipState.latestGossip.isMultiDc) Set.empty
-      else membershipState.latestGossip.allDataCenters.filterNot(isReachable(membershipState, Set.empty))
+      else membershipState.latestGossip.allDataCenters.filterNot(isDataCenterReachable(membershipState))
 
     val state = new CurrentClusterState(
       members = membershipState.latestGossip.members,

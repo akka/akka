@@ -23,7 +23,7 @@ object SourceWithContext {
  * use [[FlowWithContextOps.via]] to manually provide the context propagation for otherwise unsupported
  * operations.
  *
- * Can be created by calling [[Source.asSourceWithContext()]]
+ * Can be created by calling [[Source.asSourceWithContext]]
  */
 final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Source[(Out, Ctx), Mat])
     extends GraphDelegate(delegate)
@@ -70,6 +70,9 @@ final class SourceWithContext[+Out, +Ctx, +Mat] private[stream] (delegate: Sourc
   /**
    * Connect this [[akka.stream.scaladsl.SourceWithContext]] to a [[akka.stream.scaladsl.Sink]] and run it.
    * The returned value is the materialized value of the `Sink`.
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
    */
   def runWith[Mat2](sink: Graph[SinkShape[(Out, Ctx)], Mat2])(implicit materializer: Materializer): Mat2 =
     delegate.runWith(sink)

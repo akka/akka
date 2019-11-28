@@ -9,6 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.query.EventEnvelope
@@ -19,18 +20,14 @@ import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.EventSeq
 import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
-import akka.stream.ActorMaterializer
 import akka.stream.scaladsl.Sink
-import akka.testkit.EventFilter
 import akka.testkit.JavaSerializable
-import akka.testkit.TestEvent.Mute
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 object EventSourcedEventAdapterSpec {
 
   private val conf = ConfigFactory.parseString(s"""
-      akka.loggers = [akka.testkit.TestEventListener]
       akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
       akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
     """)
@@ -85,7 +82,8 @@ object EventSourcedEventAdapterSpec {
 
 class EventSourcedEventAdapterSpec
     extends ScalaTestWithActorTestKit(EventSourcedEventAdapterSpec.conf)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
   import EventSourcedEventAdapterSpec._
   import EventSourcedBehaviorSpec.{
     counter,
@@ -99,14 +97,12 @@ class EventSourcedEventAdapterSpec
   }
 
   import akka.actor.typed.scaladsl.adapter._
-  system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   val pidCounter = new AtomicInteger(0)
-  private def nextPid(): PersistenceId = PersistenceId(s"c${pidCounter.incrementAndGet()})")
+  private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
-  implicit val materializer = ActorMaterializer()(system.toUntyped)
   val queries: LeveldbReadJournal =
-    PersistenceQuery(system.toUntyped).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+    PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): EventSourcedBehavior[String, String, String] =
     EventSourcedBehavior(pid, "", commandHandler = { (_, command) =>

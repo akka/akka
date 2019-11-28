@@ -6,22 +6,12 @@ package akka.stream.impl
 
 import java.util.function.BinaryOperator
 
-import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
-import scala.collection.mutable
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import scala.util.control.NonFatal
 import akka.NotUsed
-import akka.actor.ActorRef
-import akka.actor.Props
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.Attributes.InputBuffer
 import akka.stream._
 import akka.stream.impl.QueueSink.Output
@@ -35,6 +25,16 @@ import akka.stream.stage._
 import akka.util.ccompat._
 import org.reactivestreams.Publisher
 import org.reactivestreams.Subscriber
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.collection.mutable
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -93,10 +93,13 @@ import org.reactivestreams.Subscriber
     val proc = new VirtualPublisher[In]
     context.materializer match {
       case am: ActorMaterializer =>
-        if (am.settings.subscriptionTimeoutSettings.mode != StreamSubscriptionTimeoutTerminationMode.noop)
-          am.scheduleOnce(am.settings.subscriptionTimeoutSettings.timeout, new Runnable {
-            def run(): Unit = proc.onSubscriptionTimeout(am)
+        val StreamSubscriptionTimeout(timeout, mode) =
+          context.effectiveAttributes.mandatoryAttribute[StreamSubscriptionTimeout]
+        if (mode != StreamSubscriptionTimeoutTerminationMode.noop) {
+          am.scheduleOnce(timeout, new Runnable {
+            def run(): Unit = proc.onSubscriptionTimeout(am, mode)
           })
+        }
       case _ => // not possible to setup timeout
     }
     (proc, proc)
@@ -115,10 +118,7 @@ import org.reactivestreams.Subscriber
     extends SinkModule[In, Publisher[In]](shape) {
 
   override def create(context: MaterializationContext): (Subscriber[In], Publisher[In]) = {
-    val actorMaterializer = ActorMaterializerHelper.downcast(context.materializer)
-    val impl = actorMaterializer.actorOf(
-      context,
-      FanoutProcessorImpl.props(context.effectiveAttributes, actorMaterializer.settings))
+    val impl = context.materializer.actorOf(context, FanoutProcessorImpl.props(context.effectiveAttributes))
     val fanoutProcessor = new ActorProcessor[In, In](impl)
     // Resolve cyclic dependency with actor. This MUST be the first message no matter what.
     impl ! ExposedPublisher(fanoutProcessor.asInstanceOf[ActorPublisher[Any]])
@@ -161,28 +161,6 @@ import org.reactivestreams.Subscriber
   override protected def newInstance(shape: SinkShape[Any]): SinkModule[Any, NotUsed] =
     new CancelSink(attributes, shape)
   override def withAttributes(attr: Attributes): SinkModule[Any, NotUsed] = new CancelSink(attr, amendShape(attr))
-}
-
-/**
- * INTERNAL API
- * Creates and wraps an actor into [[org.reactivestreams.Subscriber]] from the given `props`,
- * which should be [[akka.actor.Props]] for an [[akka.stream.actor.ActorSubscriber]].
- */
-@InternalApi private[akka] final class ActorSubscriberSink[In](
-    props: Props,
-    val attributes: Attributes,
-    shape: SinkShape[In])
-    extends SinkModule[In, ActorRef](shape) {
-
-  override def create(context: MaterializationContext) = {
-    val subscriberRef = ActorMaterializerHelper.downcast(context.materializer).actorOf(context, props)
-    (akka.stream.actor.ActorSubscriber[In](subscriberRef), subscriberRef)
-  }
-
-  override protected def newInstance(shape: SinkShape[In]): SinkModule[In, ActorRef] =
-    new ActorSubscriberSink[In](props, attributes, shape)
-  override def withAttributes(attr: Attributes): SinkModule[In, ActorRef] =
-    new ActorSubscriberSink[In](props, attr, amendShape(attr))
 }
 
 /**
@@ -361,7 +339,7 @@ import org.reactivestreams.Subscriber
       override def preStart(): Unit = {
         // Allocates one additional element to hold stream
         // closed/failure indicators
-        buffer = Buffer(maxBuffer + 1, materializer)
+        buffer = Buffer(maxBuffer + 1, inheritedAttributes)
         currentRequests = Buffer(maxConcurrentPulls, materializer)
         setKeepGoing(true)
         pull(in)
@@ -551,16 +529,16 @@ import org.reactivestreams.Subscriber
  * INTERNAL API
  */
 @InternalApi final private[stream] class LazySink[T, M](sinkFactory: T => Future[Sink[T, M]])
-    extends GraphStageWithMaterializedValue[SinkShape[T], Future[Option[M]]] {
+    extends GraphStageWithMaterializedValue[SinkShape[T], Future[M]] {
   val in = Inlet[T]("lazySink.in")
   override def initialAttributes = DefaultAttributes.lazySink
   override val shape: SinkShape[T] = SinkShape.of(in)
 
   override def toString: String = "LazySink"
 
-  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
 
-    val promise = Promise[Option[M]]()
+    val promise = Promise[M]()
     val stageLogic = new GraphStageLogic(shape) with InHandler {
       var switching = false
       override def preStart(): Unit = pull(in)
@@ -576,7 +554,7 @@ import org.reactivestreams.Subscriber
               if (!promise.isCompleted) {
                 try {
                   val mat = switchTo(sink, element)
-                  promise.success(Some(mat))
+                  promise.success(mat)
                   setKeepGoing(true)
                 } catch {
                   case NonFatal(e) =>
@@ -604,7 +582,7 @@ import org.reactivestreams.Subscriber
           // there is a cached element -> the stage must not be shut down automatically because isClosed(in) is satisfied
           setKeepGoing(true)
         } else {
-          promise.success(None)
+          promise.failure(new NeverMaterializedException)
           super.onUpstreamFinish()
         }
       }
@@ -672,10 +650,9 @@ import org.reactivestreams.Subscriber
               }
             }
           }
-          override def onDownstreamFinish(): Unit = {
-            if (!isClosed(in)) {
-              cancel(in)
-            }
+
+          override def onDownstreamFinish(cause: Throwable): Unit = {
+            if (!isClosed(in)) cancel(in, cause)
             maybeCompleteStage()
           }
         })

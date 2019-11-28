@@ -8,7 +8,7 @@ import akka.actor.ExtendedActorSystem
 import akka.event.Logging
 import akka.remote.ContainerFormats
 import akka.serialization.{ SerializationExtension, Serializers }
-import akka.protobuf.ByteString
+import akka.protobufv3.internal.ByteString
 import akka.serialization.DisabledJavaSerializer
 
 /**

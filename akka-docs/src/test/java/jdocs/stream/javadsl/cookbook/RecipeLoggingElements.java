@@ -8,9 +8,7 @@ import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.event.Logging;
 import akka.event.LoggingAdapter;
-import akka.stream.ActorMaterializer;
 import akka.stream.Attributes;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.testkit.DebugFilter;
@@ -26,7 +24,6 @@ import java.util.Arrays;
 
 public class RecipeLoggingElements extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
@@ -35,14 +32,12 @@ public class RecipeLoggingElements extends RecipeTest {
             "RecipeLoggingElements",
             ConfigFactory.parseString(
                 "akka.loglevel=DEBUG\nakka.loggers = [akka.testkit.TestEventListener]"));
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   @Test
@@ -95,7 +90,7 @@ public class RecipeLoggingElements extends RecipeTest {
             .intercept(
                 new AbstractFunction0<Object>() {
                   public Void apply() {
-                    mySource.log("custom", adapter).runWith(Sink.ignore(), mat);
+                    mySource.log("custom", adapter).runWith(Sink.ignore(), system);
                     return null;
                   }
                 },
@@ -112,7 +107,7 @@ public class RecipeLoggingElements extends RecipeTest {
         Source.from(Arrays.asList(-1, 0, 1))
             .map(x -> 1 / x) // throwing ArithmeticException: / by zero
             .log("error logging")
-            .runWith(Sink.ignore(), mat);
+            .runWith(Sink.ignore(), system);
         // #log-error
       }
     };

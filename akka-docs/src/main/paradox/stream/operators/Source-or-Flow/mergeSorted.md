@@ -17,6 +17,7 @@ Merge multiple sources.
 Merge multiple sources. Waits for one element to be ready from each input stream and emits the
 smallest element.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

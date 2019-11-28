@@ -57,7 +57,6 @@ import scala.concurrent.duration.FiniteDuration
           case oneForOne: OneForOneStrategy => oneForOne.maxNrOfRetries
           case _                            => -1
         }
-
         val nextRestartCount = restartCount + 1
 
         if (maxNrOfRetries == -1 || nextRestartCount <= maxNrOfRetries) {

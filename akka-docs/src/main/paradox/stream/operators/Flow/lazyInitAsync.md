@@ -1,6 +1,6 @@
 # Flow.lazyInitAsync
 
-Creates a real `Flow` upon receiving the first element by calling relevant `flowFactory` given as an argument.
+`lazyInitAsync` has been deprecated in 2.6.0 use `Flow.lazyFutureFlow` in combination with `prefixAndTail` instead.
 
 @ref[Simple operators](../index.md#simple-operators)
 
@@ -14,18 +14,11 @@ Creates a real `Flow` upon receiving the first element by calling relevant `flow
 
 ## Description
 
-Creates a real `Flow` upon receiving the first element by calling relevant `flowFactory` given as an argument.
-Internal `Flow` will not be created if there are no elements, because of completion or error.
-The materialized value of the `Flow` will be the materialized value of the created internal flow.
+`fromCompletionStage` has been deprecated in 2.6.0 use @ref:[lazyFutureFlow](lazyFutureFlow.md) in combination with `prefixAndTail` instead.
 
-The materialized value of the `Flow` is a @scala[`Future[Option[M]]`]@java[`CompletionStage<Optional<M>>`] that is 
-completed with @scala[`Some(mat)`]@java[`Optional.of(mat)`] when the internal flow gets materialized or with @scala[`None`]
-@java[an empty optional] when there where no elements. If the flow materialization (including the call of the `flowFactory`) 
-fails then the future is completed with a failure.
+Defers creation until a first element arrives.
 
-Adheres to the @scala[@scaladoc[`ActorAttributes.SupervisionStrategy`](akka.stream.ActorAttributes$$SupervisionStrategy)]
-@java[`ActorAttributes.SupervisionStrategy`] attribute.
-
+## Reactive Streams semantics
 
 @@@div { .callout }
 

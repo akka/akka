@@ -36,10 +36,7 @@ public class StageTest extends StreamTest {
     final JavaIdentityStage<Integer> identity = new JavaIdentityStage<Integer>();
 
     final CompletionStage<List<Integer>> result =
-        ints.via(identity)
-            .via(identity)
-            .grouped(1000)
-            .runWith(Sink.<List<Integer>>head(), materializer);
+        ints.via(identity).via(identity).grouped(1000).runWith(Sink.<List<Integer>>head(), system);
 
     assertEquals(
         Arrays.asList(0, 1, 2, 3, 4, 5), result.toCompletableFuture().get(3, TimeUnit.SECONDS));

@@ -1,17 +1,9 @@
 # Classic Distributed Publish Subscribe in Cluster
 
-@@@ note
+@@include[includes.md](includes.md) { #actor-api }
+For the new API see FIXME https://github.com/akka/akka/issues/26338.
 
-Akka Classic is the original Actor APIs, which have been improved by more type safe and guided Actor APIs, 
-known as Akka Typed. Akka Classic is still fully supported and existing applications can continue to use 
-the classic APIs. It is also possible to use Akka Typed together with classic actors within the same 
-ActorSystem, see @ref[coexistence](typed/coexisting.md). For new projects we recommend using the new Actor APIs.
-
-For the new API see FIXME https://github.com/akka/akka/issues/26338
-
-@@@
-
-## Dependency
+## Module info
 
 To use Distributed Publish Subscribe you must add the following dependency in your project:
 
@@ -20,6 +12,8 @@ To use Distributed Publish Subscribe you must add the following dependency in yo
   artifact="akka-cluster-tools_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-cluster-tools" }
 
 ## Introduction
 
@@ -42,7 +36,7 @@ a few seconds. Changes are only performed in the own part of the registry and th
 changes are versioned. Deltas are disseminated in a scalable way to other nodes with
 a gossip protocol.
 
-Cluster members with status @ref:[WeaklyUp](cluster-usage.md#weakly-up),
+Cluster members with status @ref:[WeaklyUp](typed/cluster-membership.md#weakly-up),
 will participate in Distributed Publish Subscribe, i.e. subscribers on nodes with
 `WeaklyUp` status will receive published messages if the publisher and subscriber are on
 same side of a network partition.
@@ -51,7 +45,7 @@ You can send messages via the mediator on any node to registered actors on
 any other node.
 
 There a two different modes of message delivery, explained in the sections
-[Publish](#distributed-pub-sub-publish) and [Send](#distributed-pub-sub-send) below.
+@ref:[Publish](#distributed-pub-sub-publish) and @ref:[Send](#distributed-pub-sub-send) below.
 
 @@@ div { .group-scala }
 
@@ -239,4 +233,4 @@ akka.extensions = ["akka.cluster.pubsub.DistributedPubSub"]
 As in @ref:[Message Delivery Reliability](general/message-delivery-reliability.md) of Akka, message delivery guarantee in distributed pub sub modes is **at-most-once delivery**.
 In other words, messages can be lost over the wire.
 
-If you are looking for at-least-once delivery guarantee, we recommend [Kafka Akka Streams integration](http://doc.akka.io/docs/akka-stream-kafka/current/home.html).
+If you are looking for at-least-once delivery guarantee, we recommend [Alpakka Kafka](https://doc.akka.io/docs/alpakka-kafka/current/).

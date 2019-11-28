@@ -68,7 +68,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    * in order to keep updating the state state.
    *
    * For that reason it is strongly discouraged to perform side-effects in this handler;
-   * Side effects should be executed in `andThen` or `recoveryCompleted` blocks.
+   * Side effects should be executed in `thenRun` or `recoveryCompleted` blocks.
    */
   protected def eventHandler(): EventHandler[State, Event]
 
@@ -157,7 +157,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
 
   /**
    * Transform the state into another type before giving it to and from the journal. Can be used
-   * to migrate from different state types e.g. when migration from PersistentFSM to Typed Persistence
+   * to migrate from different state types e.g. when migration from PersistentFSM to Typed EventSourcedBehavior.
    */
   def snapshotAdapter(): SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State]
 
@@ -212,7 +212,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
 /**
  * A [[EventSourcedBehavior]] that is enforcing that replies to commands are not forgotten.
  * There will be compilation errors if the returned effect isn't a [[ReplyEffect]], which can be
- * created with `Effects().reply`, `Effects().noReply`, [[Effect.thenReply]], or [[Effect.thenNoReply]].
+ * created with `Effects().reply`, `Effects().noReply`, [[EffectBuilder.thenReply]], or [[EffectBuilder.thenNoReply]].
  */
 abstract class EventSourcedBehaviorWithEnforcedReplies[Command, Event, State](
     persistenceId: PersistenceId,

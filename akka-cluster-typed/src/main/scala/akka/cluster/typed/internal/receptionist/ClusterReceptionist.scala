@@ -8,7 +8,7 @@ import akka.actor.typed.internal.receptionist.{ AbstractServiceKey, Receptionist
 import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, LoggerOps }
 import akka.actor.typed.{ ActorRef, Behavior, Terminated }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberRemoved
@@ -16,14 +16,17 @@ import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
 import akka.remote.AddressUidExtension
 import akka.util.TypedMultiMap
-import scala.concurrent.duration._
 
+import scala.concurrent.duration._
 import akka.actor.Address
 import akka.cluster.ClusterEvent.ClusterDomainEvent
 import akka.cluster.ClusterEvent.ClusterShuttingDown
 import akka.cluster.ClusterEvent.MemberJoined
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
+import akka.cluster.ClusterEvent.ReachabilityEvent
+import akka.cluster.ClusterEvent.ReachableMember
+import akka.cluster.ClusterEvent.UnreachableMember
 import akka.cluster.ddata.SelfUniqueAddress
 
 // just to provide a log class
@@ -60,6 +63,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
       extends InternalCommand
   private final case class NodeAdded(addresses: UniqueAddress) extends InternalCommand
   private final case class NodeRemoved(addresses: UniqueAddress) extends InternalCommand
+  private final case class NodeUnreachable(addresses: UniqueAddress) extends InternalCommand
+  private final case class NodeReachable(addresses: UniqueAddress) extends InternalCommand
   private final case class ChangeFromReplicator(key: DDataKey, value: ORMultiMap[ServiceKey[_], Entry])
       extends InternalCommand
   private case object RemoveTick extends InternalCommand
@@ -67,14 +72,14 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   // captures setup/dependencies so we can avoid doing it over and over again
   final class Setup(ctx: ActorContext[Command]) {
-    val untypedSystem = ctx.system.toUntyped
+    val classicSystem = ctx.system.toClassic
     val settings = ClusterReceptionistSettings(ctx.system)
-    val selfSystemUid = AddressUidExtension(untypedSystem).longAddressUid
+    val selfSystemUid = AddressUidExtension(classicSystem).longAddressUid
     lazy val keepTombstonesFor = cluster.settings.PruneGossipTombstonesAfter match {
       case f: FiniteDuration => f
       case _                 => throw new IllegalStateException("Cannot actually happen")
     }
-    val cluster = Cluster(untypedSystem)
+    val cluster = Cluster(classicSystem)
     // don't use DistributedData.selfUniqueAddress here, because that will initialize extension, which
     // isn't used otherwise by the ClusterReceptionist
     implicit val selfNodeAddress = SelfUniqueAddress(cluster.selfUniqueAddress)
@@ -87,7 +92,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
   override def behavior: Behavior[Command] =
     Behaviors.setup { ctx =>
-      ctx.setLoggerClass(classOf[ClusterReceptionist])
+      ctx.setLoggerName(classOf[ClusterReceptionist])
       Behaviors.withTimers { timers =>
         val setup = new Setup(ctx)
         // include selfUniqueAddress so that it can be used locally before joining cluster
@@ -103,36 +108,39 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           }
 
         registry.allDdataKeys.foreach(key =>
-          setup.replicator ! Replicator.Subscribe(key, replicatorMessageAdapter.toUntyped))
+          setup.replicator ! Replicator.Subscribe(key, replicatorMessageAdapter.toClassic))
 
         // keep track of cluster members
         // remove entries when members are removed
         val clusterEventMessageAdapter: ActorRef[ClusterDomainEvent] =
           ctx.messageAdapter[ClusterDomainEvent] {
-            case MemberJoined(member)     => NodeAdded(member.uniqueAddress)
-            case MemberWeaklyUp(member)   => NodeAdded(member.uniqueAddress)
-            case MemberUp(member)         => NodeAdded(member.uniqueAddress)
-            case MemberRemoved(member, _) => NodeRemoved(member.uniqueAddress)
-            case ClusterShuttingDown      => NodeRemoved(setup.cluster.selfUniqueAddress)
+            case MemberJoined(member)      => NodeAdded(member.uniqueAddress)
+            case MemberWeaklyUp(member)    => NodeAdded(member.uniqueAddress)
+            case MemberUp(member)          => NodeAdded(member.uniqueAddress)
+            case MemberRemoved(member, _)  => NodeRemoved(member.uniqueAddress)
+            case UnreachableMember(member) => NodeUnreachable(member.uniqueAddress)
+            case ReachableMember(member)   => NodeReachable(member.uniqueAddress)
+            case ClusterShuttingDown       => NodeRemoved(setup.cluster.selfUniqueAddress)
             case other =>
               throw new IllegalStateException(s"Unexpected ClusterDomainEvent $other. Please report bug.")
           }
         setup.cluster.subscribe(
-          clusterEventMessageAdapter.toUntyped,
+          clusterEventMessageAdapter.toClassic,
           ClusterEvent.InitialStateAsEvents,
           classOf[MemberJoined],
           classOf[MemberWeaklyUp],
           classOf[MemberUp],
           classOf[MemberRemoved],
+          classOf[ReachabilityEvent],
           ClusterShuttingDown.getClass)
 
         // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
         // which is possible for OR CRDTs - done with an adapter to leverage the existing NodesRemoved message
-        timers.startTimerWithFixedDelay("remove-nodes", RemoveTick, setup.settings.pruningInterval)
+        timers.startTimerWithFixedDelay(RemoveTick, setup.settings.pruningInterval)
 
         // default tomstone keepalive is 24h (based on prune-gossip-tombstones-after) and keeping the actorrefs
         // around isn't very costly so don't prune often
-        timers.startTimerWithFixedDelay("prune-tombstones", PruneTombstonesTick, setup.keepTombstonesFor / 24)
+        timers.startTimerWithFixedDelay(PruneTombstonesTick, setup.keepTombstonesFor / 24)
 
         behavior(setup, registry, TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV])
       }
@@ -186,7 +194,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
           if (removals.nonEmpty) {
             if (ctx.log.isDebugEnabled)
-              ctx.log.debug(
+              ctx.log.debugN(
                 "ClusterReceptionist [{}] - Node(s) removed [{}], updating registry removing entries: [{}]",
                 cluster.selfAddress,
                 addresses.mkString(","),
@@ -211,11 +219,26 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         }
       }
 
+      def reachabilityChanged(keysForNode: Set[AbstractServiceKey], newRegistry: ShardedServiceRegistry): Unit = {
+        keysForNode.foreach { changedKey =>
+          val serviceKey = changedKey.asServiceKey
+
+          val subscribers = subscriptions.get(changedKey)
+          if (subscribers.nonEmpty) {
+            val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
+            val listing =
+              ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved = false)
+            subscribers.foreach(_ ! listing)
+          }
+        }
+      }
+
       def onCommand(cmd: Command): Behavior[Command] = cmd match {
         case ReceptionistMessages.Register(key, serviceInstance, maybeReplyTo) =>
           if (serviceInstance.path.address.hasLocalScope) {
             val entry = Entry(serviceInstance, setup.selfSystemUid)
-            ctx.log.debug("ClusterReceptionist [{}] - Actor was registered: [{}] [{}]", cluster.selfAddress, key, entry)
+            ctx.log
+              .debugN("ClusterReceptionist [{}] - Actor was registered: [{}] [{}]", cluster.selfAddress, key, entry)
             watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
             maybeReplyTo match {
               case Some(replyTo) => replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
@@ -226,20 +249,23 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               ServiceRegistry(registry).addBinding(key, entry).toORMultiMap
             }
           } else {
-            ctx.log.error(s"ClusterReceptionist [{}] - Register of non-local [{}] is not supported", serviceInstance)
+            ctx.log.error("ClusterReceptionist [{}] - Register of non-local [{}] is not supported", serviceInstance)
           }
           Behaviors.same
 
         case ReceptionistMessages.Find(key, replyTo) =>
-          replyTo ! ReceptionistMessages.Listing(key.asServiceKey, registry.activeActorRefsFor(key, selfUniqueAddress))
+          val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
+          replyTo ! ReceptionistMessages.Listing(key.asServiceKey, reachable, all, servicesWereAddedOrRemoved = true)
           Behaviors.same
 
         case ReceptionistMessages.Subscribe(key, subscriber) =>
           watchWith(ctx, subscriber, SubscriberTerminated(key, subscriber))
 
           // immediately reply with initial listings to the new subscriber
-          val listing =
-            ReceptionistMessages.Listing(key.asServiceKey, registry.activeActorRefsFor(key, selfUniqueAddress))
+          val listing = {
+            val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
+            ReceptionistMessages.Listing(key.asServiceKey, reachable, all, servicesWereAddedOrRemoved = true)
+          }
           subscriber ! listing
 
           next(newSubscriptions = subscriptions.inserted(key)(subscriber))
@@ -252,7 +278,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
         case RegisteredActorTerminated(key, serviceInstance) =>
           val entry = Entry(serviceInstance, setup.selfSystemUid)
-          ctx.log.debug(
+          ctx.log.debugN(
             "ClusterReceptionist [{}] - Registered actor terminated: [{}] [{}]",
             cluster.selfAddress,
             key.asServiceKey.id,
@@ -272,7 +298,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           val newRegistry = registry.withServiceRegistry(ddataKey, newState)
           if (changedKeys.nonEmpty) {
             if (ctx.log.isDebugEnabled) {
-              ctx.log.debug(
+              ctx.log.debugN(
                 "ClusterReceptionist [{}] - Change from replicator: [{}], changes: [{}], tombstones [{}]",
                 cluster.selfAddress,
                 newState.entries.entries,
@@ -287,9 +313,9 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
               val subscribers = subscriptions.get(changedKey)
               if (subscribers.nonEmpty) {
+                val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
                 val listing =
-                  ReceptionistMessages
-                    .Listing(serviceKey, newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress))
+                  ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved = true)
                 subscribers.foreach(_ ! listing)
               }
 
@@ -298,7 +324,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               val tombstonedButReAdded = newRegistry.actorRefsFor(serviceKey).filter(newRegistry.hasTombstone)
               if (tombstonedButReAdded.nonEmpty) {
                 if (ctx.log.isDebugEnabled)
-                  ctx.log.debug(
+                  ctx.log.debug2(
                     "ClusterReceptionist [{}] - Saw ActorRefs that were tomstoned [{}], re-removing.",
                     cluster.selfAddress,
                     tombstonedButReAdded.mkString(", "))
@@ -330,7 +356,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           } else {
             // Ok to update from several nodes but more efficient to try to do it from one node.
             if (isLeader) {
-              ctx.log.debug(
+              ctx.log.debug2(
                 "ClusterReceptionist [{}] - Leader node observed removed node [{}]",
                 cluster.selfAddress,
                 uniqueAddress)
@@ -339,6 +365,30 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
             next(registry.removeNode(uniqueAddress))
           }
+
+        case NodeUnreachable(uniqueAddress) =>
+          val keysForNode = registry.keysFor(uniqueAddress)
+          val newRegistry = registry.addUnreachable(uniqueAddress)
+          if (keysForNode.nonEmpty) {
+            ctx.log.debug2(
+              "ClusterReceptionist [{}] - Node with registered services unreachable [{}]",
+              cluster.selfAddress,
+              uniqueAddress)
+            reachabilityChanged(keysForNode, newRegistry)
+          }
+          next(newRegistry)
+
+        case NodeReachable(uniqueAddress) =>
+          val keysForNode = registry.keysFor(uniqueAddress)
+          val newRegistry = registry.removeUnreachable(uniqueAddress)
+          if (keysForNode.nonEmpty) {
+            ctx.log.debug2(
+              "ClusterReceptionist [{}] - Node with registered services reachable again [{}]",
+              cluster.selfAddress,
+              uniqueAddress)
+            reachabilityChanged(keysForNode, newRegistry)
+          }
+          next(newRegistry)
 
         case RemoveTick =>
           // ok to update from several nodes but more efficient to try to do it from one node
@@ -349,7 +399,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             if (notInCluster.isEmpty) Behaviors.same
             else {
               if (ctx.log.isDebugEnabled)
-                ctx.log.debug(
+                ctx.log.debug2(
                   "ClusterReceptionist [{}] - Leader node cleanup tick, removed nodes: [{}]",
                   cluster.selfAddress,
                   notInCluster.mkString(","))

@@ -253,10 +253,7 @@ class FSMActorSpec extends AkkaSpec(Map("akka.actor.debug.fsm" -> true)) with Im
     "log events and transitions if asked to do so" in {
       import akka.util.ccompat.JavaConverters._
       val config = ConfigFactory
-        .parseMap(Map(
-          "akka.loglevel" -> "DEBUG",
-          "akka.actor.serialize-messages" -> "off",
-          "akka.actor.debug.fsm" -> true).asJava)
+        .parseMap(Map("akka.loglevel" -> "DEBUG", "akka.actor.debug.fsm" -> true).asJava)
         .withFallback(system.settings.config)
       val fsmEventSystem = ActorSystem("fsmEvent", config)
       try {

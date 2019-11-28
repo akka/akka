@@ -11,7 +11,7 @@ import java.util.stream.{ Collector, StreamSupport }
 import akka.stream.{ Attributes, IOResult, SinkShape }
 import akka.stream.impl._
 import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamSink, OutputStreamSourceStage }
+import akka.stream.impl.io.{ InputStreamSinkStage, InputStreamSource, OutputStreamGraphStage, OutputStreamSourceStage }
 import akka.util.ByteString
 
 import scala.concurrent.duration.Duration._
@@ -24,8 +24,6 @@ import akka.NotUsed
  */
 object StreamConverters {
 
-  import Sink.{ shape => sinkShape }
-
   /**
    * Creates a Source from an [[InputStream]] created by the given function.
    * Emitted elements are up to `chunkSize` sized [[akka.util.ByteString]] elements.
@@ -37,7 +35,8 @@ object StreamConverters {
    * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[Future]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
-   * and a possible exception if IO operation was not completed successfully.
+   * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
+   * not give any guarantee that the bytes were seen by downstream stages.
    *
    * The created [[InputStream]] will be closed when the [[Source]] is cancelled.
    *
@@ -79,8 +78,7 @@ object StreamConverters {
    * will cancel the stream when the [[OutputStream]] is no longer writable.
    */
   def fromOutputStream(out: () => OutputStream, autoFlush: Boolean = false): Sink[ByteString, Future[IOResult]] =
-    Sink.fromGraph(
-      new OutputStreamSink(out, DefaultAttributes.outputStreamSink, sinkShape("OutputStreamSink"), autoFlush))
+    Sink.fromGraph(new OutputStreamGraphStage(out, autoFlush))
 
   /**
    * Creates a Sink which when materialized will return an [[InputStream]] which it is possible

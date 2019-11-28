@@ -1,3 +1,6 @@
+---
+project.description: Binary compatibility across Akka versions.
+---
 # Binary Compatibility Rules
 
 Akka maintains and verifies *backwards binary compatibility* across versions of modules.
@@ -12,7 +15,7 @@ This means that the new JARs are a drop-in replacement for the old one
 
 Binary compatibility is maintained between:
 
- * **minor** and **patch** versions - please note that the meaning of "minor" has shifted to be more restrictive with Akka `2.4.0`, read [Change in versioning scheme](#24versioningchange) for details.
+ * **minor** and **patch** versions - please note that the meaning of "minor" has shifted to be more restrictive with Akka `2.4.0`, read @ref:[Change in versioning scheme](#24versioningchange) for details.
 
 Binary compatibility is **NOT** maintained between:
 
@@ -20,7 +23,7 @@ Binary compatibility is **NOT** maintained between:
  * any versions of **may change** modules – read @ref:[Modules marked "May Change"](may-change.md) for details
  * a few notable exclusions explained below
 
-Specific examples (please read [Change in versioning scheme](#24versioningchange) to understand the difference in "before 2.4 era" and "after 2.4 era"):
+Specific examples (please read @ref:[Change in versioning scheme](#24versioningchange) to understand the difference in "before 2.4 era" and "after 2.4 era"):
 
 ```
 # [epoch.major.minor] era
@@ -83,6 +86,22 @@ This is because modules may assume internals changes across module boundaries, f
 in Clustering may have required an internals change in Actor, however it is not public API, 
 thus such change is considered safe.
 
+If you accidentally mix Akka versions, for example through transitive
+dependencies, you might get a warning at run time such as:
+
+```
+Detected possible incompatible versions on the classpath. Please note that a given Akka version MUST be the same
+across all modules of Akka that you are using, e.g. if you use [2.5.20] all other modules that are released together
+MUST be of the same version. Make sure you're using a compatible set of libraries. Possibly conflicting versions
+[2.5.19, 2.5.20] in libraries [akka-persistence:2.5.19, akka-cluster-sharding:2.5.19, akka-protobuf:2.5.19,
+akka-persistence-query:2.5.19, akka-actor:2.5.20, akka-slf4j:2.5.19, akka-remote:2.5.19, akka-cluster:2.5.19,
+akka-distributed-data:2.5.19, akka-stream:2.5.19, akka-cluster-tools:2.5.19]
+```
+
+The fix is typically to pick the highest Akka version, and add explicit
+dependencies to your project as needed. For example, in the example above
+you might want to add dependencies for 2.5.20.
+
 @@@ note
 
 We recommend keeping an `akkaVersion` variable in your build file, and re-use it for all
@@ -136,8 +155,8 @@ possible, however these markers allow to experiment, gather feedback and stabili
 
 ## Binary Compatibility Checking Toolchain
 
-Akka uses the Lightbend maintained [Migration Manager](https://github.com/typesafehub/migration-manager), 
-called `MiMa` for short, for enforcing binary compatibility is kept where it was promised.
+Akka uses the Lightbend maintained [MiMa](https://github.com/lightbend/mima),
+for enforcing binary compatibility is kept where it was promised.
 
 All Pull Requests must pass MiMa validation (which happens automatically), and if failures are detected,
 manual exception overrides may be put in place if the change happened to be in an Internal API for example.

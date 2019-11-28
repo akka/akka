@@ -8,8 +8,6 @@ import akka.Done;
 import akka.actor.ActorSystem;
 import akka.dispatch.Futures;
 import akka.japi.pf.PFBuilder;
-import akka.stream.ActorMaterializer;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Keep;
 import akka.stream.javadsl.Source;
 import akka.stream.testkit.TestSubscriber;
@@ -32,20 +30,17 @@ import static org.junit.Assert.assertEquals;
 
 public class RecipeAdhocSourceTest extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
   Duration duration200mills = Duration.ofMillis(200);
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeAdhocSource");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   // #adhoc-source
@@ -93,7 +88,7 @@ public class RecipeAdhocSourceTest extends RecipeTest {
         TestSubscriber.Probe<String> probe =
             adhocSource(Source.repeat("a"), duration200mills, 3)
                 .toMat(TestSink.probe(system), Keep.right())
-                .run(mat);
+                .run(system);
         probe.requestNext("a");
       }
     };
@@ -113,7 +108,7 @@ public class RecipeAdhocSourceTest extends RecipeTest {
                     duration200mills,
                     3)
                 .toMat(TestSink.probe(system), Keep.right())
-                .run(mat);
+                .run(system);
 
         probe.requestNext("a");
         Thread.sleep(300);
@@ -136,7 +131,7 @@ public class RecipeAdhocSourceTest extends RecipeTest {
                     duration200mills,
                     3)
                 .toMat(TestSink.probe(system), Keep.right())
-                .run(mat);
+                .run(system);
 
         probe.requestNext("a");
         Thread.sleep(100);
@@ -174,7 +169,7 @@ public class RecipeAdhocSourceTest extends RecipeTest {
                     duration200mills,
                     3)
                 .toMat(TestSink.probe(system), Keep.right())
-                .run(mat);
+                .run(system);
 
         probe.requestNext("a");
         assertEquals(1, startedCount.get());
@@ -204,7 +199,7 @@ public class RecipeAdhocSourceTest extends RecipeTest {
                     duration200mills,
                     3)
                 .toMat(TestSink.probe(system), Keep.right())
-                .run(mat);
+                .run(system);
 
         probe.requestNext("a");
         assertEquals(1, startedCount.get());

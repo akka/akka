@@ -25,7 +25,7 @@ import akka.stream.stage._
     onFailureMessage: (Throwable) => Any)
     extends GraphStage[SinkShape[In]] {
   val in: Inlet[In] = Inlet[In]("ActorRefBackpressureSink.in")
-  override def initialAttributes = DefaultAttributes.actorRefWithAck
+  override def initialAttributes = DefaultAttributes.actorRefWithBackpressureSink
   override val shape: SinkShape[In] = SinkShape(in)
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =

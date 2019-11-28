@@ -45,7 +45,7 @@ final class RemoteSettings(val config: Config) {
   /**
    * INTERNAL API
    */
-  @silent
+  @silent("deprecated")
   @InternalApi private[akka] def untrustedMode: Boolean =
     if (Artery.Enabled) Artery.UntrustedMode else UntrustedMode
   @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
@@ -67,7 +67,7 @@ final class RemoteSettings(val config: Config) {
   @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
   val Dispatcher: String = getString("akka.remote.classic.use-dispatcher")
 
-  @silent
+  @silent("deprecated")
   def configureDispatcher(props: Props): Props =
     if (Artery.Enabled) {
       if (Artery.Advanced.Dispatcher.isEmpty) props else props.withDispatcher(Artery.Advanced.Dispatcher)
@@ -160,9 +160,9 @@ final class RemoteSettings(val config: Config) {
   }.requiring(_.duration > Duration.Zero, "command-ack-timeout must be > 0")
 
   val UseUnsafeRemoteFeaturesWithoutCluster: Boolean = getBoolean(
-    "akka.remote.use-unsafe-remote-features-without-cluster")
+    "akka.remote.use-unsafe-remote-features-outside-cluster")
 
-  val WarnUnsafeWatchWithoutCluster: Boolean = getBoolean("akka.remote.warn-unsafe-watch-without-cluster")
+  val WarnUnsafeWatchWithoutCluster: Boolean = getBoolean("akka.remote.warn-unsafe-watch-outside-cluster")
 
   val WatchFailureDetectorConfig: Config = getConfig("akka.remote.watch-failure-detector")
   val WatchFailureDetectorImplementationClass: String = WatchFailureDetectorConfig.getString("implementation-class")

@@ -29,11 +29,31 @@ trait TimerScheduler[T] {
    * the reciprocal of the specified `delay`.
    *
    * Each timer has a key and if a new timer with same key is started
-   * the previous is cancelled and it's guaranteed that a message from the
-   * previous timer is not received, even though it might already be enqueued
-   * in the mailbox when the new timer is started.
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already be enqueued
+   * in the mailbox before the new timer was started.
    */
   def startTimerWithFixedDelay(key: Any, msg: T, delay: FiniteDuration): Unit
+
+  /**
+   * Schedules a message to be sent repeatedly to the `self` actor with a
+   * fixed `delay` between messages.
+   *
+   * It will not compensate the delay between messages if scheduling is delayed
+   * longer than specified for some reason. The delay between sending of subsequent
+   * messages will always be (at least) the given `delay`.
+   *
+   * In the long run, the frequency of messages will generally be slightly lower than
+   * the reciprocal of the specified `delay`.
+   *
+   * When a new timer is started with the same message,
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started. If you do not want this,
+   * you can start start them as individual timers by specifying distinct keys.
+   */
+  def startTimerWithFixedDelay(msg: T, delay: FiniteDuration): Unit =
+    startTimerWithFixedDelay(msg, msg, delay)
 
   /**
    * Schedules a message to be sent repeatedly to the `self` actor with a
@@ -56,11 +76,40 @@ trait TimerScheduler[T] {
    * Therefore `startTimerWithFixedDelay` is often preferred.
    *
    * Each timer has a key and if a new timer with same key is started
-   * the previous is cancelled and it's guaranteed that a message from the
-   * previous timer is not received, even though it might already be enqueued
-   * in the mailbox when the new timer is started.
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started.
    */
   def startTimerAtFixedRate(key: Any, msg: T, interval: FiniteDuration): Unit
+
+  /**
+   * Schedules a message to be sent repeatedly to the `self` actor with a
+   * given frequency.
+   *
+   * It will compensate the delay for a subsequent message if the sending of previous
+   * message was delayed more than specified. In such cases, the actual message interval
+   * will differ from the interval passed to the method.
+   *
+   * If the execution is delayed longer than the `interval`, the subsequent message will
+   * be sent immediately after the prior one. This also has the consequence that after
+   * long garbage collection pauses or other reasons when the JVM was suspended all
+   * "missed" messages will be sent when the process wakes up again.
+   *
+   * In the long run, the frequency of messages will be exactly the reciprocal of the
+   * specified `interval`.
+   *
+   * Warning: `startTimerAtFixedRate` can result in bursts of scheduled messages after long
+   * garbage collection pauses, which may in worst case cause undesired load on the system.
+   * Therefore `startTimerWithFixedDelay` is often preferred.
+   *
+   * When a new timer is started with the same message
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started. If you do not want this,
+   * you can start start them as individual timers by specifying distinct keys.
+   */
+  def startTimerAtFixedRate(msg: T, interval: FiniteDuration): Unit =
+    startTimerAtFixedRate(msg, msg, interval)
 
   /**
    * Deprecated API: See [[TimerScheduler#startTimerWithFixedDelay]] or [[TimerScheduler#startTimerAtFixedRate]].
@@ -76,11 +125,24 @@ trait TimerScheduler[T] {
    * the given `delay`.
    *
    * Each timer has a key and if a new timer with same key is started
-   * the previous is cancelled and it's guaranteed that a message from the
-   * previous timer is not received, even though it might already be enqueued
-   * in the mailbox when the new timer is started.
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started.
    */
   def startSingleTimer(key: Any, msg: T, delay: FiniteDuration): Unit
+
+  /**
+   * Start a timer that will send `msg` once to the `self` actor after
+   * the given `delay`.
+   *
+   * If a new timer is started with the same message
+   * the previous is cancelled. It is guaranteed that a message from the
+   * previous timer is not received, even if it was already enqueued
+   * in the mailbox when the new timer was started. If you do not want this,
+   * you can start start them as individual timers by specifying distinct keys.
+   */
+  def startSingleTimer(msg: T, delay: FiniteDuration): Unit =
+    startSingleTimer(msg, msg, delay)
 
   /**
    * Check if a timer with a given `key` is active.

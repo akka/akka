@@ -5,22 +5,19 @@
 package akka.actor
 
 import java.util
-
 import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Future
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
 
 import akka.Done
-import akka.testkit.{ AkkaSpec, EventFilter, TestKit }
+import akka.testkit.{ AkkaSpec, EventFilter, TestKit, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import akka.actor.CoordinatedShutdown.Phase
 import akka.actor.CoordinatedShutdown.UnknownReason
-
 import akka.util.ccompat.JavaConverters._
-import scala.concurrent.Promise
-import java.util.concurrent.TimeoutException
+import java.util.concurrent.{ Executors, TimeoutException }
 
 import akka.ConfigurationException
+import akka.dispatch.ExecutionContexts
 
 class CoordinatedShutdownSpec
     extends AkkaSpec(ConfigFactory.parseString("""
@@ -33,6 +30,7 @@ class CoordinatedShutdownSpec
   // some convenience to make the test readable
   def phase(dependsOn: String*): Phase = Phase(dependsOn.toSet, timeout = 10.seconds, recover = true, enabled = true)
   val emptyPhase: Phase = Phase(Set.empty, timeout = 10.seconds, recover = true, enabled = true)
+  val abortingPhase: Phase = Phase(Set.empty, timeout = 10.seconds, recover = false, enabled = true)
 
   private def checkTopologicalSort(phases: Map[String, Phase]): List[String] = {
     val result = CoordinatedShutdown.topologicalSort(phases)
@@ -149,8 +147,203 @@ class CoordinatedShutdownSpec
         testActor ! "C"
         Future.successful(Done)
       }
-      Await.result(co.run(UnknownReason), remainingOrDefault)
-      receiveN(4) should ===(List("A", "B", "B", "C"))
+      whenReady(co.run(UnknownReason)) { _ =>
+        receiveN(4) should ===(List("A", "B", "B", "C"))
+      }
+    }
+
+    "cancel shutdown tasks" in {
+      import system.dispatcher
+      val phases = Map("a" -> emptyPhase)
+      val co = new CoordinatedShutdown(extSys, phases)
+      val probe = TestProbe()
+      def createTask(message: String): () => Future[Done] =
+        () =>
+          Future {
+            probe.ref ! message
+            Done
+          }
+
+      val task1 = co.addCancellableTask("a", "copy1")(createTask("copy1"))
+      val task2 = co.addCancellableTask("a", "copy2")(createTask("copy2"))
+      val task3 = co.addCancellableTask("a", "copy3")(createTask("copy3"))
+
+      assert(!task1.isCancelled)
+      assert(!task2.isCancelled)
+      assert(!task3.isCancelled)
+
+      task2.cancel()
+      assert(task2.isCancelled)
+
+      val messagesFut = Future {
+        probe.receiveN(2, 3.seconds).map(_.toString)
+      }
+      whenReady(co.run(UnknownReason).flatMap(_ => messagesFut), timeout(250.milliseconds)) { messages =>
+        messages.distinct.size shouldEqual 2
+        messages.foreach {
+          case "copy1" | "copy3" => // OK
+          case other             => fail(s"Unexpected probe message ${other}!")
+        }
+      }
+    }
+
+    "re-register the same task if requested" in {
+      import system.dispatcher
+      val phases = Map("a" -> emptyPhase)
+      val co = new CoordinatedShutdown(extSys, phases)
+      val testProbe = TestProbe()
+
+      val taskName = "labor"
+      val task: () => Future[Done] = () =>
+        Future {
+          testProbe.ref ! taskName
+          Done
+        }
+
+      val task1 = co.addCancellableTask("a", taskName)(task)
+      val task2 = co.addCancellableTask("a", taskName)(task)
+      val task3 = co.addCancellableTask("a", taskName)(task)
+
+      List(task1, task2, task3).foreach { t =>
+        assert(!t.isCancelled)
+      }
+
+      task1.cancel()
+      assert(task1.isCancelled)
+
+      val messagesFut = Future {
+        testProbe.receiveN(2, 3.seconds).map(_.toString)
+      }
+      whenReady(co.run(UnknownReason).flatMap(_ => messagesFut), timeout(250.milliseconds)) { messages =>
+        messages.distinct.size shouldEqual 1
+        messages.head shouldEqual taskName
+      }
+    }
+
+    "honor registration and cancellation in later phases" in {
+      import system.dispatcher
+      val phases = Map("a" -> emptyPhase, "b" -> phase("a"))
+      val co = new CoordinatedShutdown(extSys, phases)
+
+      val testProbe = TestProbe()
+
+      object TaskAB {
+        val taskA: Cancellable = co.addCancellableTask("a", "taskA") { () =>
+          Future {
+            taskB.cancel()
+            testProbe.ref ! "A cancels B"
+            Done
+          }
+        }
+
+        val taskB: Cancellable = co.addCancellableTask("b", "taskB") { () =>
+          Future {
+            taskA.cancel()
+            testProbe.ref ! "B cancels A"
+            Done
+          }
+        }
+      }
+      co.addCancellableTask("a", "taskA") { () =>
+        Future {
+          co.addCancellableTask("b", "dependentTaskB") { () =>
+            Future {
+              testProbe.ref ! "A adds B"
+              Done
+            }
+          }
+          Done
+        }
+      }
+      co.addCancellableTask("a", "taskA") { () =>
+        Future {
+          co.addCancellableTask("a", "dependentTaskA") { () =>
+            Future {
+              testProbe.ref ! "A adds A"
+              Done
+            }
+          }
+          Done
+        }
+      }
+      co.addCancellableTask("b", "taskB") { () =>
+        Future {
+          co.addCancellableTask("a", "dependentTaskA") { () =>
+            Future {
+              testProbe.ref ! "B adds A"
+              Done
+            }
+          }
+          Done
+        }
+      }
+
+      List(TaskAB.taskA, TaskAB.taskB).foreach { t =>
+        t.isCancelled shouldBe false
+      }
+
+      val messagesFut = Future {
+        testProbe.receiveN(2, 3.seconds).map(_.toString)
+      }
+      whenReady(co.run(UnknownReason).flatMap(_ => messagesFut), timeout(250.milliseconds)) { messages =>
+        messages.toSet shouldEqual Set("A adds B", "A cancels B")
+      }
+    }
+
+    "cancel tasks across threads" in {
+      val phases = Map("a" -> emptyPhase, "b" -> phase("a"))
+      val co = new CoordinatedShutdown(extSys, phases)
+      val testProbe = TestProbe()
+
+      val executor = Executors.newFixedThreadPool(25)
+      implicit val executionContext: ExecutionContext = ExecutionContext.fromExecutor(executor)
+
+      case class BMessage(content: String)
+
+      val messageA = "concurrentA"
+      val task: () => Future[Done] = () =>
+        Future {
+          testProbe.ref ! messageA
+          co.addCancellableTask("b", "concurrentB") { () =>
+            Future {
+              testProbe.ref ! BMessage("concurrentB")
+              Done
+            }(ExecutionContexts.sameThreadExecutionContext)
+          }
+          Done
+        }(ExecutionContexts.sameThreadExecutionContext)
+
+      val cancellationFut: Future[Done] = {
+        val cancellables = (0 until 20).map { _ =>
+          co.addCancellableTask("a", "concurrentTaskA")(task)
+        }
+        val shouldBeCancelled = cancellables.zipWithIndex.collect {
+          case (c, i) if i % 2 == 0 => c
+        }
+        val cancelFutures = for {
+          _ <- cancellables
+          c <- shouldBeCancelled
+        } yield Future {
+          c.cancel() shouldBe true
+          Done
+        }
+        cancelFutures.foldLeft(Future.successful(Done)) {
+          case (acc, fut) =>
+            acc.flatMap(_ => fut)
+        }
+      }
+
+      Await.result(cancellationFut, 250.milliseconds)
+
+      val messagesFut = Future {
+        testProbe.receiveN(20, 3.seconds).map(_.toString)
+      }
+      whenReady(co.run(UnknownReason).flatMap(_ => messagesFut), timeout(250.milliseconds)) { messages =>
+        messages.length shouldEqual 20
+        messages.toSet shouldEqual Set(messageA, "BMessage(concurrentB)")
+      }
+
+      executor.shutdown()
     }
 
     "run from a given phase" in {
@@ -446,6 +639,83 @@ class CoordinatedShutdownSpec
         TestKit.shutdownActorSystem(newSystem)
         CoordinatedShutdown(newSystem)
 
+      }
+    }
+
+    def withCoordinatedShutdown(phases: Map[String, Phase])(block: CoordinatedShutdown => Unit): Unit = {
+      val co = new CoordinatedShutdown(extSys, phases)
+      try {
+        block(co)
+      } finally {
+        watch(co.terminationWatcher) ! PoisonPill
+        expectTerminated(co.terminationWatcher)
+      }
+    }
+
+    "support actor termination tasks with a stop message" in {
+      val phases = Map("a" -> abortingPhase)
+      withCoordinatedShutdown(phases) { co =>
+        val actorToWatch = TestProbe()
+        co.addActorTerminationTask("a", "a1", actorToWatch.ref, Some("stop"))
+        val result = co.run(UnknownReason)
+        actorToWatch.expectMsg("stop")
+        result.isReadyWithin(100.millis) should be(false)
+        actorToWatch.ref ! PoisonPill
+        result.futureValue should ===(Done)
+      }
+    }
+
+    "support actor termination tasks without a stop message" in {
+      val phases = Map("a" -> abortingPhase)
+      withCoordinatedShutdown(phases) { co =>
+        val actorToWatch = TestProbe()
+        co.addActorTerminationTask("a", "a1", actorToWatch.ref, None)
+        val result = co.run(UnknownReason)
+        actorToWatch.expectNoMessage(100.millis)
+        result.isReadyWithin(100.millis) should be(false)
+        actorToWatch.ref ! PoisonPill
+        result.futureValue should ===(Done)
+      }
+    }
+
+    "support actor termination tasks for actors that are already shutdown" in {
+      val phases = Map("a" -> abortingPhase)
+      withCoordinatedShutdown(phases) { co =>
+        val actorToWatch = TestProbe()
+        watch(actorToWatch.ref)
+        actorToWatch.ref ! PoisonPill
+        expectTerminated(actorToWatch.ref)
+        co.addActorTerminationTask("a", "a1", actorToWatch.ref, None)
+        val result = co.run(UnknownReason)
+        result.futureValue should ===(Done)
+      }
+    }
+
+    "allow watching the same actor twice in the same phase" in {
+      val phases = Map("a" -> abortingPhase)
+      withCoordinatedShutdown(phases) { co =>
+        val actorToWatch = TestProbe()
+        co.addActorTerminationTask("a", "a1", actorToWatch.ref, Some("stop1"))
+        co.addActorTerminationTask("a", "a2", actorToWatch.ref, Some("stop2"))
+        val result = co.run(UnknownReason)
+        actorToWatch.expectMsgAllOf("stop1", "stop2")
+        actorToWatch.ref ! PoisonPill
+        result.futureValue should ===(Done)
+      }
+    }
+
+    "allow watching the same actor twice in different phases" in {
+      val phases = Map("a" -> abortingPhase, "b" -> abortingPhase.copy(dependsOn = Set("a")))
+      withCoordinatedShutdown(phases) { co =>
+        val actorToWatch = TestProbe()
+        co.addActorTerminationTask("a", "a1", actorToWatch.ref, Some("stopa"))
+        // no stop message because it's just going to end up being dead lettered
+        co.addActorTerminationTask("b", "b1", actorToWatch.ref, None)
+        val result = co.run(UnknownReason)
+        actorToWatch.expectMsg("stopa")
+        actorToWatch.expectNoMessage(100.millis)
+        actorToWatch.ref ! PoisonPill
+        result.futureValue should ===(Done)
       }
     }
 

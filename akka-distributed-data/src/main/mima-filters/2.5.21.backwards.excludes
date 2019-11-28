@@ -17,3 +17,5 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.Replicat
 ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.Replicator.replica")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.Replicator.receiveWeaklyUpMemberUp")
 
+# #27411 changes not caught by previous mima versions
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.cluster.ddata.ORSet.clear")

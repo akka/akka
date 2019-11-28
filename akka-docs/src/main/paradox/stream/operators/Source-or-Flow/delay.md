@@ -16,6 +16,7 @@ Delay every element passed through with a specific duration.
 
 Delay every element passed through with a specific duration.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -527,7 +527,7 @@ final case class Dropped(message: Any, reason: String, sender: ActorRef, recipie
 object Dropped {
 
   /**
-   * Convenience for creating `Cropped` without `sender`.
+   * Convenience for creating `Dropped` without a `sender`.
    */
   def apply(message: Any, reason: String, recipient: ActorRef): Dropped =
     Dropped(message, reason, ActorRef.noSender, recipient)

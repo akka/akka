@@ -80,6 +80,11 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
   val disallowedSerializationBindings: Set[Class[_]] =
     Set(classOf[java.io.Serializable], classOf[java.io.Serializable], classOf[java.lang.Comparable[_]])
 
+  def isGZipped(bytes: Array[Byte]): Boolean = {
+    (bytes != null) && (bytes.length >= 2) &&
+    (bytes(0) == GZIPInputStream.GZIP_MAGIC.toByte) &&
+    (bytes(1) == (GZIPInputStream.GZIP_MAGIC >> 8).toByte)
+  }
 }
 
 /**
@@ -104,14 +109,21 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
       bindingName,
       JacksonObjectMapperProvider(system).getOrCreate(bindingName, Some(new CBORFactory)))
 
+@InternalApi object Compression {
+  sealed trait Algoritm
+  object Off extends Algoritm
+  final case class GZip(largerThan: Long) extends Algoritm
+  // TODO add LZ4, issue #27066
+}
+
 /**
  * INTERNAL API: Base class for Jackson serializers.
  *
  * Configuration in `akka.serialization.jackson` section.
  * It will load Jackson modules defined in configuration `jackson-modules`.
  *
- * It will compress the payload if the the payload is larger than the configured
- * `compress-larger-than` value.
+ * It will compress the payload if the compression `algorithm` is enabled and the the
+ * payload is larger than the configured `compress-larger-than` value.
  */
 @InternalApi private[akka] abstract class JacksonSerializer(
     val system: ExtendedActorSystem,
@@ -119,6 +131,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     val objectMapper: ObjectMapper)
     extends SerializerWithStringManifest {
   import JacksonSerializer.GadgetClassBlacklist
+  import JacksonSerializer.isGZipped
 
   // TODO issue #27107: it should be possible to implement ByteBufferSerializer as well, using Jackson's
   //      ByteBufferBackedOutputStream/ByteBufferBackedInputStream
@@ -127,11 +140,16 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
   private val conf = JacksonObjectMapperProvider.configForBinding(bindingName, system.settings.config)
   private val isDebugEnabled = conf.getBoolean("verbose-debug-logging") && log.isDebugEnabled
   private final val BufferSize = 1024 * 4
-  private val compressLargerThan: Long = {
-    val key = "compress-larger-than"
-    toRootLowerCase(conf.getString(key)) match {
-      case "off" => Long.MaxValue
-      case _     => conf.getBytes(key)
+  private val compressionAlgorithm: Compression.Algoritm = {
+    toRootLowerCase(conf.getString("compression.algorithm")) match {
+      case "off" => Compression.Off
+      case "gzip" =>
+        val compressLargerThan = conf.getBytes("compression.compress-larger-than")
+        Compression.GZip(compressLargerThan)
+      case other =>
+        throw new IllegalArgumentException(
+          s"Unknown compression algorithm [$other], possible values are " +
+          """"off" or "gzip"""")
     }
   }
   private val migrations: Map[String, JacksonMigration] = {
@@ -171,9 +189,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     checkAllowedSerializationBindings()
     val startTime = if (isDebugEnabled) System.nanoTime else 0L
     val bytes = objectMapper.writeValueAsBytes(obj)
-    val result =
-      if (bytes.length > compressLargerThan) compress(bytes)
-      else bytes
+    val result = compress(bytes)
 
     logToBinaryDuration(obj, startTime, bytes, result)
 
@@ -202,7 +218,6 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
     checkAllowedSerializationBindings()
     val startTime = if (isDebugEnabled) System.nanoTime else 0L
-    val compressed = isGZipped(bytes)
 
     val (fromVersion, manifestClassName) = parseManifest(manifest)
     checkAllowedClassName(manifestClassName)
@@ -243,18 +258,18 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
       }
       checkAllowedClass(clazz)
 
-      val decompressBytes = if (compressed) decompress(bytes) else bytes
+      val decompressedBytes = decompress(bytes)
 
       val result = migration match {
         case Some(transformer) if fromVersion < transformer.currentVersion =>
-          val jsonTree = objectMapper.readTree(decompressBytes)
+          val jsonTree = objectMapper.readTree(decompressedBytes)
           val newJsonTree = transformer.transform(fromVersion, jsonTree)
           objectMapper.treeToValue(newJsonTree, clazz)
         case _ =>
-          objectMapper.readValue(decompressBytes, clazz)
+          objectMapper.readValue(decompressedBytes, clazz)
       }
 
-      logFromBinaryDuration(bytes, decompressBytes, startTime, clazz)
+      logFromBinaryDuration(bytes, decompressedBytes, startTime, clazz)
 
       result
 
@@ -320,7 +335,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
    * Here we use `serialization-bindings` also and more importantly when deserializing (fromBinary)
    * to check that the manifest class is of a known (registered) type.
    *
-   * If and old class is removed from `serialization-bindings` when it's not used for serialization
+   * If an old class is removed from `serialization-bindings` when it's not used for serialization
    * but still used for deserialization (e.g. rolling update with serialization changes) it can
    * be allowed by specifying in `whitelist-class-prefix`.
    *
@@ -383,6 +398,14 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
   }
 
   def compress(bytes: Array[Byte]): Array[Byte] = {
+    compressionAlgorithm match {
+      case Compression.Off => bytes
+      case Compression.GZip(largerThan) =>
+        if (bytes.length > largerThan) compressGzip(bytes) else bytes
+    }
+  }
+
+  private def compressGzip(bytes: Array[Byte]): Array[Byte] = {
     val bos = new ByteArrayOutputStream(BufferSize)
     val zip = new GZIPOutputStream(bos)
     try zip.write(bytes)
@@ -391,6 +414,13 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
   }
 
   def decompress(bytes: Array[Byte]): Array[Byte] = {
+    if (isGZipped(bytes))
+      decompressGzip(bytes)
+    else
+      bytes
+  }
+
+  private def decompressGzip(bytes: Array[Byte]): Array[Byte] = {
     val in = new GZIPInputStream(new ByteArrayInputStream(bytes))
     val out = new ByteArrayOutputStream()
     val buffer = new Array[Byte](BufferSize)
@@ -407,9 +437,4 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     out.toByteArray
   }
 
-  def isGZipped(bytes: Array[Byte]): Boolean = {
-    (bytes != null) && (bytes.length >= 2) &&
-    (bytes(0) == GZIPInputStream.GZIP_MAGIC.toByte) &&
-    (bytes(1) == (GZIPInputStream.GZIP_MAGIC >> 8).toByte)
-  }
 }

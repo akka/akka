@@ -25,37 +25,37 @@ import akka.actor.typed.Terminated
   import akka.cluster.ddata.typed.javadsl.{ Replicator => JReplicator }
   import akka.cluster.ddata.typed.scaladsl.{ Replicator => SReplicator }
 
-  private case class InternalChanged[A <: ReplicatedData](
-      chg: dd.Replicator.Changed[A],
-      subscriber: ActorRef[JReplicator.Changed[A]])
+  private case class InternalSubscribeResponse[A <: ReplicatedData](
+      chg: dd.Replicator.SubscribeResponse[A],
+      subscriber: ActorRef[JReplicator.SubscribeResponse[A]])
       extends JReplicator.Command
 
   val localAskTimeout = 60.seconds // ReadLocal, WriteLocal shouldn't timeout
   val additionalAskTimeout = 1.second
 
-  def behavior(
+  def apply(
       settings: dd.ReplicatorSettings,
       underlyingReplicator: Option[akka.actor.ActorRef]): Behavior[SReplicator.Command] = {
 
     Behaviors.setup { ctx =>
-      val untypedReplicator = underlyingReplicator match {
+      val classicReplicator = underlyingReplicator match {
         case Some(ref) => ref
         case None      =>
           // FIXME perhaps add supervisor for restarting, see PR https://github.com/akka/akka/pull/25988
-          val untypedReplicatorProps = dd.Replicator.props(settings)
-          ctx.actorOf(untypedReplicatorProps, name = "underlying")
+          val classicReplicatorProps = dd.Replicator.props(settings)
+          ctx.actorOf(classicReplicatorProps, name = "underlying")
       }
 
       def withState(
           subscribeAdapters: Map[
-            ActorRef[JReplicator.Changed[ReplicatedData]],
-            ActorRef[dd.Replicator.Changed[ReplicatedData]]]): Behavior[SReplicator.Command] = {
+            ActorRef[JReplicator.SubscribeResponse[ReplicatedData]],
+            ActorRef[dd.Replicator.SubscribeResponse[ReplicatedData]]]): Behavior[SReplicator.Command] = {
 
         def stopSubscribeAdapter(
-            subscriber: ActorRef[JReplicator.Changed[ReplicatedData]]): Behavior[SReplicator.Command] = {
+            subscriber: ActorRef[JReplicator.SubscribeResponse[ReplicatedData]]): Behavior[SReplicator.Command] = {
           subscribeAdapters.get(subscriber) match {
             case Some(adapter) =>
-              // will be unsubscribed from untypedReplicator via Terminated
+              // will be unsubscribed from classicReplicator via Terminated
               ctx.stop(adapter)
               withState(subscribeAdapters - subscriber)
             case None => // already unsubscribed or terminated
@@ -67,7 +67,7 @@ import akka.actor.typed.Terminated
           .receive[SReplicator.Command] { (ctx, msg) =>
             msg match {
               case cmd: SReplicator.Get[_] =>
-                untypedReplicator.tell(dd.Replicator.Get(cmd.key, cmd.consistency), sender = cmd.replyTo.toUntyped)
+                classicReplicator.tell(dd.Replicator.Get(cmd.key, cmd.consistency), sender = cmd.replyTo.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Get[d] =>
@@ -77,13 +77,14 @@ import akka.actor.typed.Terminated
                 })
                 import ctx.executionContext
                 val reply =
-                  (untypedReplicator ? dd.Replicator.Get(cmd.key, cmd.consistency.toUntyped))
+                  (classicReplicator ? dd.Replicator.Get(cmd.key, cmd.consistency.toClassic))
                     .mapTo[dd.Replicator.GetResponse[d]]
                     .map {
                       case rsp: dd.Replicator.GetSuccess[d] =>
                         JReplicator.GetSuccess(rsp.key)(rsp.dataValue)
-                      case rsp: dd.Replicator.NotFound[d]   => JReplicator.NotFound(rsp.key)
-                      case rsp: dd.Replicator.GetFailure[d] => JReplicator.GetFailure(rsp.key)
+                      case rsp: dd.Replicator.NotFound[d]       => JReplicator.NotFound(rsp.key)
+                      case rsp: dd.Replicator.GetFailure[d]     => JReplicator.GetFailure(rsp.key)
+                      case rsp: dd.Replicator.GetDataDeleted[d] => JReplicator.GetDataDeleted(rsp.key)
                     }
                     .recover {
                       case _ => JReplicator.GetFailure(cmd.key)
@@ -92,9 +93,9 @@ import akka.actor.typed.Terminated
                 Behaviors.same
 
               case cmd: SReplicator.Update[_] =>
-                untypedReplicator.tell(
+                classicReplicator.tell(
                   dd.Replicator.Update(cmd.key, cmd.writeConsistency, None)(cmd.modify),
-                  sender = cmd.replyTo.toUntyped)
+                  sender = cmd.replyTo.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Update[d] =>
@@ -104,14 +105,15 @@ import akka.actor.typed.Terminated
                 })
                 import ctx.executionContext
                 val reply =
-                  (untypedReplicator ? dd.Replicator.Update(cmd.key, cmd.writeConsistency.toUntyped, None)(cmd.modify))
+                  (classicReplicator ? dd.Replicator.Update(cmd.key, cmd.writeConsistency.toClassic, None)(cmd.modify))
                     .mapTo[dd.Replicator.UpdateResponse[d]]
                     .map {
                       case rsp: dd.Replicator.UpdateSuccess[d] => JReplicator.UpdateSuccess(rsp.key)
                       case rsp: dd.Replicator.UpdateTimeout[d] => JReplicator.UpdateTimeout(rsp.key)
                       case rsp: dd.Replicator.ModifyFailure[d] =>
                         JReplicator.ModifyFailure(rsp.key, rsp.errorMessage, rsp.cause)
-                      case rsp: dd.Replicator.StoreFailure[d] => JReplicator.StoreFailure(rsp.key)
+                      case rsp: dd.Replicator.StoreFailure[d]      => JReplicator.StoreFailure(rsp.key)
+                      case rsp: dd.Replicator.UpdateDataDeleted[d] => JReplicator.UpdateDataDeleted(rsp.key)
                     }
                     .recover {
                       case _ => JReplicator.UpdateTimeout(cmd.key)
@@ -120,37 +122,47 @@ import akka.actor.typed.Terminated
                 Behaviors.same
 
               case cmd: SReplicator.Subscribe[_] =>
-                // For the Scala API the Changed messages can be sent directly to the subscriber
-                untypedReplicator.tell(
-                  dd.Replicator.Subscribe(cmd.key, cmd.subscriber.toUntyped),
-                  sender = cmd.subscriber.toUntyped)
+                // For the Scala API the SubscribeResponse messages can be sent directly to the subscriber
+                classicReplicator.tell(
+                  dd.Replicator.Subscribe(cmd.key, cmd.subscriber.toClassic),
+                  sender = cmd.subscriber.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Subscribe[ReplicatedData] @unchecked =>
-                // For the Java API the Changed messages must be mapped to the JReplicator.Changed class.
+                // For the Java API the Changed/Deleted messages must be mapped to the JReplicator.Changed/Deleted class.
                 // That is done with an adapter, and we have to keep track of the lifecycle of the original
                 // subscriber and stop the adapter when the original subscriber is stopped.
-                val adapter: ActorRef[dd.Replicator.Changed[ReplicatedData]] = ctx.spawnMessageAdapter { chg =>
-                  InternalChanged(chg, cmd.subscriber)
+                val adapter: ActorRef[dd.Replicator.SubscribeResponse[ReplicatedData]] = ctx.spawnMessageAdapter {
+                  rsp =>
+                    InternalSubscribeResponse(rsp, cmd.subscriber)
                 }
 
-                untypedReplicator.tell(
-                  dd.Replicator.Subscribe(cmd.key, adapter.toUntyped),
+                classicReplicator.tell(
+                  dd.Replicator.Subscribe(cmd.key, adapter.toClassic),
                   sender = akka.actor.ActorRef.noSender)
 
                 ctx.watch(cmd.subscriber)
 
                 withState(subscribeAdapters.updated(cmd.subscriber, adapter))
 
-              case InternalChanged(chg, subscriber) =>
-                subscriber ! JReplicator.Changed(chg.key)(chg.dataValue)
+              case InternalSubscribeResponse(rsp, subscriber) =>
+                rsp match {
+                  case chg: dd.Replicator.Changed[_] => subscriber ! JReplicator.Changed(chg.key)(chg.dataValue)
+                  case del: dd.Replicator.Deleted[_] => subscriber ! JReplicator.Deleted(del.key)
+                }
+                Behaviors.same
+
+              case cmd: SReplicator.Unsubscribe[_] =>
+                classicReplicator.tell(
+                  dd.Replicator.Unsubscribe(cmd.key, cmd.subscriber.toClassic),
+                  sender = cmd.subscriber.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Unsubscribe[ReplicatedData] @unchecked =>
                 stopSubscribeAdapter(cmd.subscriber)
 
               case cmd: SReplicator.Delete[_] =>
-                untypedReplicator.tell(dd.Replicator.Delete(cmd.key, cmd.consistency), sender = cmd.replyTo.toUntyped)
+                classicReplicator.tell(dd.Replicator.Delete(cmd.key, cmd.consistency), sender = cmd.replyTo.toClassic)
                 Behaviors.same
 
               case cmd: JReplicator.Delete[d] =>
@@ -160,43 +172,43 @@ import akka.actor.typed.Terminated
                 })
                 import ctx.executionContext
                 val reply =
-                  (untypedReplicator ? dd.Replicator.Delete(cmd.key, cmd.consistency.toUntyped))
+                  (classicReplicator ? dd.Replicator.Delete(cmd.key, cmd.consistency.toClassic))
                     .mapTo[dd.Replicator.DeleteResponse[d]]
                     .map {
                       case rsp: dd.Replicator.DeleteSuccess[d] => JReplicator.DeleteSuccess(rsp.key)
                       case rsp: dd.Replicator.ReplicationDeleteFailure[d] =>
-                        JReplicator.ReplicationDeleteFailure(rsp.key)
+                        JReplicator.DeleteFailure(rsp.key)
                       case rsp: dd.Replicator.DataDeleted[d]  => JReplicator.DataDeleted(rsp.key)
                       case rsp: dd.Replicator.StoreFailure[d] => JReplicator.StoreFailure(rsp.key)
                     }
                     .recover {
-                      case _ => JReplicator.ReplicationDeleteFailure(cmd.key)
+                      case _ => JReplicator.DeleteFailure(cmd.key)
                     }
                 reply.foreach { cmd.replyTo ! _ }
                 Behaviors.same
 
               case SReplicator.GetReplicaCount(replyTo) =>
-                untypedReplicator.tell(dd.Replicator.GetReplicaCount, sender = replyTo.toUntyped)
+                classicReplicator.tell(dd.Replicator.GetReplicaCount, sender = replyTo.toClassic)
                 Behaviors.same
 
               case JReplicator.GetReplicaCount(replyTo) =>
                 implicit val timeout = Timeout(localAskTimeout)
                 import ctx.executionContext
                 val reply =
-                  (untypedReplicator ? dd.Replicator.GetReplicaCount)
+                  (classicReplicator ? dd.Replicator.GetReplicaCount)
                     .mapTo[dd.Replicator.ReplicaCount]
                     .map(rsp => JReplicator.ReplicaCount(rsp.n))
                 reply.foreach { replyTo ! _ }
                 Behaviors.same
 
               case SReplicator.FlushChanges | JReplicator.FlushChanges =>
-                untypedReplicator.tell(dd.Replicator.FlushChanges, sender = akka.actor.ActorRef.noSender)
+                classicReplicator.tell(dd.Replicator.FlushChanges, sender = akka.actor.ActorRef.noSender)
                 Behaviors.same
 
             }
           }
           .receiveSignal {
-            case (_, Terminated(ref: ActorRef[JReplicator.Changed[ReplicatedData]] @unchecked)) =>
+            case (_, Terminated(ref: ActorRef[JReplicator.SubscribeResponse[ReplicatedData]] @unchecked)) =>
               stopSubscribeAdapter(ref)
           }
       }

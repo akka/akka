@@ -20,7 +20,7 @@ object ReplicatorSettings {
    * `akka.cluster.distributed-data`.
    */
   def apply(system: ActorSystem[_]): ReplicatorSettings =
-    dd.ReplicatorSettings(system.toUntyped)
+    dd.ReplicatorSettings(system.toClassic)
 
   /**
    * Create settings from a configuration with the same layout as
@@ -34,5 +34,5 @@ object ReplicatorSettings {
    * The name of the actor used in DistributedData extensions.
    */
   @InternalApi private[akka] def name(system: ActorSystem[_]): String =
-    dd.ReplicatorSettings.name(system.toUntyped, Some("typed"))
+    dd.ReplicatorSettings.name(system.toClassic, Some("typed"))
 }

@@ -23,7 +23,7 @@ import com.github.ghik.silencer.silent
  * A RoutedActorRef is an ActorRef that has a set of connected ActorRef and it uses a Router to
  * send a message to one (or more) of these actors.
  */
-@silent
+@silent("deprecated")
 private[akka] class RoutedActorRef(
     _system: ActorSystemImpl,
     _routerProps: Props,

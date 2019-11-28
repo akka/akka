@@ -45,7 +45,6 @@ class TcpConnectionSpec extends AkkaSpec("""
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.io.tcp.trace-logging = on
     akka.io.tcp.register-timeout = 500ms
-    akka.actor.serialize-creators = on
     """) with WithLogCapturing { thisSpecs =>
   import TcpConnectionSpec._
 
@@ -465,9 +464,9 @@ class TcpConnectionSpec extends AkkaSpec("""
 
         val buffer = ByteBuffer.allocate(1)
         val thrown = the[IOException] thrownBy {
-            windowsWorkaroundToDetectAbort()
-            serverSideChannel.read(buffer)
-          }
+          windowsWorkaroundToDetectAbort()
+          serverSideChannel.read(buffer)
+        }
         thrown.getMessage should ===(ConnectionResetByPeerMessage)
       }
     }
@@ -655,7 +654,7 @@ class TcpConnectionSpec extends AkkaSpec("""
       override lazy val connectionActor = createConnectionActorWithoutRegistration(serverAddress = address)
       run {
         connectionActor ! newChannelRegistration
-        userHandler.expectMsg(30.seconds, CommandFailed(Connect(address)))
+        userHandler.expectMsg(15.seconds, CommandFailed(Connect(address)))
       }
     }
 

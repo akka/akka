@@ -5,7 +5,7 @@
 package akka.persistence.typed
 
 import akka.annotation.InternalApi
-import akka.persistence.{ SnapshotSelectionCriteria => UntypedSnapshotSelectionCriteria }
+import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.util.HashCode
 
 object SnapshotSelectionCriteria {
@@ -29,7 +29,7 @@ object SnapshotSelectionCriteria {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def fromUntyped(c: UntypedSnapshotSelectionCriteria): SnapshotSelectionCriteria =
+  @InternalApi private[akka] def fromClassic(c: ClassicSnapshotSelectionCriteria): SnapshotSelectionCriteria =
     new SnapshotSelectionCriteria(c.maxSequenceNr, c.maxTimestamp, c.minSequenceNr, c.minTimestamp)
 
 }
@@ -82,7 +82,7 @@ final class SnapshotSelectionCriteria @InternalApi private[akka] (
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] def toUntyped: akka.persistence.SnapshotSelectionCriteria =
+  @InternalApi private[akka] def toClassic: akka.persistence.SnapshotSelectionCriteria =
     akka.persistence.SnapshotSelectionCriteria(maxSequenceNr, maxTimestamp, minSequenceNr, minTimestamp)
 
   override def equals(other: Any): Boolean = other match {

@@ -6,14 +6,11 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom.{ current => random }
 
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
 
-class FlowMapSpec extends StreamSpec with ScriptedTest {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-
-  implicit val materializer = ActorMaterializer(settings)
+class FlowMapSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) with ScriptedTest {
 
   "A Map" must {
 
@@ -22,7 +19,7 @@ class FlowMapSpec extends StreamSpec with ScriptedTest {
         Script(TestConfig.RandomTestRange.map { _ =>
           val x = random.nextInt(); Seq(x) -> Seq(x.toString)
         }: _*)
-      TestConfig.RandomTestRange.foreach(_ => runScript(script, settings)(_.map(_.toString)))
+      TestConfig.RandomTestRange.foreach(_ => runScript(script)(_.map(_.toString)))
     }
 
     "not blow up with high request counts" in {

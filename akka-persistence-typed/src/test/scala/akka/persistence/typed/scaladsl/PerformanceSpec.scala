@@ -11,6 +11,7 @@ import scala.concurrent.duration._
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.scaladsl.Behaviors
@@ -73,7 +74,7 @@ object PerformanceSpec {
       .supervise({
         val parameters = Parameters()
         EventSourcedBehavior[Command, String, String](
-          persistenceId = PersistenceId(name),
+          persistenceId = PersistenceId.ofUniqueId(name),
           "",
           commandHandler = CommandHandler.command {
             case StopMeasure =>
@@ -110,15 +111,13 @@ object PerformanceSpec {
 }
 
 class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseString(s"""
-      akka.actor.serialize-creators = off
-      akka.actor.serialize-messages = off
       akka.persistence.publish-plugin-commands = on
       akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
       akka.persistence.journal.leveldb.dir = "target/journal-PerformanceSpec"
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-PerformanceSpec/"
       akka.test.single-expect-default = 10s
-      """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with WordSpecLike {
+      """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with WordSpecLike with LogCapturing {
 
   import PerformanceSpec._
 

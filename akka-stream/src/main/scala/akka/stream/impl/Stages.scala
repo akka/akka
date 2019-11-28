@@ -109,7 +109,7 @@ import akka.stream._
     val subscriberSource = name("subscriberSource")
     val actorPublisherSource = name("actorPublisherSource")
     val actorRefSource = name("actorRefSource")
-    val actorRefWithAckSource = name("actorRefWithAckSource")
+    val actorRefWithBackpressureSource = name("actorRefWithBackpressureSource")
     val queueSource = name("queueSource")
     val inputStreamSource = name("inputStreamSource") and IODispatcher
     val outputStreamSource = name("outputStreamSource") and IODispatcher
@@ -132,7 +132,7 @@ import akka.stream._
     val fanoutPublisherSink = name("fanoutPublisherSink")
     val ignoreSink = name("ignoreSink")
     val actorRefSink = name("actorRefSink")
-    val actorRefWithAck = name("actorRefWithAckSink")
+    val actorRefWithBackpressureSink = name("actorRefWithBackpressureSink")
     val actorSubscriberSink = name("actorSubscriberSink")
     val queueSink = name("queueSink")
     val lazySink = name("lazySink")
@@ -142,6 +142,9 @@ import akka.stream._
     val inputStreamSink = name("inputStreamSink") and IODispatcher
     val fileSink = name("fileSink") and IODispatcher
     val fromJavaStream = name("fromJavaStream")
+
+    val inputBoundary = name("input-boundary")
+    val outputBoundary = name("output-boundary")
   }
 
 }

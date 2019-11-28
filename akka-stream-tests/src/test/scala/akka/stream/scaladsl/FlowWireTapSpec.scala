@@ -5,15 +5,14 @@
 package akka.stream.scaladsl
 
 import akka.Done
-import akka.stream.ActorMaterializer
 import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 import scala.util.control.NoStackTrace
 
 class FlowWireTapSpec extends StreamSpec("akka.stream.materializer.debug.fuzzing-mode = off") {
-  implicit val materializer = ActorMaterializer()
+
   import system.dispatcher
 
   "A wireTap" must {

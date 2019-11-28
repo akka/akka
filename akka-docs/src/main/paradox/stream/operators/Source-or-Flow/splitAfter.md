@@ -16,6 +16,7 @@ End the current substream whenever a predicate returns `true`, starting a new su
 
 End the current substream whenever a predicate returns `true`, starting a new substream for the next element.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

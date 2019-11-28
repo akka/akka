@@ -217,7 +217,7 @@ e.g. `allCluster`, `allTyped`.
 Binary compatibility rules and guarantees are described in depth in the [Binary Compatibility Rules
 ](http://doc.akka.io/docs/akka/snapshot/common/binary-compatibility-rules.html) section of the documentation.
 
-Akka uses MiMa (which is short for [Lightbend Migration Manager](https://github.com/typesafehub/migration-manager)) to
+Akka uses [MiMa](https://github.com/lightbend/mima) to
 validate binary compatibility of incoming pull requests. If your PR fails due to binary compatibility issues, you may see 
 an error like this:
 
@@ -227,7 +227,11 @@ an error like this:
 [error]    filter with: ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.foldAsync")
 ```
 
-In such situations it's good to consult with a core team member if the violation can be safely ignored (by adding the above snippet to `<module>/src/main/mima-filters/<last-version>.backwards.excludes`), or if it would indeed break binary compatibility.
+In such situations it's good to consult with a core team member whether the violation can be safely ignored or if it would indeed
+break binary compatibility. If the violation can be ignored add exclude statements from the mima output to
+a new file named `<module>/src/main/mima-filters/<last-version>.backwards.excludes/<pr-or-issue>-<issue-number>-<description>.excludes`,
+e.g. `akka-actor/src/main/mima-filters/2.6.0.backwards.excludes/pr-12345-rename-internal-classes.excludes`. Make sure to add a comment
+in the file that describes briefly why the incompatibility can be ignored.
 
 Situations when it may be fine to ignore a MiMa issued warning include:
 
@@ -253,6 +257,17 @@ All wire protocol changes that may concern rolling upgrades should be documented
 [Rolling Update Changelog](https://doc.akka.io/docs/akka/current/project/rolling-update.html#change-log) 
 (found in akka-docs/src/main/paradox/project/rolling-update.md)
 
+## Protobuf
+
+Akka includes a shaded version of protobuf `3.9.0` that is used for internal communication. To generate files
+run `protobufGenerate`. The generated files are put in the `src/main/java` of each project and need to be commited. 
+The generated files are automatically transformed to use the shaded version of protobuf.
+
+Generation depends on protoc `3.9.0` being on the path. Old versions of
+protoc can be downloaded from the [protobuf release page](https://github.com/protocolbuffers/protobuf/releases) and built from
+source or downloaded from [maven central](http://repo1.maven.org/maven2/com/google/protobuf/protoc/3.9.0/). See
+[Protobuf.scala](https://github.com/akka/akka/blob/master/project/Protobuf.scala) for details of how to override 
+the settings for generation.
 
 ## Pull request requirements
 
@@ -551,4 +566,4 @@ The cluster is made out of real bare-metal boxes, and maintained by the Akka tea
 
 * [Akka Contributor License Agreement](http://www.lightbend.com/contribute/cla)
 * [Akka Issue Tracker](http://doc.akka.io/docs/akka/current/project/issue-tracking.html)
-* [Scalariform](https://github.com/daniel-trinh/scalariform)
+* [Scalafmt](https://scalameta.org/scalafmt/)

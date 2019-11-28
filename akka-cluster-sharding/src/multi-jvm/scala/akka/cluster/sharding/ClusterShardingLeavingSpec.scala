@@ -67,7 +67,8 @@ abstract class ClusterShardingLeavingSpecConfig(val mode: String) extends MultiN
     akka.loglevel = INFO
     akka.actor.provider = "cluster"
     akka.remote.classic.log-remote-lifecycle-events = off
-    akka.cluster.auto-down-unreachable-after = 0s
+    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
+    akka.cluster.testkit.auto-down-unreachable-after = 0s
     akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
     akka.persistence.journal.leveldb-shared {
       timeout = 5s

@@ -16,6 +16,7 @@ Stream a single object repeatedly
 
 Stream a single object repeatedly
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

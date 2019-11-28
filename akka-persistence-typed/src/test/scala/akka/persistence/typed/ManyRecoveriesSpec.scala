@@ -14,8 +14,7 @@ import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.testkit.EventFilter
-import akka.testkit.TestEvent.Mute
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.WordSpecLike
 
 object ManyRecoveriesSpec {
@@ -29,7 +28,7 @@ object ManyRecoveriesSpec {
       probe: TestProbe[String],
       latch: Option[TestLatch]): EventSourcedBehavior[Cmd, Evt, String] =
     EventSourcedBehavior[Cmd, Evt, String](
-      persistenceId = PersistenceId(name),
+      persistenceId = PersistenceId.ofUniqueId(name),
       emptyState = "",
       commandHandler = CommandHandler.command {
         case Cmd(s) => Effect.persist(Evt(s)).thenRun(_ => probe.ref ! s"$name-$s")
@@ -50,7 +49,6 @@ object ManyRecoveriesSpec {
 }
 
 class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
-    akka.loggers = [akka.testkit.TestEventListener]
     akka.actor.default-dispatcher {
       type = Dispatcher
       executor = "thread-pool-executor"
@@ -60,12 +58,9 @@ class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
     }
     akka.persistence.max-concurrent-recoveries = 3
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
-    """) with WordSpecLike {
+    """) with WordSpecLike with LogCapturing {
 
   import ManyRecoveriesSpec._
-
-  import akka.actor.typed.scaladsl.adapter._
-  system.toUntyped.eventStream.publish(Mute(EventFilter.warning(start = "No default snapshot store", occurrences = 1)))
 
   "Many persistent actors" must {
     "be able to recover without overloading" in {
@@ -77,7 +72,7 @@ class ManyRecoveriesSpec extends ScalaTestWithActorTestKit(s"""
       }
 
       // this would starve (block) all threads without max-concurrent-recoveries
-      val latch = TestLatch()(system.toUntyped)
+      val latch = TestLatch()(system.toClassic)
       (1 to 100).foreach { n =>
         spawn(persistentBehavior(s"a$n", probe, Some(latch))) ! Cmd("B")
       }

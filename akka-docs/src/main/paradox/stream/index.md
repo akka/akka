@@ -1,6 +1,9 @@
+---
+project.description: An intuitive and safe way to do asynchronous, non-blocking backpressured stream processing.
+---
 # Streams
 
-## Dependency
+## Module info
 
 To use Akka Streams, add the module to your project:
 
@@ -9,6 +12,8 @@ To use Akka Streams, add the module to your project:
   artifact="akka-stream_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-stream" }
 
 @@toc { depth=2 }
 
@@ -23,7 +28,9 @@ To use Akka Streams, add the module to your project:
 * [stream-rate](stream-rate.md)
 * [stream-dynamic](stream-dynamic.md)
 * [stream-customize](stream-customize.md)
-* [stream-integrations](stream-integrations.md)
+* [futures-interop](futures-interop.md)
+* [actor-interop](actor-interop.md)
+* [reactive-streams-interop](reactive-streams-interop.md)
 * [stream-error](stream-error.md)
 * [stream-io](stream-io.md)
 * [stream-refs](stream-refs.md)

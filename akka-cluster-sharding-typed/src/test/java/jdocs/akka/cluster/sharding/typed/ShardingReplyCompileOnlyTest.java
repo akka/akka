@@ -4,56 +4,84 @@
 
 package jdocs.akka.cluster.sharding.typed;
 
-import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
+import akka.actor.typed.javadsl.AbstractBehavior;
+import akka.actor.typed.javadsl.ActorContext;
 import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.typed.javadsl.Receive;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
+import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
 
-public class ShardingReplyCompileOnlyTest {
-
-  ActorSystem system = ActorSystem.create(Behaviors.empty(), "ShardingExample");
-  ClusterSharding sharding = ClusterSharding.get(system);
+interface ShardingReplyCompileOnlyTest {
 
   // #sharded-response
   // a sharded actor that needs counter updates
-  EntityTypeKey<Command> typeKey = EntityTypeKey.create(Command.class, "example-sharded-response");
+  public class CounterConsumer {
+    public static EntityTypeKey<Command> typeKey =
+        EntityTypeKey.create(Command.class, "example-sharded-response");
 
-  public interface Command {}
+    public interface Command {}
 
-  class NewCount implements Command {
-    public final long value;
+    public static class NewCount implements Command {
+      public final long value;
 
-    NewCount(long value) {
-      this.value = value;
+      public NewCount(long value) {
+        this.value = value;
+      }
     }
   }
 
   // a sharded counter that sends responses to another sharded actor
-  interface CounterCommand {}
+  public class Counter extends AbstractBehavior<Counter.Command> {
+    public static EntityTypeKey<Command> typeKey =
+        EntityTypeKey.create(Command.class, "example-sharded-counter");
 
-  enum Increment implements CounterCommand {
-    INSTANCE
-  }
+    public interface Command {}
 
-  class GetValue implements CounterCommand {
-    public final String replyToEntityId;
-
-    GetValue(String replyToEntityId) {
-      this.replyToEntityId = replyToEntityId;
+    public enum Increment implements Command {
+      INSTANCE
     }
-  }
 
-  public Behavior<CounterCommand> counter(int value) {
-    return Behaviors.receive(CounterCommand.class)
-        .onMessage(Increment.class, msg -> counter(value + 1))
-        .onMessage(
-            GetValue.class,
-            msg -> {
-              sharding.entityRefFor(typeKey, msg.replyToEntityId).tell(new NewCount(value));
-              return Behaviors.same();
-            })
-        .build();
+    public static class GetValue implements Command {
+      public final String replyToEntityId;
+
+      public GetValue(String replyToEntityId) {
+        this.replyToEntityId = replyToEntityId;
+      }
+    }
+
+    public static Behavior<Command> create() {
+      return Behaviors.setup(Counter::new);
+    }
+
+    private final ClusterSharding sharding;
+    private int value = 0;
+
+    private Counter(ActorContext<Command> context) {
+      super(context);
+      this.sharding = ClusterSharding.get(context.getSystem());
+    }
+
+    @Override
+    public Receive<Command> createReceive() {
+      return newReceiveBuilder()
+          .onMessage(Increment.class, msg -> onIncrement())
+          .onMessage(GetValue.class, this::onGetValue)
+          .build();
+    }
+
+    private Behavior<Command> onIncrement() {
+      value++;
+      return this;
+    }
+
+    private Behavior<Command> onGetValue(GetValue msg) {
+      EntityRef<CounterConsumer.Command> entityRef =
+          sharding.entityRefFor(CounterConsumer.typeKey, msg.replyToEntityId);
+      entityRef.tell(new CounterConsumer.NewCount(value));
+      return this;
+    }
   }
   // #sharded-response
 }

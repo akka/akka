@@ -16,6 +16,7 @@ Transform each element in the stream by calling a mapping function with it and p
 
 Transform each element in the stream by calling a mapping function with it and passing the returned value downstream.
 
+## Reactive Streams semantics
 
 @@@div { .callout }
 

@@ -17,7 +17,8 @@ trait EventsByPersistenceIdQuery extends ReadJournal {
    * Query events for a specific `PersistentActor` identified by `persistenceId`.
    *
    * You can retrieve a subset of all events by specifying `fromSequenceNr` and `toSequenceNr`
-   * or use `0L` and `Long.MaxValue` respectively to retrieve all events.
+   * or use `0L` and `Long.MaxValue` respectively to retrieve all events. The query will
+   * return all the events inclusive of the `fromSequenceNr` and `toSequenceNr` values.
    *
    * The returned event stream should be ordered by sequence number.
    *

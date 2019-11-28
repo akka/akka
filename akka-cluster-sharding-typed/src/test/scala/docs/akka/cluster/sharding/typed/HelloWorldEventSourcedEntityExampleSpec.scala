@@ -5,10 +5,12 @@
 package docs.akka.cluster.sharding.typed
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
+import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
@@ -27,7 +29,8 @@ object HelloWorldEventSourcedEntityExampleSpec {
 
 class HelloWorldEventSourcedEntityExampleSpec
     extends ScalaTestWithActorTestKit(HelloWorldEventSourcedEntityExampleSpec.config)
-    with WordSpecLike {
+    with WordSpecLike
+    with LogCapturing {
   import HelloWorldPersistentEntityExample.HelloWorld
   import HelloWorldPersistentEntityExample.HelloWorld._
 
@@ -37,14 +40,16 @@ class HelloWorldEventSourcedEntityExampleSpec
     super.beforeAll()
     Cluster(system).manager ! Join(Cluster(system).selfMember.address)
 
-    sharding.init(Entity(HelloWorld.entityTypeKey, ctx => HelloWorld.persistentEntity(ctx.entityId)))
+    sharding.init(Entity(HelloWorld.TypeKey) { entityContext =>
+      HelloWorld(entityContext.entityId, PersistenceId(entityContext.entityTypeKey.name, entityContext.entityId))
+    })
   }
 
   "HelloWorld example" must {
 
     "sayHello" in {
       val probe = createTestProbe[Greeting]()
-      val ref = ClusterSharding(system).entityRefFor(HelloWorld.entityTypeKey, "1")
+      val ref = ClusterSharding(system).entityRefFor(HelloWorld.TypeKey, "1")
       ref ! Greet("Alice")(probe.ref)
       probe.expectMessage(Greeting("Alice", 1))
       ref ! Greet("Bob")(probe.ref)

@@ -4,189 +4,27 @@
 
 package jdocs.akka.typed;
 
-// #import
-import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.StashBuffer;
-// #import
-
 import akka.Done;
-import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.Behaviors;
+import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import akka.actor.testkit.typed.javadsl.TestProbe;
+import akka.actor.typed.ActorRef;
 import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 import org.scalatest.junit.JUnitSuite;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 
+import static jdocs.akka.typed.StashDocSample.DB;
+import static jdocs.akka.typed.StashDocSample.DataAccess;
+
 public class StashDocTest extends JUnitSuite {
 
-  // #db
-
-  interface DB {
-    CompletionStage<Done> save(String id, String value);
-
-    CompletionStage<String> load(String id);
-  }
-  // #db
-
-  // #stashing
-
-  public static class DataAccess {
-
-    interface Command {}
-
-    public static class Save implements Command {
-      public final String payload;
-      public final ActorRef<Done> replyTo;
-
-      public Save(String payload, ActorRef<Done> replyTo) {
-        this.payload = payload;
-        this.replyTo = replyTo;
-      }
-    }
-
-    public static class Get implements Command {
-      public final ActorRef<String> replyTo;
-
-      public Get(ActorRef<String> replyTo) {
-        this.replyTo = replyTo;
-      }
-    }
-
-    static class InitialState implements Command {
-      public final String value;
-
-      InitialState(String value) {
-        this.value = value;
-      }
-    }
-
-    enum SaveSuccess implements Command {
-      INSTANCE
-    }
-
-    static class DBError implements Command {
-      public final RuntimeException cause;
-
-      public DBError(RuntimeException cause) {
-        this.cause = cause;
-      }
-    }
-
-    private final ActorContext<Command> context;
-    private final StashBuffer<Command> buffer;
-    private final String id;
-    private final DB db;
-
-    private DataAccess(
-        ActorContext<Command> context, StashBuffer<Command> buffer, String id, DB db) {
-      this.context = context;
-      this.buffer = buffer;
-      this.id = id;
-      this.db = db;
-    }
-
-    public static Behavior<Command> create(String id, DB db) {
-      return Behaviors.setup(
-          ctx ->
-              Behaviors.withStash(
-                  100,
-                  stash -> {
-                    ctx.pipeToSelf(
-                        db.load(id),
-                        (value, cause) -> {
-                          if (cause == null) return new InitialState(value);
-                          else return new DBError(asRuntimeException(cause));
-                        });
-
-                    return new DataAccess(ctx, stash, id, db).init();
-                  }));
-    }
-
-    private Behavior<Command> init() {
-      return Behaviors.receive(Command.class)
-          .onMessage(
-              InitialState.class,
-              message -> {
-                // now we are ready to handle stashed messages if any
-                return buffer.unstashAll(active(message.value));
-              })
-          .onMessage(
-              DBError.class,
-              message -> {
-                throw message.cause;
-              })
-          .onMessage(
-              Command.class,
-              message -> {
-                // stash all other messages for later processing
-                buffer.stash(message);
-                return Behaviors.same();
-              })
-          .build();
-    }
-
-    private Behavior<Command> active(String state) {
-      return Behaviors.receive(Command.class)
-          .onMessage(
-              Get.class,
-              message -> {
-                message.replyTo.tell(state);
-                return Behaviors.same();
-              })
-          .onMessage(
-              Save.class,
-              message -> {
-                context.pipeToSelf(
-                    db.save(id, message.payload),
-                    (value, cause) -> {
-                      if (cause == null) return SaveSuccess.INSTANCE;
-                      else return new DBError(asRuntimeException(cause));
-                    });
-                return saving(message.payload, message.replyTo);
-              })
-          .build();
-    }
-
-    private Behavior<Command> saving(String state, ActorRef<Done> replyTo) {
-      return Behaviors.receive(Command.class)
-          .onMessage(
-              SaveSuccess.class,
-              message -> {
-                replyTo.tell(Done.getInstance());
-                return buffer.unstashAll(active(state));
-              })
-          .onMessage(
-              DBError.class,
-              message -> {
-                throw message.cause;
-              })
-          .onMessage(
-              Command.class,
-              message -> {
-                buffer.stash(message);
-                return Behaviors.same();
-              })
-          .build();
-    }
-
-    private static RuntimeException asRuntimeException(Throwable t) {
-      // can't throw Throwable in lambdas
-      if (t instanceof RuntimeException) {
-        return (RuntimeException) t;
-      } else {
-        return new RuntimeException(t);
-      }
-    }
-  }
-
-  // #stashing
-
   @ClassRule public static final TestKitJunitResource testKit = new TestKitJunitResource();
+
+  @Rule public final LogCapturing logCapturing = new LogCapturing();
 
   @Test
   public void stashingExample() throws Exception {

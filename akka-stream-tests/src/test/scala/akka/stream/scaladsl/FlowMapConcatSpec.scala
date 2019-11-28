@@ -4,16 +4,17 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ ActorAttributes, ActorMaterializer, ActorMaterializerSettings, Supervision }
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.stream.ActorAttributes
+import akka.stream.Supervision
+
 import scala.util.control.NoStackTrace
 
-class FlowMapConcatSpec extends StreamSpec with ScriptedTest {
-
-  val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
-  implicit val materializer = ActorMaterializer(settings)
+class FlowMapConcatSpec extends StreamSpec("""
+    akka.stream.materializer.initial-input-buffer-size = 2
+  """) with ScriptedTest {
 
   "A MapConcat" must {
 
@@ -25,7 +26,7 @@ class FlowMapConcatSpec extends StreamSpec with ScriptedTest {
         Seq(3) -> Seq(3, 3, 3),
         Seq(2) -> Seq(2, 2),
         Seq(1) -> Seq(1))
-      TestConfig.RandomTestRange.foreach(_ => runScript(script, settings)(_.mapConcat(x => (1 to x).map(_ => x))))
+      TestConfig.RandomTestRange.foreach(_ => runScript(script)(_.mapConcat(x => (1 to x).map(_ => x))))
     }
 
     "map and concat grouping with slow downstream" in assertAllStagesStopped {

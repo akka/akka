@@ -7,8 +7,6 @@ package akka.cluster.ddata.typed.javadsl
 import java.time.Duration
 import java.util.function.{ Function => JFunction }
 
-import scala.util.control.NoStackTrace
-
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.DeadLetterSuppression
@@ -31,14 +29,14 @@ object Replicator {
    * The `Behavior` for the `Replicator` actor.
    */
   def behavior(settings: dd.ReplicatorSettings): Behavior[Command] =
-    ReplicatorBehavior.behavior(settings, underlyingReplicator = None).narrow[Command]
+    ReplicatorBehavior(settings, underlyingReplicator = None).narrow[Command]
 
   /**
    * The `Behavior` for the `Replicator` actor.
    * It will use the given underlying [[akka.cluster.ddata.Replicator]]
    */
   def behavior(settings: dd.ReplicatorSettings, underlyingReplicator: akka.actor.ActorRef): Behavior[Command] =
-    ReplicatorBehavior.behavior(settings, Some(underlyingReplicator)).narrow[Command]
+    ReplicatorBehavior(settings, Some(underlyingReplicator)).narrow[Command]
 
   @DoNotInherit trait Command extends akka.cluster.ddata.typed.scaladsl.Replicator.Command
 
@@ -46,60 +44,60 @@ object Replicator {
     def timeout: Duration
 
     /** INTERNAL API */
-    @InternalApi private[akka] def toUntyped: dd.Replicator.ReadConsistency
+    @InternalApi private[akka] def toClassic: dd.Replicator.ReadConsistency
   }
   case object ReadLocal extends ReadConsistency {
     override def timeout: Duration = Duration.ZERO
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadLocal
+    @InternalApi private[akka] override def toClassic = dd.Replicator.ReadLocal
   }
   final case class ReadFrom(n: Int, timeout: Duration) extends ReadConsistency {
     require(n >= 2, "ReadFrom n must be >= 2, use ReadLocal for n=1")
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadFrom(n, timeout.asScala)
+    @InternalApi private[akka] override def toClassic = dd.Replicator.ReadFrom(n, timeout.asScala)
   }
   final case class ReadMajority(timeout: Duration, minCap: Int = DefaultMajorityMinCap) extends ReadConsistency {
     def this(timeout: Duration) = this(timeout, DefaultMajorityMinCap)
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadMajority(timeout.asScala, minCap)
+    @InternalApi private[akka] override def toClassic = dd.Replicator.ReadMajority(timeout.asScala, minCap)
   }
   final case class ReadAll(timeout: Duration) extends ReadConsistency {
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.ReadAll(timeout.asScala)
+    @InternalApi private[akka] override def toClassic = dd.Replicator.ReadAll(timeout.asScala)
   }
 
   sealed trait WriteConsistency {
     def timeout: Duration
 
     /** INTERNAL API */
-    @InternalApi private[akka] def toUntyped: dd.Replicator.WriteConsistency
+    @InternalApi private[akka] def toClassic: dd.Replicator.WriteConsistency
   }
   case object WriteLocal extends WriteConsistency {
     override def timeout: Duration = Duration.ZERO
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteLocal
+    @InternalApi private[akka] override def toClassic = dd.Replicator.WriteLocal
   }
   final case class WriteTo(n: Int, timeout: Duration) extends WriteConsistency {
     require(n >= 2, "WriteTo n must be >= 2, use WriteLocal for n=1")
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteTo(n, timeout.asScala)
+    @InternalApi private[akka] override def toClassic = dd.Replicator.WriteTo(n, timeout.asScala)
   }
   final case class WriteMajority(timeout: Duration, minCap: Int = DefaultMajorityMinCap) extends WriteConsistency {
     def this(timeout: Duration) = this(timeout, DefaultMajorityMinCap)
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteMajority(timeout.asScala, minCap)
+    @InternalApi private[akka] override def toClassic = dd.Replicator.WriteMajority(timeout.asScala, minCap)
   }
   final case class WriteAll(timeout: Duration) extends WriteConsistency {
 
     /** INTERNAL API */
-    @InternalApi private[akka] override def toUntyped = dd.Replicator.WriteAll(timeout.asScala)
+    @InternalApi private[akka] override def toClassic = dd.Replicator.WriteAll(timeout.asScala)
   }
 
   /**
@@ -122,7 +120,7 @@ object Replicator {
       replyTo: ActorRef[GetResponse[A]])
       extends Command
 
-  @DoNotInherit sealed abstract class GetResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+  @DoNotInherit sealed abstract class GetResponse[A <: ReplicatedData] {
     def key: Key[A]
   }
 
@@ -152,6 +150,11 @@ object Replicator {
    */
   final case class GetFailure[A <: ReplicatedData](key: Key[A]) extends GetResponse[A]
 
+  /**
+   * The [[Get]] request couldn't be performed because the entry has been deleted.
+   */
+  final case class GetDataDeleted[A <: ReplicatedData](key: Key[A]) extends GetResponse[A]
+
   object Update {
 
     private def modifyWithInitial[A <: ReplicatedData](initial: A, modify: A => A): Option[A] => A = {
@@ -177,8 +180,7 @@ object Replicator {
       key: Key[A],
       writeConsistency: WriteConsistency,
       replyTo: ActorRef[UpdateResponse[A]])(val modify: Option[A] => A)
-      extends Command
-      with NoSerializationVerificationNeeded {
+      extends Command {
 
     /**
      * Modify value of local `Replicator` and replicate with given `writeConsistency`.
@@ -197,7 +199,7 @@ object Replicator {
 
   }
 
-  @DoNotInherit sealed abstract class UpdateResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+  @DoNotInherit sealed abstract class UpdateResponse[A <: ReplicatedData] {
     def key: Key[A]
   }
   final case class UpdateSuccess[A <: ReplicatedData](key: Key[A]) extends UpdateResponse[A] with DeadLetterSuppression
@@ -214,6 +216,11 @@ object Replicator {
    * crashes before it has been able to communicate with other replicas.
    */
   final case class UpdateTimeout[A <: ReplicatedData](key: Key[A]) extends UpdateFailure[A]
+
+  /**
+   * The [[Update]] couldn't be performed because the entry has been deleted.
+   */
+  final case class UpdateDataDeleted[A <: ReplicatedData](key: Key[A]) extends UpdateResponse[A]
 
   /**
    * If the `modify` function of the [[Update]] throws an exception the reply message
@@ -250,21 +257,30 @@ object Replicator {
    * If the key is deleted the subscriber is notified with a [[Deleted]]
    * message.
    */
-  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
+  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[SubscribeResponse[A]])
+      extends Command
 
   /**
    * Unregister a subscriber.
    *
    * @see [[Replicator.Subscribe]]
    */
-  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
+  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[SubscribeResponse[A]])
+      extends Command
+
+  /**
+   * @see [[Replicator.Subscribe]]
+   */
+  sealed trait SubscribeResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+    def key: Key[A]
+  }
 
   /**
    * The data value is retrieved with [[#get]] using the typed key.
    *
    * @see [[Replicator.Subscribe]]
    */
-  final case class Changed[A <: ReplicatedData](key: Key[A])(data: A) {
+  final case class Changed[A <: ReplicatedData](key: Key[A])(data: A) extends SubscribeResponse[A] {
 
     /**
      * The data value, with correct type.
@@ -282,6 +298,11 @@ object Replicator {
   }
 
   /**
+   * @see [[Replicator.Subscribe]]
+   */
+  final case class Deleted[A <: ReplicatedData](key: Key[A]) extends SubscribeResponse[A]
+
+  /**
    * Send this message to the local `Replicator` to delete a data value for the
    * given `key`. The `Replicator` will reply with one of the [[DeleteResponse]] messages.
    */
@@ -290,19 +311,13 @@ object Replicator {
       consistency: WriteConsistency,
       replyTo: ActorRef[DeleteResponse[A]])
       extends Command
-      with NoSerializationVerificationNeeded
 
-  sealed trait DeleteResponse[A <: ReplicatedData] extends NoSerializationVerificationNeeded {
+  sealed trait DeleteResponse[A <: ReplicatedData] {
     def key: Key[A]
   }
   final case class DeleteSuccess[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
-  final case class ReplicationDeleteFailure[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
-  final case class DataDeleted[A <: ReplicatedData](key: Key[A])
-      extends RuntimeException
-      with NoStackTrace
-      with DeleteResponse[A] {
-    override def toString: String = s"DataDeleted [$key]"
-  }
+  final case class DeleteFailure[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
+  final case class DataDeleted[A <: ReplicatedData](key: Key[A]) extends DeleteResponse[A]
 
   /**
    * Get current number of replicas, including the local replica.

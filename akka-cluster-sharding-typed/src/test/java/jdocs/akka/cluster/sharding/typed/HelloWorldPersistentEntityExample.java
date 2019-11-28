@@ -6,6 +6,7 @@ package jdocs.akka.cluster.sharding.typed;
 
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
+import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.ActorContext;
 import java.time.Duration;
 import java.util.Collections;
@@ -14,8 +15,9 @@ import java.util.Set;
 import java.util.concurrent.CompletionStage;
 
 // #persistent-entity-import
+import akka.actor.typed.javadsl.Behaviors;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
-import akka.cluster.sharding.typed.javadsl.EventSourcedEntity;
+import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.Effect;
 import akka.persistence.typed.javadsl.EventHandler;
@@ -25,6 +27,7 @@ import akka.persistence.typed.javadsl.EventHandler;
 import akka.cluster.sharding.typed.javadsl.ClusterSharding;
 import akka.cluster.sharding.typed.javadsl.EntityRef;
 import akka.cluster.sharding.typed.javadsl.Entity;
+import akka.persistence.typed.javadsl.EventSourcedBehavior;
 import akka.serialization.jackson.CborSerializable;
 import akka.util.Timeout;
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -44,10 +47,15 @@ public class HelloWorldPersistentEntityExample {
       this.system = system;
       sharding = ClusterSharding.get(system);
 
+      // registration at startup
       sharding.init(
-          Entity.ofEventSourcedEntity(
+          Entity.of(
               HelloWorld.ENTITY_TYPE_KEY,
-              ctx -> new HelloWorld(ctx.getActorContext(), ctx.getEntityId())));
+              entityContext ->
+                  HelloWorld.create(
+                      entityContext.getEntityId(),
+                      PersistenceId.of(
+                          entityContext.getEntityTypeKey().name(), entityContext.getEntityId()))));
     }
 
     // usage example
@@ -64,10 +72,10 @@ public class HelloWorldPersistentEntityExample {
   // #persistent-entity
 
   public static class HelloWorld
-      extends EventSourcedEntity<HelloWorld.Command, HelloWorld.Greeted, HelloWorld.KnownPeople> {
+      extends EventSourcedBehavior<HelloWorld.Command, HelloWorld.Greeted, HelloWorld.KnownPeople> {
 
     // Command
-    interface Command extends CborSerializable {}
+    public interface Command extends CborSerializable {}
 
     public static final class Greet implements Command {
       public final String whom;
@@ -124,8 +132,14 @@ public class HelloWorldPersistentEntityExample {
     public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
         EntityTypeKey.create(Command.class, "HelloWorld");
 
-    public HelloWorld(ActorContext<Command> ctx, String entityId) {
-      super(ENTITY_TYPE_KEY, entityId);
+    public static Behavior<Command> create(String entityId, PersistenceId persistenceId) {
+      return Behaviors.setup(context -> new HelloWorld(context, entityId, persistenceId));
+    }
+
+    private HelloWorld(
+        ActorContext<Command> context, String entityId, PersistenceId persistenceId) {
+      super(persistenceId);
+      context.getLog().info("Starting HelloWorld {}", entityId);
     }
 
     @Override

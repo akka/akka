@@ -5,12 +5,7 @@
 package jdocs.akka.cluster.sharding.typed;
 
 import akka.actor.typed.ActorRef;
-import akka.actor.typed.Behavior;
-import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.Behaviors;
 import akka.cluster.sharding.typed.javadsl.EntityTypeKey;
-import akka.cluster.sharding.typed.javadsl.EventSourcedEntityWithEnforcedReplies;
-import akka.persistence.typed.ExpectingReply;
 import akka.persistence.typed.PersistenceId;
 import akka.persistence.typed.javadsl.CommandHandlerWithReply;
 import akka.persistence.typed.javadsl.CommandHandlerWithReplyBuilder;
@@ -27,97 +22,72 @@ import java.math.BigDecimal;
  * Bank account example illustrating: - different state classes representing the lifecycle of the
  * account - null as emptyState - event handlers that delegate to methods in the state classes -
  * command handlers that delegate to methods in the EventSourcedBehavior class - replies of various
- * types, using ExpectingReply and EventSourcedEntityWithEnforcedReplies
+ * types, using EventSourcedBehaviorWithEnforcedReplies
  */
 public interface AccountExampleWithNullState {
 
   // #account-entity
   public class AccountEntity
-      extends EventSourcedEntityWithEnforcedReplies<
-          AccountEntity.AccountCommand, AccountEntity.AccountEvent, AccountEntity.Account> {
+      extends EventSourcedBehaviorWithEnforcedReplies<
+          AccountEntity.Command, AccountEntity.Event, AccountEntity.Account> {
 
-    public static final EntityTypeKey<AccountCommand> ENTITY_TYPE_KEY =
-        EntityTypeKey.create(AccountCommand.class, "Account");
+    public static final EntityTypeKey<Command> ENTITY_TYPE_KEY =
+        EntityTypeKey.create(Command.class, "Account");
 
     // Command
-    interface AccountCommand<Reply> extends ExpectingReply<Reply>, CborSerializable {}
+    interface Command<Reply> extends CborSerializable {}
 
-    public static class CreateAccount implements AccountCommand<OperationResult> {
-      private final ActorRef<OperationResult> replyTo;
+    public static class CreateAccount implements Command<OperationResult> {
+      public final ActorRef<OperationResult> replyTo;
 
       @JsonCreator
       public CreateAccount(ActorRef<OperationResult> replyTo) {
         this.replyTo = replyTo;
       }
-
-      @Override
-      public ActorRef<OperationResult> replyTo() {
-        return replyTo;
-      }
     }
 
-    public static class Deposit implements AccountCommand<OperationResult> {
+    public static class Deposit implements Command<OperationResult> {
       public final BigDecimal amount;
-      private final ActorRef<OperationResult> replyTo;
+      public final ActorRef<OperationResult> replyTo;
 
       public Deposit(BigDecimal amount, ActorRef<OperationResult> replyTo) {
         this.replyTo = replyTo;
         this.amount = amount;
       }
-
-      @Override
-      public ActorRef<OperationResult> replyTo() {
-        return replyTo;
-      }
     }
 
-    public static class Withdraw implements AccountCommand<OperationResult> {
+    public static class Withdraw implements Command<OperationResult> {
       public final BigDecimal amount;
-      private final ActorRef<OperationResult> replyTo;
+      public final ActorRef<OperationResult> replyTo;
 
       public Withdraw(BigDecimal amount, ActorRef<OperationResult> replyTo) {
         this.amount = amount;
         this.replyTo = replyTo;
       }
-
-      @Override
-      public ActorRef<OperationResult> replyTo() {
-        return replyTo;
-      }
     }
 
-    public static class GetBalance implements AccountCommand<CurrentBalance> {
-      private final ActorRef<CurrentBalance> replyTo;
+    public static class GetBalance implements Command<CurrentBalance> {
+      public final ActorRef<CurrentBalance> replyTo;
 
       @JsonCreator
       public GetBalance(ActorRef<CurrentBalance> replyTo) {
         this.replyTo = replyTo;
       }
-
-      @Override
-      public ActorRef<CurrentBalance> replyTo() {
-        return replyTo;
-      }
     }
 
-    public static class CloseAccount implements AccountCommand<OperationResult> {
-      private final ActorRef<OperationResult> replyTo;
+    public static class CloseAccount implements Command<OperationResult> {
+      public final ActorRef<OperationResult> replyTo;
 
       @JsonCreator
       public CloseAccount(ActorRef<OperationResult> replyTo) {
         this.replyTo = replyTo;
       }
-
-      @Override
-      public ActorRef<OperationResult> replyTo() {
-        return replyTo;
-      }
     }
 
     // Reply
-    interface AccountCommandReply extends CborSerializable {}
+    interface CommandReply extends CborSerializable {}
 
-    interface OperationResult extends AccountCommandReply {}
+    interface OperationResult extends CommandReply {}
 
     enum Confirmed implements OperationResult {
       INSTANCE
@@ -132,7 +102,7 @@ public interface AccountExampleWithNullState {
       }
     }
 
-    public static class CurrentBalance implements AccountCommandReply {
+    public static class CurrentBalance implements CommandReply {
       public final BigDecimal balance;
 
       @JsonCreator
@@ -142,11 +112,11 @@ public interface AccountExampleWithNullState {
     }
 
     // Event
-    interface AccountEvent extends CborSerializable {}
+    interface Event extends CborSerializable {}
 
-    public static class AccountCreated implements AccountEvent {}
+    public static class AccountCreated implements Event {}
 
-    public static class Deposited implements AccountEvent {
+    public static class Deposited implements Event {
       public final BigDecimal amount;
 
       @JsonCreator
@@ -155,7 +125,7 @@ public interface AccountExampleWithNullState {
       }
     }
 
-    public static class Withdrawn implements AccountEvent {
+    public static class Withdrawn implements Event {
       public final BigDecimal amount;
 
       @JsonCreator
@@ -164,7 +134,7 @@ public interface AccountExampleWithNullState {
       }
     }
 
-    public static class AccountClosed implements AccountEvent {}
+    public static class AccountClosed implements Event {}
 
     // State
     interface Account extends CborSerializable {}
@@ -202,12 +172,15 @@ public interface AccountExampleWithNullState {
 
     public static class ClosedAccount implements Account {}
 
-    public static AccountEntity create(String accountNumber) {
-      return new AccountEntity(accountNumber);
+    public static AccountEntity create(String accountNumber, PersistenceId persistenceId) {
+      return new AccountEntity(accountNumber, persistenceId);
     }
 
-    public AccountEntity(String accountNumber) {
-      super(ENTITY_TYPE_KEY, accountNumber);
+    private final String accountNumber;
+
+    private AccountEntity(String accountNumber, PersistenceId persistenceId) {
+      super(persistenceId);
+      this.accountNumber = accountNumber;
     }
 
     @Override
@@ -216,8 +189,8 @@ public interface AccountExampleWithNullState {
     }
 
     @Override
-    public CommandHandlerWithReply<AccountCommand, AccountEvent, Account> commandHandler() {
-      CommandHandlerWithReplyBuilder<AccountCommand, AccountEvent, Account> builder =
+    public CommandHandlerWithReply<Command, Event, Account> commandHandler() {
+      CommandHandlerWithReplyBuilder<Command, Event, Account> builder =
           newCommandHandlerWithReplyBuilder();
 
       builder.forNullState().onCommand(CreateAccount.class, this::createAccount);
@@ -236,48 +209,47 @@ public interface AccountExampleWithNullState {
       return builder.build();
     }
 
-    private ReplyEffect<AccountEvent, Account> createAccount(CreateAccount command) {
+    private ReplyEffect<Event, Account> createAccount(CreateAccount command) {
       return Effect()
           .persist(new AccountCreated())
-          .thenReply(command, account2 -> Confirmed.INSTANCE);
+          .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
     }
 
-    private ReplyEffect<AccountEvent, Account> deposit(OpenedAccount account, Deposit command) {
+    private ReplyEffect<Event, Account> deposit(OpenedAccount account, Deposit command) {
       return Effect()
           .persist(new Deposited(command.amount))
-          .thenReply(command, account2 -> Confirmed.INSTANCE);
+          .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
     }
 
-    private ReplyEffect<AccountEvent, Account> withdraw(OpenedAccount account, Withdraw command) {
+    private ReplyEffect<Event, Account> withdraw(OpenedAccount account, Withdraw command) {
       if (!account.canWithdraw(command.amount)) {
         return Effect()
-            .reply(command, new Rejected("not enough funds to withdraw " + command.amount));
+            .reply(command.replyTo, new Rejected("not enough funds to withdraw " + command.amount));
       } else {
         return Effect()
             .persist(new Withdrawn(command.amount))
-            .thenReply(command, account2 -> Confirmed.INSTANCE);
+            .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
       }
     }
 
-    private ReplyEffect<AccountEvent, Account> getBalance(
-        OpenedAccount account, GetBalance command) {
-      return Effect().reply(command, new CurrentBalance(account.balance));
+    private ReplyEffect<Event, Account> getBalance(OpenedAccount account, GetBalance command) {
+      return Effect().reply(command.replyTo, new CurrentBalance(account.balance));
     }
 
-    private ReplyEffect<AccountEvent, Account> closeAccount(
-        OpenedAccount account, CloseAccount command) {
+    private ReplyEffect<Event, Account> closeAccount(OpenedAccount account, CloseAccount command) {
       if (account.balance.equals(BigDecimal.ZERO)) {
         return Effect()
             .persist(new AccountClosed())
-            .thenReply(command, account2 -> Confirmed.INSTANCE);
+            .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
       } else {
-        return Effect().reply(command, new Rejected("balance must be zero for closing account"));
+        return Effect()
+            .reply(command.replyTo, new Rejected("balance must be zero for closing account"));
       }
     }
 
     @Override
-    public EventHandler<Account, AccountEvent> eventHandler() {
-      EventHandlerBuilder<Account, AccountEvent> builder = newEventHandlerBuilder();
+    public EventHandler<Account, Event> eventHandler() {
+      EventHandlerBuilder<Account, Event> builder = newEventHandlerBuilder();
 
       builder.forNullState().onEvent(AccountCreated.class, () -> new OpenedAccount());
 

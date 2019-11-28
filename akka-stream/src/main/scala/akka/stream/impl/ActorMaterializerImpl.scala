@@ -7,22 +7,32 @@ package akka.stream.impl
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor._
-import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
 import akka.event.LoggingAdapter
-import akka.pattern.{ ask, pipe, retry }
+import akka.pattern.ask
+import akka.pattern.pipe
+import akka.pattern.retry
 import akka.stream._
-import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphInterpreterShell }
+import akka.stream.impl.fusing.ActorGraphInterpreter
+import akka.stream.impl.fusing.GraphInterpreterShell
 import akka.stream.snapshot.StreamSnapshot
-import akka.util.{ OptionVal, Timeout }
+import akka.util.OptionVal
+import akka.util.Timeout
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Future
 
 /**
  * ExtendedActorMaterializer used by subtypes which delegates in-island wiring to [[akka.stream.impl.PhaseIsland]]s
+ *
+ * INTERNAL API
  */
+@silent("deprecated")
 @DoNotInherit private[akka] abstract class ExtendedActorMaterializer extends ActorMaterializer {
 
   override def withNamePrefix(name: String): ExtendedActorMaterializer
@@ -46,10 +56,8 @@ import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
   @InternalApi private[akka] override def actorOf(context: MaterializationContext, props: Props): ActorRef = {
     val effectiveProps = props.dispatcher match {
       case Dispatchers.DefaultDispatcherId =>
+        // the caller said to use the default dispatcher, but that can been trumped by the dispatcher attribute
         props.withDispatcher(context.effectiveAttributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
-      case ActorAttributes.IODispatcher.dispatcher =>
-        // this one is actually not a dispatcher but a relative config key pointing containing the actual dispatcher name
-        props.withDispatcher(settings.blockingIoDispatcher)
       case _ => props
     }
 
@@ -63,14 +71,6 @@ import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
     supervisor match {
       case ref: LocalActorRef =>
         ref.underlying.attachChild(props, name, systemService = false)
-      case ref: RepointableActorRef =>
-        if (ref.isStarted)
-          ref.underlying.asInstanceOf[ActorCell].attachChild(props, name, systemService = false)
-        else {
-          implicit val timeout = ref.system.settings.CreationTimeout
-          val f = (supervisor ? StreamSupervisor.Materialize(props, name)).mapTo[ActorRef]
-          Await.result(f, timeout.duration)
-        }
       case unknown =>
         throw new IllegalStateException(s"Stream supervisor must be a local actor, was [${unknown.getClass.getName}]")
     }
@@ -104,7 +104,7 @@ private[akka] class SubFusingActorMaterializerImpl(
         attributes: Attributes,
         materializer: PhasedFusingActorMaterializer,
         islandName: String): PhaseIsland[Any] = {
-      new GraphStageIsland(settings, attributes, materializer, islandName, OptionVal(registerShell))
+      new GraphStageIsland(attributes, materializer, islandName, OptionVal(registerShell))
         .asInstanceOf[PhaseIsland[Any]]
     }
   }
@@ -151,6 +151,22 @@ private[akka] class SubFusingActorMaterializerImpl(
 
   override def withNamePrefix(name: String): SubFusingActorMaterializerImpl =
     new SubFusingActorMaterializerImpl(delegate.withNamePrefix(name), registerShell)
+
+  override def shutdown(): Unit = delegate.shutdown()
+
+  override def isShutdown: Boolean = delegate.isShutdown
+
+  override def system: ActorSystem = delegate.system
+
+  override private[akka] def logger = delegate.logger
+
+  override private[akka] def supervisor = delegate.supervisor
+
+  override private[akka] def actorOf(context: MaterializationContext, props: Props): ActorRef =
+    delegate.actorOf(context, props)
+
+  @silent("deprecated")
+  override def settings: ActorMaterializerSettings = delegate.settings
 }
 
 /**
@@ -173,21 +189,15 @@ private[akka] class SubFusingActorMaterializerImpl(
  * INTERNAL API
  */
 @InternalApi private[akka] object StreamSupervisor {
-  def props(settings: ActorMaterializerSettings, haveShutDown: AtomicBoolean): Props =
-    Props(new StreamSupervisor(haveShutDown)).withDeploy(Deploy.local).withDispatcher(settings.dispatcher)
+  def props(attributes: Attributes, haveShutDown: AtomicBoolean): Props =
+    Props(new StreamSupervisor(haveShutDown))
+      .withDeploy(Deploy.local)
+      .withDispatcher(attributes.mandatoryAttribute[ActorAttributes.Dispatcher].dispatcher)
   private[stream] val baseName = "StreamSupervisor"
   private val actorName = SeqActorName(baseName)
   def nextName(): String = actorName.next()
 
   final case class Materialize(props: Props, name: String)
-      extends DeadLetterSuppression
-      with NoSerializationVerificationNeeded
-
-  final case class AddFunctionRef(f: (ActorRef, Any) => Unit, name: String)
-      extends DeadLetterSuppression
-      with NoSerializationVerificationNeeded
-
-  final case class RemoveFunctionRef(ref: FunctionRef)
       extends DeadLetterSuppression
       with NoSerializationVerificationNeeded
 
@@ -221,11 +231,6 @@ private[akka] class SubFusingActorMaterializerImpl(
     case Materialize(props, name) =>
       val impl = context.actorOf(props, name)
       sender() ! impl
-    case AddFunctionRef(f, name) =>
-      val ref = context.asInstanceOf[ActorCell].addFunctionRef(f, name)
-      sender() ! ref
-    case RemoveFunctionRef(ref) =>
-      context.asInstanceOf[ActorCell].removeFunctionRef(ref)
     case GetChildren =>
       sender() ! Children(context.children.toSet)
     case GetChildrenSnapshots =>

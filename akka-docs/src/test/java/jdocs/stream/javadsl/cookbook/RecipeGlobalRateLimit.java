@@ -24,19 +24,16 @@ import static junit.framework.TestCase.assertTrue;
 
 public class RecipeGlobalRateLimit extends RecipeTest {
   static ActorSystem system;
-  static Materializer mat;
 
   @BeforeClass
   public static void setup() {
     system = ActorSystem.create("RecipeGlobalRateLimit");
-    mat = ActorMaterializer.create(system);
   }
 
   @AfterClass
   public static void tearDown() {
     TestKit.shutdownActorSystem(system);
     system = null;
-    mat = null;
   }
 
   public
@@ -145,8 +142,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
     @Override
     public void postStop() {
       replenishTimer.cancel();
-      waitQueue
-          .stream()
+      waitQueue.stream()
           .forEach(
               ref -> {
                 ref.tell(
@@ -229,7 +225,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
                           builder.from(merge).to(s);
                           return ClosedShape.getInstance();
                         }))
-                .run(mat);
+                .run(system);
 
         probe.expectSubscription().request(1000);
 
