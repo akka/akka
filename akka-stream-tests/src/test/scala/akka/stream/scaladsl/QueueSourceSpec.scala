@@ -153,7 +153,7 @@ class QueueSourceSpec extends StreamSpec {
       val s = TestSubscriber.manualProbe[Int]()
       val probe = TestProbe()
       val queue =
-        TestSourceStage(new QueueSource[Int](1, OverflowStrategy.dropHead), probe).to(Sink.fromSubscriber(s)).run()
+        TestSourceStage(new QueueSource[Int](1, OverflowStrategy.dropHead, 1), probe).to(Sink.fromSubscriber(s)).run()
       val sub = s.expectSubscription
 
       sub.request(1)
@@ -163,7 +163,7 @@ class QueueSourceSpec extends StreamSpec {
       sub.cancel()
     }
 
-    "fail offer future if user does not wait in backpressure mode" in assertAllStagesStopped {
+    "allow to wait only one offer future in backpressure mode with default maxConcurrentPulls" in assertAllStagesStopped {
       val (queue, probe) = Source.queue[Int](5, OverflowStrategy.backpressure).toMat(TestSink.probe)(Keep.both).run()
 
       for (i <- 1 to 5) assertSuccess(queue.offer(i))
@@ -178,6 +178,28 @@ class QueueSourceSpec extends StreamSpec {
       queue.complete()
 
       probe.request(6).expectNext(2, 3, 4, 5, 6).expectComplete()
+    }
+
+    "allow to wait `n` offer futures in backpressure mode with `n` maxConcurrentPulls" in assertAllStagesStopped {
+      val n = 2
+      val (queue, probe) = Source.queue[Int](5, OverflowStrategy.backpressure, n).toMat(TestSink.probe)(Keep.both).run()
+
+      for (i <- 1 to 5) assertSuccess(queue.offer(i))
+
+      queue.offer(6).pipeTo(testActor)
+      queue.offer(7).pipeTo(testActor)
+      queue.offer(8).pipeTo(testActor)
+      expectMsgType[Status.Failure].cause shouldBe an[IllegalStateException]
+
+      probe.requestNext(1)
+      expectMsg(QueueOfferResult.Enqueued)
+
+      probe.requestNext(2)
+      expectMsg(QueueOfferResult.Enqueued)
+
+      queue.complete()
+
+      probe.request(7).expectNext(3, 4, 5, 6, 7).expectComplete()
     }
 
     "complete watching future with failure if stream failed" in assertAllStagesStopped {

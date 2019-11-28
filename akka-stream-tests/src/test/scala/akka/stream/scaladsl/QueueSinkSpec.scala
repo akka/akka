@@ -34,7 +34,7 @@ class QueueSinkSpec extends StreamSpec {
       }
     }
 
-    "allow to have only one future waiting for result in each point of time with default request buffer size" in
+    "allow to have only one future waiting for result in each point of time with default maxConcurrentOffers" in
     assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue())
@@ -51,7 +51,7 @@ class QueueSinkSpec extends StreamSpec {
       queue.pull()
     }
 
-    "allow to have `n` futures waiting for result in each point of time with `n` request buffer size" in
+    "allow to have `n` futures waiting for result in each point of time with `n` maxConcurrentOffers" in
     assertAllStagesStopped {
       val n = 2
       val probe = TestPublisher.manualProbe[Int]()

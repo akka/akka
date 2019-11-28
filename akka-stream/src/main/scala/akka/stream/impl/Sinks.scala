@@ -333,12 +333,12 @@ import org.reactivestreams.Subscriber
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class QueueSink[T](requestBufferSize: Int)
+@InternalApi private[akka] final class QueueSink[T](maxConcurrentPulls: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueueWithCancel[T]] {
 
   def this() = this(1)
 
-  require(requestBufferSize > 0, "Request buffer size must be greater than 0")
+  require(maxConcurrentPulls > 0, "Request buffer size must be greater than 0")
 
   type Requested[E] = Promise[Option[E]]
 
@@ -356,21 +356,23 @@ import org.reactivestreams.Subscriber
       require(maxBuffer > 0, "Buffer size must be greater than 0")
 
       var buffer: Buffer[Received[T]] = _
-      var currentRequests: mutable.Queue[Requested[T]] = mutable.Queue.empty
+      var currentRequests: Buffer[Requested[T]] = _
 
       override def preStart(): Unit = {
         // Allocates one additional element to hold stream
         // closed/failure indicators
         buffer = Buffer(maxBuffer + 1, materializer)
+        currentRequests = Buffer(maxConcurrentPulls, materializer)
         setKeepGoing(true)
         pull(in)
       }
 
       private val callback = getAsyncCallback[Output[T]] {
         case QueueSink.Pull(pullPromise) =>
-          if (currentRequests.size >= requestBufferSize)
-            pullPromise.failure(new IllegalStateException(
-              "Request buffer is full. You have to wait for one previous future to be resolved to send another request"))
+          if (currentRequests.isFull)
+            pullPromise.failure(
+              new IllegalStateException(s"Too many concurrent pulls. Specified maximum is $maxConcurrentPulls. " +
+              "You have to wait for one previous future to be resolved to send another request"))
           else if (buffer.isEmpty) currentRequests.enqueue(pullPromise)
           else {
             if (buffer.used == maxBuffer) tryPull(in)
