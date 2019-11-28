@@ -338,8 +338,9 @@ object Sink {
    * [[akka.stream.javadsl.SinkQueueWithCancel.pull]] method is pulling element from the stream and returns ``CompletionStage[Option[T]]``.
    * `CompletionStage` completes when element is available.
    *
-   * Before calling pull method second time need to ensure that request buffer is not full or wait until some of the previous CompletionStages completes.
-   * Pull returns Failed future with ''IllegalStateException'' if request buffer is full.
+   * Before calling pull method second time you need to ensure that number of pending pulls is less then ``maxConcurrentPulls``
+   * or wait until some of the previous Futures completes.
+   * Pull returns Failed future with ''IllegalStateException'' if there will be more then ``maxConcurrentPulls`` number of pending pulls.
    *
    * `Sink` will request at most number of elements equal to size of `inputBuffer` from
    * upstream and then stop back pressure.  You can configure size of input
@@ -350,8 +351,8 @@ object Sink {
    *
    * @see [[akka.stream.javadsl.SinkQueueWithCancel]]
    */
-  def queue[T](requestBufferSize: Int): Sink[T, SinkQueueWithCancel[T]] =
-    new Sink(scaladsl.Sink.queue[T](requestBufferSize).mapMaterializedValue(_.asJava))
+  def queue[T](maxConcurrentPulls: Int): Sink[T, SinkQueueWithCancel[T]] =
+    new Sink(scaladsl.Sink.queue[T](maxConcurrentPulls).mapMaterializedValue(_.asJava))
 
   /**
    * Creates a `Sink` that is materialized as an [[akka.stream.javadsl.SinkQueueWithCancel]].
