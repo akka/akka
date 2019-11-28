@@ -6,8 +6,7 @@ package akka.actor.typed
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
-import akka.actor.ClassicActorSystemProvider
-import akka.actor.BootstrapSetup
+import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
@@ -18,6 +17,7 @@ import akka.util.Helpers.Requiring
 import akka.{ Done, actor => classic }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.slf4j.Logger
+
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 
 /**
@@ -165,6 +165,16 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
   def eventStream: ActorRef[EventStream.Command] =
     EventStreamExtension(this).ref
 
+  /**
+   * Obtains the external address of the default transport.
+   *
+   * Consider differences in clustered and non-clustered ActorSystems.
+   * For a non-clustered ActorSystem, this will return an address without host and port.
+   * For a clustered ActorSystem, this will return the address that other nodes can use to
+   * communicate with this node.
+   */
+  def address: Address
+
 }
 
 object ActorSystem {
@@ -262,7 +272,8 @@ object ActorSystem {
       appConfig,
       cl,
       executionContext,
-      Some(PropsAdapter[Any](() => GuardianStartupBehavior(guardianBehavior), guardianProps)),
+      Some(
+        PropsAdapter[Any](() => GuardianStartupBehavior(guardianBehavior), guardianProps, rethrowTypedFailure = false)),
       setup)
     system.start()
 

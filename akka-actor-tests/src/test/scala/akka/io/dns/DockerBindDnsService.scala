@@ -80,6 +80,11 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
     }
   }
 
+  def dumpNameserverLogs(): Unit = {
+    id.foreach(id => log.info("Nameserver std out: {} ", client.logs(id, LogsParam.stdout()).readFully()))
+    id.foreach(id => log.info("Nameserver std err: {} ", client.logs(id, LogsParam.stderr()).readFully()))
+  }
+
   override def afterTermination(): Unit = {
     self.afterTermination()
     id.foreach(client.killContainer)

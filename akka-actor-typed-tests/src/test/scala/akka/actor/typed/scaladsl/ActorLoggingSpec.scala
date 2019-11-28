@@ -7,6 +7,9 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.actor.ActorPath
+import akka.actor.ExtendedActorSystem
+import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
@@ -263,11 +266,11 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         }
       }
       val actor =
-        LoggingTestKit.info("Starting up").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).expect {
+        LoggingTestKit.info("Starting up").withMdc(Map(ActorMdc.AkkaTagsKey -> "tag1,tag2")).expect {
           spawn(behavior, ActorTags("tag1", "tag2"))
         }
 
-      LoggingTestKit.info("Got message").withMdc(Map(ActorMdc.TagsKey -> "tag1,tag2")).expect {
+      LoggingTestKit.info("Got message").withMdc(Map(ActorMdc.AkkaTagsKey -> "tag1,tag2")).expect {
         actor ! "ping"
       }
     }
@@ -342,7 +345,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
       val ref = LoggingTestKit
         .info("Starting")
         // not counting for example "akkaSource", but it shouldn't have any other entries
-        .withCustom(logEvent => logEvent.mdc.keysIterator.forall(_.startsWith("akka")))
+        .withCustom(logEvent =>
+          logEvent.mdc.keysIterator.forall(entry => entry.startsWith("akka") || entry == "sourceActorSystem"))
         .expect {
           spawn(behaviors)
         }
@@ -463,10 +467,10 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
 
     "always include some MDC values in the log" in {
       // need AtomicReference because LoggingFilter defined before actor is created and ActorTestKit names are dynamic
-      val actorPathStr = new AtomicReference[String]
+      val actorPath = new AtomicReference[ActorPath]
       val behavior =
         Behaviors.setup[Message] { context =>
-          actorPathStr.set(context.self.path.toString)
+          actorPath.set(context.self.path)
           context.log.info("Starting")
           Behaviors.receiveMessage { _ =>
             if (MDC.get("logSource") != null)
@@ -476,15 +480,32 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
           }
         }
 
+      def assertExpectedMdc(event: LoggingEvent) = {
+        try {
+          event.mdc should contain allElementsOf (
+            Map(
+              ActorMdc.AkkaAddressKey -> system.classicSystem.asInstanceOf[ExtendedActorSystem].provider.addressString,
+              ActorMdc.AkkaSourceKey -> actorPath.get.toString,
+              ActorMdc.SourceActorSystemKey -> system.name)
+          )
+          true
+        } catch {
+          case ex: Throwable =>
+            // give us some info about what was missing thanks
+            ex.printStackTrace()
+            false
+        }
+      }
+
       // log from setup
       // can't use LoggingEventFilter.withMdc here because the actorPathStr isn't know yet
       val ref =
-        LoggingTestKit.info("Starting").withCustom(event => event.mdc("akkaSource") == actorPathStr.get).expect {
+        LoggingTestKit.info("Starting").withCustom(assertExpectedMdc).expect {
           spawn(behavior)
         }
 
       // on message
-      LoggingTestKit.info("Got message!").withMdc(Map("akkaSource" -> actorPathStr.get)).withOccurrences(10).expect {
+      LoggingTestKit.info("Got message!").withCustom(assertExpectedMdc).withOccurrences(10).expect {
         (1 to 10).foreach { n =>
           ref ! Message(n, s"msg-$n")
         }

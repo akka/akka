@@ -9,10 +9,8 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
-
 import akka.Done
-import akka.actor.CoordinatedShutdown
-import akka.actor.InvalidMessageException
+import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
@@ -158,6 +156,12 @@ class ActorSystemSpec
         intercept[InvalidMessageException] {
           sys ! null
         }
+      }
+    }
+
+    "return default address " in {
+      withSystem("address", Behaviors.empty[String]) { sys =>
+        sys.address shouldBe Address("akka", "adapter-address")
       }
     }
   }

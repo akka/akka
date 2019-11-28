@@ -212,7 +212,7 @@ different Reactive Streams implementations.
 
 Akka Streams implements these concepts as `Source`, `Flow` (referred to as `Processor` in Reactive Streams)
 and `Sink` without exposing the Reactive Streams interfaces directly.
-If you need to integrate with other Reactive Stream libraries, read @ref:[Integrating with Reactive Streams](stream-integrations.md#reactive-streams-integration).
+If you need to integrate with other Reactive Stream libraries, read @ref:[Integrating with Reactive Streams](reactive-streams-interop.md).
 
 @@@
 

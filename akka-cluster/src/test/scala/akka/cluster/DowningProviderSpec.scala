@@ -7,7 +7,6 @@ package akka.cluster
 import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
 
 import akka.ConfigurationException
 import akka.actor.ActorSystem
@@ -76,25 +75,17 @@ class DowningProviderSpec extends WordSpec with Matchers {
     }
 
     "stop the cluster if the downing provider throws exception in props method" in {
-      try {
-        val system = ActorSystem(
-          "auto-downing",
-          ConfigFactory.parseString("""
+      val system = ActorSystem(
+        "auto-downing",
+        ConfigFactory.parseString("""
           akka.cluster.downing-provider-class="akka.cluster.FailingDowningProvider"
         """).withFallback(baseConf))
 
-        val cluster = Cluster(system)
-        cluster.join(cluster.selfAddress)
+      val cluster = Cluster(system)
+      cluster.join(cluster.selfAddress)
 
-        awaitCond(cluster.isTerminated, 3.seconds)
-        shutdownActorSystem(system)
-      } catch {
-        case NonFatal(e) if e.getMessage.contains("cannot create children while terminating") =>
-          // FIXME #27840
-          // cannot create children while terminating or terminated
-          // thrown from loadExtension SystemMaterializer
-          pending
-      }
+      awaitCond(cluster.isTerminated, 3.seconds)
+      shutdownActorSystem(system)
     }
 
   }

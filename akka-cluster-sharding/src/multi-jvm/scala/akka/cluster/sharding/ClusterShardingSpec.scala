@@ -228,7 +228,8 @@ object ClusterShardingDocCode {
 
 object PersistentClusterShardingSpecConfig extends ClusterShardingSpecConfig("persistence")
 object DDataClusterShardingSpecConfig extends ClusterShardingSpecConfig("ddata")
-object PersistentClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig("persistence", "all")
+object PersistentClusterShardingWithEntityRecoverySpecConfig
+    extends ClusterShardingSpecConfig("persistence", "constant")
 object DDataClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig("ddata", "constant")
 
 class PersistentClusterShardingSpec extends ClusterShardingSpec(PersistentClusterShardingSpecConfig)
@@ -254,21 +255,21 @@ class DDataClusterShardingMultiJvmNode5 extends DDataClusterShardingSpec
 class DDataClusterShardingMultiJvmNode6 extends DDataClusterShardingSpec
 class DDataClusterShardingMultiJvmNode7 extends DDataClusterShardingSpec
 
-class PersistentClusterShardingWithEntityRecoveryMultiJvmNode1 extends PersistentClusterShardingSpec
-class PersistentClusterShardingWithEntityRecoveryMultiJvmNode2 extends PersistentClusterShardingSpec
-class PersistentClusterShardingWithEntityRecoveryMultiJvmNode3 extends PersistentClusterShardingSpec
-class PersistentClusterShardingWithEntityRecoveryMultiJvmNode4 extends PersistentClusterShardingSpec
-class PersistentClusterShardingWithEntityRecoveryMultiJvmNode5 extends PersistentClusterShardingSpec
-class PersistentClusterShardingWithEntityRecoveryMultiJvmNode6 extends PersistentClusterShardingSpec
-class PersistentClusterShardingWithEntityRecoveryMultiJvmNode7 extends PersistentClusterShardingSpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode1 extends PersistentClusterShardingWithEntityRecoverySpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode2 extends PersistentClusterShardingWithEntityRecoverySpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode3 extends PersistentClusterShardingWithEntityRecoverySpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode4 extends PersistentClusterShardingWithEntityRecoverySpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode5 extends PersistentClusterShardingWithEntityRecoverySpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode6 extends PersistentClusterShardingWithEntityRecoverySpec
+class PersistentClusterShardingWithEntityRecoveryMultiJvmNode7 extends PersistentClusterShardingWithEntityRecoverySpec
 
-class DDataClusterShardingWithEntityRecoveryMultiJvmNode1 extends DDataClusterShardingSpec
-class DDataClusterShardingWithEntityRecoveryMultiJvmNode2 extends DDataClusterShardingSpec
-class DDataClusterShardingWithEntityRecoveryMultiJvmNode3 extends DDataClusterShardingSpec
-class DDataClusterShardingWithEntityRecoveryMultiJvmNode4 extends DDataClusterShardingSpec
-class DDataClusterShardingWithEntityRecoveryMultiJvmNode5 extends DDataClusterShardingSpec
-class DDataClusterShardingWithEntityRecoveryMultiJvmNode6 extends DDataClusterShardingSpec
-class DDataClusterShardingWithEntityRecoveryMultiJvmNode7 extends DDataClusterShardingSpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode1 extends DDataClusterShardingWithEntityRecoverySpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode2 extends DDataClusterShardingWithEntityRecoverySpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode3 extends DDataClusterShardingWithEntityRecoverySpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode4 extends DDataClusterShardingWithEntityRecoverySpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode5 extends DDataClusterShardingWithEntityRecoverySpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode6 extends DDataClusterShardingWithEntityRecoverySpec
+class DDataClusterShardingWithEntityRecoveryMultiJvmNode7 extends DDataClusterShardingWithEntityRecoverySpec
 
 abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
     extends MultiNodeSpec(config)
@@ -341,8 +342,10 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
           .props
           .withDeploy(Deploy.local)
       system.actorOf(
-        ClusterSingletonManager
-          .props(singletonProps, terminationMessage = PoisonPill, settings = ClusterSingletonManagerSettings(system)),
+        ClusterSingletonManager.props(
+          singletonProps,
+          terminationMessage = ShardCoordinator.Internal.Terminate,
+          settings = ClusterSingletonManagerSettings(system)),
         name = typeName + "Coordinator")
     }
   }

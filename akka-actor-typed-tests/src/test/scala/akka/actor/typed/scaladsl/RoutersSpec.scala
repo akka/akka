@@ -5,34 +5,28 @@
 package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.Dropped
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.ActorRef
-import akka.actor.typed.Behavior
+import akka.actor.testkit.typed.scaladsl.{ LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.internal.routing.GroupRouterImpl
-import akka.actor.typed.internal.routing.RoutingLogics
-import akka.actor.typed.receptionist.Receptionist
-import akka.actor.typed.receptionist.ServiceKey
+import akka.actor.typed.internal.routing.{ GroupRouterImpl, RoutingLogics }
+import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.adapter._
-import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
+import akka.actor.typed.{ ActorRef, Behavior }
+import akka.actor.{ ActorSystem, Dropped }
+import org.scalatest.{ Matchers, WordSpecLike }
 
 class RoutersSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel=debug
   """) with WordSpecLike with Matchers with LogCapturing {
 
   // needed for the event filter
-  implicit val classicSystem = system.toClassic
+  implicit val classicSystem: ActorSystem = system.toClassic
 
   def compileOnlyApiCoverage(): Unit = {
     Routers.group(ServiceKey[String]("key")).withRandomRouting().withRoundRobinRouting()
 
     Routers.pool(10)(Behaviors.empty[Any]).withRandomRouting()
     Routers.pool(10)(Behaviors.empty[Any]).withRoundRobinRouting()
+    Routers.pool(10)(Behaviors.empty[Any]).withConsistentHashingRouting(1, (msg: Any) => msg.toString)
   }
 
   "The router pool" must {

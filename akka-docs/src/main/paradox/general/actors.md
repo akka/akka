@@ -161,7 +161,7 @@ their parent.
 
 ## Supervisor Strategy
 
-The final piece of an actor is its a strategy for handling unexpected exceptions - failures. 
+The final piece of an actor is its strategy for handling unexpected exceptions - failures. 
 Fault handling is then done transparently by Akka, applying one of the strategies described 
 in @ref:[Fault Tolerance](../typed/fault-tolerance.md) for each failure.
 

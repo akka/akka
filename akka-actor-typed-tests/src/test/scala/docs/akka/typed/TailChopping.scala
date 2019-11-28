@@ -46,9 +46,9 @@ object TailChopping {
 
         def sendNextRequest(requestCount: Int): Behavior[Command] = {
           if (sendRequest(requestCount, replyAdapter)) {
-            timers.startSingleTimer(RequestTimeout, RequestTimeout, nextRequestAfter)
+            timers.startSingleTimer(RequestTimeout, nextRequestAfter)
           } else {
-            timers.startSingleTimer(FinalTimeout, FinalTimeout, finalTimeout)
+            timers.startSingleTimer(FinalTimeout, finalTimeout)
           }
           waiting(requestCount)
         }

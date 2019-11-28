@@ -196,6 +196,20 @@ A starting point for configuration of `logback.xml` for production:
 
 @@snip [logback.xml](/akka-actor-typed-tests/src/test/resources/logback-doc-prod.xml)
 
+Note that the `AsyncAppender` may drop log events if the queue becomes full, which may happen if the
+logging backend can't keep up with the throughput of produced log events. Dropping log events is necessary
+if you want to gracefully degrade your application if only your logging backend or filesystem is experiencing
+issues. 
+
+An alternative of the Logback `AsyncAppender` with better performance is the [Logstash async appender](https://github.com/logstash/logstash-logback-encoder#async-appenders).
+
+The ELK-stack is commonly used as logging infrastructure for production:
+
+* [Logstash Logback encoder](https://github.com/logstash/logstash-logback-encoder)
+* [Logstash](https://www.elastic.co/guide/en/logstash/current/index.html)
+* [Elasticsearch](https://www.elastic.co/guide/en/elasticsearch/reference/current/index.html)
+* [Kibana](https://www.elastic.co/guide/en/kibana/current/index.html)
+
 For development you might want to log to standard out, but also have all debug level logging to file, like
 in this example:
 
@@ -387,7 +401,7 @@ With Logback the actor path is available with `%X{akkaSource}` specifier within 
   </encoder>
 ```
 
-The actor system in which the logging was performed is available in the MDC with attribute name `sourceActorSystem`,
+The actor system name in which the logging was performed is available in the MDC with attribute name `sourceActorSystem`,
 but that is typically also included in the `akkaSource` attribute.
 With Logback the ActorSystem name is available with `%X{sourceActorSystem}` specifier within the pattern layout configuration:
 
@@ -397,9 +411,20 @@ With Logback the ActorSystem name is available with `%X{sourceActorSystem}` spec
   </encoder>
 ```
 
-Akka's internal logging is asynchronous which means that the timestamp of a log entry is taken from
+The address of the actor system, containing host and port if the system is using cluster, is available through `akkaAddress`:
+
+```
+  <encoder>
+    <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaAddress} - %msg%n</pattern>
+  </encoder>
+```
+
+
+For typed actors the log event timestamp is taken when the log call was made but for
+Akka's _internal_ logging as well as the classic actor logging is asynchronous which means that the timestamp of a log entry is taken from
 when the underlying logger implementation is called, which can be surprising at first.
-If you want to more accurately output the timestamp, use the MDC attribute `akkaTimestamp`.
+If you want to more accurately output the timestamp for such loggers, use the MDC attribute `akkaTimestamp`. Note that 
+the MDC key will not have any value for a typed actor.
 With Logback the timestamp is available with `%X{akkaTimestamp}` specifier within the pattern layout configuration:
 
 ```

@@ -15,7 +15,7 @@ To use Akka Actors, add the following dependency in your project:
   version=$akka.version$
 }
 
-Both the Java and Scala DSLs of Akka modules bundled in the same JAR. For a smooth development experience,
+Both the Java and Scala DSLs of Akka modules are bundled in the same JAR. For a smooth development experience,
 when using an IDE such as Eclipse or IntelliJ, you can disable the auto-importer from suggesting `javadsl`
 imports when working in Scala, or viceversa. See @ref:[IDE Tips](../additional/ide.md). 
 
@@ -80,9 +80,8 @@ the next behavior is "the same as the current one".
 The type of the messages handled by this behavior is declared to be of class
 `Greet`@java[.]@scala[, meaning that `message` argument is also typed as such.
 This is why we can access the `whom` and `replyTo` members without needing to use a pattern match.]
-Typically, an actor handles more than one specific message type and then there
-is one common @scala[`trait`]@java[`interface`] that all messages that the
-actor can handle @scala[`extends`]@java[`implements`].
+Typically, an actor handles more than one specific message type where all of them
+directly or indirectly @scala[`extend`]@java[`implement`] a common @scala[`trait`]@java[`interface`].
 
 On the last line we see the `HelloWorld` Actor send a message to another
 Actor, which is done using the @scala[`!` operator (pronounced “bang” or “tell”)]@java[`tell` method].
