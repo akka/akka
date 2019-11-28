@@ -812,7 +812,44 @@ object Source {
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
-    Source.fromGraph(new QueueSource(bufferSize, overflowStrategy).withAttributes(DefaultAttributes.queueSource))
+    queue(bufferSize, overflowStrategy, 1)
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.stream.scaladsl.SourceQueueWithComplete]].
+   * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
+   * if downstream is terminated.
+   *
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
+   * there is no space available in the buffer.
+   *
+   * Acknowledgement mechanism is available.
+   * [[akka.stream.scaladsl.SourceQueueWithComplete.offer]] returns `Future[QueueOfferResult]` which completes with
+   * `QueueOfferResult.Enqueued` if element was added to buffer or sent downstream. It completes with
+   * `QueueOfferResult.Dropped` if element was dropped. Can also complete  with `QueueOfferResult.Failure` -
+   * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
+   *
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `maxConcurrentOffers` number of
+   * `offer():Future` call when buffer is full.
+   *
+   * You can watch accessibility of stream with [[akka.stream.scaladsl.SourceQueueWithComplete.watchCompletion]].
+   * It returns future that completes with success when the operator is completed or fails when the stream is failed.
+   *
+   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
+   * for downstream demand unless there is another message waiting for downstream demand, in that case
+   * offer result will be completed according to the overflow strategy.
+   *
+   * @param bufferSize size of buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   * @param maxConcurrentOffers maximum number of pending offers for backpressure overflow strategy
+   *                            when buffer is full
+   */
+  def queue[T](
+      bufferSize: Int,
+      overflowStrategy: OverflowStrategy,
+      maxConcurrentOffers: Int): Source[T, SourceQueueWithComplete[T]] =
+    Source.fromGraph(
+      new QueueSource(bufferSize, overflowStrategy, maxConcurrentOffers).withAttributes(DefaultAttributes.queueSource))
 
   /**
    * Start a new `Source` from some resource which can be opened, read and closed.

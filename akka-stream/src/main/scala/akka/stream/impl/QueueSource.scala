@@ -27,7 +27,10 @@ import scala.concurrent.{ Future, Promise }
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class QueueSource[T](maxBuffer: Int, overflowStrategy: OverflowStrategy)
+@InternalApi private[akka] final class QueueSource[T](
+    maxBuffer: Int,
+    overflowStrategy: OverflowStrategy,
+    maxConcurrentOffers: Int)
     extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
   import QueueSource._
 
@@ -41,11 +44,12 @@ import scala.concurrent.{ Future, Promise }
       override protected def logSource: Class[_] = classOf[QueueSource[_]]
 
       var buffer: Buffer[T] = _
-      var pendingOffer: Option[Offer[T]] = None
+      var pendingOffers: Buffer[Offer[T]] = _
       var terminating = false
 
       override def preStart(): Unit = {
         if (maxBuffer > 0) buffer = Buffer(maxBuffer, inheritedAttributes)
+        pendingOffers = Buffer(maxConcurrentOffers, inheritedAttributes)
       }
       override def postStop(): Unit = {
         val exception = new StreamDetachedException()
@@ -91,14 +95,12 @@ import scala.concurrent.{ Future, Promise }
               failStage(bufferOverflowException)
             case s: Backpressure =>
               log.log(s.logLevel, "Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")
-              pendingOffer match {
-                case Some(_) =>
-                  offer.promise.failure(
-                    new IllegalStateException(
-                      "You have to wait for the previous offer to be resolved to send another request"))
-                case None =>
-                  pendingOffer = Some(offer)
-              }
+              if (pendingOffers.isFull)
+                offer.promise.failure(
+                  new IllegalStateException(
+                    s"Too many concurrent offers. Specified maximum is $maxConcurrentOffers. " +
+                    "You have to wait for one previous future to be resolved to send another request"))
+              else pendingOffers.enqueue(offer)
           }
       }
 
@@ -113,14 +115,14 @@ import scala.concurrent.{ Future, Promise }
           } else if (isAvailable(out)) {
             push(out, elem)
             promise.success(QueueOfferResult.Enqueued)
-          } else if (pendingOffer.isEmpty)
-            pendingOffer = Some(offer)
+          } else if (!pendingOffers.isFull)
+            pendingOffers.enqueue(offer)
           else
             overflowStrategy match {
               case s @ (_: DropHead | _: DropBuffer) =>
                 log.log(s.logLevel, "Dropping element because buffer is full and overflowStrategy is: [{}]", s)
-                pendingOffer.get.promise.success(QueueOfferResult.Dropped)
-                pendingOffer = Some(offer)
+                pendingOffers.dequeue().promise.success(QueueOfferResult.Dropped)
+                pendingOffers.enqueue(offer)
               case s @ (_: DropTail | _: DropNew) =>
                 log.log(s.logLevel, "Dropping element because buffer is full and overflowStrategy is: [{}]", s)
                 promise.success(QueueOfferResult.Dropped)
@@ -139,7 +141,7 @@ import scala.concurrent.{ Future, Promise }
             }
 
         case Completion =>
-          if (maxBuffer != 0 && buffer.nonEmpty || pendingOffer.nonEmpty) terminating = true
+          if (maxBuffer != 0 && buffer.nonEmpty || pendingOffers.nonEmpty) terminating = true
           else {
             completion.success(Done)
             completeStage()
@@ -153,37 +155,25 @@ import scala.concurrent.{ Future, Promise }
       setHandler(out, this)
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
-        pendingOffer match {
-          case Some(Offer(_, promise)) =>
-            promise.success(QueueOfferResult.QueueClosed)
-            pendingOffer = None
-          case None => // do nothing
-        }
+        while (pendingOffers.nonEmpty) pendingOffers.dequeue().promise.success(QueueOfferResult.QueueClosed)
         completion.success(Done)
         completeStage()
       }
 
       override def onPull(): Unit = {
         if (maxBuffer == 0) {
-          pendingOffer match {
-            case Some(Offer(elem, promise)) =>
-              push(out, elem)
-              promise.success(QueueOfferResult.Enqueued)
-              pendingOffer = None
-              if (terminating) {
-                completion.success(Done)
-                completeStage()
-              }
-            case None =>
+          if (pendingOffers.nonEmpty) {
+            val offer = pendingOffers.dequeue()
+            push(out, offer.elem)
+            offer.promise.success(QueueOfferResult.Enqueued)
+            if (terminating) {
+              completion.success(Done)
+              completeStage()
+            }
           }
         } else if (buffer.nonEmpty) {
           push(out, buffer.dequeue())
-          pendingOffer match {
-            case Some(offer) =>
-              enqueueAndSuccess(offer)
-              pendingOffer = None
-            case None => //do nothing
-          }
+          while (pendingOffers.nonEmpty && !buffer.isFull) enqueueAndSuccess(pendingOffers.dequeue())
           if (terminating && buffer.isEmpty) {
             completion.success(Done)
             completeStage()
