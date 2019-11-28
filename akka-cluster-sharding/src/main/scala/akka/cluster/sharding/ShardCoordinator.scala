@@ -434,15 +434,15 @@ object ShardCoordinator {
       regions: Set[ActorRef],
       shuttingDownRegions: Set[ActorRef])
       extends Actor
-      with ActorLogging {
+      with ActorLogging
+      with Timers {
     import Internal._
 
     shuttingDownRegions.foreach(context.watch)
     regions.foreach(_ ! BeginHandOff(shard))
     var remaining = regions
 
-    import context.dispatcher
-    context.system.scheduler.scheduleOnce(handOffTimeout, self, ReceiveTimeout)
+    timers.startSingleTimer("hand-off-timeout", ReceiveTimeout, handOffTimeout)
 
     def receive = {
       case BeginHandOffAck(`shard`) =>
