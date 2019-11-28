@@ -706,45 +706,6 @@ object Source {
     new Source(scaladsl.Source.queue[T](bufferSize, overflowStrategy).mapMaterializedValue(_.asJava))
 
   /**
-   * Creates a `Source` that is materialized as an [[akka.stream.javadsl.SourceQueueWithComplete]].
-   * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
-   * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
-   * if downstream is terminated.
-   *
-   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
-   * there is no space available in the buffer.
-   *
-   * Acknowledgement mechanism is available.
-   * [[akka.stream.javadsl.SourceQueueWithComplete.offer]] returns `CompletionStage<QueueOfferResult>` which completes with
-   * `QueueOfferResult.enqueued` if element was added to buffer or sent downstream. It completes with
-   * `QueueOfferResult.dropped` if element was dropped. Can also complete with `QueueOfferResult.Failure` -
-   * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
-   *
-   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `maxConcurrentOffers` number of
-   * `offer():CompletionStage` call when buffer is full.
-   *
-   * You can watch accessibility of stream with [[akka.stream.javadsl.SourceQueueWithComplete.watchCompletion]].
-   * It returns a future that completes with success when this operator is completed or fails when stream is failed.
-   *
-   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
-   * for downstream demand unless there is another message waiting for downstream demand, in that case
-   * offer result will be completed according to the overflow strategy.
-   *
-   * SourceQueue that current source is materialized to is for single thread usage only.
-   *
-   * @param bufferSize size of buffer in element count
-   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
-   * @param maxConcurrentOffers maximum number of pending offers for backpressure overflow strategy
-   *                            when buffer is full
-   */
-  def queue[T](
-      bufferSize: Int,
-      overflowStrategy: OverflowStrategy,
-      maxConcurrentOffers: Int): Source[T, SourceQueueWithComplete[T]] =
-    new Source(
-      scaladsl.Source.queue[T](bufferSize, overflowStrategy, maxConcurrentOffers).mapMaterializedValue(_.asJava))
-
-  /**
    * Start a new `Source` from some resource which can be opened, read and closed.
    * Interaction with resource happens in a blocking way.
    *
