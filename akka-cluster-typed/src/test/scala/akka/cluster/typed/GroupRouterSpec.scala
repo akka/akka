@@ -106,18 +106,19 @@ class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) 
     node2.manager ! Join(node1.selfMember.address)
 
     val statsPromise = Promise[(Seq[ActorRef[Ping.type]], Seq[ActorRef[Ping.type]])]
-    system.scheduler.scheduleAtFixedRate(200.millis, 200.millis)(() => {
+    val cancelable = system.scheduler.scheduleAtFixedRate(200.millis, 200.millis)(() => {
       implicit val timeout = Timeout(3.seconds)
       val actorRefsInNode1 = system1.ask[Seq[ActorRef[Ping.type]]](ref => GetWorkers(ref)).futureValue
       val actorRefsInNode2 = system2.ask[Seq[ActorRef[Ping.type]]](ref => GetWorkers(ref)).futureValue
       // waiting all messages are handled
-      if (actorRefsInNode1.size + actorRefsInNode2.size == settings.messageCount) {
+      if (actorRefsInNode1.size + actorRefsInNode2.size == settings.messageCount && !statsPromise.isCompleted) {
         statsPromise.success((actorRefsInNode1, actorRefsInNode2))
       }
     })(system.executionContext)
 
     try {
       val stats = statsPromise.future.futureValue
+      cancelable.cancel()
       resultCheck(stats._1, stats._2)
     } finally {
       system1.terminate()

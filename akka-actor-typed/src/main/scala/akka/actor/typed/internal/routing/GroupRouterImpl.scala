@@ -49,6 +49,7 @@ private[akka] final case class GroupRouterBuilder[T] private[akka] (
   def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: T => String): GroupRouterBuilder[T] = {
     import akka.actor.typed.scaladsl.adapter._
     copy(
+      preferLocalRoutees = false,
       logicFactory = system =>
         new RoutingLogics.ConsistentHashingLogic[T](
           virtualNodesFactor,
@@ -80,7 +81,7 @@ private final class InitialGroupRouterImpl[T](
 
   def onMessage(msg: T): Behavior[T] = msg match {
     case serviceKey.Listing(allRoutees) =>
-      val update = GroupRouterHelper.routeesToUpdate(allRoutees, routingLogic, preferLocalRoutees)
+      val update = GroupRouterHelper.routeesToUpdate(allRoutees,preferLocalRoutees)
       // we don't need to watch, because receptionist already does that
       routingLogic.routeesUpdated(update)
       val activeGroupRouter =
@@ -98,18 +99,15 @@ private final class InitialGroupRouterImpl[T](
   }
 }
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
 private[routing] object GroupRouterHelper {
   def routeesToUpdate[T](
       allRoutees: Set[ActorRef[T]],
-      routingLogic: RoutingLogic[T],
       preferLocalRoutees: Boolean): Set[ActorRef[T]] = {
-    val shouldFilter = preferLocalRoutees && (routingLogic match {
-        case _: RoutingLogics.RandomLogic[_]     => true
-        case _: RoutingLogics.RoundRobinLogic[_] => true
-        case _                                   => false
-      })
-    if (shouldFilter) {
+    if (preferLocalRoutees) {
       val localRoutees = allRoutees.filter(_.path.address.hasLocalScope)
       if (localRoutees.nonEmpty) localRoutees else allRoutees
     } else allRoutees
@@ -133,7 +131,7 @@ private[akka] final class GroupRouterImpl[T](
   def onMessage(msg: T): Behavior[T] = msg match {
     case l @ serviceKey.Listing(allRoutees) =>
       context.log.debug("Update from receptionist: [{}]", l)
-      val update = GroupRouterHelper.routeesToUpdate(allRoutees, routingLogic, preferLocalRoutees)
+      val update = GroupRouterHelper.routeesToUpdate(allRoutees, preferLocalRoutees)
 
       val routees =
         if (update.nonEmpty) update
