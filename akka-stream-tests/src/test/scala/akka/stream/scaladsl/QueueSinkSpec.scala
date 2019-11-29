@@ -79,9 +79,11 @@ class QueueSinkSpec extends StreamSpec {
       val mat = Materializer(system)
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))(mat)
+
       val future1 = queue.pull()
       val future2 = queue.pull()
       mat.shutdown()
+
       future1.failed.futureValue shouldBe an[AbruptTerminationException]
       future2.failed.futureValue shouldBe an[AbruptTerminationException]
     }
