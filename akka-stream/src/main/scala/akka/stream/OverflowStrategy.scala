@@ -88,7 +88,7 @@ private[akka] object OverflowStrategies {
    * INTERNAL API
    */
   private[akka] case object EmitEarly extends DelayOverflowStrategy {
-    private[akka] override def isBackpressure: Boolean = false
+    private[akka] override def isBackpressure: Boolean = true
   }
 }
 
@@ -132,6 +132,7 @@ object DelayOverflowStrategy {
 
   /**
    * If the buffer is full when a new element is available this strategy send next element downstream without waiting
+   * Will backpressure if downstream is not ready.
    */
   def emitEarly: DelayOverflowStrategy = EmitEarly
 
