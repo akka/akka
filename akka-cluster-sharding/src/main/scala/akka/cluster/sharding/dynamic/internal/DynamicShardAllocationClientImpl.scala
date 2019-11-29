@@ -36,6 +36,7 @@ import akka.pattern.ask
 import scala.concurrent.Future
 import scala.compat.java8.FutureConverters._
 import akka.util.JavaDurationConverters._
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -77,19 +78,21 @@ final private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSyste
   override def setShardLocation(shard: ShardId, location: Address): CompletionStage[Done] =
     updateShardLocation(shard, location).toJava
 
+  @silent("deprecated") // mapValues dance
   override def shardLocations(): Future[ShardLocations] = {
     Future
       .traverse(DataKeys) { key =>
         (replicator ? Get(key, ReadMajority(timeout))).flatMap {
           case success @ GetSuccess(`key`, _) =>
-            Future.successful(success.get(key).entries.mapValues(asStr => ShardLocation(AddressFromURIString(asStr))))
+            Future.successful(
+              success.get(key).entries.mapValues(asStr => ShardLocation(AddressFromURIString(asStr))).toMap)
           case GetFailure(_, _) =>
             Future.failed(
               (new ClientTimeoutException(s"Unable to get shard locations after ${timeout.duration.pretty}")))
         }
       }
       .map { all =>
-        new ShardLocations(all.reduce(_ ++ _))
+        new ShardLocations(all.reduce(_ ++ _).toMap)
       }
 
   }

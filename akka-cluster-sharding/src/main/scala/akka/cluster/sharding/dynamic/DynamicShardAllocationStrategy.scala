@@ -25,6 +25,7 @@ import akka.cluster.sharding.ShardRegion.ShardId
 import akka.event.Logging
 import akka.pattern.AskTimeoutException
 import akka.util.Timeout
+import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -72,6 +73,7 @@ object DynamicShardAllocationStrategy {
 
     override def receive: Receive = active
 
+    @silent("deprecated") // mapValues dance
     private def active: Receive = {
       case c @ Changed(key: LWWMapKey[ShardId, String] @unchecked) =>
         val newLocations = c.get(key).entries
@@ -83,7 +85,7 @@ object DynamicShardAllocationStrategy {
         sender() ! GetShardLocationResponse(shardLocation)
       case GetShardLocations =>
         log.debug("GetShardLocations")
-        sender() ! GetShardLocationsResponse(currentLocations.mapValues(asStr => AddressFromURIString(asStr)))
+        sender() ! GetShardLocationsResponse(currentLocations.mapValues(asStr => AddressFromURIString(asStr)).toMap)
     }
   }
 }
@@ -169,31 +171,40 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)(
       case (key, value) => (key.path.address, value)
     }
 
+    val currentlyAllocatedShards: Set[ShardId] = currentShardAllocations.foldLeft(Set.empty[ShardId]) {
+      case (acc, next) => acc ++ next._2.toSet
+    }
+
     log.debug("Current allocations by address: " + currentAllocationByAddress)
 
     val shardsThatNeedRebalanced: Future[Set[ShardId]] = for {
       desiredMappings <- (shardState ? GetShardLocations).mapTo[GetShardLocationsResponse]
     } yield {
       log.debug("desired allocations: {}", desiredMappings.desiredAllocations)
-      desiredMappings.desiredAllocations.filterNot {
-        case (shardId, expectedLocation) =>
+      desiredMappings.desiredAllocations.filter {
+        case (shardId, expectedLocation) if currentlyAllocatedShards.contains(shardId) =>
           currentAllocationByAddress.get(expectedLocation) match {
             case None =>
               log.debug(
                 "Shard {} desired location {} is not part of the cluster, not rebalancing",
                 shardId,
                 expectedLocation)
-              true // not a current allocation so don't rebalance yet
+              false // not a current allocation so don't rebalance yet
             case Some(shards) =>
               val inCorrectLocation = shards.contains(shardId)
-              inCorrectLocation
+              !inCorrectLocation
           }
+        case (shardId, _) =>
+          log.debug("Shard {} not currently allocated so not rebalancing to desired location", shardId)
+          false
       }
     }.keys.toSet
 
     shardsThatNeedRebalanced
       .map { done =>
-        log.debug("Shards not currently in their desired location {}", done)
+        if (done.nonEmpty) {
+          log.debug("Shards not currently in their desired location {}", done)
+        }
         done
       }
       .recover {
