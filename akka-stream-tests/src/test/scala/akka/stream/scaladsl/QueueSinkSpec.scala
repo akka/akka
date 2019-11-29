@@ -104,9 +104,10 @@ class QueueSinkSpec extends StreamSpec {
       val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))
       val future1 = queue.pull()
       val future2 = queue.pull()
-      probe.sendError(new IllegalArgumentException)
-      future1.failed.futureValue shouldBe an[IllegalArgumentException]
-      future2.failed.futureValue shouldBe an[IllegalArgumentException]
+      val ex = new IllegalArgumentException
+      probe.sendError(ex)
+      future1.failed.futureValue shouldBe ex
+      future2.failed.futureValue shouldBe ex
     }
 
     "wait for next element from upstream" in assertAllStagesStopped {
@@ -121,27 +122,6 @@ class QueueSinkSpec extends StreamSpec {
       expectMsg(Some(1))
       sub.sendComplete()
       queue.pull()
-    }
-
-    "fail future on stream failure" in assertAllStagesStopped {
-      val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source.fromPublisher(probe).runWith(Sink.queue())
-      val sub = probe.expectSubscription()
-
-      queue.pull().pipeTo(testActor)
-      expectNoMessage(noMsgTimeout)
-
-      sub.sendError(ex)
-      expectMsg(Status.Failure(ex))
-    }
-
-    "fail future when stream failed" in assertAllStagesStopped {
-      val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source.fromPublisher(probe).runWith(Sink.queue())
-      val sub = probe.expectSubscription()
-      sub.sendError(ex)
-
-      the[Exception] thrownBy { Await.result(queue.pull(), remainingOrDefault) } should be(ex)
     }
 
     "fail future immediately if stream already canceled" in assertAllStagesStopped {
