@@ -34,7 +34,7 @@ so create one per logical application. Typically one `ActorSystem` per JVM proce
 
 An actor can create, or _spawn_, an arbitrary number of child actors, which in turn can spawn children of their own, thus
 forming an actor hierarchy. @apidoc[akka.actor.typed.ActorSystem] hosts the hierarchy and there can be only one _root actor_,
-actor at the top of the hierarchy of the `ActorSystem`. The lifecycle of a child actor is tied to the parent -- a child
+an actor at the top of the hierarchy of the `ActorSystem`. The lifecycle of a child actor is tied to the parent -- a child
 can stop itself or be stopped at any time but it can never outlive its parent.
 
 ### The ActorContext
