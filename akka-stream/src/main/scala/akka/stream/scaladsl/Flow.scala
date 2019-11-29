@@ -26,7 +26,6 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
 import akka.actor.ActorRef
