@@ -128,7 +128,7 @@ per HTTP request.
 That is not difficult to implement in your behavior, but since this is a common pattern there is a predefined
 message protocol and implementation of a behavior for this. It can be used as the guardian actor of the `ActorSystem`,
 possibly combined with `Behaviors.setup` to start some initial tasks or actors. Child actors can then be started from
-the outside by telling or asking `SpawnProtocol.Spawn` to the actor reference of the system. When using `ask` this is
+the outside by `tell`ing or `ask`ing `SpawnProtocol.Spawn` to the actor reference of the system. Using `ask` is
 similar to how `ActorSystem.actorOf` can be used in classic actors with the difference that a
 @scala[`Future`]@java[`CompletionStage`] of the `ActorRef` is returned.
 
