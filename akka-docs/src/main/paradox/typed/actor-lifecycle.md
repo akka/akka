@@ -67,7 +67,7 @@ Many of the methods in `ActorContext` are not thread-safe and
 
 ### The Guardian Actor
 
-The top level actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor
+The top level actor, also called the user guardian actor, is created along with the `ActorSystem`. Messages sent to the actor
 system are directed to the root actor. The root actor is defined by the behavior used to create the `ActorSystem`,
 named `HelloWorldMain` in the example below:
 
