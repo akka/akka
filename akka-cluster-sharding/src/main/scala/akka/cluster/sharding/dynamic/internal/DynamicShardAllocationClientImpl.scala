@@ -22,7 +22,7 @@ import akka.cluster.ddata.Replicator.ReadMajority
 import akka.cluster.ddata.Replicator.Update
 import akka.cluster.ddata.Replicator.UpdateSuccess
 import akka.cluster.ddata.Replicator.UpdateTimeout
-import akka.cluster.ddata.Replicator.WriteMajority
+import akka.cluster.ddata.Replicator.WriteLocal
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.dynamic.ClientTimeoutException
@@ -58,16 +58,13 @@ final private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSyste
   private val timeout =
     system.settings.config.getDuration("akka.cluster.sharding.dynamic-shard-allocation-strategy.client-timeout").asScala
   private implicit val askTimeout = Timeout(timeout * 2)
-  private implicit val ec = system.dispatcher
+  private implicit val ec = system.dispatchers.internalDispatcher
 
   override def updateShardLocation(shard: ShardId, location: Address): Future[Done] = {
-    val key = DataKeys(shard.hashCode() % ddataKeys)
+    val key = DataKeys(math.abs(shard.hashCode() % ddataKeys))
     log.debug("updateShardLocation {} {} key {}", shard, location, key)
-    (replicator ? Update(key, WriteMajority(timeout), None) {
-      case None =>
-        LWWMap.empty.put(self, shard, location.toString)
-      case Some(existing) =>
-        existing.put(self, shard, location.toString)
+    (replicator ? Update(key, LWWMap.empty[ShardId, String], WriteLocal, None) { existing =>
+      existing.put(self, shard, location.toString)
     }).flatMap {
       case UpdateSuccess(_, _) => Future.successful(Done)
       case UpdateTimeout =>

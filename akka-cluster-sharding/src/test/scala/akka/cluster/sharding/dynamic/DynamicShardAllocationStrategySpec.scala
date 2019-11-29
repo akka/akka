@@ -45,9 +45,11 @@ class DynamicShardAllocationStrategySpec extends AkkaSpec("""
 
   def createStrategy(): (DynamicShardAllocationStrategy, TestProbe) = {
     val probe = TestProbe()
-    (new DynamicShardAllocationStrategy(system, "type")(Timeout(250.millis)) {
+    val strategy = new DynamicShardAllocationStrategy(system, "type")(Timeout(250.millis)) {
       override private[akka] def createShardStateActor() = probe.ref
-    }, probe)
+    }
+    strategy.start()
+    (strategy, probe)
   }
 
 }

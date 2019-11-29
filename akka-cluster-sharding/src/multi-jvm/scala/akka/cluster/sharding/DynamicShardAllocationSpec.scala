@@ -18,6 +18,7 @@ import akka.cluster.sharding.dynamic.DynamicShardAllocationStrategy
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
+import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
@@ -109,7 +110,7 @@ abstract class DynamicShardAllocationSpec
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId,
-        () => new DynamicShardAllocationStrategy(system, typeName),
+        new DynamicShardAllocationStrategy(system, typeName),
         PoisonPill)
     }
 
@@ -138,9 +139,10 @@ abstract class DynamicShardAllocationSpec
       enterBarrier("shard-location-updated")
 
       runOn(second, third) {
+        val probe = TestProbe()
         awaitAssert({
-          shardRegion ! Get(shardToSpecifyLocation)
-          expectMsg(Home(address(first)))
+          shardRegion.tell(Get(shardToSpecifyLocation), probe.ref)
+          probe.expectMsg(Home(address(first)))
         }, 10.seconds)
       }
       enterBarrier("shard-allocated-to-specific-node")

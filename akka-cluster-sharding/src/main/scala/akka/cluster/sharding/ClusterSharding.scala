@@ -223,51 +223,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       settings,
       extractEntityId,
       extractShardId,
-      () => allocationStrategy,
-      handOffStopMessage)
-  }
-
-  /**
-   * Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
-   * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
-   * for this type can later be retrieved with the [[shardRegion]] method.
-   *
-   * This method will start a [[ShardRegion]] in proxy mode when there is no match between the roles of
-   * the current cluster node and the role specified in [[ClusterShardingSettings]] passed to this method.
-   *
-   * Some settings can be configured as described in the `akka.cluster.sharding` section
-   * of the `reference.conf`.
-   *
-   * @param typeName the name of the entity type
-   * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
-   * @param settings configuration settings, see [[ClusterShardingSettings]]
-   * @param extractEntityId partial function to extract the entity id and the message to send to the
-   *   entity from the incoming message, if the partial function does not match the message will
-   *   be `unhandled`, i.e. posted as `Unhandled` messages on the event stream
-   * @param extractShardId function to determine the shard id for an incoming message, only messages
-   *   that passed the `extractEntityId` will be used
-   * @param allocationStrategyFactory possibility to use a custom shard allocation and
-   *   rebalancing logic. Being a factory means that it'll only be created on a node hosting the shard coordinator
-   * @param handOffStopMessage the message that will be sent to entities when they are to be stopped
-   *   for a rebalance or graceful shutdown of a `ShardRegion`, e.g. `PoisonPill`.
-   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
-   */
-  def start(
-      typeName: String,
-      entityProps: Props,
-      settings: ClusterShardingSettings,
-      extractEntityId: ShardRegion.ExtractEntityId,
-      extractShardId: ShardRegion.ExtractShardId,
-      allocationStrategyFactory: () => ShardAllocationStrategy,
-      handOffStopMessage: Any): ActorRef = {
-
-    internalStart(
-      typeName,
-      _ => entityProps,
-      settings,
-      extractEntityId,
-      extractShardId,
-      allocationStrategyFactory,
+      allocationStrategy,
       handOffStopMessage)
   }
 
@@ -322,7 +278,7 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       settings: ClusterShardingSettings,
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId,
-      allocationStrategy: () => ShardAllocationStrategy,
+      allocationStrategy: ShardAllocationStrategy,
       handOffStopMessage: Any): ActorRef = {
 
     if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
@@ -454,49 +410,6 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       settings: ClusterShardingSettings,
       messageExtractor: ShardRegion.MessageExtractor,
       allocationStrategy: ShardAllocationStrategy,
-      handOffStopMessage: Any): ActorRef = {
-
-    internalStart(
-      typeName,
-      _ => entityProps,
-      settings,
-      extractEntityId = {
-        case msg if messageExtractor.entityId(msg) ne null =>
-          (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
-      },
-      extractShardId = msg => messageExtractor.shardId(msg),
-      allocationStrategy = () => allocationStrategy,
-      handOffStopMessage = handOffStopMessage)
-  }
-
-  /**
-   * Java/Scala API: Register a named entity type by defining the [[akka.actor.Props]] of the entity actor
-   * and functions to extract entity and shard identifier from messages. The [[ShardRegion]] actor
-   * for this type can later be retrieved with the [[#shardRegion]] method.
-   *
-   * This method will start a [[ShardRegion]] in proxy mode when there is no match between the
-   * node roles and the role specified in the [[ClusterShardingSettings]] passed to this method.
-   *
-   * Some settings can be configured as described in the `akka.cluster.sharding` section
-   * of the `reference.conf`.
-   *
-   * @param typeName the name of the entity type
-   * @param entityProps the `Props` of the entity actors that will be created by the `ShardRegion`
-   * @param settings configuration settings, see [[ClusterShardingSettings]]
-   * @param messageExtractor functions to extract the entity id, shard id, and the message to send to the
-   *   entity from the incoming message, see [[ShardRegion.MessageExtractor]]
-   * @param allocationStrategy possibility to use a custom shard allocation and
-   *   rebalancing logic
-   * @param handOffStopMessage the message that will be sent to entities when they are to be stopped
-   *   for a rebalance or graceful shutdown of a `ShardRegion`, e.g. `PoisonPill`.
-   * @return the actor ref of the [[ShardRegion]] that is to be responsible for the shard
-   */
-  def start(
-      typeName: String,
-      entityProps: Props,
-      settings: ClusterShardingSettings,
-      messageExtractor: ShardRegion.MessageExtractor,
-      allocationStrategy: () => ShardAllocationStrategy,
       handOffStopMessage: Any): ActorRef = {
 
     internalStart(
@@ -757,7 +670,7 @@ private[akka] object ClusterShardingGuardian {
       settings: ClusterShardingSettings,
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId,
-      allocationStrategy: () => ShardAllocationStrategy,
+      allocationStrategy: ShardAllocationStrategy,
       handOffStopMessage: Any)
       extends NoSerializationVerificationNeeded
   final case class StartProxy(
@@ -832,9 +745,9 @@ private[akka] class ClusterShardingGuardian extends Actor {
           if (context.child(cName).isEmpty) {
             val coordinatorProps =
               if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
-                ShardCoordinator.props(typeName, settings, allocationStrategy())
+                ShardCoordinator.props(typeName, settings, allocationStrategy)
               else
-                ShardCoordinator.props(typeName, settings, allocationStrategy(), rep, majorityMinCap)
+                ShardCoordinator.props(typeName, settings, allocationStrategy, rep, majorityMinCap)
             val singletonProps =
               BackoffOpts
                 .onStop(
