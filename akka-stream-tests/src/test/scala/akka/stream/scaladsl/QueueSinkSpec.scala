@@ -6,14 +6,15 @@ package akka.stream.scaladsl
 
 import akka.actor.Status
 import akka.pattern.pipe
+import akka.stream.AbruptTerminationException
 import akka.stream.Attributes.inputBuffer
+import akka.stream.Materializer
 import akka.stream.StreamDetachedException
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-
-import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 class QueueSinkSpec extends StreamSpec {
@@ -72,6 +73,40 @@ class QueueSinkSpec extends StreamSpec {
 
       sub.sendComplete()
       queue.pull()
+    }
+
+    "fail all futures on abrupt termination" in assertAllStagesStopped {
+      val n = 2
+      val mat = Materializer(system)
+      val probe = TestPublisher.manualProbe[Int]()
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))(mat)
+      val future1 = queue.pull()
+      val future2 = queue.pull()
+      mat.shutdown()
+      future1.failed.futureValue shouldBe an[AbruptTerminationException]
+      future2.failed.futureValue shouldBe an[AbruptTerminationException]
+    }
+
+    "complete all futures with None on upstream complete" in assertAllStagesStopped {
+      val n = 2
+      val probe = TestPublisher.probe[Int]()
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))
+      val future1 = queue.pull()
+      val future2 = queue.pull()
+      probe.sendComplete()
+      future1.futureValue shouldBe None
+      future2.futureValue shouldBe None
+    }
+
+    "fail all futures on upstream fail" in assertAllStagesStopped {
+      val n = 2
+      val probe = TestPublisher.probe[Int]()
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))
+      val future1 = queue.pull()
+      val future2 = queue.pull()
+      probe.sendError(new IllegalArgumentException)
+      future1.failed.futureValue shouldBe an[IllegalArgumentException]
+      future2.failed.futureValue shouldBe an[IllegalArgumentException]
     }
 
     "wait for next element from upstream" in assertAllStagesStopped {

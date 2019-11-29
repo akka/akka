@@ -314,8 +314,6 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] final class QueueSink[T](maxConcurrentPulls: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueueWithCancel[T]] {
 
-  def this() = this(1)
-
   require(maxConcurrentPulls > 0, "Request buffer size must be greater than 0")
 
   type Requested[E] = Promise[Option[E]]
@@ -333,14 +331,11 @@ import scala.util.control.NonFatal
       val maxBuffer = inheritedAttributes.get[InputBuffer](InputBuffer(16, 16)).max
       require(maxBuffer > 0, "Buffer size must be greater than 0")
 
-      var buffer: Buffer[Received[T]] = _
-      var currentRequests: Buffer[Requested[T]] = _
+      // Allocates one additional element to hold stream closed/failure indicators
+      var buffer: Buffer[Received[T]] = Buffer(maxBuffer + 1, inheritedAttributes)
+      var currentRequests: Buffer[Requested[T]] = Buffer(maxConcurrentPulls, inheritedAttributes)
 
       override def preStart(): Unit = {
-        // Allocates one additional element to hold stream
-        // closed/failure indicators
-        buffer = Buffer(maxBuffer + 1, inheritedAttributes)
-        currentRequests = Buffer(maxConcurrentPulls, inheritedAttributes)
         setKeepGoing(true)
         pull(in)
       }
@@ -369,18 +364,28 @@ import scala.util.control.NonFatal
         }
       }
 
-      def enqueueAndNotify(requested: Received[T]): Unit = {
-        buffer.enqueue(requested)
-        if (currentRequests.nonEmpty) sendDownstream(currentRequests.dequeue)
-      }
-
       def onPush(): Unit = {
-        enqueueAndNotify(Success(Some(grab(in))))
+        buffer.enqueue(Success(Some(grab(in))))
+        if (currentRequests.nonEmpty) currentRequests.dequeue().complete(buffer.dequeue())
         if (buffer.used < maxBuffer) pull(in)
       }
 
-      override def onUpstreamFinish(): Unit = enqueueAndNotify(Success(None))
-      override def onUpstreamFailure(ex: Throwable): Unit = enqueueAndNotify(Failure(ex))
+      override def onUpstreamFinish(): Unit = {
+        buffer.enqueue(Success(None))
+        while (currentRequests.nonEmpty && buffer.nonEmpty) currentRequests.dequeue().complete(buffer.dequeue())
+        while (currentRequests.nonEmpty) currentRequests.dequeue().complete(Success(None))
+        if (buffer.isEmpty) completeStage()
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        buffer.enqueue(Failure(ex))
+        while (currentRequests.nonEmpty && buffer.nonEmpty) currentRequests.dequeue().complete(buffer.dequeue())
+        while (currentRequests.nonEmpty) currentRequests.dequeue().complete(Failure(ex))
+        if (buffer.isEmpty) failStage(ex)
+      }
+
+      override def postStop(): Unit =
+        while (currentRequests.nonEmpty) currentRequests.dequeue().failure(new AbruptStageTerminationException(this))
 
       setHandler(in, this)
 
