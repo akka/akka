@@ -21,9 +21,13 @@ import com.github.ghik.silencer.silent
 /**
  * INTERNAL API
  */
-private[remote] object ChannelLocalActor extends ChannelLocal[Option[HandleEventListener]] {
-  override def initialValue(channel: Channel): Option[HandleEventListener] = None
-  def notifyListener(channel: Channel, msg: HandleEvent): Unit = get(channel).foreach { _.notify(msg) }
+private[remote] object ChannelLocalActor {
+  def notifyListener(channel: Channel, msg: HandleEvent): Unit = {
+    val listener = channel.getAttachment.asInstanceOf[HandleEventListener]
+    if (listener ne null) {
+      listener.notify(msg)
+    }
+  }
 }
 
 /**
@@ -39,8 +43,7 @@ private[remote] trait TcpHandlers extends CommonHandlers {
       channel: Channel,
       listener: HandleEventListener,
       msg: ChannelBuffer,
-      remoteSocketAddress: InetSocketAddress): Unit =
-    ChannelLocalActor.set(channel, Some(listener))
+      remoteSocketAddress: InetSocketAddress): Unit = channel.setAttachment(listener)
 
   override def createHandle(channel: Channel, localAddress: Address, remoteAddress: Address): AssociationHandle =
     new TcpAssociationHandle(localAddress, remoteAddress, transport, channel)

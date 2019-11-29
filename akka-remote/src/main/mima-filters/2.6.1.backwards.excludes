@@ -1,0 +1,10 @@
+#28281 Remove usage of ChannelLocalActor
+ProblemFilters.exclude[MissingTypesProblem]("akka.remote.transport.netty.ChannelLocalActor$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.ChannelLocalActor.initialValue")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.ChannelLocalActor.iterator")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.ChannelLocalActor.remove")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.ChannelLocalActor.setIfAbsent")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.ChannelLocalActor.set")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.ChannelLocalActor.get")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.ChannelLocalActor.spliterator")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.transport.netty.ChannelLocalActor.forEach")
