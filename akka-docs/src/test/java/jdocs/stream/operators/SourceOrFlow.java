@@ -42,6 +42,8 @@ import akka.stream.Attributes;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 class SourceOrFlow {
   private static ActorSystem system = null;
@@ -186,6 +188,25 @@ class SourceOrFlow {
     // #scan
   }
 
+  // #scan-async
+  CompletionStage<Integer> asyncFunction(int acc, int next) {
+    return CompletableFuture.supplyAsync(() -> acc + next);
+  }
+  // #scan-async
+
+  void scanAsyncExample() {
+    // #scan-async
+    Source<Integer, NotUsed> source = Source.range(1, 5);
+    source.scanAsync(0, (acc, x) -> asyncFunction(acc, x)).runForeach(System.out::println, system);
+    // 0  (= 0)
+    // 1  (= 0 + 1)
+    // 3  (= 0 + 1 + 2)
+    // 6  (= 0 + 1 + 2 + 3)
+    // 10 (= 0 + 1 + 2 + 3 + 4)
+    // 15 (= 0 + 1 + 2 + 3 + 4 + 5)
+    // #scan-async
+  }
+
   static // #conflateWithSeed-type
   class Summed {
 
@@ -326,5 +347,45 @@ class SourceOrFlow {
     // 1
     // 2
     // #take-while
+  }
+
+  void filterExample() {
+    // #filter
+    Source<String, NotUsed> words =
+        Source.from(
+            Arrays.asList(
+                ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
+                        + "ut labore et dolore magna aliqua.")
+                    .split(" ")));
+
+    Source<String, NotUsed> longWords = words.filter(w -> w.length() > 6);
+
+    longWords.runWith(Sink.foreach(System.out::print), system);
+    // consectetur
+    // adipiscing
+    // eiusmod
+    // tempor
+    // incididunt
+    // #filter
+  }
+
+  void filterNotExample() {
+    // #filterNot
+    Source<String, NotUsed> words =
+        Source.from(
+            Arrays.asList(
+                ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
+                        + "ut labore et dolore magna aliqua.")
+                    .split(" ")));
+
+    Source<String, NotUsed> longWords = words.filterNot(w -> w.length() <= 5);
+
+    longWords.runWith(Sink.foreach(System.out::print), system);
+    // consectetur
+    // adipiscing
+    // eiusmod
+    // tempor
+    // incididunt
+    // #filterNot
   }
 }

@@ -2,7 +2,7 @@
 
 Storage backends for journals and snapshot stores are pluggable in the Akka persistence extension.
 
-A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](http://akka.io/community/)
+A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](https://akka.io/community/)
 
 Two popular plugins are:
 

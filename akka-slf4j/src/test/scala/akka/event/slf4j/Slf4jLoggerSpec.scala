@@ -91,6 +91,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
       s should include("akkaSource=[akka://Slf4jLoggerSpec/user/logProducer]")
+      s should include("akkaAddress=[akka://Slf4jLoggerSpec]")
       s should include("level=[ERROR]")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       (s should include).regex(sourceThreadRegex)
@@ -105,6 +106,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
       s should include("akkaSource=[akka://Slf4jLoggerSpec/user/logProducer]")
+      s should include("akkaAddress=[akka://Slf4jLoggerSpec]")
       s should include("level=[INFO]")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       (s should include).regex(sourceThreadRegex)

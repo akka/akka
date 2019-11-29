@@ -18,7 +18,23 @@ Emit its current value, which starts at `zero`, and then apply the current and n
 emitting the next current value. This means that `scan` emits one element downstream before, and upstream elements
 will not be requested until, the second element is required from downstream.
 
-Note that the `zero` value must be immutable.
+@@@ warning
+
+Note that the `zero` value must be immutable, because otherwise
+the same mutable instance would be shared across different threads
+when running the stream more than once.
+
+@@@
+
+## Examples
+
+Below example demonstrates how `scan` is similar to `fold`, but it keeps value from every iteration.
+
+Scala
+:  @@snip [Scan.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Scan.scala) { #scan }
+
+Java
+:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #scan }
 
 ## Reactive Streams semantics
 
@@ -31,11 +47,3 @@ Note that the `zero` value must be immutable.
 **completes** when upstream completes
 
 @@@
-
-## Examples
-
-Scala
-:  @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Scan.scala) { #scan }
-
-Java
-:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #scan }

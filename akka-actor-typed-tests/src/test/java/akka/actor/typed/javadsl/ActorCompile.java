@@ -133,6 +133,15 @@ public class ActorCompile {
             });
   }
 
+  {
+    Behavior<MyMsg> b =
+        Behaviors.withTimers(
+            timers -> {
+              timers.startTimerWithFixedDelay(new MyMsgB("tick"), Duration.ofSeconds(1));
+              return Behaviors.ignore();
+            });
+  }
+
   static class MyBehavior extends ExtensibleBehavior<MyMsg> {
 
     @Override

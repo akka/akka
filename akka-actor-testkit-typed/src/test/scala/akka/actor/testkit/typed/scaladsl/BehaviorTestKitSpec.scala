@@ -5,6 +5,7 @@
 package akka.actor.testkit.typed.scaladsl
 
 import akka.Done
+import akka.actor.Address
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
@@ -12,8 +13,8 @@ import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Parent }
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Parent._
 import org.scalatest.{ Matchers, WordSpec }
-import scala.reflect.ClassTag
 
+import scala.reflect.ClassTag
 import org.slf4j.event.Level
 
 object BehaviorTestKitSpec {
@@ -125,6 +126,8 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
   private val props = Props.empty.withDispatcherFromConfig("cat")
 
+  private val testKitAddress = Address("akka", "StubbedActorContext")
+
   "BehaviorTestKit" must {
 
     "allow assertions on effect type" in {
@@ -193,6 +196,11 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
       testkit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, what))
       testkit.clearLog()
       testkit.logEntries() shouldBe Seq.empty
+    }
+
+    "return default address" in {
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      testkit.context.asScala.system.address shouldBe testKitAddress
     }
   }
 

@@ -114,7 +114,7 @@ public class LoggerSourceTest extends JUnitSuite {
                   return testKit.spawn(behavior);
                 });
 
-    // MDC persistenceId ajd persistencePhase for the "command-received" not included in the
+    // MDC persistenceId and persistencePhase for the "command-received" not included in the
     // "command-received" logging, because that is via ActorContext.log directly and
     // EventSourcedBehaviorImpl
     // isn't involved.

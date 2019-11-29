@@ -6,7 +6,6 @@ package akka.stream.scaladsl
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.language.higherKinds
 import scala.annotation.unchecked.uncheckedVariance
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts

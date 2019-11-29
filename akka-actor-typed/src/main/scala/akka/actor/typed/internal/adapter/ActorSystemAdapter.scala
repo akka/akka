@@ -8,12 +8,9 @@ import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContextExecutor
-
 import akka.Done
 import akka.actor
-import akka.actor.ActorRefProvider
-import akka.actor.ExtendedActorSystem
-import akka.actor.InvalidMessageException
+import akka.actor.{ ActorRefProvider, Address, ExtendedActorSystem, InvalidMessageException }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -118,6 +115,7 @@ import org.slf4j.{ Logger, LoggerFactory }
     ActorRefAdapter(ref)
   }
 
+  override def address: Address = system.provider.getDefaultAddress
 }
 
 private[akka] object ActorSystemAdapter {

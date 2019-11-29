@@ -30,7 +30,11 @@ public class ManualTimerExampleTest extends JUnitSuite {
 
   private final ManualTime manualTime = ManualTime.get(testKit.system());
 
-  static final class Tick {}
+  static final class Tick {
+    private Tick() {}
+
+    static final Tick INSTANCE = new Tick();
+  }
 
   static final class Tock {}
 
@@ -40,7 +44,7 @@ public class ManualTimerExampleTest extends JUnitSuite {
     Behavior<Tick> behavior =
         Behaviors.withTimers(
             timer -> {
-              timer.startSingleTimer("T", new Tick(), Duration.ofMillis(10));
+              timer.startSingleTimer(Tick.INSTANCE, Duration.ofMillis(10));
               return Behaviors.receiveMessage(
                   tick -> {
                     probe.ref().tell(new Tock());

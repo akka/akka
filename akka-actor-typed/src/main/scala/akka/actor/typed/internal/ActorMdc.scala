@@ -11,17 +11,20 @@ import org.slf4j.MDC
  * INTERNAL API
  */
 @InternalApi private[akka] object ActorMdc {
-  val SourceKey = "akkaSource"
-  val TagsKey = "akkaTags"
+  val SourceActorSystemKey = "sourceActorSystem"
+  val AkkaSourceKey = "akkaSource"
+  val AkkaTagsKey = "akkaTags"
+  val AkkaAddressKey = "akkaAddress"
 
-  /**
-   * @param tags empty string for no tags, a single tag or a comma separated list of tags
-   */
-  def setMdc(source: String, tags: String): Unit = {
-    val mdcAdapter = MDC.getMDCAdapter
-    mdcAdapter.put(SourceKey, source)
-    if (tags.nonEmpty)
-      mdcAdapter.put(TagsKey, tags)
+  def setMdc(context: ActorContextImpl.LoggingContext): Unit = {
+    // avoid access to MDC ThreadLocal if not needed, see details in LoggingContext
+    context.mdcUsed = true
+    MDC.put(AkkaSourceKey, context.akkaSource)
+    MDC.put(SourceActorSystemKey, context.sourceActorSystem)
+    MDC.put(AkkaAddressKey, context.akkaAddress)
+    // empty string for no tags, a single tag or a comma separated list of tags
+    if (context.tagsString.nonEmpty)
+      MDC.put(AkkaTagsKey, context.tagsString)
   }
 
   // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,

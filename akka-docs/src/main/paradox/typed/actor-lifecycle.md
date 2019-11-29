@@ -34,7 +34,7 @@ so create one per logical application. Typically one `ActorSystem` per JVM proce
 
 An actor can create, or _spawn_, an arbitrary number of child actors, which in turn can spawn children of their own, thus
 forming an actor hierarchy. @apidoc[akka.actor.typed.ActorSystem] hosts the hierarchy and there can be only one _root actor_,
-actor at the top of the hierarchy of the `ActorSystem`. The lifecycle of a child actor is tied to the parent -- a child
+an actor at the top of the hierarchy of the `ActorSystem`. The lifecycle of a child actor is tied to the parent -- a child
 can stop itself or be stopped at any time but it can never outlive its parent.
 
 ### The ActorContext
@@ -67,7 +67,7 @@ Many of the methods in `ActorContext` are not thread-safe and
 
 ### The Guardian Actor
 
-The top level actor, also called the guardian actor, is created along with the `ActorSystem`. Messages sent to the actor
+The top level actor, also called the user guardian actor, is created along with the `ActorSystem`. Messages sent to the actor
 system are directed to the root actor. The root actor is defined by the behavior used to create the `ActorSystem`,
 named `HelloWorldMain` in the example below:
 
@@ -128,7 +128,7 @@ per HTTP request.
 That is not difficult to implement in your behavior, but since this is a common pattern there is a predefined
 message protocol and implementation of a behavior for this. It can be used as the guardian actor of the `ActorSystem`,
 possibly combined with `Behaviors.setup` to start some initial tasks or actors. Child actors can then be started from
-the outside by telling or asking `SpawnProtocol.Spawn` to the actor reference of the system. When using `ask` this is
+the outside by `tell`ing or `ask`ing `SpawnProtocol.Spawn` to the actor reference of the system. Using `ask` is
 similar to how `ActorSystem.actorOf` can be used in classic actors with the difference that a
 @scala[`Future`]@java[`CompletionStage`] of the `ActorRef` is returned.
 
@@ -164,7 +164,7 @@ All child actors will be stopped when their parent is stopped.
 
 When an actor is stopped, it receives the `PostStop` signal that can be used for cleaning up resources.
 A callback function may be specified as parameter to `Behaviors.stopped` to handle the `PostStop` signal 
-when stopping gracefully. This allows to apply different actions from when it is stopped abruptly.
+when stopping gracefully. This allows to apply different actions when it is stopped abruptly.
 
 Here is an illustrating example:
 
