@@ -10,6 +10,7 @@ import akka.Done
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.AddressFromURIString
 import akka.annotation.InternalApi
 import akka.cluster.ddata.DistributedData
 import akka.cluster.ddata.LWWMap
@@ -33,8 +34,8 @@ import akka.util.PrettyDuration._
 import akka.pattern.ask
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 import scala.compat.java8.FutureConverters._
+import akka.util.JavaDurationConverters._
 
 /**
  * INTERNAL API
@@ -48,22 +49,24 @@ final private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSyste
 
   private val replicator: ActorRef = DistributedData(system).replicator
   private val self: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
-  private val DataKey: LWWMapKey[ShardId, ShardLocation] =
-    LWWMapKey[ShardId, ShardLocation](s"dynamic-sharding-$typeName")
+  private val ddataKeys =
+    system.settings.config.getInt("akka.cluster.sharding.dynamic-shard-allocation-strategy.ddata-keys")
 
-  // TODO configurable consistency, timeout etc
-  private val timeout = 5.seconds
+  private val DataKeys = (0 until ddataKeys).map(i => LWWMapKey[ShardId, String](s"dynamic-sharding-$typeName-$i"))
+
+  private val timeout =
+    system.settings.config.getDuration("akka.cluster.sharding.dynamic-shard-allocation-strategy.client-timeout").asScala
   private implicit val askTimeout = Timeout(timeout * 2)
   private implicit val ec = system.dispatcher
 
   override def updateShardLocation(shard: ShardId, location: Address): Future[Done] = {
-    // TODO debug or remove
-    log.info("updateShardLocation {} {}", shard, location)
-    (replicator ? Update(DataKey, WriteMajority(timeout), None) {
+    val key = DataKeys(shard.hashCode() % ddataKeys)
+    log.debug("updateShardLocation {} {} key {}", shard, location, key)
+    (replicator ? Update(key, WriteMajority(timeout), None) {
       case None =>
-        LWWMap.empty.put(self, shard, ShardLocation(location))
+        LWWMap.empty.put(self, shard, location.toString)
       case Some(existing) =>
-        existing.put(self, shard, ShardLocation(address = location))
+        existing.put(self, shard, location.toString)
     }).flatMap {
       case UpdateSuccess(_, _) => Future.successful(Done)
       case UpdateTimeout =>
@@ -75,12 +78,20 @@ final private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSyste
     updateShardLocation(shard, location).toJava
 
   override def shardLocations(): Future[ShardLocations] = {
-    (replicator ? Get(DataKey, ReadMajority(timeout))).flatMap {
-      case success @ GetSuccess(`DataKey`, _) =>
-        Future.successful(new ShardLocations(success.get(DataKey).entries))
-      case GetFailure(_, _) =>
-        Future.failed((new ClientTimeoutException(s"Unable to get shard locations after ${timeout.duration.pretty}")))
-    }
+    Future
+      .traverse(DataKeys) { key =>
+        (replicator ? Get(key, ReadMajority(timeout))).flatMap {
+          case success @ GetSuccess(`key`, _) =>
+            Future.successful(success.get(key).entries.mapValues(asStr => ShardLocation(AddressFromURIString(asStr))))
+          case GetFailure(_, _) =>
+            Future.failed(
+              (new ClientTimeoutException(s"Unable to get shard locations after ${timeout.duration.pretty}")))
+        }
+      }
+      .map { all =>
+        new ShardLocations(all.reduce(_ ++ _))
+      }
+
   }
 
   override def getShardLocations(): CompletionStage[ShardLocations] = shardLocations().toJava
