@@ -4,7 +4,6 @@
 
 package akka.stream.scaladsl
 
-import akka.actor.Status
 import akka.pattern.pipe
 import akka.stream.AbruptTerminationException
 import akka.stream.Attributes.inputBuffer
