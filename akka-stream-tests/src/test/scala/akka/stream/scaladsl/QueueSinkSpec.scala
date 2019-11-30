@@ -11,6 +11,7 @@ import akka.stream.Materializer
 import akka.stream.StreamDetachedException
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSource
 import scala.concurrent.Await
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -77,15 +78,17 @@ class QueueSinkSpec extends StreamSpec {
     "fail all futures on abrupt termination" in assertAllStagesStopped {
       val n = 2
       val mat = Materializer(system)
-      val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))(mat)
+      val queue = TestSource.probe.runWith(Sink.queue(n))(mat)
 
       val future1 = queue.pull()
       val future2 = queue.pull()
       mat.shutdown()
 
-      future1.failed.futureValue shouldBe an[AbruptTerminationException]
-      future2.failed.futureValue shouldBe an[AbruptTerminationException]
+      // async callback can be executed after materializer shutdown so you should also expect StreamDetachedException
+      val fail1 = future1.failed.futureValue
+      val fail2 = future2.failed.futureValue
+      assert(fail1.isInstanceOf[AbruptTerminationException] || fail1.isInstanceOf[StreamDetachedException])
+      assert(fail2.isInstanceOf[AbruptTerminationException] || fail2.isInstanceOf[StreamDetachedException])
     }
 
     "complete all futures with None on upstream complete" in assertAllStagesStopped {
