@@ -60,9 +60,9 @@ abstract class GroupRouter[T] extends DeferredBehavior[T] {
    *
    * This is the default for group routers.
    *
-   * @param preferLocalRoutees if this set to false, all reachable routees will be used;
-   *                           if this set to true and there are local routees, only local routees will be used.
-   *                           if this set to true and there is no local routees, remote routees will be used.
+   * @param preferLocalRoutees if the value is false, all reachable routees will be used;
+   *                           if the value is true and there are local routees, only local routees will be used.
+   *                           if the value is true and there is no local routees, remote routees will be used.
    */
   def withRandomRouting(preferLocalRoutees: Boolean): GroupRouter[T]
 
