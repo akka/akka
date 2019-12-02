@@ -26,7 +26,7 @@ cache:
     - $HOME/.jabba/jdk
 
 script:
-  - jabba use "adopt@~1.8.202-08"
+  - jabba use "adopt@~1.8.0-222"
   # need to override as the default is to test
   - sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION ";update ;mimaReportBinaryIssues ;test:compile ;validateCompile"
   # make 'git branch' work again
