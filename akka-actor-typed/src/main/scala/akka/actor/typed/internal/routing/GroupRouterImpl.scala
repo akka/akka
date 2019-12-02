@@ -76,7 +76,7 @@ private final class InitialGroupRouterImpl[T](
 
   def onMessage(msg: T): Behavior[T] = msg match {
     case serviceKey.Listing(allRoutees) =>
-      val update = GroupRouterHelper.routeesToUpdate(allRoutees,preferLocalRoutees)
+      val update = GroupRouterHelper.routeesToUpdate(allRoutees, preferLocalRoutees)
       // we don't need to watch, because receptionist already does that
       routingLogic.routeesUpdated(update)
       val activeGroupRouter =
@@ -99,9 +99,7 @@ private final class InitialGroupRouterImpl[T](
  */
 @InternalApi
 private[routing] object GroupRouterHelper {
-  def routeesToUpdate[T](
-      allRoutees: Set[ActorRef[T]],
-      preferLocalRoutees: Boolean): Set[ActorRef[T]] = {
+  def routeesToUpdate[T](allRoutees: Set[ActorRef[T]], preferLocalRoutees: Boolean): Set[ActorRef[T]] = {
     if (preferLocalRoutees) {
       val localRoutees = allRoutees.filter(_.path.address.hasLocalScope)
       if (localRoutees.nonEmpty) localRoutees else allRoutees
