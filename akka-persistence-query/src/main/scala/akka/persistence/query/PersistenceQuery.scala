@@ -23,6 +23,11 @@ object PersistenceQuery extends ExtensionId[PersistenceQuery] with ExtensionIdPr
    */
   override def get(system: ActorSystem): PersistenceQuery = super.get(system)
 
+  /**
+   * Java API.
+   */
+  override def get(system: ClassicActorSystemProvider): PersistenceQuery = super.get(system)
+
   def createExtension(system: ExtendedActorSystem): PersistenceQuery = new PersistenceQuery(system)
 
   def lookup(): PersistenceQuery.type = PersistenceQuery

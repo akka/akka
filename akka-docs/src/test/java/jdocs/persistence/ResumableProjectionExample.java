@@ -10,7 +10,6 @@ import akka.actor.typed.ActorSystem;
 import akka.actor.typed.Behavior;
 import akka.actor.typed.javadsl.AbstractBehavior;
 import akka.actor.typed.javadsl.ActorContext;
-import akka.actor.typed.javadsl.Adapter;
 import akka.actor.typed.javadsl.Behaviors;
 import akka.actor.typed.javadsl.Receive;
 import akka.actor.typed.javadsl.AskPattern;
@@ -31,7 +30,7 @@ public interface ResumableProjectionExample {
       throws Exception {
 
     final MyJavadslReadJournal readJournal =
-        PersistenceQuery.get(Adapter.toClassic(system))
+        PersistenceQuery.get(system)
             .getReadJournalFor(
                 MyJavadslReadJournal.class, "akka.persistence.query.my-read-journal");
 
