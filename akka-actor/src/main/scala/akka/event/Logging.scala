@@ -1634,7 +1634,7 @@ class LogMarker(val name: String, val properties: Map[String, Any]) {
 
   /** Java API */
   def getProperties: java.util.Map[String, Object] = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     properties.map { case (k, v) => (k, v.asInstanceOf[AnyRef]) }.asJava
   }
 }
@@ -1653,7 +1653,7 @@ object LogMarker {
 
   /** Java API */
   def create(name: String, properties: java.util.Map[String, Any]): LogMarker = {
-    import scala.collection.JavaConverters._
+    import akka.util.ccompat.JavaConverters._
     apply(name, properties.asScala.toMap)
   }
 
