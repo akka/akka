@@ -787,13 +787,18 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
           if (joiningNode == selfUniqueAddress) {
             logInfo(
+              ClusterLogMarker.memberChanged(joiningNode, MemberStatus.Joining),
               "Node [{}] is JOINING itself (with roles [{}]) and forming new cluster",
               joiningNode.address,
               roles.mkString(", "))
             if (localMembers.isEmpty)
               leaderActions() // important for deterministic oldest when bootstrapping
           } else {
-            logInfo("Node [{}] is JOINING, roles [{}]", joiningNode.address, roles.mkString(", "))
+            logInfo(
+              ClusterLogMarker.memberChanged(joiningNode, MemberStatus.Joining),
+              "Node [{}] is JOINING, roles [{}]",
+              joiningNode.address,
+              roles.mkString(", "))
             sender() ! Welcome(selfUniqueAddress, latestGossip)
           }
 
@@ -827,19 +832,23 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
    */
   def leaving(address: Address): Unit = {
     // only try to update if the node is available (in the member ring)
-    if (latestGossip.members.exists(
-          m => m.address == address && (m.status == Joining || m.status == WeaklyUp || m.status == Up))) {
-      val newMembers = latestGossip.members.map { m =>
-        if (m.address == address) m.copy(status = Leaving) else m
-      } // mark node as LEAVING
-      val newGossip = latestGossip.copy(members = newMembers)
+    latestGossip.members.find(_.address == address).foreach { existingMember =>
+      if (existingMember.status == Joining || existingMember.status == WeaklyUp || existingMember.status == Up) {
+        // mark node as LEAVING
+        val newMembers = latestGossip.members - existingMember + existingMember.copy(status = Leaving)
+        val newGossip = latestGossip.copy(members = newMembers)
 
-      updateLatestGossip(newGossip)
+        updateLatestGossip(newGossip)
 
-      logInfo("Marked address [{}] as [{}]", address, Leaving)
-      publishMembershipState()
-      // immediate gossip to speed up the leaving process
-      gossip()
+        logInfo(
+          ClusterLogMarker.memberChanged(existingMember.uniqueAddress, MemberStatus.Leaving),
+          "Marked address [{}] as [{}]",
+          address,
+          Leaving)
+        publishMembershipState()
+        // immediate gossip to speed up the leaving process
+        gossip()
+      }
     }
   }
 
@@ -914,9 +923,17 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
     localMembers.find(_.address == address) match {
       case Some(m) if m.status != Down =>
         if (localReachability.isReachable(m.uniqueAddress))
-          logInfo("Marking node [{}] as [{}]", m.address, Down)
+          logInfo(
+            ClusterLogMarker.memberChanged(m.uniqueAddress, MemberStatus.Down),
+            "Marking node [{}] as [{}]",
+            m.address,
+            Down)
         else
-          logInfo("Marking unreachable node [{}] as [{}]", m.address, Down)
+          logInfo(
+            ClusterLogMarker.memberChanged(m.uniqueAddress, MemberStatus.Down),
+            "Marking unreachable node [{}] as [{}]",
+            m.address,
+            Down)
 
         val newGossip = localGossip.markAsDown(m)
         updateLatestGossip(newGossip)
@@ -936,6 +953,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       val newGossip = localGossip.copy(overview = newOverview)
       updateLatestGossip(newGossip)
       logWarning(
+        ClusterLogMarker.unreachable(node.address),
         "Marking node as TERMINATED [{}], due to quarantine. Node roles [{}]. " +
         "It must still be marked as down before it's removed.",
         node.address,
@@ -1298,17 +1316,33 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         exitingConfirmed = exitingConfirmed.filterNot(removedExitingConfirmed)
 
         changedMembers.foreach { m =>
-          logInfo("Leader is moving node [{}] to [{}]", m.address, m.status)
+          logInfo(
+            ClusterLogMarker.memberChanged(m.uniqueAddress, m.status),
+            "Leader is moving node [{}] to [{}]",
+            m.address,
+            m.status)
         }
         removedUnreachable.foreach { m =>
           val status = if (m.status == Exiting) "exiting" else "unreachable"
-          logInfo("Leader is removing {} node [{}]", status, m.address)
+          logInfo(
+            ClusterLogMarker.memberChanged(m.uniqueAddress, MemberStatus.Removed),
+            "Leader is removing {} node [{}]",
+            status,
+            m.address)
         }
         removedExitingConfirmed.foreach { n =>
-          logInfo("Leader is removing confirmed Exiting node [{}]", n.address)
+          logInfo(
+            ClusterLogMarker.memberChanged(n, MemberStatus.Removed),
+            "Leader is removing confirmed Exiting node [{}]",
+            n.address)
         }
         removedOtherDc.foreach { m =>
-          logInfo("Leader is removing {} node [{}] in DC [{}]", m.status, m.address, m.dataCenter)
+          logInfo(
+            ClusterLogMarker.memberChanged(m.uniqueAddress, MemberStatus.Removed),
+            "Leader is removing {} node [{}] in DC [{}]",
+            m.status,
+            m.address,
+            m.dataCenter)
         }
 
         newGossip
@@ -1360,7 +1394,11 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
       // log status changes
       changedMembers.foreach { m =>
-        logInfo("Leader is moving node [{}] to [{}]", m.address, m.status)
+        logInfo(
+          ClusterLogMarker.memberChanged(m.uniqueAddress, m.status),
+          "Leader is moving node [{}] to [{}]",
+          m.address,
+          m.status)
       }
 
       publishMembershipState()
