@@ -65,8 +65,8 @@ A node begins in the `joining` state. Once all nodes have seen that the new
 node is joining (through gossip convergence) the `leader` will set the member
 state to `up`.
 
-If a node is leaving the cluster in a safe, expected manner then it switches to
-the `leaving` state. Once the leader sees the convergence on the node in the
+If a node is leaving the cluster in a safe, expected manner, for example through @ref[coordinated shutdown](../coordinated-shutdown.md), 
+it switches to the `leaving` state. Once the leader sees the convergence on the node in the
 `leaving` state, the leader will then move it to `exiting`.  Once all nodes
 have seen the exiting state (convergence) the `leader` will remove the node
 from the cluster, marking it as `removed`.
@@ -115,35 +115,30 @@ members in quorum decisions.
 
 ## State Diagrams
 
-### State Diagram for the Member States (`akka.cluster.allow-weakly-up-members=off`)
+### State Diagram for the Member States 
 
-![member-states.png](../images/member-states.png)
-
-### State Diagram for the Member States (`akka.cluster.allow-weakly-up-members=on`)
-
-![member-states-weakly-up.png](../images/member-states-weakly-up.png)
+![member-states.png](../images/member-state-diagram.png)
   
 #### User Actions
 
  * **join** - join a single node to a cluster - can be explicit or automatic on
 startup if a node to join have been specified in the configuration
    
- * **leave** - tell a node to leave the cluster gracefully
+ * **leave** - tell a node to leave the cluster gracefully, normally triggered by ActorSystem or JVM shutdown through @ref[coordinated shutdown](../coordinated-shutdown.md)
    
- * **down** - mark a node as down
+ * **down** - mark a node as down - normally only used to remove crashed nodes from the cluster
    
 #### Leader Actions
 
-The `leader` has the following duties:
+The `leader` has the following duties of shifting members in and out of the cluster:
 
- * shifting members in and out of the cluster
-    * joining -> up
-    * weakly up -> up *(no convergence is required for this leader action to be performed)*
-    * exiting -> removed
+ * joining ⭢ up
+ * weakly up ⭢ up *(no convergence is required for this leader action to be performed)*
+ * leaving ⭢ exciting
+ * exiting ⭢ removed
+ * down ⭢ removed
 
 #### Failure Detection and Unreachability
 
- * **fd*** - the failure detector of one of the monitoring nodes has triggered
-causing the monitored node to be marked as unreachable
-   
- * **unreachable*** - unreachable is not a real member states but more of a flag in addition to the state signaling that the cluster is unable to talk to this node, after being unreachable the failure detector may detect it as reachable again and thereby remove the flag
+Being unreachable is not a separate member state but rather a flag in addition to the state. A node can become unreachable while in any of the states, meaning that the cluster is unable to talk to it. After becoming unreachable the failure detector may detect it as reachable again and thereby remove the flag.
+
