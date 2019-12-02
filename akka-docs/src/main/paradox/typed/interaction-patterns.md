@@ -205,8 +205,8 @@ Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #standalone-ask }
 
 Note that validation errors are also explicit in the message protocol. The `GiveMeCookies` request can reply
-with `Cookies` or `InvalidRequest`. The requestor has to decide how to handle `InvalidRequest` reply. Sometimes
-that should be treated as a failed @scala[`Future`]@java[`Future`] and for that the reply can be mapped on the
+with `Cookies` or `InvalidRequest`. The requestor has to decide how to handle an `InvalidRequest` reply. Sometimes
+it should be treated as a failed @scala[`Future`]@java[`Future`] and for that the reply can be mapped on the
 requestor side.
 
 Scala
