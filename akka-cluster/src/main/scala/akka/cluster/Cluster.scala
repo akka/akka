@@ -493,6 +493,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       if (LogInfo && log.isInfoEnabled)
         logAtLevel(Logging.InfoLevel, message)
 
+    def logInfo(marker: LogMarker, message: String): Unit =
+      if (LogInfo && log.isInfoEnabled)
+        logAtLevel(marker, Logging.InfoLevel, message)
+
     def logInfo(template: String, arg1: Any): Unit =
       if (LogInfo && log.isInfoEnabled)
         logAtLevel(Logging.InfoLevel, log.format(template, arg1))

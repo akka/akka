@@ -32,6 +32,18 @@ object ClusterLogMarker {
     LogMarker("akkaHeartbeatStarvation")
 
   /**
+   * Marker "akkaClusterLeaderDetained" of log event when leader can't perform its duties.
+   */
+  val leaderDetained: LogMarker =
+    LogMarker("akkaClusterLeaderDetained")
+
+  /**
+   * Marker "akkaClusterLeaderAllowed" of log event when leader can perform its duties again.
+   */
+  val leaderAllowed: LogMarker =
+    LogMarker("akkaClusterLeaderAllowed")
+
+  /**
    * Marker "akkaClusterSingletonStarted" of log event when Cluster Singleton
    * instance has started.
    */
