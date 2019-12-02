@@ -28,6 +28,13 @@ This @javadoc[Subscriber](java.util.concurrent.Flow.Subscriber) can be attached 
 [Reactive Streams](https://www.reactive-streams.org/) @javadoc[Publisher](java.util.concurrent.Flow.Publisher)
 to populate it.
 
+@@@ note
+
+For JDK 8 users: since @javadoc[java.util.concurrent.Flow](java.util.concurrent.Flow) was introduced in JDK version 9,
+if you are still on version 8 you may use the [org.reactivestreams](https://github.com/reactive-streams/reactive-streams-jvm#reactive-streams) library with `Source.asSubscriber` and `Flow.asSubscriber`.
+
+@@@
+
 ## Example
 
 Suppose we use a database client that supports [Reactive Streams](https://www.reactive-streams.org/),
