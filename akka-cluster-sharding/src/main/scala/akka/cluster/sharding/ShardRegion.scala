@@ -25,6 +25,7 @@ import akka.cluster.MemberStatus
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.Shard.ShardStats
+import akka.event.Logging
 import akka.pattern.{ ask, pipe }
 import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
 
@@ -490,7 +491,6 @@ private[akka] class ShardRegion(
     replicator: ActorRef,
     majorityMinCap: Int)
     extends Actor
-    with ActorLogging
     with Timers {
 
   import ShardingQueries.ShardsQueryResult
@@ -498,6 +498,8 @@ private[akka] class ShardRegion(
   import ShardRegion._
   import settings._
   import settings.tuningParameters._
+
+  val log = Logging.withMarker(context.system, this)
 
   val cluster = Cluster(context.system)
 
@@ -1033,7 +1035,7 @@ private[akka] class ShardRegion(
         .get(id)
         .orElse(entityProps match {
           case Some(props) if !shardsByRef.values.exists(_ == id) =>
-            log.debug("{}: Starting shard [{}] in region", typeName, id)
+            log.debug(ShardingLogMarker.shardStarted(typeName, id), "{}: Starting shard [{}] in region", typeName, id)
 
             val name = URLEncoder.encode(id, "utf-8")
             val shard = context.watch(

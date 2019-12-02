@@ -8,6 +8,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
+
 import akka.actor._
 import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
@@ -25,6 +26,8 @@ import akka.cluster.ddata.GSetKey
 import akka.cluster.ddata.Key
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.event.BusLogging
+import akka.event.Logging
 import akka.util.Timeout
 import com.github.ghik.silencer.silent
 
@@ -495,12 +498,13 @@ object ShardCoordinator {
 abstract class ShardCoordinator(
     settings: ClusterShardingSettings,
     allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
-    extends Actor
-    with ActorLogging {
+    extends Actor {
   import ShardCoordinator._
   import ShardCoordinator.Internal._
   import ShardRegion.ShardId
   import settings.tuningParameters._
+
+  val log = Logging.withMarker(context.system, this)
 
   val cluster = Cluster(context.system)
   val removalMargin = cluster.downingProvider.downRemovalMargin
@@ -526,6 +530,8 @@ abstract class ShardCoordinator(
     context.system.scheduler.scheduleWithFixedDelay(rebalanceInterval, rebalanceInterval, self, RebalanceTick)
 
   cluster.subscribe(self, initialStateMode = InitialStateAsEvents, ClusterShuttingDown.getClass)
+
+  protected def typeName: String
 
   override def postStop(): Unit = {
     super.postStop()
@@ -881,7 +887,11 @@ abstract class ShardCoordinator(
           if (state.regions.contains(region) && !gracefulShutdownInProgress.contains(region)) {
             update(ShardHomeAllocated(shard, region)) { evt =>
               state = state.updated(evt)
-              log.debug("Shard [{}] allocated at [{}]", evt.shard, evt.region)
+              log.debug(
+                ShardingLogMarker.shardAllocated(typeName, shard, regionAddress(region)),
+                "Shard [{}] allocated at [{}]",
+                evt.shard,
+                evt.region)
 
               sendHostShardMsg(evt.shard, evt.region)
               getShardHomeSender ! ShardHome(evt.shard, evt.region)
@@ -895,8 +905,13 @@ abstract class ShardCoordinator(
       }
     }
 
+  private def regionAddress(region: ActorRef): Address = {
+    if (region.path.address.host.isEmpty) cluster.selfAddress
+    else region.path.address
+  }
+
   def continueRebalance(shards: Set[ShardId]): Unit = {
-    if (log.isInfoEnabled && (shards.nonEmpty || rebalanceInProgress.nonEmpty)) {
+    if ((log: BusLogging).isInfoEnabled && (shards.nonEmpty || rebalanceInProgress.nonEmpty)) {
       log.info(
         "Starting rebalance for shards [{}]. Current shards rebalancing: [{}]",
         shards.mkString(","),
@@ -932,7 +947,7 @@ abstract class ShardCoordinator(
  */
 @deprecated("Use `ddata` mode, persistence mode is deprecated.", "2.6.0")
 class PersistentShardCoordinator(
-    typeName: String,
+    override val typeName: String,
     settings: ClusterShardingSettings,
     allocationStrategy: ShardCoordinator.ShardAllocationStrategy)
     extends ShardCoordinator(settings, allocationStrategy)
@@ -1041,7 +1056,7 @@ class PersistentShardCoordinator(
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
 class DDataShardCoordinator(
-    typeName: String,
+    override val typeName: String,
     settings: ClusterShardingSettings,
     allocationStrategy: ShardCoordinator.ShardAllocationStrategy,
     replicator: ActorRef,
