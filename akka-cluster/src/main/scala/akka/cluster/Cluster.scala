@@ -494,7 +494,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         logAtLevel(Logging.InfoLevel, message)
 
     def logInfo(marker: LogMarker, message: String): Unit =
-      if (LogInfo && log.isInfoEnabled)
+      if (LogInfo && log.isInfoEnabled(marker))
         logAtLevel(marker, Logging.InfoLevel, message)
 
     def logInfo(template: String, arg1: Any): Unit =
@@ -502,7 +502,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         logAtLevel(Logging.InfoLevel, log.format(template, arg1))
 
     def logInfo(marker: LogMarker, template: String, arg1: Any): Unit =
-      if (LogInfo && log.isInfoEnabled)
+      if (LogInfo && log.isInfoEnabled(marker))
         logAtLevel(marker, Logging.InfoLevel, log.format(template, arg1))
 
     def logInfo(template: String, arg1: Any, arg2: Any): Unit =
@@ -510,7 +510,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         logAtLevel(Logging.InfoLevel, log.format(template, arg1, arg2))
 
     def logInfo(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-      if (LogInfo && log.isInfoEnabled)
+      if (LogInfo && log.isInfoEnabled(marker))
         logAtLevel(marker, Logging.InfoLevel, log.format(template, arg1, arg2))
 
     def logInfo(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
@@ -518,7 +518,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         logAtLevel(Logging.InfoLevel, log.format(template, arg1, arg2, arg3))
 
     def logInfo(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-      if (LogInfo && log.isInfoEnabled)
+      if (LogInfo && log.isInfoEnabled(marker))
         logAtLevel(marker, Logging.InfoLevel, log.format(template, arg1, arg2, arg3))
 
     def logWarning(message: String): Unit =
@@ -530,7 +530,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         logAtLevel(Logging.WarningLevel, log.format(template, arg1))
 
     def logWarning(marker: LogMarker, template: String, arg1: Any): Unit =
-      if (log.isWarningEnabled)
+      if (log.isWarningEnabled(marker))
         logAtLevel(marker, Logging.WarningLevel, log.format(template, arg1))
 
     def logWarning(template: String, arg1: Any, arg2: Any): Unit =
@@ -538,7 +538,7 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
         logAtLevel(Logging.WarningLevel, log.format(template, arg1, arg2))
 
     def logWarning(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-      if (log.isWarningEnabled)
+      if (log.isWarningEnabled(marker))
         logAtLevel(marker, Logging.WarningLevel, log.format(template, arg1, arg2))
 
     def logWarning(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
@@ -548,6 +548,10 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
     def logError(message: String): Unit =
       if (log.isErrorEnabled)
         logAtLevel(Logging.ErrorLevel, message)
+
+    def logError(marker: LogMarker, message: String): Unit =
+      if (log.isErrorEnabled(marker))
+        logAtLevel(marker, Logging.ErrorLevel, message)
 
     def logError(template: String, arg1: Any): Unit =
       if (log.isErrorEnabled)

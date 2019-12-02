@@ -52,6 +52,12 @@ object ClusterLogMarker {
     LogMarker("akkaClusterLeaderAllowed")
 
   /**
+   * Marker "akkaJoinFailed" of log event when node couldn't join seed nodes.
+   */
+  val joinFailed: LogMarker =
+    LogMarker("akkaJoinFailed")
+
+  /**
    * Marker "akkaMemberChanged" of log event when a member's status is changed by the leader.
    * @param node The address of the node that is changed. Included as property "akkaRemoteAddress"
    *             and "akkaRemoteAddressUid".

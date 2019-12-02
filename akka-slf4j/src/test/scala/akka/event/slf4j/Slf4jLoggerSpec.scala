@@ -122,6 +122,16 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       s should include("msg=[security-wise interesting message]")
     }
 
+    "log info with marker and properties" in {
+      producer ! StringWithMarker("interesting message", LogMarker("testMarker", Map("p1" -> 1, "p2" -> "B")))
+
+      awaitCond(outputString.contains("----"), 5 seconds)
+      val s = outputString
+      s should include("marker=[testMarker]")
+      s should include("p1: 1 p2: B")
+      s should include("msg=[interesting message]")
+    }
+
     "log info with slf4j marker" in {
       val slf4jMarker = MarkerFactory.getMarker("SLF")
       slf4jMarker.add(MarkerFactory.getMarker("ADDED")) // slf4j markers can have children
@@ -143,7 +153,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
       s should include("marker=[SLF [ ADDED ]]")
-      s should include("mdc=[ticket-#3671: Custom MDC Values]")
+      s should include("mdc=[ticket-#3671: Custom MDC Values")
       s should include("msg=[security-wise interesting message]")
     }
 
@@ -158,7 +168,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       s should include("level=[INFO]")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       (s should include).regex(sourceThreadRegex)
-      s should include("mdc=[ticket-#3671: Custom MDC Values]")
+      s should include("mdc=[ticket-#3671: Custom MDC Values")
       s should include("msg=[Message with custom MDC values]")
     }
 
@@ -179,7 +189,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       s should include("level=[INFO]")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       (s should include).regex(sourceThreadRegex)
-      s should include("mdc=[ticket-#3671: null]")
+      s should include("mdc=[ticket-#3671: null")
       s should include("msg=[Message with null custom MDC values]")
     }
 

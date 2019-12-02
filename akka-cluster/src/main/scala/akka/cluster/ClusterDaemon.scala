@@ -1777,6 +1777,7 @@ private[cluster] final class JoinSeedNodeProcess(
         context.become(done)
       } else {
         logError(
+          ClusterLogMarker.joinFailed,
           "Couldn't join seed nodes because of incompatible cluster configuration. " +
           "It's recommended to perform a full cluster shutdown in order to deploy this new version." +
           "If a cluster shutdown isn't an option, you may want to disable this protection by setting " +
@@ -1792,6 +1793,7 @@ private[cluster] final class JoinSeedNodeProcess(
     case ReceiveTimeout =>
       if (attempt >= 2)
         logWarning(
+          ClusterLogMarker.joinFailed,
           "Couldn't join seed nodes after [{}] attempts, will try again. seed-nodes=[{}]",
           attempt,
           seedNodes.filterNot(_ == selfAddress).mkString(", "))
