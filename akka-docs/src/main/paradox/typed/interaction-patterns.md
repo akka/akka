@@ -228,7 +228,7 @@ Java
 ## Send Future result to self
 
 When using an API that returns a @scala[`Future`]@java[`CompletionStage`] from an actor it's common that you would
-like to use the value of the in the actor when the @scala[`Future`]@java[`CompletionStage`] is completed. For
+like to use the value of the response in the actor when the @scala[`Future`]@java[`CompletionStage`] is completed. For
 this purpose the `ActorContext` provides a `pipeToSelf` method.
 
 **Example:**
