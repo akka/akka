@@ -18,7 +18,7 @@ trait CommonUtils {
 
 object CommonUtils {
 
-  import scala.collection.JavaConverters._
+  import akka.util.ccompat.JavaConverters._
 
   def initSystemWithEnabledPlugin(name: String, serializeMessages: Boolean, serializeSnapshots: Boolean) =
     ActorSystem(
