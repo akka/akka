@@ -55,9 +55,9 @@ class TestKitExamples {
           case ReadMessages(batch) if batch.nonEmpty => ProcessingSuccess
           case WriteMessages(batch) if batch.size > 1 =>
             ProcessingSuccess
-          case ReadSeqNum => StorageFailure()
+          case ReadSeqNum        => StorageFailure()
           case DeleteMessages(_) => Reject()
-          case _ => StorageFailure()
+          case _                 => StorageFailure()
         }
       } else {
         ProcessingSuccess
