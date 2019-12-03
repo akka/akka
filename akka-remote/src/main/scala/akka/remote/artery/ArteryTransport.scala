@@ -294,7 +294,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     extends RemoteTransport(_system, _provider)
     with InboundContext {
   import ArteryTransport._
-  import FlightRecorderEvents._
 
   type LifeCycle
 
@@ -309,6 +308,9 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   override val log: MarkerLoggingAdapter = Logging.withMarker(system, getClass)
 
+  val flightRecorder: RemotingFlightRecorder = RemotingFlightRecorder(system)
+  log.debug("Using flight recorder {}", flightRecorder)
+
   /**
    * Compression tables must be created once, such that inbound lane restarts don't cause dropping of the tables.
    * However are the InboundCompressions are owned by the Decoder operator, and any call into them must be looped through the Decoder!
@@ -317,8 +319,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
    */
   protected val _inboundCompressions = {
     if (settings.Advanced.Compression.Enabled) {
-      val eventSink = IgnoreEventSink
-      new InboundCompressionsImpl(system, this, settings.Advanced.Compression, eventSink)
+      new InboundCompressionsImpl(system, this, settings.Advanced.Compression, flightRecorder)
     } else NoInboundCompressions
   }
 
@@ -376,8 +377,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     capacity =
       settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
-  val topLevelFlightRecorder: EventSink = IgnoreEventSink
-
   private val associationRegistry = new AssociationRegistry(
     remoteAddress =>
       new Association(
@@ -399,7 +398,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       Runtime.getRuntime.addShutdownHook(shutdownHook)
 
     startTransport()
-    topLevelFlightRecorder.loFreq(Transport_Started, NoMetaData)
+    flightRecorder.transportStarted()
 
     val systemMaterializer = SystemMaterializer(system)
     materializer =
@@ -409,7 +408,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       settings.Advanced.ControlStreamMaterializerSettings)
 
     messageDispatcher = new MessageDispatcher(system, provider)
-    topLevelFlightRecorder.loFreq(Transport_MaterializerStarted, NoMetaData)
+    flightRecorder.transportMaterializerStarted()
 
     val (port, boundPort) = bindInboundStreams()
 
@@ -422,11 +421,11 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       Address(ArteryTransport.ProtocolName, system.name, settings.Bind.Hostname, boundPort),
       AddressUidExtension(system).longAddressUid)
 
-    topLevelFlightRecorder.loFreq(Transport_UniqueAddressSet, _localAddress.toString())
+    flightRecorder.transportUniqueAddressSet(_localAddress)
 
     runInboundStreams(port, boundPort)
 
-    topLevelFlightRecorder.loFreq(Transport_StartupFinished, NoMetaData)
+    flightRecorder.transportStartupFinished()
 
     startRemoveQuarantinedAssociationTask()
 
@@ -618,7 +617,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       case cause =>
         if (restartCounter.restart()) {
           log.error(cause, "{} failed. Restarting it. {}", streamName, cause.getMessage)
-          topLevelFlightRecorder.loFreq(Transport_RestartInbound, s"$localAddress - $streamName")
+          flightRecorder.transportRestartInbound(localAddress, streamName)
           restart()
         } else {
           log.error(
@@ -661,7 +660,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     implicit val ec = system.dispatchers.internalDispatcher
 
     killSwitch.abort(ShutdownSignal)
-    topLevelFlightRecorder.loFreq(Transport_KillSwitchPulled, NoMetaData)
+    flightRecorder.transportKillSwitchPulled()
     for {
       _ <- streamsCompleted.recover { case _    => Done }
       _ <- shutdownTransport().recover { case _ => Done }
@@ -669,7 +668,6 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
       // no need to explicitly shut down the contained access since it's lifecycle is bound to the Decoder
       _inboundCompressionAccess = OptionVal.None
 
-      topLevelFlightRecorder.loFreq(Transport_FlightRecorderClose, NoMetaData)
       Done
     }
   }

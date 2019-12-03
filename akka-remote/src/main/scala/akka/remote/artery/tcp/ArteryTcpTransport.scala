@@ -74,7 +74,6 @@ private[remote] class ArteryTcpTransport(
     extends ArteryTransport(_system, _provider) {
   import ArteryTransport._
   import ArteryTcpTransport._
-  import FlightRecorderEvents._
 
   override type LifeCycle = NotUsed
 
@@ -117,8 +116,6 @@ private[remote] class ArteryTcpTransport(
       streamId: Int,
       bufferPool: EnvelopeBufferPool): Sink[EnvelopeBuffer, Future[Done]] = {
     implicit val sys: ActorSystem = system
-
-    val afr = IgnoreEventSink
 
     val host = outboundContext.remoteAddress.host.get
     val port = outboundContext.remoteAddress.port.get
@@ -174,10 +171,7 @@ private[remote] class ArteryTcpTransport(
             .via(Flow.lazyFlow(() => {
               // only open the actual connection if any new messages are sent
               logConnect()
-              afr.loFreq(
-                TcpOutbound_Connected,
-                s"${outboundContext.remoteAddress.host.get}:${outboundContext.remoteAddress.port.get} " +
-                s"/ ${streamName(streamId)}")
+              flightRecorder.tcpOutboundConnected(outboundContext.remoteAddress, streamName(streamId))
               if (controlIdleKillSwitch.isDefined)
                 outboundContext.asInstanceOf[Association].setControlIdleKillSwitch(controlIdleKillSwitch)
 
@@ -220,7 +214,7 @@ private[remote] class ArteryTcpTransport(
     Flow[EnvelopeBuffer]
       .map { env =>
         val size = env.byteBuffer.limit()
-        afr.hiFreq(TcpOutbound_Sent, size)
+        flightRecorder.tcpOutboundSent(size)
 
         // TODO Possible performance improvement, could we reduce the copying of bytes?
         val bytes = ByteString(env.byteBuffer)
@@ -260,12 +254,9 @@ private[remote] class ArteryTcpTransport(
 
     val binding = serverBinding match {
       case None =>
-        val afr = IgnoreEventSink
         val binding = connectionSource
           .to(Sink.foreach { connection =>
-            afr.loFreq(
-              TcpInbound_Connected,
-              s"${connection.remoteAddress.getHostString}:${connection.remoteAddress.getPort}")
+            flightRecorder.tcpInboundConnected(connection.remoteAddress)
             inboundConnectionFlow.map(connection.handleWith(_))(sys.dispatcher)
           })
           .run()
@@ -280,7 +271,7 @@ private[remote] class ArteryTcpTransport(
 
         // only on initial startup, when ActorSystem is starting
         val b = Await.result(binding, settings.Bind.BindTimeout)
-        afr.loFreq(TcpInbound_Bound, s"$bindHost:${b.localAddress.getPort}")
+        flightRecorder.tcpInboundBound(bindHost, b.localAddress)
         b
       case Some(binding) =>
         // already bound, when restarting
@@ -351,7 +342,7 @@ private[remote] class ArteryTcpTransport(
       Flow[ByteString]
         .via(inboundKillSwitch.flow)
         // must create new FlightRecorder event sink for each connection because they can't be shared
-        .via(new TcpFraming)
+        .via(new TcpFraming(flightRecorder))
         .alsoTo(inboundStream)
         .filter(_ => false) // don't send back anything in this TCP socket
         .map(_ => ByteString.empty) // make it a Flow[ByteString] again
@@ -490,7 +481,7 @@ private[remote] class ArteryTcpTransport(
     implicit val ec = system.dispatchers.internalDispatcher
     inboundKillSwitch.shutdown()
     unbind().map { _ =>
-      topLevelFlightRecorder.loFreq(Transport_Stopped, NoMetaData)
+      flightRecorder.transportStopped()
       Done
     }
   }
@@ -502,9 +493,7 @@ private[remote] class ArteryTcpTransport(
         for {
           _ <- binding.unbind()
         } yield {
-          topLevelFlightRecorder.loFreq(
-            TcpInbound_Bound,
-            s"${localAddress.address.host.get}:${localAddress.address.port}")
+          flightRecorder.tcpInboundUnbound(localAddress)
           Done
         }
       case None =>
