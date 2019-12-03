@@ -57,8 +57,7 @@ object Scaladoc extends AutoPlugin {
       "-doc-version",
       ver,
       "-doc-canonical-base-url",
-      "https://doc.akka.io/api/akka/current/"
-    )
+      "https://doc.akka.io/api/akka/current/")
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
@@ -135,7 +134,7 @@ object UnidocRoot extends AutoPlugin {
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled
     .ifTrue(Seq(javacOptions in (JavaUnidoc, unidoc) := {
       if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
-      else Seq("-Xdoclint:none", "--frames", "--ignore-source-errors", "--no-module-directories")
+      else Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories")
     }))
     .getOrElse(Nil)
 
