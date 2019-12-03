@@ -126,19 +126,18 @@ startup if a node to join have been specified in the configuration
    
  * **leave** - tell a node to leave the cluster gracefully, normally triggered by ActorSystem or JVM shutdown through @ref[coordinated shutdown](../coordinated-shutdown.md)
    
- * **down** - mark a node as down - normally only used to remove crashed nodes from the cluster
+ * **down** - mark a node as down - action required to remove crashed nodes from the cluster, can be triggered manually, through [Cluster HTTP Management](https://doc.akka.io/docs/akka-management/current/cluster-http-management.html#put-cluster-members-address-responses), or it is triggered automatically by a @ref[downing provider](cluster.md#downing) like [Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
    
 #### Leader Actions
 
-The `leader` has the following duties of shifting members in and out of the cluster:
+The `leader` has the duty of confirming user actions to shift members in and out of the cluster:
 
  * joining ⭢ up
  * weakly up ⭢ up *(no convergence is required for this leader action to be performed)*
- * leaving ⭢ exciting
+ * leaving ⭢ exiting
  * exiting ⭢ removed
  * down ⭢ removed
 
 #### Failure Detection and Unreachability
 
-Being unreachable is not a separate member state but rather a flag in addition to the state. A node can become unreachable while in any of the states, meaning that the cluster is unable to talk to it. After becoming unreachable the failure detector may detect it as reachable again and thereby remove the flag.
-
+Being unreachable is not a separate member state but rather a flag in addition to the state. A failure detector on each node that monitors another node can mark the monitored node as unreachable independent of its state. Afterwards the failure detector continues monitoring the node until it detects it as reachable again and removes the flag. A node is considered reachable again only after all monitoring nodes see it as reachable again.
