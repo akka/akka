@@ -821,13 +821,13 @@ To use the testkit you need to add the following dependency in your project:
 
 There are two testkit classes which have similar api:
 
- * `PersistenceTestKit` class is for messages
- * `SnapshotTestKit` class is for snapshots
+ * @apidoc[PersistenceTestKit] class is for messages
+ * @apidoc[SnapshotTestKit] class is for snapshots
  
 The testkit classes have two corresponding plugins which emulate the behavior of the storages: 
 
- * `PersistenceTestKitPlugin` class emulates a messages storage 
- * `PersistenceTestKitSnapshotPlugin` class emulates a snapshots storage
+ * @apidoc[PersistenceTestKitPlugin] class emulates a messages storage 
+ * @apidoc[PersistenceTestKitSnapshotPlugin] class emulates a snapshots storage
 
 **Note!** The corresponding plugins **must** be configured in the actor system which is used to initialize the particular testkit class:
 
@@ -927,23 +927,23 @@ and set it with `withPolicy()` method.
 
 Message storage has the following operations:
 
- * `ReadMessages` Read the messages from the storage.
- * `WriteMessages` Write messages to the storage.
- * `DeleteMessages` Delete messages from the storage.
- * `ReadSeqNum` Read the highest sequence number for particular persistence id.
+ * @apidoc[ReadMessages] Read the messages from the storage.
+ * @apidoc[WriteMessages] Write messages to the storage.
+ * @apidoc[DeleteMessages] Delete messages from the storage.
+ * @apidoc[ReadSeqNum] Read the highest sequence number for particular persistence id.
 
 Snapshot storage has the following operations:
 
- * `ReadSnapshot` Read the snapshot from the storage.
- * `WriteSnapshot` Writhe the snapshot to the storage.
- * `DeleteSnapshotsByCriteria` Delete snapshots in the storage by criteria.
- * `DeleteSnapshotByMeta` Delete particular snapshot from the storage by its metadata.
+ * @apidoc[ReadSnapshot] Read the snapshot from the storage.
+ * @apidoc[WriteSnapshot] Writhe the snapshot to the storage.
+ * @apidoc[DeleteSnapshotsByCriteria] Delete snapshots in the storage by criteria.
+ * @apidoc[DeleteSnapshotByMeta] Delete particular snapshot from the storage by its metadata.
 
 The `tryProcess()` method must return one of the processing results:
  
- * `ProcessingSuccess` Successful completion of the operation. All the messages will be saved/read/deleted.
- * `StorageFailure` Emulates exception from the storage.
- * `Reject` Emulates rejection from the storage.
+ * @apidoc[ProcessingSuccess] Successful completion of the operation. All the messages will be saved/read/deleted.
+ * @apidoc[StorageFailure] Emulates exception from the storage.
+ * @apidoc[Reject] Emulates rejection from the storage.
 
 **Note** that snapshot storage does not have rejections. If you return `Reject` in the `tryProcess()` of the snapshot storage policy, it will have the same effect as the `StorageFailure`.
 

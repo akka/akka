@@ -5,31 +5,16 @@
 package akka.persistence.testkit.scaladsl
 
 import java.io.NotSerializableException
-import java.util.UUID
 
 import akka.actor.{ ActorSystem, Props }
 import akka.persistence.SaveSnapshotFailure
-import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 import akka.persistence.testkit._
-
-import akka.util.ccompat.JavaConverters._
 
 class SnapshotSerializeSpec extends WordSpecLike with CommonSnapshotTests {
 
   override lazy val system: ActorSystem =
-    //todo probably implement method for setting plugin in Persistence for testing purposes
-    ActorSystem(
-      s"persistence-testkit-${UUID.randomUUID()}",
-      PersistenceTestKitSnapshotPlugin.config
-        .withFallback(PersistenceTestKitPlugin.config)
-        .withFallback(
-          ConfigFactory.parseMap(
-            Map(
-              "akka.persistence.testkit.messages.serialize" -> true,
-              "akka.persistence.testkit.snapshots.serialize" -> true).asJava))
-        .withFallback(ConfigFactory.parseString("akka.loggers = [\"akka.testkit.TestEventListener\"]"))
-        .withFallback(ConfigFactory.defaultApplication()))
+    CommonUtils.initSystemWithEnabledPlugin("SnapshotSerializeSpec", true, true)
 
   override def specificTests(): Unit =
     "fail if tries to save nonserializable snapshot" in {

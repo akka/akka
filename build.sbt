@@ -60,7 +60,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   persistenceShared,
   persistenceTck,
   persistenceTyped,
-  persistenceTestKit,
+  persistenceTestkit,
   protobuf,
   protobufV3,
   remote,
@@ -196,7 +196,7 @@ lazy val docs = akkaModule("akka-docs")
     clusterShardingTyped % "compile->compile;test->test",
     actorTypedTests % "compile->compile;test->test",
     streamTestkit % "compile->compile;test->test",
-    persistenceTestKit % "compile->compile;test->test")
+    persistenceTestkit % "compile->compile;test->test")
   .settings(Dependencies.docs)
   .settings(Paradox.settings)
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
@@ -270,7 +270,7 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .settings(fork in Test := true)
   .disablePlugins(MimaPlugin)
 
-lazy val persistenceTestKit = akkaModule("akka-persistence-testkit")
+lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
   .dependsOn(persistence % "compile->compile;provided->provided;test->test", testkit % "compile->compile;test->test", persistenceTck % "test")
   .settings(Dependencies.persistenceTestKit)
   .settings(AutomaticModuleName.settings("akka.persistence.testkit"))

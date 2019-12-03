@@ -6,12 +6,32 @@ package akka.persistence.testkit
 
 import java.util.UUID
 
-import akka.actor.ActorRef
+import akka.actor.{ ActorRef, ActorSystem }
 import akka.persistence._
+import com.typesafe.config.ConfigFactory
 
 trait CommonUtils {
 
   protected def randomPid() = UUID.randomUUID().toString
+
+}
+
+object CommonUtils {
+
+  import scala.collection.JavaConverters._
+
+  def initSystemWithEnabledPlugin(name: String, serializeMessages: Boolean, serializeSnapshots: Boolean) =
+    ActorSystem(
+      s"persistence-testkit-$name",
+      PersistenceTestKitSnapshotPlugin.config
+        .withFallback(PersistenceTestKitPlugin.config)
+        .withFallback(
+          ConfigFactory.parseMap(
+            Map(
+              "akka.persistence.testkit.messages.serialize" -> serializeMessages,
+              "akka.persistence.testkit.snapshots.serialize" -> serializeSnapshots).asJava))
+        .withFallback(ConfigFactory.parseString("akka.loggers = [\"akka.testkit.TestEventListener\"]"))
+        .withFallback(ConfigFactory.defaultApplication()))
 
 }
 
