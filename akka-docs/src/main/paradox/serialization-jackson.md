@@ -391,6 +391,29 @@ different settings for remote messages and persisted events.
 
 @@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #several-config }
 
+### Manifest-less serialization
+
+When using the Jackson serializer for persistence, given that the fully qualified class name is
+stored in the manifest, this can result in a lot of wasted disk and IO used, especially when the
+events are small. To address this, a `type-in-manifest` flag can be turned off, which will result
+in the class name not appearing in the manifest.
+
+When deserializing, the Jackson serializer will use the type defined in `deserialization-type`, if
+present, otherwise it will look for exactly one serialization binding class, and use that. For
+this to be useful, generally that single type must be a 
+@ref:[Polymorphic type](#polymorphic-types), with all type information necessary to deserialize to
+the various sub types contained in the JSON message.
+
+Since this configuration can only be applied to a single root type, you will usually only want to
+apply it to a per binding configuration, not to the regular `jackson-json` or `jackson-cbor`
+configurations.
+
+@@snip [config](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/SerializationDocSpec.scala) { #manifestless }
+
+Note that Akka remoting already implements manifest compression, and so this optimization will have
+no significant impact for messages sent over remoting. It's only useful for messages serialized for
+other purposes, such as persistence or distributed data.
+
 ## Additional features
 
 Additional Jackson serialization features can be enabled/disabled in configuration. The default values from

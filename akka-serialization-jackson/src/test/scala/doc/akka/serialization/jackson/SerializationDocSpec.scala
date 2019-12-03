@@ -101,6 +101,27 @@ object SerializationDocSpec {
     #//#several-config
   """
 
+  val configManifestless = """
+    #//#manifestless
+    akka.actor {
+      serializers {
+        jackson-json-event   = "akka.serialization.jackson.JacksonJsonSerializer"
+      }
+      serialization-identifiers {
+        jackson-json-event = 9001
+      }
+      serialization-bindings {
+        "com.myservice.MyEvent" = jackson-json-event
+      }
+    }
+    akka.serialization.jackson {
+      jackson-json-event {
+        type-in-manifest = off
+      }
+    }
+    #//#manifestless
+  """
+
   //#polymorphism
   final case class Zoo(primaryAttraction: Animal) extends MySerializable
 
