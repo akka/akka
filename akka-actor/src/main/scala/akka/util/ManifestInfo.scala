@@ -11,6 +11,7 @@ import java.util.jar.Attributes
 import java.util.jar.Manifest
 
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -40,6 +41,7 @@ object ManifestInfo extends ExtensionId[ManifestInfo] with ExtensionIdProvider {
     "com.typesafe.play")
 
   override def get(system: ActorSystem): ManifestInfo = super.get(system)
+  override def get(system: ClassicActorSystemProvider): ManifestInfo = super.get(system)
 
   override def lookup(): ManifestInfo.type = ManifestInfo
 

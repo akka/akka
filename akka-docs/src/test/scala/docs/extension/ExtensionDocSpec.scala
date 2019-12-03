@@ -5,7 +5,9 @@
 package docs.extension
 
 import java.util.concurrent.atomic.AtomicLong
+
 import akka.actor.Actor
+import akka.actor.ClassicActorSystemProvider
 import akka.testkit.AkkaSpec
 
 //#extension
@@ -42,6 +44,7 @@ object CountExtension extends ExtensionId[CountExtensionImpl] with ExtensionIdPr
    * Java API: retrieve the Count extension for the given system.
    */
   override def get(system: ActorSystem): CountExtensionImpl = super.get(system)
+  override def get(system: ClassicActorSystemProvider): CountExtensionImpl = super.get(system)
 }
 //#extensionid
 

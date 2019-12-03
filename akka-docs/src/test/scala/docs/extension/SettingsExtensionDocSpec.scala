@@ -10,9 +10,12 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.ExtendedActorSystem
+
 import scala.concurrent.duration.Duration
 import com.typesafe.config.Config
 import java.util.concurrent.TimeUnit
+
+import akka.actor.ClassicActorSystemProvider
 
 //#imports
 
@@ -39,6 +42,7 @@ object Settings extends ExtensionId[SettingsImpl] with ExtensionIdProvider {
    * Java API: retrieve the Settings extension for the given system.
    */
   override def get(system: ActorSystem): SettingsImpl = super.get(system)
+  override def get(system: ClassicActorSystemProvider): SettingsImpl = super.get(system)
 }
 //#extensionid
 

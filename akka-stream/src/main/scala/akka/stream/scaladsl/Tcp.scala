@@ -81,6 +81,7 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   def apply()(implicit system: ActorSystem): Tcp = super.apply(system)
 
   override def get(system: ActorSystem): Tcp = super.get(system)
+  override def get(system: ClassicActorSystemProvider): Tcp = super.get(system)
 
   def lookup() = Tcp
 

@@ -10,6 +10,7 @@ import akka.actor.SupervisorStrategy
 import akka.event.LoggingAdapter
 import akka.event.Logging
 import com.typesafe.config.Config
+
 import scala.collection.immutable
 import akka.actor.Props
 import akka.actor.Deploy
@@ -17,6 +18,7 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.ActorSystem
 import akka.actor.ActorRef
+import akka.actor.ClassicActorSystemProvider
 
 /**
  * Cluster metrics extension.
@@ -87,6 +89,7 @@ class ClusterMetricsExtension(system: ExtendedActorSystem) extends Extension {
 object ClusterMetricsExtension extends ExtensionId[ClusterMetricsExtension] with ExtensionIdProvider {
   override def lookup = ClusterMetricsExtension
   override def get(system: ActorSystem): ClusterMetricsExtension = super.get(system)
+  override def get(system: ClassicActorSystemProvider): ClusterMetricsExtension = super.get(system)
   override def createExtension(system: ExtendedActorSystem): ClusterMetricsExtension =
     new ClusterMetricsExtension(system)
 }

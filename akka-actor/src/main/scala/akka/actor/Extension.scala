@@ -31,6 +31,7 @@ package akka.actor
  *
  *   // Java API: retrieve the extension for the given system.
  *   override def get(system: ActorSystem): UdpExt = super.get(system)
+ *   override def get(system: ClassicActorSystemProvider): UdpExt = super.get(system)
  * }
  *
  * class Ext(system: ExtendedActorSystem) extends Extension {
@@ -100,7 +101,7 @@ trait ExtensionId[T <: Extension] {
    * For extensions written in Scala that are to be used from Java also,
    * this method should be overridden to get correct return type.
    * {{{
-   * override def get(system: ActorSystem): TheExtension = super.get(system)
+   * override def get(system: ClassicActorSystemProvider): TheExtension = super.get(system)
    * }}}
    *
    */

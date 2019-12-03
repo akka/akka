@@ -48,6 +48,8 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    */
   override def get(system: ActorSystem): TcpExt = super.get(system)
 
+  override def get(system: ClassicActorSystemProvider): TcpExt = super.get(system)
+
   /**
    * Scala API: this object contains all applicable socket options for TCP.
    *
