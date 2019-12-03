@@ -1,0 +1,2 @@
+# Akka 2.6.0 for Scala 2.13 accidentally contained a copy of the protobuf classes which has now been fixed
+ProblemFilters.exclude[MissingClassProblem]("akka.protobufv3.internal.*")
