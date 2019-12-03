@@ -52,12 +52,12 @@ class TestKitExamples {
         //check the type of operation and react with success or with reject or with failure.
         //if you return ProcessingSuccess the operation will be performed, otherwise not.
         processingUnit match {
-          case ReadMessages(batch) if batch.nonEmpty ⇒ ProcessingSuccess
-          case WriteMessages(batch) if batch.size > 1 ⇒
+          case ReadMessages(batch) if batch.nonEmpty => ProcessingSuccess
+          case WriteMessages(batch) if batch.size > 1 =>
             ProcessingSuccess
-          case ReadSeqNum ⇒ StorageFailure()
-          case DeleteMessages(_) ⇒ Reject()
-          case _ ⇒ StorageFailure()
+          case ReadSeqNum => StorageFailure()
+          case DeleteMessages(_) => Reject()
+          case _ => StorageFailure()
         }
       } else {
         ProcessingSuccess
@@ -78,14 +78,14 @@ class TestKitExamples {
         //check the type of operation and react with success or with reject or with failure.
         //if you return ProcessingSuccess the operation will be performed, otherwise not.
         processingUnit match {
-          case ReadSnapshot(_, payload) if payload.nonEmpty ⇒
+          case ReadSnapshot(_, payload) if payload.nonEmpty =>
             ProcessingSuccess
-          case WriteSnapshot(meta, payload) if meta.sequenceNr > 10 ⇒
+          case WriteSnapshot(meta, payload) if meta.sequenceNr > 10 =>
             ProcessingSuccess
-          case DeleteSnapshotsByCriteria(_) ⇒ StorageFailure()
-          case DeleteSnapshotByMeta(meta) if meta.sequenceNr < 10 ⇒
+          case DeleteSnapshotsByCriteria(_) => StorageFailure()
+          case DeleteSnapshotByMeta(meta) if meta.sequenceNr < 10 =>
             ProcessingSuccess
-          case _ ⇒ StorageFailure()
+          case _ => StorageFailure()
         }
       } else {
         ProcessingSuccess
