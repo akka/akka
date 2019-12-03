@@ -1028,7 +1028,7 @@ class SubSource[Out, Mat](
    */
   def mapError[E <: Throwable](clazz: Class[E], f: function.Function[E, Throwable]): javadsl.SubSource[Out, Mat] =
     mapError {
-      case err if clazz.isInstance(err) ⇒ f(clazz.cast(err))
+      case err if clazz.isInstance(err) => f(clazz.cast(err))
     }
 
   /**

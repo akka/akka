@@ -1576,7 +1576,7 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
    */
   def mapError[E <: Throwable](clazz: Class[E], f: function.Function[E, Throwable]): javadsl.Flow[In, Out, Mat] =
     mapError {
-      case err if clazz.isInstance(err) ⇒ f(clazz.cast(err))
+      case err if clazz.isInstance(err) => f(clazz.cast(err))
     }
 
   /**

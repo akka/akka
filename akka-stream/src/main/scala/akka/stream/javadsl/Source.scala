@@ -1868,7 +1868,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def mapError[E <: Throwable](clazz: Class[E], f: function.Function[E, Throwable]): javadsl.Source[Out, Mat] =
     mapError {
-      case err if clazz.isInstance(err) ⇒ f(clazz.cast(err))
+      case err if clazz.isInstance(err) => f(clazz.cast(err))
     }
 
   /**

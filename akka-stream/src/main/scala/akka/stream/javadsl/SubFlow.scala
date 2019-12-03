@@ -1045,9 +1045,11 @@ class SubFlow[In, Out, Mat](
    * '''Cancels when''' downstream cancels
    *
    */
-  def mapError[E <: Throwable](clazz: Class[E], f: function.Function[E, Throwable]): javadsl.SubFlow[In, Out, Mat @uncheckedVariance] =
+  def mapError[E <: Throwable](
+      clazz: Class[E],
+      f: function.Function[E, Throwable]): javadsl.SubFlow[In, Out, Mat @uncheckedVariance] =
     mapError {
-      case err if clazz.isInstance(err) ⇒ f(clazz.cast(err))
+      case err if clazz.isInstance(err) => f(clazz.cast(err))
     }
 
   /**
