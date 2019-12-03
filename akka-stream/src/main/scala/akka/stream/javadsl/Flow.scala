@@ -22,7 +22,6 @@ import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.actor.ClassicActorSystemProvider
-import akka.annotation.ApiMayChange
 import akka.dispatch.ExecutionContexts
 import akka.event.LoggingAdapter
 import akka.japi.function
