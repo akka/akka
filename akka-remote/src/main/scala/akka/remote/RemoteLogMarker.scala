@@ -34,14 +34,14 @@ object RemoteLogMarker {
         LogMarker.Properties.RemoteAddressUid -> remoteAddressUid.getOrElse("")))
 
   /**
-   * Marker "akkaConnected" of log event when outbound connection is established.
+   * Marker "akkaConnect" of log event when outbound connection is attempted.
    *
    * @param remoteAddress The address of the connected node. Included as property "akkaRemoteAddress".
    * @param remoteAddressUid The address of the connected node. Included as property "akkaRemoteAddressUid".
    */
-  def connected(remoteAddress: Address, remoteAddressUid: Option[Long]): LogMarker =
+  def connect(remoteAddress: Address, remoteAddressUid: Option[Long]): LogMarker =
     LogMarker(
-      "akkaConnected",
+      "akkaConnect",
       Map(
         LogMarker.Properties.RemoteAddress -> remoteAddress,
         LogMarker.Properties.RemoteAddressUid -> remoteAddressUid.getOrElse("")))

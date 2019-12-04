@@ -146,10 +146,10 @@ private[remote] class ArteryTcpTransport(
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
       val restartCount = new AtomicInteger(0)
 
-      def logConnected(): Unit = {
+      def logConnect(): Unit = {
         if (log.isDebugEnabled)
           log.debug(
-            RemoteLogMarker.connected(
+            RemoteLogMarker.connect(
               outboundContext.remoteAddress,
               outboundContext.associationState.uniqueRemoteAddressValue().map(_.uid)),
             "Outbound connection opened to [{}]",
@@ -173,6 +173,7 @@ private[remote] class ArteryTcpTransport(
           Flow[ByteString]
             .via(Flow.lazyFlow(() => {
               // only open the actual connection if any new messages are sent
+              logConnect()
               afr.loFreq(
                 TcpOutbound_Connected,
                 s"${outboundContext.remoteAddress.host.get}:${outboundContext.remoteAddress.port.get} " +
@@ -180,12 +181,7 @@ private[remote] class ArteryTcpTransport(
               if (controlIdleKillSwitch.isDefined)
                 outboundContext.asInstanceOf[Association].setControlIdleKillSwitch(controlIdleKillSwitch)
 
-              Flow[ByteString]
-                .prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId)).map { header =>
-                  logConnected()
-                  header
-                })
-                .via(connectionFlow)
+              Flow[ByteString].prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId))).via(connectionFlow)
             }))
             .mapError {
               case ArteryTransport.ShutdownSignal => ArteryTransport.ShutdownSignal
