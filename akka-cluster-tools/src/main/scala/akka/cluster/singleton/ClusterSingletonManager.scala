@@ -1026,7 +1026,7 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
 
   when(Stopping) {
     case Event(Terminated(ref), StoppingData(singleton)) if ref == singleton =>
-      logInfo(LogMarker("cluster.singleton.terminated"), "Singleton actor [{}] was terminated", singleton.path)
+      logInfo(ClusterLogMarker.singletonTerminated, "Singleton actor [{}] was terminated", singleton.path)
       stop()
   }
 
