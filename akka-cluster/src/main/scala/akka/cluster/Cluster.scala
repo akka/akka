@@ -474,51 +474,51 @@ class Cluster(val system: ExtendedActorSystem) extends Extension {
       log.isDebugEnabled
 
     def logDebug(message: String): Unit =
-      if (LogInfo && log.isDebugEnabled)
+      if (settings.LogInfo && log.isDebugEnabled)
         logAtLevel(Logging.DebugLevel, message)
 
     def logDebug(template: String, arg1: Any): Unit =
-      if (LogInfo && log.isDebugEnabled)
+      if (settings.LogInfo && log.isDebugEnabled)
         logAtLevel(Logging.DebugLevel, log.format(template, arg1))
 
     def logDebug(template: String, arg1: Any, arg2: Any): Unit =
-      if (LogInfo && log.isDebugEnabled)
+      if (settings.LogInfo && log.isDebugEnabled)
         logAtLevel(Logging.DebugLevel, log.format(template, arg1, arg2))
 
     def logDebug(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-      if (LogInfo && log.isDebugEnabled)
+      if (settings.LogInfo && log.isDebugEnabled)
         logAtLevel(Logging.DebugLevel, log.format(template, arg1, arg2, arg3))
 
     def logInfo(message: String): Unit =
-      if (LogInfo && log.isInfoEnabled)
+      if (settings.LogInfo && log.isInfoEnabled)
         logAtLevel(Logging.InfoLevel, message)
 
     def logInfo(marker: LogMarker, message: String): Unit =
-      if (LogInfo && log.isInfoEnabled(marker))
+      if (settings.LogInfo && log.isInfoEnabled(marker))
         logAtLevel(marker, Logging.InfoLevel, message)
 
     def logInfo(template: String, arg1: Any): Unit =
-      if (LogInfo && log.isInfoEnabled)
+      if (settings.LogInfo && log.isInfoEnabled)
         logAtLevel(Logging.InfoLevel, log.format(template, arg1))
 
     def logInfo(marker: LogMarker, template: String, arg1: Any): Unit =
-      if (LogInfo && log.isInfoEnabled(marker))
+      if (settings.LogInfo && log.isInfoEnabled(marker))
         logAtLevel(marker, Logging.InfoLevel, log.format(template, arg1))
 
     def logInfo(template: String, arg1: Any, arg2: Any): Unit =
-      if (LogInfo && log.isInfoEnabled)
+      if (settings.LogInfo && log.isInfoEnabled)
         logAtLevel(Logging.InfoLevel, log.format(template, arg1, arg2))
 
     def logInfo(marker: LogMarker, template: String, arg1: Any, arg2: Any): Unit =
-      if (LogInfo && log.isInfoEnabled(marker))
+      if (settings.LogInfo && log.isInfoEnabled(marker))
         logAtLevel(marker, Logging.InfoLevel, log.format(template, arg1, arg2))
 
     def logInfo(template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-      if (LogInfo && log.isInfoEnabled)
+      if (settings.LogInfo && log.isInfoEnabled)
         logAtLevel(Logging.InfoLevel, log.format(template, arg1, arg2, arg3))
 
     def logInfo(marker: LogMarker, template: String, arg1: Any, arg2: Any, arg3: Any): Unit =
-      if (LogInfo && log.isInfoEnabled(marker))
+      if (settings.LogInfo && log.isInfoEnabled(marker))
         logAtLevel(marker, Logging.InfoLevel, log.format(template, arg1, arg2, arg3))
 
     def logWarning(message: String): Unit =
