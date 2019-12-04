@@ -7,6 +7,11 @@ package akka.actor
 import akka.annotation.ApiMayChange
 import akka.event.LogMarker
 
+/**
+ * This is public with the purpose to document the used markers and properties of log events.
+ * No guarantee that it will remain binary compatible, but the marker names and properties
+ * are considered public API and will not be changed without notice.
+ */
 @ApiMayChange
 object ActorLogMarker {
 
