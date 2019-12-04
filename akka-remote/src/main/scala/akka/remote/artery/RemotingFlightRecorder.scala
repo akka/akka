@@ -13,25 +13,39 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
+import akka.util.JavaVersion
 
+import scala.util.Failure
+import scala.util.Success
+
+/**
+ * INTERNAL API
+ */
 @InternalApi
 object RemotingFlightRecorder extends ExtensionId[RemotingFlightRecorder] with ExtensionIdProvider {
 
-  private val ImplClassKey = "akka.remoting.flight-recorder-class"
-
   override def createExtension(system: ExtendedActorSystem): RemotingFlightRecorder =
-    if (system.settings.config.hasPath(ImplClassKey))
-      system.dynamicAccess
-        .createInstanceFor[RemotingFlightRecorder](
-          system.settings.config.getString(ImplClassKey),
-          (classOf[ExtendedActorSystem], system) :: Nil)
-        .get
-    else
+    if (JavaVersion.majorVersion >= 9) {
+      // Dynamic instantiation to not trigger class load on JDK 8
+      println(s"java version ${JavaVersion.majorVersion}")
+      system.dynamicAccess.createInstanceFor[RemotingFlightRecorder](
+        "akka.remote.artery.jfr.JFRRemotingFlightRecorder",
+        (classOf[ExtendedActorSystem], system) :: Nil) match {
+        case Success(jfr) => jfr
+        case Failure(_) =>
+          system.log.debug("Failed to load JFR remoting flight recorder, falling back to noop")
+          NoOpRemotingFlightRecorder
+      } // fallback if not possible to dynamically load for some reason
+    } else
+      // JFR not available on Java 8
       NoOpRemotingFlightRecorder
 
   override def lookup(): ExtensionId[_ <: Extension] = this
 }
 
+/**
+ * INTERNAL API
+ */
 @InternalApi
 private[akka] trait RemotingFlightRecorder extends Extension {
 
@@ -85,7 +99,9 @@ private[akka] trait RemotingFlightRecorder extends Extension {
 
 /**
  * JFR is only available under certain circumstances (JDK11 for now, possible OpenJDK 8 in the future) so therefore
- * the default needs to be a no-op flight recorder. See module akka-flight-recorder.
+ * the default on JDK 8 needs to be a no-op flight recorder.
+ *
+ * INTERNAL
  */
 @InternalApi
 private[akka] case object NoOpRemotingFlightRecorder extends RemotingFlightRecorder {
