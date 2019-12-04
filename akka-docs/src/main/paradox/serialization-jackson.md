@@ -404,6 +404,12 @@ this to be useful, generally that single type must be a
 @ref:[Polymorphic type](#polymorphic-types), with all type information necessary to deserialize to
 the various sub types contained in the JSON message.
 
+When switching serializers, for example, if doing a rolling update as described
+@ref:[here](additional/rolling-updates.md#from-java-serialization-to-jackson), there will be
+periods of time when you may have no serialization bindings declared for the type. In such
+circumstances, you must use the `deserialization-type` configuration attribute to specify which
+type should be used to deserialize messages.
+
 Since this configuration can only be applied to a single root type, you will usually only want to
 apply it to a per binding configuration, not to the regular `jackson-json` or `jackson-cbor`
 configurations.
