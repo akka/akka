@@ -1173,7 +1173,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       val periodicNotice = 60
       if (membershipState.convergence(exitingConfirmed)) {
         if (leaderActionCounter >= firstNotice)
-          logInfo(ClusterLogMarker.leaderAllowed, "Leader can perform its duties again")
+          logInfo(ClusterLogMarker.leaderRestored, "Leader can perform its duties again")
         leaderActionCounter = 0
         leaderActionsOnConvergence()
       } else {
@@ -1183,7 +1183,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
         if (leaderActionCounter == firstNotice || leaderActionCounter % periodicNotice == 0)
           logInfo(
-            ClusterLogMarker.leaderDetained,
+            ClusterLogMarker.leaderIncapacitated,
             "Leader can currently not perform its duties, reachability status: [{}], member status: [{}]",
             membershipState.dcReachabilityExcludingDownedObservers,
             latestGossip.members

@@ -45,16 +45,17 @@ object ClusterLogMarker {
     LogMarker("akkaHeartbeatStarvation")
 
   /**
-   * Marker "akkaClusterLeaderDetained" of log event when leader can't perform its duties.
+   * Marker "akkaClusterLeaderIncapacitated" of log event when leader can't perform its duties.
+   * Typically because there are unreachable nodes that have not been downed.
    */
-  val leaderDetained: LogMarker =
-    LogMarker("akkaClusterLeaderDetained")
+  val leaderIncapacitated: LogMarker =
+    LogMarker("akkaClusterLeaderIncapacitated")
 
   /**
-   * Marker "akkaClusterLeaderAllowed" of log event when leader can perform its duties again.
+   * Marker "akkaClusterLeaderRestored" of log event when leader can perform its duties again.
    */
-  val leaderAllowed: LogMarker =
-    LogMarker("akkaClusterLeaderAllowed")
+  val leaderRestored: LogMarker =
+    LogMarker("akkaClusterLeaderRestored")
 
   /**
    * Marker "akkaJoinFailed" of log event when node couldn't join seed nodes.
