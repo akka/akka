@@ -401,7 +401,7 @@ This can be used with any type of `Behavior`, including `receive`, `receiveMessa
 * Each timer has a key and if a new timer with the same key is started, the previous is cancelled. It is guaranteed that a message from the previous timer is not received, even if it was already enqueued in the mailbox when the new timer was started.
 * Both periodic and single message timers are supported. 
 * The `TimerScheduler` is mutable in itself, because it performs and manages the side effects of registering the scheduled tasks.
-* The `TimerScheduler` is bound to the lifecycle of the actor that owns it and it's cancelled automatically when the actor is stopped.
+* The `TimerScheduler` is bound to the lifecycle of the actor that owns it and is cancelled automatically when the actor is stopped.
 * `Behaviors.withTimers` can also be used inside `Behaviors.supervise` and it will automatically cancel the started timers correctly when the actor is restarted, so that the new incarnation will not receive scheduled messages from a previous incarnation.
 
 ### Schedule periodically
