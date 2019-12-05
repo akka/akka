@@ -306,7 +306,7 @@ Java
 ## Changing Behavior
 
 After processing a message, actors are able to return the `Behavior` that is used
-for next message.
+for the next message.
 
 As you can see in the above examples this is not supported by persistent actors. Instead, the state is
 returned by `eventHandler`. The reason a new behavior can't be returned is that behavior is part of the actor's
