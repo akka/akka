@@ -81,7 +81,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
     output.reset()
   }
 
-  val sourceThreadRegex = "sourceThread=\\[Slf4jLoggerSpec-akka.actor.default-dispatcher-[1-9][0-9]*\\]"
+  val sourceThreadRegex = "sourceThread=Slf4jLoggerSpec-akka.actor.default-dispatcher-[1-9][0-9]*"
 
   "Slf4jLogger" must {
 
@@ -90,8 +90,8 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
 
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s should include("akkaSource=[akka://Slf4jLoggerSpec/user/logProducer]")
-      s should include("akkaAddress=[akka://Slf4jLoggerSpec]")
+      s should include("akkaSource=akka://Slf4jLoggerSpec/user/logProducer")
+      s should include("akkaAddress=akka://Slf4jLoggerSpec")
       s should include("level=[ERROR]")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       (s should include).regex(sourceThreadRegex)
@@ -105,8 +105,8 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
 
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s should include("akkaSource=[akka://Slf4jLoggerSpec/user/logProducer]")
-      s should include("akkaAddress=[akka://Slf4jLoggerSpec]")
+      s should include("akkaSource=akka://Slf4jLoggerSpec/user/logProducer")
+      s should include("akkaAddress=akka://Slf4jLoggerSpec")
       s should include("level=[INFO]")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       (s should include).regex(sourceThreadRegex)
@@ -128,7 +128,8 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
       s should include("marker=[testMarker]")
-      s should include("p1: 1 p2: B")
+      s should include("p1=1")
+      s should include("p2=B")
       s should include("msg=[interesting message]")
     }
 
@@ -153,7 +154,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
       s should include("marker=[SLF [ ADDED ]]")
-      s should include("mdc=[ticket-#3671: Custom MDC Values")
+      s should include("ticketDesc=Custom MDC Values")
       s should include("msg=[security-wise interesting message]")
     }
 
@@ -164,11 +165,11 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
 
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s should include("akkaSource=[akka://Slf4jLoggerSpec/user/logProducer]")
+      s should include("akkaSource=akka://Slf4jLoggerSpec/user/logProducer")
       s should include("level=[INFO]")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       (s should include).regex(sourceThreadRegex)
-      s should include("mdc=[ticket-#3671: Custom MDC Values")
+      s should include("ticketDesc=Custom MDC Values")
       s should include("msg=[Message with custom MDC values]")
     }
 
@@ -185,11 +186,11 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
 
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s should include("akkaSource=[akka://Slf4jLoggerSpec/user/logProducer]")
+      s should include("akkaSource=akka://Slf4jLoggerSpec/user/logProducer")
       s should include("level=[INFO]")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$LogProducer]")
       (s should include).regex(sourceThreadRegex)
-      s should include("mdc=[ticket-#3671: null")
+      s should include("ticketDesc=null")
       s should include("msg=[Message with null custom MDC values]")
     }
 
@@ -198,7 +199,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       log.info("test")
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s should include("akkaSource=[akka.event.slf4j.Slf4jLoggerSpec.MyLogSource(akka://Slf4jLoggerSpec)]")
+      s should include("akkaSource=akka.event.slf4j.Slf4jLoggerSpec.MyLogSource(akka://Slf4jLoggerSpec)")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec.MyLogSource(akka://Slf4jLoggerSpec)]")
     }
 
@@ -207,7 +208,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       log.info("test")
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s should include("akkaSource=[akka.event.slf4j.Slf4jLoggerSpec.MyLogSource]")
+      s should include("akkaSource=akka.event.slf4j.Slf4jLoggerSpec.MyLogSource")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec.MyLogSource]")
     }
 
@@ -216,7 +217,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       log.info("test")
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s should include("akkaSource=[Slf4jLoggerSpec$MyLogSource(akka://Slf4jLoggerSpec)]")
+      s should include("akkaSource=Slf4jLoggerSpec$MyLogSource(akka://Slf4jLoggerSpec)")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$MyLogSource]")
     }
 
@@ -225,7 +226,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       log.info("test")
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s should include("akkaSource=[Slf4jLoggerSpec$MyLogSource]")
+      s should include("akkaSource=Slf4jLoggerSpec$MyLogSource")
       s should include("logger=[akka.event.slf4j.Slf4jLoggerSpec$MyLogSource]")
     }
 
@@ -234,7 +235,7 @@ class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAft
       log.info("test")
       awaitCond(outputString.contains("----"), 5 seconds)
       val s = outputString
-      s should include("sourceActorSystem=[Slf4jLoggerSpec]")
+      s should include("sourceActorSystem=Slf4jLoggerSpec")
     }
   }
 
