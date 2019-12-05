@@ -8,9 +8,14 @@ import java.net.InetSocketAddress
 
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
 import akka.remote.UniqueAddress
 import akka.remote.artery.RemotingFlightRecorder
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 final class JFRRemotingFlightRecorder(system: ExtendedActorSystem) extends RemotingFlightRecorder {
   override def transportMediaDriverStarted(directoryName: String): Unit =
     TransportMediaDriverStarted(directoryName).commit()

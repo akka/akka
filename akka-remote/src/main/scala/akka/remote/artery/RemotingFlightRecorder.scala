@@ -27,7 +27,6 @@ object RemotingFlightRecorder extends ExtensionId[RemotingFlightRecorder] with E
   override def createExtension(system: ExtendedActorSystem): RemotingFlightRecorder =
     if (JavaVersion.majorVersion >= 9) {
       // Dynamic instantiation to not trigger class load on JDK 8
-      println(s"java version ${JavaVersion.majorVersion}")
       system.dynamicAccess.createInstanceFor[RemotingFlightRecorder](
         "akka.remote.artery.jfr.JFRRemotingFlightRecorder",
         (classOf[ExtendedActorSystem], system) :: Nil) match {
