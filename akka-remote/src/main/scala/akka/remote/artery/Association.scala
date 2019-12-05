@@ -30,6 +30,7 @@ import akka.event.Logging
 import akka.remote.DaemonMsgCreate
 import akka.remote.PriorityMessage
 import akka.remote.RemoteActorRef
+import akka.remote.RemoteLogMarker
 import akka.remote.UniqueAddress
 import akka.remote.artery.ArteryTransport.AeronTerminated
 import akka.remote.artery.ArteryTransport.ShuttingDown
@@ -142,7 +143,7 @@ private[remote] class Association(
 
   require(remoteAddress.port.nonEmpty)
 
-  private val log = Logging(transport.system, getClass)
+  private val log = Logging.withMarker(transport.system, getClass)
   private def flightRecorder = transport.topLevelFlightRecorder
 
   override def settings = transport.settings
@@ -493,6 +494,7 @@ private[remote] class Association(
                     .publish(GracefulShutdownQuarantinedEvent(UniqueAddress(remoteAddress, u), reason))
                 } else {
                   log.warning(
+                    RemoteLogMarker.quarantine(remoteAddress, Some(u)),
                     "Association to [{}] with UID [{}] is irrecoverably failed. UID is now quarantined and all " +
                     "messages to this UID will be delivered to dead letters. " +
                     "Remote ActorSystem must be restarted to recover from this situation. Reason: {}",
@@ -516,6 +518,7 @@ private[remote] class Association(
             }
           case Some(peer) =>
             log.info(
+              RemoteLogMarker.quarantine(remoteAddress, Some(u)),
               "Quarantine of [{}] ignored due to non-matching UID, quarantine requested for [{}] but current is [{}]. {}",
               remoteAddress,
               u,
@@ -524,12 +527,16 @@ private[remote] class Association(
             send(ClearSystemMessageDelivery(current.incarnation - 1), OptionVal.None, OptionVal.None)
           case None =>
             log.info(
+              RemoteLogMarker.quarantine(remoteAddress, Some(u)),
               "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
               remoteAddress,
               reason)
         }
       case None =>
-        log.warning("Quarantine of [{}] ignored because unknown UID", remoteAddress)
+        log.warning(
+          RemoteLogMarker.quarantine(remoteAddress, None),
+          "Quarantine of [{}] ignored because unknown UID",
+          remoteAddress)
     }
 
   }

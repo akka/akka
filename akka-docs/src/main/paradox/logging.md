@@ -575,6 +575,14 @@ A more advanced (including most Akka added information) example pattern would be
 <pattern>%date{ISO8601} level=[%level] marker=[%marker] logger=[%logger] akkaSource=[%X{akkaSource}] sourceActorSystem=[%X{sourceActorSystem}] sourceThread=[%X{sourceThread}] mdc=[ticket-#%X{ticketNumber}: %X{ticketDesc}] - msg=[%msg]%n----%n</pattern>
 ```
 
+Akka is logging some events with markers. Some of these events also include structured MDC properties. 
+
+* The "SECURITY" marker is used for highlighting security related events or incidents.
+* Akka Actor is using the markers defined in @apidoc[akka.actor.ActorLogMarker].
+* Akka Cluster is using the markers defined in @apidoc[akka.cluster.ClusterLogMarker].
+* Akka Remoting is using the markers defined in @apidoc[akka.remote.RemoteLogMarker].
+* Akka Cluster Sharding is using the markers defined in @apidoc[akka.cluster.sharding.ShardingLogMarker].
+
 #### Using SLF4J's Markers
 
 It is also possible to use the `org.slf4j.Marker` with the `LoggingAdapter` when using slf4j.
