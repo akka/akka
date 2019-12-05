@@ -1623,16 +1623,34 @@ trait DiagnosticLoggingAdapter extends LoggingAdapter {
 
 /** DO NOT INHERIT: Class is open only for use by akka-slf4j*/
 @DoNotInherit
-class LogMarker(val name: String)
+class LogMarker(val name: String, val properties: Map[String, Any]) {
+  // for binary compatibility
+  def this(name: String) = this(name, Map.empty)
+
+  /** Java API */
+  def getProperties: java.util.Map[String, Object] = {
+    import akka.util.ccompat.JavaConverters._
+    properties.map { case (k, v) => (k, v.asInstanceOf[AnyRef]) }.asJava
+  }
+}
+
 object LogMarker {
 
   /** The Marker is internally transferred via MDC using using this key */
   private[akka] final val MDCKey = "marker"
 
-  def apply(name: String): LogMarker = new LogMarker(name)
+  def apply(name: String): LogMarker = new LogMarker(name, Map.empty)
+
+  def apply(name: String, properties: Map[String, Any]): LogMarker = new LogMarker(name, properties)
 
   /** Java API */
   def create(name: String): LogMarker = apply(name)
+
+  /** Java API */
+  def create(name: String, properties: java.util.Map[String, Any]): LogMarker = {
+    import akka.util.ccompat.JavaConverters._
+    apply(name, properties.asScala.toMap)
+  }
 
   @Deprecated
   @deprecated("use akka.event.LogEventWithMarker#marker instead", since = "2.5.12")
