@@ -107,8 +107,6 @@ private[remote] class AeronSource(
       private val messageHandler = new MessageHandler(pool)
       private val addPollTask: Add = Add(pollTask(subscription, messageHandler, getAsyncCallback(taskOnMessage)))
 
-      private val channelMetadata = channel.getBytes("US-ASCII")
-
       private var delegatingToTaskRunner = false
 
       private var pendingUnavailableImages: List[Int] = Nil
@@ -123,7 +121,7 @@ private[remote] class AeronSource(
       override protected def logSource = classOf[AeronSource]
 
       override def preStart(): Unit = {
-        flightRecorder.aeronSourceStarted(channel, streamId, channelMetadata)
+        flightRecorder.aeronSourceStarted(channel, streamId)
       }
 
       override def postStop(): Unit = {
@@ -133,7 +131,7 @@ private[remote] class AeronSource(
           case e: DriverTimeoutException =>
             // media driver was shutdown
             log.debug("DriverTimeout when closing subscription. {}", e)
-        } finally flightRecorder.aeronSourceStopped(channel, streamId, channelMetadata)
+        } finally flightRecorder.aeronSourceStopped(channel, streamId)
       }
 
       // OutHandler

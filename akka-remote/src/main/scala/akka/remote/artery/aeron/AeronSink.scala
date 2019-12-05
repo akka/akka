@@ -128,23 +128,21 @@ private[remote] class AeronSink(
       private var delegateTaskStartTime = 0L
       private var countBeforeDelegate = 0L
 
-      private val channelMetadata = channel.getBytes("US-ASCII")
-
       override def preStart(): Unit = {
         setKeepGoing(true)
         pull(in)
         // TODO: Identify different sinks!
-        flightRecorder.aeronSinkStarted(channel, streamId, channelMetadata)
+        flightRecorder.aeronSinkStarted(channel, streamId)
       }
 
       override def postStop(): Unit = {
         try {
           taskRunner.command(Remove(addOfferTask.task))
-          flightRecorder.aeronSinkTaskRunnerRemoved(channel, streamId, channelMetadata)
+          flightRecorder.aeronSinkTaskRunnerRemoved(channel, streamId)
           pub.close()
-          flightRecorder.aeronSinkPublicationClosed(channel, streamId, channelMetadata)
+          flightRecorder.aeronSinkPublicationClosed(channel, streamId)
         } finally {
-          flightRecorder.aeronSinkStopped(channel, streamId, channelMetadata)
+          flightRecorder.aeronSinkStopped(channel, streamId)
           completed.complete(completedValue)
         }
       }
@@ -222,7 +220,7 @@ private[remote] class AeronSink(
         offerTaskInProgress = false
         val cause = new PublicationClosedException(s"Aeron Publication to [${channel}] was closed.")
         // this is not exepected, since we didn't close the publication ourselves
-        flightRecorder.aeronSinkPublicationClosedUnexpectedly(channel, streamId, channelMetadata)
+        flightRecorder.aeronSinkPublicationClosedUnexpectedly(channel, streamId)
         completedValue = Failure(cause)
         failStage(cause)
       }

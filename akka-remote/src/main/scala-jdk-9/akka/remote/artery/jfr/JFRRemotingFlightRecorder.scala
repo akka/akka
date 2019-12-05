@@ -68,22 +68,19 @@ final class JFRRemotingFlightRecorder(system: ExtendedActorSystem) extends Remot
   override def transportRestartInbound(remoteAddress: UniqueAddress, streamName: String): Unit =
     TransportRestartInbound(remoteAddress, streamName).commit()
 
-  override def aeronSinkStarted(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit =
+  override def aeronSinkStarted(channel: String, streamId: Int): Unit =
     AeronSinkStarted(channel, streamId).commit()
 
-  override def aeronSinkTaskRunnerRemoved(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit =
+  override def aeronSinkTaskRunnerRemoved(channel: String, streamId: Int): Unit =
     AeronSinkTaskRunnerRemoved(channel, streamId).commit()
 
-  override def aeronSinkPublicationClosed(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit =
+  override def aeronSinkPublicationClosed(channel: String, streamId: Int): Unit =
     AeronSinkPublicationClosed(channel, streamId).commit()
 
-  override def aeronSinkPublicationClosedUnexpectedly(
-      channel: String,
-      streamId: Int,
-      channelMetadata: Array[Byte]): Unit =
+  override def aeronSinkPublicationClosedUnexpectedly(channel: String, streamId: Int): Unit =
     AeronSinkPublicationClosedUnexpectedly(channel, streamId).commit()
 
-  override def aeronSinkStopped(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit =
+  override def aeronSinkStopped(channel: String, streamId: Int): Unit =
     AeronSinkStopped(channel, streamId).commit()
 
   override def aeronSinkEnvelopeGrabbed(lastMessageSize: Int): Unit =
@@ -101,10 +98,10 @@ final class JFRRemotingFlightRecorder(system: ExtendedActorSystem) extends Remot
   override def aeronSinkReturnFromTaskRunner(nanosSinceTaskStartTime: Long): Unit =
     AeronSinkReturnFromTaskRunner(nanosSinceTaskStartTime).commit()
 
-  override def aeronSourceStarted(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit =
+  override def aeronSourceStarted(channel: String, streamId: Int): Unit =
     AeronSourceStarted(channel, streamId).commit()
 
-  override def aeronSourceStopped(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit =
+  override def aeronSourceStopped(channel: String, streamId: Int): Unit =
     AeronSourceStopped(channel, streamId).commit()
 
   override def aeronSourceReceived(size: Int): Unit =

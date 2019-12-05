@@ -66,19 +66,19 @@ private[akka] trait RemotingFlightRecorder extends Extension {
   def transportRestartOutbound(remoteAddress: Address, streamName: String): Unit
   def transportRestartInbound(remoteAddress: UniqueAddress, streamName: String): Unit
 
-  def aeronSinkStarted(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit
-  def aeronSinkTaskRunnerRemoved(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit
-  def aeronSinkPublicationClosed(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit
-  def aeronSinkPublicationClosedUnexpectedly(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit
-  def aeronSinkStopped(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit
+  def aeronSinkStarted(channel: String, streamId: Int): Unit
+  def aeronSinkTaskRunnerRemoved(channel: String, streamId: Int): Unit
+  def aeronSinkPublicationClosed(channel: String, streamId: Int): Unit
+  def aeronSinkPublicationClosedUnexpectedly(channel: String, streamId: Int): Unit
+  def aeronSinkStopped(channel: String, streamId: Int): Unit
   def aeronSinkEnvelopeGrabbed(lastMessageSize: Int): Unit
   def aeronSinkEnvelopeOffered(lastMessageSize: Int): Unit
   def aeronSinkGaveUpEnvelope(cause: String): Unit
   def aeronSinkDelegateToTaskRunner(countBeforeDelegate: Long): Unit
   def aeronSinkReturnFromTaskRunner(nanosSinceTaskStartTime: Long): Unit
 
-  def aeronSourceStarted(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit
-  def aeronSourceStopped(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit
+  def aeronSourceStarted(channel: String, streamId: Int): Unit
+  def aeronSourceStopped(channel: String, streamId: Int): Unit
   def aeronSourceReceived(size: Int): Unit
   def aeronSourceDelegateToTaskRunner(countBeforeDelegate: Long): Unit
   def aeronSourceReturnFromTaskRunner(nanosSinceTaskStartTime: Long): Unit
@@ -122,22 +122,19 @@ private[akka] case object NoOpRemotingFlightRecorder extends RemotingFlightRecor
   override def transportRestartInbound(remoteAddress: UniqueAddress, streamName: String): Unit = ()
   override def transportSendQueueOverflow(queueIndex: Int): Unit = ()
 
-  override def aeronSinkStarted(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit = ()
-  override def aeronSinkTaskRunnerRemoved(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit = ()
-  override def aeronSinkPublicationClosed(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit = ()
-  override def aeronSinkPublicationClosedUnexpectedly(
-      channel: String,
-      streamId: Int,
-      channelMetadata: Array[Byte]): Unit = ()
-  override def aeronSinkStopped(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit = ()
+  override def aeronSinkStarted(channel: String, streamId: Int): Unit = ()
+  override def aeronSinkTaskRunnerRemoved(channel: String, streamId: Int): Unit = ()
+  override def aeronSinkPublicationClosed(channel: String, streamId: Int): Unit = ()
+  override def aeronSinkPublicationClosedUnexpectedly(channel: String, streamId: Int): Unit = ()
+  override def aeronSinkStopped(channel: String, streamId: Int): Unit = ()
   override def aeronSinkEnvelopeGrabbed(lastMessageSize: Int): Unit = ()
   override def aeronSinkEnvelopeOffered(lastMessageSize: Int): Unit = ()
   override def aeronSinkGaveUpEnvelope(cause: String): Unit = ()
   override def aeronSinkDelegateToTaskRunner(countBeforeDelegate: Long): Unit = ()
   override def aeronSinkReturnFromTaskRunner(nanosSinceTaskStartTime: Long): Unit = ()
 
-  override def aeronSourceStarted(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit = ()
-  override def aeronSourceStopped(channel: String, streamId: Int, channelMetadata: Array[Byte]): Unit = ()
+  override def aeronSourceStarted(channel: String, streamId: Int): Unit = ()
+  override def aeronSourceStopped(channel: String, streamId: Int): Unit = ()
   override def aeronSourceReceived(size: Int): Unit = ()
   override def aeronSourceDelegateToTaskRunner(countBeforeDelegate: Long): Unit = ()
   override def aeronSourceReturnFromTaskRunner(nanosSinceTaskStartTime: Long): Unit = ()
