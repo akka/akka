@@ -185,23 +185,15 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     None
   } else {
     configuredDeserializationType.orElse {
-      val bindings = serialization.settings.SerializationBindings.filter(_._2 == bindingName).keys.toList
+      val bindings = serialization.bindings.filter(_._2.identifier == identifier)
       bindings match {
         case Nil =>
           throw new IllegalArgumentException(
             s"Jackson serializer [$bindingName] with type-in-manifest disabled must either declare" +
             " a deserialization-type or have exactly one binding configured, but none were configured")
 
-        case List(className) =>
-          Some(system.dynamicAccess.getClassFor[AnyRef](className) match {
-            case Success(c) => c
-            case Failure(_) =>
-              // This should not be possible, since serialization should have already validated that this
-              // class exists.
-              throw new NotSerializableException(
-                s"Cannot find deserialization-type [$className] for Jackson serializer [$bindingName]")
-
-          })
+        case Seq((clazz, _)) =>
+          Some(clazz.asSubclass(classOf[AnyRef]))
 
         case multiple =>
           throw new IllegalArgumentException(
