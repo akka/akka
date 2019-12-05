@@ -394,8 +394,8 @@ val log = Logging(system.eventStream, "my.nice.string")
 
 Java
 :   ```java
-    final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.string");
-    ```
+final LoggingAdapter log = Logging.getLogger(system.eventStream(), "my.string");
+```
 
 <a id="slf4j-directly"></a>
 ### Using the SLF4J API directly
@@ -430,19 +430,27 @@ in this example:
 Place the `logback.xml` file in `src/main/resources/logback.xml`. For tests you can define different
 logging configuration in `src/test/resources/logback-test.xml`.
 
+MDC properties can be included in the Logback output with for example `%X{akkaSource}` specifier within the
+[pattern layout configuration](http://logback.qos.ch/manual/layouts.html#mdc):
+
+```
+  <encoder>
+    <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
+  </encoder>
+```
+
+All MDC properties as key-value entries can be included with `%mdc`:
+
+```
+  <encoder>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg {%mdc}%n</pattern>
+  </encoder>
+```
+
 ### Logging Thread, Akka Source and Actor System in MDC
 
 Since the logging is done asynchronously the thread in which the logging was performed is captured in
 Mapped Diagnostic Context (MDC) with attribute name `sourceThread`.
-With Logback the thread name is available with `%X{sourceThread}` specifier within the pattern layout configuration:
-
-```
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{sourceThread} - %msg%n</pattern>
-  </encoder>
-</appender>
-```
 
 @@@ note
 
@@ -455,26 +463,12 @@ available in the logs.
 Another helpful facility is that Akka captures the actor’s address when
 instantiating a logger within it, meaning that the full instance identification
 is available for associating log messages e.g. with members of a router. This
-information is available in the MDC with attribute name `akkaSource`:
+information is available in the MDC with attribute name `akkaSource`.
 
-```
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
-  </encoder>
-</appender>
-```
+The address of the actor system, containing host and port if the system is using cluster, is available through `akkaAddress`.
 
 Finally, the actor system in which the logging was performed
-is available in the MDC with attribute name `sourceActorSystem`:
-
-```
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{sourceActorSystem} - %msg%n</pattern>
-  </encoder>
-</appender>
-```
+is available in the MDC with attribute name `sourceActorSystem`.
 
 For more details on what this attribute contains—also for non-actors—please see
 [How to Log](#how-to-log).
@@ -483,15 +477,7 @@ For more details on what this attribute contains—also for non-actors—please 
 
 Akka's logging is asynchronous which means that the timestamp of a log entry is taken from
 when the underlying logger implementation is called, which can be surprising at first.
-If you want to more accurately output the timestamp, use the MDC attribute `akkaTimestamp`:
-
-```
-<appender name="STDOUT" class="ch.qos.logback.core.ConsoleAppender">
-  <encoder>
-    <pattern>%X{akkaTimestamp} %-5level %logger{36} %X{akkaTimestamp} - %msg%n</pattern>
-  </encoder>
-</appender>
-```
+If you want to more accurately output the timestamp, use the MDC attribute `akkaTimestamp`.
 
 ### MDC values defined by the application
 
@@ -508,9 +494,9 @@ val log: DiagnosticLoggingAdapter = Logging(this);
 
 Java
 :   ```java
-    // Within your AbstractActor
-    final DiagnosticLoggingAdapter log = Logging.getLogger(this);
-    ```
+// Within your AbstractActor
+final DiagnosticLoggingAdapter log = Logging.getLogger(this);
+```
 
 Once you have the logger, you need to add the custom values before you log something.
 This way, the values will be put in the SLF4J MDC right before appending the log and removed after.
@@ -552,6 +538,14 @@ Now, the values will be available in the MDC, so you can use them in the layout 
 </appender>
 ```
 
+All MDC properties as key-value entries can be included with `%mdc`:
+
+```
+  <encoder>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg {%mdc}%n</pattern>
+  </encoder>
+```
+
 ### Using Markers
 
 Some logging libraries allow, in addition to MDC data, attaching so called "markers" to log statements.
@@ -563,17 +557,6 @@ Markers are available through the LoggingAdapters, when obtained via `Logging.wi
 The first argument passed into all log calls then should be a `akka.event.LogMarker`.
 
 The slf4j bridge provided by Akka in `akka-slf4j` will automatically pick up this marker value and make it available to SLF4J.
-For example you could use it like this:
-
-```
-<pattern>%date{ISO8601} [%marker][%level] [%msg]%n</pattern>
-```
-
-A more advanced (including most Akka added information) example pattern would be:
-
-```
-<pattern>%date{ISO8601} level=[%level] marker=[%marker] logger=[%logger] akkaSource=[%X{akkaSource}] sourceActorSystem=[%X{sourceActorSystem}] sourceThread=[%X{sourceThread}] mdc=[ticket-#%X{ticketNumber}: %X{ticketDesc}] - msg=[%msg]%n----%n</pattern>
-```
 
 Akka is logging some events with markers. Some of these events also include structured MDC properties. 
 
@@ -582,6 +565,16 @@ Akka is logging some events with markers. Some of these events also include stru
 * Akka Cluster is using the markers defined in @apidoc[akka.cluster.ClusterLogMarker].
 * Akka Remoting is using the markers defined in @apidoc[akka.remote.RemoteLogMarker].
 * Akka Cluster Sharding is using the markers defined in @apidoc[akka.cluster.sharding.ShardingLogMarker].
+
+Markers and MDC properties are automatically picked up by the [Logstash Logback encoder](https://github.com/logstash/logstash-logback-encoder).
+
+The marker can be included in the Logback output with `%marker` and all MDC properties as key-value entries with `%mdc`.
+
+```
+  <encoder>
+    <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
+  </encoder>
+```
 
 #### Using SLF4J's Markers
 

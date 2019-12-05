@@ -221,16 +221,30 @@ logging configuration in `src/test/resources/logback-test.xml`.
 #### MDC values
 
 When logging via the  @scala[`log`]@java[`getLog`] of the `ActorContext` as described in
-@ref:[How to log](#how-to-log) Akka captures the actor's path and includes that in MDC with
-attribute name `akkaSource`.
+@ref:[How to log](#how-to-log) Akka includes a few MDC properties:
 
-This can be included in the log output with `%X{akkaSource}` specifier within the pattern layout configuration:
+* `akkaSource`: the actor's path
+* `akkaAddress`: the full address of the ActorSystem, including hostname and port if Cluster is enabled
+* `akkaTags`: tags defined in the `Props` of the actor
+* `sourceActorSystem`: the name of the ActorSystem
+
+These MDC properties can be included in the Logback output with for example `%X{akkaSource}` specifier within the
+[pattern layout configuration](http://logback.qos.ch/manual/layouts.html#mdc):
 
 ```
   <encoder>
     <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
   </encoder>
 ```
+
+All MDC properties as key-value entries can be included with `%mdc`:
+
+```
+  <encoder>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg {%mdc}%n</pattern>
+  </encoder>
+```
+
 
 ## Internal logging by Akka
 
@@ -385,51 +399,34 @@ akka.remote.artery {
 
 Since the logging is done asynchronously the thread in which the logging was performed is captured in
 MDC with attribute name `sourceThread`.
-With Logback the thread name is available with `%X{sourceThread}` specifier within the pattern layout configuration:
 
-```
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{sourceThread} - %msg%n</pattern>
-  </encoder>
-```
-
-The path of the actor in which the logging was performed is available in the MDC with attribute name `akkaSource`,
-With Logback the actor path is available with `%X{akkaSource}` specifier within the pattern layout configuration:
-```
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
-  </encoder>
-```
+The path of the actor in which the logging was performed is available in the MDC with attribute name `akkaSource`.
 
 The actor system name in which the logging was performed is available in the MDC with attribute name `sourceActorSystem`,
 but that is typically also included in the `akkaSource` attribute.
-With Logback the ActorSystem name is available with `%X{sourceActorSystem}` specifier within the pattern layout configuration:
 
-```
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{sourceActorSystem} - %msg%n</pattern>
-  </encoder>
-```
-
-The address of the actor system, containing host and port if the system is using cluster, is available through `akkaAddress`:
-
-```
-  <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaAddress} - %msg%n</pattern>
-  </encoder>
-```
-
+The address of the actor system, containing host and port if the system is using cluster, is available through `akkaAddress`.
 
 For typed actors the log event timestamp is taken when the log call was made but for
 Akka's _internal_ logging as well as the classic actor logging is asynchronous which means that the timestamp of a log entry is taken from
 when the underlying logger implementation is called, which can be surprising at first.
 If you want to more accurately output the timestamp for such loggers, use the MDC attribute `akkaTimestamp`. Note that 
 the MDC key will not have any value for a typed actor.
-With Logback the timestamp is available with `%X{akkaTimestamp}` specifier within the pattern layout configuration:
+
+These MDC properties can be included in the Logback output with for example `%X{akkaSource}` specifier within the
+[pattern layout configuration](http://logback.qos.ch/manual/layouts.html#mdc):
 
 ```
   <encoder>
-    <pattern>%X{akkaTimestamp} %-5level %logger{36} %X{akkaTimestamp} - %msg%n</pattern>
+    <pattern>%date{ISO8601} %-5level %logger{36} %X{akkaSource} - %msg%n</pattern>
+  </encoder>
+```
+
+All MDC properties as key-value entries can be included with `%mdc`:
+
+```
+  <encoder>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg {%mdc}%n</pattern>
   </encoder>
 ```
 
@@ -442,6 +439,16 @@ Akka is logging some events with markers. Some of these events also include stru
 * Akka Cluster is using the markers defined in @apidoc[akka.cluster.ClusterLogMarker].
 * Akka Remoting is using the markers defined in @apidoc[akka.remote.RemoteLogMarker].
 * Akka Cluster Sharding is using the markers defined in @apidoc[akka.cluster.sharding.ShardingLogMarker].
+
+Markers and MDC properties are automatically picked up by the [Logstash Logback encoder](https://github.com/logstash/logstash-logback-encoder).
+
+The marker can be included in the Logback output with `%marker` and all MDC properties as key-value entries with `%mdc`.
+
+```
+  <encoder>
+    <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
+  </encoder>
+```
 
 ### Logger names
 
