@@ -1,0 +1,2 @@
+# #28207 Structured logging, internal changes
+ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.Cluster#ClusterLogger.this")
