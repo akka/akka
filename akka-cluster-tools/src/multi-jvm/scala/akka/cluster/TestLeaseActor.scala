@@ -8,11 +8,11 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
