@@ -864,3 +864,11 @@ spec:
 There is currently no way to limit the size of a memory empty dir but there is a [pull request](https://github.com/kubernetes/kubernetes/pull/63641) for adding it.
 
 Any space used in the mount will count towards your container's memory usage.
+
+
+### Flight Recorder
+
+When running on JDK 11 Artery specific flight recording is available through the [Java Flight Recorder (JFR)](https://openjdk.java.net/jeps/328).
+
+Low overhead Artery specific events are emitted by default when JFR is enabled, higher overhead events needs a custom settings template and are not enabled automatically with the `profiling` JFR template.
+A template for enabling those can be found in the Akka sources here: https://github.com/akka/akka/tree/master/akka-remote/src/akka-profiling-hifreq.jfc

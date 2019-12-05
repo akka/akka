@@ -1,0 +1,824 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration version="2.0" label="Akka Profiling" description="Low overhead configuration for profiling, typically around 2 % overhead." provider="Oracle">
+
+  <category label="Java Virtual Machine">
+
+    <category label="GC">
+
+      <category label="Detailed">
+
+        <event name="jdk.ObjectCountAfterGC" label="Object Count after GC">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+        </event>
+
+        <event name="jdk.G1HeapRegionTypeChange" label="G1 Heap Region Type Change" description="Information about a G1 heap region type change">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+        </event>
+
+        <event name="jdk.AllocationRequiringGC" label="Allocation Requiring GC">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.EvacuationInformation" label="Evacuation Information">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.G1BasicIHOP" label="G1 Basic IHOP Statistics" description="Basic statistics related to current IHOP calculation">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.ZStatisticsSampler" label="Z Statistics Sampler">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+        </event>
+
+        <event name="jdk.ZStatisticsCounter" label="Z Statistics Counter">
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.ZPageAllocation" label="ZPage Allocation" description="Allocation of a ZPage">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+        </event>
+
+        <event name="jdk.ObjectCount" label="Object Count">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">everyChunk</setting>
+        </event>
+
+        <event name="jdk.G1EvacuationOldStatistics" label="G1 Evacuation Memory Statistics for Old" description="Memory related evacuation statistics during GC for the old generation">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.ConcurrentModeFailure" label="Concurrent Mode Failure" description="Concurrent Mode failed">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.ZThreadPhase" label="ZGC Thread Phase">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.PromoteObjectInNewPLAB" label="Promotion in new PLAB" description="Object survived scavenge and was copied to a new Promotion Local Allocation Buffer (PLAB). Supported GCs are Parallel Scavange, G1 and CMS with Parallel New. Due to promotion being done in parallel an object might be reported multiple times as the GC threads race to copy all objects.">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.G1HeapRegionInformation" label="G1 Heap Region Information" description="Information about a specific heap region in the G1 GC">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">everyChunk</setting>
+        </event>
+
+        <event name="jdk.PromoteObjectOutsidePLAB" label="Promotion outside PLAB" description="Object survived scavenge and was copied directly to the heap. Supported GCs are Parallel Scavange, G1 and CMS with Parallel New. Due to promotion being done in parallel an object might be reported multiple times as the GC threads race to copy all objects.">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.PromotionFailed" label="Promotion Failed" description="Promotion of an object failed">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.G1AdaptiveIHOP" label="G1 Adaptive IHOP Statistics" description="Statistics related to current adaptive IHOP calculation">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.G1EvacuationYoungStatistics" label="G1 Evacuation Statistics for Young" description="Memory related evacuation statistics during GC for the young generation">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.TenuringDistribution" label="Tenuring Distribution">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.G1MMU" label="G1 MMU Information">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.EvacuationFailed" label="Evacuation Failed" description="Evacuation of an object failed">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+      </category>
+
+      <category label="Collector">
+
+        <event name="jdk.GarbageCollection" label="Garbage Collection" description="Garbage collection performed by the JVM">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.G1GarbageCollection" label="G1 Garbage Collection" description="Extra information specific to G1 Garbage Collections">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.OldGarbageCollection" label="Old Garbage Collection" description="Extra information specific to Old Garbage Collections">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.YoungGarbageCollection" label="Young Garbage Collection" description="Extra information specific to Young Garbage Collections">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.ParallelOldGarbageCollection" label="Parallel Old Garbage Collection" description="Extra information specific to Parallel Old Garbage Collections">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+      </category>
+
+      <category label="Heap">
+
+        <event name="jdk.GCHeapSummary" label="Heap Summary">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.G1HeapSummary" label="G1 Heap Summary">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.MetaspaceSummary" label="Metaspace Summary">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.PSHeapSummary" label="Parallel Scavenge Heap Summary">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+      </category>
+
+      <category label="Configuration">
+
+        <event name="jdk.YoungGenerationConfiguration" label="Young Generation Configuration" description="The configuration of the young generation of the garbage collected heap">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+        </event>
+
+        <event name="jdk.GCSurvivorConfiguration" label="GC Survivor Configuration" description="The configuration of the survivors of garbage collection">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+        </event>
+
+        <event name="jdk.GCHeapConfiguration" label="GC Heap Configuration" description="The configuration of the garbage collected heap">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+        </event>
+
+        <event name="jdk.GCTLABConfiguration" label="TLAB Configuration" description="The configuration of the Thread Local Allocation Buffers (TLABs)">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+        </event>
+
+        <event name="jdk.GCConfiguration" label="GC Configuration" description="The configuration of the garbage collector">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">everyChunk</setting>
+        </event>
+
+      </category>
+
+      <category label="Metaspace">
+
+        <event name="jdk.MetaspaceOOM" label="Metaspace Out of Memory">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.MetaspaceAllocationFailure" label="Metaspace Allocation Failure">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.MetaspaceChunkFreeListSummary" label="Metaspace Chunk Free List Summary">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+        <event name="jdk.MetaspaceGCThreshold" label="Metaspace GC Threshold">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+      </category>
+
+      <category label="Phases">
+
+        <event name="jdk.GCPhasePause" label="GC Phase Pause">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.GCPhaseConcurrent" label="GC Phase Concurrent">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.GCPhasePauseLevel4" label="GC Phase Pause Level 4">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.GCPhasePauseLevel1" label="GC Phase Pause Level 1">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.GCPhasePauseLevel3" label="GC Phase Pause Level 3">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.GCPhasePauseLevel2" label="GC Phase Pause Level 2">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+      </category>
+
+      <category label="Reference">
+
+        <event name="jdk.GCReferenceStatistics" label="GC Reference Statistics" description="Total count of processed references during GC">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+      </category>
+
+    </category>
+
+    <category label="Flag">
+
+      <event name="jdk.DoubleFlag" label="Double Flag">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+      <event name="jdk.IntFlag" label="Int Flag">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+      <event name="jdk.LongFlag" label="Long Flag">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+      <event name="jdk.BooleanFlagChanged" label="Boolean Flag Changed">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+      <event name="jdk.DoubleFlagChanged" label="Double Flag Changed">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+      <event name="jdk.StringFlagChanged" label="String Flag Changed">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+      <event name="jdk.UnsignedIntFlagChanged" label="Unsigned Int Flag Changed">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+      <event name="jdk.BooleanFlag" label="Boolean Flag">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+      <event name="jdk.UnsignedLongFlagChanged" label="Unsigned Long Flag Changed">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+      <event name="jdk.UnsignedIntFlag" label="Unsigned Int Flag">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+      <event name="jdk.StringFlag" label="String Flag">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+      <event name="jdk.LongFlagChanged" label="Long Flag Changed">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+      <event name="jdk.UnsignedLongFlag" label="Unsigned Long Flag">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+      <event name="jdk.IntFlagChanged" label="Int Flag Changed">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+    </category>
+
+    <category label="Code Cache">
+
+      <event name="jdk.CodeCacheConfiguration" label="Code Cache Configuration">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+      <event name="jdk.CodeCacheFull" label="Code Cache Full">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+      <event name="jdk.CodeCacheStatistics" label="Code Cache Statistics">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">everyChunk</setting>
+      </event>
+
+    </category>
+
+    <category label="Runtime">
+
+      <category label="Modules">
+
+        <event name="jdk.ModuleRequire" label="Module Require" description="A directed edge representing a dependency">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">endChunk</setting>
+        </event>
+
+        <event name="jdk.ModuleExport" label="Module Export">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">endChunk</setting>
+        </event>
+
+      </category>
+
+      <category label="Safepoint">
+
+        <event name="jdk.SafepointBegin" label="Safepoint Begin" description="Safepointing begin">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.SafepointStateSynchronization" label="Safepoint State Synchronization" description="Synchronize run state of threads">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.SafepointEnd" label="Safepoint End" description="Safepointing end">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.SafepointCleanup" label="Safepoint Cleanup" description="Safepointing begin running cleanup tasks">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.SafepointWaitBlocked" label="Safepoint Wait Blocked" description="Safepointing begin waiting on running threads to block">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+        <event name="jdk.SafepointCleanupTask" label="Safepoint Cleanup Task" description="Safepointing begin running cleanup tasks">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+        </event>
+
+      </category>
+
+      <event name="jdk.ThreadDump" label="Thread Dump">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">60 s</setting>
+      </event>
+
+      <event name="jdk.BiasedLockClassRevocation" label="Biased Lock Class Revocation" description="Revoked biases for all instances of a class">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+      </event>
+
+      <event name="jdk.ReservedStackActivation" label="Reserved Stack Activation" description="Activation of Reserved Stack Area caused by stack overflow with ReservedStackAccess annotated method in call stack">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+      <event name="jdk.NativeLibrary" label="Native Library">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">everyChunk</setting>
+      </event>
+
+      <event name="jdk.ExecuteVMOperation" label="VM Operation" description="Execution of a VM Operation">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+      </event>
+
+      <event name="jdk.BiasedLockRevocation" label="Biased Lock Revocation" description="Revoked bias of object">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+      </event>
+
+      <event name="jdk.BiasedLockSelfRevocation" label="Biased Lock Self Revocation" description="Revoked bias of object biased towards own thread">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+      </event>
+
+      <event name="jdk.Shutdown" label="JVM Shutdown" description="JVM shutting down">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+    </category>
+
+    <category label="Code Sweeper">
+
+      <event name="jdk.CodeSweeperConfiguration" label="Code Sweeper Configuration">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+      <event name="jdk.CodeSweeperStatistics" label="Code Sweeper Statistics">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">everyChunk</setting>
+      </event>
+
+      <event name="jdk.SweepCodeCache" label="Sweep Code Cache">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">100 ms</setting>
+      </event>
+
+    </category>
+
+    <category label="Class Loading">
+
+      <event name="jdk.ClassLoad" label="Class Load">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+        <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ms</setting>
+      </event>
+
+      <event name="jdk.ClassDefine" label="Class Define">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+        <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+      <event name="jdk.ClassUnload" label="Class Unload">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+      </event>
+
+    </category>
+
+    <category label="Compiler">
+
+      <event name="jdk.Compilation" label="Compilation">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">100 ms</setting>
+      </event>
+
+      <event name="jdk.CompilerStatistics" label="Compiler Statistics">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">1000 ms</setting>
+      </event>
+
+      <event name="jdk.CompilationFailure" label="Compilation Failure">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      </event>
+
+      <category label="Optimization">
+
+        <event name="jdk.CompilerInlining" label="Method Inlining">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+      </category>
+
+      <event name="jdk.CompilerPhase" label="Compiler Phase">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 s</setting>
+      </event>
+
+      <event name="jdk.CompilerConfiguration" label="Compiler Configuration">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+    </category>
+
+    <category label="Profiling">
+
+      <event name="jdk.OldObjectSample" label="Old Object Sample" description="A potential memory leak">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="cutoff" label="Cutoff" description="Limit running time of event">0 ns</setting>
+      </event>
+
+      <event name="jdk.ExecutionSample" label="Method Profiling Sample" description="Snapshot of a threads state">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">10 ms</setting>
+      </event>
+
+      <event name="jdk.NativeMethodSample" label="Method Profiling Sample Native" description="Snapshot of a threads state when in native">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">10 ms</setting>
+      </event>
+
+    </category>
+
+    <event name="jdk.JVMInformation" label="JVM Information" description="Description of JVM and the Java application">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+    </event>
+
+    <event name="jdk.InitialSystemProperty" label="Initial System Property" description="System Property at JVM start">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+    </event>
+
+  </category>
+
+  <category label="Akka">
+
+    <category label="Remoting">
+
+      <category label="Transport">
+
+        <event name="akka.remote.artery.jfr.TransportStartupFinished" label="Startup finished">
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+        </event>
+
+        <event name="akka.remote.artery.jfr.TransportUniqueAddressSet" label="Unique address set">
+          <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+        </event>
+
+        <event name="akka.remote.artery.jfr.TransportStarted" label="Transport started">
+          <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+        </event>
+
+        <event name="akka.remote.artery.jfr.TransportMaterializerStarted" label="Materializer started">
+          <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+          <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+          <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        </event>
+
+      </category>
+
+      <category label="Tcp">
+
+        <category label="Inbound">
+
+          <event name="akka.remote.artery.jfr.TcpInboundBound" label="Bound">
+            <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+            <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+            <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+          </event>
+
+          <event name="akka.remote.artery.jfr.TcpInboundConnected" label="Connected">
+            <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+            <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+            <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+          </event>
+
+          <event name="akka.remote.artery.jfr.TcpInboundReceived" label="Received">
+            <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+            <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+            <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+          </event>
+
+        </category>
+
+        <category label="Outbound">
+
+          <event name="akka.remote.artery.jfr.TcpOutboundSent" label="Sent">
+            <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+            <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+            <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+          </event>
+
+          <event name="akka.remote.artery.jfr.TcpOutboundConnected" label="Connected">
+            <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+            <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+            <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+          </event>
+
+        </category>
+
+      </category>
+
+    </category>
+
+  </category>
+
+  <category label="Java Application">
+
+    <event name="jdk.JavaMonitorEnter" label="Java Monitor Blocked">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+    </event>
+
+    <event name="jdk.JavaExceptionThrow" label="Java Exception" description="An object derived from java.lang.Exception has been created">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">false</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+    </event>
+
+    <category label="Statistics">
+
+      <event name="jdk.ClassLoadingStatistics" label="Class Loading Statistics">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">1000 ms</setting>
+      </event>
+
+      <event name="jdk.JavaThreadStatistics" label="Java Thread Statistics">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">1000 ms</setting>
+      </event>
+
+      <event name="jdk.ClassLoaderStatistics" label="Class Loader Statistics">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">everyChunk</setting>
+      </event>
+
+      <event name="jdk.ThreadAllocationStatistics" label="Thread Allocation Statistics">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">everyChunk</setting>
+      </event>
+
+      <event name="jdk.ExceptionStatistics" label="Exception Statistics" description="Number of objects derived from java.lang.Throwable that have been created">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">1000 ms</setting>
+      </event>
+
+    </category>
+
+    <event name="jdk.ThreadPark" label="Java Thread Park">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+    </event>
+
+    <event name="jdk.ThreadStart" label="Java Thread Start">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+    </event>
+
+    <event name="jdk.SocketRead" label="Socket Read" description="Reading data from a socket">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+    </event>
+
+    <event name="jdk.FileForce" label="File Force" description="Force updates to be written to file">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+    </event>
+
+    <event name="jdk.SocketWrite" label="Socket Write" description="Writing data to a socket">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+    </event>
+
+    <event name="jdk.JavaErrorThrow" label="Java Error" description="An object derived from java.lang.Error has been created. OutOfMemoryErrors are ignored">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+    </event>
+
+    <event name="jdk.JavaMonitorInflate" label="Java Monitor Inflated">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+    </event>
+
+    <event name="jdk.ObjectAllocationOutsideTLAB" label="Allocation outside TLAB" description="Allocation outside Thread Local Allocation Buffers">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+    </event>
+
+    <event name="jdk.FileWrite" label="File Write" description="Writing data to a file">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+    </event>
+
+    <event name="jdk.JavaMonitorWait" label="Java Monitor Wait" description="Waiting on a Java monitor">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+    </event>
+
+    <event name="jdk.ObjectAllocationInNewTLAB" label="Allocation in new TLAB" description="Allocation in new Thread Local Allocation Buffer">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+    </event>
+
+    <event name="jdk.FileRead" label="File Read" description="Reading data from a file">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+    </event>
+
+    <event name="jdk.ThreadSleep" label="Java Thread Sleep">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">10 ms</setting>
+    </event>
+
+    <event name="jdk.ThreadEnd" label="Java Thread End">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+    </event>
+
+  </category>
+
+  <category label="Operating System">
+
+    <category label="Processor">
+
+      <event name="jdk.CPULoad" label="CPU Load" description="OS CPU Load">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">1000 ms</setting>
+      </event>
+
+      <event name="jdk.ThreadCPULoad" label="Thread CPU Load">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">10 s</setting>
+      </event>
+
+      <event name="jdk.CPUInformation" label="CPU Information">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+      <event name="jdk.ThreadContextSwitchRate" label="Thread Context Switch Rate">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">10 s</setting>
+      </event>
+
+      <event name="jdk.CPUTimeStampCounter" label="CPU Time Stamp Counter">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+      </event>
+
+    </category>
+
+    <event name="jdk.OSInformation" label="OS Information">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+    </event>
+
+    <category label="Memory">
+
+      <event name="jdk.PhysicalMemory" label="Physical Memory" description="OS Physical Memory">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">everyChunk</setting>
+      </event>
+
+    </category>
+
+    <event name="jdk.SystemProcess" label="System Process">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">endChunk</setting>
+    </event>
+
+    <event name="jdk.InitialEnvironmentVariable" label="Initial Environment Variable">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">beginChunk</setting>
+    </event>
+
+    <category label="Network">
+
+      <event name="jdk.NetworkUtilization" label="Network Utilization">
+        <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+        <setting name="period" label="Period" description="Record event at interval" contentType="jdk.jfr.Period">5 s</setting>
+      </event>
+
+    </category>
+
+  </category>
+
+  <category label="Flight Recorder">
+
+    <event name="jdk.ActiveSetting" label="Recording Setting">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+    </event>
+
+    <event name="jdk.ActiveRecording" label="Flight Recording">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+      <setting name="stackTrace" label="Stack Trace" description="Record stack traces" contentType="jdk.jfr.Flag">false</setting>
+      <setting name="threshold" label="Threshold" description="Record event with duration above or equal to threshold" contentType="jdk.jfr.Timespan">0 ns</setting>
+    </event>
+
+    <event name="jdk.DumpReason" label="Recording Reason" description="Who requested the recording and why">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+    </event>
+
+    <event name="jdk.DataLoss" label="Data Loss" description="Data could not be copied out from a buffer, typically because of contention">
+      <setting name="enabled" label="Enabled" description="Record event" contentType="jdk.jfr.Flag">true</setting>
+    </event>
+
+  </category>
+
+</configuration>
