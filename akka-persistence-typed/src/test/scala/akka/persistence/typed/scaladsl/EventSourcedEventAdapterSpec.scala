@@ -96,13 +96,11 @@ class EventSourcedEventAdapterSpec
     State
   }
 
-  import akka.actor.typed.scaladsl.adapter._
-
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   val queries: LeveldbReadJournal =
-    PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+    PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): EventSourcedBehavior[String, String, String] =
     EventSourcedBehavior(pid, "", commandHandler = { (_, command) =>

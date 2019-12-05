@@ -6,6 +6,7 @@ package akka.remote.serialization
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.EmptyLocalActorRef
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
@@ -23,6 +24,7 @@ private[akka] object ActorRefResolveThreadLocalCache
     with ExtensionIdProvider {
 
   override def get(system: ActorSystem): ActorRefResolveThreadLocalCache = super.get(system)
+  override def get(system: ClassicActorSystemProvider): ActorRefResolveThreadLocalCache = super.get(system)
 
   override def lookup = ActorRefResolveThreadLocalCache
 

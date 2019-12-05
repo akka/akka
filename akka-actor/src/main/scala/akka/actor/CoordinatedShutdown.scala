@@ -181,6 +181,8 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
 
   override def get(system: ActorSystem): CoordinatedShutdown = super.get(system)
 
+  override def get(system: ClassicActorSystemProvider): CoordinatedShutdown = super.get(system)
+
   override def lookup = CoordinatedShutdown
 
   override def createExtension(system: ExtendedActorSystem): CoordinatedShutdown = {

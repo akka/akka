@@ -11,11 +11,11 @@ import java.util.concurrent.ConcurrentHashMap
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.util.control.NonFatal
-
 import akka.util.ccompat.JavaConverters._
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.Deploy
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
@@ -153,6 +153,7 @@ import akka.util.ByteString
 object ClusterSharding extends ExtensionId[ClusterSharding] with ExtensionIdProvider {
 
   override def get(system: ActorSystem): ClusterSharding = super.get(system)
+  override def get(system: ClassicActorSystemProvider): ClusterSharding = super.get(system)
 
   override def lookup = ClusterSharding
 

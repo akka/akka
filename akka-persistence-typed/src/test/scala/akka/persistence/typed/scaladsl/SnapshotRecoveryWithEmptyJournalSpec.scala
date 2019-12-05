@@ -12,7 +12,6 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
 import akka.persistence.serialization.Snapshot
 import akka.persistence.typed.PersistenceId
 import akka.serialization.Serialization
@@ -64,7 +63,7 @@ class SnapshotRecoveryWithEmptyJournalSpec
 
   val snapshotsDir: File = new File(survivingSnapshotPath)
 
-  val serializationExtension: Serialization = SerializationExtension(system.toClassic)
+  val serializationExtension: Serialization = SerializationExtension(system)
 
   val persistenceId: String = system.name
 

@@ -6,7 +6,6 @@ package akka.actor.typed.internal.receptionist
 
 import akka.actor.typed.internal.ActorRefSerializationSpec
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.SerializationExtension
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -17,7 +16,7 @@ class ServiceKeySerializationSpec
     with WordSpecLike
     with LogCapturing {
 
-  val serialization = SerializationExtension(system.toClassic)
+  val serialization = SerializationExtension(system)
 
   "ServiceKey[T]" must {
     "be serialized and deserialized by ServiceKeySerializer" in {

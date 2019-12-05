@@ -17,7 +17,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.MemberStatus
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Down
@@ -210,7 +209,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers with LogCapturing {
 
         regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(2)
 
-        akka.cluster.Cluster(system1.toClassic).shutdown()
+        akka.cluster.Cluster(system1).shutdown()
 
         regProbe2.expectNoMessage(3.seconds)
 

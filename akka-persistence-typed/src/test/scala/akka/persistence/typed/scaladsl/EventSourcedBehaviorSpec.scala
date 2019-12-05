@@ -283,10 +283,9 @@ class EventSourcedBehaviorSpec
     with LogCapturing {
 
   import EventSourcedBehaviorSpec._
-  import akka.actor.typed.scaladsl.adapter._
 
   val queries: LeveldbReadJournal =
-    PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+    PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")

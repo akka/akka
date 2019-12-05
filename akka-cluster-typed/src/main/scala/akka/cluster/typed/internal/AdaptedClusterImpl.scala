@@ -142,7 +142,7 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
   import AdapterClusterImpl._
 
   require(system.isInstanceOf[ActorSystemAdapter[_]], "only adapted actor systems can be used for cluster features")
-  private val classicCluster = akka.cluster.Cluster(system.toClassic)
+  private val classicCluster = akka.cluster.Cluster(system)
 
   override def selfMember: Member = classicCluster.selfMember
   override def isTerminated: Boolean = classicCluster.isTerminated
