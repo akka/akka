@@ -306,7 +306,7 @@ Java
 ## Changing Behavior
 
 After processing a message, actors are able to return the `Behavior` that is used
-for next message.
+for the next message.
 
 As you can see in the above examples this is not supported by persistent actors. Instead, the state is
 returned by `eventHandler`. The reason a new behavior can't be returned is that behavior is part of the actor's
@@ -319,9 +319,9 @@ as shown in above example. For more complex actors it's useful to be able to cha
 that different functions for processing commands may be defined depending on what state the actor is in.
 This is useful when implementing finite state machine (FSM) like entities.
 
-The next example shows how to define different behavior based on the current `State`. It is an actor that
+The next example demonstrates how to define different behavior based on the current `State`. It shows an actor that
 represents the state of a blog post. Before a post is started the only command it can process is to `AddPost`.
-Once it is started then it we can look it up with `GetPost`, modify it with `ChangeBody` or publish it with `Publish`.
+Once it is started then one can look it up with `GetPost`, modify it with `ChangeBody` or publish it with `Publish`.
 
 The state is captured by:
 
@@ -440,7 +440,8 @@ command or the reply will be sent later, perhaps after some asynchronous interac
 ## Serialization
 
 The same @ref:[serialization](../serialization.md) mechanism as for actor messages is also used for persistent actors.
-When picking serialization solution for the events you should also consider that it must be possible to read old events
+
+When picking a serialization solution for the events you should also consider that it must be possible to read old events
 when the application has evolved.
 Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
 
