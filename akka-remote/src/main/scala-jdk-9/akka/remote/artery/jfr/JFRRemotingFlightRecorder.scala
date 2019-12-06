@@ -16,7 +16,7 @@ import akka.remote.artery.RemotingFlightRecorder
  * INTERNAL API
  */
 @InternalApi
-final class JFRRemotingFlightRecorder(system: ExtendedActorSystem) extends RemotingFlightRecorder {
+private[akka] final class JFRRemotingFlightRecorder(system: ExtendedActorSystem) extends RemotingFlightRecorder {
   override def transportMediaDriverStarted(directoryName: String): Unit =
     TransportMediaDriverStarted(directoryName).commit()
 

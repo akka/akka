@@ -31,8 +31,9 @@ object RemotingFlightRecorder extends ExtensionId[RemotingFlightRecorder] with E
         "akka.remote.artery.jfr.JFRRemotingFlightRecorder",
         (classOf[ExtendedActorSystem], system) :: Nil) match {
         case Success(jfr) => jfr
-        case Failure(_) =>
-          system.log.debug("Failed to load JFR remoting flight recorder, falling back to noop")
+        case Failure(ex) =>
+          system.log
+            .warning("Failed to load JFR remoting flight recorder, falling back to noop. Exception: {}", ex.getMessage)
           NoOpRemotingFlightRecorder
       } // fallback if not possible to dynamically load for some reason
     } else

@@ -4,23 +4,18 @@
 
 package akka.remote.artery
 
-import akka.actor.ActorSystem
-import akka.testkit.TestKit
+import akka.testkit.AkkaSpec
+import akka.util.JavaVersion
 import org.scalatest.Matchers
-import org.scalatest.WordSpec
 
-class RemotingFlightRecorderSpec extends WordSpec with Matchers {
+class RemotingFlightRecorderSpec extends AkkaSpec with Matchers {
 
   "The RemotingFlightRecorder" must {
 
     "use the no-op recorder by default" in {
-      val system = ActorSystem("RemotingFlightRecorderSpec")
-      try {
-        val extension = RemotingFlightRecorder(system)
+      val extension = RemotingFlightRecorder(system)
+      if (JavaVersion.majorVersion < 11)
         extension should ===(NoOpRemotingFlightRecorder)
-      } finally {
-        TestKit.shutdownActorSystem(system)
-      }
     }
   }
 
