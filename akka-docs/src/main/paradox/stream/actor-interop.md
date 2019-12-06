@@ -170,7 +170,7 @@ at a rate that is faster than the stream can consume. You should consider using 
 if you want a backpressured actor interface.
 
 The stream can be completed successfully by sending `akka.actor.Status.Success` to the actor reference.
-If the content is `akka.stream.CompletionStrategy.immediately` the completion will be signaled immidiately.
+If the content is `akka.stream.CompletionStrategy.immediately` the completion will be signaled immediately.
 If the content is `akka.stream.CompletionStrategy.draining` already buffered elements will be signaled before siganling completion.
 Any other content will be ignored and fall back to the draining behaviour. 
 
