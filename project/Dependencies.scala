@@ -214,7 +214,7 @@ object Dependencies {
 
   val distributedData = l ++= Seq(lmdb, Test.junit, Test.scalatest.value)
 
-  val slf4j = l ++= Seq(slf4jApi, Test.logback)
+  val slf4j = l ++= Seq(slf4jApi, Provided.logback)
 
   val persistence = l ++= Seq(
         Provided.levelDB,

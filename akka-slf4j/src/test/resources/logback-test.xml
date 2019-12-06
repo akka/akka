@@ -10,6 +10,13 @@
       <pattern>%date{ISO8601} level=[%level] marker=[%marker] logger=[%logger] mdc=[%mdc] - msg=[%msg]%n----%n</pattern>
     </encoder>
   </appender>
+  <appender name="ADAPTER-TEST" class="akka.event.slf4j.AkkaLogbackClassicAdaptingFilterSpec$TestAppender">
+    <filter class="akka.event.slf4j.AkkaLogbackClassicAdaptingFilter" />
+    <encoder>
+      <pattern>thread=[%thread] sourceThread=[%X{sourceThread}] timestamp=[%date{yyyyMMdd'T'hh:mm:ss.SSS'Z'}] akkaTimestampMillis=[%X{akkaTimestampMillis}] msg=[%msg]----%n</pattern>
+    </encoder>
+  </appender>
+
   <logger name="akka.event.slf4j.Slf4jLoggingFilterSpec$DebugLevelProducer"
     level="debug" additivity="false">
     <appender-ref ref="STDOUT" />
@@ -21,6 +28,10 @@
   <logger name="akka.event.slf4j.Slf4jLoggerSpec" level="info"
     additivity="false">
     <appender-ref ref="TEST" />
+  </logger>
+  <logger name="akka.event.slf4j.AkkaLogbackClassicAdaptingFilterSpec" level="info"
+          additivity="false">
+    <appender-ref ref="ADAPTER-TEST" />
   </logger>
   <root level="info">
     <appender-ref ref="STDOUT" />
