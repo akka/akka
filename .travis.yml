@@ -42,7 +42,7 @@ stages:
 
 env:
   global:
-    - TRAVIS_JDK=8
+    - TRAVIS_JDK=11
     # encrypt with: travis encrypt WHITESOURCE_PASSWORD=...
     - secure: "BCWtUqKG7trI7n5OZE2ReCGXQE/f5P8kXpfcpa5DXJeautBnpH/jettY5ermB5JLl12CisG6S4nS3BSKP4Uf8WPpPeSq402CZYTCbUxMWCvS+9N+kEQrHU7iwYqHQBL/RMy6eIyWPRD+JqxKuvlgfNuSEry9pMagwW7mNQrZgYU="
 
