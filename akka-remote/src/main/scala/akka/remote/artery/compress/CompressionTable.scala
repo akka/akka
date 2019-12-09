@@ -7,6 +7,7 @@ package akka.remote.artery.compress
 import java.util
 import java.util.Comparator
 
+import akka.util.HashCode
 import org.agrona.collections.Object2IntHashMap
 
 /**
@@ -17,7 +18,7 @@ import org.agrona.collections.Object2IntHashMap
 private[remote] final class CompressionTable[T](
     val originUid: Long,
     val version: Byte,
-    _dictionary: Object2IntHashMap[T]) {
+    private val _dictionary: Object2IntHashMap[T]) {
 
   def dictionary: Map[T, Int] = {
     import akka.util.ccompat.JavaConverters._
@@ -67,6 +68,20 @@ private[remote] final class CompressionTable[T](
     }
 
   override def toString: String = s"CompressionTable($originUid,$version,$dictionary)"
+
+  override def hashCode(): Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, originUid)
+    result = HashCode.hash(result, version)
+    result = HashCode.hash(result, _dictionary)
+    result
+  }
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: CompressionTable[_] =>
+      originUid == other.originUid && version == other.version && _dictionary == other._dictionary
+    case _ => false
+  }
 }
 
 /** INTERNAL API */
