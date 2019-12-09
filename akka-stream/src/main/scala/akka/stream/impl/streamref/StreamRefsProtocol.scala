@@ -39,13 +39,19 @@ private[akka] object StreamRefsProtocol {
       with DeadLetterSuppression
 
   /**
-   * INTERNAL API: Sent to a the receiver side of a stream ref, once the sending side of the SinkRef gets signalled a Failure.
+   * INTERNAL API
+   *
+   * Sent to a the receiver side of a stream ref, once the sending side of the SinkRef gets signalled a Failure.
+   * Sent to the sender of a stream if receiver downstream failed.
    */
   @InternalApi
   private[akka] final case class RemoteStreamFailure(msg: String) extends StreamRefsProtocol
 
   /**
-   * INTERNAL API: Sent to a the receiver side of a stream ref, once the sending side of the SinkRef gets signalled a completion.
+   * INTERNAL API
+   *
+   * Sent to a the receiver side of a stream ref, once the sending side of the SinkRef gets signalled a completion.
+   * Sent to the sender of a stream ref if receiver downstream cancelled.
    */
   @InternalApi
   private[akka] final case class RemoteStreamCompleted(seqNr: Long) extends StreamRefsProtocol
@@ -59,5 +65,13 @@ private[akka] object StreamRefsProtocol {
   private[akka] final case class CumulativeDemand(seqNr: Long) extends StreamRefsProtocol with DeadLetterSuppression {
     if (seqNr <= 0) throw ReactiveStreamsCompliance.numberOfElementsInRequestMustBePositiveException
   }
+
+  /**
+   * INTERNAL API
+   *
+   * Ack that failure or completion has been seen and the remote side can stop
+   */
+  @InternalApi
+  private[akka] final case object Ack extends StreamRefsProtocol with DeadLetterSuppression
 
 }

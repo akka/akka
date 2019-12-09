@@ -103,6 +103,11 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       override def preStart(): Unit = {
         initialPartnerRef match {
           case OptionVal.Some(ref) =>
+            log.debug(
+              "[{}] Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}",
+              stageActorName,
+              initialPartnerRef,
+              self.ref)
             // this will set the `partnerRef`
             observeAndValidateSender(
               ref,
@@ -110,21 +115,23 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
               "usage and complete stack trace on the issue tracker: https://github.com/akka/akka")
             tryPull()
           case OptionVal.None =>
+            log.debug(
+              "[{}] Created SinkRef with initial partner, local worker: {}, subscription timeout: {}",
+              stageActorName,
+              self.ref,
+              PrettyDuration.format(subscriptionTimeout.timeout))
             // only schedule timeout timer if partnerRef has not been resolved yet (i.e. if this instance of the Actor
             // has not been provided with a valid initialPartnerRef)
             scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
         }
 
-        log.debug(
-          "Created SinkRef, pointing to remote Sink receiver: {}, local worker: {}",
-          initialPartnerRef,
-          self.ref)
       }
 
       def initialReceive: ((ActorRef, Any)) => Unit = {
         case (_, Terminated(ref)) =>
           log.debug(
-            "remote terminated [{}], partnerRef: [{}], finishedWithAwaitingPartnerTermination: [{}]",
+            "[{}] remote terminated [{}], partnerRef: [{}], finishedWithAwaitingPartnerTermination: [{}]",
+            stageActorName,
             ref,
             partnerRef,
             finishedWithAwaitingPartnerTermination)
@@ -148,20 +155,42 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
           if (remoteCumulativeDemandReceived < d) {
             remoteCumulativeDemandReceived = d
             log.debug(
-              "Received cumulative demand [{}], consumable demand: [{}]",
+              "[{}] Received cumulative demand [{}], consumable demand: [{}]",
+              stageActorName,
               StreamRefsProtocol.CumulativeDemand(d),
               remoteCumulativeDemandReceived - remoteCumulativeDemandConsumed)
           }
 
           tryPull()
 
-        case (_, _) => // keep the compiler happy (stage actor receive is total)
+        case (sender, StreamRefsProtocol.RemoteStreamCompleted(_)) =>
+          // unless we already sent a completed/failed downstream and are awaiting Terminated as ack for that
+          if (finishedWithAwaitingPartnerTermination.isEmpty) {
+            log.debug("[{}] Remote downstream cancelled", stageActorName)
+            self.unwatch(sender)
+            // remote only sent this after unwatching so cancelling is ok
+            cancelStage(SubscriptionWithCancelException.NoMoreElementsNeeded)
+            sender ! StreamRefsProtocol.Ack
+          }
+
+        case (sender, StreamRefsProtocol.RemoteStreamFailure(msg)) =>
+          // unless we already sent a completed/failed downstream and are awaiting Terminated as ack for that
+          if (finishedWithAwaitingPartnerTermination.isEmpty) {
+            log.debug("[{}] Remote downstream failed: {}", stageActorName, msg)
+            self.unwatch(sender)
+            // remote only sent this after unwatching so cancelling is ok
+            cancelStage(RemoteStreamRefActorTerminatedException(s"Remote downstream failed: $msg"))
+            sender ! StreamRefsProtocol.Ack
+          }
+
+        case (sender, msg) => // keep the compiler happy (stage actor receive is total)
+          log.debug("[{}] Unexpected message {} from {}", stageActorName, msg, sender)
       }
 
       override def onPush(): Unit = {
         val elem = grabSequenced(in)
         getPartnerRef ! elem
-        log.debug("Sending sequenced: {} to {}", elem, getPartnerRef)
+        log.debug("[{}] Sending sequenced: {} to {}", stageActorName, elem, getPartnerRef)
         tryPull()
       }
 
@@ -172,6 +201,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
         case SubscriptionTimeoutTimerKey =>
+          log.debug("[{}] Subscription timed out", stageActorName)
           val ex = StreamRefSubscriptionTimeoutException(
             // we know the future has been competed by now, since it is in preStart
             s"[$stageActorName] Remote side did not subscribe (materialize) handed out Source reference [$ref], " +
@@ -187,7 +217,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        log.debug("Upstream failure, partnerRef [{}]", partnerRef)
+        log.debug("[{}] Upstream failure, partnerRef [{}]", stageActorName, partnerRef)
         partnerRef match {
           case OptionVal.Some(ref) =>
             ref ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
@@ -203,7 +233,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       }
 
       override def onUpstreamFinish(): Unit = {
-        log.debug("Upstream finish, partnerRef [{}]", partnerRef)
+        log.debug("[{}] Upstream finish, partnerRef [{}]", stageActorName, partnerRef)
         partnerRef match {
           case OptionVal.Some(ref) =>
             ref ! StreamRefsProtocol.RemoteStreamCompleted(remoteCumulativeDemandConsumed)
@@ -227,14 +257,15 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
           completedBeforeRemoteConnected match {
             case OptionVal.Some(scala.util.Failure(ex)) =>
               log.warning(
-                "Stream already terminated with exception before remote side materialized, sending failure: {}",
+                "[{}] Stream already terminated with exception before remote side materialized, sending failure: {}",
+                stageActorName,
                 ex)
               partner ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
               finishedWithAwaitingPartnerTermination = OptionVal(Failure(ex))
               setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
 
             case OptionVal.Some(scala.util.Success(Done)) =>
-              log.warning("Stream already completed before remote side materialized, failing now.")
+              log.warning("[{}] Stream already completed before remote side materialized, failing now.", stageActorName)
               partner ! StreamRefsProtocol.RemoteStreamCompleted(remoteCumulativeDemandConsumed)
               finishedWithAwaitingPartnerTermination = OptionVal(Success(Done))
               setKeepGoing(true) // we will terminate once partner ref has Terminated (to avoid racing Terminated with completion message)
