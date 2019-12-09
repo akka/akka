@@ -24,8 +24,10 @@ class LeveldbJournalNativePerfSpec
 
   override def supportsSerialization = true
 
+  // increase for real measurements, low because of slow CI
   override def measurementIterations: Int = 3
 
-  override def eventsCount: Int = 1000
+  // increase for real measurements, low because of slow CI
+  override def eventsCount: Int = 100
 
 }
