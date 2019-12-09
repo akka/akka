@@ -260,7 +260,7 @@ All wire protocol changes that may concern rolling upgrades should be documented
 ## Protobuf
 
 Akka includes a shaded version of protobuf `3.9.0` that is used for internal communication. To generate files
-run `protobufGenerate`. The generated files are put in the `src/main/java` of each project and need to be commited. 
+run `protobufGenerate`. The generated files are put in the `src/main/java` of each project and need to be committed. 
 The generated files are automatically transformed to use the shaded version of protobuf.
 
 Generation depends on protoc `3.9.0` being on the path. Old versions of
