@@ -440,7 +440,7 @@ command or the reply will be sent later, perhaps after some asynchronous interac
 ## Serialization
 
 The same @ref:[serialization](../serialization.md) mechanism as for actor messages is also used for persistent actors.
-When picking a serialization solution for the events you should also consider that it must be possible read old events
+When picking a serialization solution for the events you should also consider that it must be possible to read old events
 when the application has evolved.
 Strategies for that can be found in the @ref:[schema evolution](../persistence-schema-evolution.md).
 
