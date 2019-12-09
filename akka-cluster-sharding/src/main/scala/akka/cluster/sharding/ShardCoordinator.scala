@@ -28,6 +28,7 @@ import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.event.BusLogging
 import akka.event.Logging
+import akka.util.PrettyDuration._
 import akka.util.Timeout
 import com.github.ghik.silencer.silent
 
@@ -649,7 +650,10 @@ abstract class ShardCoordinator(
         continueRebalance(shards)
 
       case RebalanceDone(shard, ok) =>
-        log.debug("Rebalance shard [{}] done [{}]", shard, ok)
+        if (ok)
+          log.debug("Rebalance shard [{}] completed successfully.", shard)
+        else
+          log.warning("Rebalance shard [{}] didn't complete within [{}].", shard, handOffTimeout.pretty)
         // The shard could have been removed by ShardRegionTerminated
         if (state.shards.contains(shard)) {
           if (ok) {
