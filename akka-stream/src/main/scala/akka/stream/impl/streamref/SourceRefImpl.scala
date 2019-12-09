@@ -208,6 +208,9 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
           scheduleDemandRedelivery()
 
         case TerminationDeadlineTimerKey =>
+          log.debug(
+            "Remote partner [{}] has terminated unexpectedly and no clean completion/failure message was received",
+            partnerRef)
           failStage(RemoteStreamRefActorTerminatedException(
             s"Remote partner [$partnerRef] has terminated unexpectedly and no clean completion/failure message was received " +
             "(possible reasons: network partition or subscription timeout triggered termination of partner). Tearing down."))
@@ -252,13 +255,15 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
               // will never reach us; so after the given timeout we need to forcefully terminate this side of the stream ref
               // the other (sending) side terminates by default once it gets a Terminated signal so no special handling is needed there.
               scheduleOnce(TerminationDeadlineTimerKey, finalTerminationSignalDeadline)
+              log.debug("Starting delayed shutdown, deadline: [{}]", finalTerminationSignalDeadline)
 
             case _ =>
+              val ex = RemoteStreamRefActorTerminatedException(
+                s"Received UNEXPECTED Terminated($p) message! " +
+                s"This actor was NOT our trusted remote partner, which was: $getPartnerRef. Tearing down.")
+              log.error("Unexpected terminated", ex)
               // this should not have happened! It should be impossible that we watched some other actor
-              failStage(
-                RemoteStreamRefActorTerminatedException(
-                  s"Received UNEXPECTED Terminated($p) message! " +
-                  s"This actor was NOT our trusted remote partner, which was: $getPartnerRef. Tearing down."))
+              failStage(ex)
           }
 
         case (_, _) => // keep the compiler happy (stage actor receive is total)

@@ -95,7 +95,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
 
       private var completedBeforeRemoteConnected: OptionVal[Try[Done]] = OptionVal.None
 
-      // Some when this side of the stream has completed/failed, and we await the Terminated() signal back from the partner
+      // When this side of the stream has completed/failed, and we await the Terminated() signal back from the partner
       // so we can safely shut down completely; This is to avoid *our* Terminated() signal to reach the partner before the
       // Complete/Fail message does, which can happen on transports such as Artery which use a dedicated lane for system messages (Terminated)
       private[this] var finishedWithAwaitingPartnerTermination: OptionVal[Try[Done]] = OptionVal.None
@@ -123,6 +123,11 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
 
       def initialReceive: ((ActorRef, Any)) => Unit = {
         case (_, Terminated(ref)) =>
+          log.debug(
+            "remote terminated [{}], partnerRef: [{}], finishedWithAwaitingPartnerTermination: [{}]",
+            ref,
+            partnerRef,
+            finishedWithAwaitingPartnerTermination)
           if (ref == getPartnerRef)
             finishedWithAwaitingPartnerTermination match {
               case OptionVal.Some(Failure(ex)) =>
@@ -182,6 +187,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
+        log.debug("Upstream failure, partnerRef [{}]", partnerRef)
         partnerRef match {
           case OptionVal.Some(ref) =>
             ref ! StreamRefsProtocol.RemoteStreamFailure(ex.getMessage)
@@ -196,7 +202,8 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
         }
       }
 
-      override def onUpstreamFinish(): Unit =
+      override def onUpstreamFinish(): Unit = {
+        log.debug("Upstream finish, partnerRef [{}]", partnerRef)
         partnerRef match {
           case OptionVal.Some(ref) =>
             ref ! StreamRefsProtocol.RemoteStreamCompleted(remoteCumulativeDemandConsumed)
@@ -207,6 +214,7 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
             // not terminating on purpose, since other side may subscribe still and then we want to complete it
             setKeepGoing(true)
         }
+      }
 
       @throws[InvalidPartnerActorException]
       def observeAndValidateSender(partner: ActorRef, failureMsg: String): Unit = {
