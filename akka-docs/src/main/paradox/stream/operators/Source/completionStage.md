@@ -33,6 +33,6 @@ For the corresponding operator for the Scala standard library `Future` see @ref:
 ## Example
 
 Java
-:  @@snip [SourceFromCompletionStage.java](/akka-docs/src/test/java/jdocs/stream/operators/source/FromCompletionStage.scala) { #sourceFromCompletionStage }
+:  @@snip [SourceFromCompletionStage.java](/akka-docs/src/test/java/jdocs/stream/operators/source/FromCompletionStage.java) { #sourceFromCompletionStage }
 
 For the corresponding operator for the Scala standard library `Future` see @ref:[future](future.md).
