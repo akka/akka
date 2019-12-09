@@ -1,6 +1,6 @@
 # fromFuture
 
-`fromFuture` has been deprecated in 2.6.0, use `Source.future` instead.
+Deprecated by @ref[`Source.future`](future.md).
 
 @ref[Source operators](../index.md#source-operators)
 
