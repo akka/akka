@@ -196,8 +196,7 @@ public class SerializationDocTest {
         akka.actor.typed.ActorSystem.create(Behaviors.empty(), "example");
 
     // Get the Serialization Extension
-    Serialization serialization =
-        SerializationExtension.get(akka.actor.typed.javadsl.Adapter.toClassic(system));
+    Serialization serialization = SerializationExtension.get(system);
     // #programmatic-typed
   }
 }
