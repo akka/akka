@@ -26,6 +26,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
   private[this] val SourceRefManifest = "E"
   private[this] val SinkRefManifest = "F"
   private[this] val OnSubscribeHandshakeManifest = "G"
+  private[this] val AckManifest = "H"
 
   override def manifest(o: AnyRef): String = o match {
     // protocol
@@ -41,6 +42,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
     //    case _: MaterializedSourceRef[_]                 => SourceRefManifest
     case _: SinkRefImpl[_] => SinkRefManifest
     //    case _: MaterializedSinkRef[_]                   => SinkRefManifest
+    case StreamRefsProtocol.Ack => AckManifest
   }
 
   override def toBinary(o: AnyRef): Array[Byte] = o match {
@@ -57,6 +59,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
     //    case ref: MaterializedSinkRef[_]                 => ??? // serializeSinkRef(ref).toByteArray
     case ref: SourceRefImpl[_] => serializeSourceRef(ref).toByteArray
     //    case ref: MaterializedSourceRef[_]               => serializeSourceRef(ref.).toByteArray
+    case StreamRefsProtocol.Ack => Array.emptyByteArray
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
@@ -69,6 +72,7 @@ private[akka] final class StreamRefSerializer(val system: ExtendedActorSystem)
     // refs
     case SinkRefManifest   => deserializeSinkRef(bytes)
     case SourceRefManifest => deserializeSourceRef(bytes)
+    case AckManifest       => StreamRefsProtocol.Ack
   }
 
   // -----
