@@ -49,6 +49,13 @@ object Jdk9 extends AutoPlugin {
     //      ++= (CompileJdk9 / products).value.flatMap(Path.allSubpaths),
     Compile / fullClasspath ++= (CompileJdk9 / exportedProducts).value)
 
+  val testSettings = Seq(
+    (Test / test) := {
+      (Test / test).value
+      (TestJdk9 / test).value
+    }
+  )
+
   override def trigger = noTrigger
   override def projectConfigurations = Seq(CompileJdk9)
   override lazy val projectSettings =
@@ -56,5 +63,6 @@ object Jdk9 extends AutoPlugin {
     inConfig(CompileJdk9)(compileJdk9Settings) ++
     compileSettings ++
     inConfig(TestJdk9)(Defaults.testSettings) ++
-    inConfig(TestJdk9)(testJdk9Settings)
+    inConfig(TestJdk9)(testJdk9Settings) ++
+    testSettings
 }
