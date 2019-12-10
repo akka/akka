@@ -10,7 +10,9 @@ import org.junit.Test;
 
 import java.util.concurrent.Flow;
 
-public class JavaFlowSupportCompileTest {
+import org.scalatest.junit.JUnitSuite;
+
+public class JavaFlowSupportCompileTest extends JUnitSuite {
   @Test
   public void shouldCompile() throws Exception {
     final Flow.Processor<String,String> processor = new Flow.Processor<String, String>() {
