@@ -608,13 +608,22 @@ private[akka] class EmptyLocalActorRef(
         case Some(identify) =>
           if (!sel.wildcardFanOut) sender ! ActorIdentity(identify.messageId, None)
         case None =>
-          eventStream.publish(DeadLetter(sel.msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+          sel.msg match {
+            case m: DeadLetterSuppression => publishSupressedDeadLetter(m, sender)
+            case _ =>
+              eventStream.publish(
+                DeadLetter(sel.msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+          }
       }
       true
     case m: DeadLetterSuppression =>
-      eventStream.publish(SuppressedDeadLetter(m, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+      publishSupressedDeadLetter(m, sender)
       true
     case _ => false
+  }
+
+  private def publishSupressedDeadLetter(msg: DeadLetterSuppression, sender: ActorRef): Unit = {
+    eventStream.publish(SuppressedDeadLetter(msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
   }
 }
 
