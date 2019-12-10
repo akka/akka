@@ -16,6 +16,18 @@ Intersperse stream with provided element similar to `List.mkString`.
 
 Intersperse stream with provided element similar to `List.mkString`. It can inject start and end marker elements to stream.
 
+## Example
+
+The following takes a stream of integers, converts them to strings and then adds a `[` at the start, `, ` between each
+element and a `]` at the end.
+
+Scala
+:  @@snip [Intersperse.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Intersperse.scala) { #intersperse }
+
+Java
+:  @@snip [Intersperse.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/Intersperse.java) { #intersperse }
+
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
