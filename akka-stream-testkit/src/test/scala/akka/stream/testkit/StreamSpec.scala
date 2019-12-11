@@ -16,13 +16,13 @@ import scala.concurrent.duration._
 
 class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
   def this(config: Config) =
-    this(ActorSystem(AkkaSpec.getCallerName(getClass), ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
+    this(ActorSystem(AkkaSpec.getCallerName(), ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
   def this(configMap: Map[String, _]) = this(AkkaSpec.mapToConfig(configMap))
 
-  def this() = this(ActorSystem(AkkaSpec.getCallerName(getClass), AkkaSpec.testConf))
+  def this() = this(ActorSystem(AkkaSpec.getCallerName(), AkkaSpec.testConf))
 
   override def withFixture(test: NoArgTest) = {
     super.withFixture(test) match {

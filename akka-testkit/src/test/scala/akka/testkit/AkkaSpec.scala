@@ -44,17 +44,14 @@ object AkkaSpec {
     ConfigFactory.parseMap(map.asJava)
   }
 
-  def getCallerName(clazz: Class[_]): String = {
-    val s = Thread.currentThread.getStackTrace
+  def getCallerName(): String =
+    Thread.currentThread.getStackTrace
       .map(_.getClassName)
       .drop(1)
       .dropWhile(_.matches("(java.lang.Thread|.*AkkaSpec.*|.*\\.StreamSpec.*|.*MultiNodeSpec.*|.*\\.Abstract.*)"))
-    val reduced = s.lastIndexWhere(_ == clazz.getName) match {
-      case -1 => s
-      case z  => s.drop(z + 1)
-    }
-    reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
-  }
+      .head
+      .replaceFirst(""".*\.""", "")
+      .replaceAll("[^a-zA-Z_0-9]", "_")
 
 }
 
@@ -70,13 +67,13 @@ abstract class AkkaSpec(_system: ActorSystem)
   implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, Millis))
 
   def this(config: Config) =
-    this(ActorSystem(AkkaSpec.getCallerName(getClass), ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
+    this(ActorSystem(AkkaSpec.getCallerName(), ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
   def this(configMap: Map[String, _]) = this(AkkaSpec.mapToConfig(configMap))
 
-  def this() = this(ActorSystem(AkkaSpec.getCallerName(getClass), AkkaSpec.testConf))
+  def this() = this(ActorSystem(AkkaSpec.getCallerName(), AkkaSpec.testConf))
 
   val log: LoggingAdapter = Logging(system, this.getClass)
 
