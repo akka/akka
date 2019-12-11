@@ -18,8 +18,7 @@ Useful in many cases where an API requires a `Flow` but you want to provide a `S
 
 Note that termination events, like completion and cancelation is not automatically propagated through to the "other-side" of the such-composed Flow. The `Source` can complete and the sink will continue to accept elements.
 
-Use @ref:[fromSinkAndSourceCoupled](fromSinkAndSourceCoupled.md) if you want to couple termination of both of the ends, for example most useful in handling websocket connections.
-
+Use @ref:[fromSinkAndSourceCoupled](fromSinkAndSourceCoupled.md) if you want to couple termination of both of the ends. 
 
 ## Examples
 
@@ -35,7 +34,24 @@ Java
 
 With this server running you could use `telnet 127.0.0.1 9999` to see a stream of timestamps being printed, one every second. 
 
-The same pattern can also be applied to [Akka HTTP WebSockets](https://doc.akka.io/docs/akka-http/current/server-side/websocket-support.html#server-api) which also has an API accepting a `Flow` of messages. 
+The following sample is a little bit more advanced and uses the `MergeHub` to dynamically merge incoming messages to a single stream which is then fed into a `BroadcastHug` which emits elements over a dynamic set of downstreams allowing us to create a simplistic little TCP chat server in which a text entered from one client is emitted to all connected clients.
+
+Scala
+:   @@snip [FromSinkAndSource.scala](/akka-docs/src/test/scala/docs/stream/operators/flow/FromSinkAndSource.scala) { #chat }
+
+Java
+:   @@snip [FromSinkAndSource.java](/akka-docs/src/test/java/jdocs/stream/operators/flow/FromSinkAndSource.java) { #chat }
+
+
+The same patterns can also be applied to [Akka HTTP WebSockets](https://doc.akka.io/docs/akka-http/current/server-side/websocket-support.html#server-api) which also has an API accepting a `Flow` of messages. 
+
+`fromSinkAndSource` can also be useful when testing a component that takes a `Flow` allowing for complete separate control and assertion of incoming and outgoing elements using stream testkit test probes for sink and source:
+
+Scala
+:   @@snip [FromSinkAndSource.scala](/akka-docs/src/test/scala/docs/stream/operators/flow/FromSinkAndSource.scala) { #testing }
+
+Java
+:   @@snip [FromSinkAndSource.java](/akka-docs/src/test/java/jdocs/stream/operators/flow/FromSinkAndSource.java) { #testing }
 
 ## Reactive Streams semantics
 

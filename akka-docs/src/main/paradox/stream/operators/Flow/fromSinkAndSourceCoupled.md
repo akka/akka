@@ -10,7 +10,7 @@ Allows coupling termination (cancellation, completion, erroring) of Sinks and So
 
 ## Description
 
-See @ref[Flow.fromSinkAndSource](fromSinkAndSource.md) for docs on the general idea. 
+See @ref[Flow.fromSinkAndSource](fromSinkAndSource.md) for docs on the general workings and examples.
 
 This operator only adds coupled termination to what `fromSinkAndSource` does: If the emitted `Flow` gets a cancellation, the `Source` is cancelled,
 however the Sink will also be completed. The table below illustrates the effects in detail:
