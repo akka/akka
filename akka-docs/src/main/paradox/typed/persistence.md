@@ -535,7 +535,7 @@ Scala
 Java
 :  @@snip [x](/akka-persistence-typed/src/test/java/akka/persistence/typed/javadsl/PersistentActorCompileOnlyTest.java) { #event-wrapper }
 
-Then install it on a `EventSourcedBehavior`:
+Then install it on an `EventSourcedBehavior`:
 
 Scala
 :  @@snip [x](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #install-event-adapter }
