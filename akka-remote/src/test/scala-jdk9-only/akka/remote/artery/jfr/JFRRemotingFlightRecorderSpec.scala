@@ -27,7 +27,7 @@ class JFRRemotingFlightRecorderSpec extends AkkaSpec {
         "JFRRemotingFlightRecorderSpec-2",
         ConfigFactory.parseString(
           """
-           akka.use-java-flight-recorder = off
+           akka.java-flight-recorder.enabled = false
             """))
       try {
         val extension = RemotingFlightRecorder(system)
