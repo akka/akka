@@ -16,7 +16,10 @@ import scala.concurrent.duration._
 
 class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
   def this(config: Config) =
-    this(ActorSystem(AkkaSpec.getCallerName(classOf[StreamSpec]), ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
+    this(
+      ActorSystem(
+        AkkaSpec.getCallerName(classOf[StreamSpec]),
+        ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
