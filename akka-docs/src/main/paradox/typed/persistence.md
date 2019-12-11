@@ -72,7 +72,7 @@ Java
 The first important thing to notice is the `Behavior` of a persistent actor is typed to the type of the `Command`
 because this is the type of message a persistent actor should receive. In Akka this is now enforced by the type system.
 
-The components that make up a EventSourcedBehavior are:
+The components that make up an `EventSourcedBehavior` are:
 
 * `persistenceId` is the stable unique identifier for the persistent actor.
 * `emptyState` defines the `State` when the entity is first created e.g. a Counter would start with 0 as state.
@@ -103,7 +103,7 @@ be unique enough to be used as the `PersistenceId` by itself. For example two di
 entities may have the same `entityId`. To create a unique `PersistenceId` the `entityId` should be prefixed
 with a stable name of the entity type, which typically is the same as the `EntityTypeKey.name` that
 is used in Cluster Sharding. There are @scala[`PersistenceId.apply`]@java[`PersistenceId.of`] factory methods
-to help with constructing such `PersistenceId` from a `entityTypeHint` and `entityId`.
+to help with constructing such `PersistenceId` from an `entityTypeHint` and `entityId`.
 
 The default separator when concatenating the `entityTypeHint` and `entityId` is `|`, but a custom separator
 is supported.
@@ -193,7 +193,7 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #event-handler }
 
-@scala[These are used to create a `EventSourcedBehavior`:]
+@scala[These are used to create an `EventSourcedBehavior`:]
 @java[These are defined in an `EventSourcedBehavior`:]
 
 Scala
@@ -275,7 +275,7 @@ The recovery of a persistent actor will therefore never be done partially with o
 a single `persist` effect.
 
 Some journals may not support atomic writes of several events and they will then reject the `persist` with
-multiple events. This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` (typically with a 
+multiple events. This is signalled to an `EventSourcedBehavior` via an `EventRejectedException` (typically with a 
 `UnsupportedOperationException`) and can be handled with a @ref[supervisor](fault-tolerance.md).
 
 ## Cluster Sharding and EventSourcedBehavior
@@ -545,7 +545,7 @@ Java
 
 ## Wrapping EventSourcedBehavior
 
-When creating a `EventSourcedBehavior`, it is possible to wrap `EventSourcedBehavior` in
+When creating an `EventSourcedBehavior`, it is possible to wrap `EventSourcedBehavior` in
 other behaviors such as `Behaviors.setup` in order to access the `ActorContext` object. For instance
 to access the actor logging upon taking snapshots for debug purpose.
 
@@ -558,7 +558,7 @@ Java
 
 ## Journal failures
 
-By default a `EventSourcedBehavior` will stop if an exception is thrown from the journal. It is possible to override this with
+By default an `EventSourcedBehavior` will stop if an exception is thrown from the journal. It is possible to override this with
 any `BackoffSupervisorStrategy`. It is not possible to use the normal supervision wrapping for this as it isn't valid to
 `resume` a behavior on a journal failure as it is not known if the event was persisted.
 
@@ -576,7 +576,7 @@ emitted to the @scala[`receiveSignal` handler] @java[`receiveSignal` method] and
 
 Journals can reject events. The difference from a failure is that the journal must decide to reject an event before
 trying to persist it e.g. because of a serialization exception. If an event is rejected it definitely won't be in the journal. 
-This is signalled to a `EventSourcedBehavior` via a `EventRejectedException` and can be handled with a @ref[supervisor](fault-tolerance.md).
+This is signalled to an `EventSourcedBehavior` via an `EventRejectedException` and can be handled with a @ref[supervisor](fault-tolerance.md).
 Not all journal implementations use rejections and treat these kind of problems also as journal failures. 
 
 ## Stash
