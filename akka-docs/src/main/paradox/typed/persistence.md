@@ -514,7 +514,7 @@ akka.persistence.journal.leveldb.replay-filter {
 
 ## Tagging
 
-Persistence allows you to use event tags without using @ref[`EventAdapter`](../persistence.md#event-adapters):
+Persistence allows you to use event tags without using an @ref[`EventAdapter`](../persistence.md#event-adapters):
 
 Scala
 :  @@snip [BasicPersistentActorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #tagging }
