@@ -17,6 +17,13 @@ Emits a specifiable number of elements from the original source, then from the p
 Emits a specifiable number of elements from the original source, then from the provided source and repeats. If one
 source completes the rest of the other stream will be emitted.
 
+## Example
+Scala
+:   @@snip [FlowInterleaveSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowInterleaveSpec.scala) { #interleave }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #interleave }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -28,11 +35,3 @@ source completes the rest of the other stream will be emitted.
 **completes** when both upstreams have completed
 
 @@@
-
-
-## Example
-Scala
-:   @@snip [FlowInterleaveSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowInterleaveSpec.scala) { #interleave }
-
-Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #interleave }
