@@ -79,8 +79,6 @@ object JournalPerfSpec {
   @InternalApi private[akka] class CmdSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
     override def identifier: Int = 293562
 
-    system.log.info("hi")
-
     override def manifest(o: AnyRef): String = ""
 
     override def toBinary(o: AnyRef): Array[Byte] =
