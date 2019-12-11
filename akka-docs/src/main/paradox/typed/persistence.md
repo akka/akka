@@ -616,7 +616,7 @@ Note that the stashed commands are kept in an in-memory buffer, so in case of a 
 processed.
 
 * Stashed commands are discarded if the actor (entity) is passivated or rebalanced by Cluster Sharding.
-* Stashed commands are discarded if the actor is restarted (or stopped) due to that an exception was thrown from processing a command or side effect after persisting.
+* Stashed commands are discarded if the actor is restarted (or stopped) in case an exception was thrown from processing a command or side effect after persisting.
 * Stashed commands are preserved and processed later in case of failure in storing events if an `onPersistFailure` backoff supervisor strategy is defined.
 
 It's allowed to stash messages while unstashing. Those newly added commands will not be processed by the
