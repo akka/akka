@@ -18,122 +18,122 @@ import akka.remote.artery.RemotingFlightRecorder
 @InternalApi
 private[akka] final class JFRRemotingFlightRecorder(system: ExtendedActorSystem) extends RemotingFlightRecorder {
   override def transportMediaDriverStarted(directoryName: String): Unit =
-    TransportMediaDriverStarted(directoryName).commit()
+    new TransportMediaDriverStarted(directoryName).commit()
 
   override def transportStarted(): Unit =
-    TransportStarted().commit()
+    new TransportStarted().commit()
 
   override def transportAeronErrorLogStarted(): Unit =
-    TransportAeronErrorLogStarted().commit()
+    new TransportAeronErrorLogStarted().commit()
 
   override def transportTaskRunnerStarted(): Unit =
-    TransportTaskRunnerStarted().commit()
+    new TransportTaskRunnerStarted().commit()
 
   override def transportUniqueAddressSet(uniqueAddress: UniqueAddress): Unit =
-    TransportUniqueAddressSet(uniqueAddress).commit()
+    new TransportUniqueAddressSet(uniqueAddress).commit()
 
   override def transportMaterializerStarted(): Unit =
-    TransportMaterializerStarted().commit()
+    new TransportMaterializerStarted().commit()
 
   override def transportStartupFinished(): Unit =
-    TransportStartupFinished().commit()
+    new TransportStartupFinished().commit()
 
   override def transportKillSwitchPulled(): Unit =
-    TransportKillSwitchPulled().commit()
+    new TransportKillSwitchPulled().commit()
 
   override def transportStopped(): Unit =
-    TransportStopped().commit()
+    new TransportStopped().commit()
 
   override def transportAeronErrorLogTaskStopped(): Unit =
-    TransportAeronErrorLogTaskStopped().commit()
+    new TransportAeronErrorLogTaskStopped().commit()
 
   override def transportMediaFileDeleted(): Unit =
-    TransportMediaFileDeleted().commit()
+    new TransportMediaFileDeleted().commit()
 
   override def transportSendQueueOverflow(queueIndex: Int): Unit =
-    TransportSendQueueOverflow(queueIndex).commit()
+    new TransportSendQueueOverflow(queueIndex).commit()
 
   override def transportStopIdleOutbound(remoteAddress: Address, queueIndex: Int): Unit =
-    TransportStopIdleOutbound(remoteAddress, queueIndex).commit()
+    new TransportStopIdleOutbound(remoteAddress, queueIndex).commit()
 
   override def transportQuarantined(remoteAddress: Address, uid: Long): Unit =
-    TransportQuarantined(remoteAddress, uid).commit()
+    new TransportQuarantined(remoteAddress, uid).commit()
 
   override def transportRemoveQuarantined(remoteAddress: Address): Unit =
-    TransportRemoveQuarantined(remoteAddress).commit()
+    new TransportRemoveQuarantined(remoteAddress).commit()
 
   override def transportRestartOutbound(remoteAddress: Address, streamName: String): Unit =
-    TransportRestartOutbound(remoteAddress, streamName).commit()
+    new TransportRestartOutbound(remoteAddress, streamName).commit()
 
   override def transportRestartInbound(remoteAddress: UniqueAddress, streamName: String): Unit =
-    TransportRestartInbound(remoteAddress, streamName).commit()
+    new TransportRestartInbound(remoteAddress, streamName).commit()
 
   override def aeronSinkStarted(channel: String, streamId: Int): Unit =
-    AeronSinkStarted(channel, streamId).commit()
+    new AeronSinkStarted(channel, streamId).commit()
 
   override def aeronSinkTaskRunnerRemoved(channel: String, streamId: Int): Unit =
-    AeronSinkTaskRunnerRemoved(channel, streamId).commit()
+    new AeronSinkTaskRunnerRemoved(channel, streamId).commit()
 
   override def aeronSinkPublicationClosed(channel: String, streamId: Int): Unit =
-    AeronSinkPublicationClosed(channel, streamId).commit()
+    new AeronSinkPublicationClosed(channel, streamId).commit()
 
   override def aeronSinkPublicationClosedUnexpectedly(channel: String, streamId: Int): Unit =
-    AeronSinkPublicationClosedUnexpectedly(channel, streamId).commit()
+    new AeronSinkPublicationClosedUnexpectedly(channel, streamId).commit()
 
   override def aeronSinkStopped(channel: String, streamId: Int): Unit =
-    AeronSinkStopped(channel, streamId).commit()
+    new AeronSinkStopped(channel, streamId).commit()
 
   override def aeronSinkEnvelopeGrabbed(lastMessageSize: Int): Unit =
-    AeronSinkEnvelopeGrabbed(lastMessageSize).commit()
+    new AeronSinkEnvelopeGrabbed(lastMessageSize).commit()
 
   override def aeronSinkEnvelopeOffered(lastMessageSize: Int): Unit =
-    AeronSinkEnvelopeOffered(lastMessageSize).commit()
+    new AeronSinkEnvelopeOffered(lastMessageSize).commit()
 
   override def aeronSinkGaveUpEnvelope(cause: String): Unit =
-    AeronSinkGaveUpEnvelope(cause).commit()
+    new AeronSinkGaveUpEnvelope(cause).commit()
 
   override def aeronSinkDelegateToTaskRunner(countBeforeDelegate: Long): Unit =
-    AeronSinkDelegateToTaskRunner(countBeforeDelegate).commit()
+    new AeronSinkDelegateToTaskRunner(countBeforeDelegate).commit()
 
   override def aeronSinkReturnFromTaskRunner(nanosSinceTaskStartTime: Long): Unit =
-    AeronSinkReturnFromTaskRunner(nanosSinceTaskStartTime).commit()
+    new AeronSinkReturnFromTaskRunner(nanosSinceTaskStartTime).commit()
 
   override def aeronSourceStarted(channel: String, streamId: Int): Unit =
-    AeronSourceStarted(channel, streamId).commit()
+    new AeronSourceStarted(channel, streamId).commit()
 
   override def aeronSourceStopped(channel: String, streamId: Int): Unit =
-    AeronSourceStopped(channel, streamId).commit()
+    new AeronSourceStopped(channel, streamId).commit()
 
   override def aeronSourceReceived(size: Int): Unit =
-    AeronSourceReceived(size).commit()
+    new AeronSourceReceived(size).commit()
 
   override def aeronSourceDelegateToTaskRunner(countBeforeDelegate: Long): Unit =
-    AeronSourceDelegateToTaskRunner(countBeforeDelegate).commit()
+    new AeronSourceDelegateToTaskRunner(countBeforeDelegate).commit()
 
   override def aeronSourceReturnFromTaskRunner(nanosSinceTaskStartTime: Long): Unit =
-    AeronSourceReturnFromTaskRunner(nanosSinceTaskStartTime).commit()
+    new AeronSourceReturnFromTaskRunner(nanosSinceTaskStartTime).commit()
 
   override def compressionActorRefAdvertisement(uid: Long): Unit =
-    CompressionActorRefAdvertisement(uid).commit()
+    new CompressionActorRefAdvertisement(uid).commit()
 
   override def compressionClassManifestAdvertisement(uid: Long): Unit =
-    CompressionClassManifestAdvertisement(uid).commit()
+    new CompressionClassManifestAdvertisement(uid).commit()
 
   override def tcpOutboundConnected(remoteAddress: Address, streamName: String): Unit =
-    TcpOutboundConnected(remoteAddress, streamName).commit()
+    new TcpOutboundConnected(remoteAddress, streamName).commit()
 
   override def tcpOutboundSent(size: Int): Unit =
-    TcpOutboundSent(size).commit()
+    new TcpOutboundSent(size).commit()
 
   override def tcpInboundBound(bindHost: String, address: InetSocketAddress): Unit =
-    TcpInboundBound(bindHost, address).commit()
+    new TcpInboundBound(bindHost, address).commit()
 
   override def tcpInboundUnbound(localAddress: UniqueAddress): Unit =
-    TcpInboundUnbound(localAddress).commit()
+    new TcpInboundUnbound(localAddress).commit()
 
   override def tcpInboundConnected(remoteAddress: InetSocketAddress): Unit =
-    TcpInboundConnected(remoteAddress).commit()
+    new TcpInboundConnected(remoteAddress).commit()
 
   override def tcpInboundReceived(size: Int): Unit =
-    TcpInboundReceived(size).commit()
+    new TcpInboundReceived(size).commit()
 }

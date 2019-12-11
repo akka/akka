@@ -39,7 +39,7 @@ private[akka] object JFREventUtils {
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron")) @Label("Media driver started")
-final case class TransportMediaDriverStarted(directoryName: String) extends Event
+final class TransportMediaDriverStarted(val directoryName: String) extends Event
 
 /**
  * INTERNAL API
@@ -47,7 +47,7 @@ final case class TransportMediaDriverStarted(directoryName: String) extends Even
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Transport started")
-final case class TransportStarted() extends Event
+final class TransportStarted() extends Event
 
 /**
  * INTERNAL API
@@ -55,7 +55,7 @@ final case class TransportStarted() extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron")) @Label("Aeron error log started")
-final case class TransportAeronErrorLogStarted() extends Event
+final class TransportAeronErrorLogStarted() extends Event
 
 /**
  * INTERNAL API
@@ -63,7 +63,7 @@ final case class TransportAeronErrorLogStarted() extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Task runner started")
-final case class TransportTaskRunnerStarted() extends Event
+final class TransportTaskRunnerStarted() extends Event
 
 /**
  * INTERNAL API
@@ -71,7 +71,7 @@ final case class TransportTaskRunnerStarted() extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Unique address set")
-final case class TransportUniqueAddressSet(_uniqueAddress: UniqueAddress) extends Event {
+final class TransportUniqueAddressSet(_uniqueAddress: UniqueAddress) extends Event {
   val uniqueAddress = _uniqueAddress.toString()
 }
 
@@ -81,7 +81,7 @@ final case class TransportUniqueAddressSet(_uniqueAddress: UniqueAddress) extend
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Materializer started")
-final case class TransportMaterializerStarted() extends Event
+final class TransportMaterializerStarted() extends Event
 
 /**
  * INTERNAL API
@@ -89,7 +89,7 @@ final case class TransportMaterializerStarted() extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Startup finished")
-final case class TransportStartupFinished() extends Event
+final class TransportStartupFinished() extends Event
 
 /**
  * INTERNAL API
@@ -97,7 +97,7 @@ final case class TransportStartupFinished() extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Kill switch pulled")
-final case class TransportKillSwitchPulled() extends Event
+final class TransportKillSwitchPulled() extends Event
 
 /**
  * INTERNAL API
@@ -105,7 +105,7 @@ final case class TransportKillSwitchPulled() extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Stopped")
-final case class TransportStopped() extends Event
+final class TransportStopped() extends Event
 
 /**
  * INTERNAL API
@@ -113,7 +113,7 @@ final case class TransportStopped() extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron")) @Label("Aeron log task stopped")
-final case class TransportAeronErrorLogTaskStopped() extends Event
+final class TransportAeronErrorLogTaskStopped() extends Event
 
 /**
  * INTERNAL API
@@ -121,7 +121,7 @@ final case class TransportAeronErrorLogTaskStopped() extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Media file deleted")
-final case class TransportMediaFileDeleted() extends Event
+final class TransportMediaFileDeleted() extends Event
 
 /**
  * INTERNAL API
@@ -129,7 +129,7 @@ final case class TransportMediaFileDeleted() extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Send queue overflow")
-final case class TransportSendQueueOverflow(queueIndex: Int) extends Event
+final class TransportSendQueueOverflow(val queueIndex: Int) extends Event
 
 /**
  * INTERNAL API
@@ -137,7 +137,7 @@ final case class TransportSendQueueOverflow(queueIndex: Int) extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Stop idle outbound")
-final case class TransportStopIdleOutbound(_remoteAddress: Address, queueIndex: Int) extends Event {
+final class TransportStopIdleOutbound(_remoteAddress: Address, val queueIndex: Int) extends Event {
   val remoteAddress = _remoteAddress.toString
 }
 
@@ -147,7 +147,7 @@ final case class TransportStopIdleOutbound(_remoteAddress: Address, queueIndex: 
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Quarantined")
-final case class TransportQuarantined(_remoteAddress: Address, uid: Long) extends Event {
+final class TransportQuarantined(_remoteAddress: Address, val uid: Long) extends Event {
   val remoteAddress = _remoteAddress.toString
 }
 
@@ -157,7 +157,7 @@ final case class TransportQuarantined(_remoteAddress: Address, uid: Long) extend
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Remove quarantined")
-final case class TransportRemoveQuarantined(_remoteAddress: Address) extends Event {
+final class TransportRemoveQuarantined(_remoteAddress: Address) extends Event {
   val remoteAddress = _remoteAddress.toString
 }
 
@@ -167,7 +167,7 @@ final case class TransportRemoveQuarantined(_remoteAddress: Address) extends Eve
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Restart outbound")
-final case class TransportRestartOutbound(_remoteAddress: Address, streamName: String) extends Event {
+final class TransportRestartOutbound(_remoteAddress: Address, val streamName: String) extends Event {
   val remoteAddress = _remoteAddress.toString
 }
 
@@ -177,7 +177,7 @@ final case class TransportRestartOutbound(_remoteAddress: Address, streamName: S
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Transport")) @Label("Restart inbound")
-final case class TransportRestartInbound(_remoteAddress: UniqueAddress, streamName: String) extends Event {
+final class TransportRestartInbound(_remoteAddress: UniqueAddress, val streamName: String) extends Event {
   val remoteAddress = _remoteAddress.toString()
 }
 
@@ -189,7 +189,7 @@ final case class TransportRestartInbound(_remoteAddress: UniqueAddress, streamNa
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Sink")) @Label("Started")
-final case class AeronSinkStarted(channel: String, streamId: Int) extends Event {}
+final class AeronSinkStarted(val channel: String, val streamId: Int) extends Event {}
 
 /**
  * INTERNAL API
@@ -197,7 +197,7 @@ final case class AeronSinkStarted(channel: String, streamId: Int) extends Event 
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Sink")) @Label("Task runner removed")
-final case class AeronSinkTaskRunnerRemoved(channel: String, streamId: Int) extends Event
+final class AeronSinkTaskRunnerRemoved(val channel: String, val streamId: Int) extends Event
 
 /**
  * INTERNAL API
@@ -205,7 +205,7 @@ final case class AeronSinkTaskRunnerRemoved(channel: String, streamId: Int) exte
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Sink")) @Label("Publication closed")
-final case class AeronSinkPublicationClosed(channel: String, streamId: Int) extends Event
+final class AeronSinkPublicationClosed(val channel: String, val streamId: Int) extends Event
 
 /**
  * INTERNAL API
@@ -213,7 +213,7 @@ final case class AeronSinkPublicationClosed(channel: String, streamId: Int) exte
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Sink")) @Label("Publication closed unexpectedly")
-final case class AeronSinkPublicationClosedUnexpectedly(channel: String, streamId: Int) extends Event
+final class AeronSinkPublicationClosedUnexpectedly(val channel: String, val streamId: Int) extends Event
 
 /**
  * INTERNAL API
@@ -221,7 +221,7 @@ final case class AeronSinkPublicationClosedUnexpectedly(channel: String, streamI
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Sink")) @Label("Stopped")
-final case class AeronSinkStopped(channel: String, streamId: Int) extends Event
+final class AeronSinkStopped(val channel: String, val streamId: Int) extends Event
 
 /**
  * INTERNAL API
@@ -230,7 +230,7 @@ final case class AeronSinkStopped(channel: String, streamId: Int) extends Event
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Sink")) @Label("Envelope grabbed")
-final case class AeronSinkEnvelopeGrabbed(@DataAmount() lastMessageSize: Int) extends Event
+final class AeronSinkEnvelopeGrabbed(@DataAmount() val lastMessageSize: Int) extends Event
 
 /**
  * INTERNAL API
@@ -239,7 +239,7 @@ final case class AeronSinkEnvelopeGrabbed(@DataAmount() lastMessageSize: Int) ex
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Sink")) @Label("Envelope offered")
-final case class AeronSinkEnvelopeOffered(@DataAmount() lastMessageSize: Int) extends Event
+final class AeronSinkEnvelopeOffered(@DataAmount() val lastMessageSize: Int) extends Event
 
 /**
  * INTERNAL API
@@ -247,7 +247,7 @@ final case class AeronSinkEnvelopeOffered(@DataAmount() lastMessageSize: Int) ex
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Sink")) @Label("Gave up envelope")
-final case class AeronSinkGaveUpEnvelope(cause: String) extends Event
+final class AeronSinkGaveUpEnvelope(val cause: String) extends Event
 
 /**
  * INTERNAL API
@@ -256,7 +256,7 @@ final case class AeronSinkGaveUpEnvelope(cause: String) extends Event
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Sink")) @Label("Delegate to task runner")
-final case class AeronSinkDelegateToTaskRunner(countBeforeDelegate: Long) extends Event
+final class AeronSinkDelegateToTaskRunner(val countBeforeDelegate: Long) extends Event
 
 /**
  * INTERNAL API
@@ -265,7 +265,7 @@ final case class AeronSinkDelegateToTaskRunner(countBeforeDelegate: Long) extend
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Sink")) @Label("Return from task runner")
-final case class AeronSinkReturnFromTaskRunner(@Timespan(Timespan.NANOSECONDS) nanosSinceTaskStartTime: Long)
+final class AeronSinkReturnFromTaskRunner(@Timespan(Timespan.NANOSECONDS) val nanosSinceTaskStartTime: Long)
     extends Event
 
 // aeron source events
@@ -276,7 +276,7 @@ final case class AeronSinkReturnFromTaskRunner(@Timespan(Timespan.NANOSECONDS) n
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Source")) @Label("Started")
-final case class AeronSourceStarted(channel: String, streamId: Int) extends Event
+final class AeronSourceStarted(val channel: String, val streamId: Int) extends Event
 
 /**
  * INTERNAL API
@@ -284,7 +284,7 @@ final case class AeronSourceStarted(channel: String, streamId: Int) extends Even
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Source")) @Label("Stopped")
-final case class AeronSourceStopped(channel: String, streamId: Int) extends Event
+final class AeronSourceStopped(val channel: String, val streamId: Int) extends Event
 
 /**
  * INTERNAL API
@@ -293,7 +293,7 @@ final case class AeronSourceStopped(channel: String, streamId: Int) extends Even
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Source")) @Label("Received")
-final case class AeronSourceReceived(@DataAmount() size: Int) extends Event
+final class AeronSourceReceived(@DataAmount() val size: Int) extends Event
 
 /**
  * INTERNAL API
@@ -302,7 +302,7 @@ final case class AeronSourceReceived(@DataAmount() size: Int) extends Event
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Source")) @Label("Delegate to task runner")
-final case class AeronSourceDelegateToTaskRunner(countBeforeDelegate: Long) extends Event
+final class AeronSourceDelegateToTaskRunner(val countBeforeDelegate: Long) extends Event
 
 /**
  * INTERNAL API
@@ -311,7 +311,7 @@ final case class AeronSourceDelegateToTaskRunner(countBeforeDelegate: Long) exte
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Aeron", "Source")) @Label("Return from task runner")
-final case class AeronSourceReturnFromTaskRunner(@Timespan(Timespan.NANOSECONDS) nanosSinceTaskStartTime: Long)
+final class AeronSourceReturnFromTaskRunner(@Timespan(Timespan.NANOSECONDS) val nanosSinceTaskStartTime: Long)
     extends Event
 
 // compression events
@@ -322,7 +322,7 @@ final case class AeronSourceReturnFromTaskRunner(@Timespan(Timespan.NANOSECONDS)
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Compression")) @Label("ActorRef advertisement")
-final case class CompressionActorRefAdvertisement(uid: Long) extends Event
+final class CompressionActorRefAdvertisement(val uid: Long) extends Event
 
 /**
  * INTERNAL API
@@ -330,7 +330,7 @@ final case class CompressionActorRefAdvertisement(uid: Long) extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Compression")) @Label("ClassManifest advertisement")
-final case class CompressionClassManifestAdvertisement(uid: Long) extends Event
+final class CompressionClassManifestAdvertisement(val uid: Long) extends Event
 
 // tcp outbound events
 
@@ -340,7 +340,7 @@ final case class CompressionClassManifestAdvertisement(uid: Long) extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Tcp", "Outbound")) @Label("Connected")
-final case class TcpOutboundConnected(_remoteAddress: Address, streamName: String) extends Event {
+final class TcpOutboundConnected(_remoteAddress: Address, val streamName: String) extends Event {
   val remoteAddress = _remoteAddress.toString
 }
 
@@ -351,7 +351,7 @@ final case class TcpOutboundConnected(_remoteAddress: Address, streamName: Strin
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Tcp", "Outbound")) @Label("Sent")
-final case class TcpOutboundSent(@DataAmount() size: Int) extends Event
+final class TcpOutboundSent(@DataAmount() val size: Int) extends Event
 
 // tcp inbound events
 
@@ -361,7 +361,7 @@ final case class TcpOutboundSent(@DataAmount() size: Int) extends Event
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Tcp", "Inbound")) @Label("Bound")
-final case class TcpInboundBound(bindHost: String, _address: InetSocketAddress) extends Event {
+final class TcpInboundBound(val bindHost: String, _address: InetSocketAddress) extends Event {
   val address = JFREventUtils.stringOf(_address)
 }
 
@@ -371,7 +371,7 @@ final case class TcpInboundBound(bindHost: String, _address: InetSocketAddress) 
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Tcp", "Inbound")) @Label("Unbound")
-final case class TcpInboundUnbound(_localAddress: UniqueAddress) extends Event {
+final class TcpInboundUnbound(_localAddress: UniqueAddress) extends Event {
   val localAddress = _localAddress.toString()
 }
 
@@ -381,7 +381,7 @@ final case class TcpInboundUnbound(_localAddress: UniqueAddress) extends Event {
 @InternalApi
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Tcp", "Inbound")) @Label("Connected")
-final case class TcpInboundConnected(_remoteAddress: InetSocketAddress) extends Event {
+final class TcpInboundConnected(_remoteAddress: InetSocketAddress) extends Event {
   val remoteAddress = JFREventUtils.stringOf(_remoteAddress)
 }
 
@@ -392,4 +392,4 @@ final case class TcpInboundConnected(_remoteAddress: InetSocketAddress) extends 
 @Enabled(false) // hi frequency event
 @StackTrace(false)
 @Category(Array("Akka", "Remoting", "Tcp", "Inbound")) @Label("Received")
-final case class TcpInboundReceived(@DataAmount() size: Int) extends Event
+final class TcpInboundReceived(@DataAmount() val size: Int) extends Event
