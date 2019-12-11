@@ -11,7 +11,6 @@ import scala.concurrent.duration._
 
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
-import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.annotation.InternalApi
 import akka.persistence.PersistentActor
@@ -76,7 +75,7 @@ object JournalPerfSpec {
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] class CmdSerializer(system: ExtendedActorSystem) extends SerializerWithStringManifest {
+  @InternalApi private[akka] class CmdSerializer extends SerializerWithStringManifest {
     override def identifier: Int = 293562
 
     override def manifest(o: AnyRef): String = ""
