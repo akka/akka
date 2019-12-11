@@ -594,7 +594,7 @@ or interaction to complete before processing additional commands. That is accomp
 and later use `thenUnstashAll`.
 
 Let's use an example of a task manager to illustrate how the stashing effects can be used. It handles three commands;
-`StartTask`, `NextStep` and `EndTask`. Those commands are associated with a given `taskId` and the manager process
+`StartTask`, `NextStep` and `EndTask`. Those commands are associated with a given `taskId` and the manager processes
 one `taskId` at a time. A task is started when receiving `StartTask`, and continues when receiving `NextStep` commands
 until the final `EndTask` is received. Commands with another `taskId` than the one in progress are deferred by
 stashing them. When `EndTask` is processed a new task can start and the stashed commands are processed.
