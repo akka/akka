@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package akka.remote.artery.jfr
 
 import akka.remote.artery.RemotingFlightRecorder
@@ -12,7 +13,7 @@ class JFRRemotingFlightRecorderSpec extends AkkaSpec {
 
     "use the JFR one on Java 11" in {
       val extension = RemotingFlightRecorder(system)
-      extension should be a[JFRRemotingFlightRecorder]
+      extension shouldBe a[JFRRemotingFlightRecorder]
     }
   }
 
