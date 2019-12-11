@@ -10,8 +10,25 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.testkit.AkkaSpec
 import com.typesafe.config.{ Config, ConfigFactory }
 
+object MultiNodeClusterShardingConfig {
+  private[sharding] def getCallerName() = {
+    Thread.currentThread.getStackTrace
+      .map(_.getClassName)
+      .drop(1)
+      .dropWhile(_.matches(
+        "(java.lang.Thread|.*AkkaSpec.*|.*\\.StreamSpec.*|.*MultiNodeSpec.*|.*\\.Abstract.*|.*MultiNodeClusterShardingConfig.*|.*MultiNodeClusterShardingSpec.*)"))
+      .head
+      .replaceFirst(""".*\.""", "")
+      .replaceAll("[^a-zA-Z_0-9]", "_")
+
+  }
+}
+
 /**
  * A MultiNodeConfig for ClusterSharding. Implement the roles, etc. and create with the following:
+ *
+ * Note that this class is not used anywhere yet, but could be a good starting point
+ * for new or refactored multi-node sharding specs
  *
  * @param mode the state store mode
  * @param rememberEntities defaults to off
@@ -25,7 +42,9 @@ abstract class MultiNodeClusterShardingConfig(
     loglevel: String = "INFO")
     extends MultiNodeConfig {
 
-  val targetDir = s"target/ClusterSharding${AkkaSpec.getCallerName(getClass)}Spec-$mode-remember-$rememberEntities"
+  import MultiNodeClusterShardingConfig._
+
+  val targetDir = s"target/ClusterSharding${getCallerName()}Spec-$mode-remember-$rememberEntities"
 
   val modeConfig =
     if (mode == ClusterShardingSettings.StateStoreModeDData) ConfigFactory.empty
