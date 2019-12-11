@@ -1283,9 +1283,16 @@ callback. This means it's not possible to write
 
 Note that the stash is part of the ephemeral actor state, unlike the
 mailbox. Therefore, it should be managed like other parts of the
-actor's state which have the same property. The @scala[`Stash` trait’s] @java[`AbstractActorWithStash`]
-implementation of `preRestart` will call `unstashAll()`, which is
-usually the desired behavior.
+actor's state which have the same property.
+
+However, the @scala[`Stash` trait’s] @java[`AbstractActorWithStash`]
+implementation of `preRestart` will call `unstashAll()`. This means
+that prior to the actor restarting, it will transfer all stashed 
+messages back to the actor's mailbox.
+
+The result of this is that when an actor is restarted, any stashed 
+messages will be delivered to the new incarnation of the actor. 
+This is usually the desired behavior.
 
 @@@ note
 
