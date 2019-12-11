@@ -4,8 +4,12 @@
 
 package akka.remote.artery.jfr
 
+import akka.actor.ActorSystem
+import akka.remote.artery.NoOpRemotingFlightRecorder
 import akka.remote.artery.RemotingFlightRecorder
 import akka.testkit.AkkaSpec
+import akka.testkit.TestKit
+import com.typesafe.config.ConfigFactory
 
 class JFRRemotingFlightRecorderSpec extends AkkaSpec {
 
@@ -14,6 +18,23 @@ class JFRRemotingFlightRecorderSpec extends AkkaSpec {
     "use the JFR one on Java 11" in {
       val extension = RemotingFlightRecorder(system)
       extension shouldBe a[JFRRemotingFlightRecorder]
+
+      extension.transportStopped() // try to actually report something and see that it doesn't throw or something
+    }
+
+    "be disabled if configured to" in {
+      val system = ActorSystem(
+        "JFRRemotingFlightRecorderSpec-2",
+        ConfigFactory.parseString(
+          """
+           akka.use-java-flight-recorder = off
+            """))
+      try {
+        val extension = RemotingFlightRecorder(system)
+        extension should === (NoOpRemotingFlightRecorder)
+      } finally {
+        TestKit.shutdownActorSystem(system)
+      }
     }
   }
 
