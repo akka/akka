@@ -568,7 +568,7 @@ Scala
 Java
 :  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #supervision }
 
-If there is a problem with recovering the state of the actor from the journal, `RecoveryFailed` signal is
+If there is a problem with recovering the state of the actor from the journal, a `RecoveryFailed` signal is
 emitted to the @scala[`receiveSignal` handler] @java[`receiveSignal` method] and the actor will be stopped
 (or restarted with backoff).
 
