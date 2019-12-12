@@ -95,15 +95,15 @@ private[remote] object CompressionTable {
   }
   def compareBy2ndValue[T]: Comparator[Tuple2[T, Int]] = CompareBy2ndValue.asInstanceOf[Comparator[(T, Int)]]
 
-  private def newObject2IntHashMap[T]: Object2IntHashMap[T] = {
+  private def newObject2IntHashMap[T](initialCapacity: Int): Object2IntHashMap[T] = {
     // import to use shouldAvoidAllocation = false because of concurrent access of dictionary
-    new Object2IntHashMap[T](256, Hashing.DEFAULT_LOAD_FACTOR, NotCompressedId, false)
+    new Object2IntHashMap[T](initialCapacity, Hashing.DEFAULT_LOAD_FACTOR, NotCompressedId, false)
   }
 
-  def empty[T] = new CompressionTable[T](0, 0, newObject2IntHashMap)
+  def empty[T] = new CompressionTable[T](0, 0, newObject2IntHashMap(2))
 
   def apply[T](originUid: Long, version: Byte, dictionary: Map[T, Int]): CompressionTable[T] = {
-    val _dictionary = newObject2IntHashMap[T]
+    val _dictionary = newObject2IntHashMap[T](dictionary.size * 2)
     dictionary.foreach {
       case (key, value) => _dictionary.put(key, value)
     }
