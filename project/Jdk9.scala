@@ -36,7 +36,7 @@ object Jdk9 extends AutoPlugin {
           (Test / sourceDirectory).value / JAVA_TEST_SOURCE_DIRECTORY)),
     scalacOptions := AkkaBuild.DefaultScalacOptions ++ notOnJdk8(Seq("-release", "11")),
     javacOptions := AkkaBuild.DefaultJavacOptions ++ notOnJdk8(Seq("--release", "11")),
-    // compile := compile.dependsOn(CompileJdk9 / compile).value,
+    compile := compile.dependsOn(CompileJdk9 / compile).value,
     classpathConfiguration := TestJdk9,
     externalDependencyClasspath := (externalDependencyClasspath in Test).value)
 

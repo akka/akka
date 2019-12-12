@@ -12,7 +12,7 @@ class RemotingFlightRecorderSpec extends AkkaSpec with Matchers {
 
   "The RemotingFlightRecorder" must {
 
-    "use the no-op recorder by default" in {
+    "use the no-op recorder by default when running on JDK 8" in {
       val extension = RemotingFlightRecorder(system)
       if (JavaVersion.majorVersion < 11)
         extension should ===(NoOpRemotingFlightRecorder)
