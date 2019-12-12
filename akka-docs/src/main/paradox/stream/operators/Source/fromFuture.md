@@ -28,6 +28,3 @@ If the future fails the stream is failed with that exception.
 **completes** after the future has completed
 
 @@@
-
-## Example
-
