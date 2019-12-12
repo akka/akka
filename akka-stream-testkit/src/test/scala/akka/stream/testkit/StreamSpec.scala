@@ -14,7 +14,7 @@ import org.scalatest.Failed
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
+abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
   def this(config: Config) =
     this(ActorSystem(AkkaSpec.getCallerName(), ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
