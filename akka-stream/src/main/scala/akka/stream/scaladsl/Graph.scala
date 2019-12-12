@@ -834,12 +834,10 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
                   if (idx == outPendingIdx) {
                     push(o, elem)
                     outPendingElem = null
-                    if (!isClosed(in)) {
-                      if (!hasBeenPulled(in)) {
-                        pull(in)
-                      }
-                    } else
+                    if (isClosed(in))
                       completeStage()
+                    else if (!hasBeenPulled(in))
+                      pull(in)
                   }
                 } else if (!hasBeenPulled(in))
                   pull(in)
@@ -851,12 +849,12 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
                   downstreamRunning -= 1
                   if (downstreamRunning == 0)
                     completeStage()
-                  else if (outPendingElem != null) {
-                    if (idx == outPendingIdx) {
-                      outPendingElem = null
-                      if (!hasBeenPulled(in))
-                        pull(in)
-                    }
+                  else if (outPendingElem != null && idx == outPendingIdx) {
+                    outPendingElem = null
+                    if (isClosed(in))
+                      completeStage()
+                    else if (!hasBeenPulled(in))
+                      pull(in)
                   }
                 }
             })
