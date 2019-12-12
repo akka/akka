@@ -6,7 +6,6 @@ package docs.akka.cluster.sharding.typed
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -87,9 +86,6 @@ object AccountExampleWithEventHandlersInState {
       override def applyEvent(event: Event): Account =
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
-
-    val TypeKey: EntityTypeKey[Command[_]] =
-      EntityTypeKey[Command[_]]("Account")
 
     // Note that after defining command, event and state classes you would probably start here when writing this.
     // When filling in the parameters of EventSourcedBehavior.apply you can use IntelliJ alt+Enter > createValue
