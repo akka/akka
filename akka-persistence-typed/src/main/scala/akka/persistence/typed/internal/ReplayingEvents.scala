@@ -99,7 +99,7 @@ private[akka] final class ReplayingEvents[C, E, S](
     case PoisonPill =>
       state = state.copy(receivedPoisonPill = true)
       this
-    case signal =>
+    case signal if setup.isSignalDefined(setup.emptyState, signal) =>
       setup.onSignal(state.state, signal, catchAndLog = true)
       this
   }
@@ -231,6 +231,7 @@ private[akka] final class ReplayingEvents[C, E, S](
           setup.persistenceId,
           (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
       }
+
       setup.onSignal(state.state, RecoveryCompleted, catchAndLog = false)
 
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)

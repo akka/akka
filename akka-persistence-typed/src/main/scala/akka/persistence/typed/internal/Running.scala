@@ -321,7 +321,7 @@ private[akka] object Running {
         // wait for journal responses before stopping
         state = state.copy(receivedPoisonPill = true)
         this
-      case signal =>
+      case signal if setup.isSignalDefined(setup.emptyState, signal) =>
         setup.onSignal(visibleState.state, signal, catchAndLog = false)
         this
     }
@@ -383,8 +383,11 @@ private[akka] object Running {
 
       signal match {
         case Some(signal) =>
-          setup.log.debug2("Received snapshot response [{}], emitting signal [{}].", response, signal)
-          setup.onSignal(state.state, signal, catchAndLog = false)
+          setup.log.debug("Received snapshot response [{}].", response)
+          if (setup.isSignalDefined(setup.emptyState, signal)) {
+            setup.log.debug("Emitting signal [{}].", signal)
+            setup.onSignal(state.state, signal, catchAndLog = false)
+          }
         case None =>
           setup.log.debug("Received snapshot response [{}], no signal emitted.", response)
       }
@@ -411,7 +414,7 @@ private[akka] object Running {
       case PoisonPill =>
         // wait for snapshot response before stopping
         new StoringSnapshot(state.copy(receivedPoisonPill = true), sideEffects, snapshotReason)
-      case signal =>
+      case signal if setup.isSignalDefined(setup.emptyState, signal) =>
         setup.onSignal(state.state, signal, catchAndLog = false)
         Behaviors.same
     }
@@ -484,10 +487,10 @@ private[akka] object Running {
     }
 
     signal match {
-      case Some(sig) =>
+      case Some(sig) if setup.isSignalDefined(setup.emptyState, sig) =>
         setup.onSignal(state, sig, catchAndLog = false)
         Behaviors.same
-      case None =>
+      case _ =>
         Behaviors.unhandled // unexpected journal response
     }
   }
@@ -511,10 +514,10 @@ private[akka] object Running {
     }
 
     signal match {
-      case Some(sig) =>
+      case Some(sig) if setup.isSignalDefined(setup.emptyState, sig) =>
         setup.onSignal(state, sig, catchAndLog = false)
         Behaviors.same
-      case None =>
+      case _ =>
         Behaviors.unhandled // unexpected snapshot response
     }
   }

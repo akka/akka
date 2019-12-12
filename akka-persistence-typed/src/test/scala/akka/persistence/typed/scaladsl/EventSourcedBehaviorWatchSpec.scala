@@ -9,12 +9,10 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, Behavior, ChildFailed, DeathPactException, Terminated }
+import akka.actor.typed.{ ActorRef, ChildFailed, DeathPactException, Terminated }
 import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.WordSpecLike
-
-import scala.util.Random
 
 object EventSourcedBehaviorWatchSpec {
   sealed trait Command extends CborSerializable
@@ -33,40 +31,16 @@ class EventSourcedBehaviorWatchSpec
 
   private val cause = TestException("Dodge this.")
 
-  private val parentId = new Random()
-
   private val pidCounter = new AtomicInteger(0)
 
   private def nextPid: PersistenceId = PersistenceId.ofUniqueId(s"${pidCounter.incrementAndGet()}")
-
-  private def spawnAnonymous[T](behavior: Behavior[T]): ActorRef[T] = {
-    spawn(behavior, name = s"${parentId.nextInt()}")
-  }
-
-  private def watcher(toWatch: ActorRef[_]): TestProbe[HasTerminated] = {
-    val probe = TestProbe[HasTerminated]()
-    val w = Behaviors.setup[Any] { ctx =>
-      ctx.watch(toWatch)
-      Behaviors
-        .receive[Any] { (_, _) =>
-          Behaviors.same
-        }
-        .receiveSignal {
-          case (_, t: Terminated) =>
-            probe.ref ! HasTerminated(t.ref)
-            Behaviors.stopped
-        }
-    }
-    spawn(w)
-    probe
-  }
 
   "A typed persistent parent actor watching a child" must {
 
     "throw a DeathPactException from parent when not handling the child Terminated signal" in {
 
       val parent =
-        spawnAnonymous(Behaviors.setup[Command] { context =>
+        spawn(Behaviors.setup[Command] { context =>
           val child = context.spawnAnonymous(Behaviors.receive[Command] { (_, _) =>
             throw cause
           })
@@ -79,21 +53,19 @@ class EventSourcedBehaviorWatchSpec
           }, eventHandler = (state, evt) => state + evt)
         })
 
-      val watcherProbe = watcher(toWatch = parent)
-
       LoggingTestKit.error[TestException].expect {
         LoggingTestKit.error[DeathPactException].expect {
           parent ! Fail
         }
       }
-      watcherProbe.expectMessageType[HasTerminated].ref shouldEqual parent
+      createTestProbe().expectTerminated(parent)
     }
 
     "receive a Terminated when handling the signal" in {
       val probe = TestProbe[AnyRef]()
 
       val parent =
-        spawnAnonymous(Behaviors.setup[Stop.type] { context =>
+        spawn(Behaviors.setup[Stop.type] { context =>
           val child = context.spawnAnonymous(Behaviors.setup[Stop.type] { c =>
             Behaviors.receive[Stop.type] { (_, _) =>
               context.stop(c.self)
@@ -124,7 +96,7 @@ class EventSourcedBehaviorWatchSpec
       val probe = TestProbe[AnyRef]()
 
       val parent =
-        spawnAnonymous(Behaviors.setup[Fail.type] { context =>
+        spawn(Behaviors.setup[Fail.type] { context =>
           val child = context.spawnAnonymous(Behaviors.receive[Fail.type] { (_, _) =>
             throw cause
           })
