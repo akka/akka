@@ -110,7 +110,7 @@ private[akka] object Running {
       case PoisonPill =>
         if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
         else new HandlingCommands(state.copy(receivedPoisonPill = true))
-      case signal =>
+      case signal if setup.isSignalDefined(state.state, signal) =>
         setup.onSignal(state.state, signal, catchAndLog = false)
         this
     }

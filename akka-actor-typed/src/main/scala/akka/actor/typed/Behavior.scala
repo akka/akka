@@ -219,7 +219,7 @@ object Behavior {
   def isUnhandled[T](behavior: Behavior[T]): Boolean = behavior eq BehaviorImpl.UnhandledBehavior
 
   /**
-   * Returns true if the given behavior is deferred.
+   * Returns true if the given behavior is the special `Unhandled` marker.
    */
   def isDeferred[T](behavior: Behavior[T]): Boolean = behavior._tag == BehaviorTags.DeferredBehavior
 
@@ -234,17 +234,10 @@ object Behavior {
    */
   def interpretSignal[T](behavior: Behavior[T], ctx: TypedActorContext[T], signal: Signal): Behavior[T] = {
     val result = interpret(behavior, ctx, signal, isSignal = true)
-
-    def isIntercepted: Boolean = result match {
-      case intercepted: InterceptorImpl[T, Any] @unchecked =>
-        intercepted.nestedBehavior._tag == BehaviorTags.ExtensibleBehavior
-      case _ => false
-    }
-
     // we need to throw here to allow supervision of deathpact exception
     signal match {
-      case Terminated(ref) if result == BehaviorImpl.UnhandledBehavior || isIntercepted => throw DeathPactException(ref)
-      case _                                                                            => result
+      case Terminated(ref) if result == BehaviorImpl.UnhandledBehavior => throw DeathPactException(ref)
+      case _                                                           => result
     }
   }
 

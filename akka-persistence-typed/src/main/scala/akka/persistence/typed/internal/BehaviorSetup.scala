@@ -120,6 +120,9 @@ private[akka] final class BehaviorSetup[C, E, S](
     }
   }
 
+  def isSignalDefined(state: S, signal: Signal): Boolean =
+    signalHandler.isDefinedAt((state, signal))
+
   def shouldSnapshot(state: S, event: E, sequenceNr: Long): SnapshotAfterPersist = {
     retention match {
       case DisabledRetentionCriteria =>
