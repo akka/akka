@@ -115,6 +115,7 @@ object AccountExampleWithOptionState {
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
 
+    // used for sharding, typically in `init`-- for an example, see AccountExampleSpec.scala line 47 in this folder
     val TypeKey: EntityTypeKey[Command[_]] =
       EntityTypeKey[Command[_]]("Account")
 
