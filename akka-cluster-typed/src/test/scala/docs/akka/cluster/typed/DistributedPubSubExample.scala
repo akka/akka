@@ -87,8 +87,7 @@ object Publisher {
       Behaviors.setup[AnyRef] { context =>
         import akka.cluster.pubsub.DistributedPubSub
         import akka.cluster.pubsub.DistributedPubSubMediator
-        import akka.actor.typed.scaladsl.adapter._
-        val mediator = DistributedPubSub(context.system.toClassic).mediator
+        val mediator = DistributedPubSub(context.system).mediator
 
         var registry: Map[DataKey, DataType] = Map.empty
 
@@ -263,8 +262,7 @@ object DataPlatform {
   def apply(): Behavior[ProvisionCommand] = {
     Behaviors.setup { context =>
       //#mediator
-      import akka.actor.typed.scaladsl.adapter._
-      val mediator = DistributedPubSub(context.system.toClassic).mediator
+      val mediator = DistributedPubSub(context.system).mediator
       //#mediator
       val service = context.spawn(DataService(mediator), "data")
 
@@ -337,7 +335,7 @@ object DistributedPubSubExample {
 
     // provision new data type
     val platformProbe = TestProbe[DataApi]()(system)
-    val mediator = DistributedPubSub(system.toClassic).mediator
+    val mediator = DistributedPubSub(system).mediator
     mediator ! DistributedPubSubMediator.Subscribe(IngestionTopic, platformProbe.ref.toClassic)
 
     system ! ProvisionDataType(key, "dummy-schema", platformProbe.ref)

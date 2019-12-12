@@ -13,16 +13,20 @@ To use Akka Streams, add the module to your project:
 <a id="reactive-streams-integration"></a>
 ## Overview
 
-[Reactive Streams](http://reactive-streams.org/) defines a standard for asynchronous stream processing with non-blocking
-back pressure. It makes it possible to plug together stream libraries that adhere to the standard.
-Akka Streams is one such library.
+Akka Streams implements the [Reactive Streams](http://reactive-streams.org/) standard for asynchronous stream processing with non-blocking
+back pressure. 
 
-An incomplete list of other implementations:
+Since Java 9 the APIs of Reactive Streams has been included in the Java Standard library, under the  `java.util.concurrent.Flow` 
+namespace. For Java 8 there is instead a separate Reactive Streams artifact with the same APIs in the package `org.reactivestreams`.
 
- * [Reactor (1.1+)](https://github.com/reactor/reactor)
- * [RxJava](https://github.com/ReactiveX/RxJavaReactiveStreams)
- * [Ratpack](http://www.ratpack.io/manual/current/streams.html)
- * [Slick](http://slick.lightbend.com)
+Akka streams provides interoperability for both these two API versions, the Reactive Streams interfaces directly through factories on the
+regular `Source` and `Sink` APIs. For the Java 9 and later built in interfaces there is a separate set of factories in 
+@scala[`akka.stream.scaladsl.JavaFlowSupport`]@java[`akka.stream.javadsl.JavaFlowSupport`].
+
+In the following samples the standalone Reactive Stream API factories has been used but each such call can be replaced with the
+corresponding method from `JavaFlowSupport` and the JDK @scala[`java.util.concurrent.Flow._`]@java[`java.util.concurrent.Flow.*`] interfaces.
+
+Note that it is not possible to use `JavaFlowSupport` on Java 8 since the needed interfaces simply is not available in the Java standard library.
 
 The two most important interfaces in Reactive Streams are the `Publisher` and `Subscriber`.
 
@@ -121,3 +125,13 @@ Java
 
 Please note that a factory is necessary to achieve reusability of the resulting `Flow`.
 
+
+## Other implementations
+
+Implementing Reactive Streams makes it possible to plug Akka Streams together with other stream libraries that adhere to the standard.
+An incomplete list of other implementations:
+
+ * [Reactor (1.1+)](https://github.com/reactor/reactor)
+ * [RxJava](https://github.com/ReactiveX/RxJavaReactiveStreams)
+ * [Ratpack](http://www.ratpack.io/manual/current/streams.html)
+ * [Slick](http://slick.lightbend.com)

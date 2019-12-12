@@ -102,7 +102,8 @@ lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderInPr)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
-  .dependsOn(Seq(actor, actorTyped, stream, streamTests, persistence, distributedData, jackson, testkit).map(
+  .enablePlugins(Jdk9)
+  .dependsOn(Seq(actor, actorTyped, stream, streamTestkit, persistence, distributedData, jackson, testkit).map(
     _ % "compile->compile;compile->test"): _*)
   .settings(Dependencies.benchJmh)
   .settings(javacOptions += "-parameters") // for Jackson
@@ -170,6 +171,7 @@ lazy val distributedData = akkaModule("akka-distributed-data")
   .enablePlugins(MultiNodeScalaTest)
 
 lazy val docs = akkaModule("akka-docs")
+  .configs(akka.Jdk9.TestJdk9)
   .dependsOn(
     actor,
     cluster,
@@ -180,6 +182,7 @@ lazy val docs = akkaModule("akka-docs")
     persistenceQuery,
     distributedData,
     stream,
+    stream % "TestJdk9->CompileJdk9",
     actorTyped,
     clusterTools % "compile->compile;test->test",
     clusterSharding % "compile->compile;test->test",
@@ -201,7 +204,8 @@ lazy val docs = akkaModule("akka-docs")
     NoPublish,
     ParadoxBrowse,
     ScaladocNoVerificationOfDiagrams,
-    StreamOperatorsIndexGenerator)
+    StreamOperatorsIndexGenerator,
+    Jdk9)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
   .disablePlugins(ScalafixPlugin)
 
@@ -344,9 +348,14 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .disablePlugins(MimaPlugin)
 
 lazy val streamTests = akkaModule("akka-stream-tests")
-  .dependsOn(streamTestkit % "test->test", remote % "test->test", stream)
+  .configs(akka.Jdk9.TestJdk9)
+  .dependsOn(
+    streamTestkit % "test->test",
+    remote % "test->test",
+    stream % "TestJdk9->CompileJdk9"
+  )
   .settings(Dependencies.streamTests)
-  .enablePlugins(NoPublish)
+  .enablePlugins(NoPublish, Jdk9)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
 lazy val streamTestsTck = akkaModule("akka-stream-tests-tck")

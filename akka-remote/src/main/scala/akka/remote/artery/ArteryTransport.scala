@@ -11,7 +11,7 @@ import akka.{ Done, NotUsed }
 import akka.actor.{ Actor, ActorRef, Address, CoordinatedShutdown, Dropped, ExtendedActorSystem, Props }
 import akka.annotation.InternalStableApi
 import akka.dispatch.Dispatchers
-import akka.event.{ Logging, LoggingAdapter }
+import akka.event.{ Logging, MarkerLoggingAdapter }
 import akka.remote.AddressUidExtension
 import akka.remote.RemoteActorRef
 import akka.remote.RemoteActorRefProvider
@@ -28,7 +28,6 @@ import akka.stream._
 import akka.stream.scaladsl.{ Flow, Keep, Sink }
 import akka.util.{ unused, OptionVal, WildcardIndex }
 import com.github.ghik.silencer.silent
-
 import scala.annotation.tailrec
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
@@ -308,7 +307,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
   @volatile private[this] var controlSubject: ControlMessageSubject = _
   @volatile private[this] var messageDispatcher: MessageDispatcher = _
 
-  override val log: LoggingAdapter = Logging(system, getClass)
+  override val log: MarkerLoggingAdapter = Logging.withMarker(system, getClass)
 
   /**
    * Compression tables must be created once, such that inbound lane restarts don't cause dropping of the tables.

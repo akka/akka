@@ -46,7 +46,9 @@ object JavaFlowSupport {
      * @see See also [[Source.asSubscriber]] if wanting to integrate with [[org.reactivestreams.Subscriber]] instead
      *      (which carries the same semantics, however existed before RS's inclusion in Java 9).
      */
-    final def asSubscriber[T]: Source[T, juc.Flow.Subscriber[T]] =
+    //#asSubscriber
+    final def asSubscriber[T]: Source[T, java.util.concurrent.Flow.Subscriber[T]] =
+    //#asSubscriber
       scaladsl.Source.asSubscriber[T].mapMaterializedValue(_.asJava)
   }
 

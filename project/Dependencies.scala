@@ -17,16 +17,17 @@ object Dependencies {
   val junitVersion = "4.12"
   val slf4jVersion = "1.7.29"
   // check agrona version when updating this
-  val aeronVersion = "1.22.1"
-  // needs to be inline with the aeron version
-  val agronaVersion = "1.0.8"
+  val aeronVersion = "1.24.0"
+  // needs to be inline with the aeron version, check
+  // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
+  val agronaVersion = "1.1.0"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.10.1"
   val protobufJavaVersion = "3.10.0"
   val logbackVersion = "1.2.3"
 
   val scala212Version = "2.12.10"
-  val scala213Version = "2.13.0"
+  val scala213Version = "2.13.1"
 
   val reactiveStreamsVersion = "1.0.3"
 
@@ -111,7 +112,7 @@ object Dependencies {
       val commonsCodec = "commons-codec" % "commons-codec" % "1.13" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
-      val mockito = "org.mockito" % "mockito-core" % "3.1.0" % "test" // MIT
+      val mockito = "org.mockito" % "mockito-core" % "3.2.0" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
       val scalacheck = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value % "test" } // New BSD

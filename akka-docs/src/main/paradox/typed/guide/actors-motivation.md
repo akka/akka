@@ -150,7 +150,7 @@ involved (where message losses are to be expected).**
    other in an efficient way without blocking. With this style of task-delegating concurrency
    (and even more so with networked/distributed computing) call stack-based error handling breaks down and new,
    explicit error signaling mechanisms need to be introduced. Failures become part of the domain model.**
- * **Concurrent systems with work delegation needs to handle service faults and have principled means to recover from them.
+ * **Concurrent systems with work delegation need to handle service faults and have principled means to recover from them.
    Clients of such services need to be aware that tasks/messages might get lost during restarts.
    Even if loss does not happen, a response might be delayed arbitrarily due to previously enqueued tasks
    (a long queue), delays caused by garbage collection, etc. In face of these, concurrent systems should handle response

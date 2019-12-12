@@ -50,6 +50,15 @@ class DeadLetterSupressionSpec extends AkkaSpec with ImplicitSender {
     allListener.expectMsg(SuppressedDeadLetter(SuppressedMsg, testActor, system.deadLetters))
     allListener.expectMsg(DeadLetter(NormalMsg, testActor, deadActor))
     allListener.expectNoMessage()
+
+    // unwrap for ActorSelection
+    system.actorSelection(deadActor.path) ! SuppressedMsg
+    system.actorSelection(deadActor.path) ! NormalMsg
+
+    // the recipient ref isn't the same as deadActor here so only checking the message
+    deadListener.expectMsgType[DeadLetter].message should ===(NormalMsg)
+    suppressedListener.expectMsgType[SuppressedDeadLetter].message should ===(SuppressedMsg)
+    deadListener.expectNoMessage()
   }
 
   s"must suppress message from default dead-letters logging (sent to dead: ${Logging.simpleName(system.deadLetters)})" in {
@@ -76,5 +85,13 @@ class DeadLetterSupressionSpec extends AkkaSpec with ImplicitSender {
     deadListener.expectNoMessage(Duration.Zero)
     suppressedListener.expectNoMessage(Duration.Zero)
     allListener.expectNoMessage(Duration.Zero)
+
+    // unwrap for ActorSelection
+    system.actorSelection(system.deadLetters.path) ! SuppressedMsg
+    system.actorSelection(system.deadLetters.path) ! NormalMsg
+
+    deadListener.expectMsg(DeadLetter(NormalMsg, testActor, system.deadLetters))
+    suppressedListener.expectMsg(SuppressedDeadLetter(SuppressedMsg, testActor, system.deadLetters))
+    deadListener.expectNoMessage()
   }
 }

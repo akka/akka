@@ -72,7 +72,7 @@ class ActorSystemSpec
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       akka.remote.artery.canonical.hostname = 127.0.0.1
-      
+
       serializers {
           test = "akka.cluster.typed.ActorSystemSpec$$TestSerializer"
         }
@@ -114,8 +114,7 @@ class ActorSystemSpec
         }
         inbox.receiveAll() should ===("hello" :: Nil)
         sys.whenTerminated.futureValue
-        CoordinatedShutdown(sys.toClassic).shutdownReason() should ===(
-          Some(CoordinatedShutdown.ActorSystemTerminateReason))
+        CoordinatedShutdown(sys).shutdownReason() should ===(Some(CoordinatedShutdown.ActorSystemTerminateReason))
       }
     }
 
@@ -150,8 +149,7 @@ class ActorSystemSpec
       // now we know that the guardian has started, and should receive PostStop
       sys.terminate()
       sys.whenTerminated.futureValue
-      CoordinatedShutdown(sys.toClassic).shutdownReason() should ===(
-        Some(CoordinatedShutdown.ActorSystemTerminateReason))
+      CoordinatedShutdown(sys).shutdownReason() should ===(Some(CoordinatedShutdown.ActorSystemTerminateReason))
       inbox.receiveAll() should ===("done" :: Nil)
     }
 

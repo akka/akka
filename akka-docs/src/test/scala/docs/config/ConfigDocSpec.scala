@@ -17,8 +17,7 @@ import com.typesafe.config.ConfigFactory
 class ConfigDocSpec extends WordSpec with Matchers {
   val rootBehavior = Behaviors.empty[String]
 
-  "programmatically configure ActorSystem" in {
-
+  def compileOnlyCustomConfig(): Unit = {
     //#custom-config
     val customConf = ConfigFactory.parseString("""
       akka.log-config-on-start = on
@@ -27,8 +26,6 @@ class ConfigDocSpec extends WordSpec with Matchers {
     // config and default overrides, and then resolves it.
     val system = ActorSystem(rootBehavior, "MySystem", ConfigFactory.load(customConf))
     //#custom-config
-
-    ActorTestKit.shutdown(system)
   }
 
   def compileOnlyPrintConfig(): Unit = {

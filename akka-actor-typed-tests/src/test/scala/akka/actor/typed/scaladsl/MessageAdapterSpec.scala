@@ -17,10 +17,11 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
+import org.slf4j.event.Level
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString("""
-      akka.log-dead-letters = off
+      akka.log-dead-letters = on
       ping-pong-dispatcher {
         executor = thread-pool-executor
         type = PinnedDispatcher
@@ -269,6 +270,31 @@ class MessageAdapterSpec
       // exception was thrown for 3
       probe.expectMessage("stopped")
     }
+
+  }
+
+  "log wrapped message of DeadLetter" in {
+    case class Ping(sender: ActorRef[Pong])
+    case class Pong(greeting: String)
+    case class PingReply(response: Pong)
+
+    val pingProbe = createTestProbe[Ping]()
+
+    val snitch = Behaviors.setup[PingReply] { context =>
+      val replyTo = context.messageAdapter[Pong](PingReply)
+      pingProbe.ref ! Ping(replyTo)
+      Behaviors.stopped
+    }
+    val ref = spawn(snitch)
+
+    createTestProbe().expectTerminated(ref)
+
+    LoggingTestKit.empty
+      .withLogLevel(Level.INFO)
+      .withMessageRegex("Pong.*wrapped in.*AdaptMessage.*dead letters encountered")
+      .expect {
+        pingProbe.receiveMessage().sender ! Pong("hi")
+      }
 
   }
 

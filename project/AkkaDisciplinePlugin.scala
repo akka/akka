@@ -27,8 +27,8 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     val silencerVersion = "1.4.4"
     Seq(
       libraryDependencies ++= Seq(
-          compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion cross CrossVersion.full),
-          "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided cross CrossVersion.full))
+          compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion cross CrossVersion.patch),
+          "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided cross CrossVersion.patch))
   }
 
   lazy val disciplineSettings =

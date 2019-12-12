@@ -6,7 +6,6 @@ package docs.akka.typed
 
 //#fiddle_code
 //#imports
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
@@ -16,6 +15,7 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 import akka.NotUsed
 import akka.Done
 import akka.actor.typed.{ DispatcherSelector, Terminated }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 
 import org.scalatest.WordSpecLike
 import akka.actor.testkit.typed.scaladsl.ActorTestKit

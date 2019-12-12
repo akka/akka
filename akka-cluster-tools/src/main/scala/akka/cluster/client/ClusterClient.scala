@@ -8,7 +8,6 @@ import java.net.URLEncoder
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
@@ -17,6 +16,7 @@ import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.Cancellable
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.DeadLetterSuppression
 import akka.actor.Deploy
 import akka.actor.ExtendedActorSystem
@@ -40,6 +40,7 @@ import com.typesafe.config.Config
 import akka.remote.DeadlineFailureDetector
 import akka.util.MessageBuffer
 import akka.util.ccompat._
+
 import scala.collection.immutable.{ HashMap, HashSet }
 
 @ccompatUsedUntil213
@@ -557,6 +558,7 @@ final class ClusterClient(settings: ClusterClientSettings) extends Actor with Ac
   since = "2.6.0")
 object ClusterClientReceptionist extends ExtensionId[ClusterClientReceptionist] with ExtensionIdProvider {
   override def get(system: ActorSystem): ClusterClientReceptionist = super.get(system)
+  override def get(system: ClassicActorSystemProvider): ClusterClientReceptionist = super.get(system)
 
   override def lookup() = ClusterClientReceptionist
 
