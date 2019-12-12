@@ -48,38 +48,41 @@ public class FromSinkAndSource {
     Sink<String, NotUsed> sink = pair.first();
     Source<String, NotUsed> source = pair.second();
 
-    Flow<ByteString, ByteString, NotUsed> framing = Framing.delimiter(ByteString.fromString("\n"), 1024);
+    Flow<ByteString, ByteString, NotUsed> framing =
+        Framing.delimiter(ByteString.fromString("\n"), 1024);
 
-    Sink<ByteString, NotUsed> sinkWithFraming = framing.map(bytes -> bytes.utf8String()).to(pair.first());
-    Source<ByteString, NotUsed> sourceWithFraming = source.map(text -> ByteString.fromString(text + "\n"));
+    Sink<ByteString, NotUsed> sinkWithFraming =
+        framing.map(bytes -> bytes.utf8String()).to(pair.first());
+    Source<ByteString, NotUsed> sourceWithFraming =
+        source.map(text -> ByteString.fromString(text + "\n"));
 
     Flow<ByteString, ByteString, NotUsed> serverFlow =
         Flow.fromSinkAndSource(sinkWithFraming, sourceWithFraming);
 
-    Tcp.get(system).bind("127.0.0.1", 9999).runForeach(incomingConnection ->
-            incomingConnection.handleWith(serverFlow, system),
-        system
-    );
+    Tcp.get(system)
+        .bind("127.0.0.1", 9999)
+        .runForeach(
+            incomingConnection -> incomingConnection.handleWith(serverFlow, system), system);
     // #chat
   }
 
-    <In, Out> void myApiThatTakesAFlow(Flow<In, Out, NotUsed> flow) {
-      throw new UnsupportedOperationException();
-    }
+  <In, Out> void myApiThatTakesAFlow(Flow<In, Out, NotUsed> flow) {
+    throw new UnsupportedOperationException();
+  }
 
-    void testing() {
-      ActorSystem system = null;
-      // #testing
-      TestSubscriber.Probe<String> inProbe = TestSubscriber.probe(system);
-      TestPublisher.Probe<String> outProbe = TestPublisher.probe(0, system);
-      Flow<String, String, NotUsed> testFlow =
-          Flow.fromSinkAndSource(Sink.fromSubscriber(inProbe), Source.fromPublisher(outProbe));
+  void testing() {
+    ActorSystem system = null;
+    // #testing
+    TestSubscriber.Probe<String> inProbe = TestSubscriber.probe(system);
+    TestPublisher.Probe<String> outProbe = TestPublisher.probe(0, system);
+    Flow<String, String, NotUsed> testFlow =
+        Flow.fromSinkAndSource(Sink.fromSubscriber(inProbe), Source.fromPublisher(outProbe));
 
-      myApiThatTakesAFlow(testFlow);
-      inProbe.expectNext("first");
-      outProbe.expectRequest();
-      outProbe.sendError(new RuntimeException("test error"));
-      // ...
-      // #testing
-    }
+    myApiThatTakesAFlow(testFlow);
+    inProbe.expectNext("first");
+    outProbe.expectRequest();
+    outProbe.sendError(new RuntimeException("test error"));
+    // ...
+    // #testing
+  }
 }
