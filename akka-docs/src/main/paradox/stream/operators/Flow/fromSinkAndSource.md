@@ -45,6 +45,8 @@ Java
 
 The same patterns can also be applied to [Akka HTTP WebSockets](https://doc.akka.io/docs/akka-http/current/server-side/websocket-support.html#server-api) which also has an API accepting a `Flow` of messages. 
 
+If we would replace the `fromSinkAndSource` here with `fromSinkAndSourceCoupled` it would allow the client to close the connection by closing its outgoing stream.
+
 `fromSinkAndSource` can also be useful when testing a component that takes a `Flow` allowing for complete separate control and assertion of incoming and outgoing elements using stream testkit test probes for sink and source:
 
 Scala
