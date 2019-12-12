@@ -6,7 +6,6 @@ package docs.akka.cluster.sharding.typed
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
@@ -114,9 +113,6 @@ object AccountExampleWithOptionState {
       override def applyEvent(event: Event): Account =
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
-
-    val TypeKey: EntityTypeKey[Command[_]] =
-      EntityTypeKey[Command[_]]("Account")
 
     def apply(persistenceId: PersistenceId): Behavior[Command[_]] = {
       EventSourcedBehavior.withEnforcedReplies[Command[_], Event, Option[Account]](
