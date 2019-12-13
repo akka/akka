@@ -3,9 +3,8 @@
  */
 
 package akka.actor
-import java.net.URI
-import java.net.URISyntaxException
-import java.net.MalformedURLException
+
+import java.net.{ MalformedURLException, URI, URISyntaxException }
 
 import scala.annotation.tailrec
 import scala.collection.immutable

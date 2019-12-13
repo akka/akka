@@ -4,12 +4,8 @@
 
 package akka.actor.dungeon
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.FiniteDuration
-
-import akka.actor.ActorCell
-import akka.actor.Cancellable
-import akka.actor.NotInfluenceReceiveTimeout
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import akka.actor.{ ActorCell, Cancellable, NotInfluenceReceiveTimeout }
 
 private[akka] object ReceiveTimeout {
   final val emptyReceiveTimeoutData: (Duration, Cancellable) = (Duration.Undefined, ActorCell.emptyCancellable)

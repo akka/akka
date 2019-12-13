@@ -13,12 +13,8 @@ import scala.collection.immutable
 import scala.util.control.NonFatal
 import akka.dispatch._
 import akka.dispatch.sysmsg._
-import akka.event.AddressTerminatedTopic
-import akka.event.EventStream
-import akka.event.Logging
-import akka.event.MarkerLoggingAdapter
-import akka.serialization.JavaSerializer
-import akka.serialization.Serialization
+import akka.event.{ AddressTerminatedTopic, EventStream, Logging, MarkerLoggingAdapter }
+import akka.serialization.{ JavaSerializer, Serialization }
 import akka.util.OptionVal
 
 object ActorRef {

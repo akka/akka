@@ -120,10 +120,11 @@ private[akka] trait Children { this: ActorCell =>
         swapChildrenRefs(c, c.shallDie(ref)) || shallDie(ref)
       }
 
-      if (actor match {
-            case r: RepointableRef => r.isStarted
-            case _                 => true
-          }) shallDie(actor)
+      val needToDie = actor match {
+        case r: RepointableRef => r.isStarted
+        case _                 => true
+      }
+      if (needToDie) shallDie(actor)
     }
     actor.asInstanceOf[InternalActorRef].stop()
   }

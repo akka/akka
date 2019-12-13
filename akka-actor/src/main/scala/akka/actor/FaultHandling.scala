@@ -13,9 +13,7 @@ import akka.util.JavaDurationConverters._
 import scala.collection.mutable.ArrayBuffer
 import scala.collection.immutable
 import scala.concurrent.duration.Duration
-import akka.event.Logging.LogEvent
-import akka.event.Logging.Error
-import akka.event.Logging.Warning
+import akka.event.Logging.{ Error, LogEvent, Warning }
 import scala.util.control.NonFatal
 import akka.util.ccompat._
 

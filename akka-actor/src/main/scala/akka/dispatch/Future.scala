@@ -13,8 +13,7 @@ import java.util.{ LinkedList => JLinkedList }
 import java.util.concurrent.{ Callable, Executor, ExecutorService }
 
 import scala.util.{ Failure, Success, Try }
-import java.util.concurrent.CompletionStage
-import java.util.concurrent.CompletableFuture
+import java.util.concurrent.{ CompletableFuture, CompletionStage }
 
 import akka.compat
 import akka.util.unused

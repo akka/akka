@@ -9,7 +9,6 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.annotation.tailrec
 
 import akka.util.JavaDurationConverters
-import com.github.ghik.silencer.silent
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace

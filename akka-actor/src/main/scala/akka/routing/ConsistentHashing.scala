@@ -10,17 +10,13 @@ import akka.dispatch.Dispatchers
 import com.typesafe.config.Config
 import akka.actor.SupervisorStrategy
 import akka.japi.Util.immutableSeq
-import akka.actor.Address
-import akka.actor.ExtendedActorSystem
-import akka.actor.ActorSystem
+import akka.actor.{ ActorPath, ActorSystem, Address, ExtendedActorSystem, WrappedMessage }
 import java.util.concurrent.atomic.AtomicReference
 
 import akka.serialization.SerializationExtension
 import scala.util.control.NonFatal
 
 import akka.event.Logging
-import akka.actor.ActorPath
-import akka.actor.WrappedMessage
 
 object ConsistentHashingRouter {
 

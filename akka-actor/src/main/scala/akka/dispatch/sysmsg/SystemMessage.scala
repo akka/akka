@@ -5,8 +5,7 @@
 package akka.dispatch.sysmsg
 
 import scala.annotation.tailrec
-import akka.actor.{ ActorInitializationException, ActorRef, InternalActorRef, PossiblyHarmful }
-import akka.actor.DeadLetterSuppression
+import akka.actor.{ ActorInitializationException, ActorRef, DeadLetterSuppression, InternalActorRef, PossiblyHarmful }
 import akka.annotation.InternalStableApi
 
 /**

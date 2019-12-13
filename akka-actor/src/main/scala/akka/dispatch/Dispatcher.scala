@@ -10,8 +10,7 @@ import akka.event.Logging
 import akka.dispatch.sysmsg.SystemMessage
 import java.util.concurrent.{ ExecutorService, RejectedExecutionException }
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.duration.FiniteDuration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater
 
 import com.github.ghik.silencer.silent

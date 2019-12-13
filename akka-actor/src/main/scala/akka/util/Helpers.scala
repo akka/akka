@@ -4,14 +4,13 @@
 
 package akka.util
 
-import java.util.Comparator
 import scala.annotation.tailrec
-import java.util.regex.Pattern
 import com.typesafe.config.Config
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration.Duration
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import java.lang.{ StringBuilder => JStringBuilder }
 import java.util.concurrent.TimeUnit
-import java.util.Locale
+import java.util.{ Comparator, Locale }
+import java.util.regex.Pattern
 import java.time.{ Instant, LocalDateTime, ZoneId }
 import java.time.format.DateTimeFormatter
 
@@ -95,7 +94,7 @@ object Helpers {
   final val base64chars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789+~"
 
   @tailrec
-  def base64(l: Long, sb: java.lang.StringBuilder = new java.lang.StringBuilder("$")): String = {
+  def base64(l: Long, sb: JStringBuilder = new JStringBuilder("$")): String = {
     sb.append(base64chars.charAt(l.toInt & 63))
     val next = l >>> 6
     if (next == 0) sb.toString

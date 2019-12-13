@@ -4,12 +4,10 @@
 
 package akka.actor
 
-import java.lang.reflect.{ Modifier, ParameterizedType, TypeVariable }
+import java.lang.reflect.{ Constructor, Modifier, ParameterizedType, TypeVariable }
 import akka.japi.Creator
 import akka.util.Reflect
-import scala.annotation.varargs
-import scala.annotation.tailrec
-import java.lang.reflect.Constructor
+import scala.annotation.{ tailrec, varargs }
 
 /**
  *

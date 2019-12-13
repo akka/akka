@@ -3,6 +3,7 @@
  */
 
 package akka.util
+
 import scala.util.control.NonFatal
 import java.lang.reflect.Constructor
 import scala.collection.immutable

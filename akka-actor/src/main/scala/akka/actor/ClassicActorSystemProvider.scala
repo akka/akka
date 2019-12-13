@@ -4,8 +4,7 @@
 
 package akka.actor
 
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 /**
  * Glue API introduced to allow minimal user effort integration between classic and typed for example for streams.

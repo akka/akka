@@ -10,8 +10,7 @@ import java.lang.reflect.InvocationTargetException
 import akka.annotation.DoNotInherit
 
 import scala.reflect.ClassTag
-import scala.util.Failure
-import scala.util.Try
+import scala.util.{ Failure, Try }
 
 /**
  * This is the default [[akka.actor.DynamicAccess]] implementation used by [[akka.actor.ExtendedActorSystem]]

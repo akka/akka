@@ -10,8 +10,7 @@ import java.util.concurrent.CompletionStage
 import scala.language.implicitConversions
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.Promise
+import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration._
 import scala.util.Success
 import java.util.regex.Pattern
@@ -19,10 +18,10 @@ import java.util.regex.Pattern
 import akka.pattern.ask
 import akka.routing.MurmurHash
 import akka.util.{ Helpers, JavaDurationConverters, Timeout }
+import akka.util.ccompat._
 import akka.dispatch.ExecutionContexts
 
 import scala.compat.java8.FutureConverters
-import akka.util.ccompat._
 import com.github.ghik.silencer.silent
 
 /**

@@ -6,11 +6,8 @@ package akka.event
 
 import language.existentials
 import akka.actor.Actor.Receive
-import akka.actor.ActorContext
-import akka.actor.ActorCell
-import akka.actor.DiagnosticActorLogging
+import akka.actor.{ AbstractActor, ActorCell, ActorContext, DiagnosticActorLogging }
 import akka.event.Logging.{ LogEvent, LogLevel }
-import akka.actor.AbstractActor
 import scala.runtime.BoxedUnit
 
 object LoggingReceive {

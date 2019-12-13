@@ -5,23 +5,19 @@
 package akka.actor
 
 import akka.dispatch.sysmsg._
-import akka.dispatch.{ Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.{ Dispatchers, Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.routing._
 import akka.event._
-import akka.util.Helpers
+import akka.util.{ Helpers, OptionVal }
 import akka.util.Collections.EmptyImmutableSeq
-import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
-
+import scala.util.control.NonFatal
 import akka.ConfigurationException
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
-import akka.dispatch.Dispatchers
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.serialization.Serialization
-import akka.util.OptionVal
 
 /**
  * Interface for all ActorRef providers to implement.
