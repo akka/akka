@@ -8,9 +8,9 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ChildFailed, DeathPactException, Terminated }
-import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.{ PersistenceId, RecoveryCompleted }
 import akka.serialization.jackson.CborSerializable
 import org.scalatest.WordSpecLike
 
@@ -52,6 +52,38 @@ class EventSourcedBehaviorWatchSpec
             Effect.none
           }, eventHandler = (state, evt) => state + evt)
         })
+
+      LoggingTestKit.error[TestException].expect {
+        LoggingTestKit.error[DeathPactException].expect {
+          parent ! Fail
+        }
+      }
+      createTestProbe().expectTerminated(parent)
+    }
+
+    "behave as expected if a user's signal handler is side effecting" in {
+      val signalHandler: PartialFunction[(String, Signal), Unit] = {
+        case (_, RecoveryCompleted) =>
+          java.time.Instant.now.getNano
+          Behaviors.same
+      }
+
+      val parent =
+        spawn(Behaviors.setup[Command] { context =>
+          val child = context.spawnAnonymous(Behaviors.receive[Command] { (_, _) =>
+            throw cause
+          })
+
+          context.watch(child)
+
+          EventSourcedBehavior[Command, String, String](nextPid, emptyState = "", commandHandler = (_, cmd) => {
+            child ! cmd
+            Effect.none
+          }, eventHandler = (state, evt) => state + evt).receiveSignal(signalHandler)
+        })
+
+      signalHandler.isDefinedAt(("", RecoveryCompleted)) shouldEqual true
+      signalHandler.isDefinedAt(("", Terminated(parent))) shouldEqual false
 
       LoggingTestKit.error[TestException].expect {
         LoggingTestKit.error[DeathPactException].expect {
