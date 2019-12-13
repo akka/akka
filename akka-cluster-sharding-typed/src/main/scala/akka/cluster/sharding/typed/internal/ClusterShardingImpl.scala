@@ -132,7 +132,7 @@ import akka.util.Timeout
       entity.stopMessage,
       settingsWithDataCenter,
       extractor,
-      entity.allocationStrategyFactory)
+      entity.allocationStrategy)
   }
 
   // javadsl impl
@@ -147,7 +147,7 @@ import akka.util.Timeout
         entityProps = entity.entityProps,
         settings = entity.settings.asScala,
         messageExtractor = entity.messageExtractor.asScala,
-        allocationStrategyFactory = entity.allocationStrategyFactory.asScala,
+        allocationStrategy = entity.allocationStrategy.asScala,
         role = entity.role.asScala,
         dataCenter = entity.dataCenter.asScala))
   }
@@ -159,7 +159,7 @@ import akka.util.Timeout
       stopMessage: Option[M],
       settings: ClusterShardingSettings,
       extractor: ShardingMessageExtractor[E, M],
-      allocationStrategy: Option[() => ShardAllocationStrategy]): ActorRef[E] = {
+      allocationStrategy: Option[ShardAllocationStrategy]): ActorRef[E] = {
 
     val extractorAdapter = new ExtractorAdapter(extractor)
     val extractEntityId: ShardRegion.ExtractEntityId = {
@@ -209,7 +209,7 @@ import akka.util.Timeout
           ClusterShardingSettings.toClassicSettings(settings),
           extractEntityId,
           extractShardId,
-          allocationStrategy.getOrElse(() => defaultShardAllocationStrategy(settings)),
+          allocationStrategy.getOrElse(defaultShardAllocationStrategy(settings)),
           stopMessage.getOrElse(PoisonPill))
       } else {
         log.info(

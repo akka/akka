@@ -106,7 +106,9 @@ object ShardCoordinator {
 
   /**
    * Shard allocation strategy where start is called by the shard coordinator before any calls to
-   * rebalance or allocate shard
+   * rebalance or allocate shard. This can be used if there is any expensive initialization to be done
+   * that you do not want to to in the constructor as it will happen on every node rather than just
+   * the node that hosts the ShardCoordinator
    */
   trait StartableAllocationStrategy extends ShardAllocationStrategy {
     def start(): Unit
