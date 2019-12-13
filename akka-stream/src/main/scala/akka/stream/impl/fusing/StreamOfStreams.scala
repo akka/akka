@@ -148,10 +148,14 @@ import scala.util.control.NonFatal
       var subSource : SubSourceOutlet[In] = null
       var subSink : SubSinkInlet[Out] = null
 
+      setHandlers(in, out, this)
+
       override def postStop(): Unit = {
         matPromise.tryFailure(new AbruptStageTerminationException(this))
-        subSource.complete()
-        subSink.cancel()
+        if(null != subSource && !subSource.isClosed)
+          subSource.complete()
+        if(null != subSink && !subSink.isClosed)
+          subSink.cancel()
         super.postStop()
       }
       /**
@@ -195,14 +199,22 @@ import scala.util.control.NonFatal
        * is now allowed to be called on this port.
        */
       override def onPull(): Unit = {
-        if(null != subSource){
-          //delegate to subSource
+        if(null != subSink){
+          //delegate to subSink
           subSink.pull()
         }
         else if(accumulated.size < n) {
           pull(in)
         }
         else if(accumulated.size == n) { //corner case for n = 0, can be handled in FlowOps
+          materializeFlow()
+        }
+      }
+
+      override def onDownstreamFinish(cause: Throwable): Unit = {
+        if(null != subSink){
+          subSink.cancel(cause)
+        } else {
           materializeFlow()
         }
       }
@@ -224,7 +236,7 @@ import scala.util.control.NonFatal
              * is now allowed to be called on this port.
              */
             override def onPull(): Unit = {
-              if(isClosed(in) && !hasBeenPulled(in)) {
+              if(!isClosed(in) && !hasBeenPulled(in)) {
                 pull(in)
               }
             }
@@ -249,12 +261,12 @@ import scala.util.control.NonFatal
             }
 
             override def onUpstreamFinish(): Unit = {
-              complete(out)
+              completeStage()
               super.onUpstreamFinish()
             }
 
             override def onUpstreamFailure(ex: Throwable): Unit = {
-              fail(out, ex)
+              failStage(ex)
               super.onUpstreamFailure(ex)
             }
           }
@@ -266,7 +278,11 @@ import scala.util.control.NonFatal
         matPromise.complete(m)
         m.get
         //this materialization comes in response to downstream demand, so we need to signal this to the materialized flow
-        subSink.pull()
+        if(!isClosed(in)) {
+          subSink.pull()
+        } else {
+          subSource.complete()
+        }
       }
     }
     (logic, matPromise.future)
