@@ -99,9 +99,9 @@ private[akka] final class ReplayingEvents[C, E, S](
     case PoisonPill =>
       state = state.copy(receivedPoisonPill = true)
       this
-    case signal if setup.isSignalDefined(setup.emptyState, signal) =>
-      setup.onSignal(state.state, signal, catchAndLog = true)
-      this
+    case signal =>
+      if (setup.onSignal(state.state, signal, catchAndLog = true)) this
+      else Behaviors.unhandled
   }
 
   private def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {

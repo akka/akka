@@ -9,9 +9,19 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed._
-import akka.actor.typed.scaladsl.Behaviors
-import akka.persistence.typed.{ PersistenceId, RecoveryCompleted }
+import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
+import akka.persistence.Recovery
+import akka.persistence.typed.internal.{
+  BehaviorSetup,
+  EventSourcedSettings,
+  InternalProtocol,
+  NoOpSnapshotAdapter,
+  StashState
+}
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WriterIdentity
+import akka.persistence.typed.{ NoOpEventAdapter, PersistenceId, RecoveryCompleted }
 import akka.serialization.jackson.CborSerializable
+import akka.util.ConstantFun
 import org.scalatest.WordSpecLike
 
 object EventSourcedBehaviorWatchSpec {
@@ -34,6 +44,28 @@ class EventSourcedBehaviorWatchSpec
   private val pidCounter = new AtomicInteger(0)
 
   private def nextPid: PersistenceId = PersistenceId.ofUniqueId(s"${pidCounter.incrementAndGet()}")
+
+  private def setup(
+      pf: PartialFunction[(String, Signal), Unit],
+      settings: EventSourcedSettings,
+      context: ActorContext[_]): BehaviorSetup[Command, String, String] =
+    new BehaviorSetup[Command, String, String](
+      context.asInstanceOf[ActorContext[InternalProtocol]],
+      nextPid,
+      emptyState = "",
+      commandHandler = (_, _) => Effect.none,
+      eventHandler = (state, evt) => state + evt,
+      WriterIdentity.newIdentity(),
+      pf,
+      _ => Set.empty[String],
+      NoOpEventAdapter.instance[String],
+      NoOpSnapshotAdapter.instance[String],
+      snapshotWhen = ConstantFun.scalaAnyThreeToFalse,
+      Recovery(),
+      RetentionCriteria.disabled,
+      holdingRecoveryPermit = false,
+      settings = settings,
+      stashState = new StashState(context.asInstanceOf[ActorContext[InternalProtocol]], settings))
 
   "A typed persistent parent actor watching a child" must {
 
@@ -68,6 +100,15 @@ class EventSourcedBehaviorWatchSpec
           Behaviors.same
       }
 
+      Behaviors.setup[Command] { context =>
+        val settings = EventSourcedSettings(context.system, "", "")
+
+        setup(signalHandler, settings, context).onSignal("", RecoveryCompleted, false) shouldEqual true
+        setup(PartialFunction.empty, settings, context).onSignal("", RecoveryCompleted, false) shouldEqual false
+
+        Behaviors.empty
+      }
+
       val parent =
         spawn(Behaviors.setup[Command] { context =>
           val child = context.spawnAnonymous(Behaviors.receive[Command] { (_, _) =>
@@ -81,9 +122,6 @@ class EventSourcedBehaviorWatchSpec
             Effect.none
           }, eventHandler = (state, evt) => state + evt).receiveSignal(signalHandler)
         })
-
-      signalHandler.isDefinedAt(("", RecoveryCompleted)) shouldEqual true
-      signalHandler.isDefinedAt(("", Terminated(parent))) shouldEqual false
 
       LoggingTestKit.error[TestException].expect {
         LoggingTestKit.error[DeathPactException].expect {

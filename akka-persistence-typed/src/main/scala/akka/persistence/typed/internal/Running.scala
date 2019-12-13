@@ -110,9 +110,9 @@ private[akka] object Running {
       case PoisonPill =>
         if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
         else new HandlingCommands(state.copy(receivedPoisonPill = true))
-      case signal if setup.isSignalDefined(state.state, signal) =>
-        setup.onSignal(state.state, signal, catchAndLog = false)
-        this
+      case signal =>
+        if (setup.onSignal(state.state, signal, catchAndLog = false)) this
+        else Behaviors.unhandled
     }
 
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
@@ -321,9 +321,9 @@ private[akka] object Running {
         // wait for journal responses before stopping
         state = state.copy(receivedPoisonPill = true)
         this
-      case signal if setup.isSignalDefined(setup.emptyState, signal) =>
-        setup.onSignal(visibleState.state, signal, catchAndLog = false)
-        this
+      case signal =>
+        if (setup.onSignal(visibleState.state, signal, catchAndLog = false)) this
+        else Behaviors.unhandled
     }
 
     override def currentSequenceNumber: Long = visibleState.seqNr
@@ -384,9 +384,8 @@ private[akka] object Running {
       signal match {
         case Some(signal) =>
           setup.log.debug("Received snapshot response [{}].", response)
-          if (setup.isSignalDefined(setup.emptyState, signal)) {
-            setup.log.debug("Emitting signal [{}].", signal)
-            setup.onSignal(state.state, signal, catchAndLog = false)
+          if (setup.onSignal(state.state, signal, catchAndLog = false)) {
+            setup.log.debug("Emitted signal [{}].", signal)
           }
         case None =>
           setup.log.debug("Received snapshot response [{}], no signal emitted.", response)
@@ -414,9 +413,11 @@ private[akka] object Running {
       case PoisonPill =>
         // wait for snapshot response before stopping
         new StoringSnapshot(state.copy(receivedPoisonPill = true), sideEffects, snapshotReason)
-      case signal if setup.isSignalDefined(setup.emptyState, signal) =>
-        setup.onSignal(state.state, signal, catchAndLog = false)
-        Behaviors.same
+      case signal =>
+        if (setup.onSignal(state.state, signal, catchAndLog = false))
+          Behaviors.same
+        else
+          Behaviors.unhandled
     }
 
     override def currentSequenceNumber: Long = state.seqNr
@@ -487,8 +488,7 @@ private[akka] object Running {
     }
 
     signal match {
-      case Some(sig) if setup.isSignalDefined(setup.emptyState, sig) =>
-        setup.onSignal(state, sig, catchAndLog = false)
+      case Some(sig) if setup.onSignal(state, sig, catchAndLog = false) =>
         Behaviors.same
       case _ =>
         Behaviors.unhandled // unexpected journal response
@@ -514,8 +514,7 @@ private[akka] object Running {
     }
 
     signal match {
-      case Some(sig) if setup.isSignalDefined(setup.emptyState, sig) =>
-        setup.onSignal(state, sig, catchAndLog = false)
+      case Some(sig) if setup.onSignal(state, sig, catchAndLog = false) =>
         Behaviors.same
       case _ =>
         Behaviors.unhandled // unexpected snapshot response
