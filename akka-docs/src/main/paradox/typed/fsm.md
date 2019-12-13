@@ -47,6 +47,7 @@ Java
 The method `idle` above makes use of `Behaviors.unhandled` which advises the system to reuse the previous behavior, 
 including the hint that the message has not been handled.
 There are two related behaviors:
+
 - return `Behaviors.empty` as next behavior in case you reached a state where you don't expect messages any more. 
   For instance if an actor only waits until all spawned child actors stopped. 
   Unhandled messages are still logged with this behavior.
