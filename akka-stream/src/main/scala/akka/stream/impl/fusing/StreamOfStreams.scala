@@ -17,7 +17,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.impl.TraversalBuilder
 import akka.stream.impl.fusing.GraphStages.SingleSource
-import akka.stream.impl.{ Buffer => BufferImpl }
+import akka.stream.impl.{Buffer => BufferImpl}
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.OptionVal
@@ -25,7 +25,9 @@ import akka.util.ccompat.JavaConverters._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.{Future, Promise}
 import scala.concurrent.duration.FiniteDuration
+import scala.util.Try
 import scala.util.control.NonFatal
 
 /**
@@ -131,6 +133,151 @@ import scala.util.control.NonFatal
   }
 
   override def toString: String = s"FlattenMerge($breadth)"
+}
+
+
+@InternalApi private[akka] final class PrefixAndDownstream[In, Out, M](n : Int,
+                                                                       f : immutable.Seq[In] => Flow[In, Out, M])
+  extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]]{
+  import shape.{in, out}
+
+  override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
+    val matPromise = Promise[M]
+    val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
+      var accumulated = List.empty[In]
+      var subSource : SubSourceOutlet[In] = null
+      var subSink : SubSinkInlet[Out] = null
+
+      override def postStop(): Unit = {
+        matPromise.tryFailure(new AbruptStageTerminationException(this))
+        subSource.complete()
+        subSink.cancel()
+        super.postStop()
+      }
+      /**
+       * Called when the input port has a new element available. The actual element can be retrieved via the
+       * [[GraphStageLogic.grab]] method.
+       */
+      override def onPush(): Unit = {
+        if(null != subSource) {
+          subSource.push(grab(in))
+        } else {
+          accumulated ::= grab(in)
+          if(accumulated.size == n) {
+            materializeFlow()
+          } else {
+            //gi'me some more!
+            pull(in)
+          }
+        }
+      }
+
+      override def onUpstreamFinish(): Unit = {
+        if(null != subSource) {
+          subSource.complete()
+        } else {
+          materializeFlow()
+        }
+      }
+
+      override def onUpstreamFailure(ex: Throwable): Unit = {
+        if(null != subSource) {
+          subSource.fail(ex)
+        } else {
+          //flow won't be materialized, so we have to complete the future with a failure indicating this
+          matPromise.failure(new NeverMaterializedException(ex))
+          super.onUpstreamFailure(ex)
+        }
+      }
+
+      /**
+       * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push]]
+       * is now allowed to be called on this port.
+       */
+      override def onPull(): Unit = {
+        if(null != subSource){
+          //delegate to subSource
+          subSink.pull()
+        }
+        else if(accumulated.size < n) {
+          pull(in)
+        }
+        else if(accumulated.size == n) { //corner case for n = 0, can be handled in FlowOps
+          materializeFlow()
+        }
+      }
+
+      def materializeFlow(): Unit = {
+        val prefix = accumulated.reverse
+        accumulated = Nil
+        val flow = try f(prefix) catch {
+          case NonFatal(ex) =>
+            val neverMaterializedEx = new NeverMaterializedException(ex)
+            matPromise.failure(neverMaterializedEx)
+            throw neverMaterializedEx
+        }
+        subSource = new SubSourceOutlet[In]("subSource")
+        subSource.setHandler{
+          new OutHandler {
+            /**
+             * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push]]
+             * is now allowed to be called on this port.
+             */
+            override def onPull(): Unit = {
+              if(isClosed(in) && !hasBeenPulled(in)) {
+                pull(in)
+              }
+            }
+
+            override def onDownstreamFinish(cause: Throwable): Unit = {
+              if(!isClosed(in)) {
+                cancel(in, cause)
+              }
+              super.onDownstreamFinish(cause)
+            }
+          }
+        }
+        subSink = new SubSinkInlet[Out]("subSink")
+        subSink.setHandler{
+          new InHandler {
+            /**
+             * Called when the input port has a new element available. The actual element can be retrieved via the
+             * [[GraphStageLogic.grab]] method.
+             */
+            override def onPush(): Unit = {
+              push(out, subSink.grab())
+            }
+
+            override def onUpstreamFinish(): Unit = {
+              complete(out)
+              super.onUpstreamFinish()
+            }
+
+            override def onUpstreamFailure(ex: Throwable): Unit = {
+              fail(out, ex)
+              super.onUpstreamFailure(ex)
+            }
+          }
+        }
+        val runnableGraph = Source.fromGraph(subSource.source)
+          .viaMat(flow)(Keep.right)
+          .to(subSink.sink)
+        val m = Try(interpreter.subFusingMaterializer.materialize(runnableGraph))
+        matPromise.complete(m)
+        m.get
+        //this materialization comes in response to downstream demand, so we need to signal this to the materialized flow
+        subSink.pull()
+      }
+    }
+    (logic, matPromise.future)
+  }
+
+  /**
+   * The shape of a graph is all that is externally visible: its inlets and outlets.
+   */
+  override val shape: FlowShape[In, Out] = {
+    FlowShape.of(Inlet[In]("in"), Outlet[Out]("out"))
+  }
 }
 
 /**

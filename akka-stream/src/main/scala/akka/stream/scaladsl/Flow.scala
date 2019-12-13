@@ -3123,6 +3123,17 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) => Mat3): ClosedMat[Mat3]
 
+  def prefixAndDownstreamMat[Out2, Mat2, Mat3](n : Int)(f : immutable.Seq[Out] => Flow[Out, Out2, Mat2])(matF : (Mat, Future[Mat2]) => Mat3): ReprMat[Out2, Mat3] = {
+    require(n >= 0, s"prefixAndDownstreamMat: n must be non-negative.")
+    if(0 == n) {
+      //better to handle this here than complicate the stage.
+      //todo: proper exception handling
+      viaMat(f(Nil).mapMaterializedValue(Future.successful))(matF)
+    } else {
+      viaMat(new PrefixAndDownstream(n, f))(matF)
+    }
+  }
+
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
    *
