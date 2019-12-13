@@ -24,7 +24,7 @@ class OutboundCompressionSpec extends AkkaSpec {
       table.compress(alice) should ===(1) // compressed
       table.compress(bob) should ===(-1) // not compressed
 
-      val table2 = table.copy(2, dictionary = table.dictionary.updated(bob, 2))
+      val table2 = CompressionTable(table.originUid, table.version, table.dictionary.updated(bob, 2))
       table2.compress(alice) should ===(1) // compressed
       table2.compress(bob) should ===(2) // compressed
     }

@@ -43,7 +43,7 @@ Java
 Then you can `spawn` the `EventSourcedBehavior` and verify the outcome of sending commands to the actor using
 the facilities of the @ref:[ActorTestKit](testing-async.md).
 
-A full test for the `AccountEntity`, which is shown in the @ref:[Style Guide](style-guide.md), may look like this:
+A full test for the `AccountEntity`, which is shown in the @ref:[Persistence Style Guide](persistence-style.md), may look like this:
 
 Scala
 :  @@snip [AccountExampleDocSpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleDocSpec.scala) { #test }

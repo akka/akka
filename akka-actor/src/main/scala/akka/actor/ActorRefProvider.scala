@@ -153,6 +153,13 @@ import akka.util.OptionVal
 
   /** INTERNAL API */
   @InternalApi private[akka] def serializationInformation: Serialization.Information
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def addressString: String
+
 }
 
 /**
@@ -179,7 +186,7 @@ trait ActorRefFactory {
   implicit def dispatcher: ExecutionContextExecutor
 
   /**
-   * Father of all children created by this interface.
+   * Parent of all children created by this interface.
    *
    * INTERNAL API
    */
@@ -727,6 +734,19 @@ private[akka] class LocalActorRefProvider private[akka] (
           serializationInformationCache = OptionVal.Some(info)
           info
         }
+    }
+  }
+
+  // lazily initialized with fallback since it can depend on transport which is not initialized up front
+  // worth caching since if it is used once in a system it will very likely be used many times
+  @volatile private var _addressString: OptionVal[String] = OptionVal.None
+  override private[akka] def addressString: String = {
+    _addressString match {
+      case OptionVal.Some(addr) => addr
+      case OptionVal.None =>
+        val addr = getDefaultAddress.toString
+        _addressString = OptionVal.Some(addr)
+        addr
     }
   }
 }

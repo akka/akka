@@ -6,6 +6,8 @@ package akka.actor.typed.scaladsl.adapter
 
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
+import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.scaladsl.Behaviors
 
 /**
  * Wrap [[akka.actor.typed.Behavior]] in a classic [[akka.actor.Props]], i.e. when
@@ -18,5 +20,8 @@ import akka.actor.typed.Props
  */
 object PropsAdapter {
   def apply[T](behavior: => Behavior[T], deploy: Props = Props.empty): akka.actor.Props =
-    akka.actor.typed.internal.adapter.PropsAdapter(() => behavior, deploy)
+    akka.actor.typed.internal.adapter.PropsAdapter(
+      () => Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+      deploy,
+      rethrowTypedFailure = false)
 }

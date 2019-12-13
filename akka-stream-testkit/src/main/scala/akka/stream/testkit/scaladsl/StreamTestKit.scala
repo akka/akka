@@ -147,7 +147,7 @@ object StreamTestKit {
           case ConnectionSnapshot.ShouldPull =>
             builder.append("[label=shouldPull, color=blue];")
           case ConnectionSnapshot.ShouldPush =>
-            builder.append(s"[label=shouldPush, color=red];")
+            builder.append(s"[label=shouldPush, color=red, dir=back];")
           case ConnectionSnapshot.Closed =>
             builder.append("[style=dotted, label=closed, dir=both];")
           case _ =>

@@ -9,8 +9,6 @@ import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.scaladsl._
 
-import language.higherKinds
-
 /**
  * INTERNAL API
  */

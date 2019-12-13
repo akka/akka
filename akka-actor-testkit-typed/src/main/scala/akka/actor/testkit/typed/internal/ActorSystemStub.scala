@@ -21,11 +21,10 @@ import akka.annotation.InternalApi
 import akka.{ actor => classic }
 import akka.Done
 import com.typesafe.config.ConfigFactory
+
 import scala.compat.java8.FutureConverters
 import scala.concurrent._
-
-import akka.actor.ActorRefProvider
-import akka.actor.ReflectiveDynamicAccess
+import akka.actor.{ ActorPath, ActorRefProvider, Address, ReflectiveDynamicAccess }
 import akka.actor.typed.internal.InternalRecipientRef
 import com.github.ghik.silencer.silent
 import org.slf4j.Logger
@@ -41,7 +40,9 @@ import org.slf4j.LoggerFactory
     with ActorRefImpl[Nothing]
     with InternalRecipientRef[Nothing] {
 
-  override val path: classic.ActorPath = classic.RootActorPath(classic.Address("akka", name)) / "user"
+  private val rootPath: ActorPath = classic.RootActorPath(classic.Address("akka", name))
+
+  override val path: classic.ActorPath = rootPath / "user"
 
   override val settings: Settings = {
     val classLoader = getClass.getClassLoader
@@ -113,4 +114,6 @@ import org.slf4j.LoggerFactory
     throw new UnsupportedOperationException("ActorSystemStub cannot register extensions")
 
   override def log: Logger = LoggerFactory.getLogger(getClass)
+
+  def address: Address = rootPath.address
 }

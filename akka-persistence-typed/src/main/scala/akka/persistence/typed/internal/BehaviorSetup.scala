@@ -155,9 +155,8 @@ private[akka] object PersistenceMdc {
   // MDC is cleared (if used) from aroundReceive in ActorAdapter after processing each message,
   // but important to call `context.log` to mark MDC as used
   def setMdc(persistenceId: PersistenceId, phase: String): Unit = {
-    val mdcAdpater = MDC.getMDCAdapter
-    mdcAdpater.put(PersistenceIdKey, persistenceId.id)
-    mdcAdpater.put(PersistencePhaseKey, phase)
+    MDC.put(PersistenceIdKey, persistenceId.id)
+    MDC.put(PersistencePhaseKey, phase)
   }
 
 }

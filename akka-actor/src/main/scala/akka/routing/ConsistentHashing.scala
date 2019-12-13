@@ -5,6 +5,7 @@
 package akka.routing
 
 import scala.collection.immutable
+
 import akka.dispatch.Dispatchers
 import com.typesafe.config.Config
 import akka.actor.SupervisorStrategy
@@ -13,10 +14,13 @@ import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.ActorSystem
 import java.util.concurrent.atomic.AtomicReference
+
 import akka.serialization.SerializationExtension
 import scala.util.control.NonFatal
+
 import akka.event.Logging
 import akka.actor.ActorPath
+import akka.actor.WrappedMessage
 
 object ConsistentHashingRouter {
 
@@ -51,7 +55,8 @@ object ConsistentHashingRouter {
   @SerialVersionUID(1L)
   final case class ConsistentHashableEnvelope(message: Any, hashKey: Any)
       extends ConsistentHashable
-      with RouterEnvelope {
+      with RouterEnvelope
+      with WrappedMessage {
     override def consistentHashKey: Any = hashKey
   }
 

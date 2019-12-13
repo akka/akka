@@ -190,23 +190,32 @@ object DistributedPubSubMediator {
   @SerialVersionUID(1L) final case class SubscribeAck(subscribe: Subscribe) extends DeadLetterSuppression
   @SerialVersionUID(1L) final case class UnsubscribeAck(unsubscribe: Unsubscribe)
   @SerialVersionUID(1L) final case class Publish(topic: String, msg: Any, sendOneMessageToEachGroup: Boolean)
-      extends DistributedPubSubMessage {
+      extends DistributedPubSubMessage
+      with WrappedMessage {
     def this(topic: String, msg: Any) = this(topic, msg, sendOneMessageToEachGroup = false)
+
+    override def message: Any = msg
   }
   object Publish {
     def apply(topic: String, msg: Any) = new Publish(topic, msg)
   }
   @SerialVersionUID(1L) final case class Send(path: String, msg: Any, localAffinity: Boolean)
-      extends DistributedPubSubMessage {
+      extends DistributedPubSubMessage
+      with WrappedMessage {
 
     /**
      * Convenience constructor with `localAffinity` false
      */
     def this(path: String, msg: Any) = this(path, msg, localAffinity = false)
+
+    override def message: Any = msg
   }
   @SerialVersionUID(1L) final case class SendToAll(path: String, msg: Any, allButSelf: Boolean = false)
-      extends DistributedPubSubMessage {
+      extends DistributedPubSubMessage
+      with WrappedMessage {
     def this(path: String, msg: Any) = this(path, msg, allButSelf = false)
+
+    override def message: Any = msg
   }
 
   sealed abstract class GetTopics
@@ -241,8 +250,21 @@ object DistributedPubSubMediator {
     }
   }
 
-  // Only for testing purposes, to poll/await replication
-  case object Count
+  sealed abstract class Count
+
+  /**
+   * Scala API: Send this message to the mediator and it will reply with an `Int` of
+   * the number of subscribers.
+   * Only for testing purposes, to poll/await replication.
+   */
+  case object Count extends Count
+
+  /**
+   * Java API: Send this message to the mediator and it will reply with an `Integer` of
+   * the number of subscribers.
+   */
+  def getCountInstance: Count = Count
+
   final case class CountSubscribers(topic: String)
 
   /**
@@ -897,6 +919,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
 
 object DistributedPubSub extends ExtensionId[DistributedPubSub] with ExtensionIdProvider {
   override def get(system: ActorSystem): DistributedPubSub = super.get(system)
+
+  override def get(system: ClassicActorSystemProvider): DistributedPubSub = super.get(system)
 
   override def lookup = DistributedPubSub
 

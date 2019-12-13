@@ -40,6 +40,7 @@ object Udp extends ExtensionId[UdpExt] with ExtensionIdProvider {
    * Java API: retrieve the Udp extension for the given system.
    */
   override def get(system: ActorSystem): UdpExt = super.get(system)
+  override def get(system: ClassicActorSystemProvider): UdpExt = super.get(system)
 
   /**
    * The common interface for [[Command]] and [[Event]].

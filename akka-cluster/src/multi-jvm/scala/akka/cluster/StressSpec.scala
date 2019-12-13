@@ -129,8 +129,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
     akka.remote.artery.advanced.aeron {
       idle-cpu-level = 1
-      embedded-media-driver = off
-      aeron-dir = "target/aeron-StressSpec"
     }
 
     akka.actor.default-dispatcher.fork-join-executor {
@@ -678,11 +676,7 @@ class StressMultiJvmNode12 extends StressSpec
 class StressMultiJvmNode13 extends StressSpec
 
 abstract class StressSpec
-    extends MultiNodeSpec({
-      // Aeron media driver must be started before ActorSystem
-      SharedMediaDriverSupport.startMediaDriver(StressMultiJvmSpec)
-      StressMultiJvmSpec
-    })
+    extends MultiNodeSpec(StressMultiJvmSpec)
     with MultiNodeClusterSpec
     with BeforeAndAfterEach
     with ImplicitSender {

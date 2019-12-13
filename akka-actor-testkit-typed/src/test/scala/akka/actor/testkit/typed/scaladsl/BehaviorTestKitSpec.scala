@@ -5,19 +5,20 @@
 package akka.actor.testkit.typed.scaladsl
 
 import akka.Done
+import akka.actor.Address
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
-import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Father }
-import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Father._
+import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Parent }
+import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Parent._
 import org.scalatest.{ Matchers, WordSpec }
-import scala.reflect.ClassTag
 
+import scala.reflect.ClassTag
 import org.slf4j.event.Level
 
 object BehaviorTestKitSpec {
-  object Father {
+  object Parent {
 
     case class Reproduce(times: Int)
 
@@ -125,34 +126,36 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
   private val props = Props.empty.withDispatcherFromConfig("cat")
 
+  private val testKitAddress = Address("akka", "StubbedActorContext")
+
   "BehaviorTestKit" must {
 
     "allow assertions on effect type" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnAnonymous(1))
       val spawnAnonymous = testkit.expectEffectType[Effect.SpawnedAnonymous[_]]
       spawnAnonymous.props should ===(Props.empty)
     }
 
     "allow expecting NoEffects by type" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.expectEffectType[NoEffects]
     }
 
     "allow expecting NoEffects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.expectEffect(NoEffects)
     }
 
     "return if effects have taken place" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.hasEffects() should ===(false)
       testkit.run(SpawnAnonymous(1))
       testkit.hasEffects() should ===(true)
     }
 
     "allow assertions using partial functions - no match" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnChildren(1))
       val ae = intercept[AssertionError] {
         testkit.expectEffectPF {
@@ -163,7 +166,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
     }
 
     "allow assertions using partial functions - match" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnChildren(1))
       val childName = testkit.expectEffectPF {
         case Spawned(_, name, _) => name
@@ -172,7 +175,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
     }
 
     "allow assertions using partial functions - match on NoEffect" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       val hasEffects = testkit.expectEffectPF {
         case NoEffects => false
       }
@@ -181,31 +184,36 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
     "allow retrieving log messages issued by behavior" in {
       val what = "Hello!"
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(Log(what))
       testkit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, what))
     }
 
     "allow clearing log messages issued by behavior" in {
       val what = "Hi!"
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(Log(what))
       testkit.logEntries() shouldBe Seq(CapturedLogEvent(Level.INFO, what))
       testkit.clearLog()
       testkit.logEntries() shouldBe Seq.empty
     }
+
+    "return default address" in {
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
+      testkit.context.asScala.system.address shouldBe testKitAddress
+    }
   }
 
   "BehaviorTestKit's spawn" must {
     "create children when no props specified" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnChildren(2))
       val effects = testkit.retrieveAllEffects()
       effects should contain only (Spawned(Child.initial, "child0"), Spawned(Child.initial, "child1", Props.empty))
     }
 
     "create children when props specified and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnChildrenWithProps(2, props))
       val effects = testkit.retrieveAllEffects()
       effects should contain only (Spawned(Child.initial, "child0", props), Spawned(Child.initial, "child1", props))
@@ -214,14 +222,14 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
   "BehaviorTestkit's spawnAnonymous" must {
     "create children when no props specified and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnAnonymous(2))
       val effects = testkit.retrieveAllEffects()
       effects shouldBe Seq(SpawnedAnonymous(Child.initial, Props.empty), SpawnedAnonymous(Child.initial, Props.empty))
     }
 
     "create children when props specified and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
 
       testkit.run(SpawnAnonymousWithProps(2, props))
       val effects = testkit.retrieveAllEffects()
@@ -231,14 +239,14 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
   "BehaviorTestkit's spawnMessageAdapter" must {
     "create adapters without name and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnAdapter)
       val effects = testkit.retrieveAllEffects()
       effects shouldBe Seq(SpawnedAnonymousAdapter())
     }
 
     "create adapters with name and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnAdapterWithName("adapter"))
       val effects = testkit.retrieveAllEffects()
       effects shouldBe Seq(SpawnedAdapter("adapter"))
@@ -247,7 +255,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
   "BehaviorTestkit's messageAdapter" must {
     "create message adapters and record effects" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(CreateMessageAdapter(classOf[String], (_: String) => SpawnChildren(1)))
       testkit.expectEffectType[MessageAdapter[String, Command]]
     }
@@ -255,7 +263,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
   "BehaviorTestkit's run".can {
     "run behaviors with messages without canonicalization" in {
-      val testkit = BehaviorTestKit[Father.Command](Father.init)
+      val testkit = BehaviorTestKit[Parent.Command](Parent.init)
       testkit.run(SpawnAdapterWithName("adapter"))
       testkit.currentBehavior should not be Behaviors.same
       testkit.returnedBehavior shouldBe Behaviors.same
@@ -264,7 +272,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
   "BehaviorTestKit’s watch" must {
     "record effects for watching and unwatching" in {
-      val testkit = BehaviorTestKit(Father.init)
+      val testkit = BehaviorTestKit(Parent.init)
       testkit.run(SpawnAndWatchUnwatch("hello"))
       val child = testkit.childInbox("hello").ref
       testkit.retrieveAllEffects() should be(
@@ -272,7 +280,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
     }
 
     "record effects for watchWith" in {
-      val testkit = BehaviorTestKit(Father.init)
+      val testkit = BehaviorTestKit(Parent.init)
       val spawnAndWatchWithMsg = SpawnAndWatchWith("hello")
       testkit.run(spawnAndWatchWithMsg)
       val child = testkit.childInbox("hello").ref
@@ -283,7 +291,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
 
   "BehaviorTestKit’s child actor support" must {
     "allow retrieving and killing" in {
-      val testkit = BehaviorTestKit(Father.init)
+      val testkit = BehaviorTestKit(Parent.init)
       val i = TestInbox[ActorRef[String]]()
       val h = TestInbox[String]()
       testkit.run(SpawnSession(i.ref, h.ref))
@@ -306,7 +314,7 @@ class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
     }
 
     "stop and restart a named child" in {
-      val testkit = BehaviorTestKit(Father.init)
+      val testkit = BehaviorTestKit(Parent.init)
       testkit.run(SpawnChild)
       val child = testkit.expectEffectType[Spawned[String]]
 

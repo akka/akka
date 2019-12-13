@@ -126,6 +126,7 @@ transparency with explicit messaging between actors (same type of messaging for 
 They also have limited functionality compared to ordinary actors, and worse performance.
 
 To summarize the fallacy of transparent remoting:
+
 * Was used in CORBA, RMI, and DCOM, and all of them failed. Those problems were noted by [Waldo et al already in 1994](http://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.41.7628)
 * Partial failure is a major problem. Remote calls introduce uncertainty whether the function was invoked or not.
   Typically handled by using timeouts but the client can't always know the result of the call.
@@ -278,7 +279,7 @@ are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](
 
 ### Persistent mode for Cluster Sharding
 
-Cluster Sharding coordinator and [Remembering Entities](../cluster/cluster-sharding.md#remembering-entities) state could previously be stored in Distributed Data or via Akka Persistence.
+Cluster Sharding coordinator and @ref:[Remembering Entities](../cluster-sharding.md#remembering-entities) state could previously be stored in Distributed Data or via Akka Persistence.
 The Persistence mode has been deprecated in favour of using the Distributed Data mode for the coordinator state. A replacement for the state
 for Remembered Entities is tracked in [issue 27763](https://github.com/akka/akka/issues/27763).
 
@@ -386,7 +387,7 @@ now run on the internal dispatcher by default.
 The dispatcher can be configured through `akka.actor.internal-dispatcher`.
 
 For maximum performance, you might want to use a single shared dispatcher for all non-blocking,
-asynchronous actors, user actors and Akka internal actors. In that case, can configure the
+asynchronous actors, user actors and Akka internal actors. In that case, you can configure the
 `akka.actor.internal-dispatcher` with a string value of `akka.actor.default-dispatcher`.
 This reinstantiates the behavior from previous Akka versions but also removes the isolation between
 user and Akka internals. So, use at your own risk!
@@ -484,7 +485,7 @@ When the `ActorSystem` was shutting down and the `Scheduler` was closed all outs
 which was needed for some internals in Akka but a surprising behavior for end users. Therefore this behavior has
 changed in Akka 2.6.x and outstanding tasks are not run when the system is terminated.
 
-Instead, `system.registerOnTermination` or `CoordinatedShutdown` can be used for running such tasks when the shutting
+Instead, `system.registerOnTermination` or `CoordinatedShutdown` can be used for running such tasks when shutting
 down.
 
 ### IOSources & FileIO
@@ -608,10 +609,10 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
 
 * `Behaviors.intercept` now takes a factory function for the interceptor.
 * `ActorSystem.scheduler` previously gave access to the classic `akka.actor.Scheduler` but now returns a specific `akka.actor.typed.Scheduler`.
-  Additionally `schedule` method has been replaced by `scheduleWithFixedDelay` and `scheduleAtFixedRate`. Actors that needs to schedule tasks should
+  Additionally `schedule` method has been replaced by `scheduleWithFixedDelay` and `scheduleAtFixedRate`. Actors that need to schedule tasks should
   prefer `Behaviors.withTimers`.
 * `TimerScheduler.startPeriodicTimer`, replaced by `startTimerWithFixedDelay` or `startTimerAtFixedRate`
-* `Routers.pool` now take a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
+* `Routers.pool` now takes a factory function rather than a `Behavior` to protect against accidentally sharing same behavior instance and state across routees.
 * The `request` parameter in Distributed Data commands was removed, in favor of using `ask` with the new `ReplicatorMessageAdapter`.
 * Removed `Behavior.same`, `Behavior.unhandled`, `Behavior.stopped`, `Behavior.empty`, and `Behavior.ignore` since
   they were redundant with corresponding @scala[scaladsl.Behaviors.x]@java[javadsl.Behaviors.x].
@@ -644,7 +645,7 @@ made before finalizing the APIs. Compared to Akka 2.5.x the source incompatible 
   parameter list.
 * `EventSourcedBehavior.withEnforcedReplies` signature changed. Command is not required to extend `ExpectingReply`
   anymore. `ExpectingReply` has therefore been removed.
-* `ActorContext` is now a mandatory constructor parameter in `AbstractBehavior`. Create via `Behaviors.setup.
+* `ActorContext` is now a mandatory constructor parameter in `AbstractBehavior`. Create via `Behaviors.setup`.
   The reason is to encourage right usage and detect mistakes like not creating a new instance (via `setup`)
   when the behavior is supervised and restarted.    
 * `LoggingEventFilter` has been renamed to `LoggingTestKit` and its `intercept` method renamed to `assert`

@@ -75,8 +75,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
   .settings(rootSettings: _*)
-  .settings(
-    unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
+  .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
   .enablePlugins(CopyrightHeaderForBuild)
 
@@ -103,7 +102,8 @@ lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   .disablePlugins(ValidatePullRequest, MimaPlugin, CopyrightHeaderInPr)
 
 lazy val benchJmh = akkaModule("akka-bench-jmh")
-  .dependsOn(Seq(actor, actorTyped, stream, streamTests, persistence, distributedData, jackson, testkit).map(
+  .enablePlugins(Jdk9)
+  .dependsOn(Seq(actor, actorTyped, stream, streamTestkit, persistence, distributedData, jackson, testkit).map(
     _ % "compile->compile;compile->test"): _*)
   .settings(Dependencies.benchJmh)
   .settings(javacOptions += "-parameters") // for Jackson
@@ -171,6 +171,7 @@ lazy val distributedData = akkaModule("akka-distributed-data")
   .enablePlugins(MultiNodeScalaTest)
 
 lazy val docs = akkaModule("akka-docs")
+  .configs(akka.Jdk9.TestJdk9)
   .dependsOn(
     actor,
     cluster,
@@ -181,6 +182,7 @@ lazy val docs = akkaModule("akka-docs")
     persistenceQuery,
     distributedData,
     stream,
+    stream % "TestJdk9->CompileJdk9",
     actorTyped,
     clusterTools % "compile->compile;test->test",
     clusterSharding % "compile->compile;test->test",
@@ -202,7 +204,8 @@ lazy val docs = akkaModule("akka-docs")
     NoPublish,
     ParadoxBrowse,
     ScaladocNoVerificationOfDiagrams,
-    StreamOperatorsIndexGenerator)
+    StreamOperatorsIndexGenerator,
+    Jdk9)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
   .disablePlugins(ScalafixPlugin)
 
@@ -218,7 +221,6 @@ lazy val jackson = akkaModule("akka-serialization-jackson")
   .settings(OSGi.jackson)
   .settings(javacOptions += "-parameters")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
-  .disablePlugins(MimaPlugin)
 
 lazy val multiNodeTestkit = akkaModule("akka-multi-node-testkit")
   .dependsOn(remote, testkit)
@@ -288,7 +290,7 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     exportJars := true, // in dependent projects, use assembled and shaded jar
     makePomConfiguration := makePomConfiguration.value
         .withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
-    packageBin in Compile := (assembly in Compile).value, // package by running assembly
+    packageBin in Compile := ReproducibleBuildsPlugin.postProcessJar((assembly in Compile).value), // package by running assembly
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
     fullClasspath in assembly := (managedClasspath in Runtime).value, // otherwise, there's a cyclic dependency between packageBin and assembly
     test in assembly := {}, // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
@@ -346,9 +348,14 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
   .disablePlugins(MimaPlugin)
 
 lazy val streamTests = akkaModule("akka-stream-tests")
-  .dependsOn(streamTestkit % "test->test", remote % "test->test", stream)
+  .configs(akka.Jdk9.TestJdk9)
+  .dependsOn(
+    streamTestkit % "test->test",
+    remote % "test->test",
+    stream % "TestJdk9->CompileJdk9"
+  )
   .settings(Dependencies.streamTests)
-  .enablePlugins(NoPublish)
+  .enablePlugins(NoPublish, Jdk9)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
 
 lazy val streamTestsTck = akkaModule("akka-stream-tests-tck")
@@ -371,8 +378,8 @@ lazy val testkit = akkaModule("akka-testkit")
   .settings(initialCommands += "import akka.testkit._")
 
 lazy val actorTyped = akkaModule("akka-actor-typed")
-  .dependsOn(actor)
-  .settings(AutomaticModuleName.settings("akka.actor.typed")) // fine for now, eventually new module name to become typed.actor
+  .dependsOn(actor, slf4j)
+  .settings(AutomaticModuleName.settings("akka.actor.typed"))
   .settings(Dependencies.actorTyped)
   .settings(OSGi.actorTyped)
   .settings(initialCommands :=

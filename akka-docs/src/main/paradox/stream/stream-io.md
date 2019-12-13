@@ -131,11 +131,11 @@ An end-of-frame marker, e.g. end line `\n`, can do framing via `Framing.delimite
 Or a length-field can be used to build a framing protocol.
 There is a bidi implementing this protocol provided by `Framing.simpleFramingProtocol`,
 see
-@scala[[ScalaDoc](http://doc.akka.io/api/akka/current/akka/stream/scaladsl/Framing$.html)]
+@scala[[ScalaDoc](https://doc.akka.io/api/akka/current/akka/stream/scaladsl/Framing$.html)]
 @java[[Javadoc](http://doc.akka.io/japi/akka/current/akka/stream/javadsl/Framing.html#simpleFramingProtocol-int-)]
 for more information.
 
-@scala[[JsonFraming](http://doc.akka.io/api/akka/current/akka/stream/scaladsl/JsonFraming$.html)]@java[[JsonFraming](http://doc.akka.io/japi/akka/current/akka/stream/javadsl/JsonFraming.html#objectScanner-int-)] separates valid JSON objects from incoming `ByteString` objects:
+@scala[[JsonFraming](https://doc.akka.io/api/akka/current/akka/stream/scaladsl/JsonFraming$.html)]@java[[JsonFraming](https://doc.akka.io/japi/akka/current/akka/stream/javadsl/JsonFraming.html#objectScanner-int-)] separates valid JSON objects from incoming `ByteString` objects:
 
 Scala
 :  @@snip [JsonFramingSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/JsonFramingSpec.scala) { #using-json-framing }

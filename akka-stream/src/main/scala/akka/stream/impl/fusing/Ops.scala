@@ -15,7 +15,7 @@ import akka.stream.Attributes.{ InputBuffer, LogLevels }
 import akka.stream.OverflowStrategies._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.impl.{ ReactiveStreamsCompliance, Buffer => BufferImpl }
-import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.stream.scaladsl.{ DelayStrategy, Flow, Keep, Source }
 import akka.stream.stage._
 import akka.stream.{ Supervision, _ }
 
@@ -1407,14 +1407,12 @@ private[stream] object Collect {
     new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging {
       override protected def logSource: Class[_] = classOf[Watch[_]]
 
-      private lazy val self = getStageActor {
-        case (_, Terminated(`targetRef`)) =>
-          failStage(new WatchedActorTerminatedException("Watch", targetRef))
-        case (_, _) => // keep the compiler happy (stage actor receive is total)
-      }
-
       override def preStart(): Unit = {
-        // initialize self, and watch the target
+        val self = getStageActor {
+          case (_, Terminated(`targetRef`)) =>
+            failStage(new WatchedActorTerminatedException("Watch", targetRef))
+          case (_, _) => // keep the compiler happy (stage actor receive is total)
+        }
         self.watch(targetRef)
       }
 
@@ -1702,34 +1700,47 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class Delay[T](val d: FiniteDuration, val strategy: DelayOverflowStrategy)
-    extends SimpleLinearGraphStage[T] {
-  private[this] def timerName = "DelayedTimer"
+@InternalApi object Delay {
+  private val TimerName = "DelayedTimer"
+  private val DelayPrecisionMS = 10
+}
 
-  final val DelayPrecisionMS = 10
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class Delay[T](
+    delayStrategySupplier: () => DelayStrategy[T],
+    overflowStrategy: DelayOverflowStrategy)
+    extends SimpleLinearGraphStage[T] {
 
   override def initialAttributes: Attributes = DefaultAttributes.delay
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
-      val size = inheritedAttributes.mandatoryAttribute[InputBuffer].max
+      import Delay._
 
-      val delayMillis = d.toMillis
+      private[this] val size = inheritedAttributes.mandatoryAttribute[InputBuffer].max
 
-      var buffer: BufferImpl[(Long, T)] = _ // buffer has pairs timestamp with upstream element
+      private[this] val delayStrategy = delayStrategySupplier()
 
-      override def preStart(): Unit = buffer = BufferImpl(size, inheritedAttributes)
+      // buffer has pairs of timestamp of expected push and element
+      private[this] val buffer = BufferImpl[(Long, T)](size, inheritedAttributes)
 
-      val onPushWhenBufferFull: () => Unit = strategy match {
+      private[this] val onPushWhenBufferFull: () => Unit = overflowStrategy match {
         case EmitEarly =>
           () => {
-            if (!isTimerActive(timerName))
+            if (isAvailable(out)) {
+              if (isTimerActive(TimerName)) {
+                cancelTimer(TimerName)
+              }
+
               push(out, buffer.dequeue()._2)
-            else {
-              cancelTimer(timerName)
-              onTimer(timerName)
+              grabAndPull()
+              completeIfReady()
+            } else {
+              throw new IllegalStateException(
+                "Was configured to emitEarly and got element when out is not ready and buffer is full, should not be possible.")
             }
-            grabAndPull()
           }
         case _: DropHead =>
           () => {
@@ -1744,7 +1755,7 @@ private[stream] object Collect {
         case _: DropNew =>
           () => {
             grab(in)
-            pull(in)
+            if (shouldPull) pull(in)
           }
         case _: DropBuffer =>
           () => {
@@ -1753,7 +1764,7 @@ private[stream] object Collect {
           }
         case _: Fail =>
           () => {
-            failStage(BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
+            failStage(new BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
           }
         case _: Backpressure =>
           () => {
@@ -1766,46 +1777,41 @@ private[stream] object Collect {
           onPushWhenBufferFull()
         else {
           grabAndPull()
-          if (!isTimerActive(timerName)) {
-            // schedule a timer for the full-delay `d` only if the buffer is empty, because otherwise a
-            // full-length timer will starve subsequent `onPull` callbacks, preventing overdue elements
-            // to be discharged.
-            if (buffer.isEmpty)
-              scheduleOnce(timerName, d)
-            else
-              scheduleOnce(timerName, Math.max(DelayPrecisionMS, nextElementWaitTime()).millis)
+          if (!isTimerActive(TimerName)) {
+            val waitTime = nextElementWaitTime()
+            if (waitTime <= DelayPrecisionMS && isAvailable(out)) {
+              push(out, buffer.dequeue()._2)
+              completeIfReady()
+            } else
+              scheduleOnce(TimerName, waitTime.millis)
           }
         }
       }
 
-      def pullCondition: Boolean = strategy match {
-        case EmitEarly =>
-          // when buffer is full we can only emit early if out is available
-          buffer.used < size || isAvailable(out)
-        case _ =>
-          !strategy.isBackpressure || buffer.used < size
-      }
+      private def shouldPull: Boolean =
+        buffer.used < size || !overflowStrategy.isBackpressure ||
+        // we can only emit early if output is ready
+        (overflowStrategy == EmitEarly && isAvailable(out))
 
-      def grabAndPull(): Unit = {
-        if (buffer.used == size) throw new IllegalStateException("Trying to enqueue but buffer is full")
-        buffer.enqueue((System.nanoTime(), grab(in)))
-        if (pullCondition) pull(in)
+      private def grabAndPull(): Unit = {
+        val element = grab(in)
+        buffer.enqueue((System.nanoTime() + delayStrategy.nextDelay(element).toNanos, element))
+        if (shouldPull) pull(in)
       }
 
       override def onUpstreamFinish(): Unit =
         completeIfReady()
 
       def onPull(): Unit = {
-        if (!isTimerActive(timerName) && !buffer.isEmpty) {
+        if (!isTimerActive(TimerName) && !buffer.isEmpty) {
           val waitTime = nextElementWaitTime()
-          if (waitTime < 0) {
+          if (waitTime <= DelayPrecisionMS)
             push(out, buffer.dequeue()._2)
-          } else {
-            scheduleOnce(timerName, Math.max(DelayPrecisionMS, waitTime).millis)
-          }
+          else
+            scheduleOnce(TimerName, waitTime.millis)
         }
 
-        if (!isClosed(in) && !hasBeenPulled(in) && pullCondition)
+        if (!isClosed(in) && !hasBeenPulled(in) && shouldPull)
           pull(in)
 
         completeIfReady()
@@ -1816,19 +1822,14 @@ private[stream] object Collect {
 
       def completeIfReady(): Unit = if (isClosed(in) && buffer.isEmpty) completeStage()
 
-      def nextElementWaitTime(): Long = {
-        delayMillis - NANOSECONDS.toMillis(System.nanoTime() - buffer.peek()._1)
+      private def nextElementWaitTime(): Long = {
+        NANOSECONDS.toMillis(buffer.peek()._1 - System.nanoTime())
       }
 
       final override protected def onTimer(key: Any): Unit = {
         if (isAvailable(out))
           push(out, buffer.dequeue()._2)
 
-        if (!buffer.isEmpty) {
-          val waitTime = nextElementWaitTime()
-          if (waitTime > DelayPrecisionMS)
-            scheduleOnce(timerName, waitTime.millis)
-        }
         completeIfReady()
       }
     }
@@ -2268,7 +2269,6 @@ private[stream] object Collect {
 
         matVal
       }
-
     }
     (stageLogic, matPromise.future)
   }

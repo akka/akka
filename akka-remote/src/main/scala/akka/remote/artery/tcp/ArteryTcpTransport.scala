@@ -26,6 +26,7 @@ import akka.actor.ExtendedActorSystem
 import akka.dispatch.ExecutionContexts
 import akka.event.Logging
 import akka.remote.RemoteActorRefProvider
+import akka.remote.RemoteLogMarker
 import akka.remote.RemoteTransportException
 import akka.remote.artery.Decoder.InboundCompressionAccess
 import akka.remote.artery.compress._
@@ -145,6 +146,26 @@ private[remote] class ArteryTcpTransport(
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
       val restartCount = new AtomicInteger(0)
 
+      def logConnect(): Unit = {
+        if (log.isDebugEnabled)
+          log.debug(
+            RemoteLogMarker.connect(
+              outboundContext.remoteAddress,
+              outboundContext.associationState.uniqueRemoteAddressValue().map(_.uid)),
+            "Outbound connection opened to [{}]",
+            outboundContext.remoteAddress)
+      }
+
+      def logDisconnected(): Unit = {
+        if (log.isDebugEnabled)
+          log.debug(
+            RemoteLogMarker.disconnected(
+              outboundContext.remoteAddress,
+              outboundContext.associationState.uniqueRemoteAddressValue().map(_.uid)),
+            "Outbound connection closed to [{}]",
+            outboundContext.remoteAddress)
+      }
+
       val flowFactory = () => {
         val onFailureLogLevel = if (restartCount.incrementAndGet() == 1) Logging.WarningLevel else Logging.DebugLevel
 
@@ -152,6 +173,7 @@ private[remote] class ArteryTcpTransport(
           Flow[ByteString]
             .via(Flow.lazyFlow(() => {
               // only open the actual connection if any new messages are sent
+              logConnect()
               afr.loFreq(
                 TcpOutbound_Connected,
                 s"${outboundContext.remoteAddress.host.get}:${outboundContext.remoteAddress.port.get} " +
@@ -161,6 +183,12 @@ private[remote] class ArteryTcpTransport(
 
               Flow[ByteString].prepend(Source.single(TcpFraming.encodeConnectionHeader(streamId))).via(connectionFlow)
             }))
+            .mapError {
+              case ArteryTransport.ShutdownSignal => ArteryTransport.ShutdownSignal
+              case e =>
+                logDisconnected()
+                e
+            }
             .recoverWithRetries(1, { case ArteryTransport.ShutdownSignal => Source.empty })
             .log(name = s"outbound connection to [${outboundContext.remoteAddress}], ${streamName(streamId)} stream")
             .addAttributes(Attributes.logLevels(onElement = LogLevels.Off, onFailure = onFailureLogLevel))

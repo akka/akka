@@ -4,8 +4,8 @@
 
 package jdocs.stream.operators;
 
+import akka.actor.ActorSystem;
 import akka.japi.pf.PFBuilder;
-import akka.stream.Materializer;
 import akka.stream.javadsl.Flow;
 
 import akka.NotUsed;
@@ -42,9 +42,11 @@ import akka.stream.Attributes;
 import java.time.Duration;
 import java.util.Arrays;
 import java.util.Comparator;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 class SourceOrFlow {
-  private static Materializer materializer = null;
+  private static ActorSystem system = null;
 
   void logExample() {
     Flow.of(String.class)
@@ -60,11 +62,10 @@ class SourceOrFlow {
   }
 
   void zipWithIndexExample() {
-    Materializer materializer = null;
     // #zip-with-index
     Source.from(Arrays.asList("apple", "orange", "banana"))
         .zipWithIndex()
-        .runWith(Sink.foreach(System.out::print), materializer);
+        .runWith(Sink.foreach(System.out::print), system);
     // this will print ('apple', 0), ('orange', 1), ('banana', 2)
     // #zip-with-index
   }
@@ -73,7 +74,7 @@ class SourceOrFlow {
     // #zip
     Source<String, NotUsed> sourceFruits = Source.from(Arrays.asList("apple", "orange", "banana"));
     Source<String, NotUsed> sourceFirstLetters = Source.from(Arrays.asList("A", "O", "B"));
-    sourceFruits.zip(sourceFirstLetters).runWith(Sink.foreach(System.out::print), materializer);
+    sourceFruits.zip(sourceFirstLetters).runWith(Sink.foreach(System.out::print), system);
     // this will print ('apple', 'A'), ('orange', 'O'), ('banana', 'B')
 
     // #zip
@@ -87,7 +88,7 @@ class SourceOrFlow {
         .zipWith(
             sourceFruits,
             (Function2<String, String, String>) (countStr, fruitName) -> countStr + " " + fruitName)
-        .runWith(Sink.foreach(System.out::print), materializer);
+        .runWith(Sink.foreach(System.out::print), system);
     // this will print 'one apple', 'two orange', 'three banana'
 
     // #zip-with
@@ -97,7 +98,7 @@ class SourceOrFlow {
     // #prepend
     Source<String, NotUsed> ladies = Source.from(Arrays.asList("Emma", "Emily"));
     Source<String, NotUsed> gentlemen = Source.from(Arrays.asList("Liam", "William"));
-    gentlemen.prepend(ladies).runWith(Sink.foreach(System.out::print), materializer);
+    gentlemen.prepend(ladies).runWith(Sink.foreach(System.out::print), system);
     // this will print "Emma", "Emily", "Liam", "William"
 
     // #prepend
@@ -107,7 +108,7 @@ class SourceOrFlow {
     // #concat
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
-    sourceA.concat(sourceB).runWith(Sink.foreach(System.out::print), materializer);
+    sourceA.concat(sourceB).runWith(Sink.foreach(System.out::print), system);
     // prints 1, 2, 3, 4, 10, 20, 30, 40
 
     // #concat
@@ -117,7 +118,7 @@ class SourceOrFlow {
     // #interleave
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
-    sourceA.interleave(sourceB, 2).runWith(Sink.foreach(System.out::print), materializer);
+    sourceA.interleave(sourceB, 2).runWith(Sink.foreach(System.out::print), system);
     // prints 1, 2, 10, 20, 3, 4, 30, 40
 
     // #interleave
@@ -127,7 +128,7 @@ class SourceOrFlow {
     // #merge
     Source<Integer, NotUsed> sourceA = Source.from(Arrays.asList(1, 2, 3, 4));
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(10, 20, 30, 40));
-    sourceA.merge(sourceB).runWith(Sink.foreach(System.out::print), materializer);
+    sourceA.merge(sourceB).runWith(Sink.foreach(System.out::print), system);
     // merging is not deterministic, can for example print 1, 2, 3, 4, 10, 20, 30, 40
 
     // #merge
@@ -139,13 +140,13 @@ class SourceOrFlow {
     Source<Integer, NotUsed> sourceB = Source.from(Arrays.asList(2, 4, 6, 8));
     sourceA
         .mergeSorted(sourceB, Comparator.<Integer>naturalOrder())
-        .runWith(Sink.foreach(System.out::print), materializer);
+        .runWith(Sink.foreach(System.out::print), system);
     // prints 1, 2, 3, 4, 5, 6, 7, 8
 
     Source<Integer, NotUsed> sourceC = Source.from(Arrays.asList(20, 1, 1, 1));
     sourceA
         .mergeSorted(sourceC, Comparator.<Integer>naturalOrder())
-        .runWith(Sink.foreach(System.out::print), materializer);
+        .runWith(Sink.foreach(System.out::print), system);
     // prints 1, 3, 5, 7, 20, 1, 1, 1
     // #merge-sorted
   }
@@ -156,10 +157,10 @@ class SourceOrFlow {
     Source<String, NotUsed> source2 = Source.from(Arrays.asList("Second source"));
     Source<String, NotUsed> emptySource = Source.empty();
 
-    source1.orElse(source2).runWith(Sink.foreach(System.out::print), materializer);
+    source1.orElse(source2).runWith(Sink.foreach(System.out::print), system);
     // this will print "First source"
 
-    emptySource.orElse(source2).runWith(Sink.foreach(System.out::print), materializer);
+    emptySource.orElse(source2).runWith(Sink.foreach(System.out::print), system);
     // this will print "Second source"
 
     // #or-else
@@ -177,7 +178,7 @@ class SourceOrFlow {
   void scanExample() {
     // #scan
     Source<Integer, NotUsed> source = Source.range(1, 5);
-    source.scan(0, (acc, x) -> acc + x).runForeach(System.out::println, materializer);
+    source.scan(0, (acc, x) -> acc + x).runForeach(System.out::println, system);
     // 0  (= 0)
     // 1  (= 0 + 1)
     // 3  (= 0 + 1 + 2)
@@ -185,6 +186,25 @@ class SourceOrFlow {
     // 10 (= 0 + 1 + 2 + 3 + 4)
     // 15 (= 0 + 1 + 2 + 3 + 4 + 5)
     // #scan
+  }
+
+  // #scan-async
+  CompletionStage<Integer> asyncFunction(int acc, int next) {
+    return CompletableFuture.supplyAsync(() -> acc + next);
+  }
+  // #scan-async
+
+  void scanAsyncExample() {
+    // #scan-async
+    Source<Integer, NotUsed> source = Source.range(1, 5);
+    source.scanAsync(0, (acc, x) -> asyncFunction(acc, x)).runForeach(System.out::println, system);
+    // 0  (= 0)
+    // 1  (= 0 + 1)
+    // 3  (= 0 + 1 + 2)
+    // 6  (= 0 + 1 + 2 + 3)
+    // 10 (= 0 + 1 + 2 + 3 + 4)
+    // 15 (= 0 + 1 + 2 + 3 + 4 + 5)
+    // #scan-async
   }
 
   static // #conflateWithSeed-type
@@ -257,7 +277,7 @@ class SourceOrFlow {
     // #grouped
     Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7))
         .grouped(3)
-        .runForeach(System.out::println, materializer);
+        .runForeach(System.out::println, system);
     // [1, 2, 3]
     // [4, 5, 6]
     // [7]
@@ -265,10 +285,107 @@ class SourceOrFlow {
     Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7))
         .grouped(3)
         .map(g -> g.stream().reduce(0, Integer::sum))
-        .runForeach(System.out::println, materializer);
+        .runForeach(System.out::println, system);
     // 6   (= 1 + 2 + 3)
     // 15  (= 4 + 5 + 6)
     // 7   (= 7)
     // #grouped
+  }
+
+  static
+  // #fold
+  class Histogram {
+    final long low;
+    final long high;
+
+    private Histogram(long low, long high) {
+      this.low = low;
+      this.high = high;
+    }
+
+    // Immutable start value
+    public static Histogram INSTANCE = new Histogram(0L, 0L);
+
+    public Histogram add(int number) {
+      if (number < 100) {
+        return new Histogram(low + 1L, high);
+      } else {
+        return new Histogram(low, high + 1L);
+      }
+    }
+  }
+  // #fold
+
+  void foldExample() {
+    // #fold
+
+    // Folding over the numbers from 1 to 150:
+    Source.range(1, 150)
+        .fold(Histogram.INSTANCE, (acc, n) -> acc.add(n))
+        .runForeach(h -> System.out.println("Histogram(" + h.low + ", " + h.high + ")"), system);
+
+    // Prints: Histogram(99, 51)
+    // #fold
+  }
+
+  void takeExample() {
+    // #take
+    Source.from(Arrays.asList(1, 2, 3, 4, 5)).take(3).runForeach(System.out::println, system);
+    // this will print:
+    // 1
+    // 2
+    // 3
+    // #take
+  }
+
+  void takeWhileExample() {
+    // #take-while
+    Source.from(Arrays.asList(1, 2, 3, 4, 5))
+        .takeWhile(i -> i < 3)
+        .runForeach(System.out::println, system);
+    // this will print:
+    // 1
+    // 2
+    // #take-while
+  }
+
+  void filterExample() {
+    // #filter
+    Source<String, NotUsed> words =
+        Source.from(
+            Arrays.asList(
+                ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
+                        + "ut labore et dolore magna aliqua.")
+                    .split(" ")));
+
+    Source<String, NotUsed> longWords = words.filter(w -> w.length() > 6);
+
+    longWords.runWith(Sink.foreach(System.out::print), system);
+    // consectetur
+    // adipiscing
+    // eiusmod
+    // tempor
+    // incididunt
+    // #filter
+  }
+
+  void filterNotExample() {
+    // #filterNot
+    Source<String, NotUsed> words =
+        Source.from(
+            Arrays.asList(
+                ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
+                        + "ut labore et dolore magna aliqua.")
+                    .split(" ")));
+
+    Source<String, NotUsed> longWords = words.filterNot(w -> w.length() <= 5);
+
+    longWords.runWith(Sink.foreach(System.out::print), system);
+    // consectetur
+    // adipiscing
+    // eiusmod
+    // tempor
+    // incididunt
+    // #filterNot
   }
 }

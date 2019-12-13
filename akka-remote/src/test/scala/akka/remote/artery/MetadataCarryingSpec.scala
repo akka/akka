@@ -18,6 +18,7 @@ import akka.testkit.JavaSerializable
 
 object MetadataCarryingSpy extends ExtensionId[MetadataCarryingSpy] with ExtensionIdProvider {
   override def get(system: ActorSystem): MetadataCarryingSpy = super.get(system)
+  override def get(system: ClassicActorSystemProvider): MetadataCarryingSpy = super.get(system)
   override def lookup = MetadataCarryingSpy
   override def createExtension(system: ExtendedActorSystem): MetadataCarryingSpy = new MetadataCarryingSpy
 

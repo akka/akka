@@ -14,6 +14,7 @@ import akka.actor.typed.BehaviorInterceptor
 import akka.actor.typed.PostStop
 import akka.actor.typed.Signal
 import akka.actor.typed.SupervisorStrategy
+import akka.actor.typed.internal.ActorContextImpl
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
@@ -83,7 +84,11 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def apply(context: typed.TypedActorContext[Command]): Behavior[Command] = {
     val ctx = context.asScala
-    ctx.setLoggerName(loggerClass)
+    val hasCustomLoggerName = ctx match {
+      case internalCtx: ActorContextImpl[_] => internalCtx.hasCustomLoggerName
+      case _                                => false
+    }
+    if (!hasCustomLoggerName) ctx.setLoggerName(loggerClass)
     val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
 
     // stashState outside supervise because StashState should survive restarts due to persist failures

@@ -1,12 +1,8 @@
 # Testing
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Testing](../testing.md).
-@@@
 
-@@project-info{ projectId="akka-actor-testkit-typed" }
-
-## Dependency
+## Module info
 
 To use Actor TestKit add the module to your project:
 
@@ -29,6 +25,8 @@ We recommend using Akka TestKit with ScalaTest:
 }
 
 @@@
+
+@@project-info{ projectId="akka-actor-testkit-typed" }
 
 ## Introduction
 

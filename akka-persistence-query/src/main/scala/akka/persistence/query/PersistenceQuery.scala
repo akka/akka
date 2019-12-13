@@ -18,10 +18,8 @@ import scala.reflect.ClassTag
  */
 object PersistenceQuery extends ExtensionId[PersistenceQuery] with ExtensionIdProvider {
 
-  /**
-   * Java API.
-   */
   override def get(system: ActorSystem): PersistenceQuery = super.get(system)
+  override def get(system: ClassicActorSystemProvider): PersistenceQuery = super.get(system)
 
   def createExtension(system: ExtendedActorSystem): PersistenceQuery = new PersistenceQuery(system)
 

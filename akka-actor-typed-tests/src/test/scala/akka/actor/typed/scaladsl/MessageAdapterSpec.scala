@@ -17,10 +17,11 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
+import org.slf4j.event.Level
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString("""
-      akka.log-dead-letters = off
+      akka.log-dead-letters = on
       ping-pong-dispatcher {
         executor = thread-pool-executor
         type = PinnedDispatcher
@@ -85,9 +86,11 @@ class MessageAdapterSpec
       trait Ping
       case class Ping1(sender: ActorRef[Pong1]) extends Ping
       case class Ping2(sender: ActorRef[Pong2]) extends Ping
+      case class Ping3(sender: ActorRef[Int]) extends Ping
       trait Response
       case class Pong1(greeting: String) extends Response
       case class Pong2(greeting: String) extends Response
+      case class Pong3(greeting: Int) extends Response
 
       case class Wrapped(qualifier: String, response: Response)
 
@@ -98,6 +101,9 @@ class MessageAdapterSpec
         case Ping2(sender) =>
           sender ! Pong2("hello-2")
           Behaviors.same
+        case Ping3(sender) =>
+          sender ! 3
+          Behaviors.same
       })
 
       val probe = TestProbe[Wrapped]()
@@ -106,8 +112,11 @@ class MessageAdapterSpec
         context.messageAdapter[Response](pong => Wrapped(qualifier = "wrong", pong)) // this is replaced
         val replyTo1: ActorRef[Response] = context.messageAdapter(pong => Wrapped(qualifier = "1", pong))
         val replyTo2 = context.messageAdapter[Pong2](pong => Wrapped(qualifier = "2", pong))
+        val replyTo3 =
+          context.messageAdapter[Int](intValue => Wrapped(qualifier = intValue.toString, response = Pong3(intValue)))
         pingPong ! Ping1(replyTo1)
         pingPong ! Ping2(replyTo2)
+        pingPong ! Ping3(replyTo3)
 
         Behaviors.receiveMessage { wrapped =>
           probe.ref ! wrapped
@@ -119,6 +128,7 @@ class MessageAdapterSpec
 
       probe.expectMessage(Wrapped("1", Pong1("hello-1")))
       probe.expectMessage(Wrapped("2", Pong2("hello-2")))
+      probe.expectMessage(Wrapped("3", Pong3(3)))
     }
 
     "not break if wrong/unknown response type" in {
@@ -250,7 +260,7 @@ class MessageAdapterSpec
       }
 
       // Not expecting "Exception thrown out of adapter. Stopping myself"
-      LoggingTestKit.error[TestException].withMessageContains("boom").intercept {
+      LoggingTestKit.error[TestException].withMessageContains("boom").expect {
         spawn(snitch)
       }
 
@@ -260,6 +270,31 @@ class MessageAdapterSpec
       // exception was thrown for 3
       probe.expectMessage("stopped")
     }
+
+  }
+
+  "log wrapped message of DeadLetter" in {
+    case class Ping(sender: ActorRef[Pong])
+    case class Pong(greeting: String)
+    case class PingReply(response: Pong)
+
+    val pingProbe = createTestProbe[Ping]()
+
+    val snitch = Behaviors.setup[PingReply] { context =>
+      val replyTo = context.messageAdapter[Pong](PingReply)
+      pingProbe.ref ! Ping(replyTo)
+      Behaviors.stopped
+    }
+    val ref = spawn(snitch)
+
+    createTestProbe().expectTerminated(ref)
+
+    LoggingTestKit.empty
+      .withLogLevel(Level.INFO)
+      .withMessageRegex("Pong.*wrapped in.*AdaptMessage.*dead letters encountered")
+      .expect {
+        pingProbe.receiveMessage().sender ! Pong("hi")
+      }
 
   }
 

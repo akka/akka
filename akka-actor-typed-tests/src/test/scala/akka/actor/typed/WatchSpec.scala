@@ -109,7 +109,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
         },
         "supervised-child-parent")
 
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         parent ! "boom"
       }
       probe.expectMessageType[ChildHasFailed].t.cause shouldEqual ex
@@ -144,7 +144,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       }
       val parent = spawn(behavior, "parent")
 
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         parent ! "boom"
       }
       probe.expectMessageType[ChildHasFailed].t.cause shouldEqual ex
@@ -183,8 +183,8 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
           },
           "grosso-bosso")
 
-      LoggingTestKit.error[TestException].intercept {
-        LoggingTestKit.error[DeathPactException].intercept {
+      LoggingTestKit.error[TestException].expect {
+        LoggingTestKit.error[DeathPactException].expect {
           grossoBosso ! "boom"
         }
       }
@@ -327,7 +327,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       LoggingTestKit
         .error[IllegalStateException]
         .withMessageContains("termination message was not overwritten")
-        .intercept {
+        .expect {
           watcher ! StartWatching(terminator)
         }
       // supervisor should have stopped the actor
@@ -340,7 +340,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       LoggingTestKit
         .error[IllegalStateException]
         .withMessageContains("termination message was not overwritten")
-        .intercept {
+        .expect {
           watcher ! StartWatchingWith(terminator, CustomTerminationMessage2)
         }
       // supervisor should have stopped the actor
@@ -352,7 +352,7 @@ class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       LoggingTestKit
         .error[IllegalStateException]
         .withMessageContains("termination message was not overwritten")
-        .intercept {
+        .expect {
           watcher ! StartWatchingWith(terminator, CustomTerminationMessage)
         }
       // supervisor should have stopped the actor

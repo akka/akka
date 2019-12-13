@@ -20,6 +20,14 @@ of elements taken at that point.
 If the stream never completes, the @scala[`Future`] @java[`CompletionStage`] will never complete.
 If there is a failure signaled in the stream the @scala[`Future`] @java[`CompletionStage`] will be completed with failure.
 
+## Example
+
+Scala
+:   @@snip [TakeLastSinkSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/TakeLastSinkSpec.scala) { #takeLast-operator-example }
+
+Java
+:   @@snip [SinkDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SinkDocExamples.java) { #takeLast-operator-example }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -29,11 +37,3 @@ If there is a failure signaled in the stream the @scala[`Future`] @java[`Complet
 **backpressures** never
 
 @@@
-
-## Example
-
-Scala
-:   @@snip [TakeLastSinkSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/TakeLastSinkSpec.scala) { #takeLast-operator-example }
-
-Java
-:   @@snip [SinkDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SinkDocExamples.java) { #takeLast-operator-example }

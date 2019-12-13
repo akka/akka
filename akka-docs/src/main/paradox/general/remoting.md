@@ -13,7 +13,7 @@ asynchronous. This effort has been undertaken to ensure that all functions are
 available equally when running within a single JVM or on a cluster of hundreds
 of machines. The key for enabling this is to go from remote to local by way of
 optimization instead of trying to go from local to remote by way of
-generalization. See [this classic paper](http://doc.akka.io/docs/misc/smli_tr-94-29.pdf)
+generalization. See [this classic paper](https://doc.akka.io/docs/misc/smli_tr-94-29.pdf)
 for a detailed discussion on why the second approach is bound to fail.
 
 ## Ways in which Transparency is Broken

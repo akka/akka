@@ -47,7 +47,8 @@ private[cluster] class CrossDcHeartbeatSender extends Actor {
   import context.dispatcher
 
   private val clusterLogger =
-    new cluster.ClusterLogger(Logging(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterHeartbeat)))
+    new cluster.ClusterLogger(
+      Logging.withMarker(context.system, ActorWithLogClass(this, ClusterLogClass.ClusterHeartbeat)))
   import clusterLogger._
 
   // For inspecting if in active state; allows avoiding "becoming active" when already active

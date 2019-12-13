@@ -3,9 +3,7 @@
 @@include[includes.md](includes.md) { #actor-api }
 For the new API see FIXME https://github.com/akka/akka/issues/26338.
 
-@@project-info{ projectId="akka-cluster-tools" }
-
-## Dependency
+## Module info
 
 To use Distributed Publish Subscribe you must add the following dependency in your project:
 
@@ -14,6 +12,8 @@ To use Distributed Publish Subscribe you must add the following dependency in yo
   artifact="akka-cluster-tools_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-cluster-tools" }
 
 ## Introduction
 
@@ -233,4 +233,4 @@ akka.extensions = ["akka.cluster.pubsub.DistributedPubSub"]
 As in @ref:[Message Delivery Reliability](general/message-delivery-reliability.md) of Akka, message delivery guarantee in distributed pub sub modes is **at-most-once delivery**.
 In other words, messages can be lost over the wire.
 
-If you are looking for at-least-once delivery guarantee, we recommend [Kafka Akka Streams integration](http://doc.akka.io/docs/akka-stream-kafka/current/home.html).
+If you are looking for at-least-once delivery guarantee, we recommend [Alpakka Kafka](https://doc.akka.io/docs/alpakka-kafka/current/).

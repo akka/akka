@@ -52,7 +52,9 @@ public final class JavaFlowSupport {
      * See also {@code Source.asSubscriber} if wanting to integrate with {@link org.reactivestreams.Subscriber} instead
      * (which carries the same semantics, however existed before RS's inclusion in Java 9).
      */
+    //#asSubscriber
     public static <T> akka.stream.javadsl.Source<T, java.util.concurrent.Flow.Subscriber<T>> asSubscriber() {
+    //#asSubscriber
       return akka.stream.javadsl.Source.<T>asSubscriber().mapMaterializedValue(JavaFlowAndRsConverters::asJava);
     }
   }

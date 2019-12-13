@@ -145,6 +145,7 @@ object Dns extends ExtensionId[DnsExt] with ExtensionIdProvider {
    * Java API: retrieve the Udp extension for the given system.
    */
   override def get(system: ActorSystem): DnsExt = super.get(system)
+  override def get(system: ClassicActorSystemProvider): DnsExt = super.get(system)
 }
 
 class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: String, managerName: String)

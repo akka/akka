@@ -5,7 +5,6 @@
 package akka.actor.typed.internal
 
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.ActorRef
 import akka.serialization.{ JavaSerializer, SerializationExtension }
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -32,7 +31,7 @@ class ActorRefSerializationSpec
     with WordSpecLike
     with LogCapturing {
 
-  val serialization = SerializationExtension(system.toClassic)
+  val serialization = SerializationExtension(system)
 
   "ActorRef[T]" must {
     "be serialized and deserialized by MiscMessageSerializer" in {

@@ -9,16 +9,14 @@ import akka.actor.typed.Behavior;
 import akka.actor.typed.Extension;
 import akka.actor.typed.ExtensionId;
 import akka.actor.typed.javadsl.Behaviors;
-import com.typesafe.config.ConfigFactory;
 import docs.akka.typed.extensions.DatabasePool;
-import docs.akka.typed.extensions.ExtensionDocSpec;
 
 import java.util.concurrent.CompletionStage;
 
-public class ExtensionDocTest {
+interface ExtensionDocTest {
 
   // #shared-resource
-  public static class ExpensiveDatabaseConnection {
+  public class ExpensiveDatabaseConnection {
     public CompletionStage<Object> executeQuery(String query) {
       throw new RuntimeException("I should do a database query");
     }
@@ -27,10 +25,31 @@ public class ExtensionDocTest {
   // #shared-resource
 
   // #extension
-  public static class DatabaseConnectionPool implements Extension {
+  public class DatabaseConnectionPool implements Extension {
+    // #extension
+    // #extension-id
+    public static class Id extends ExtensionId<DatabaseConnectionPool> {
+
+      private static final Id instance = new Id();
+
+      private Id() {}
+
+      // called once per ActorSystem
+      @Override
+      public DatabaseConnectionPool createExtension(ActorSystem<?> system) {
+        return new DatabaseConnectionPool(system);
+      }
+
+      public static DatabaseConnectionPool get(ActorSystem<?> system) {
+        return instance.apply(system);
+      }
+    }
+    // #extension-id
+    // #extension
+
     private final ExpensiveDatabaseConnection _connection;
 
-    public DatabaseConnectionPool(ActorSystem<?> system) {
+    private DatabaseConnectionPool(ActorSystem<?> system) {
       // database configuration can be loaded from config
       // from the actor system
       _connection = new ExpensiveDatabaseConnection();
@@ -42,25 +61,6 @@ public class ExtensionDocTest {
   }
   // #extension
 
-  // #extension-id
-  public static class DatabaseConnectionPoolId extends ExtensionId<DatabaseConnectionPool> {
-
-    private static final DatabaseConnectionPoolId instance = new DatabaseConnectionPoolId();
-
-    private DatabaseConnectionPoolId() {}
-
-    // called once per ActorSystem
-    @Override
-    public DatabaseConnectionPool createExtension(ActorSystem system) {
-      return new DatabaseConnectionPool(system);
-    }
-
-    public static DatabaseConnectionPool get(ActorSystem<?> system) {
-      return instance.apply(system);
-    }
-  }
-  // #extension-id
-
   public static Behavior<Object> initialBehavior() {
     return null;
   }
@@ -69,7 +69,7 @@ public class ExtensionDocTest {
     // #usage
     Behaviors.setup(
         (context) -> {
-          DatabaseConnectionPoolId.get(context.getSystem())
+          DatabaseConnectionPool.Id.get(context.getSystem())
               .connection()
               .executeQuery("insert into...");
           return initialBehavior();

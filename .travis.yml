@@ -4,7 +4,7 @@ sudo: false
 
 scala:
   - "2.12.9"
-  - "2.13.0"
+  - "2.13.1"
 
 before_install: curl -Ls https://git.io/jabba | bash && . ~/.jabba/jabba.sh
 install: jabba install "adopt@~1.$TRAVIS_JDK.0-0" && jabba use "$_" && java -Xmx32m -version
@@ -36,7 +36,7 @@ jobs:
 
 stages:
   - name: whitesource
-    if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v) AND env(TRAVIS_SCALA_VERSION) = "2.12.8"
+    if: repo = akka/akka AND ((branch = master AND type != pull_request) OR tag =~ ^v) AND env(TRAVIS_SCALA_VERSION) =~ ^2.12
   - name: test
     if: type == pull_request OR NOT tag =~ ^v
 

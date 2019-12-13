@@ -1,8 +1,6 @@
 # Interaction Patterns
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
-@@@
 
 ## Dependency
 
@@ -24,7 +22,7 @@ Message exchange with Actors follow a few common patterns, let's go through each
 
 The fundamental way to interact with an actor is through @scala["tell", which is so common that it has a special symbolic method name: `actorRef ! message`]@java[`actorRef.tell(message)`]. Sending a message with tell can safely be done from any thread.
 
-Tell is asynchronous which means that the method returns right away, when the statement after it is executed there is no guarantee that the message has been processed by the recipient yet. It also means there is no way to know if the message was received, the processing succeeded or failed.
+Tell is asynchronous which means that the method returns right away. After the statement is executed there is no guarantee that the message has been processed by the recipient yet. It also means there is no way to know if the message was received, the processing succeeded or failed.
 
 **Example:**
 
@@ -87,7 +85,7 @@ Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #request-response-send }
 
 
-On the receiving side the @scala[`ActorRef[response]`]@java[`ActorRef<Response>`] can then be used to send one or more responses back:
+On the receiving side the @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`] can then be used to send one or more responses back:
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #request-response-respond }
@@ -207,8 +205,8 @@ Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #standalone-ask }
 
 Note that validation errors are also explicit in the message protocol. The `GiveMeCookies` request can reply
-with `Cookies` or `InvalidRequest`. The requestor has to decide how to handle `InvalidRequest` reply. Sometimes
-that should be treated as a failed @scala[`Future`]@java[`Future`] and for that the reply can be mapped on the
+with `Cookies` or `InvalidRequest`. The requestor has to decide how to handle an `InvalidRequest` reply. Sometimes
+it should be treated as a failed @scala[`Future`]@java[`Future`] and for that the reply can be mapped on the
 requestor side.
 
 Scala
@@ -230,7 +228,7 @@ Java
 ## Send Future result to self
 
 When using an API that returns a @scala[`Future`]@java[`CompletionStage`] from an actor it's common that you would
-like to use the value of the in the actor when the @scala[`Future`]@java[`CompletionStage`] is completed. For
+like to use the value of the response in the actor when the @scala[`Future`]@java[`CompletionStage`] is completed. For
 this purpose the `ActorContext` provides a `pipeToSelf` method.
 
 **Example:**
@@ -400,10 +398,10 @@ There are a few things worth noting here:
 
 * To get access to the timers you start with `Behaviors.withTimers` that will pass a `TimerScheduler` instance to the function. 
 This can be used with any type of `Behavior`, including `receive`, `receiveMessage`, but also `setup` or any other behavior.
-* Each timer has a key and if a new timer with the same key is started, the previous is cancelled and it's guaranteed that a message from the previous timer is not received, even though it might already be enqueued in the mailbox when the new timer is started.
+* Each timer has a key and if a new timer with the same key is started, the previous is cancelled. It is guaranteed that a message from the previous timer is not received, even if it was already enqueued in the mailbox when the new timer was started.
 * Both periodic and single message timers are supported. 
 * The `TimerScheduler` is mutable in itself, because it performs and manages the side effects of registering the scheduled tasks.
-* The `TimerScheduler` is bound to the lifecycle of the actor that owns it and it's cancelled automatically when the actor is stopped.
+* The `TimerScheduler` is bound to the lifecycle of the actor that owns it and is cancelled automatically when the actor is stopped.
 * `Behaviors.withTimers` can also be used inside `Behaviors.supervise` and it will automatically cancel the started timers correctly when the actor is restarted, so that the new incarnation will not receive scheduled messages from a previous incarnation.
 
 ### Schedule periodically
@@ -470,6 +468,3 @@ Java
 
 A disadvantage is that a message adapter can't be used so the response has to be in the protocol of the actor being responded to. Additionally the `EntityTypeKey`
 could be included in the message if it is not known statically.
-
-
-

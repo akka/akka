@@ -1,8 +1,6 @@
 # Routers
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Routing](../routing.md).
-@@@
 
 ## Dependency
 
@@ -81,12 +79,27 @@ sent through the router, each actor is forwarded one message.
 Round robin gives fair routing where every available routee gets the same amount of messages as long as the set
 of routees stays relatively stable, but may be unfair if the set of routees changes a lot.
 
-This is the default for pool routers as the pool of routees is expected to remain the same. 
+This is the default for pool routers as the pool of routees is expected to remain the same.
+
+An optional parameter `preferLocalRoutees` can be used for this strategy. Routers will only use routees located in local actor system if `preferLocalRoutees` is true and local routees do exist. The default value for this parameter is false.
+
 
 ### Random
+
 Randomly selects a routee when a message is sent through the router.
 
 This is the default for group routers as the group of routees is expected to change as nodes join and leave the cluster.
+
+An optional parameter `preferLocalRoutees` can be used for this strategy. Routers will only use routees located in local actor system if `preferLocalRoutees` is true and local routees do exist. The default value for this parameter is false.
+
+### Consistent Hashing
+ 
+Uses [consistent hashing](http://en.wikipedia.org/wiki/Consistent_hashing) to select a routee based
+on the sent message. This [article](http://www.tom-e-white.com/2007/11/consistent-hashing.html) 
+gives good insight into how consistent hashing is implemented.
+
+Currently you have to define hashMapping of the router to map incoming messages to their consistent
+hash key. This makes the decision transparent for the sender.
 
 ## Routers and performance
 

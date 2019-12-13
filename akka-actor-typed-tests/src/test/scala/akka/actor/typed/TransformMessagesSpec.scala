@@ -134,7 +134,7 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike 
           case s => s.toLowerCase
         }
 
-      LoggingTestKit.error[ActorInitializationException].intercept {
+      LoggingTestKit.error[ActorInitializationException].expect {
         val ref = spawn(transform(transform(Behaviors.receiveMessage[String] { _ =>
           Behaviors.same
         })))
@@ -148,7 +148,7 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike 
       val probe = TestProbe[String]()
       val behv = Behaviors
         .withTimers[String] { timers =>
-          timers.startSingleTimer("timer", "a", 10.millis)
+          timers.startSingleTimer("a", 10.millis)
           Behaviors.receiveMessage { msg =>
             probe.ref ! msg
             Behaviors.same
@@ -169,7 +169,7 @@ class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike 
     "be possible to combine with outer timers" in {
       val probe = TestProbe[String]()
       val behv = Behaviors.withTimers[String] { timers =>
-        timers.startSingleTimer("timer", "a", 10.millis)
+        timers.startSingleTimer("a", 10.millis)
         Behaviors
           .receiveMessage[String] { msg =>
             probe.ref ! msg

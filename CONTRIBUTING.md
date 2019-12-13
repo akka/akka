@@ -230,7 +230,7 @@ an error like this:
 In such situations it's good to consult with a core team member whether the violation can be safely ignored or if it would indeed
 break binary compatibility. If the violation can be ignored add exclude statements from the mima output to
 a new file named `<module>/src/main/mima-filters/<last-version>.backwards.excludes/<pr-or-issue>-<issue-number>-<description>.excludes`,
-e.g. `akka-actor/src/main/mima-filters/2.5.x.backwards.excludes/pr-12345-rename-internal-classes.excludes`. Make sure to add a comment
+e.g. `akka-actor/src/main/mima-filters/2.6.0.backwards.excludes/pr-12345-rename-internal-classes.excludes`. Make sure to add a comment
 in the file that describes briefly why the incompatibility can be ignored.
 
 Situations when it may be fine to ignore a MiMa issued warning include:
@@ -260,7 +260,7 @@ All wire protocol changes that may concern rolling upgrades should be documented
 ## Protobuf
 
 Akka includes a shaded version of protobuf `3.9.0` that is used for internal communication. To generate files
-run `protobufGenerate`. The generated files are put in the `src/main/java` of each project and need to be commited. 
+run `protobufGenerate`. The generated files are put in the `src/main/java` of each project and need to be committed. 
 The generated files are automatically transformed to use the shaded version of protobuf.
 
 Generation depends on protoc `3.9.0` being on the path. Old versions of
@@ -311,6 +311,16 @@ akka-docs/paradox
 ```
 
 The generated html documentation is in `akka-docs/target/paradox/site/main/index.html`.
+
+Alternatively, use `akka-docs/paradoxBrowse` to open the generated docs in your default web browser.
+
+### Links to API documentation
+
+Akka Paradox supports directives to link to the Scaladoc- and Javadoc-generated API documentation:
+
+* `@apidoc[Flow]` searches for the class name and creates links to Scaladoc and Javadoc (see variants in [sbt-paradox-apidoc](https://github.com/lightbend/sbt-paradox-apidoc#examples))
+* `@scaladoc[Flow](akka.stream.scaladsl.Flow)` (see [Paradox docs](https://developer.lightbend.com/docs/paradox/current/directives/linking.html#scaladoc-directive))
+* `@javadoc[Flow](akka.stream.javadsl.Flow)` (see [Paradox docs](https://developer.lightbend.com/docs/paradox/current/directives/linking.html#javadoc-directive))
 
 ### Scaladoc
 

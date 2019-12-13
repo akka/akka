@@ -4,6 +4,7 @@
 
 package docs.akka.cluster.ddata.typed.scaladsl
 
+import scala.concurrent.duration._
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.ddata.typed.scaladsl.Replicator
@@ -37,6 +38,7 @@ object ReplicatorDocSpec {
     final case object Increment extends Command
     final case class GetValue(replyTo: ActorRef[Int]) extends Command
     final case class GetCachedValue(replyTo: ActorRef[Int]) extends Command
+    case object Unsubscribe extends Command
     private sealed trait InternalCommand extends Command
     private case class InternalUpdateResponse(rsp: Replicator.UpdateResponse[GCounter]) extends InternalCommand
     private case class InternalGetResponse(rsp: Replicator.GetResponse[GCounter], replyTo: ActorRef[Int])
@@ -74,6 +76,10 @@ object ReplicatorDocSpec {
 
               case GetCachedValue(replyTo) =>
                 replyTo ! cachedValue
+                Behaviors.same
+
+              case Unsubscribe =>
+                replicatorAdapter.unsubscribe(key)
                 Behaviors.same
 
               case internal: InternalCommand =>
@@ -125,7 +131,7 @@ class ReplicatorDocSpec
       probe.expectMessage(1)
     }
 
-    "have API for Subscribe" in {
+    "have API for Subscribe and Unsubscribe" in {
       val c = spawn(Counter(GCounterKey("counter2")))
 
       val probe = createTestProbe[Int]()
@@ -140,6 +146,13 @@ class ReplicatorDocSpec
         c ! Counter.GetCachedValue(probe.ref)
         probe.expectMessage(3)
       }
+
+      c ! Counter.Unsubscribe
+      c ! Counter.Increment
+      // wait so it would update the cached value if we didn't unsubscribe
+      probe.expectNoMessage(500.millis)
+      c ! Counter.GetCachedValue(probe.ref)
+      probe.expectMessage(3) // old value, not 4
     }
 
     "have an extension" in {

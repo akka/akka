@@ -9,7 +9,6 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.actor.typed.scaladsl.Behaviors
-import akka.protobufv3.internal.Any
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 

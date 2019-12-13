@@ -205,7 +205,7 @@ object EventSourcedBehaviorSpec {
           case IncrementLater =>
             // purpose is to test signals
             val delay = ctx.spawnAnonymous(Behaviors.withTimers[Tick.type] { timers =>
-              timers.startSingleTimer(Tick, Tick, 10.millis)
+              timers.startSingleTimer(Tick, 10.millis)
               Behaviors.receive((_, msg) =>
                 msg match {
                   case Tick => Behaviors.stopped
@@ -283,10 +283,9 @@ class EventSourcedBehaviorSpec
     with LogCapturing {
 
   import EventSourcedBehaviorSpec._
-  import akka.actor.typed.scaladsl.adapter._
 
   val queries: LeveldbReadJournal =
-    PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+    PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
@@ -467,7 +466,7 @@ class EventSourcedBehaviorSpec
 
     "handle scheduled message arriving before recovery completed " in {
       val c = spawn(Behaviors.withTimers[Command] { timers =>
-        timers.startSingleTimer("tick", Increment, 1.millis)
+        timers.startSingleTimer(Increment, 1.millis)
         Thread.sleep(30) // now it's probably already in the mailbox, and will be stashed
         counter(nextPid)
       })
@@ -483,7 +482,7 @@ class EventSourcedBehaviorSpec
     "handle scheduled message arriving after recovery completed " in {
       val c = spawn(Behaviors.withTimers[Command] { timers =>
         // probably arrives after recovery completed
-        timers.startSingleTimer("tick", Increment, 200.millis)
+        timers.startSingleTimer(Increment, 200.millis)
         counter(nextPid)
       })
 
@@ -496,7 +495,7 @@ class EventSourcedBehaviorSpec
     }
 
     "fail after recovery timeout" in {
-      LoggingTestKit.error("Exception during recovery from snapshot").intercept {
+      LoggingTestKit.error("Exception during recovery from snapshot").expect {
         val c = spawn(
           Behaviors.setup[Command](ctx =>
             counter(ctx, nextPid)
@@ -522,7 +521,7 @@ class EventSourcedBehaviorSpec
       c ! StopIt
       probe.expectTerminated(c)
 
-      LoggingTestKit.error[TestException].intercept {
+      LoggingTestKit.error[TestException].expect {
         val c2 = spawn(Behaviors.setup[Command](counter(_, pid)))
         c2 ! Fail
         probe.expectTerminated(c2) // should fail
@@ -534,20 +533,14 @@ class EventSourcedBehaviorSpec
         PersistenceId.ofUniqueId(null)
       }
       val probe = TestProbe[AnyRef]
-      LoggingTestKit
-        .error[ActorInitializationException]
-        .withMessageContains("persistenceId must not be null")
-        .intercept {
-          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId.ofUniqueId(null))))
-          probe.expectTerminated(ref)
-        }
-      LoggingTestKit
-        .error[ActorInitializationException]
-        .withMessageContains("persistenceId must not be null")
-        .intercept {
-          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = null)))
-          probe.expectTerminated(ref)
-        }
+      LoggingTestKit.error[ActorInitializationException].withMessageContains("persistenceId must not be null").expect {
+        val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId.ofUniqueId(null))))
+        probe.expectTerminated(ref)
+      }
+      LoggingTestKit.error[ActorInitializationException].withMessageContains("persistenceId must not be null").expect {
+        val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = null)))
+        probe.expectTerminated(ref)
+      }
     }
 
     "fail fast if persistenceId is empty" in {
@@ -555,13 +548,10 @@ class EventSourcedBehaviorSpec
         PersistenceId.ofUniqueId("")
       }
       val probe = TestProbe[AnyRef]
-      LoggingTestKit
-        .error[ActorInitializationException]
-        .withMessageContains("persistenceId must not be empty")
-        .intercept {
-          val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId.ofUniqueId(""))))
-          probe.expectTerminated(ref)
-        }
+      LoggingTestKit.error[ActorInitializationException].withMessageContains("persistenceId must not be empty").expect {
+        val ref = spawn(Behaviors.setup[Command](counter(_, persistenceId = PersistenceId.ofUniqueId(""))))
+        probe.expectTerminated(ref)
+      }
     }
 
     "fail fast if default journal plugin is not defined" in {
@@ -571,7 +561,7 @@ class EventSourcedBehaviorSpec
         LoggingTestKit
           .error[ActorInitializationException]
           .withMessageContains("Default journal plugin is not configured")
-          .intercept {
+          .expect {
             val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
             val probe = testkit2.createTestProbe()
             probe.expectTerminated(ref)
@@ -588,7 +578,7 @@ class EventSourcedBehaviorSpec
         LoggingTestKit
           .error[ActorInitializationException]
           .withMessageContains("Journal plugin [missing] configuration doesn't exist")
-          .intercept {
+          .expect {
             val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withJournalPluginId("missing")))
             val probe = testkit2.createTestProbe()
             probe.expectTerminated(ref)
@@ -609,7 +599,7 @@ class EventSourcedBehaviorSpec
       try {
         LoggingTestKit
           .warn("No default snapshot store configured")
-          .intercept {
+          .expect {
             val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid())))
             val probe = testkit2.createTestProbe[State]()
             // verify that it's not terminated
@@ -633,7 +623,7 @@ class EventSourcedBehaviorSpec
         LoggingTestKit
           .error[ActorInitializationException]
           .withMessageContains("Snapshot store plugin [missing] configuration doesn't exist")
-          .intercept {
+          .expect {
             val ref = testkit2.spawn(Behaviors.setup[Command](counter(_, nextPid()).withSnapshotPluginId("missing")))
             val probe = testkit2.createTestProbe()
             probe.expectTerminated(ref)

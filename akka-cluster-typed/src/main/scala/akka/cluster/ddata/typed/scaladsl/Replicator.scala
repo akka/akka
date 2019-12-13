@@ -250,14 +250,16 @@ object Replicator {
    * If the key is deleted the subscriber is notified with a [[Deleted]]
    * message.
    */
-  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
+  final case class Subscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[SubscribeResponse[A]])
+      extends Command
 
   /**
    * Unregister a subscriber.
    *
    * @see [[Subscribe]]
    */
-  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[Changed[A]]) extends Command
+  final case class Unsubscribe[A <: ReplicatedData](key: Key[A], subscriber: ActorRef[SubscribeResponse[A]])
+      extends Command
 
   /**
    * @see [[Subscribe]]

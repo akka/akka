@@ -48,8 +48,8 @@ class LoggerSourceSpec
     // one test case leaks to another, the actual log class is what is tested in each individual case
 
     "log from setup" in {
-      LoggingTestKit.info("recovery-completed").intercept {
-        eventFilterFor("setting-up-behavior").intercept {
+      LoggingTestKit.info("recovery-completed").expect {
+        eventFilterFor("setting-up-behavior").expect {
           spawn(behavior)
         }
       }
@@ -57,8 +57,8 @@ class LoggerSourceSpec
     }
 
     "log from recovery completed" in {
-      LoggingTestKit.info("setting-up-behavior").intercept {
-        eventFilterFor("recovery-completed").intercept {
+      LoggingTestKit.info("setting-up-behavior").expect {
+        eventFilterFor("recovery-completed").expect {
           spawn(behavior)
         }
       }
@@ -69,8 +69,8 @@ class LoggerSourceSpec
         .withLogLevel(Level.INFO)
         .withMessageRegex("(setting-up-behavior|recovery-completed|event-received)")
         .withOccurrences(3)
-        .intercept {
-          eventFilterFor("command-received").intercept {
+        .expect {
+          eventFilterFor("command-received").expect {
             spawn(behavior) ! "cmd"
           }
         }
@@ -81,11 +81,28 @@ class LoggerSourceSpec
         .withLogLevel(Level.INFO)
         .withMessageRegex("(setting-up-behavior|recovery-completed|command-received)")
         .withOccurrences(3)
-        .intercept {
-          eventFilterFor("event-received").intercept {
+        .expect {
+          eventFilterFor("event-received").expect {
             spawn(behavior) ! "cmd"
           }
         }
+    }
+
+    "use the user provided name" in {
+
+      val behavior: Behavior[String] = Behaviors.setup[String] { ctx =>
+        ctx.setLoggerName("my-custom-name")
+        EventSourcedBehavior[String, String, String](nextPid(), emptyState = "", commandHandler = (_, _) => {
+          ctx.log.info("command-received")
+          Effect.persist("evt")
+        }, eventHandler = (state, _) => state)
+      }
+
+      val actor = spawn(behavior)
+
+      LoggingTestKit.info("command-received").withLoggerName("my-custom-name").withOccurrences(1).expect {
+        actor ! "cmd"
+      }
     }
   }
 

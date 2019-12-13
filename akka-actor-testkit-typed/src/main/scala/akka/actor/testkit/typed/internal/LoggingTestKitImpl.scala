@@ -54,7 +54,7 @@ import org.slf4j.event.Level
     mdc.forall { case (key, value) => event.mdc.contains(key) && event.mdc(key) == value } &&
     custom.forall(f => f(event))
 
-    // loggerName is handled when installing the filter, in `intercept`
+    // loggerName is handled when installing the filter, in `expect`
   }
 
   private def messageOrEmpty(event: LoggingEvent): String =
@@ -82,7 +82,7 @@ import org.slf4j.event.Level
       todo > 0
   }
 
-  override def intercept[T](code: => T)(implicit system: ActorSystem[_]): T = {
+  override def expect[T](code: => T)(implicit system: ActorSystem[_]): T = {
     val effectiveLoggerName = loggerName.getOrElse("")
     checkLogback(system)
     TestAppender.setupTestAppender(effectiveLoggerName)
@@ -106,6 +106,13 @@ import org.slf4j.event.Level
       TestAppender.removeFilter(effectiveLoggerName, this)
     }
   }
+
+  override def expect[T](system: ActorSystem[_], code: Supplier[T]): T =
+    expect(code.get())(system)
+
+  // deprecated (renamed to expect)
+  override def intercept[T](code: => T)(implicit system: ActorSystem[_]): T =
+    expect(code)(system)
 
   private def checkLogback(system: ActorSystem[_]): Unit = {
     if (!system.dynamicAccess.classIsOnClasspath("ch.qos.logback.classic.spi.ILoggingEvent")) {
@@ -149,8 +156,5 @@ import org.slf4j.event.Level
 
   override def withCause(newCause: Class[_ <: Throwable]): javadsl.LoggingTestKit =
     copy(cause = Option(newCause))
-
-  override def expect[T](system: ActorSystem[_], code: Supplier[T]): T =
-    intercept(code.get())(system)
 
 }

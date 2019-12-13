@@ -88,7 +88,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "schedule non-repeated ticks" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startSingleTimer("T", Tick(1), 10.millis)
+        timer.startSingleTimer(Tick(1), 10.millis)
         target(probe.ref, timer, 1)
       }
 
@@ -103,7 +103,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "schedule repeated ticks" taggedAs TimingTest in {
       val probe = TestProbe[Event]("evt")
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startTimerWithFixedDelay("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay(Tick(1), interval)
         target(probe.ref, timer, 1)
       }
 
@@ -175,7 +175,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       probe.expectMessage(Tock(1))
 
       val latch = new CountDownLatch(1)
-      LoggingTestKit.error[Exc].intercept {
+      LoggingTestKit.error[Exc].expect {
         // next Tock(1) is enqueued in mailbox, but should be discarded by new incarnation
         ref ! SlowThenThrow(latch, new Exc)
 
@@ -205,7 +205,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
 
       probe.expectMessage(Tock(2))
 
-      LoggingTestKit.error[Exc].intercept {
+      LoggingTestKit.error[Exc].expect {
         val latch = new CountDownLatch(1)
         // next Tock(2) is enqueued in mailbox, but should be discarded by new incarnation
         ref ! SlowThenThrow(latch, new Exc)
@@ -222,11 +222,11 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "cancel timers when stopped from exception" taggedAs TimingTest in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startTimerWithFixedDelay("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay(Tick(1), interval)
         target(probe.ref, timer, 1)
       }
       val ref = spawn(behv)
-      LoggingTestKit.error[Exc].intercept {
+      LoggingTestKit.error[Exc].expect {
         ref ! Throw(new Exc)
         probe.expectMessage(GotPostStop(false))
       }
@@ -235,7 +235,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "cancel timers when stopped voluntarily" taggedAs TimingTest in {
       val probe = TestProbe[Event]()
       val behv = Behaviors.withTimers[Command] { timer =>
-        timer.startTimerWithFixedDelay("T", Tick(1), interval)
+        timer.startTimerWithFixedDelay(Tick(1), interval)
         target(probe.ref, timer, 1)
       }
       val ref = spawn(behv)
@@ -246,9 +246,9 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "allow for nested timers" in {
       val probe = TestProbe[String]()
       val ref = spawn(Behaviors.withTimers[String] { outerTimer =>
-        outerTimer.startTimerWithFixedDelay("outer-key", "outer-message", 50.millis)
+        outerTimer.startTimerWithFixedDelay("outer-message", 50.millis)
         Behaviors.withTimers { innerTimer =>
-          innerTimer.startTimerWithFixedDelay("inner-key", "inner-message", 50.millis)
+          innerTimer.startTimerWithFixedDelay("inner-message", 50.millis)
           Behaviors.receiveMessage { message =>
             if (message == "stop") Behaviors.stopped
             else {
@@ -273,7 +273,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
     "keep timers when behavior changes" in {
       val probe = TestProbe[String]()
       def newBehavior(n: Int): Behavior[String] = Behaviors.withTimers[String] { timers =>
-        timers.startTimerWithFixedDelay(s"key${n}", s"message${n}", 50.milli)
+        timers.startTimerWithFixedDelay(s"message${n}", 50.milli)
         Behaviors.receiveMessage { message =>
           if (message == "stop") Behaviors.stopped
           else {
@@ -299,13 +299,13 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       val probe = TestProbe[DeadLetter]()
       val ref = spawn(Behaviors.withTimers[String] { timers =>
         Behaviors.setup { _ =>
-          timers.startTimerWithFixedDelay("test", "test", 250.millis)
+          timers.startTimerWithFixedDelay("test", 250.millis)
           Behaviors.receive { (context, _) =>
             Behaviors.stopped(() => context.log.info(s"stopping"))
           }
         }
       })
-      LoggingTestKit.info("stopping").intercept {
+      LoggingTestKit.info("stopping").expect {
         ref ! "stop"
       }
       probe.expectTerminated(ref)
@@ -323,11 +323,11 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
         case Tick(-1) =>
           probe.ref ! Tock(-1)
           Behaviors.withTimers[Command] { timer =>
-            timer.startSingleTimer("T0", Tick(0), 5.millis)
+            timer.startSingleTimer(Tick(0), 5.millis)
             Behaviors.receiveMessage[Command] {
               case Tick(0) =>
                 probe.ref ! Tock(0)
-                timer.startSingleTimer("T1", Tick(1), 5.millis)
+                timer.startSingleTimer(Tick(1), 5.millis)
                 // let Tick(0) arrive in mailbox, test will not fail if it arrives later
                 Thread.sleep(100)
                 throw TestException("boom")
@@ -344,7 +344,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
           Behaviors.unhandled
       }
 
-    LoggingTestKit.error[TestException].intercept {
+    LoggingTestKit.error[TestException].expect {
       val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
       ref ! Tick(-1)
       probe.expectMessage(Tock(-1))
@@ -365,7 +365,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       case Tick(-1) =>
         probe.ref ! Tock(-1)
         Behaviors.withTimers[Command] { timer =>
-          timer.startSingleTimer("T0", Tick(0), 5.millis)
+          timer.startSingleTimer(Tick(0), 5.millis)
           // let Tick(0) arrive in mailbox, test will not fail if it arrives later
           Thread.sleep(100)
           throw TestException("boom")
@@ -379,7 +379,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
         Behaviors.unhandled
     }
 
-    LoggingTestKit.error[TestException].intercept {
+    LoggingTestKit.error[TestException].expect {
       val ref = spawn(Behaviors.supervise(behv).onFailure[TestException](SupervisorStrategy.restart))
       ref ! Tick(-1)
       probe.expectMessage(Tock(-1))

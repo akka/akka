@@ -30,5 +30,5 @@ between invocations.
 
 **backpressures** when the previous fold function invocation has not yet completed
 
-@@@div
+@@@
 

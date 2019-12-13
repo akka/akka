@@ -1,7 +1,7 @@
 # Persistence - Building a storage backend 
 
 Storage backends for journals and snapshot stores are pluggable in the Akka persistence extension.
-A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](http://akka.io/community/)
+A directory of persistence journal and snapshot store plugins is available at the Akka Community Projects page, see [Community plugins](https://akka.io/community/)
 This documentation described how to build a new storage backend.
 
 Applications can provide their own plugins by implementing a plugin API and activating them by configuration.
@@ -79,7 +79,7 @@ A snapshot store plugin can be activated with the following minimal configuratio
 
 The snapshot store instance is an actor so the methods corresponding to requests from persistent actors
 are executed sequentially. It may delegate to asynchronous libraries, spawn futures, or delegate to other
-actors to achive parallelism.
+actors to achieve parallelism.
 
 The snapshot store plugin class must have a constructor with one of these signatures:
 

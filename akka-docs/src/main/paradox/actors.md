@@ -2,9 +2,7 @@
 
 @@include[includes.md](includes.md) { #actor-api }
 
-@@project-info{ projectId="akka-actor" }
-
-## Dependency
+## Module info
 
 To use Classic Actors, add the following dependency in your project:
 
@@ -13,6 +11,8 @@ To use Classic Actors, add the following dependency in your project:
   artifact="akka-actor_$scala.binary_version$"
   version="$akka.version$"
 }
+
+@@project-info{ projectId="akka-actor" }
 
 ## Introduction
 
@@ -832,7 +832,7 @@ That has benefits such as:
 The `Receive` can be implemented in other ways than using the `ReceiveBuilder` since it in the
 end is just a wrapper around a Scala `PartialFunction`. In Java, you can implement `PartialFunction` by
 extending `AbstractPartialFunction`. For example, one could implement an adapter
-to [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching). See the @extref[Akka Vavr sample project](samples:akka-sample-vavr) for more details.
+to [Vavr Pattern Matching DSL](http://www.vavr.io/vavr-docs/#_pattern_matching). See the [Akka Vavr sample project](https://github.com/akka/akka-samples/tree/2.5/akka-sample-vavr) for more details.
 
 If the validation of the `ReceiveBuilder` match logic turns out to be a bottleneck for some of your
 actors you can consider to implement it at lower level by extending `UntypedAbstractActor` instead
@@ -1061,9 +1061,7 @@ Java
 :  @@snip [ActorDocTest.java](/akka-docs/src/test/java/jdocs/actor/ActorDocTest.java) { #hot-swap-actor }
 
 This variant of the `become` method is useful for many different things,
-such as to implement a Finite State Machine (FSM, for an example see @scala[[Dining
-Hakkers](http://www.lightbend.com/activator/template/akka-sample-fsm-scala)).] @java[[Dining
-Hakkers](http://www.lightbend.com/activator/template/akka-sample-fsm-java-lambda)).] It will replace the current behavior (i.e. the top of the behavior
+such as to implement a Finite State Machine (FSM). It will replace the current behavior (i.e. the top of the behavior
 stack), which means that you do not use `unbecome`, instead always the
 next behavior is explicitly installed.
 
@@ -1156,9 +1154,16 @@ callback. This means it's not possible to write
 
 Note that the stash is part of the ephemeral actor state, unlike the
 mailbox. Therefore, it should be managed like other parts of the
-actor's state which have the same property. The @scala[`Stash` trait’s] @java[`AbstractActorWithStash`]
-implementation of `preRestart` will call `unstashAll()`, which is
-usually the desired behavior.
+actor's state which have the same property.
+
+However, the @scala[`Stash` trait’s] @java[`AbstractActorWithStash`]
+implementation of `preRestart` will call `unstashAll()`. This means
+that prior to the actor restarting, it will transfer all stashed 
+messages back to the actor's mailbox.
+
+The result of this is that when an actor is restarted, any stashed 
+messages will be delivered to the new incarnation of the actor. 
+This is usually the desired behavior.
 
 @@@ note
 

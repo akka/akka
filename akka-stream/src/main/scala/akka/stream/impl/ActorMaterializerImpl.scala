@@ -174,6 +174,7 @@ private[akka] class SubFusingActorMaterializerImpl(
  */
 @InternalApi private[akka] object FlowNames extends ExtensionId[FlowNames] with ExtensionIdProvider {
   override def get(system: ActorSystem): FlowNames = super.get(system)
+  override def get(system: ClassicActorSystemProvider): FlowNames = super.get(system)
   override def lookup() = FlowNames
   override def createExtension(system: ExtendedActorSystem): FlowNames = new FlowNames
 }

@@ -24,7 +24,7 @@ public class BlockingActor extends AbstractBehavior<Integer> {
             Integer.class,
             i -> {
               // DO NOT DO THIS HERE: this is an example of incorrect code,
-              // better alternatives are described futher on.
+              // better alternatives are described further on.
 
               // block for 5 seconds, representing blocking I/O, etc
               Thread.sleep(5000);

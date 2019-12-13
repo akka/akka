@@ -8,7 +8,6 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.ActorSystem
-import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.{ Cluster => ClassicCluster }
 import akka.testkit.LongRunningTest
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -50,14 +49,14 @@ abstract class JoinConfigCompatCheckerClusterShardingSpec
   protected def join(sys: ActorSystem[_]): ClassicCluster = {
     if (sys eq system) {
       configured(system) should ===(JoinConfig.Shards)
-      val seedNode = ClassicCluster(system.toClassic)
+      val seedNode = ClassicCluster(system)
       seedNode.join(seedNode.selfAddress)
       val probe = createTestProbe()
       probe.awaitAssert(seedNode.readView.isSingletonCluster should ===(true), clusterWaitDuration)
       seedNode
     } else {
-      val joiningNode = ClassicCluster(sys.toClassic)
-      joiningNode.joinSeedNodes(im.Seq(ClassicCluster(system.toClassic).selfAddress))
+      val joiningNode = ClassicCluster(sys)
+      joiningNode.joinSeedNodes(im.Seq(ClassicCluster(system).selfAddress))
       joiningNode
     }
   }

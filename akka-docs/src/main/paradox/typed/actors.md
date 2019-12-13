@@ -3,19 +3,9 @@ project.description: The Actor model, managing internal state and changing behav
 ---
 # Introduction to Actors
 
-@@@ note
 For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
-@@@
 
-@@@ note
-Both the Java and Scala DSLs of Akka modules bundled in the same JAR. For a smooth development experience,
-when using an IDE such as Eclipse or IntelliJ, you can disable the auto-importer from suggesting `javadsl`
-imports when working in Scala, or viceversa. See @ref:[IDE Tips](../additional/ide.md). 
-@@@
-
-@@project-info{ projectId="akka-actor-typed" }
-
-## Dependency
+## Module info
 
 To use Akka Actors, add the following dependency in your project:
 
@@ -24,6 +14,12 @@ To use Akka Actors, add the following dependency in your project:
   artifact=akka-actor-typed_$scala.binary_version$
   version=$akka.version$
 }
+
+Both the Java and Scala DSLs of Akka modules are bundled in the same JAR. For a smooth development experience,
+when using an IDE such as Eclipse or IntelliJ, you can disable the auto-importer from suggesting `javadsl`
+imports when working in Scala, or viceversa. See @ref:[IDE Tips](../additional/ide.md). 
+
+@@project-info{ projectId="akka-actor-typed" }
 
 ## Akka Actors
 
@@ -84,9 +80,8 @@ the next behavior is "the same as the current one".
 The type of the messages handled by this behavior is declared to be of class
 `Greet`@java[.]@scala[, meaning that `message` argument is also typed as such.
 This is why we can access the `whom` and `replyTo` members without needing to use a pattern match.]
-Typically, an actor handles more than one specific message type and then there
-is one common @scala[`trait`]@java[`interface`] that all messages that the
-actor can handle @scala[`extends`]@java[`implements`].
+Typically, an actor handles more than one specific message type where all of them
+directly or indirectly @scala[`extend`]@java[`implement`] a common @scala[`trait`]@java[`interface`].
 
 On the last line we see the `HelloWorld` Actor send a message to another
 Actor, which is done using the @scala[`!` operator (pronounced “bang” or “tell”)]@java[`tell` method].
@@ -158,6 +153,8 @@ The console output may look like this:
 [INFO] [03/13/2018 15:50:05.816] [hello-akka.actor.default-dispatcher-4] [akka://hello/user/World] Greeting 3 for World
 [INFO] [03/13/2018 15:50:05.816] [hello-akka.actor.default-dispatcher-6] [akka://hello/user/Akka] Greeting 3 for Akka
 ```
+
+You will also need to add a @ref:[logging dependency](logging.md) to see that output when running.
 
 @@@ div { .group-scala }
 

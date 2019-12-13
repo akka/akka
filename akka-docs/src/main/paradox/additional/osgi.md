@@ -10,12 +10,6 @@ To use Akka in OSGi, you must add the following dependency in your project:
   version=$akka.version$
 }
 
-## Sample project
-
-You can look at the
-@extref[OSGi Dining Hakkers example project](samples:akka-samples-osgi-dining-hakkers)
-to see what this looks like in practice.
-
 ## Background
 
 [OSGi](http://www.osgi.org/developer) is a mature packaging and deployment standard for component-based systems. It

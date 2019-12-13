@@ -91,6 +91,15 @@ import akka.util.{ unused, ConstantFun }
     message
   }
 
+  @InternalStableApi
+  private def interpretUnstashedMessage(
+      behavior: Behavior[T],
+      ctx: TypedActorContext[T],
+      wrappedMessage: T,
+      @unused node: Node[T]): Behavior[T] = {
+    Behavior.interpretMessage(behavior, ctx, wrappedMessage)
+  }
+
   private def rawHead: Node[T] =
     if (nonEmpty) _first
     else throw new NoSuchElementException("head of empty buffer")
@@ -119,31 +128,33 @@ import akka.util.{ unused, ConstantFun }
     if (isEmpty)
       behavior // optimization
     else {
-      val iter = new Iterator[T] {
+      val iter = new Iterator[Node[T]] {
         override def hasNext: Boolean = StashBufferImpl.this.nonEmpty
-        override def next(): T = {
+        override def next(): Node[T] = {
           val next = StashBufferImpl.this.dropHeadForUnstash()
           unstashed(ctx, next)
-          wrap(next.message)
+          next
         }
       }.take(math.min(numberOfMessages, size))
-      interpretUnstashedMessages(behavior, ctx, iter)
+      interpretUnstashedMessages(behavior, ctx, iter, wrap)
     }
   }
 
   private def interpretUnstashedMessages(
       behavior: Behavior[T],
       ctx: TypedActorContext[T],
-      messages: Iterator[T]): Behavior[T] = {
+      messages: Iterator[Node[T]],
+      wrap: T => T): Behavior[T] = {
     @tailrec def interpretOne(b: Behavior[T]): Behavior[T] = {
       val b2 = Behavior.start(b, ctx)
       if (!Behavior.isAlive(b2) || !messages.hasNext) b2
       else {
-        val message = messages.next()
+        val node = messages.next()
+        val message = wrap(node.message)
         val interpretResult = try {
           message match {
             case sig: Signal => Behavior.interpretSignal(b2, ctx, sig)
-            case msg         => Behavior.interpretMessage(b2, ctx, msg)
+            case msg         => interpretUnstashedMessage(b2, ctx, msg, node)
           }
         } catch {
           case NonFatal(e) => throw UnstashException(e, b2)
@@ -161,7 +172,7 @@ import akka.util.{ unused, ConstantFun }
         if (Behavior.isAlive(actualNext))
           interpretOne(Behavior.canonicalize(actualNext, b2, ctx)) // recursive
         else {
-          unstashRestToDeadLetters(ctx, messages)
+          unstashRestToDeadLetters(ctx, messages, wrap)
           actualNext
         }
       }
@@ -178,17 +189,17 @@ import akka.util.{ unused, ConstantFun }
     if (Behavior.isAlive(actualInitialBehavior)) {
       interpretOne(actualInitialBehavior)
     } else {
-      unstashRestToDeadLetters(ctx, messages)
+      unstashRestToDeadLetters(ctx, messages, wrap)
       started
     }
   }
 
-  private def unstashRestToDeadLetters(ctx: TypedActorContext[T], messages: Iterator[T]): Unit = {
+  private def unstashRestToDeadLetters(ctx: TypedActorContext[T], messages: Iterator[Node[T]], wrap: T => T): Unit = {
     val scalaCtx = ctx.asScala
     import akka.actor.typed.scaladsl.adapter._
     val classicDeadLetters = scalaCtx.system.deadLetters.toClassic
-    messages.foreach(msg =>
-      scalaCtx.system.deadLetters ! DeadLetter(msg, classicDeadLetters, ctx.asScala.self.toClassic))
+    messages.foreach(node =>
+      scalaCtx.system.deadLetters ! DeadLetter(wrap(node.message), classicDeadLetters, ctx.asScala.self.toClassic))
   }
 
   override def unstash(behavior: Behavior[T], numberOfMessages: Int, wrap: JFunction[T, T]): Behavior[T] =
