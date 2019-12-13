@@ -3148,6 +3148,21 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
     Mat] =
     new Source(delegate.prefixAndTail(n).map { case (taken, tail) => Pair(taken.asJava, tail.asJava) })
 
+  def prefixAndDownstream[Out2, Mat2](n : Int,
+                                      f : function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): javadsl.Source[Out2, Mat] = {
+    val newDelegate = delegate.prefixAndDownstream(n)(seq => f(seq.asJava).asScala)
+    new javadsl.Source(newDelegate)
+  }
+
+  def prefixAndDownstreamMat[Out2, Mat2, Mat3](n : Int,
+                                               f : function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]],
+                                               matF: function.Function2[Mat, CompletionStage[Mat2], Mat3]): javadsl.Source[Out2, Mat3] = {
+    val newDelegate = delegate.prefixAndDownstreamMat(n)(seq => f(seq.asJava).asScala){
+      (m1, fm2) => matF(m1, fm2.toJava)
+    }
+    new javadsl.Source(newDelegate)
+  }
+
   /**
    * This operation demultiplexes the incoming stream into separate output
    * streams, one for each element key. The key is computed for each element

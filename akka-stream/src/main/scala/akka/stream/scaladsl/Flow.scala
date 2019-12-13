@@ -1929,6 +1929,11 @@ trait FlowOps[+Out, +Mat] {
   def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, NotUsed])] =
     via(new PrefixAndTail[Out](n))
 
+  def prefixAndDownstream[Out2, Mat2](n : Int)(f : immutable.Seq[Out] => Flow[Out, Out2, Mat2]): Repr[Out2] = {
+    require(n >= 0, s"prefixAndDownstreamMat: n must be non-negative.")
+    via(new PrefixAndDownstream(n, f))
+  }
+
   /**
    * This operation demultiplexes the incoming stream into separate output
    * streams, one for each element key. The key is computed for each element
@@ -3125,13 +3130,7 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
 
   def prefixAndDownstreamMat[Out2, Mat2, Mat3](n : Int)(f : immutable.Seq[Out] => Flow[Out, Out2, Mat2])(matF : (Mat, Future[Mat2]) => Mat3): ReprMat[Out2, Mat3] = {
     require(n >= 0, s"prefixAndDownstreamMat: n must be non-negative.")
-    if(0 == n) {
-      //better to handle this here than complicate the stage.
-      //todo: proper exception handling
-      viaMat(f(Nil).mapMaterializedValue(Future.successful))(matF)
-    } else {
-      viaMat(new PrefixAndDownstream(n, f))(matF)
-    }
+    viaMat(new PrefixAndDownstream(n, f))(matF)
   }
 
   /**

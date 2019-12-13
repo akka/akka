@@ -2024,6 +2024,21 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
   def prefixAndTail(n: Int): javadsl.Flow[In, akka.japi.Pair[java.util.List[Out], javadsl.Source[Out, NotUsed]], Mat] =
     new Flow(delegate.prefixAndTail(n).map { case (taken, tail) => akka.japi.Pair(taken.asJava, tail.asJava) })
 
+  def prefixAndDownstream[Out2, Mat2](n : Int,
+                                         f : function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): javadsl.Flow[In, Out2, Mat] = {
+    val newDelegate = delegate.prefixAndDownstream(n)(seq => f(seq.asJava).asScala)
+    new javadsl.Flow(newDelegate)
+  }
+
+  def prefixAndDownstreamMat[Out2, Mat2, Mat3](n : Int,
+                                               f : function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]],
+                                               matF: function.Function2[Mat, CompletionStage[Mat2], Mat3]): javadsl.Flow[In, Out2, Mat3] = {
+    val newDelegate = delegate.prefixAndDownstreamMat(n)(seq => f(seq.asJava).asScala){
+      (m1, fm2) => matF(m1, fm2.toJava)
+    }
+    new javadsl.Flow(newDelegate)
+  }
+
   /**
    * This operation demultiplexes the incoming stream into separate output
    * streams, one for each element key. The key is computed for each element
