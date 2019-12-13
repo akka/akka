@@ -75,7 +75,8 @@ abstract class MultiNodeClusterShardingConfig(
 
   import MultiNodeClusterShardingConfig._
 
-  val targetDir = s"target/ClusterSharding${testNameFromCallStack(classOf[MultiNodeClusterShardingConfig])}Spec-$mode-remember-$rememberEntities"
+  val targetDir =
+    s"target/ClusterSharding${testNameFromCallStack(classOf[MultiNodeClusterShardingConfig])}Spec-$mode-remember-$rememberEntities"
 
   val modeConfig =
     if (mode == ClusterShardingSettings.StateStoreModeDData) ConfigFactory.empty
