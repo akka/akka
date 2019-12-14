@@ -1929,6 +1929,26 @@ trait FlowOps[+Out, +Mat] {
   def prefixAndTail[U >: Out](n: Int): Repr[(immutable.Seq[Out], Source[U, NotUsed])] =
     via(new PrefixAndTail[Out](n))
 
+  /**
+   * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements),
+   * then apply `f` on these elements in order to obtain a flow, this flow is then materialized and the rest of the input is processed by this flow (similar to via ).
+   * This method returns a flow consuming the rest of the stream producing the materialized flow's output.
+   *
+   * '''Emits when''' the materialized flow emits.
+   *  Notice the first `n` elements are buffered internally before materializing the flow, This flow will then be materialized and connected to the rest of the upstream - producing elements at its own discretion (might 'swallow' or multiply elements).
+   *
+   * '''Backpressures when''' the materialized flow backpressures
+   *
+   * '''Completes when''' the materialized flow completes.
+   *  If upstream completes before producing `n` elements, `f` will be applied with the provided elements,
+   *  the resulting flow will be materialized and signalled for upstream completion, it can then cancel/complete at its own discretion.
+   *
+   * '''Cancels when''' upstream cancels, application of `f` fails, materialization of the resulting flow fails or the materialized flow cancels.
+   *  Notice the materialized flow may apply its own logic in case of upstream or downstream cancellations.
+   *
+   *  @param n the number of elements to accumulate before materializing the downstream flow.
+   *  @param f a function that produces the downstream flow based on the upstream's prefix.
+   **/
   def prefixAndDownstream[Out2, Mat2](n : Int)(f : immutable.Seq[Out] => Flow[Out, Out2, Mat2]): Repr[Out2] = {
     require(n >= 0, s"prefixAndDownstreamMat: n must be non-negative.")
     via(new PrefixAndDownstream(n, f))
@@ -3128,6 +3148,10 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) => Mat3): ClosedMat[Mat3]
 
+  /**
+   * mat version of [[#prefixAndDownstream]], this method gives access to a future materialized value of the downstream flow.
+   *see [[#prefixAndDownstream]] for details.
+   */
   def prefixAndDownstreamMat[Out2, Mat2, Mat3](n : Int)(f : immutable.Seq[Out] => Flow[Out, Out2, Mat2])(matF : (Mat, Future[Mat2]) => Mat3): ReprMat[Out2, Mat3] = {
     require(n >= 0, s"prefixAndDownstreamMat: n must be non-negative.")
     viaMat(new PrefixAndDownstream(n, f))(matF)
