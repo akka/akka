@@ -88,7 +88,7 @@ object AccountExampleWithEventHandlersInState {
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
 
-    // used for sharding, typically in `init`-- for an example, see AccountExampleSpec.scala line 47 in this folder
+    // when used with sharding, this TypeKey can be used in `sharding.init` and `sharding.entityRefFor`:
     val TypeKey: EntityTypeKey[Command[_]] =
       EntityTypeKey[Command[_]]("Account")
 
