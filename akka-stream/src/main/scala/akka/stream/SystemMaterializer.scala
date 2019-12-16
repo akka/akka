@@ -13,12 +13,14 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.annotation.InternalApi
 import akka.dispatch.Dispatchers
+import akka.dispatch.ExecutionContexts
 import akka.stream.impl.MaterializerGuardian
 
 import scala.concurrent.Await
 import scala.concurrent.Promise
 import akka.util.JavaDurationConverters._
 import akka.pattern.ask
+import akka.util.OptionVal
 import akka.util.Timeout
 import com.github.ghik.silencer.silent
 
@@ -84,7 +86,16 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
     Await.result(started, materializerTimeout.duration).materializer
   }
 
-  // block on async creation to make it effectively final
-  val materializer = Await.result(systemMaterializerPromise.future, materializerTimeout.duration)
+  @volatile private var _systemMaterializer: OptionVal[Materializer] = OptionVal.None
+  systemMaterializerPromise.future.foreach(mat => _systemMaterializer = OptionVal.Some(mat))(
+    ExecutionContexts.sameThreadExecutionContext)
+
+  // avoid block on async creation unless we actually need it
+  def materializer: Materializer =
+    _systemMaterializer match {
+      case OptionVal.Some(mat) => mat
+      case OptionVal.None =>
+        Await.result(systemMaterializerPromise.future, materializerTimeout.duration)
+    }
 
 }
