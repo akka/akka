@@ -18,6 +18,7 @@ message PersistentMessage {
   optional string sender = 11; // not stored in journal, needed for remote serialization 
   optional string manifest = 12;
   optional string writerUuid = 13;
+  optional sint64 timestamp = 14;
 }
 
 message PersistentPayload {

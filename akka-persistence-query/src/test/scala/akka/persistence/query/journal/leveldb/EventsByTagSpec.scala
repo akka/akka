@@ -123,6 +123,17 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
         .expectNext(EventEnvelope(Sequence(4L), "c", 1L, "a green cucumber"))
         .expectComplete()
     }
+
+    "include timestamp in EventEnvelope" in {
+      system.actorOf(TestActor.props("testTimestamp"))
+      val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(0L))
+      val probe = greenSrc.runWith(TestSink.probe[EventEnvelope])
+
+      probe.request(2)
+      probe.expectNext().timestamp should be > 0L
+      probe.expectNext().timestamp should be > 0L
+      probe.cancel()
+    }
   }
 
   "Leveldb live query EventsByTag" must {
