@@ -43,7 +43,7 @@ Java
 :   @@snip [FromSinkAndSource.java](/akka-docs/src/test/java/jdocs/stream/operators/flow/FromSinkAndSource.java) { #chat }
 
 
-The same patterns can also be applied to @extref:[Akka HTTP WebSockets](akka-http:/server-side/websocket-support.html#server-api) which also have an API accepting a `Flow` of messages. 
+The same patterns can also be applied to @extref:[Akka HTTP WebSockets](akka.http:/server-side/websocket-support.html#server-api) which also have an API accepting a `Flow` of messages. 
 
 If we would replace the `fromSinkAndSource` here with `fromSinkAndSourceCoupled` it would allow the client to close the connection by closing its outgoing stream.
 
