@@ -44,7 +44,7 @@ final case class TimeBasedUUID(value: UUID) extends Offset with Ordered[TimeBase
     throw new IllegalArgumentException("UUID " + value + " is not a time-based UUID")
   }
 
-  override def compare(other: TimeBasedUUID): Int = value.compareTo(other.value)
+  override def compare(other: TimeBasedUUID): Int = value.timestamp().compareTo(other.value.timestamp())
 }
 
 /**
