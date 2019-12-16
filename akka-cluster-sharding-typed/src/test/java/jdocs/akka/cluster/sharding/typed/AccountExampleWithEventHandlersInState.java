@@ -120,7 +120,9 @@ public interface AccountExampleWithEventHandlersInState {
     // Event
     interface Event extends CborSerializable {}
 
-    public static class AccountCreated implements Event {}
+    public enum AccountCreated implements Event {
+      INSTANCE
+    }
 
     public static class Deposited implements Event {
       public final BigDecimal amount;
@@ -219,7 +221,7 @@ public interface AccountExampleWithEventHandlersInState {
 
     private ReplyEffect<Event, Account> createAccount(EmptyAccount account, CreateAccount command) {
       return Effect()
-          .persist(new AccountCreated())
+          .persist(AccountCreated.INSTANCE)
           .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
     }
 
