@@ -108,7 +108,8 @@ final private[akka] class EventsByPersistenceIdStage(
                 offset = Sequence(pr.sequenceNr),
                 persistenceId = pr.persistenceId,
                 sequenceNr = pr.sequenceNr,
-                event = pr.payload))
+                event = pr.payload,
+                timestamp = pr.timestamp))
             nextSequenceNr = pr.sequenceNr + 1
             deliverBuf(out)
 

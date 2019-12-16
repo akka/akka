@@ -166,7 +166,7 @@ private[persistence] trait LeveldbStore
   def persistentFromBytes(a: Array[Byte]): PersistentRepr = serialization.deserialize(a, classOf[PersistentRepr]).get
 
   private def addToMessageBatch(persistent: PersistentRepr, tags: Set[String], batch: WriteBatch): Unit = {
-    val persistentBytes = persistentToBytes(persistent)
+    val persistentBytes = persistentToBytes(persistent.withTimestamp(System.currentTimeMillis()))
     val nid = numericId(persistent.persistenceId)
     batch.put(keyToBytes(counterKey(nid)), counterToBytes(persistent.sequenceNr))
     batch.put(keyToBytes(Key(nid, persistent.sequenceNr, 0)), persistentBytes)
