@@ -488,9 +488,9 @@ private[akka] object Running {
     }
 
     signal match {
-      case Some(sig) if setup.onSignal(state, sig, catchAndLog = false) =>
-        Behaviors.same
-      case _ =>
+      case Some(sig) =>
+        if (setup.onSignal(state, sig, catchAndLog = false)) Behaviors.same else Behaviors.unhandled
+      case None =>
         Behaviors.unhandled // unexpected journal response
     }
   }
@@ -514,10 +514,10 @@ private[akka] object Running {
     }
 
     signal match {
-      case Some(sig) if setup.onSignal(state, sig, catchAndLog = false) =>
-        Behaviors.same
-      case _ =>
-        Behaviors.unhandled // unexpected snapshot response
+      case Some(sig) =>
+        if (setup.onSignal(state, sig, catchAndLog = false)) Behaviors.same else Behaviors.unhandled
+      case None =>
+        Behaviors.unhandled // unexpected journal response
     }
   }
 
