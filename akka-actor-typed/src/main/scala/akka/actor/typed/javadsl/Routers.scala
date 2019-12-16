@@ -4,7 +4,7 @@
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ Behavior, Props }
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
@@ -176,4 +176,9 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    * Set a new pool size from the one set at construction
    */
   def withPoolSize(poolSize: Int): PoolRouter[T]
+
+  /**
+   * Set the props used to spawn the pool's routees
+   */
+  def withRouteeProps(routeeProps: Props): PoolRouter[T]
 }
