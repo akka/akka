@@ -45,7 +45,7 @@ public class PrimitiveStateTest extends JUnitSuite {
     }
 
     @Override
-    public SignalHandler signalHandler() {
+    public SignalHandler<Integer> signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.instance(),
