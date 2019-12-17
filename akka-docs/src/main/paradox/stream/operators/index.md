@@ -238,6 +238,8 @@ See the @ref:[Substreams](../stream-substream.md) page for more detail and code 
 |--|--|--|
 |Source/Flow|<a name="flatmapconcat"></a>@ref[flatMapConcat](Source-or-Flow/flatMapConcat.md)|Transform each input element into a `Source` whose elements are then flattened into the output stream through concatenation.|
 |Source/Flow|<a name="flatmapmerge"></a>@ref[flatMapMerge](Source-or-Flow/flatMapMerge.md)|Transform each input element into a `Source` whose elements are then flattened into the output stream through merging.|
+|Source/Flow|<a name="flattenconcat"></a>@ref[flattenConcat](Source-or-Flow/flattenConcat.md)|Flatten concat each input `Source`'s output elements into the output stream by concatenation,fully consuming one Source after the other, this method is equivalent to `flatMapConcat(identity)`.|
+|Source/Flow|<a name="flattenmerge"></a>@ref[flattenMerge](Source-or-Flow/flattenMerge.md)|Flatten merge each input `Source`'s output elements into the output stream by merging,where at most `breadth` substreams are being consumed at any given time,this method is equivalent to `flatMapMerge(breadth, identity)`.   |
 |Source/Flow|<a name="flatmapprefix"></a>@ref[flatMapPrefix](Source-or-Flow/flatMapPrefix.md)|Use the first `n` elements from the stream to determine how to process the rest.|
 |Source/Flow|<a name="groupby"></a>@ref[groupBy](Source-or-Flow/groupBy.md)|Demultiplex the incoming stream into separate output streams.|
 |Source/Flow|<a name="prefixandtail"></a>@ref[prefixAndTail](Source-or-Flow/prefixAndTail.md)|Take up to *n* elements from the stream (less than *n* only if the upstream completes before emitting *n* elements) and returns a pair containing a strict sequence of the taken element and a stream representing the remaining elements.|
@@ -410,6 +412,8 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [flatMapConcat](Source-or-Flow/flatMapConcat.md)
 * [flatMapMerge](Source-or-Flow/flatMapMerge.md)
 * [flatMapPrefix](Source-or-Flow/flatMapPrefix.md)
+* [flattenConcat](Source-or-Flow/flattenConcat.md)
+* [flattenMerge](Source-or-Flow/flattenMerge.md)
 * [fold](Source-or-Flow/fold.md)
 * [fold](Sink/fold.md)
 * [foldAsync](Source-or-Flow/foldAsync.md)

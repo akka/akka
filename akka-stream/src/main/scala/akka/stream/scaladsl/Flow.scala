@@ -2239,7 +2239,21 @@ trait FlowOps[+Out, +Mat] {
    *
    * '''Cancels when''' downstream cancels
    */
-  def flatMapConcat[T, M](f: Out => Graph[SourceShape[T], M]): Repr[T] = map(f).via(new FlattenMerge[T, M](1))
+  def flatMapConcat[T, M](f: Out => Graph[SourceShape[T], M]): Repr[T] = flatMapMerge(1, f)
+
+  /**
+   * Flatten concat each input `Source`'s output elements into the output stream by concatenation,
+   * fully consuming one Source after the other, this method is equivalent to `flatMapConcat(identity)`.
+   *
+   * '''Emits when''' a currently consumed substream has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all consumed substreams complete
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def flattenConcat[T, M](implicit ev: Out <:< Graph[SourceShape[T], M]): Repr[T] = flatMapConcat(ev)
 
   /**
    * Transform each input element into a `Source` of output elements that is
@@ -2256,6 +2270,22 @@ trait FlowOps[+Out, +Mat] {
    */
   def flatMapMerge[T, M](breadth: Int, f: Out => Graph[SourceShape[T], M]): Repr[T] =
     map(f).via(new FlattenMerge[T, M](breadth))
+
+  /**
+   * Flatten merge each input `Source`'s output elements into the output stream by merging,
+   * where at most `breadth` substreams are being consumed at any given time,
+   * this method is equivalent to `flatMapMerge(breadth, identity)`.
+   *
+   * '''Emits when''' a currently consumed substream has an element available
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes and all consumed substreams complete
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def flattenMerge[T, M](breadth: Int)(implicit ev: Out <:< Graph[SourceShape[T], M]): Repr[T] =
+    flatMapMerge(breadth, ev)
 
   /**
    * If the first element has not passed through this operator before the provided timeout, the stream is failed

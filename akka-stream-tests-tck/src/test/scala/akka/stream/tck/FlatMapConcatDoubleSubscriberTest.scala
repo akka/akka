@@ -20,7 +20,7 @@ class FlatMapConcatDoubleSubscriberTest extends AkkaSubscriberBlackboxVerificati
         def subscribe(s: Subscriber[_ >: Int]): Unit =
           subscriber.success(s.asInstanceOf[Subscriber[Int]])
       }))
-      .flatMapConcat(identity)
+      .flattenConcat
       .runWith(Sink.ignore)
 
     Await.result(subscriber.future, 1.second)
