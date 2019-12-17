@@ -127,6 +127,10 @@ bytes to different objects.
 Then you only need to fill in the blanks, bind it to a name in your configuration and then
 list which classes that should be serialized using it.
 
+The serializers are initialized eagerly by the `SerializationExtension` when the `ActorSystem` is started and
+therefore a serializer itself must not access the `SerializationExtension` from its constructor. Instead, it
+should access the `SerializationExtension` lazily.
+
 <a id="string-manifest-serializer"></a>
 ### Serializer with String Manifest
 

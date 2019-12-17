@@ -31,6 +31,7 @@ import scala.util.control.{ ControlThrowable, NonFatal }
 import scala.util.{ Failure, Success, Try }
 
 import akka.event.Logging.DefaultLogger
+import akka.serialization.SerializationExtension
 
 object BootstrapSetup {
 
@@ -1133,7 +1134,13 @@ private[akka] class ActorSystemImpl(
   private def findExtension[T <: Extension](ext: ExtensionId[T]): T = extensions.get(ext) match {
     case c: CountDownLatch =>
       blocking {
-        c.await()
+        val awaitMillis = settings.CreationTimeout.duration.toMillis
+        if (!c.await(awaitMillis, TimeUnit.MILLISECONDS))
+          throw new IllegalStateException(
+            s"Initialization of [$ext] took more than [$awaitMillis ms]. " +
+            (if (ext == SerializationExtension)
+               "A serializer must not access the SerializationExtension from its constructor. Use lazy init."
+             else "Could be deadlock due to cyclic initialization of extensions."))
       }
       findExtension(ext) //Registration in process, await completion and retry
     case t: Throwable => throw t //Initialization failed, throw same again
