@@ -1325,7 +1325,7 @@ trait FlowOps[+Out, +Mat] {
    *
    * See also [[FlowOps.take]], [[FlowOps.takeWithin]], [[FlowOps.takeWhile]]
    */
-  def limitWeighted[T](max: Long)(costFn: Out => Long): Repr[Out] = via(LimitWeighted(max, costFn))
+  def limitWeighted(max: Long)(costFn: Out => Long): Repr[Out] = via(LimitWeighted(max, costFn))
 
   /**
    * Apply a sliding window over the stream and return the windows as groups of elements, with the last group
