@@ -204,6 +204,38 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
         .expectComplete()
 
     }
+
+    "work when materialized flow produces no downstream elements" in assertAllStagesStopped{
+      val (prefixF, suffixF) = Source(0 until 100)
+        .prefixAndDownstreamMat(4){ prefix =>
+          Flow[Int]
+            .mapMaterializedValue(_ => prefix)
+            .filter(_ => false)
+        } (Keep.right)
+        .toMat(Sink.seq) (Keep.both)
+        .run
+
+      prefixF.futureValue should === (0 until 4)
+      suffixF.futureValue/*(Interval(Span(1000, Minutes)))*/ should be (empty)
+    }
+
+    "work when materialized flow does not consume upstream" in assertAllStagesStopped{
+      val (prefixF, suffixF) = Source(0 until 100)
+        .map{ i =>
+          i should be <= 4
+          i
+        }
+        .prefixAndDownstreamMat(4){ prefix =>
+          Flow[Int]
+            .mapMaterializedValue(_ => prefix)
+            .take(0)
+        } (Keep.right)
+        .toMat(Sink.seq) (Keep.both)
+        .run
+
+      prefixF.futureValue should === (0 until 4)
+      suffixF.futureValue/*(Interval(Span(1000, Minutes)))*/ should be (empty)
+    }
   }
 
 }
