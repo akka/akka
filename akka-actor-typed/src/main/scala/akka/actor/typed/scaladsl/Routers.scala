@@ -3,7 +3,7 @@
  */
 
 package akka.actor.typed.scaladsl
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ Behavior, Props }
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.DoNotInherit
@@ -166,4 +166,9 @@ trait PoolRouter[T] extends Behavior[T] {
    * Set a new pool size from the one set at construction
    */
   def withPoolSize(poolSize: Int): PoolRouter[T]
+
+  /**
+   * Set the props used to spawn the pool's routees
+   */
+  def withRouteeProps(routeeProps: Props): PoolRouter[T]
 }

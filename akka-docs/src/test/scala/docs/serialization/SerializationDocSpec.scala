@@ -214,12 +214,11 @@ package docs.serialization {
     def demonstrateTypedActorSystem(): Unit = {
       //#programmatic-typed
       import akka.actor.typed.ActorSystem
-      import akka.actor.typed.scaladsl.adapter._
 
       val system = ActorSystem(Behaviors.empty, "example")
 
       // Get the Serialization Extension
-      val serialization = SerializationExtension(system.toClassic)
+      val serialization = SerializationExtension(system)
       //#programmatic-typed
     }
 

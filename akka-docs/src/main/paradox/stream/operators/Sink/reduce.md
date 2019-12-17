@@ -19,6 +19,14 @@ receives the two first elements of the flow.
 
 Materializes into a @scala[`Future`] @java[`CompletionStage`] that will be completed by the last result of the reduction function.
 
+## Example
+
+Scala
+:   @@snip [SinkReduceSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SinkSpec.scala) { #reduce-operator-example }
+
+Java
+:   @@snip [SinkDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SinkDocExamples.java) { #reduce-operator-example }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -28,11 +36,3 @@ Materializes into a @scala[`Future`] @java[`CompletionStage`] that will be compl
 **backpressures** when the previous reduction function invocation has not yet completed
 
 @@@
-
-## Example
-
-Scala
-:   @@snip [SinkReduceSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SinkSpec.scala) { #reduce-operator-example }
-
-Java
-:   @@snip [SinkDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SinkDocExamples.java) { #reduce-operator-example }

@@ -14,15 +14,18 @@ import org.scalatest.Failed
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
+abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
   def this(config: Config) =
-    this(ActorSystem(AkkaSpec.getCallerName(getClass), ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
+    this(
+      ActorSystem(
+        AkkaSpec.testNameFromCallStack(classOf[StreamSpec]),
+        ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
   def this(configMap: Map[String, _]) = this(AkkaSpec.mapToConfig(configMap))
 
-  def this() = this(ActorSystem(AkkaSpec.getCallerName(getClass), AkkaSpec.testConf))
+  def this() = this(ActorSystem(AkkaSpec.testNameFromCallStack(classOf[StreamSpec]), AkkaSpec.testConf))
 
   override def withFixture(test: NoArgTest) = {
     super.withFixture(test) match {

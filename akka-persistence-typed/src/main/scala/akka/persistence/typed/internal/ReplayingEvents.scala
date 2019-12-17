@@ -100,8 +100,8 @@ private[akka] final class ReplayingEvents[C, E, S](
       state = state.copy(receivedPoisonPill = true)
       this
     case signal =>
-      setup.onSignal(state.state, signal, catchAndLog = true)
-      this
+      if (setup.onSignal(state.state, signal, catchAndLog = true)) this
+      else Behaviors.unhandled
   }
 
   private def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {
@@ -231,6 +231,7 @@ private[akka] final class ReplayingEvents[C, E, S](
           setup.persistenceId,
           (System.nanoTime() - state.recoveryStartTime).nanos.pretty)
       }
+
       setup.onSignal(state.state, RecoveryCompleted, catchAndLog = false)
 
       if (state.receivedPoisonPill && isInternalStashEmpty && !isUnstashAllInProgress)

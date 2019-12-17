@@ -8,6 +8,7 @@ import java.util
 import java.util.Comparator
 
 import akka.util.HashCode
+import org.agrona.collections.Hashing
 import org.agrona.collections.Object2IntHashMap
 
 /**
@@ -94,10 +95,15 @@ private[remote] object CompressionTable {
   }
   def compareBy2ndValue[T]: Comparator[Tuple2[T, Int]] = CompareBy2ndValue.asInstanceOf[Comparator[(T, Int)]]
 
-  def empty[T] = new CompressionTable[T](0, 0, new Object2IntHashMap[T](NotCompressedId))
+  private def newObject2IntHashMap[T](initialCapacity: Int): Object2IntHashMap[T] = {
+    // import to use shouldAvoidAllocation = false because of concurrent access of dictionary
+    new Object2IntHashMap[T](initialCapacity, Hashing.DEFAULT_LOAD_FACTOR, NotCompressedId, false)
+  }
+
+  def empty[T] = new CompressionTable[T](0, 0, newObject2IntHashMap(2))
 
   def apply[T](originUid: Long, version: Byte, dictionary: Map[T, Int]): CompressionTable[T] = {
-    val _dictionary = new Object2IntHashMap[T](NotCompressedId)
+    val _dictionary = newObject2IntHashMap[T](dictionary.size * 2)
     dictionary.foreach {
       case (key, value) => _dictionary.put(key, value)
     }

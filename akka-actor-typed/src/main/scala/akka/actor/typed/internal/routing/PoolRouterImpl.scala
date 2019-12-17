@@ -18,14 +18,15 @@ import akka.annotation.InternalApi
 private[akka] final case class PoolRouterBuilder[T](
     poolSize: Int,
     behavior: Behavior[T],
-    logicFactory: ActorSystem[_] => RoutingLogic[T] = (_: ActorSystem[_]) => new RoutingLogics.RoundRobinLogic[T])
+    logicFactory: ActorSystem[_] => RoutingLogic[T] = (_: ActorSystem[_]) => new RoutingLogics.RoundRobinLogic[T],
+    routeeProps: Props = Props.empty)
     extends javadsl.PoolRouter[T]
     with scaladsl.PoolRouter[T] {
   if (poolSize < 1) throw new IllegalArgumentException(s"pool size must be positive, was $poolSize")
 
   // deferred creation of the actual router
   def apply(ctx: TypedActorContext[T]): Behavior[T] =
-    new PoolRouterImpl[T](ctx.asScala, poolSize, behavior, logicFactory(ctx.asScala.system))
+    new PoolRouterImpl[T](ctx.asScala, poolSize, behavior, logicFactory(ctx.asScala.system), routeeProps)
 
   def withRandomRouting(): PoolRouterBuilder[T] = copy(logicFactory = _ => new RoutingLogics.RandomLogic[T]())
 
@@ -40,6 +41,8 @@ private[akka] final case class PoolRouterBuilder[T](
   }
 
   def withPoolSize(poolSize: Int): PoolRouterBuilder[T] = copy(poolSize = poolSize)
+
+  def withRouteeProps(routeeProps: Props): PoolRouterBuilder[T] = copy(routeeProps = routeeProps)
 }
 
 /**
@@ -50,11 +53,12 @@ private final class PoolRouterImpl[T](
     ctx: ActorContext[T],
     poolSize: Int,
     behavior: Behavior[T],
-    logic: RoutingLogic[T])
+    logic: RoutingLogic[T],
+    routeeProps: Props)
     extends AbstractBehavior[T](ctx) {
 
   (1 to poolSize).foreach { _ =>
-    val child = context.spawnAnonymous(behavior)
+    val child = context.spawnAnonymous(behavior, routeeProps)
     context.watch(child)
     child
   }

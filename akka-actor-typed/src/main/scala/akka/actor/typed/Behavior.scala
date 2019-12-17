@@ -219,18 +219,18 @@ object Behavior {
   def isUnhandled[T](behavior: Behavior[T]): Boolean = behavior eq BehaviorImpl.UnhandledBehavior
 
   /**
-   * Returns true if the given behavior is the special `Unhandled` marker.
+   * Returns true if the given behavior is deferred.
    */
   def isDeferred[T](behavior: Behavior[T]): Boolean = behavior._tag == BehaviorTags.DeferredBehavior
 
   /**
-   * Execute the behavior with the given message
+   * Execute the behavior with the given message.
    */
   def interpretMessage[T](behavior: Behavior[T], ctx: TypedActorContext[T], msg: T): Behavior[T] =
     interpret(behavior, ctx, msg, isSignal = false)
 
   /**
-   * Execute the behavior with the given signal
+   * Execute the behavior with the given signal.
    */
   def interpretSignal[T](behavior: Behavior[T], ctx: TypedActorContext[T], signal: Signal): Behavior[T] = {
     val result = interpret(behavior, ctx, signal, isSignal = true)

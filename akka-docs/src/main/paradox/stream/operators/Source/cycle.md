@@ -19,17 +19,6 @@ when the original iterator runs out of elements to process it will start all ove
 provided by the evaluation of provided parameter. If the method argument provides an empty iterator the stream will be 
 terminated with an exception.
 
-## Reactive Streams semantics
-
-@@@div { .callout }
-
-**emits** the next value returned from cycled iterator
-
-**completes** never
-
-@@@
-
-
 ## Examples
 
 Scala
@@ -46,3 +35,13 @@ Scala
 
 Java
 :  @@snip [cycle.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceTest.java) { #cycle-error }
+
+## Reactive Streams semantics
+
+@@@div { .callout }
+
+**emits** the next value returned from cycled iterator
+
+**completes** never
+
+@@@

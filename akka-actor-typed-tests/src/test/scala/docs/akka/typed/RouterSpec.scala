@@ -4,6 +4,7 @@
 
 package docs.akka.typed
 
+import akka.actor.typed.DispatcherSelector
 // #pool
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
@@ -65,6 +66,15 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
         }
         // #pool
 
+        // #pool-dispatcher
+        // make sure workers use the default blocking IO dispatcher
+        val blockingPool = pool.withRouteeProps(routeeProps = DispatcherSelector.blocking())
+        // spawn head router using the same executor as the parent
+        val blockingRouter = ctx.spawn(blockingPool, "blocking-pool", DispatcherSelector.sameAsParent())
+        // #pool-dispatcher
+
+        blockingRouter ! Worker.DoLog("msg")
+
         // #strategy
         val alternativePool = pool.withPoolSize(2).withRoundRobinRouting()
         // #strategy
@@ -75,7 +85,7 @@ class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with
         Behaviors.empty
       })
 
-      probe.receiveMessages(10)
+      probe.receiveMessages(11)
     }
 
     "show group routing" in {

@@ -19,6 +19,10 @@ If the future fails the stream is failed with that exception.
 
 For the corresponding operator for the Java standard library `CompletionStage` see @ref:[completionStage](completionStage.md).
 
+## Example
+Scala
+:  @@snip [SourceFromFuture.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOperators.scala) { #sourceFromFuture }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -28,8 +32,3 @@ For the corresponding operator for the Java standard library `CompletionStage` s
 **completes** after the future has completed
 
 @@@
-
-## Example
-Scala
-:  @@snip [SourceFromFuture.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOperators.scala) { #sourceFromFuture }
-

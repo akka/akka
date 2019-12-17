@@ -43,6 +43,18 @@ Scala
 Java
 :  @@snip [FSMSocTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/FSMDocTest.java) { #simple-state}
 
+@scala[
+The method `idle` above makes use of `Behaviors.unhandled` which advises the system to reuse the previous behavior, 
+including the hint that the message has not been handled.
+There are two related behaviors:
+
+- return `Behaviors.empty` as next behavior in case you reached a state where you don't expect messages any more. 
+  For instance if an actor only waits until all spawned child actors stopped. 
+  Unhandled messages are still logged with this behavior.
+- return `Behaviors.ignore` as next behavior in case you don't care about unhandled messages. 
+  All messages sent to an actor with such a behavior are simply dropped and ignored (without logging)
+]
+
 To set state timeouts use `Behaviors.withTimers` along with a `startSingleTimer`.
 
 ## Example project

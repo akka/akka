@@ -74,7 +74,7 @@ object EventSourcedBehaviorSpec {
     }
   }
 
-  // also used from PersistentActorTest
+  // also used from PersistentActorTest, EventSourcedBehaviorWatchSpec
   def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     # akka.persistence.typed.log-stashing = on
