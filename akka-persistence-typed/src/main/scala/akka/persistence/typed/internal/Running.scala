@@ -517,7 +517,7 @@ private[akka] object Running {
       case Some(sig) =>
         if (setup.onSignal(state, sig, catchAndLog = false)) Behaviors.same else Behaviors.unhandled
       case None =>
-        Behaviors.unhandled // unexpected journal response
+        Behaviors.unhandled // unexpected snapshot response
     }
   }
 
