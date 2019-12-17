@@ -72,20 +72,23 @@ private object ActorRefSource {
           buffer match {
             case OptionVal.None =>
               if (isCompleting) {
-                log.warning("[{}] Dropping element because Status.Success received already: [{}]", name, m)
+                log.warning("Dropping element because Status.Success received already: [{}] in stream [{}]", m, name)
               } else if (isAvailable(out)) {
                 push(out, m)
               } else {
-                log.debug("[{}] Dropping element because there is no downstream demand and no buffer: [{}]", name, m)
+                log.debug(
+                  "Dropping element because there is no downstream demand and no buffer: [{}] in stream [{}]",
+                  m,
+                  name)
               }
 
             case OptionVal.Some(buf) =>
               if (isCompleting) {
                 log.warning(
-                  "[{}] Dropping element because Status.Success received already, only draining already buffered elements: [{}] (pending: [{}])",
-                  name,
+                  "Dropping element because Status.Success received already, only draining already buffered elements: [{}] (pending: [{}] in stream [{}])",
                   m,
-                  buf.used)
+                  buf.used,
+                  name)
               } else if (!buf.isFull) {
                 buf.enqueue(m)
                 tryPush()
@@ -94,30 +97,37 @@ private object ActorRefSource {
                   case s: DropHead =>
                     log.log(
                       s.logLevel,
-                      "[{}] Dropping the head element because buffer is full and overflowStrategy is: [DropHead]", name)
+                      "Dropping the head element because buffer is full and overflowStrategy is: [DropHead] in stream [{}]",
+                      name)
                     buf.dropHead()
                     buf.enqueue(m)
                     tryPush()
                   case s: DropTail =>
                     log.log(
                       s.logLevel,
-                      "[{}] Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]", name)
+                      "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail] in stream [{}]",
+                      name)
                     buf.dropTail()
                     buf.enqueue(m)
                     tryPush()
                   case s: DropBuffer =>
                     log.log(
                       s.logLevel,
-                      "[{}] Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]", name)
+                      "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer] in stream [{}]",
+                      name)
                     buf.clear()
                     buf.enqueue(m)
                     tryPush()
                   case s: DropNew =>
                     log.log(
                       s.logLevel,
-                      "[{}] Dropping the new element because buffer is full and overflowStrategy is: [DropNew]", name)
+                      "Dropping the new element because buffer is full and overflowStrategy is: [DropNew] in stream [{}]",
+                      name)
                   case s: Fail =>
-                    log.log(s.logLevel, "[{}] Failing because buffer is full and overflowStrategy is: [Fail]", name)
+                    log.log(
+                      s.logLevel,
+                      "Failing because buffer is full and overflowStrategy is: [Fail] in stream [{}]",
+                      name)
                     val bufferOverflowException =
                       BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
                     failStage(bufferOverflowException)
