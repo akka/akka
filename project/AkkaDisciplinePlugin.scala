@@ -71,7 +71,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   /**
    * Remain visibly filtered for future code quality work and removing.
    */
-  val undisciplineScalacOptions = Set("-Ywarn-value-discard", "-Ywarn-numeric-widen", "-Yno-adapted-args")
+  val undisciplineScalacOptions = Set("-Ywarn-value-discard", "-Ywarn-numeric-widen")
 
   /** These options are desired, but some are excluded for the time being*/
   val disciplineScalacOptions = Set(
