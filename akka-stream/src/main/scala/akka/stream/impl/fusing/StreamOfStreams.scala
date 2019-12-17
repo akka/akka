@@ -218,12 +218,6 @@ import scala.util.control.NonFatal
       def materializeFlow(): Unit = {
         val prefix = accumulated.reverse
         accumulated = Nil
-        /*val flow = try f(prefix) catch {
-          case NonFatal(ex) =>
-            val neverMaterializedEx = new NeverMaterializedException(ex)
-            matPromise.failure(neverMaterializedEx)
-            throw neverMaterializedEx
-        }*/
         subSource = new SubSourceOutlet[In]("subSource")
         subSource.setHandler{
           new OutHandler {
@@ -249,13 +243,11 @@ import scala.util.control.NonFatal
             }
 
             override def onUpstreamFinish(): Unit = {
-              completeStage()
-              super.onUpstreamFinish()
+              complete(out)
             }
 
             override def onUpstreamFailure(ex: Throwable): Unit = {
-              failStage(ex)
-              super.onUpstreamFailure(ex)
+              fail(out, ex)
             }
           }
         }
@@ -274,12 +266,13 @@ import scala.util.control.NonFatal
         }
 
         matValueTry foreach{ _ =>
-          if(!isClosed(in)) {
-            //this materialization comes in response to downstream demand, so we need to signal this to the materialized flow
-            subSink.pull()
-          } else {
-            //or an upstream completion/failure
+          //in case we've materialized due to upstream completion
+          if(isClosed(in)) {
             subSource.complete()
+          }
+          //in case we've been pulled by downstream
+          if(isAvailable(out)) {
+            subSink.pull()
           }
         }
 

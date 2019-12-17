@@ -4,8 +4,10 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+
+//import scala.concurrent.Future
 //import org.scalatest.concurrent.PatienceConfiguration.Interval
 //import org.scalatest.time.{Minutes, Span}
 
@@ -148,6 +150,59 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
       prefixF.futureValue should be(empty)
       suffixF.futureValue should ===(100 :: 101 :: Nil)
+    }
+
+    "handles upstream cancellation" in assertAllStagesStopped {
+      val publisher = TestPublisher.manualProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
+
+      val flow = Flow[Int]
+        .prefixAndDownstreamMat(2){ prefix =>
+          println("materializing flow")
+          Flow[Int]
+            .mapMaterializedValue(_ => prefix)
+            .prepend(Source(100 to 101))
+            .alsoTo(Sink.foreach(println(_)))
+        } (Keep.right)
+
+      val flow_ = Flow[Int]
+        .alsoToMat{
+          Flow[Int]
+            .take(2)
+            .toMat(Sink.seq) (Keep.right)
+        } (Keep.right)
+        .drop(2)
+        .prepend(Source(100 to 101))
+        .alsoTo(Sink.foreach(println(_)))
+
+      val matValue = Source.fromPublisher(publisher)
+        .viaMat(if(true) flow else flow_)(Keep.right)
+        .to(Sink.fromSubscriber(subscriber))
+        .run()
+
+      matValue.value should be (empty)
+
+      val upstream = publisher.expectSubscription()
+      val downstream = subscriber.expectSubscription()
+
+      downstream.request(1000)
+
+      upstream.expectRequest()
+      //completing publisher
+      upstream.sendComplete()
+
+      matValue.futureValue should === (Nil)
+
+
+      subscriber
+        .expectNext(100)
+
+
+
+      subscriber
+        .expectNext(101)
+        .expectComplete()
+
     }
   }
 
