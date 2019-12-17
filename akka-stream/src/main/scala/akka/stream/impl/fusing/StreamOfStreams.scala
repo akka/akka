@@ -139,7 +139,10 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] final class PrefixAndDownstream[In, Out, M](n : Int,
                                                                        f : immutable.Seq[In] => Flow[In, Out, M])
   extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]]{
-  import shape.{in, out}
+
+  val in = Inlet[In](s"${this}.in")
+  val out = Outlet[Out](s"${this}.out")
+  override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
     val matPromise = Promise[M]
@@ -158,10 +161,7 @@ import scala.util.control.NonFatal
           subSink.cancel()
         super.postStop()
       }
-      /**
-       * Called when the input port has a new element available. The actual element can be retrieved via the
-       * [[GraphStageLogic.grab]] method.
-       */
+
       override def onPush(): Unit = {
         if(null != subSource) {
           subSource.push(grab(in))
@@ -194,10 +194,6 @@ import scala.util.control.NonFatal
         }
       }
 
-      /**
-       * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push]]
-       * is now allowed to be called on this port.
-       */
       override def onPull(): Unit = {
         if(null != subSink){
           //delegate to subSink
@@ -222,19 +218,15 @@ import scala.util.control.NonFatal
       def materializeFlow(): Unit = {
         val prefix = accumulated.reverse
         accumulated = Nil
-        val flow = try f(prefix) catch {
+        /*val flow = try f(prefix) catch {
           case NonFatal(ex) =>
             val neverMaterializedEx = new NeverMaterializedException(ex)
             matPromise.failure(neverMaterializedEx)
             throw neverMaterializedEx
-        }
+        }*/
         subSource = new SubSourceOutlet[In]("subSource")
         subSource.setHandler{
           new OutHandler {
-            /**
-             * Called when the output port has received a pull, and therefore ready to emit an element, i.e. [[GraphStageLogic.push]]
-             * is now allowed to be called on this port.
-             */
             override def onPull(): Unit = {
               if(!isClosed(in) && !hasBeenPulled(in)) {
                 pull(in)
@@ -252,10 +244,6 @@ import scala.util.control.NonFatal
         subSink = new SubSinkInlet[Out]("subSink")
         subSink.setHandler{
           new InHandler {
-            /**
-             * Called when the input port has a new element available. The actual element can be retrieved via the
-             * [[GraphStageLogic.grab]] method.
-             */
             override def onPush(): Unit = {
               push(out, subSink.grab())
             }
@@ -271,28 +259,35 @@ import scala.util.control.NonFatal
             }
           }
         }
-        val runnableGraph = Source.fromGraph(subSource.source)
-          .viaMat(flow)(Keep.right)
-          .to(subSink.sink)
-        val m = Try(interpreter.subFusingMaterializer.materialize(runnableGraph))
-        matPromise.complete(m)
-        m.get
-        //this materialization comes in response to downstream demand, so we need to signal this to the materialized flow
-        if(!isClosed(in)) {
-          subSink.pull()
-        } else {
-          subSource.complete()
+        val matValueTry = Try {
+          val flow = f(prefix)
+          val runnableGraph = Source.fromGraph(subSource.source)
+            .viaMat(flow)(Keep.right)
+            .to(subSink.sink)
+          interpreter.subFusingMaterializer.materialize(runnableGraph)
         }
+
+        matPromise.complete{
+          matValueTry recoverWith  {
+            case ex => scala.util.Failure(new NeverMaterializedException(ex))
+          }
+        }
+
+        matValueTry foreach{ _ =>
+          if(!isClosed(in)) {
+            //this materialization comes in response to downstream demand, so we need to signal this to the materialized flow
+            subSink.pull()
+          } else {
+            //or an upstream completion/failure
+            subSource.complete()
+          }
+        }
+
+        matValueTry.failed.foreach(failStage)
+
       }
     }
     (logic, matPromise.future)
-  }
-
-  /**
-   * The shape of a graph is all that is externally visible: its inlets and outlets.
-   */
-  override val shape: FlowShape[In, Out] = {
-    FlowShape.of(Inlet[In]("in"), Outlet[Out]("out"))
   }
 }
 

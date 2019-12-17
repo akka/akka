@@ -119,8 +119,35 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
       prefixF.futureValue should === (0 until 7)
       suffixF.futureValue should === (7 :: 8 :: 8 :: 9 :: 9 :: 9 :: Nil)
+    }
 
+    "succeed when upstream produces no elements" in assertAllStagesStopped {
+      val(prefixF, suffixF) =  Source.empty[Int]
+        .prefixAndDownstreamMat(7){ prefix =>
+          Flow[Int]
+            .mapMaterializedValue(_ => prefix)
+            .mapConcat(n => List.fill(n - 6)(n))
+        }(Keep.right)
+        .toMat(Sink.seq[Int])(Keep.both)
+        .run()
 
+      prefixF.futureValue should be(empty)
+      suffixF.futureValue should be(empty)
+    }
+
+    "apply materialized flow's semantics when upstream produces no elements" in assertAllStagesStopped {
+      val(prefixF, suffixF) =  Source.empty[Int]
+        .prefixAndDownstreamMat(7){ prefix =>
+          Flow[Int]
+            .mapMaterializedValue(_ => prefix)
+            .mapConcat(n => List.fill(n - 6)(n))
+            .prepend(Source(100 to 101))
+        }(Keep.right)
+        .toMat(Sink.seq[Int])(Keep.both)
+        .run()
+
+      prefixF.futureValue should be(empty)
+      suffixF.futureValue should ===(100 :: 101 :: Nil)
     }
   }
 
