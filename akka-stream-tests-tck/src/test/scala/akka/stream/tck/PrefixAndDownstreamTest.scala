@@ -4,17 +4,16 @@
 
 package akka.stream.tck
 
-import akka.stream.scaladsl.{Flow, Keep, Sink, Source}
+import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import org.reactivestreams.Publisher
 
 class PrefixAndDownstreamTest extends AkkaPublisherVerification[Int] {
   override def createPublisher(elements: Long): Publisher[Int] = {
     val publisher = Source(iterable(elements))
       .map(_.toInt)
-      .prefixAndDownstreamMat(1){ seq =>
-        Flow[Int]
-          .prepend(Source(seq))
-      } (Keep.left)
+      .prefixAndDownstreamMat(1) { seq =>
+        Flow[Int].prepend(Source(seq))
+      }(Keep.left)
       .runWith(Sink.asPublisher(false))
     publisher
   }

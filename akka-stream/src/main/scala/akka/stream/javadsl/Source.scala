@@ -3168,8 +3168,9 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
    **/
-  def prefixAndDownstream[Out2, Mat2](n : Int,
-                                      f : function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): javadsl.Source[Out2, Mat] = {
+  def prefixAndDownstream[Out2, Mat2](
+      n: Int,
+      f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): javadsl.Source[Out2, Mat] = {
     val newDelegate = delegate.prefixAndDownstream(n)(seq => f(seq.asJava).asScala)
     new javadsl.Source(newDelegate)
   }
@@ -3178,11 +3179,12 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    * mat version of [[#prefixAndDownstream]], this method gives access to a future materialized value of the downstream flow (as a completion stage).
    *see [[#prefixAndDownstream]] for details.
    */
-  def prefixAndDownstreamMat[Out2, Mat2, Mat3](n : Int,
-                                               f : function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]],
-                                               matF: function.Function2[Mat, CompletionStage[Mat2], Mat3]): javadsl.Source[Out2, Mat3] = {
-    val newDelegate = delegate.prefixAndDownstreamMat(n)(seq => f(seq.asJava).asScala){
-      (m1, fm2) => matF(m1, fm2.toJava)
+  def prefixAndDownstreamMat[Out2, Mat2, Mat3](
+      n: Int,
+      f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]],
+      matF: function.Function2[Mat, CompletionStage[Mat2], Mat3]): javadsl.Source[Out2, Mat3] = {
+    val newDelegate = delegate.prefixAndDownstreamMat(n)(seq => f(seq.asJava).asScala) { (m1, fm2) =>
+      matF(m1, fm2.toJava)
     }
     new javadsl.Source(newDelegate)
   }

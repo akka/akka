@@ -17,7 +17,7 @@ import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.impl.TraversalBuilder
 import akka.stream.impl.fusing.GraphStages.SingleSource
-import akka.stream.impl.{Buffer => BufferImpl}
+import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.OptionVal
@@ -25,7 +25,7 @@ import akka.util.ccompat.JavaConverters._
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.util.control.NonFatal
@@ -134,11 +134,8 @@ import scala.util.control.NonFatal
 
   override def toString: String = s"FlattenMerge($breadth)"
 }
-
-
-@InternalApi private[akka] final class PrefixAndDownstream[In, Out, M](n : Int,
-                                                                       f : immutable.Seq[In] => Flow[In, Out, M])
-  extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]]{
+@InternalApi private[akka] final class PrefixAndDownstream[In, Out, M](n: Int, f: immutable.Seq[In] => Flow[In, Out, M])
+    extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {
 
   val in = Inlet[In](s"${this}.in")
   val out = Outlet[Out](s"${this}.out")
@@ -148,26 +145,26 @@ import scala.util.control.NonFatal
     val matPromise = Promise[M]
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
       var accumulated = List.empty[In]
-      var subSource : SubSourceOutlet[In] = null
-      var subSink : SubSinkInlet[Out] = null
+      var subSource: SubSourceOutlet[In] = null
+      var subSink: SubSinkInlet[Out] = null
 
       setHandlers(in, out, this)
 
       override def postStop(): Unit = {
         matPromise.tryFailure(new AbruptStageTerminationException(this))
-        if(null != subSource && !subSource.isClosed)
+        if (null != subSource && !subSource.isClosed)
           subSource.complete()
-        if(null != subSink && !subSink.isClosed)
+        if (null != subSink && !subSink.isClosed)
           subSink.cancel()
         super.postStop()
       }
 
       override def onPush(): Unit = {
-        if(null != subSource) {
+        if (null != subSource) {
           subSource.push(grab(in))
         } else {
           accumulated ::= grab(in)
-          if(accumulated.size == n) {
+          if (accumulated.size == n) {
             materializeFlow()
           } else {
             //gi'me some more!
@@ -177,7 +174,7 @@ import scala.util.control.NonFatal
       }
 
       override def onUpstreamFinish(): Unit = {
-        if(null != subSource) {
+        if (null != subSource) {
           subSource.complete()
         } else {
           materializeFlow()
@@ -185,7 +182,7 @@ import scala.util.control.NonFatal
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        if(null != subSource) {
+        if (null != subSource) {
           subSource.fail(ex)
         } else {
           //flow won't be materialized, so we have to complete the future with a failure indicating this
@@ -195,20 +192,18 @@ import scala.util.control.NonFatal
       }
 
       override def onPull(): Unit = {
-        if(null != subSink){
+        if (null != subSink) {
           //delegate to subSink
           subSink.pull()
-        }
-        else if(accumulated.size < n) {
+        } else if (accumulated.size < n) {
           pull(in)
-        }
-        else if(accumulated.size == n) { //corner case for n = 0, can be handled in FlowOps
+        } else if (accumulated.size == n) { //corner case for n = 0, can be handled in FlowOps
           materializeFlow()
         }
       }
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
-        if(null != subSink){
+        if (null != subSink) {
           subSink.cancel(cause)
         } else {
           materializeFlow()
@@ -219,16 +214,16 @@ import scala.util.control.NonFatal
         val prefix = accumulated.reverse
         accumulated = Nil
         subSource = new SubSourceOutlet[In]("subSource")
-        subSource.setHandler{
+        subSource.setHandler {
           new OutHandler {
             override def onPull(): Unit = {
-              if(!isClosed(in) && !hasBeenPulled(in)) {
+              if (!isClosed(in) && !hasBeenPulled(in)) {
                 pull(in)
               }
             }
 
             override def onDownstreamFinish(cause: Throwable): Unit = {
-              if(!isClosed(in)) {
+              if (!isClosed(in)) {
                 cancel(in, cause)
               }
               super.onDownstreamFinish(cause)
@@ -236,7 +231,7 @@ import scala.util.control.NonFatal
           }
         }
         subSink = new SubSinkInlet[Out]("subSink")
-        subSink.setHandler{
+        subSink.setHandler {
           new InHandler {
             override def onPush(): Unit = {
               push(out, subSink.grab())
@@ -253,25 +248,23 @@ import scala.util.control.NonFatal
         }
         val matValueTry = Try {
           val flow = f(prefix)
-          val runnableGraph = Source.fromGraph(subSource.source)
-            .viaMat(flow)(Keep.right)
-            .to(subSink.sink)
+          val runnableGraph = Source.fromGraph(subSource.source).viaMat(flow)(Keep.right).to(subSink.sink)
           interpreter.subFusingMaterializer.materialize(runnableGraph)
         }
 
-        matPromise.complete{
-          matValueTry recoverWith  {
+        matPromise.complete {
+          matValueTry.recoverWith {
             case ex => scala.util.Failure(new NeverMaterializedException(ex))
           }
         }
 
-        matValueTry foreach{ _ =>
+        matValueTry.foreach { _ =>
           //in case we've materialized due to upstream completion
-          if(isClosed(in)) {
+          if (isClosed(in)) {
             subSource.complete()
           }
           //in case we've been pulled by downstream
-          if(isAvailable(out)) {
+          if (isAvailable(out)) {
             subSink.pull()
           }
         }

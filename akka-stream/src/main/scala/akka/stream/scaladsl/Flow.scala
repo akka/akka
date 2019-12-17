@@ -1949,7 +1949,7 @@ trait FlowOps[+Out, +Mat] {
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
    **/
-  def prefixAndDownstream[Out2, Mat2](n : Int)(f : immutable.Seq[Out] => Flow[Out, Out2, Mat2]): Repr[Out2] = {
+  def prefixAndDownstream[Out2, Mat2](n: Int)(f: immutable.Seq[Out] => Flow[Out, Out2, Mat2]): Repr[Out2] = {
     require(n >= 0, s"prefixAndDownstreamMat: n must be non-negative.")
     via(new PrefixAndDownstream(n, f))
   }
@@ -3152,7 +3152,8 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * mat version of [[#prefixAndDownstream]], this method gives access to a future materialized value of the downstream flow.
    *see [[#prefixAndDownstream]] for details.
    */
-  def prefixAndDownstreamMat[Out2, Mat2, Mat3](n : Int)(f : immutable.Seq[Out] => Flow[Out, Out2, Mat2])(matF : (Mat, Future[Mat2]) => Mat3): ReprMat[Out2, Mat3] = {
+  def prefixAndDownstreamMat[Out2, Mat2, Mat3](n: Int)(f: immutable.Seq[Out] => Flow[Out, Out2, Mat2])(
+      matF: (Mat, Future[Mat2]) => Mat3): ReprMat[Out2, Mat3] = {
     require(n >= 0, s"prefixAndDownstreamMat: n must be non-negative.")
     viaMat(new PrefixAndDownstream(n, f))(matF)
   }
