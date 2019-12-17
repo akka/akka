@@ -75,10 +75,11 @@ public class RouterTest {
 
           // #pool-dispatcher
           // make sure workers use the default blocking IO dispatcher
-          PoolRouter<Worker.Command> blockingPool = pool.withRouteeProps(DispatcherSelector.blocking());
+          PoolRouter<Worker.Command> blockingPool =
+              pool.withRouteeProps(DispatcherSelector.blocking());
           // spawn head router using the same executor as the parent
-          ActorRef<Worker.Command> blockingRouter = context.spawn(
-                  blockingPool, "blocking-pool", DispatcherSelector.sameAsParent());
+          ActorRef<Worker.Command> blockingRouter =
+              context.spawn(blockingPool, "blocking-pool", DispatcherSelector.sameAsParent());
           // #pool-dispatcher
 
           // #strategy
