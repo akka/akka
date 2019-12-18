@@ -1401,8 +1401,8 @@ class SubFlow[In, Out, Mat](
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
    **/
   def prefixAndDownstream[Out2, Mat2](
-                                       n: Int,
-                                       f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): SubFlow[In, Out2, Mat] = {
+      n: Int,
+      f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): SubFlow[In, Out2, Mat] = {
     val newDelegate = delegate.prefixAndDownstream(n)(seq => f(seq.asJava).asScala)
     new javadsl.SubFlow(newDelegate)
   }
