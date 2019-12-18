@@ -14,7 +14,6 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
-import scala.concurrent.Promise
 import scala.concurrent.duration._
 import akka.{ Done, NotUsed }
 import akka.actor.ActorRef
@@ -268,7 +267,7 @@ private[remote] class Association(
       s"wrong remote address in completeHandshake, got ${peer.address}, expected $remoteAddress")
     val current = associationState
 
-    current.uniqueRemoteAddressValue() match {
+    current.uniqueRemoteAddress() match {
       case Some(`peer`) =>
         // handshake already completed
         Future.successful(Done)
@@ -278,14 +277,14 @@ private[remote] class Association(
         // we signal that the handshake is completed (uniqueRemoteAddressPromise.trySuccess)
         import transport.system.dispatcher
         clearOutboundCompression().map { _ =>
-          current.uniqueRemoteAddressPromise.trySuccess(peer)
-          current.uniqueRemoteAddressValue() match {
+          current.completeUniqueRemoteAddress(peer)
+          current.uniqueRemoteAddress() match {
             case Some(`peer`) =>
             // our value
             case _ =>
-              val newState = current.newIncarnation(Promise.successful(peer))
+              val newState = current.newIncarnation(peer)
               if (swapState(current, newState)) {
-                current.uniqueRemoteAddressValue() match {
+                current.uniqueRemoteAddress() match {
                   case Some(old) =>
                     cancelStopQuarantinedTimer()
                     log.debug(
@@ -466,7 +465,7 @@ private[remote] class Association(
 
   // OutboundContext
   override def quarantine(reason: String): Unit = {
-    val uid = associationState.uniqueRemoteAddressValue().map(_.uid)
+    val uid = associationState.uniqueRemoteAddress().map(_.uid)
     quarantine(reason, uid, harmless = false)
   }
 
@@ -474,7 +473,7 @@ private[remote] class Association(
     uid match {
       case Some(u) =>
         val current = associationState
-        current.uniqueRemoteAddressValue() match {
+        current.uniqueRemoteAddress() match {
           case Some(peer) if peer.uid == u =>
             if (!current.isQuarantined(u)) {
               val newState = current.newQuarantined()

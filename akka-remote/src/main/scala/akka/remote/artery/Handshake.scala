@@ -70,6 +70,16 @@ private[remote] class OutboundHandshake(
       private var pendingMessage: OptionVal[OutboundEnvelope] = OptionVal.None
       private var injectHandshakeTickScheduled = false
 
+      private val uniqueRemoteAddressAsyncCallback = getAsyncCallback[UniqueAddress] { _ =>
+        if (handshakeState != Completed) {
+          handshakeCompleted()
+          if (isAvailable(out))
+            pull(in)
+        }
+      }
+      private val uniqueRemoteAddressListener: UniqueAddress => Unit =
+        peer => uniqueRemoteAddressAsyncCallback.invoke(peer)
+
       override protected def logSource: Class[_] = classOf[OutboundHandshake]
 
       override def preStart(): Unit = {
@@ -78,6 +88,11 @@ private[remote] class OutboundHandshake(
           case d: FiniteDuration => schedulePeriodically(LivenessProbeTick, d)
           case _                 => // only used in control stream
         }
+      }
+
+      override def postStop(): Unit = {
+        outboundContext.associationState.removeUniqueRemoteAddressListener(uniqueRemoteAddressListener)
+        super.postStop()
       }
 
       // InHandler
@@ -116,26 +131,17 @@ private[remote] class OutboundHandshake(
             }
 
           case Start =>
-            val uniqueRemoteAddress = outboundContext.associationState.uniqueRemoteAddress
-            if (uniqueRemoteAddress.isCompleted) {
-              handshakeCompleted()
-            } else {
-              // will pull when handshake reply is received (uniqueRemoteAddress completed)
-              handshakeState = ReqInProgress
-              schedulePeriodically(HandshakeRetryTick, retryInterval)
+            outboundContext.associationState.uniqueRemoteAddress() match {
+              case Some(_) =>
+                handshakeCompleted()
+              case None =>
+                // will pull when handshake reply is received (uniqueRemoteAddress completed)
+                handshakeState = ReqInProgress
+                schedulePeriodically(HandshakeRetryTick, retryInterval)
 
-              // The InboundHandshake stage will complete the uniqueRemoteAddress future
-              // when it receives the HandshakeRsp reply
-              implicit val ec = materializer.executionContext
-              uniqueRemoteAddress.foreach {
-                getAsyncCallback[UniqueAddress] { _ =>
-                  if (handshakeState != Completed) {
-                    handshakeCompleted()
-                    if (isAvailable(out))
-                      pull(in)
-                  }
-                }.invoke
-              }
+                // The InboundHandshake stage will complete the AssociationState.uniqueRemoteAddress
+                // when it receives the HandshakeRsp reply
+                outboundContext.associationState.addUniqueRemoteAddressListener(uniqueRemoteAddressListener)
             }
 
             // always push a HandshakeReq as the first message
