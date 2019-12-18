@@ -1,6 +1,6 @@
 # lazilyAsync
 
-`lazilyAsync` has been deprecated in 2.6.0, use `Source.lazyFutureSource` instead.
+Deprecated by @ref:[`Source.lazyFutureSource`](lazyFutureSource.md).
 
 @ref[Source operators](../index.md#source-operators)
 
