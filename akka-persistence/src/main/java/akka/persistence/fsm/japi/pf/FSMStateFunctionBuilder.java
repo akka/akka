@@ -15,11 +15,13 @@ import java.util.List;
 /**
  * Builder used to create a partial function for {@link akka.actor.FSM#whenUnhandled}.
  *
+ * @deprecated use EventSourcedBehavior since 2.6.0
  * @param <S> the state type
  * @param <D> the data type
  * @param <E> the domain event type
  */
 @SuppressWarnings("rawtypes")
+@Deprecated
 public class FSMStateFunctionBuilder<S, D, E> {
 
   private PFBuilder<PersistentFSM.Event<D>, PersistentFSM.State<S, D, E>> builder =

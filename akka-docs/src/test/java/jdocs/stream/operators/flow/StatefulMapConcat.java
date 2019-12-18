@@ -30,7 +30,7 @@ public class StatefulMapConcat {
                   return (element) -> {
                     counter[0] += 1;
                     // we return an iterable with the single element
-                    return Arrays.asList(new Pair(element, counter[0]));
+                    return Arrays.asList(new Pair<String, Long>(element, counter[0]));
                   };
                 });
 

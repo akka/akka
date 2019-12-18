@@ -159,8 +159,8 @@ public class PersistentActorCompileOnlyTest {
       }
 
       @Override
-      public SnapshotSelectionCriteria snapshotSelectionCriteria() {
-        return SnapshotSelectionCriteria.none();
+      public Recovery recovery() {
+        return Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none());
       }
 
       @Override

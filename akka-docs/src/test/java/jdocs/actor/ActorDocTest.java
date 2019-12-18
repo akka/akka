@@ -526,12 +526,14 @@ public class ActorDocTest extends AbstractJavaTest {
 
   @Test(expected = IllegalArgumentException.class)
   public void creatingPropsIllegal() {
+    /*
     // #creating-props-illegal
     // This will throw an IllegalArgumentException since some runtime
     // type information of the lambda is erased.
     // Use Props.create(actorClass, Creator) instead.
     Props props = Props.create(() -> new ActorWithArgs("arg"));
     // #creating-props-illegal
+    */
   }
 
   public

@@ -69,7 +69,7 @@ public class RestartDocTest {
             20, // limits the amount of restarts to 20
             () ->
                 // Create a source from a future of a source
-                Source.fromSourceCompletionStage(
+                Source.completionStageSource(
                     // Issue a GET request on the event stream
                     Http.get(system)
                         .singleRequest(HttpRequest.create("http://example.com/eventstream"))
