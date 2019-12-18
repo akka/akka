@@ -7,7 +7,6 @@ package akka.stream.typed.javadsl;
 import akka.actor.typed.ActorRef;
 import akka.actor.typed.ActorSystem;
 import akka.japi.JavaPartialFunction;
-import akka.stream.ActorMaterializer;
 import akka.stream.OverflowStrategy;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
