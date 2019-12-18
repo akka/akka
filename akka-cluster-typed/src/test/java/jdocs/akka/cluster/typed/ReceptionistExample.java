@@ -187,6 +187,19 @@ public interface ReceptionistExample {
   }
   // #find
 
+  default void deregisterSample() {
+    Behaviors.<PingService.Ping>setup(
+        context -> {
+          // #deregister
+          context
+              .getSystem()
+              .receptionist()
+              .tell(Receptionist.deregister(PingService.pingServiceKey, context.getSelf()));
+          // #deregister
+          return Behaviors.empty();
+        });
+  }
+
   public static void main(String[] args) throws Exception {
     ActorSystem<Void> system = ActorSystem.create(Guardian.create(), "ReceptionistExample");
     Thread.sleep(10000);

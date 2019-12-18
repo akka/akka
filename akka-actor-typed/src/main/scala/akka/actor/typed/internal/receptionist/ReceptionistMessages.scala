@@ -27,10 +27,11 @@ private[akka] object ReceptionistMessages {
       replyTo: Option[ActorRef[Receptionist.Registered]])
       extends Command
 
-  final case class Unregister[T] private[akka] (
-       key: ServiceKey[T],
-       serviceInstance: ActorRef[T],
-       replyTo: Option[ActorRef[Receptionist.Unregistered]]) extends Command
+  final case class Deregister[T] private[akka] (
+      key: ServiceKey[T],
+      serviceInstance: ActorRef[T],
+      replyTo: Option[ActorRef[Receptionist.Deregistered]])
+      extends Command
 
   final case class Registered[T] private[akka] (key: ServiceKey[T], _serviceInstance: ActorRef[T])
       extends Receptionist.Registered {
@@ -45,8 +46,8 @@ private[akka] object ReceptionistMessages {
       serviceInstance(key)
   }
 
-  final case class Unregistered[T] private[akka] (key: ServiceKey[T], _serviceInstance: ActorRef[T])
-    extends Receptionist.Unregistered {
+  final case class Deregistered[T] private[akka] (key: ServiceKey[T], _serviceInstance: ActorRef[T])
+      extends Receptionist.Deregistered {
     def isForKey(key: ServiceKey[_]): Boolean = key == this.key
     def serviceInstance[M](key: ServiceKey[M]): ActorRef[M] = {
       if (key != this.key)

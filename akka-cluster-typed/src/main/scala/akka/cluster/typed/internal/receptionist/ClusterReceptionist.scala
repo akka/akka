@@ -9,7 +9,7 @@ import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, LoggerOps }
-import akka.actor.typed.{ ActorRef, Behavior, Terminated }
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
@@ -28,8 +28,6 @@ import akka.cluster.ClusterEvent.ReachabilityEvent
 import akka.cluster.ClusterEvent.ReachableMember
 import akka.cluster.ClusterEvent.UnreachableMember
 import akka.cluster.ddata.SelfUniqueAddress
-
-import scala.collection.mutable
 
 // just to provide a log class
 /** INTERNAL API */
@@ -60,8 +58,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   }
 
   private sealed trait InternalCommand extends Command
-  private final case class RegisteredActorTerminated[T](key: ServiceKey[T], ref: ActorRef[T]) extends InternalCommand
-  private final case class SubscriberTerminated[T](key: ServiceKey[T], ref: ActorRef[ReceptionistMessages.Listing[T]])
+  private final case class LocalServiceActorTerminated[T](ref: ActorRef[T]) extends InternalCommand
+  private final case class SubscriberTerminated[T](ref: ActorRef[ReceptionistMessages.Listing[T]])
       extends InternalCommand
   private final case class NodeAdded(addresses: UniqueAddress) extends InternalCommand
   private final case class NodeRemoved(addresses: UniqueAddress) extends InternalCommand
@@ -72,7 +70,107 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
   private case object RemoveTick extends InternalCommand
   private case object PruneTombstonesTick extends InternalCommand
 
-  val terminationWatchers = new mutable.HashMap[String, ActorRef[Nothing]]();
+  /**
+   * @param registry The last seen state from the replicator - only updated when we get an update from th replicator
+   * @param servicesPerActor needed since an actor can implement several services
+   * @param tombstones Local actors that were stopped and should not be re-added to the available set of actors
+   *                   for a key.
+   * @param subscriptions Locally subscriptions, not replicated
+   */
+  final case class State(
+      registry: ShardedServiceRegistry,
+      servicesPerActor: Map[ActorRef[_], Set[AbstractServiceKey]],
+      tombstones: Map[ActorRef[_], Set[(AbstractServiceKey, Deadline)]],
+      subscriptions: SubscriptionRegistry) {
+
+    /** tombstone all services actor is registered for */
+    def addTombstone(actor: ActorRef[_], deadline: Deadline): State = {
+      servicesPerActor.getOrElse(actor, Set.empty).foldLeft(this) { (state, key) =>
+        state.addTombstone(actor.asInstanceOf[ActorRef[key.Protocol]], key.asServiceKey, deadline)
+      }
+    }
+
+    /** tombstone specific service actor is registered for */
+    def addTombstone[T](actor: ActorRef[T], serviceKey: ServiceKey[T], deadline: Deadline): State = {
+      val newTombsonesForActor = tombstones.getOrElse(actor, Set.empty) + (serviceKey -> deadline)
+      copy(tombstones = tombstones.updated(actor, newTombsonesForActor))
+    }
+
+    def hasTombstone[T](serviceKey: ServiceKey[T])(actorRef: ActorRef[T]): Boolean =
+      tombstones.nonEmpty && tombstones.getOrElse(actorRef, Set.empty).exists { case (key, _) => key == serviceKey }
+
+    def pruneTombstones(): State = {
+      if (tombstones.isEmpty) this
+      else {
+        val newTombstones: Map[ActorRef[_], Set[(AbstractServiceKey, Deadline)]] =
+          tombstones.foldLeft(tombstones) {
+            case (acc, (actorRef, entries)) =>
+              val entriesToKeep = entries.filter {
+                case (_, deadline) => deadline.hasTimeLeft
+              }
+              if (entriesToKeep.size == entries.size) acc
+              else if (entriesToKeep.isEmpty) acc - actorRef
+              else acc.updated(actorRef, entriesToKeep)
+          }
+        if (newTombstones eq tombstones) this
+        else copy(tombstones = newTombstones)
+      }
+    }
+
+    /**
+     * @return (reachable-nodes, all)
+     */
+    def activeActorRefsFor[T](
+        key: ServiceKey[T],
+        selfUniqueAddress: UniqueAddress): (Set[ActorRef[T]], Set[ActorRef[T]]) = {
+      val ddataKey = registry.ddataKeyFor(key)
+      val entries = registry.serviceRegistries(ddataKey).entriesFor(key)
+      val selfAddress = selfUniqueAddress.address
+      val reachable = Set.newBuilder[ActorRef[T]]
+      val all = Set.newBuilder[ActorRef[T]]
+      entries.foreach { entry =>
+        val entryAddress = entry.uniqueAddress(selfAddress)
+        val ref = entry.ref.asInstanceOf[ActorRef[key.Protocol]]
+        if (registry.nodes.contains(entryAddress) && !hasTombstone(key)(ref)) {
+          all += ref
+          if (!registry.unreachable.contains(entryAddress)) {
+            reachable += ref
+          }
+        }
+      }
+      (reachable.result(), all.result())
+    }
+
+    def addLocalService[T](serviceInstance: ActorRef[T], key: ServiceKey[T]): State = {
+      val newServicesPerActor =
+        servicesPerActor.updated(serviceInstance, servicesPerActor.getOrElse(serviceInstance, Set.empty) + key)
+      // if the service was previously registered and unregistered we need to remove it from the tombstones
+      val tombstonesForActor = tombstones.getOrElse(serviceInstance, Set.empty)
+      val newTombstones =
+        if (tombstonesForActor.isEmpty) tombstones
+        else tombstones.updated(serviceInstance, tombstonesForActor.filterNot(_._1 == key))
+      copy(servicesPerActor = newServicesPerActor, tombstones = newTombstones)
+    }
+
+    def removeLocalService[T](serviceInstance: ActorRef[T], key: ServiceKey[T], tombstoneDeadline: Deadline): State = {
+      val newServicesForActor = servicesPerActor.get(serviceInstance) match {
+        case Some(keys) =>
+          val newKeys = keys - key
+          if (newKeys.isEmpty)
+            servicesPerActor - serviceInstance
+          else
+            servicesPerActor.updated(serviceInstance, newKeys)
+        case None =>
+          throw new IllegalArgumentException(
+            s"Trying to remove $serviceInstance for $key but that has never been registered")
+      }
+      addTombstone(serviceInstance, key, tombstoneDeadline).copy(servicesPerActor = newServicesForActor)
+    }
+
+    def removeSubscriber(subscriber: ActorRef[ReceptionistMessages.Listing[Any]]): ClusterReceptionist.State =
+      copy(subscriptions = subscriptions.valueRemoved(subscriber))
+
+  }
 
   // captures setup/dependencies so we can avoid doing it over and over again
   final class Setup(ctx: ActorContext[Command]) {
@@ -94,17 +192,14 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     def selfUniqueAddress: UniqueAddress = cluster.selfUniqueAddress
   }
 
-  def uniqueKey(key: ServiceKey[_], service: ActorRef[_]): String = {
-    key.toString + service.path.toStringWithoutAddress
-  }
-
   override def behavior: Behavior[Command] =
     Behaviors.setup { ctx =>
       ctx.setLoggerName(classOf[ClusterReceptionist])
       Behaviors.withTimers { timers =>
         val setup = new Setup(ctx)
         // include selfUniqueAddress so that it can be used locally before joining cluster
-        val registry = ShardedServiceRegistry(setup.settings.distributedKeyCount).addNode(setup.selfUniqueAddress)
+        val initialRegistry =
+          ShardedServiceRegistry(setup.settings.distributedKeyCount).addNode(setup.selfUniqueAddress)
 
         // subscribe to changes from other nodes
         val replicatorMessageAdapter: ActorRef[Replicator.ReplicatorMessage] =
@@ -115,7 +210,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                 changed.dataValue.asInstanceOf[ORMultiMap[ServiceKey[_], Entry]])
           }
 
-        registry.allDdataKeys.foreach(key =>
+        initialRegistry.allDdataKeys.foreach(key =>
           setup.replicator ! Replicator.Subscribe(key, replicatorMessageAdapter.toClassic))
 
         // keep track of cluster members
@@ -150,36 +245,18 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         // around isn't very costly so don't prune often
         timers.startTimerWithFixedDelay(PruneTombstonesTick, setup.keepTombstonesFor / 24)
 
-        behavior(setup, registry, TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV])
+        val initialState = State(
+          registry = initialRegistry,
+          servicesPerActor = Map.empty,
+          tombstones = Map.empty,
+          subscriptions = TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV])
+        behavior(setup, initialState)
       }
     }
 
-  /**
-   * @param registry The last seen state from the replicator - only updated when we get an update from th replicator
-   * @param subscriptions Locally subscriptions, not replicated
-   */
-  def behavior(setup: Setup, registry: ShardedServiceRegistry, subscriptions: SubscriptionRegistry): Behavior[Command] =
+  def behavior(setup: Setup, state: State): Behavior[Command] =
     Behaviors.setup { ctx =>
       import setup._
-
-      // Helper to create new behavior
-      def next(newState: ShardedServiceRegistry = registry, newSubscriptions: SubscriptionRegistry = subscriptions) =
-        behavior(setup, newState, newSubscriptions)
-
-      /*
-       * Hack to allow multiple termination notifications per target
-       * FIXME #26505: replace by simple map in our state
-       */
-      def watchWith(ctx: ActorContext[Command], target: ActorRef[_], msg: InternalCommand): ActorRef[Nothing] = {
-        ctx.spawnAnonymous[Nothing](Behaviors.setup[Nothing] { innerCtx =>
-          innerCtx.watch(target)
-          Behaviors.receiveSignal[Nothing] {
-            case (_, Terminated(`target`)) =>
-              ctx.self ! msg
-              Behaviors.stopped
-          }
-        })
-      }
 
       def isLeader = {
         cluster.state.leader.contains(cluster.selfAddress)
@@ -191,7 +268,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           def isOnRemovedNode(entry: Entry): Boolean = addresses(entry.uniqueAddress(setup.selfUniqueAddress.address))
 
           val removals = {
-            registry.allServices.foldLeft(Map.empty[AbstractServiceKey, Set[Entry]]) {
+            state.registry.allServices.foldLeft(Map.empty[AbstractServiceKey, Set[Entry]]) {
               case (acc, (key, entries)) =>
                 val removedEntries = entries.filter(isOnRemovedNode)
                 if (removedEntries.isEmpty) acc // no change
@@ -212,7 +289,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                   .mkString(","))
 
             // shard changes over the ddata keys they belong to
-            val removalsPerDdataKey = registry.entriesPerDdataKey(removals)
+            val removalsPerDdataKey = state.registry.entriesPerDdataKey(removals)
 
             removalsPerDdataKey.foreach {
               case (ddataKey, removalForKey) =>
@@ -226,13 +303,13 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         }
       }
 
-      def reachabilityChanged(keysForNode: Set[AbstractServiceKey], newRegistry: ShardedServiceRegistry): Unit = {
+      def reachabilityChanged(keysForNode: Set[AbstractServiceKey], newState: State): Unit = {
         keysForNode.foreach { changedKey =>
           val serviceKey = changedKey.asServiceKey
 
-          val subscribers = subscriptions.get(changedKey)
+          val subscribers = state.subscriptions.get(changedKey)
           if (subscribers.nonEmpty) {
-            val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
+            val (reachable, all) = newState.activeActorRefsFor(serviceKey, selfUniqueAddress)
             val listing =
               ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved = false)
             subscribers.foreach(_ ! listing)
@@ -246,105 +323,128 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             val entry = Entry(serviceInstance, setup.selfSystemUid)
             ctx.log
               .debugN("ClusterReceptionist [{}] - Actor was registered: [{}] [{}]", cluster.selfAddress, key, entry)
-            val watcher = watchWith(ctx, serviceInstance, RegisteredActorTerminated(key, serviceInstance))
-            terminationWatchers.put(uniqueKey(key, serviceInstance), watcher);
+            // actor already watched after one service key registration
+            if (!state.servicesPerActor.contains(serviceInstance))
+              ctx.watchWith(serviceInstance, LocalServiceActorTerminated(serviceInstance))
+
             maybeReplyTo match {
               case Some(replyTo) => replyTo ! ReceptionistMessages.Registered(key, serviceInstance)
               case None          =>
             }
-            val ddataKey = registry.ddataKeyFor(key)
+            val ddataKey = state.registry.ddataKeyFor(key)
             replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
               ServiceRegistry(registry).addBinding(key, entry).toORMultiMap
             }
+            behavior(setup, state.addLocalService(serviceInstance, key))
           } else {
             ctx.log.error("ClusterReceptionist [{}] - Register of non-local [{}] is not supported", serviceInstance)
+            Behaviors.same
           }
-          Behaviors.same
 
-        case ReceptionistMessages.Unregister(key, serviceInstance, maybeReplyTo) =>
-          val entry = Entry(serviceInstance, setup.selfSystemUid)
-          ctx.log.debugN(
-            "ClusterReceptionist [{}] - Unregister actor: [{}] [{}]",
-            cluster.selfAddress,
-            key.asServiceKey.id,
-            entry)
-          val watcher = terminationWatchers.remove(uniqueKey(key, serviceInstance))
-          if(!watcher.isEmpty) ctx.stop(watcher.get)
-          maybeReplyTo match {
-            case Some(replyTo) => replyTo ! ReceptionistMessages.Unregistered(key, serviceInstance)
-            case None          =>
+        case ReceptionistMessages.Deregister(key, serviceInstance, maybeReplyTo) =>
+          if (serviceInstance.path.address.hasLocalScope) {
+            val entry = Entry(serviceInstance, setup.selfSystemUid)
+            ctx.log.debugN(
+              "ClusterReceptionist [{}] - Unregister actor: [{}] [{}]",
+              cluster.selfAddress,
+              key.asServiceKey.id,
+              entry)
+            val newState = state.removeLocalService(serviceInstance, key, setup.newTombstoneDeadline())
+            if (!newState.servicesPerActor.contains(serviceInstance)) {
+              // last service for actor unregistered, stop watching
+              ctx.unwatch(serviceInstance)
+            }
+            maybeReplyTo match {
+              case Some(replyTo) => replyTo ! ReceptionistMessages.Deregistered(key, serviceInstance)
+              case None          =>
+            }
+            val ddataKey = state.registry.ddataKeyFor(key)
+            replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
+              ServiceRegistry(registry).removeBinding(key, entry).toORMultiMap
+            }
+            // tombstone removals so they are not re-added by merging with other concurrent
+            // registrations for the same key
+            behavior(setup, newState)
+          } else {
+            ctx.log.error("ClusterReceptionist [{}] - Unregistering non-local [{}] is not supported", serviceInstance)
+            Behaviors.same
           }
-          val ddataKey = registry.ddataKeyFor(key)
-          replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
-            ServiceRegistry(registry).removeBinding(key, entry).toORMultiMap
-          }
-          // tombstone removals so they are not re-added by merging with other concurrent
-          // registrations for the same key
-          next(newState = registry.addTombstone(serviceInstance, setup.newTombstoneDeadline()))
 
         case ReceptionistMessages.Find(key, replyTo) =>
-          val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
+          val (reachable, all) = state.activeActorRefsFor(key, selfUniqueAddress)
           replyTo ! ReceptionistMessages.Listing(key.asServiceKey, reachable, all, servicesWereAddedOrRemoved = true)
           Behaviors.same
 
         case ReceptionistMessages.Subscribe(key, subscriber) =>
-          watchWith(ctx, subscriber, SubscriberTerminated(key, subscriber))
+          if (subscriber.path.address.hasLocalScope) {
+            ctx.watchWith(subscriber, SubscriberTerminated(subscriber))
 
-          // immediately reply with initial listings to the new subscriber
-          val listing = {
-            val (reachable, all) = registry.activeActorRefsFor(key, selfUniqueAddress)
-            ReceptionistMessages.Listing(key.asServiceKey, reachable, all, servicesWereAddedOrRemoved = true)
+            // immediately reply with initial listings to the new subscriber
+            val listing = {
+              val (reachable, all) = state.activeActorRefsFor(key, selfUniqueAddress)
+              ReceptionistMessages.Listing(key.asServiceKey, reachable, all, servicesWereAddedOrRemoved = true)
+            }
+            subscriber ! listing
+
+            behavior(setup, state.copy(subscriptions = state.subscriptions.inserted(key)(subscriber)))
+          } else {
+            ctx.log.error("ClusterReceptionist [{}] - Subscriptions from non-local [{}] is not supported", subscriber)
+            Behaviors.same
           }
-          subscriber ! listing
 
-          next(newSubscriptions = subscriptions.inserted(key)(subscriber))
       }
 
       def onInternalCommand(cmd: InternalCommand): Behavior[Command] = cmd match {
 
-        case SubscriberTerminated(key, subscriber) =>
-          next(newSubscriptions = subscriptions.removed(key)(subscriber))
+        case SubscriberTerminated(subscriber) =>
+          behavior(setup, state.removeSubscriber(subscriber))
 
-        case RegisteredActorTerminated(key, serviceInstance) =>
+        case LocalServiceActorTerminated(serviceInstance) =>
           val entry = Entry(serviceInstance, setup.selfSystemUid)
+
+          // could be empty if there was a race between termination and unregistration
+          val keys = state.servicesPerActor.getOrElse(serviceInstance, Set.empty)
+
           ctx.log.debugN(
             "ClusterReceptionist [{}] - Registered actor terminated: [{}] [{}]",
             cluster.selfAddress,
-            key.asServiceKey.id,
+            keys.map(_.asServiceKey.id).mkString(", "),
             entry)
-          terminationWatchers.remove(uniqueKey(key, serviceInstance))
 
-          val ddataKey = registry.ddataKeyFor(key)
-          replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
-            ServiceRegistry(registry).removeBinding(key, entry).toORMultiMap
+          keys.foreach { key =>
+            val ddataKey = state.registry.ddataKeyFor(key.asServiceKey)
+            replicator ! Replicator.Update(ddataKey, EmptyORMultiMap, settings.writeConsistency) { registry =>
+              ServiceRegistry(registry).removeBinding(key.asServiceKey, entry).toORMultiMap
+            }
           }
           // tombstone removals so they are not re-added by merging with other concurrent
           // registrations for the same key
-          next(newState = registry.addTombstone(serviceInstance, setup.newTombstoneDeadline()))
+          behavior(setup, state.addTombstone(serviceInstance, setup.newTombstoneDeadline()))
 
         case ChangeFromReplicator(ddataKey, value) =>
           // every change will come back this way - this is where the local notifications happens
-          val newState = ServiceRegistry(value)
-          val changedKeys = registry.collectChangedKeys(ddataKey, newState)
-          val newRegistry = registry.withServiceRegistry(ddataKey, newState)
+          val newRegistry = ServiceRegistry(value)
+          val changedKeys = state.registry.collectChangedKeys(ddataKey, newRegistry)
+          val newState = state.copy(registry = state.registry.withServiceRegistry(ddataKey, newRegistry))
+
           if (changedKeys.nonEmpty) {
             if (ctx.log.isDebugEnabled) {
               ctx.log.debugN(
                 "ClusterReceptionist [{}] - Change from replicator: [{}], changes: [{}], tombstones [{}]",
                 cluster.selfAddress,
-                newState.entries.entries,
+                newRegistry.entries.entries,
                 changedKeys
-                  .map(key => key.asServiceKey.id -> newState.entriesFor(key).mkString("[", ", ", "]"))
+                  .map(key => key.asServiceKey.id -> newRegistry.entriesFor(key).mkString("[", ", ", "]"))
                   .mkString(", "),
-                newRegistry.tombstones.mkString(", "))
+                state.tombstones.mkString(", "))
             }
 
             changedKeys.foreach { changedKey =>
               val serviceKey = changedKey.asServiceKey
 
-              val subscribers = subscriptions.get(changedKey)
+              val subscribers = state.subscriptions.get(changedKey)
               if (subscribers.nonEmpty) {
-                val (reachable, all) = newRegistry.activeActorRefsFor(serviceKey, selfUniqueAddress)
+                val (reachable, all) = newState.activeActorRefsFor(serviceKey, selfUniqueAddress)
                 val listing =
                   ReceptionistMessages.Listing(serviceKey, reachable, all, servicesWereAddedOrRemoved = true)
                 subscribers.foreach(_ ! listing)
@@ -352,7 +452,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
 
               // because of how ORMultiMap/ORset works, we could have a case where an actor we removed
               // is re-introduced because of a concurrent update, in that case we need to re-remove it
-              val tombstonedButReAdded = newRegistry.actorRefsFor(serviceKey).filter(newRegistry.hasTombstone)
+              val tombstonedButReAdded = newRegistry.actorRefsFor(serviceKey).filter(state.hasTombstone(serviceKey))
               if (tombstonedButReAdded.nonEmpty) {
                 if (ctx.log.isDebugEnabled)
                   ctx.log.debug2(
@@ -370,13 +470,13 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               }
             }
 
-            next(newRegistry)
+            behavior(setup, newState)
           } else {
             Behaviors.same
           }
 
         case NodeAdded(uniqueAddress) =>
-          next(registry.addNode(uniqueAddress))
+          behavior(setup, state.copy(registry = state.registry.addNode(uniqueAddress)))
 
         case NodeRemoved(uniqueAddress) =>
           if (uniqueAddress == selfUniqueAddress) {
@@ -394,38 +494,39 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
               nodesRemoved(Set(uniqueAddress))
             }
 
-            next(registry.removeNode(uniqueAddress))
+            behavior(setup, state.copy(registry = state.registry.removeNode(uniqueAddress)))
           }
 
         case NodeUnreachable(uniqueAddress) =>
-          val keysForNode = registry.keysFor(uniqueAddress)
-          val newRegistry = registry.addUnreachable(uniqueAddress)
+          val keysForNode = state.registry.keysFor(uniqueAddress)
+          val newState = state.copy(registry = state.registry.addUnreachable(uniqueAddress))
           if (keysForNode.nonEmpty) {
             ctx.log.debug2(
               "ClusterReceptionist [{}] - Node with registered services unreachable [{}]",
               cluster.selfAddress,
               uniqueAddress)
-            reachabilityChanged(keysForNode, newRegistry)
+            reachabilityChanged(keysForNode, newState)
           }
-          next(newRegistry)
+          behavior(setup, newState)
 
         case NodeReachable(uniqueAddress) =>
-          val keysForNode = registry.keysFor(uniqueAddress)
-          val newRegistry = registry.removeUnreachable(uniqueAddress)
+          val keysForNode = state.registry.keysFor(uniqueAddress)
+          val newState = state.copy(registry = state.registry.removeUnreachable(uniqueAddress))
           if (keysForNode.nonEmpty) {
             ctx.log.debug2(
               "ClusterReceptionist [{}] - Node with registered services reachable again [{}]",
               cluster.selfAddress,
               uniqueAddress)
-            reachabilityChanged(keysForNode, newRegistry)
+            reachabilityChanged(keysForNode, newState)
           }
-          next(newRegistry)
+          behavior(setup, newState)
 
         case RemoveTick =>
           // ok to update from several nodes but more efficient to try to do it from one node
           if (isLeader) {
-            val allAddressesInState: Set[UniqueAddress] = registry.allUniqueAddressesInState(setup.selfUniqueAddress)
-            val notInCluster = allAddressesInState.diff(registry.nodes)
+            val allAddressesInState: Set[UniqueAddress] =
+              state.registry.allUniqueAddressesInState(setup.selfUniqueAddress)
+            val notInCluster = allAddressesInState.diff(state.registry.nodes)
 
             if (notInCluster.isEmpty) Behaviors.same
             else {
@@ -440,11 +541,11 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           Behaviors.same
 
         case PruneTombstonesTick =>
-          val prunedRegistry = registry.pruneTombstones()
-          if (prunedRegistry eq registry) Behaviors.same
+          val prunedState = state.pruneTombstones()
+          if (prunedState eq state) Behaviors.same
           else {
             ctx.log.debug("ClusterReceptionist [{}] - Pruning tombstones", cluster.selfAddress)
-            next(prunedRegistry)
+            behavior(setup, prunedState)
           }
       }
 

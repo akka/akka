@@ -94,6 +94,12 @@ object PingPongExample {
   }
   //#find
 
+  Behaviors.setup[PingService.Ping] { context =>
+    //#deregister
+    context.system.receptionist ! Receptionist.Deregister(PingService.PingServiceKey, context.self)
+    //#deregister
+    Behaviors.empty
+  }
 }
 
 object ReceptionistExample {
