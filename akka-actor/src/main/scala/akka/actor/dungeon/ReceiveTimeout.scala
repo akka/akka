@@ -31,11 +31,11 @@ private[akka] trait ReceiveTimeout { this: ActorCell =>
     if (hasTimeoutData || receiveTimeoutChanged(beforeReceive))
       checkReceiveTimeout(!message.isInstanceOf[NotInfluenceReceiveTimeout] || receiveTimeoutChanged(beforeReceive))
 
-  final def checkReceiveTimeout(reschedule: Boolean = true): Unit = {
+  final def checkReceiveTimeout(reschedule: Boolean): Unit = {
     val (recvTimeout, task) = receiveTimeoutData
     recvTimeout match {
       case f: FiniteDuration =>
-        // The fact that timeout is FiniteDuration and task is emptyCancellable
+        // The fact that recvTimeout is FiniteDuration and task is emptyCancellable
         // means that a user called `context.setReceiveTimeout(...)`
         // while sending the ReceiveTimeout message is not scheduled yet.
         // We have to handle the case and schedule sending the ReceiveTimeout message
