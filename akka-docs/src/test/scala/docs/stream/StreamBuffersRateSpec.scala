@@ -65,7 +65,7 @@ class StreamBuffersRateSpec extends AkkaSpec {
     //#buffering-abstraction-leak
   }
 
-  "explcit buffers" in {
+  "explicit buffers" in {
     trait Job
     def inboundJobsConnector(): Source[Job, NotUsed] = Source.empty
     //#explicit-buffers-backpressure

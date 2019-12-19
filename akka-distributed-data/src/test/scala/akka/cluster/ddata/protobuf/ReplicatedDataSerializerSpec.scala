@@ -58,7 +58,7 @@ class ReplicatedDataSerializerSpec
 
   /**
    * Given a blob created with the previous serializer (with only string keys for maps). If we deserialize it and then
-   * serialize it again and arive at the same BLOB we can assume that we are compatible in both directions.
+   * serialize it again and arrive at the same BLOB we can assume that we are compatible in both directions.
    */
   def checkCompatibility(oldBlobAsBase64: String, obj: AnyRef): Unit = {
     val oldBlob = Base64.getDecoder.decode(oldBlobAsBase64)

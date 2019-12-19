@@ -758,7 +758,7 @@ object PartitionHub {
    * cancelled are simply removed from the dynamic set of consumers.
    *
    * This `statefulSink` should be used when there is a need to keep mutable state in the partition function,
-   * e.g. for implemening round-robin or sticky session kind of routing. If state is not needed the [[#sink]] can
+   * e.g. for implementing round-robin or sticky session kind of routing. If state is not needed the [[#sink]] can
    * be more convenient to use.
    *
    * @param partitioner Function that decides where to route an element. It is a factory of a function to

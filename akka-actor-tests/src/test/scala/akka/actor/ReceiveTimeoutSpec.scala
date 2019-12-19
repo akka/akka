@@ -277,7 +277,7 @@ class ReceiveTimeoutSpec extends AkkaSpec() {
     }
 
     // #28266 reproducer
-    "get the timeout when scheduled immedately on restart" in {
+    "get the timeout when scheduled immediately on restart" in {
       val probe = TestProbe()
       val ref = system.actorOf(Props(new RestartingParent(probe.ref)))
       probe.expectMsg("starting")

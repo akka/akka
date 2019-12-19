@@ -15,7 +15,7 @@ trait MayVerb {
    * Configurable number of frames to be shown when a MAY test fails (is canceled).
    *
    * Defaults to `3`.
-   * Must be geater than `0`.
+   * Must be greater than `0`.
    */
   def mayVerbStacktraceContextFrames = 3
 

@@ -868,7 +868,7 @@ class TcpSpec extends StreamSpec("""
 
       Tcp()
         .bindAndHandleWithTls(
-          // just echo charactes until we reach '\n', then complete stream
+          // just echo characters until we reach '\n', then complete stream
           // also - byte is our framing
           Flow[ByteString].mapConcat(_.utf8String.toList).takeWhile(_ != '\n').map(c => ByteString(c)),
           address.getHostName,
@@ -953,7 +953,7 @@ class TcpSpec extends StreamSpec("""
 
       Tcp()
         .bindAndHandleTls(
-          // just echo charactes until we reach '\n', then complete stream
+          // just echo characters until we reach '\n', then complete stream
           // also - byte is our framing
           Flow[ByteString].mapConcat(_.utf8String.toList).takeWhile(_ != '\n').map(c => ByteString(c)),
           address.getHostName,
