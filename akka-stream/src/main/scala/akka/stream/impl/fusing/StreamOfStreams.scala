@@ -226,7 +226,7 @@ import scala.util.control.NonFatal
               if (!isClosed(in)) {
                 cancel(in, cause)
               }
-              super.onDownstreamFinish(cause)
+              //super.onDownstreamFinish(cause)
             }
           }
         }
