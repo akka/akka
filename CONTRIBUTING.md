@@ -67,7 +67,7 @@ The steps below describe how to get a patch into a main development branch (e.g.
 The steps are exactly the same for everyone involved in the project (be it core team, or first time contributor).
 
 1. To avoid duplicated effort, it might be good to check the [issue tracker](https://github.com/akka/akka/issues) and [existing pull requests](https://github.com/akka/akka/pulls) for existing work.
-   - If there is no ticket yet, you can optionally [create one](https://github.com/akka/akka/issues/new) to discuss the problem and the approach you want to take to solve it.
+   - If there is no ticket yet, feel free to [create one](https://github.com/akka/akka/issues/new) to discuss the problem and the approach you want to take to solve it.
 1. [Fork the project](https://github.com/akka/akka#fork-destination-box) on GitHub. You'll need to create a feature-branch for your work on your fork, as this way you'll be able to submit a pull request against the mainline Akka.
 1. Create a branch on your fork and work on the feature. For example: `git checkout -b custom-headers-akka-http`
    - Please make sure to follow the general quality guidelines (specified below) when developing your patch.
@@ -77,7 +77,7 @@ The steps are exactly the same for everyone involved in the project (be it core 
 1. Now it's finally time to [submit the pull request](https://help.github.com/articles/using-pull-requests)!
     - Please make sure to include a reference to the issue you're solving *in the comment* for the Pull Request, as this will cause the PR to be linked properly with the Issue. Examples of good phrases for this are: "Resolves #1234" or "Refs #1234".
 1. If you have not already done so, you will be asked by our CLA bot to [sign the Lightbend CLA](http://www.lightbend.com/contribute/cla) online. CLA stands for Contributor License Agreement and is a way of protecting intellectual property disputes from harming the project.
-1. A core member will commenting `OK TO TEST` on your PR to kick off the build. This is just a sanity check to prevent malicious code from being run on the Jenkins cluster.
+1. A core member will comment `OK TO TEST` on your PR to kick off the build. This is just a sanity check to prevent malicious code from being run on the Jenkins cluster.
 1. Now both committers and interested people will review your code. This process is to ensure the code we merge is of the best possible quality, and that no silly mistakes slip through. You're expected to follow-up these comments by adding new commits to the same branch. The commit messages of those commits can be more loose, for example: `Removed debugging using printline`, as they all will be squashed into one commit before merging into the main branch.
     - The community and team are really nice people, so don't be afraid to ask follow up questions if you didn't understand some comment, or would like clarification on how to continue with a given feature. We're here to help, so feel free to ask and discuss any kind of questions you might have during review!
 1. After the review you should fix the issues as needed (pushing a new commit for new review etc.), iterating until the reviewers give their thumbs up–which is signalled usually by a comment saying `LGTM`, which means "Looks Good To Me". 
