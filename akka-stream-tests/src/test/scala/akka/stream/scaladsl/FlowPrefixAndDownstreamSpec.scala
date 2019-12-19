@@ -4,10 +4,10 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.{AbruptTerminationException, Materializer, NeverMaterializedException}
-import akka.{Done, NotUsed}
+import akka.stream.{ AbruptTerminationException, Materializer, NeverMaterializedException }
+import akka.{ Done, NotUsed }
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 //import scala.concurrent.Future
@@ -99,7 +99,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
         .prefixAndDownstreamMat(10) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix).map {
             case 15 => throw TE("don't like 15 either!")
-            case n => n
+            case n  => n
           }
         }(Keep.right)
         .toMat(Sink.ignore)(Keep.both)
@@ -221,10 +221,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
     "work when materialized flow cancels upstream but keep producing" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
         .prefixAndDownstreamMat(4) { prefix =>
-          Flow[Int]
-            .mapMaterializedValue(_ => prefix)
-            .take(0)
-            .concat(Source(11 to 12))
+          Flow[Int].mapMaterializedValue(_ => prefix).take(0).concat(Source(11 to 12))
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
         .run
@@ -237,13 +234,12 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
     "propagate materialization failure (when application of 'f' succeeds" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
         .prefixAndDownstreamMat(4) { prefix =>
-          Flow[Int]
-            .mapMaterializedValue(_ => throw TE(s"boom-bada-bang (${prefix.size})"))
+          Flow[Int].mapMaterializedValue(_ => throw TE(s"boom-bada-bang (${prefix.size})"))
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
         .run
 
-      prefixF.failed.futureValue should be (a[NeverMaterializedException])
+      prefixF.failed.futureValue should be(a[NeverMaterializedException])
       prefixF.failed.futureValue.getCause should ===(TE("boom-bada-bang (4)"))
       suffixF.failed.futureValue should ===(TE("boom-bada-bang (4)"))
     }
@@ -284,7 +280,6 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       suffixF.value should be(empty)
       srcWatchTermF.value should be(empty)
 
-
       val subUpstream = publisher.expectSubscription()
       val subDownstream = subscriber.expectSubscription()
 
@@ -311,7 +306,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
           prefix should ===(0 until 2)
           Flow.fromSinkAndSourceCoupled(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
         }(Keep.both)
-        .map{
+        .map {
           case 2 => 2
           case 3 => throw TE("3!?!?!?")
           case i => fail(s"unexpected value $i")
@@ -323,7 +318,6 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       suffixF.value should be(empty)
       srcWatchTermF.value should be(empty)
 
-
       val subUpstream = publisher.expectSubscription()
       val subDownstream = subscriber.expectSubscription()
 
@@ -333,7 +327,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       subDownstream.request(1)
       subscriber.expectNext(2)
       subUpstream.sendNext(2)
-       subDownstream.request(1)
+      subDownstream.request(1)
       subscriber.expectNext(3)
       subUpstream.sendNext(3)
       subUpstream.expectCancellation() should ===(TE("3!?!?!?"))
@@ -347,28 +341,29 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       val mat = Materializer(system)
       val publisher = TestPublisher.manualProbe[Int]()
 
-      val flow = Source.fromPublisher(publisher)
-        .prefixAndDownstreamMat(2){ prefix =>
+      val flow = Source
+        .fromPublisher(publisher)
+        .prefixAndDownstreamMat(2) { prefix =>
           fail(s"unexpected prefix (length = ${prefix.size})")
           Flow[Int]
-        } (Keep.right)
+        }(Keep.right)
         .toMat(Sink.ignore)(Keep.both)
 
       val (prefixF, doneF) = flow.run()(mat)
 
       publisher.expectSubscription()
-      prefixF.value should be (empty)
-      doneF.value should be (empty)
+      prefixF.value should be(empty)
+      doneF.value should be(empty)
 
       mat.shutdown()
 
       prefixF.failed.futureValue match {
-        case _ : AbruptTerminationException =>
-        case ex : NeverMaterializedException =>
+        case _: AbruptTerminationException =>
+        case ex: NeverMaterializedException =>
           ex.getCause should not be null
-          ex.getCause should be (a[AbruptTerminationException])
+          ex.getCause should be(a[AbruptTerminationException])
       }
-      doneF.failed.futureValue should be (a[AbruptTerminationException])
+      doneF.failed.futureValue should be(a[AbruptTerminationException])
     }
 
   }
