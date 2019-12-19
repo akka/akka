@@ -13,25 +13,54 @@ import org.openjdk.jmh.infra.Blackhole
 @Measurement(timeUnit = TimeUnit.MILLISECONDS)
 class ByteString_toArray_Benchmark {
 
-  val b = Array.ofDim[Byte](1024 * 10244)
-  val bb = ByteString(b)
+  var bs: ByteString = _
+
+  @Param(Array("10", "100", "1000"))
+  var kb = 0
+
   /*
     Benchmark                                  Mode  Cnt    Score    Error  Units
     2.12
-    ByteString_toArray_Benchmark.to_array  thrpt    3  537,116 ± 525,663  ops/s
+    composed_bs_to_array    10  thrpt    3    4,658 ±  14,923  ops/s
+    composed_bs_to_array   100  thrpt    3    5,341 ±   0,384  ops/s
+    composed_bs_to_array  1000  thrpt    3    5,362 ±   1,020  ops/s
+    single_bs_to_array      10  thrpt    3  527,457 ± 279,643  ops/s
+    single_bs_to_array     100  thrpt    3  520,702 ±  50,317  ops/s
+    single_bs_to_array    1000  thrpt    3  523,216 ± 108,398  ops/s
     2.13 before fix
-    ByteString_toArray_Benchmark.to_array  thrpt    3  165,869 ± 243,524  ops/s
-    2.13 with fix #28114
-    ByteString_toArray_Benchmark.to_array  thrpt    3  525,521 ± 346,830  ops/s
+    Benchmark             (kb)   Mode  Cnt    Score     Error  Units
+    composed_bs_to_array    10  thrpt    3    0,099 ±   0,012  ops/s
+    composed_bs_to_array   100  thrpt    3    0,101 ±   0,074  ops/s
+    composed_bs_to_array  1000  thrpt    3    0,101 ±   0,059  ops/s
+    single_bs_to_array      10  thrpt    3  515,178 ± 461,701  ops/s
+    single_bs_to_array     100  thrpt    3  515,013 ± 162,183  ops/s
+    single_bs_to_array    1000  thrpt    3  508,825 ± 182,691  ops/s
+    2.13 with fix
+    ---
    */
 
+  @Setup
+  def setup(): Unit = {
+    val bytes = Array.ofDim[Byte](1024 * 10244)
+    bs = ByteString(bytes)
+  }
+
   @Benchmark
-  @OperationsPerInvocation(1000)
-  def to_array(blackhole: Blackhole) = {
+  @OperationsPerInvocation(100)
+  def single_bs_to_array(blackhole: Blackhole): Unit = {
 
-    for (_ <- 0 to 1000)
-      blackhole.consume(bb.toArray[Byte])
+    for (_ <- 0 to 100)
+      blackhole.consume(bs.toArray[Byte])
 
+  }
+
+  @Benchmark
+  def composed_bs_to_array(blackhole: Blackhole): Unit = {
+    var b = ByteString.empty
+    for (_ <- 0 to 100) {
+      b = b ++ bs
+    }
+    blackhole.consume(b.toArray[Byte])
   }
 
 }
