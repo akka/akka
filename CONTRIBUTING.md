@@ -280,7 +280,7 @@ For a pull request to be considered at all it has to meet these requirements:
     1. All source files in the project must have a Lightbend copyright notice in the file header.
     1. The Notices file for the project includes the Lightbend copyright notice and no other files contain copyright notices.  See http://www.apache.org/legal/src-headers.html for instructions for managing this approach for copyrights.
 
-    Akka uses the first choice, having copyright notices in every file header. These can be added automatically with `sbt headerCreate test:headerCreate`.
+    Akka uses the first choice, having copyright notices in every file header. When absent, these are added automatically during `sbt compile`.
 
 ### Additional guidelines
 
