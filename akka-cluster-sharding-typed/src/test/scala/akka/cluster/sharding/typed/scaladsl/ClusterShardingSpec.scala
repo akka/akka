@@ -359,7 +359,7 @@ class ClusterShardingSpec
     }
 
     "use the stopMessage for leaving/rebalance" in {
-      // use many entites to reduce the risk that all are hashed to the same shard/node
+      // use many entities to reduce the risk that all are hashed to the same shard/node
       val numberOfEntities = 100
       val probe1 = TestProbe[String]()
       (1 to numberOfEntities).foreach { n =>

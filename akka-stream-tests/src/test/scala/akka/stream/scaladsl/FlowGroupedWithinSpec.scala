@@ -52,7 +52,7 @@ class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
       c.expectNoMessage(200.millis)
     }
 
-    "deliver bufferd elements onComplete before the timeout" taggedAs TimingTest in {
+    "deliver buffered elements onComplete before the timeout" taggedAs TimingTest in {
       val c = TestSubscriber.manualProbe[immutable.Seq[Int]]()
       Source(1 to 3).groupedWithin(1000, 10.second).to(Sink.fromSubscriber(c)).run()
       val cSub = c.expectSubscription

@@ -117,7 +117,7 @@ class RemoteRouterSpec extends AkkaSpec(s"""
       masterSystem.stop(router)
     }
 
-    "deploy its children on remote host driven by programatic definition" in {
+    "deploy its children on remote host driven by programmatic definition" in {
       val probe = TestProbe()(masterSystem)
       val router = masterSystem.actorOf(
         new RemoteRouterConfig(RoundRobinPool(2), Seq(Address(protocol, sysName, "localhost", port)))

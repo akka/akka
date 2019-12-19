@@ -245,7 +245,7 @@ class InterceptSpec extends ScalaTestWithActorTestKit with WordSpecLike with Log
       probe.expectMessage("after b")
     }
 
-    "intercept with recursivly setup" in {
+    "intercept with recursively setup" in {
       val probe = TestProbe[String]()
       val interceptor = snitchingInterceptor(probe.ref)
 

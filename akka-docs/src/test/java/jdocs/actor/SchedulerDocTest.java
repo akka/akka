@@ -64,7 +64,7 @@ public class SchedulerDocTest extends AbstractJavaTest {
             .matchEquals(
                 "Tick",
                 m -> {
-                  // Do someting
+                  // Do something
                 })
             .build();
       }

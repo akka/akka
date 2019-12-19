@@ -885,7 +885,7 @@ public final class Descriptors {
       // Refuse to init if someone added a new declared type.
       if (Type.values().length != FieldDescriptorProto.Type.values().length) {
         throw new RuntimeException(
-          "descriptor.proto has a new declared type but Desrciptors.java " +
+          "descriptor.proto has a new declared type but Descriptors.java " +
           "wasn't updated.");
       }
     }

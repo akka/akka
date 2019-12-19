@@ -138,7 +138,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
         // which is possible for OR CRDTs - done with an adapter to leverage the existing NodesRemoved message
         timers.startTimerWithFixedDelay(RemoveTick, setup.settings.pruningInterval)
 
-        // default tomstone keepalive is 24h (based on prune-gossip-tombstones-after) and keeping the actorrefs
+        // default tombstone keepalive is 24h (based on prune-gossip-tombstones-after) and keeping the actorrefs
         // around isn't very costly so don't prune often
         timers.startTimerWithFixedDelay(PruneTombstonesTick, setup.keepTombstonesFor / 24)
 

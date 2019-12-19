@@ -108,7 +108,7 @@ class RemoteRouterSpec
       masterSystem.stop(router)
     }
 
-    "deploy its children on remote host driven by programatic definition" in {
+    "deploy its children on remote host driven by programmatic definition" in {
       val probe = TestProbe()(masterSystem)
       val router =
         masterSystem.actorOf(

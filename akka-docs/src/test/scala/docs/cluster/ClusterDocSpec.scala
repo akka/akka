@@ -42,7 +42,7 @@ class ClusterDocSpec extends AkkaSpec(ClusterDocSpec.config) with CompileOnlySpe
     }
   }
 
-  "demonstrate programatic joining to seed nodes" in compileOnlySpec {
+  "demonstrate programmatic joining to seed nodes" in compileOnlySpec {
     //#join-seed-nodes
     import akka.actor.Address
     import akka.cluster.Cluster

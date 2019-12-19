@@ -569,7 +569,7 @@ class ReplicatedDataSerializer(val system: ExtendedActorSystem)
           else if (entry.getOperation == rd.ORSetDeltaOp.Full)
             ORSet.FullStateDeltaOp(orsetFromProto(entry.getUnderlying))
           else
-            throw new NotSerializableException(s"Unknow ORSet delta operation ${entry.getOperation}")
+            throw new NotSerializableException(s"Unknown ORSet delta operation ${entry.getOperation}")
         }
         .to(immutable.Vector)
     ORSet.DeltaGroup(ops)

@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 class RecipeFlattenSeq extends RecipeSpec {
 
-  "Recipe for flatteing a stream of seqs" must {
+  "Recipe for flattening a stream of seqs" must {
 
     "work" in {
 
