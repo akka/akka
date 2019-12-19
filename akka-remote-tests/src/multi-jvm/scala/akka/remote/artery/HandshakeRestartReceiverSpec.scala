@@ -5,11 +5,14 @@
 package akka.remote.artery
 
 import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 
 import akka.actor._
 import akka.remote.AddressUidExtension
 import akka.remote.RARP
+import akka.remote.UniqueAddress
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
@@ -65,6 +68,12 @@ abstract class HandshakeRestartReceiverSpec
     }
   }
 
+  private def futureUniqueRemoteAddress(association: OutboundContext): Future[UniqueAddress] = {
+    val p = Promise[UniqueAddress]()
+    association.associationState.addUniqueRemoteAddressListener(a => p.success(a))
+    p.future
+  }
+
   "Artery Handshake" must {
 
     "detect restarted receiver and initiate new handshake" in {
@@ -79,7 +88,7 @@ abstract class HandshakeRestartReceiverSpec
 
         val secondAddress = node(second).address
         val secondAssociation = RARP(system).provider.transport.asInstanceOf[ArteryTransport].association(secondAddress)
-        val secondUniqueRemoteAddress = Await.result(secondAssociation.associationState.uniqueRemoteAddress, 3.seconds)
+        val secondUniqueRemoteAddress = Await.result(futureUniqueRemoteAddress(secondAssociation), 3.seconds)
         secondUniqueRemoteAddress.address should ===(secondAddress)
         secondUniqueRemoteAddress.uid should ===(secondUid)
 
@@ -93,7 +102,7 @@ abstract class HandshakeRestartReceiverSpec
         }
         val (secondUid2, subject2) = identifyWithUid(secondRootPath, "subject2")
         secondUid2 should !==(secondUid)
-        val secondUniqueRemoteAddress2 = Await.result(secondAssociation.associationState.uniqueRemoteAddress, 3.seconds)
+        val secondUniqueRemoteAddress2 = Await.result(futureUniqueRemoteAddress(secondAssociation), 3.seconds)
         secondUniqueRemoteAddress2.uid should ===(secondUid2)
         secondUniqueRemoteAddress2.address should ===(secondAddress)
         secondUniqueRemoteAddress2 should !==(secondUniqueRemoteAddress)
