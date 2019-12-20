@@ -81,7 +81,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       suffixF.futureValue /*(Interval(Span(1000, Minutes)))*/ should ===(10 until 20)
     }
 
-    "propagate materialization failure" in assertAllStagesStopped {
+    "propagate failure to create the downstream flow" in assertAllStagesStopped {
       val suffixF = Source(0 until 100)
         .prefixAndDownstreamMat(10) { prefix =>
           throw TE(s"I hate mondays! (${prefix.size})")
@@ -152,22 +152,12 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      val flow = Flow[Int].prefixAndDownstreamMat(2) { prefix =>
-        println("materializing flow")
-        Flow[Int].mapMaterializedValue(_ => prefix).prepend(Source(100 to 101)).alsoTo(Sink.foreach(println(_)))
-      }(Keep.right)
-
-      val flow_ = Flow[Int]
-        .alsoToMat {
-          Flow[Int].take(2).toMat(Sink.seq)(Keep.right)
-        }(Keep.right)
-        .drop(2)
-        .prepend(Source(100 to 101))
-        .alsoTo(Sink.foreach(println(_)))
-
       val matValue = Source
         .fromPublisher(publisher)
-        .viaMat(if (true) flow else flow_)(Keep.right)
+        .prefixAndDownstreamMat(2) { prefix =>
+          println("materializing flow")
+          Flow[Int].mapMaterializedValue(_ => prefix).prepend(Source(100 to 101)).alsoTo(Sink.foreach(println(_)))
+        }(Keep.right)
         .to(Sink.fromSubscriber(subscriber))
         .run()
 
@@ -364,6 +354,51 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
           ex.getCause should be(a[AbruptTerminationException])
       }
       doneF.failed.futureValue should be(a[AbruptTerminationException])
+    }
+
+    "behave like via when n = 0" in assertAllStagesStopped {
+      val (prefixF, suffixF) = src10()
+        .prefixAndDownstreamMat(0){ prefix =>
+          prefix should be (empty)
+          Flow[Int]
+            .mapMaterializedValue(_ => prefix)
+        } (Keep.right)
+        .toMat(Sink.seq) (Keep.both)
+        .run()
+
+      prefixF.futureValue should be (empty)
+      suffixF.futureValue should === (0 until 10)
+    }
+
+    "propagate errors during flow's creation when n = 0" in assertAllStagesStopped {
+      val (prefixF, suffixF) = src10()
+        .prefixAndDownstreamMat(0){ prefix =>
+          prefix should be (empty)
+          throw TE("not this time my friend!")
+          Flow[Int]
+            .mapMaterializedValue(_ => prefix)
+        } (Keep.right)
+        .toMat(Sink.seq) (Keep.both)
+        .run()
+
+      prefixF.failed.futureValue should be (a[NeverMaterializedException])
+      prefixF.failed.futureValue.getCause ===(TE("not this time my friend!"))
+      suffixF.failed.futureValue should ===(TE("not this time my friend!"))
+    }
+
+    "propagate materialization failures when n = 0" in assertAllStagesStopped {
+      val (prefixF, suffixF) = src10()
+        .prefixAndDownstreamMat(0){ prefix =>
+          prefix should be (empty)
+          Flow[Int]
+            .mapMaterializedValue(_ => throw TE("Bang! no materialization this time"))
+        } (Keep.right)
+        .toMat(Sink.seq) (Keep.both)
+        .run()
+
+      prefixF.failed.futureValue should be (a[NeverMaterializedException])
+      prefixF.failed.futureValue.getCause ===(TE("Bang! no materialization this time"))
+      suffixF.failed.futureValue should ===(TE("Bang! no materialization this time"))
     }
 
   }

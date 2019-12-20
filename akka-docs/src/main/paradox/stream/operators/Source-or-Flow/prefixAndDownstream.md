@@ -1,6 +1,6 @@
 # prefixAndDownstream
 
-Take up to *n* elements from the stream (less than *n* only if the upstream completes before emitting *n* elements), then apply *f* on these elements in order to obtain a flow, this flow is then materialized and the rest of the input is processed by this flow (similar to via). This method returns a flow consuming the rest of the stream producing the materialized flow's output.
+Use the first _n_ elements from the stream to determine how to process the rest.
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
