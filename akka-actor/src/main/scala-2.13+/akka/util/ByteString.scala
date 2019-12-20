@@ -16,8 +16,6 @@ import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSe
 import scala.reflect.ClassTag
 import com.github.ghik.silencer.silent
 
-import akka.annotation.InternalApi
-
 object ByteString {
 
   /**
@@ -391,7 +389,6 @@ object ByteString {
     }
 
     override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int = {
-      val actualSrcPos = startIndex
       // min of the bytes available top copy, bytes there is room for in dest and the requested number of bytes
       val bytesToCopy = length.min(len).min(xs.length - start)
       if (bytesToCopy > 0) {
@@ -798,7 +795,7 @@ sealed abstract class ByteString
 
   // optimized in all subclasses, avoiding usage of the iterator to save allocations/transformations
   override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int =
-    throw new UnsupportedOperationException("Method dropRight is not implemented in ByteString")
+    throw new UnsupportedOperationException("Method copyToArray is not implemented in ByteString")
 
   override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 

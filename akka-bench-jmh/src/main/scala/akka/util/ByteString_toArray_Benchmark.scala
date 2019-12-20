@@ -47,7 +47,7 @@ class ByteString_toArray_Benchmark {
 
   @Setup
   def setup(): Unit = {
-    val bytes = Array.ofDim[Byte](1024 * 10244)
+    val bytes = Array.ofDim[Byte](1024 * kb)
     bs = ByteString(bytes)
   }
 
