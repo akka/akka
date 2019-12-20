@@ -15,6 +15,8 @@ class ByteString_toArray_Benchmark {
 
   var bs: ByteString = _
 
+  var composed: ByteString = _
+
   @Param(Array("10", "100", "1000"))
   var kb = 0
 
@@ -49,24 +51,20 @@ class ByteString_toArray_Benchmark {
   def setup(): Unit = {
     val bytes = Array.ofDim[Byte](1024 * kb)
     bs = ByteString(bytes)
+    var composed = ByteString.empty
+    for (_ <- 0 to 100) {
+      composed = composed ++ bs
+    }
   }
 
   @Benchmark
-  @OperationsPerInvocation(100)
   def single_bs_to_array(blackhole: Blackhole): Unit = {
-
-    for (_ <- 0 to 100)
-      blackhole.consume(bs.toArray[Byte])
-
+    blackhole.consume(bs.toArray[Byte])
   }
 
   @Benchmark
   def composed_bs_to_array(blackhole: Blackhole): Unit = {
-    var b = ByteString.empty
-    for (_ <- 0 to 100) {
-      b = b ++ bs
-    }
-    blackhole.consume(b.toArray[Byte])
+    blackhole.consume(composed.toArray[Byte])
   }
 
 }
