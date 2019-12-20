@@ -1637,6 +1637,8 @@ class LogMarker(val name: String, val properties: Map[String, Any]) {
     import akka.util.ccompat.JavaConverters._
     properties.map { case (k, v) => (k, v.asInstanceOf[AnyRef]) }.asJava
   }
+
+  override def toString: String = s"LogMarker($name,$properties)"
 }
 
 object LogMarker {

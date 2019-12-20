@@ -26,6 +26,7 @@ object EventStreamSpec {
         stdout-loglevel = WARNING
         loglevel = WARNING
         actor.debug.unhandled = on
+        log-dead-letters = off
       }
       """)
 
