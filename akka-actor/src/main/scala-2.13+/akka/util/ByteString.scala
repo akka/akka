@@ -8,12 +8,15 @@ import java.io.{ ObjectInputStream, ObjectOutputStream }
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable => JIterable }
 import java.nio.charset.{ Charset, StandardCharsets }
+
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.{ immutable, mutable }
 import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
 import scala.reflect.ClassTag
 import com.github.ghik.silencer.silent
+
+import akka.annotation.InternalApi
 
 object ByteString {
 
@@ -251,8 +254,20 @@ object ByteString {
       buffer.putByteArrayUnsafe(bytes)
     }
 
-    override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int = {
-      bytes.copyToArray(xs, start, length)
+    override private[akka] def copyToArray[B >: Byte](dest: Array[B], srcPos: Int, destPos: Int, len: Int): Int = {
+      val bytesToCopy = (bytes.length - srcPos).min(len).min(dest.length - destPos)
+      if (bytesToCopy > 0) {
+        Array.copy(bytes, srcPos, dest, destPos, bytesToCopy)
+        bytesToCopy
+      } else if (bytesToCopy == 0) {
+        0
+      } else {
+        // this is a bug
+        throw new IllegalArgumentException(
+          s"length: $length, bytes.length: ${bytes.length}, srcPos: $srcPos, " +
+          s"dest.length: ${dest.length}, destPos: $destPos, len: $len, " +
+          s"bytesToCopy: $bytesToCopy")
+      }
     }
   }
 
@@ -387,10 +402,24 @@ object ByteString {
       }
     }
 
-    override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int = {
-      val actualStart = start + this.startIndex
-      val actualLength = len.min(length)
-      bytes.copyToArray(xs, actualStart, actualLength)
+    override private[akka] def copyToArray[B >: Byte](dest: Array[B], srcPos: Int, destPos: Int, len: Int): Int = {
+      val actualSrcPos = srcPos + startIndex
+      // min of the bytes available top copy, bytes there is room for in dest and the requested number of bytes
+      // (0, 1, 2)
+      val bytesToCopy = (length - srcPos).min(len).min(dest.length - destPos)
+      if (bytesToCopy > 0) {
+        Array.copy(bytes, actualSrcPos, dest, destPos, bytesToCopy)
+        bytesToCopy
+      } else if (bytesToCopy == 0) {
+        // this is fine
+        0
+      } else {
+        // this is a bug
+        throw new IllegalArgumentException(
+          s"length: $length, startIndex: $startIndex, bytes.length: ${bytes.length}, srcPos: $srcPos, " +
+          s"dest.length: ${dest.length}, destPos: $destPos, len: $len, " +
+          s"actualSrcPos: $actualSrcPos, bytesToCopy: $bytesToCopy")
+      }
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
@@ -635,10 +664,29 @@ object ByteString {
       }
     }
 
-    override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int = {
-      // we could potentially do something even more clever here but for now this will do
-      val compactBs = compact
-      compactBs.copyToArray(xs, start, len)
+    override private[akka] def copyToArray[B >: Byte](dest: Array[B], srcPos: Int, destPos: Int, len: Int): Int = {
+      if (isCompact) bytestrings.head.copyToArray(dest, srcPos, destPos, len)
+      else {
+        val bsIterator = bytestrings.iterator
+        var pos = 0
+        // min of the bytes available top copy, bytes there is room for in dest and the requested number of bytes
+        val bytesToCopy = (length - srcPos).min(len).min(dest.length - destPos)
+        var currDestPos = destPos
+        var bytesLeft = bytesToCopy
+        while (bytesLeft > 0) {
+          val current = bsIterator.next()
+          if (pos >= srcPos || (pos + current.length) >= srcPos) {
+            val toCopy = bytesLeft.min(current.length)
+            current.copyToArray(dest, 0, currDestPos, toCopy)
+            pos += toCopy
+            currDestPos += toCopy
+            bytesLeft -= toCopy
+          } else {
+            // we didn't reach srcPos yet, skip
+          }
+        }
+        bytesToCopy
+      }
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
@@ -779,9 +827,17 @@ sealed abstract class ByteString
     copyToArray(xs, start, size.min(xs.size))
   }
 
+  final override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int =
+    if (len > 0)
+      copyToArray(xs, 0, start, len)
+    else
+      len
+
   // optimized in all subclasses, avoiding usage of the iterator to save allocations/transformations
-  override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int =
-    throw new UnsupportedOperationException("Method copyToArray is not implemented in ByteString")
+  // same semantics as copyToArray(Array, start, len) wrt larger len than size of src and dest with one difference - if len or calculated negative it will throw
+  /** INTERNAL API */
+  @InternalApi
+  private[akka] def copyToArray[B >: Byte](dest: Array[B], srcPos: Int, destPos: Int, len: Int): Int
 
   override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 

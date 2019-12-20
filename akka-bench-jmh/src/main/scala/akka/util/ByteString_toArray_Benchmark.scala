@@ -19,7 +19,8 @@ class ByteString_toArray_Benchmark {
   var kb = 0
 
   /*
-    Benchmark                                  Mode  Cnt    Score    Error  Units
+    akka-bench-jmh/jmh:run -f 1 -wi 3 -i 3 .*ByteString_toArray_Benchmark.*
+    Benchmark             (kb)  Mode   Cnt    Score     Error  Units
     2.12
     composed_bs_to_array    10  thrpt    3    4,658 ±  14,923  ops/s
     composed_bs_to_array   100  thrpt    3    5,341 ±   0,384  ops/s
@@ -35,13 +36,13 @@ class ByteString_toArray_Benchmark {
     single_bs_to_array      10  thrpt    3  515,178 ± 461,701  ops/s
     single_bs_to_array     100  thrpt    3  515,013 ± 162,183  ops/s
     single_bs_to_array    1000  thrpt    3  508,825 ± 182,691  ops/s
-    2.13 with half good fix
-    composed_bs_to_array    10  thrpt    3    2,570 ±   0,837  ops/s
-    composed_bs_to_array   100  thrpt    3    2,678 ±   0,426  ops/s
-    composed_bs_to_array  1000  thrpt    3    2,674 ±   0,844  ops/s
-    single_bs_to_array      10  thrpt    3  527,974 ± 363,850  ops/s
-    single_bs_to_array     100  thrpt    3  541,335 ± 208,655  ops/s
-    single_bs_to_array    1000  thrpt    3  504,734 ± 319,081  ops/s
+    2.13 with (second) fix
+    composed_bs_to_array    10  thrpt    3    5,297 ±   1,649  ops/s
+    composed_bs_to_array   100  thrpt    3    5,379 ±   2,397  ops/s
+    composed_bs_to_array  1000  thrpt    3    5,462 ±   0,908  ops/s
+    single_bs_to_array      10  thrpt    3  552,889 ± 531,326  ops/s
+    single_bs_to_array     100  thrpt    3  531,280 ± 290,192  ops/s
+    single_bs_to_array    1000  thrpt    3  516,088 ± 190,787  ops/s
    */
 
   @Setup
