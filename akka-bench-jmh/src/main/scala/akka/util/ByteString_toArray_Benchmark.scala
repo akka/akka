@@ -37,12 +37,12 @@ class ByteString_toArray_Benchmark {
     single_bs_to_array     100  thrpt    3  515,013 ± 162,183  ops/s
     single_bs_to_array    1000  thrpt    3  508,825 ± 182,691  ops/s
     2.13 with (second) fix
-    composed_bs_to_array    10  thrpt    3    5,297 ±   1,649  ops/s
-    composed_bs_to_array   100  thrpt    3    5,379 ±   2,397  ops/s
-    composed_bs_to_array  1000  thrpt    3    5,462 ±   0,908  ops/s
-    single_bs_to_array      10  thrpt    3  552,889 ± 531,326  ops/s
-    single_bs_to_array     100  thrpt    3  531,280 ± 290,192  ops/s
-    single_bs_to_array    1000  thrpt    3  516,088 ± 190,787  ops/s
+    composed_bs_to_array    10  thrpt    3    5,586 ±    0,992  ops/s
+    composed_bs_to_array   100  thrpt    3    5,335 ±    1,976  ops/s
+    composed_bs_to_array  1000  thrpt    3    5,434 ±    0,917  ops/s
+    single_bs_to_array      10  thrpt    3  500,953 ± 1411,704  ops/s
+    single_bs_to_array     100  thrpt    3  531,516 ±   99,146  ops/s
+    single_bs_to_array    1000  thrpt    3  530,254 ±  177,647  ops/s
    */
 
   @Setup
