@@ -15,6 +15,7 @@ import akka.actor.DeadLetter
 import akka.actor.DeadLetterActorRef
 import akka.actor.DeadLetterSuppression
 import akka.actor.Dropped
+import akka.actor.UnhandledMessage
 import akka.actor.WrappedMessage
 import akka.event.Logging.Info
 import akka.util.PrettyDuration._
@@ -29,6 +30,7 @@ class DeadLetterListener extends Actor {
   override def preStart(): Unit = {
     eventStream.subscribe(self, classOf[DeadLetter])
     eventStream.subscribe(self, classOf[Dropped])
+    eventStream.subscribe(self, classOf[UnhandledMessage])
   }
 
   // don't re-subscribe, skip call to preStart
@@ -114,6 +116,10 @@ class DeadLetterListener extends Actor {
       case dropped: Dropped =>
         val destination = if (isReal(d.recipient)) s" to ${d.recipient}" else ""
         s"Message [$messageStr]$wrappedIn$origin$destination was dropped. ${dropped.reason}. " +
+        s"[$count] dead letters encountered$doneMsg. "
+      case _: UnhandledMessage =>
+        val destination = if (isReal(d.recipient)) s" to ${d.recipient}" else ""
+        s"Message [$messageStr]$wrappedIn$origin$destination was unhandled. " +
         s"[$count] dead letters encountered$doneMsg. "
       case _ =>
         s"Message [$messageStr]$wrappedIn$origin to ${d.recipient} was not delivered. " +

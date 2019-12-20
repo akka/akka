@@ -479,7 +479,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
  * Subscribe to this class to be notified about all [[DeadLetter]] (also the suppressed ones)
  * and [[Dropped]].
  */
-sealed trait AllDeadLetters extends WrappedMessage {
+trait AllDeadLetters extends WrappedMessage {
   def message: Any
   def sender: ActorRef
   def recipient: ActorRef
