@@ -269,7 +269,7 @@ import scala.util.control.NonFatal
           }
         }
 
-        matValueTry.failed.foreach{ex =>
+        matValueTry.failed.foreach { ex =>
           subSource = null
           subSink = null
           failStage(ex)
