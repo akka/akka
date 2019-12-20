@@ -58,6 +58,77 @@ class MessageBufferSpec extends WordSpec with Matchers {
       buffer.foreach((m, s) => sb2.append(s"$m->$s:"))
       sb2.toString() should ===("m2->s2:m3->s3:")
     }
+
+    "filterNot of first" in {
+      val buffer = MessageBuffer.empty
+      buffer.append("m1", "s1")
+      buffer.append("m2", "s2")
+      buffer.filterNot((m, _) => m == "m1")
+      buffer.head()._1 should ===("m2")
+      buffer.size should ===(1)
+      buffer.filterNot((m, _) => m == "m2")
+      buffer.isEmpty should ===(true)
+    }
+
+    "filterNot of last" in {
+      val buffer = MessageBuffer.empty
+      buffer.append("m1", "s1")
+      buffer.append("m2", "s2")
+      buffer.filterNot((m, _) => m == "m2")
+      buffer.head()._1 should ===("m1")
+      buffer.size should ===(1)
+      buffer.filterNot((m, _) => m == "m1")
+      buffer.isEmpty should ===(true)
+    }
+
+    "filterNot of single entry" in {
+      val buffer = MessageBuffer.empty
+      buffer.append("m1", "s1")
+      buffer.append("m2", "s2")
+      buffer.append("m3", "s3")
+      buffer.append("m4", "s4")
+      buffer.append("m5", "s5")
+      buffer.append("m6", "s6")
+      buffer.head()._1 should ===("m1")
+      buffer.filterNot((m, _) => m == "m1")
+      buffer.head()._1 should ===("m2")
+      buffer.size should ===(5)
+      buffer.filterNot((m, _) => m == "m3")
+      buffer.size should ===(4)
+      buffer.filterNot((m, _) => m == "m4")
+      buffer.size should ===(3)
+      buffer.dropHead()
+      buffer.head()._1 should ===("m5")
+      buffer.size should ===(2)
+      buffer.filterNot((m, _) => m == "m6")
+      buffer.size should ===(1)
+      buffer.append("m7", "s7")
+      buffer.head()._1 should ===("m5")
+      buffer.size should ===(2)
+      buffer.filterNot((m, _) => m == "m5")
+      buffer.size should ===(1)
+      buffer.filterNot((m, _) => m == "m7")
+      buffer.size should ===(0)
+      buffer.isEmpty should ===(true)
+    }
+
+    "filterNot of several entries" in {
+      val buffer = MessageBuffer.empty
+      buffer.append("m1", "s1")
+      buffer.append("m2", "s2")
+      buffer.append("m3", "s3")
+      buffer.append("m4", "s4")
+      buffer.append("m5", "s5")
+      buffer.append("m6", "s6")
+      buffer.filterNot((m, _) => m == "m1" || m == "m2")
+      buffer.head()._1 should ===("m3")
+      buffer.size should ===(4)
+      buffer.filterNot((m, _) => m == "m4" || m == "m5")
+      buffer.size should ===(2)
+      buffer.dropHead()
+      buffer.head()._1 should ===("m6")
+      buffer.size should ===(1)
+    }
   }
 
   "A MessageBufferMap" must {
