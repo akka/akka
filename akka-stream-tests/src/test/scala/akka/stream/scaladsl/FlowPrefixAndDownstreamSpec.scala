@@ -369,6 +369,20 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       suffixF.futureValue should ===(0 until 10)
     }
 
+    "behave like via when n = 0 and upstream produces no elements" in assertAllStagesStopped {
+      val (prefixF, suffixF) = Source
+        .empty[Int]
+        .prefixAndDownstreamMat(0) { prefix =>
+          prefix should be(empty)
+          Flow[Int].mapMaterializedValue(_ => prefix)
+        }(Keep.right)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      prefixF.futureValue should be(empty)
+      suffixF.futureValue should be(empty)
+    }
+
     "propagate errors during flow's creation when n = 0" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
         .prefixAndDownstreamMat(0) { prefix =>
