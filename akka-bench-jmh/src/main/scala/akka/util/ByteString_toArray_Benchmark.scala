@@ -51,7 +51,7 @@ class ByteString_toArray_Benchmark {
   def setup(): Unit = {
     val bytes = Array.ofDim[Byte](1024 * kb)
     bs = ByteString(bytes)
-    var composed = ByteString.empty
+    composed = ByteString.empty
     for (_ <- 0 to 100) {
       composed = composed ++ bs
     }
