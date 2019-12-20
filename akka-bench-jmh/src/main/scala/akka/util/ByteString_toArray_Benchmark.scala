@@ -21,30 +21,33 @@ class ByteString_toArray_Benchmark {
   var kb = 0
 
   /*
-    akka-bench-jmh/jmh:run -f 1 -wi 3 -i 3 .*ByteString_toArray_Benchmark.*
-    Benchmark             (kb)  Mode   Cnt    Score     Error  Units
+    akka-bench-jmh/jmh:run -f 1 -wi 5 -i 5 .*ByteString_toArray_Benchmark.*
+
+
+    Benchmark             (kb)   Mode  Cnt        Score       Error  Units
     2.12
-    composed_bs_to_array    10  thrpt    3    4,658 ±  14,923  ops/s
-    composed_bs_to_array   100  thrpt    3    5,341 ±   0,384  ops/s
-    composed_bs_to_array  1000  thrpt    3    5,362 ±   1,020  ops/s
-    single_bs_to_array      10  thrpt    3  527,457 ± 279,643  ops/s
-    single_bs_to_array     100  thrpt    3  520,702 ±  50,317  ops/s
-    single_bs_to_array    1000  thrpt    3  523,216 ± 108,398  ops/s
+    composed_bs_to_array    10  thrpt    5     5625.395 ±   145.999  ops/s
+    composed_bs_to_array   100  thrpt    5      464.893 ±    33.579  ops/s
+    composed_bs_to_array  1000  thrpt    5       45.482 ±     4.217  ops/s
+    single_bs_to_array      10  thrpt    5  1450077.491 ± 27964.993  ops/s
+    single_bs_to_array     100  thrpt    5    72201.806 ±   637.800  ops/s
+    single_bs_to_array    1000  thrpt    5     5491.724 ±   178.696  ops/s
+
     2.13 before (second) fix
-    Benchmark             (kb)   Mode  Cnt    Score     Error  Units
-    composed_bs_to_array    10  thrpt    3    0,099 ±   0,012  ops/s
-    composed_bs_to_array   100  thrpt    3    0,101 ±   0,074  ops/s
-    composed_bs_to_array  1000  thrpt    3    0,101 ±   0,059  ops/s
-    single_bs_to_array      10  thrpt    3  515,178 ± 461,701  ops/s
-    single_bs_to_array     100  thrpt    3  515,013 ± 162,183  ops/s
-    single_bs_to_array    1000  thrpt    3  508,825 ± 182,691  ops/s
+    composed_bs_to_array    10  thrpt    5      128.706 ±      4.590  ops/s
+    composed_bs_to_array   100  thrpt    5       13.147 ±      0.435  ops/s
+    composed_bs_to_array  1000  thrpt    5        1.255 ±      0.057  ops/s
+    single_bs_to_array      10  thrpt    5  1336977.040 ± 719295.197  ops/s
+    single_bs_to_array     100  thrpt    5    70202.111 ±    522.435  ops/s
+    single_bs_to_array    1000  thrpt    5     5444.186 ±    224.677  ops/s
+
     2.13 with (second) fix
-    composed_bs_to_array    10  thrpt    3    5,586 ±    0,992  ops/s
-    composed_bs_to_array   100  thrpt    3    5,335 ±    1,976  ops/s
-    composed_bs_to_array  1000  thrpt    3    5,434 ±    0,917  ops/s
-    single_bs_to_array      10  thrpt    3  500,953 ± 1411,704  ops/s
-    single_bs_to_array     100  thrpt    3  531,516 ±   99,146  ops/s
-    single_bs_to_array    1000  thrpt    3  530,254 ±  177,647  ops/s
+    composed_bs_to_array    10  thrpt    5     5970.395 ±   348.356  ops/s
+    composed_bs_to_array   100  thrpt    5      479.762 ±    15.819  ops/s
+    composed_bs_to_array  1000  thrpt    5       45.940 ±     1.306  ops/s
+    single_bs_to_array      10  thrpt    5  1468430.822 ± 38730.696  ops/s
+    single_bs_to_array     100  thrpt    5    71313.855 ±   983.643  ops/s
+    single_bs_to_array    1000  thrpt    5     5526.564 ±   143.654  ops/s
    */
 
   @Setup
