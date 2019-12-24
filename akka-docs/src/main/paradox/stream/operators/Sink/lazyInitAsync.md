@@ -1,6 +1,6 @@
 # Sink.lazyInitAsync
 
-`lazyInitAsync` has been deprecated in 2.6.0, use `Sink.lazyFutureSink` 
+Deprecated by @ref:[`Sink.lazyFutureSink`](lazyFutureSink.md).
 
 @ref[Sink operators](../index.md#sink-operators)
 

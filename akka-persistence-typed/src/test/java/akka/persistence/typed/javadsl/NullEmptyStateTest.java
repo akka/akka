@@ -45,7 +45,7 @@ public class NullEmptyStateTest extends JUnitSuite {
     }
 
     @Override
-    public SignalHandler signalHandler() {
+    public SignalHandler<String> signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.instance(),

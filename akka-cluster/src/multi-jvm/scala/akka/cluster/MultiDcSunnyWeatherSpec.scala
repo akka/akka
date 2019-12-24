@@ -143,7 +143,7 @@ abstract class MultiDcSunnyWeatherSpec
    * INTERNAL API
    * Returns `Up` (or in "later" status, like Leaving etc, but never `Joining` or `WeaklyUp`) members,
    * sorted by Member.ageOrdering (from oldest to youngest). This restriction on status is needed to
-   * strongly guaratnee the order of "oldest" members, as they're linearized by the order in which they become Up
+   * strongly guarantee the order of "oldest" members, as they're linearized by the order in which they become Up
    * (since marking that transition is a Leader action).
    */
   private def membersByAge(dataCenter: ClusterSettings.DataCenter): immutable.SortedSet[Member] =

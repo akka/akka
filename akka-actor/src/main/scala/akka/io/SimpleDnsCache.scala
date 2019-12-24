@@ -39,7 +39,7 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
    * To get Srv or just one type use DnsProtocol
    *
    * This method is deprecated and involves a copy from the new protocol to
-   * remain compatable
+   * remain compatible
    */
   @silent("deprecated")
   override def cached(name: String): Option[Dns.Resolved] = {

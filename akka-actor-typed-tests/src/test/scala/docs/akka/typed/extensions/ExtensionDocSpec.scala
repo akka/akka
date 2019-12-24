@@ -33,7 +33,7 @@ object DatabasePool extends ExtensionId[DatabasePool] {
 @silent
 //#extension
 class DatabasePool(system: ActorSystem[_]) extends Extension {
-  // database configuration can be laoded from config
+  // database configuration can be loaded from config
   // from the actor system
   private val _connection = new ExpensiveDatabaseConnection()
 

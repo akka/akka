@@ -6,17 +6,55 @@ package akka.actor
 
 import language.postfixOps
 import akka.testkit._
+
 import scala.concurrent.duration._
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.Await
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicBoolean
 
 object ReceiveTimeoutSpec {
   case object Tick
   case object TransparentTick extends NotInfluenceReceiveTimeout
+
+  class RestartingParent(probe: ActorRef) extends Actor {
+    val restarting = new AtomicBoolean(false)
+    val child = context.actorOf(Props(new RestartingChild(probe, restarting)))
+    def receive = {
+      case msg =>
+        child.forward(msg)
+    }
+  }
+  class RestartingChild(probe: ActorRef, restarting: AtomicBoolean) extends Actor {
+
+    override def preStart(): Unit = {
+      if (restarting.get) {
+        probe ! "restarting"
+        context.setReceiveTimeout(500.millis)
+      } else {
+        probe ! "starting"
+      }
+    }
+
+    override def postStop(): Unit = {
+      probe ! "stopping"
+    }
+
+    def receive = {
+      case "crash" =>
+        restarting.set(true)
+        probe ! "crashing"
+        throw TestException("boom bang")
+      case ReceiveTimeout =>
+        probe ! ReceiveTimeout
+      case other =>
+        probe ! other
+    }
+  }
 }
 
-class ReceiveTimeoutSpec extends AkkaSpec {
+class ReceiveTimeoutSpec extends AkkaSpec() {
   import ReceiveTimeoutSpec._
 
   "An actor with receive timeout" must {
@@ -236,6 +274,20 @@ class ReceiveTimeoutSpec extends AkkaSpec {
       // now should happen
       probe.expectMsgType[ReceiveTimeout]
       system.stop(timeoutActor)
+    }
+
+    // #28266 reproducer
+    "get the timeout when scheduled immediately on restart" in {
+      val probe = TestProbe()
+      val ref = system.actorOf(Props(new RestartingParent(probe.ref)))
+      probe.expectMsg("starting")
+      EventFilter.error("boom bang", occurrences = 1).intercept {
+        ref ! "crash"
+      }
+      probe.expectMsg("crashing")
+      probe.expectMsg("stopping")
+      probe.expectMsg("restarting")
+      probe.expectMsg(ReceiveTimeout)
     }
   }
 }

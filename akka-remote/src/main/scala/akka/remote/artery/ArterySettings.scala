@@ -211,7 +211,8 @@ private[akka] final class ArterySettings private (config: Config) {
       val ImageLivenessTimeout: FiniteDuration = config
         .getMillisDuration("image-liveness-timeout")
         .requiring(interval => interval > Duration.Zero, "image-liveness-timeout must be more than zero")
-      require(ImageLivenessTimeout < HandshakeTimeout, "image-liveness-timeout must be less than handshake-timeout")
+      if (Transport == AeronUpd)
+        require(ImageLivenessTimeout < HandshakeTimeout, "image-liveness-timeout must be less than handshake-timeout")
       val DriverTimeout: FiniteDuration = config
         .getMillisDuration("driver-timeout")
         .requiring(interval => interval > Duration.Zero, "driver-timeout must be more than zero")

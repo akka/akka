@@ -36,6 +36,17 @@ Scala
 Java
 :  @@snip [RouterTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/RouterTest.java) { #pool }
 
+### Configuring Dispatchers
+
+Since the router itself is spawned as an actor the dispatcher used for it can be configured directly in the call to `spawn`.
+The routees, however, are spawned by the router.
+Therefore, the `PoolRouter` has a property to configure the `Props` of its routees:
+
+Scala
+:  @@snip [RouterSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/RouterSpec.scala) { #pool-dispatcher }
+
+Java
+:  @@snip [RouterTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/RouterTest.java) { #pool-dispatcher }
 
 ## Group Router
 
@@ -81,11 +92,16 @@ of routees stays relatively stable, but may be unfair if the set of routees chan
 
 This is the default for pool routers as the pool of routees is expected to remain the same.
 
+An optional parameter `preferLocalRoutees` can be used for this strategy. Routers will only use routees located in local actor system if `preferLocalRoutees` is true and local routees do exist. The default value for this parameter is false.
+
+
 ### Random
 
 Randomly selects a routee when a message is sent through the router.
 
 This is the default for group routers as the group of routees is expected to change as nodes join and leave the cluster.
+
+An optional parameter `preferLocalRoutees` can be used for this strategy. Routers will only use routees located in local actor system if `preferLocalRoutees` is true and local routees do exist. The default value for this parameter is false.
 
 ### Consistent Hashing
  

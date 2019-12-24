@@ -6,6 +6,8 @@ package akka.persistence.query
 
 import java.util.UUID
 
+import akka.util.UUIDComparator
+
 object Offset {
 
   // factories to aid discoverability
@@ -44,7 +46,7 @@ final case class TimeBasedUUID(value: UUID) extends Offset with Ordered[TimeBase
     throw new IllegalArgumentException("UUID " + value + " is not a time-based UUID")
   }
 
-  override def compare(other: TimeBasedUUID): Int = value.compareTo(other.value)
+  override def compare(other: TimeBasedUUID): Int = UUIDComparator.comparator.compare(value, other.value)
 }
 
 /**

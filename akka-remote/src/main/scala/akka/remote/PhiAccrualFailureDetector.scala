@@ -7,12 +7,15 @@ package akka.remote
 import akka.event.Logging.Warning
 import akka.remote.FailureDetector.Clock
 import java.util.concurrent.atomic.AtomicReference
+
 import scala.annotation.tailrec
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
 import scala.collection.immutable
+
 import com.typesafe.config.Config
 import akka.event.EventStream
+import akka.event.Logging
 import akka.util.Helpers.ConfigOps
 
 /**
@@ -144,7 +147,9 @@ class PhiAccrualFailureDetector(
               Warning(
                 this.toString,
                 getClass,
-                s"heartbeat interval is growing too large for address $address: $interval millis"))
+                s"heartbeat interval is growing too large for address $address: $interval millis",
+                Logging.emptyMDC,
+                RemoteLogMarker.failureDetectorGrowing(address)))
           oldState.history :+ interval
         } else oldState.history
     }

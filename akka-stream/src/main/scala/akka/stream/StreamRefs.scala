@@ -7,6 +7,7 @@ package akka.stream
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -120,11 +121,8 @@ final case class InvalidPartnerActorException(expectedRef: ActorRef, gotRef: Act
  * The stream ref resolver extension provides a way to serialize and deserialize streamrefs in user serializers.
  */
 object StreamRefResolver extends ExtensionId[StreamRefResolver] {
-
-  /**
-   * Java API
-   */
   override def get(system: ActorSystem): StreamRefResolver = super.get(system)
+  override def get(system: ClassicActorSystemProvider): StreamRefResolver = super.get(system)
 
   override def createExtension(system: ExtendedActorSystem): StreamRefResolver =
     new StreamRefResolverImpl(system)

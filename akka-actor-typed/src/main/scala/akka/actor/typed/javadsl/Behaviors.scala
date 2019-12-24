@@ -261,7 +261,7 @@ object Behaviors {
       Supervisor(Behavior.validateAsInitial(wrapped), strategy)(ClassTag(clazz))
 
     /**
-     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
+     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws.
      *
      * All non-fatal (see [[scala.util.control.NonFatal]]) exceptions types will be handled using the given strategy.
      */

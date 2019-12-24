@@ -279,7 +279,7 @@ are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](
 
 ### Persistent mode for Cluster Sharding
 
-Cluster Sharding coordinator and [Remembering Entities](../cluster/cluster-sharding.md#remembering-entities) state could previously be stored in Distributed Data or via Akka Persistence.
+Cluster Sharding coordinator and @ref:[Remembering Entities](../cluster-sharding.md#remembering-entities) state could previously be stored in Distributed Data or via Akka Persistence.
 The Persistence mode has been deprecated in favour of using the Distributed Data mode for the coordinator state. A replacement for the state
 for Remembered Entities is tracked in [issue 27763](https://github.com/akka/akka/issues/27763).
 

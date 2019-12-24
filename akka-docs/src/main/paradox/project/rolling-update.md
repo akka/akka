@@ -11,7 +11,7 @@ update completely before starting next update.
 
 @@@ note
 
-[Rolling update from classic remoting to Artery](../additional/rolling-updates.md#migrating-from-classic-remoting-to-artery) is not supported since the protocol
+@ref:[Rolling update from classic remoting to Artery](../additional/rolling-updates.md#migrating-from-classic-remoting-to-artery) is not supported since the protocol
 is completely different. It will require a full cluster shutdown and new startup.
 
 @@@
@@ -70,3 +70,6 @@ This change required a two phase update where new serializer was introduced but 
 This means that you can't update from 2.5.17 directly to 2.5.22. You must first update to one of the intermediate
 versions 2.5.18, 2.5.19, 2.5.20 or 2.5.21.
 
+### 2.6.0 Several changes in minor release
+
+See @ref:[migration guide](migration-guide-2.5.x-2.6.x.md) when updating from 2.5.x to 2.6.x.

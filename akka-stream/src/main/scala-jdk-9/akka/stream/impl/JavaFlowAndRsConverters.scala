@@ -19,7 +19,7 @@ import JavaFlowAndRsConverters.Implicits._
  *
  * Please note that either of these types are designed for *inter-op* and usually should not be used directly
  * in applications. The intended use case is for shared libraries, like database drivers or similar to provide
- * the inter-operable types, such that other librarie can co-operate with them directly, if that is your use case
+ * the inter-operable types, such that other libraries can co-operate with them directly, if that is your use case
  * and you're using the j.u.c.Flow types, use the [[akka.stream.scaladsl.JavaFlowSupport]] sources/sinks/flows instead.
  *
  * The interfaces as well as semantic contract of these sets of interfaces.

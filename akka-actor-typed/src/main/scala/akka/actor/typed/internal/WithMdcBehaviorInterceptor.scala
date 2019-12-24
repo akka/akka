@@ -26,7 +26,7 @@ import scala.reflect.ClassTag
 }
 
 /**
- * Support for Mapped Dagnostic Context for logging
+ * Support for Mapped Diagnostic Context for logging
  *
  * INTERNAL API
  */

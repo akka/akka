@@ -206,7 +206,7 @@ class GraphStageTimersSpec extends StreamSpec {
             override def preStart(): Unit = scheduleOnce("tick", 100.millis)
 
             setHandler(in, new InHandler {
-              override def onPush() = () // Ingore
+              override def onPush() = () // Ignore
             })
 
             setHandler(out, new OutHandler {

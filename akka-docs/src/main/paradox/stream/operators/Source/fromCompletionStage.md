@@ -1,6 +1,6 @@
 # fromCompletionStage
 
-`fromCompletionStage` has been deprecated in 2.6.0, use `Source.completionStage`
+Deprecated by @ref:[`Source.completionStage`](completionStage.md).
 
 @ref[Source operators](../index.md#source-operators)
 

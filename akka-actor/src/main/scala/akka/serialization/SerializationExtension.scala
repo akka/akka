@@ -4,6 +4,7 @@
 
 package akka.serialization
 
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.{ ActorSystem, ExtendedActorSystem, ExtensionId, ExtensionIdProvider }
 
 /**
@@ -12,6 +13,7 @@ import akka.actor.{ ActorSystem, ExtendedActorSystem, ExtensionId, ExtensionIdPr
  */
 object SerializationExtension extends ExtensionId[Serialization] with ExtensionIdProvider {
   override def get(system: ActorSystem): Serialization = super.get(system)
+  override def get(system: ClassicActorSystemProvider): Serialization = super.get(system)
   override def lookup = SerializationExtension
   override def createExtension(system: ExtendedActorSystem): Serialization = new Serialization(system)
 }

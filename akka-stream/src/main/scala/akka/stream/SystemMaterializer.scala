@@ -5,6 +5,7 @@
 package akka.stream
 
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.Deploy
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
@@ -29,6 +30,7 @@ import com.github.ghik.silencer.silent
  */
 object SystemMaterializer extends ExtensionId[SystemMaterializer] with ExtensionIdProvider {
   override def get(system: ActorSystem): SystemMaterializer = super.get(system)
+  override def get(system: ClassicActorSystemProvider): SystemMaterializer = super.get(system)
 
   override def lookup = SystemMaterializer
 

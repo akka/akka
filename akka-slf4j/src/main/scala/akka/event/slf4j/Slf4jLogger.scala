@@ -107,12 +107,22 @@ class Slf4jLogger extends Actor with SLF4JLogging with RequiresMessageQueue[Logg
 
   @inline
   final def withMdc(logSource: String, logEvent: LogEvent)(logStatement: => Unit): Unit = {
+    logEvent match {
+      case m: LogEventWithMarker if m.marker ne null =>
+        val properties = m.marker.properties
+        if (properties.nonEmpty) {
+          properties.foreach { case (k, v) => MDC.put(k, String.valueOf(v)) }
+        }
+      case _ =>
+    }
+
     MDC.put(mdcAkkaSourceAttributeName, logSource)
     MDC.put(mdcThreadAttributeName, logEvent.thread.getName)
     MDC.put(mdcAkkaTimestamp, formatTimestamp(logEvent.timestamp))
     MDC.put(mdcActorSystemAttributeName, context.system.name)
     MDC.put(mdcAkkaAddressAttributeName, akkaAddress)
     logEvent.mdc.foreach { case (k, v) => MDC.put(k, String.valueOf(v)) }
+
     try logStatement
     finally {
       MDC.clear()
@@ -174,7 +184,7 @@ class Slf4jLoggingFilter(@unused settings: ActorSystem.Settings, eventStream: Ev
 }
 
 /** Wraps [[org.slf4j.Marker]] */
-final class Slf4jLogMarker(val marker: org.slf4j.Marker) extends LogMarker(name = marker.getName)
+final class Slf4jLogMarker(val marker: org.slf4j.Marker) extends LogMarker(name = marker.getName, Map.empty)
 
 /** Factory for creating [[LogMarker]] that wraps [[org.slf4j.Marker]] */
 object Slf4jLogMarker {

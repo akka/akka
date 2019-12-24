@@ -27,8 +27,8 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     val silencerVersion = "1.4.4"
     Seq(
       libraryDependencies ++= Seq(
-          compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion cross CrossVersion.full),
-          "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided cross CrossVersion.full))
+          compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion cross CrossVersion.patch),
+          "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided cross CrossVersion.patch))
   }
 
   lazy val disciplineSettings =
@@ -71,7 +71,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
   /**
    * Remain visibly filtered for future code quality work and removing.
    */
-  val undisciplineScalacOptions = Set("-Ywarn-value-discard", "-Ywarn-numeric-widen", "-Yno-adapted-args")
+  val undisciplineScalacOptions = Set("-Ywarn-value-discard", "-Ywarn-numeric-widen")
 
   /** These options are desired, but some are excluded for the time being*/
   val disciplineScalacOptions = Set(
