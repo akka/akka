@@ -54,7 +54,7 @@ class RemoteInstrumentsSerializationSpec extends AkkaSpec("akka.loglevel = DEBUG
       p.expectNoMessage(100.millis)
     }
 
-    "skip exitsing remote instruments not in the message" in {
+    "skip existing remote instruments not in the message" in {
       ensureDebugLog("Skipping local RemoteInstrument 10 that has no matching data in the message") {
         val p = TestProbe()
         val instruments = Seq(testInstrument(7, "!"), testInstrument(10, ".."), testInstrument(21, "???"))

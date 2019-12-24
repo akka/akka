@@ -1,0 +1,4 @@
+# Internal incompatibilities introduced in the scala 2.13.0->2.13.1 update
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.remote.EndpointManager#Send.unapply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.remote.artery.Association#OutboundStreamMatValues.unapply")
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.remote.transport.AkkaPduCodec#Message.unapply")

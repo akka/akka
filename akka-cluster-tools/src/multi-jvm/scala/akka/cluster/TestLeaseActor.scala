@@ -8,11 +8,11 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -73,6 +73,7 @@ class TestLeaseActor extends Actor with ActorLogging {
 
 object TestLeaseActorClientExt extends ExtensionId[TestLeaseActorClientExt] with ExtensionIdProvider {
   override def get(system: ActorSystem): TestLeaseActorClientExt = super.get(system)
+  override def get(system: ClassicActorSystemProvider): TestLeaseActorClientExt = super.get(system)
   override def lookup = TestLeaseActorClientExt
   override def createExtension(system: ExtendedActorSystem): TestLeaseActorClientExt =
     new TestLeaseActorClientExt(system)

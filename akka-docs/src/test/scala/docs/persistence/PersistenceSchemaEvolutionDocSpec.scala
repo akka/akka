@@ -235,15 +235,15 @@ class PersonSerializerSettingsBox {
 final case class SamplePayload(p: Any)
 
 //#split-events-during-recovery
-trait V1
-trait V2
+trait Version1
+trait Version2
 
 // V1 event:
-final case class UserDetailsChanged(name: String, address: String) extends V1
+final case class UserDetailsChanged(name: String, address: String) extends Version1
 
 // corresponding V2 events:
-final case class UserNameChanged(name: String) extends V2
-final case class UserAddressChanged(address: String) extends V2
+final case class UserNameChanged(name: String) extends Version2
+final case class UserAddressChanged(address: String) extends Version2
 
 // event splitting adapter:
 class UserEventsAdapter extends EventAdapter {
@@ -254,7 +254,7 @@ class UserEventsAdapter extends EventAdapter {
     case UserDetailsChanged(name, null)    => EventSeq(UserNameChanged(name))
     case UserDetailsChanged(name, address) =>
       EventSeq(UserNameChanged(name), UserAddressChanged(address))
-    case event: V2 => EventSeq(event)
+    case event: Version2 => EventSeq(event)
   }
 
   override def toJournal(event: Any): Any = event

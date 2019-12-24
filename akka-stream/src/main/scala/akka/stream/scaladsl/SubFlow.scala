@@ -5,7 +5,6 @@
 package akka.stream.scaladsl
 
 import akka.stream._
-import language.higherKinds
 import scala.annotation.unchecked.uncheckedVariance
 
 /**

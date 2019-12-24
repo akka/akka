@@ -14,7 +14,6 @@ import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NonFatal
-
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.event.LogMarker
@@ -165,9 +164,45 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     import akka.util.ccompat.JavaConverters._
     conf.getStringList("whitelist-class-prefix").asScala.toVector
   }
+  private val typeInManifest: Boolean = conf.getBoolean("type-in-manifest")
+  // Calculated eagerly so as to fail fast
+  private val configuredDeserializationType: Option[Class[_ <: AnyRef]] = conf.getString("deserialization-type") match {
+    case "" => None
+    case className =>
+      system.dynamicAccess.getClassFor[AnyRef](className) match {
+        case Success(c) => Some(c)
+        case Failure(_) =>
+          throw new IllegalArgumentException(
+            s"Cannot find deserialization-type [$className] for Jackson serializer [$bindingName]")
+      }
+  }
 
   // This must lazy otherwise it will deadlock the ActorSystem creation
   private lazy val serialization = SerializationExtension(system)
+
+  // This must be lazy since it depends on serialization above
+  private lazy val deserializationType: Option[Class[_ <: AnyRef]] = if (typeInManifest) {
+    None
+  } else {
+    configuredDeserializationType.orElse {
+      val bindings = serialization.bindings.filter(_._2.identifier == identifier)
+      bindings match {
+        case Nil =>
+          throw new IllegalArgumentException(
+            s"Jackson serializer [$bindingName] with type-in-manifest disabled must either declare" +
+            " a deserialization-type or have exactly one binding configured, but none were configured")
+
+        case Seq((clazz, _)) =>
+          Some(clazz.asSubclass(classOf[AnyRef]))
+
+        case multiple =>
+          throw new IllegalArgumentException(
+            s"Jackson serializer [$bindingName] with type-in-manifest disabled must either declare" +
+            " a deserialization-type or have exactly one binding configured, but multiple bindings" +
+            s" were configured [${multiple.mkString(", ")}]")
+      }
+    }
+  }
 
   // doesn't have to be volatile, doesn't matter if check is run more than once
   private var serializationBindingsCheckedOk = false
@@ -176,12 +211,20 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
 
   override def manifest(obj: AnyRef): String = {
     checkAllowedSerializationBindings()
-    val className = obj.getClass.getName
-    checkAllowedClassName(className)
-    checkAllowedClass(obj.getClass)
-    migrations.get(className) match {
-      case Some(transformer) => className + "#" + transformer.currentVersion
-      case None              => className
+    deserializationType match {
+      case Some(clazz) =>
+        migrations.get(clazz.getName) match {
+          case Some(transformer) => "#" + transformer.currentVersion
+          case None              => ""
+        }
+      case None =>
+        val className = obj.getClass.getName
+        checkAllowedClassName(className)
+        checkAllowedClass(obj.getClass)
+        migrations.get(className) match {
+          case Some(transformer) => className + "#" + transformer.currentVersion
+          case None              => className
+        }
     }
   }
 
@@ -220,9 +263,9 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
     val startTime = if (isDebugEnabled) System.nanoTime else 0L
 
     val (fromVersion, manifestClassName) = parseManifest(manifest)
-    checkAllowedClassName(manifestClassName)
+    if (typeInManifest) checkAllowedClassName(manifestClassName)
 
-    val migration = migrations.get(manifestClassName)
+    val migration = migrations.get(deserializationType.fold(manifestClassName)(_.getName))
 
     val className = migration match {
       case Some(transformer) if fromVersion < transformer.currentVersion =>
@@ -234,7 +277,7 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
       case _ => manifestClassName
     }
 
-    if (className ne manifestClassName)
+    if (typeInManifest && (className ne manifestClassName))
       checkAllowedClassName(className)
 
     if (isCaseObject(className)) {
@@ -250,13 +293,15 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
       logFromBinaryDuration(bytes, bytes, startTime, clazz)
       result
     } else {
-      val clazz = system.dynamicAccess.getClassFor[AnyRef](className) match {
-        case Success(c) => c
-        case Failure(_) =>
-          throw new NotSerializableException(
-            s"Cannot find manifest class [$className] for serializer [${getClass.getName}].")
+      val clazz = deserializationType.getOrElse {
+        system.dynamicAccess.getClassFor[AnyRef](className) match {
+          case Success(c) => c
+          case Failure(_) =>
+            throw new NotSerializableException(
+              s"Cannot find manifest class [$className] for serializer [${getClass.getName}].")
+        }
       }
-      checkAllowedClass(clazz)
+      if (typeInManifest) checkAllowedClass(clazz)
 
       val decompressedBytes = decompress(bytes)
 

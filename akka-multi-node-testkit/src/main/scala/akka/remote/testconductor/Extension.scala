@@ -4,6 +4,7 @@
 
 package akka.remote.testconductor
 
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.remote.RemoteActorRefProvider
 import akka.util.Timeout
@@ -30,6 +31,7 @@ object TestConductor extends ExtensionId[TestConductorExt] with ExtensionIdProvi
    * Java API: retrieve the TestConductor extension for the given system.
    */
   override def get(system: ActorSystem): TestConductorExt = super.get(system)
+  override def get(system: ClassicActorSystemProvider): TestConductorExt = super.get(system)
 
   def apply()(implicit ctx: ActorContext): TestConductorExt = apply(ctx.system)
 

@@ -4,13 +4,23 @@
 
 package akka.persistence.journal
 
-import akka.actor.{ ActorLogging, ActorRef, Props }
-import akka.persistence.journal.JournalPerfSpec.{ BenchActor, Cmd, ResetCounter }
-import akka.persistence.{ PersistentActor }
-import akka.testkit.TestProbe
+import java.nio.charset.StandardCharsets
+
 import scala.collection.immutable
 import scala.concurrent.duration._
+
+import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.Props
+import akka.annotation.InternalApi
+import akka.persistence.PersistentActor
+import akka.persistence.journal.JournalPerfSpec.BenchActor
+import akka.persistence.journal.JournalPerfSpec.Cmd
+import akka.persistence.journal.JournalPerfSpec.ResetCounter
+import akka.serialization.SerializerWithStringManifest
+import akka.testkit.TestProbe
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 object JournalPerfSpec {
   class BenchActor(override val persistenceId: String, replyTo: ActorRef, replyAfter: Int)
@@ -61,6 +71,40 @@ object JournalPerfSpec {
 
   case object ResetCounter
   case class Cmd(mode: String, payload: Int)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] class CmdSerializer extends SerializerWithStringManifest {
+    override def identifier: Int = 293562
+
+    override def manifest(o: AnyRef): String = ""
+
+    override def toBinary(o: AnyRef): Array[Byte] =
+      o match {
+        case Cmd(mode, payload) =>
+          s"$mode|$payload".getBytes(StandardCharsets.UTF_8)
+        case _ =>
+          throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
+      }
+
+    override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
+      val str = new String(bytes, StandardCharsets.UTF_8)
+      val i = str.indexOf('|')
+      Cmd(str.substring(0, i), str.substring(i + 1).toInt)
+    }
+  }
+
+  private val cmdSerializerConfig = ConfigFactory.parseString(s"""
+  akka.actor {
+    serializers {
+      JournalPerfSpec = "${classOf[CmdSerializer].getName}"
+    }
+    serialization-bindings {
+      "${classOf[Cmd].getName}" = JournalPerfSpec
+    }
+  }  
+  """)
 }
 
 /**
@@ -77,7 +121,8 @@ object JournalPerfSpec {
  *
  * @see [[akka.persistence.journal.JournalSpec]]
  */
-abstract class JournalPerfSpec(config: Config) extends JournalSpec(config) {
+abstract class JournalPerfSpec(config: Config)
+    extends JournalSpec(config.withFallback(JournalPerfSpec.cmdSerializerConfig)) {
 
   private val testProbe = TestProbe()
 

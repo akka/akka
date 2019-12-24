@@ -253,7 +253,7 @@ class JepsenInspiredInsertSpec
         failureWriteAcks should be(Nil)
       }
       runOn(n2, n3) {
-        // without delays all could teoretically have been written before the blackhole
+        // without delays all could theoretically have been written before the blackhole
         if (delayMillis != 0)
           failureWriteAcks should not be (Nil)
       }

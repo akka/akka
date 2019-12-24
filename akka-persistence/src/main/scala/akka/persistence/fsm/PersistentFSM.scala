@@ -24,6 +24,8 @@ import scala.reflect.ClassTag
 private[akka] object SnapshotAfter extends ExtensionId[SnapshotAfter] with ExtensionIdProvider {
   override def get(system: ActorSystem): SnapshotAfter = super.get(system)
 
+  override def get(system: ClassicActorSystemProvider): SnapshotAfter = super.get(system)
+
   override def lookup = SnapshotAfter
 
   override def createExtension(system: ExtendedActorSystem): SnapshotAfter = new SnapshotAfter(system.settings.config)
@@ -495,7 +497,7 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
   /**
    * Adapter from Java 8 Functional Interface to Scala Function
    * @param action - Java 8 lambda expression defining the action
-   * @return action represented as a Scala Functin
+   * @return action represented as a Scala Function
    */
   final def exec(action: Consumer[D]): D => Unit =
     data => action.accept(data)

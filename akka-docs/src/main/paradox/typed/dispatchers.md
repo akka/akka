@@ -206,7 +206,7 @@ In the thread state diagrams below the colours have the following meaning:
  * Green - Runnable state
 
 The thread information was recorded using the YourKit profiler, however any good JVM profiler
-has this feature (including the free and bundled with the Oracle JDK VisualVM, as well as Oracle Flight Recorder).
+has this feature (including the free and bundled with the Oracle JDK [VisualVM](https://visualvm.github.io/), as well as [Java Mission Control](https://openjdk.java.net/projects/jmc/)).
 
 The orange portion of the thread shows that it is idle. Idle threads are fine -
 they're ready to accept new work. However, large amount of turquoise (blocked, or sleeping as in our example) threads

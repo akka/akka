@@ -764,7 +764,7 @@ A simple `toJournal:MyModel=>MyDataModel` and `fromJournal:MyDataModel=>MyModel`
 understand JSON it is possible to write an EventAdapter `toJournal:Any=>JSON` such that the Journal can *directly* store the
 json instead of serializing the object to its binary representation.
 
-Implementing an EventAdapter is rather stright forward:
+Implementing an EventAdapter is rather straightforward:
 
 Scala
 :  @@snip [PersistenceEventAdapterDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceEventAdapterDocSpec.scala) { #identity-event-adapter }

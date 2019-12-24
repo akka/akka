@@ -532,6 +532,30 @@ class NoVerificationWarningOffSpec
   }
 }
 
+class SerializerDeadlockSpec extends AkkaSpec {
+
+  "SerializationExtension" must {
+
+    "not be accessed from constructor of serializer" in {
+      intercept[IllegalStateException] {
+        val sys = ActorSystem(
+          "SerializerDeadlockSpec",
+          ConfigFactory.parseString("""
+          akka {
+            actor {
+              creation-timeout = 1s
+              serializers {
+                test = "akka.serialization.DeadlockSerializer"
+              }
+            }
+          }
+          """))
+        shutdown(sys)
+      }.getMessage should include("SerializationExtension from its constructor")
+    }
+  }
+}
+
 protected[akka] class NoopSerializer extends Serializer {
   def includeManifest: Boolean = false
 
@@ -559,4 +583,18 @@ protected[akka] class NoopSerializer2 extends Serializer {
 @SerialVersionUID(1)
 protected[akka] final case class FakeThrowable(msg: String) extends Throwable(msg) with Serializable {
   override def fillInStackTrace = null
+}
+
+class DeadlockSerializer(system: ExtendedActorSystem) extends Serializer {
+
+  // not allowed
+  SerializationExtension(system)
+
+  def includeManifest: Boolean = false
+
+  def identifier = 9999
+
+  def toBinary(o: AnyRef): Array[Byte] = Array.empty[Byte]
+
+  def fromBinary(bytes: Array[Byte], clazz: Option[Class[_]]): AnyRef = null
 }

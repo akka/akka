@@ -16,6 +16,13 @@ After completion of the original upstream the elements of the given source will 
 
 After completion of the original upstream the elements of the given source will be emitted.
 
+## Example
+Scala
+:   @@snip [FlowConcatSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowConcatSpec.scala) { #concat }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #concat }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -27,11 +34,3 @@ After completion of the original upstream the elements of the given source will 
 **completes** when all upstreams complete
 
 @@@
-
-
-## Example
-Scala
-:   @@snip [FlowConcatSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowConcatSpec.scala) { #concat }
-
-Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #concat }

@@ -4,8 +4,6 @@
 
 package akka.util
 
-import language.higherKinds
-
 /**
  * An immutable multi-map that expresses the value type as a type function of the key
  * type. Create it with a type constructor that expresses the relationship:

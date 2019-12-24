@@ -131,7 +131,7 @@ import akka.actor.typed.ActorRef
    * Run the given callback. Callbacks are run sequentially.
    *
    * @tparam NewState The type of the state after the event is persisted, when not specified will be the same as `State`
-   *                  but if a known subtype of `State` is expected that can be specified instead (preferrably by
+   *                  but if a known subtype of `State` is expected that can be specified instead (preferably by
    *                  explicitly typing the lambda parameter like so: `thenRun((SubState state) -> { ... })`).
    *                  If the state is not of the expected type an [[java.lang.ClassCastException]] is thrown.
    *

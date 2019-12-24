@@ -111,8 +111,8 @@ private[akka] object Running {
         if (isInternalStashEmpty && !isUnstashAllInProgress) Behaviors.stopped
         else new HandlingCommands(state.copy(receivedPoisonPill = true))
       case signal =>
-        setup.onSignal(state.state, signal, catchAndLog = false)
-        this
+        if (setup.onSignal(state.state, signal, catchAndLog = false)) this
+        else Behaviors.unhandled
     }
 
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
@@ -322,8 +322,8 @@ private[akka] object Running {
         state = state.copy(receivedPoisonPill = true)
         this
       case signal =>
-        setup.onSignal(visibleState.state, signal, catchAndLog = false)
-        this
+        if (setup.onSignal(visibleState.state, signal, catchAndLog = false)) this
+        else Behaviors.unhandled
     }
 
     override def currentSequenceNumber: Long = visibleState.seqNr
@@ -383,8 +383,10 @@ private[akka] object Running {
 
       signal match {
         case Some(signal) =>
-          setup.log.debug2("Received snapshot response [{}], emitting signal [{}].", response, signal)
-          setup.onSignal(state.state, signal, catchAndLog = false)
+          setup.log.debug("Received snapshot response [{}].", response)
+          if (setup.onSignal(state.state, signal, catchAndLog = false)) {
+            setup.log.debug("Emitted signal [{}].", signal)
+          }
         case None =>
           setup.log.debug("Received snapshot response [{}], no signal emitted.", response)
       }
@@ -412,8 +414,10 @@ private[akka] object Running {
         // wait for snapshot response before stopping
         new StoringSnapshot(state.copy(receivedPoisonPill = true), sideEffects, snapshotReason)
       case signal =>
-        setup.onSignal(state.state, signal, catchAndLog = false)
-        Behaviors.same
+        if (setup.onSignal(state.state, signal, catchAndLog = false))
+          Behaviors.same
+        else
+          Behaviors.unhandled
     }
 
     override def currentSequenceNumber: Long = state.seqNr
@@ -485,8 +489,7 @@ private[akka] object Running {
 
     signal match {
       case Some(sig) =>
-        setup.onSignal(state, sig, catchAndLog = false)
-        Behaviors.same
+        if (setup.onSignal(state, sig, catchAndLog = false)) Behaviors.same else Behaviors.unhandled
       case None =>
         Behaviors.unhandled // unexpected journal response
     }
@@ -512,8 +515,7 @@ private[akka] object Running {
 
     signal match {
       case Some(sig) =>
-        setup.onSignal(state, sig, catchAndLog = false)
-        Behaviors.same
+        if (setup.onSignal(state, sig, catchAndLog = false)) Behaviors.same else Behaviors.unhandled
       case None =>
         Behaviors.unhandled // unexpected snapshot response
     }

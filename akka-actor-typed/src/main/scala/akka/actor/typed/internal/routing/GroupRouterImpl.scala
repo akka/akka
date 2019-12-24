@@ -22,17 +22,24 @@ import akka.annotation.InternalApi
 @InternalApi
 private[akka] final case class GroupRouterBuilder[T] private[akka] (
     key: ServiceKey[T],
+    preferLocalRoutees: Boolean = false,
     logicFactory: ActorSystem[_] => RoutingLogic[T] = (_: ActorSystem[_]) => new RoutingLogics.RandomLogic[T]())
     extends javadsl.GroupRouter[T]
     with scaladsl.GroupRouter[T] {
 
   // deferred creation of the actual router
   def apply(ctx: TypedActorContext[T]): Behavior[T] =
-    new InitialGroupRouterImpl[T](ctx.asScala, key, logicFactory(ctx.asScala.system))
+    new InitialGroupRouterImpl[T](ctx.asScala, key, preferLocalRoutees, logicFactory(ctx.asScala.system))
 
-  def withRandomRouting(): GroupRouterBuilder[T] = copy(logicFactory = _ => new RoutingLogics.RandomLogic[T]())
+  def withRandomRouting(): GroupRouterBuilder[T] = withRandomRouting(false)
 
-  def withRoundRobinRouting(): GroupRouterBuilder[T] = copy(logicFactory = _ => new RoutingLogics.RoundRobinLogic[T])
+  def withRandomRouting(preferLocalRoutees: Boolean): GroupRouterBuilder[T] =
+    copy(preferLocalRoutees = preferLocalRoutees, logicFactory = _ => new RoutingLogics.RandomLogic[T]())
+
+  def withRoundRobinRouting(): GroupRouterBuilder[T] = withRoundRobinRouting(false)
+
+  def withRoundRobinRouting(preferLocalRoutees: Boolean): GroupRouterBuilder[T] =
+    copy(preferLocalRoutees = preferLocalRoutees, logicFactory = _ => new RoutingLogics.RoundRobinLogic[T])
 
   def withConsistentHashingRouting(
       virtualNodesFactor: Int,
@@ -41,6 +48,7 @@ private[akka] final case class GroupRouterBuilder[T] private[akka] (
 
   def withConsistentHashingRouting(virtualNodesFactor: Int, mapping: T => String): GroupRouterBuilder[T] = {
     copy(
+      preferLocalRoutees = false,
       logicFactory = system => new RoutingLogics.ConsistentHashingLogic[T](virtualNodesFactor, mapping, system.address))
   }
 }
@@ -54,6 +62,7 @@ private[akka] final case class GroupRouterBuilder[T] private[akka] (
 private final class InitialGroupRouterImpl[T](
     ctx: ActorContext[T],
     serviceKey: ServiceKey[T],
+    preferLocalRoutees: Boolean,
     routingLogic: RoutingLogic[T])
     extends AbstractBehavior[T](ctx) {
 
@@ -66,10 +75,12 @@ private final class InitialGroupRouterImpl[T](
   private val stash = StashBuffer[T](context, capacity = 10000)
 
   def onMessage(msg: T): Behavior[T] = msg match {
-    case serviceKey.Listing(update) =>
+    case serviceKey.Listing(allRoutees) =>
+      val update = GroupRouterHelper.routeesToUpdate(allRoutees, preferLocalRoutees)
       // we don't need to watch, because receptionist already does that
       routingLogic.routeesUpdated(update)
-      val activeGroupRouter = new GroupRouterImpl[T](context, serviceKey, routingLogic, update.isEmpty)
+      val activeGroupRouter =
+        new GroupRouterImpl[T](context, serviceKey, preferLocalRoutees, routingLogic, update.isEmpty)
       stash.unstashAll(activeGroupRouter)
     case msg: T @unchecked =>
       import akka.actor.typed.scaladsl.adapter._
@@ -87,9 +98,23 @@ private final class InitialGroupRouterImpl[T](
  * INTERNAL API
  */
 @InternalApi
+private[routing] object GroupRouterHelper {
+  def routeesToUpdate[T](allRoutees: Set[ActorRef[T]], preferLocalRoutees: Boolean): Set[ActorRef[T]] = {
+    if (preferLocalRoutees) {
+      val localRoutees = allRoutees.filter(_.path.address.hasLocalScope)
+      if (localRoutees.nonEmpty) localRoutees else allRoutees
+    } else allRoutees
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] final class GroupRouterImpl[T](
     ctx: ActorContext[T],
     serviceKey: ServiceKey[T],
+    preferLocalRoutees: Boolean,
     routingLogic: RoutingLogic[T],
     routeesInitiallyEmpty: Boolean)
     extends AbstractBehavior[T](ctx) {
@@ -97,8 +122,10 @@ private[akka] final class GroupRouterImpl[T](
   private var routeesEmpty = routeesInitiallyEmpty
 
   def onMessage(msg: T): Behavior[T] = msg match {
-    case l @ serviceKey.Listing(update) =>
+    case l @ serviceKey.Listing(allRoutees) =>
       context.log.debug("Update from receptionist: [{}]", l)
+      val update = GroupRouterHelper.routeesToUpdate(allRoutees, preferLocalRoutees)
+
       val routees =
         if (update.nonEmpty) update
         else

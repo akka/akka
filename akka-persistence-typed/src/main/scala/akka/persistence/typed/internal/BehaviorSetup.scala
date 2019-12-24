@@ -4,22 +4,18 @@
 
 package akka.persistence.typed.internal
 
-import scala.concurrent.ExecutionContext
-import scala.util.control.NonFatal
-
-import akka.actor.Cancellable
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.ActorRef
 import akka.actor.typed.Signal
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.{ ActorRef, Cancellable }
 import akka.annotation.InternalApi
 import akka.persistence._
+import akka.persistence.typed.scaladsl.{ EventSourcedBehavior, RetentionCriteria }
 import akka.persistence.typed.{ EventAdapter, PersistenceId, SnapshotAdapter }
-import akka.persistence.typed.scaladsl.EventSourcedBehavior
-import akka.persistence.typed.scaladsl.RetentionCriteria
-import akka.util.ConstantFun
 import akka.util.OptionVal
-import org.slf4j.Logger
-import org.slf4j.MDC
+import org.slf4j.{ Logger, MDC }
+
+import scala.concurrent.ExecutionContext
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -53,9 +49,9 @@ private[akka] final class BehaviorSetup[C, E, S](
     val settings: EventSourcedSettings,
     val stashState: StashState) {
 
+  import BehaviorSetup._
   import InternalProtocol.RecoveryTickEvent
   import akka.actor.typed.scaladsl.adapter._
-  import BehaviorSetup._
 
   val persistence: Persistence = Persistence(context.system.toClassic)
 
@@ -102,17 +98,23 @@ private[akka] final class BehaviorSetup[C, E, S](
   }
 
   /**
+   * Applies the `signalHandler` if defined and returns true, otherwise returns false.
+   * If an exception is thrown and `catchAndLog=true` it is logged and returns true, otherwise it is thrown.
+   *
    * `catchAndLog=true` should be used for "unknown" signals in the phases before Running
    * to avoid restart loops if restart supervision is used.
    */
-  def onSignal(state: S, signal: Signal, catchAndLog: Boolean): Unit = {
+  def onSignal[T](state: S, signal: Signal, catchAndLog: Boolean): Boolean = {
     try {
-      signalHandler.applyOrElse((state, signal), ConstantFun.scalaAnyToUnit)
+      var handled = true
+      signalHandler.applyOrElse((state, signal), (_: (S, Signal)) => handled = false)
+      handled
     } catch {
       case NonFatal(ex) =>
-        if (catchAndLog)
+        if (catchAndLog) {
           log.error(s"Error while processing signal [$signal]: $ex", ex)
-        else {
+          true
+        } else {
           if (log.isDebugEnabled)
             log.debug(s"Error while processing signal [$signal]: $ex", ex)
           throw ex

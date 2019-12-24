@@ -479,7 +479,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
  * Subscribe to this class to be notified about all [[DeadLetter]] (also the suppressed ones)
  * and [[Dropped]].
  */
-sealed trait AllDeadLetters {
+sealed trait AllDeadLetters extends WrappedMessage {
   def message: Any
   def sender: ActorRef
   def recipient: ActorRef
@@ -531,6 +531,28 @@ object Dropped {
    */
   def apply(message: Any, reason: String, recipient: ActorRef): Dropped =
     Dropped(message, reason, ActorRef.noSender, recipient)
+}
+
+object WrappedMessage {
+
+  /**
+   * Unwrap [[WrappedMessage]] recursively.
+   */
+  @tailrec def unwrap(message: Any): Any = {
+    message match {
+      case w: WrappedMessage => unwrap(w.message)
+      case _                 => message
+
+    }
+  }
+}
+
+/**
+ * Message envelopes may implement this trait for better logging, such as logging of
+ * message class name of the wrapped message instead of the envelope class name.
+ */
+trait WrappedMessage {
+  def message: Any
 }
 
 private[akka] object DeadLetterActorRef {
@@ -586,13 +608,22 @@ private[akka] class EmptyLocalActorRef(
         case Some(identify) =>
           if (!sel.wildcardFanOut) sender ! ActorIdentity(identify.messageId, None)
         case None =>
-          eventStream.publish(DeadLetter(sel.msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+          sel.msg match {
+            case m: DeadLetterSuppression => publishSupressedDeadLetter(m, sender)
+            case _ =>
+              eventStream.publish(
+                DeadLetter(sel.msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+          }
       }
       true
     case m: DeadLetterSuppression =>
-      eventStream.publish(SuppressedDeadLetter(m, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+      publishSupressedDeadLetter(m, sender)
       true
     case _ => false
+  }
+
+  private def publishSupressedDeadLetter(msg: DeadLetterSuppression, sender: ActorRef): Unit = {
+    eventStream.publish(SuppressedDeadLetter(msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
   }
 }
 

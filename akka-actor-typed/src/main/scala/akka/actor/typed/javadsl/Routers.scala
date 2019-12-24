@@ -4,7 +4,7 @@
 
 package akka.actor.typed.javadsl
 
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ Behavior, Props }
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
@@ -56,12 +56,35 @@ abstract class GroupRouter[T] extends DeferredBehavior[T] {
   def withRandomRouting(): GroupRouter[T]
 
   /**
+   * Route messages by randomly selecting the routee from the available routees.
+   *
+   * This is the default for group routers.
+   *
+   * @param preferLocalRoutees if the value is false, all reachable routees will be used;
+   *                           if the value is true and there are local routees, only local routees will be used.
+   *                           if the value is true and there is no local routees, remote routees will be used.
+   */
+  def withRandomRouting(preferLocalRoutees: Boolean): GroupRouter[T]
+
+  /**
    * Route messages by using round robin.
    *
    * Round robin gives fair routing where every available routee gets the same amount of messages as long as the set
    * of routees stays relatively stable, but may be unfair if the set of routees changes a lot.
    */
   def withRoundRobinRouting(): GroupRouter[T]
+
+  /**
+   * Route messages by using round robin.
+   *
+   * Round robin gives fair routing where every available routee gets the same amount of messages as long as the set
+   * of routees stays relatively stable, but may be unfair if the set of routees changes a lot.
+   *
+   * @param preferLocalRoutees if the value is false, all reachable routees will be used;
+   *                           if the value is true and there are local routees, only local routees will be used.
+   *                           if the value is true and there is no local routees, remote routees will be used.
+   */
+  def withRoundRobinRouting(preferLocalRoutees: Boolean): GroupRouter[T]
 
   /**
    * Route messages by using consistent hashing.
@@ -153,4 +176,9 @@ abstract class PoolRouter[T] extends DeferredBehavior[T] {
    * Set a new pool size from the one set at construction
    */
   def withPoolSize(poolSize: Int): PoolRouter[T]
+
+  /**
+   * Set the props used to spawn the pool's routees
+   */
+  def withRouteeProps(routeeProps: Props): PoolRouter[T]
 }
