@@ -697,7 +697,7 @@ object Source {
    * for downstream demand unless there is another message waiting for downstream demand, in that case
    * offer result will be completed according to the overflow strategy.
    *
-   * SourceQueue that current source is materialized to is for single producer usage only.
+   * Current source is materialized for the single producer usage only.
    *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
@@ -730,7 +730,7 @@ object Source {
    * for downstream demand unless there is another message waiting for downstream demand, in that case
    * offer result will be completed according to the overflow strategy.
    *
-   * SourceQueue that current source is materialized to is for `maxConcurrentOffers` number of producers usage only.
+   * Current source is materialized for the `maxConcurrentOffers` number of producers usage.
    *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
