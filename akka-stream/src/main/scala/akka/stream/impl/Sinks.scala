@@ -314,7 +314,7 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] final class QueueSink[T](maxConcurrentPulls: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], SinkQueueWithCancel[T]] {
 
-  require(maxConcurrentPulls > 0, "Request buffer size must be greater than 0")
+  require(maxConcurrentPulls > 0, "Max concurrent pulls must be greater than 0")
 
   type Requested[E] = Promise[Option[E]]
 
@@ -332,8 +332,8 @@ import scala.util.control.NonFatal
       require(maxBuffer > 0, "Buffer size must be greater than 0")
 
       // Allocates one additional element to hold stream closed/failure indicators
-      var buffer: Buffer[Received[T]] = Buffer(maxBuffer + 1, inheritedAttributes)
-      var currentRequests: Buffer[Requested[T]] = Buffer(maxConcurrentPulls, inheritedAttributes)
+      val buffer: Buffer[Received[T]] = Buffer(maxBuffer + 1, inheritedAttributes)
+      val currentRequests: Buffer[Requested[T]] = Buffer(maxConcurrentPulls, inheritedAttributes)
 
       override def preStart(): Unit = {
         setKeepGoing(true)
