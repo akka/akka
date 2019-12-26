@@ -22,13 +22,13 @@ object FileIO {
   /**
    * Creates a Sink that writes incoming [[ByteString]] elements to the given file.
    * Overwrites existing files by truncating their contents, if you want to append to an existing file use
-   * [[#toFile(File, util.Set[OpenOption])]] with [[java.nio.file.StandardOpenOption.APPEND]].
+   * [[toFile(File, util.Set[OpenOption])]] with [[java.nio.file.StandardOpenOption.APPEND]].
    *
    * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * @param f The file to write to
    */
@@ -38,13 +38,13 @@ object FileIO {
   /**
    * Creates a Sink that writes incoming [[ByteString]] elements to the given file path.
    * Overwrites existing files by truncating their contents, if you want to append to an existing file
-   * [[#toPath(Path, util.Set[OpenOption])]] with [[java.nio.file.StandardOpenOption.APPEND]].
+   * [[toPath(Path, util.Set[OpenOption])]] with [[java.nio.file.StandardOpenOption.APPEND]].
    *
    * Materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] that will be completed with the size of the file (in bytes) at the streams completion,
    * and a possible exception if IO operation was not completed successfully.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * Accepts as arguments a set of [[java.nio.file.StandardOpenOption]], which will determine
    * the underlying behavior when writing the file. If [[java.nio.file.StandardOpenOption.SYNC]] is
@@ -64,7 +64,7 @@ object FileIO {
    * and a possible exception if IO operation was not completed successfully.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * @param f The file to write to
    * @param options File open options, see [[java.nio.file.StandardOpenOption]]
@@ -80,7 +80,7 @@ object FileIO {
    * and a possible exception if IO operation was not completed successfully.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * Accepts as arguments a set of [[java.nio.file.StandardOpenOption]], which will determine
    * the underlying behavior when writing the file. If [[java.nio.file.StandardOpenOption.SYNC]] is
@@ -101,7 +101,7 @@ object FileIO {
    * and a possible exception if IO operation was not completed successfully.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * Accepts as arguments a set of [[java.nio.file.StandardOpenOption]], which will determine
    * the underlying behavior when writing the file. If [[java.nio.file.StandardOpenOption.SYNC]] is
@@ -125,7 +125,7 @@ object FileIO {
    * except the last element, which will be up to 8192 in size.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
@@ -142,7 +142,7 @@ object FileIO {
    * except the last element, which will be up to 8192 in size.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
@@ -158,7 +158,7 @@ object FileIO {
    * except the last element, which will be up to `chunkSize` in size.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
@@ -177,7 +177,7 @@ object FileIO {
    * except the last element, which will be up to `chunkSize` in size.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
@@ -195,7 +195,7 @@ object FileIO {
    * except the last element, which will be up to `chunkSize` in size.
    *
    * You can configure the default dispatcher for this Source by changing the `akka.stream.materializer.blocking-io-dispatcher` or
-   * set it for a given Source by using [[ActorAttributes]].
+   * set it for a given Source by using [[akka.stream.ActorAttributes]].
    *
    * It materializes a [[java.util.concurrent.CompletionStage]] of [[IOResult]] containing the number of bytes read from the source file upon completion,
    * and a possible exception if IO operation was not completed successfully. Note that bytes having been read by the source does
