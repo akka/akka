@@ -239,6 +239,15 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       probe.cancel()
     }
 
+    "not complete for empty stream" in {
+      val src = queries.eventsByTag(tag = "red", offset = NoOffset)
+      val probe =
+        src.map(_.event).runWith(TestSink.probe[Any]).request(2)
+
+      probe.expectNoMessage(200.millis)
+
+      probe.cancel()
+    }
   }
 
 }

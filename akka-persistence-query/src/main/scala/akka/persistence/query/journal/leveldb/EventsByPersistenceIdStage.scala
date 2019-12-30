@@ -127,7 +127,7 @@ final private[akka] class EventsByPersistenceIdStage(
               nextSequenceNr,
               toSequenceNr,
               bufferSize)
-            if (bufferEmpty && (nextSequenceNr > toSequenceNr || nextSequenceNr == fromSequenceNr)) {
+            if (bufferEmpty && (nextSequenceNr > toSequenceNr || (nextSequenceNr == fromSequenceNr && isCurrentQuery()))) {
               completeStage()
             } else if (nextSequenceNr < toSequenceNr) {
               // need further requests to the journal
