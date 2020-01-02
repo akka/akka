@@ -332,7 +332,7 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
           }
         case (sender, msg) =>
           // should never happen but keep the compiler happy (stage actor receive is total)
-          throw new IllegalArgumentException(s"[$stageActorName] Unexpected message $msg from $sender")
+          throw new IllegalStateException(s"[$stageActorName] Unexpected message in state $state: $msg from $sender")
       }
 
       override protected def onTimer(timerKey: Any): Unit = timerKey match {
