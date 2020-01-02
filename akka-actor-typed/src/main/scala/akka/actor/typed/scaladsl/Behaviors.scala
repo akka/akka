@@ -30,7 +30,7 @@ object Behaviors {
     BehaviorImpl.DeferredBehavior(factory)
 
   /**
-   * Support for stashing messages to unstash at a later timej.
+   * Support for stashing messages to unstash at a later time.
    */
   def withStash[T](capacity: Int)(factory: StashBuffer[T] => Behavior[T]): Behavior[T] =
     setup(ctx => {
