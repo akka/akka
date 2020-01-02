@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -30,7 +30,7 @@ object Behaviors {
     BehaviorImpl.DeferredBehavior(factory)
 
   /**
-   * Support for stashing messages to unstash at a later timej.
+   * Support for stashing messages to unstash at a later time.
    */
   def withStash[T](capacity: Int)(factory: StashBuffer[T] => Behavior[T]): Behavior[T] =
     setup(ctx => {
