@@ -47,7 +47,7 @@ object Behaviors {
     BehaviorImpl.DeferredBehavior(ctx => factory.apply(ctx.asJava))
 
   /**
-   * Support for stashing messages to unstash at a later timej.
+   * Support for stashing messages to unstash at a later time.
    */
   def withStash[T](capacity: Int, factory: java.util.function.Function[StashBuffer[T], Behavior[T]]): Behavior[T] =
     setup(ctx => {
