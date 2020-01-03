@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -14,8 +14,8 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
-  val junitVersion = "4.12"
-  val slf4jVersion = "1.7.30"
+  val junitVersion = "4.13"
+  val slf4jVersion = "1.7.29"
   // check agrona version when updating this
   val aeronVersion = "1.24.0"
   // needs to be inline with the aeron version, check
@@ -112,7 +112,7 @@ object Dependencies {
       val commonsCodec = "commons-codec" % "commons-codec" % "1.13" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
-      val mockito = "org.mockito" % "mockito-core" % "3.2.0" % "test" // MIT
+      val mockito = "org.mockito" % "mockito-core" % "3.2.4" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
       val scalacheck = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value % "test" } // New BSD

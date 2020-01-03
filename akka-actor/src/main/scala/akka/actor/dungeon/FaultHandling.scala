@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.dungeon
@@ -244,6 +244,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
       if (freshActor eq failedActor) setActorFields(freshActor, this, self) // If the creator returns the same instance, we need to restore our nulled out fields.
 
       freshActor.aroundPostRestart(cause)
+      checkReceiveTimeout(reschedule = true) // user may have set a receive timeout in preStart which is called from postRestart
       if (system.settings.DebugLifecycle) publish(Debug(self.path.toString, clazz(freshActor), "restarted"))
 
       // only after parent is up and running again do restart the children which were not stopped

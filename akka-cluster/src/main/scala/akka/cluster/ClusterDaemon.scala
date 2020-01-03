@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster
@@ -1458,7 +1458,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
             logInfo(
               "Marking exiting node(s) as UNREACHABLE [{}]. This is expected and they will be removed.",
               exiting.mkString(", "))
-          nonExiting.foreach { node =>
+          newlyDetectedReachableMembers.foreach { node =>
             logInfo(ClusterLogMarker.reachable(node.address), "Marking node as REACHABLE [{}].", node)
           }
 

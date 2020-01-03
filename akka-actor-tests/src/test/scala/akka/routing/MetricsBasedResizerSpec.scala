@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -334,7 +334,7 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
       resizer.resize(routees(7)) should be(2)
     }
 
-    "ignore further away sample data when optmizing" in {
+    "ignore further away sample data when optimizing" in {
       val resizer = DefaultOptimalSizeExploringResizer(
         explorationProbability = 0,
         numOfAdjacentSizesToConsiderDuringOptimization = 4)

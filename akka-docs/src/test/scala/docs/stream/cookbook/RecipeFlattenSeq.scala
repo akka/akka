@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream.cookbook
@@ -12,7 +12,7 @@ import scala.concurrent.duration._
 
 class RecipeFlattenSeq extends RecipeSpec {
 
-  "Recipe for flatteing a stream of seqs" must {
+  "Recipe for flattening a stream of seqs" must {
 
     "work" in {
 

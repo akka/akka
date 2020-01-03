@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 // Protocol Buffers - Google's data interchange format
@@ -885,7 +885,7 @@ public final class Descriptors {
       // Refuse to init if someone added a new declared type.
       if (Type.values().length != FieldDescriptorProto.Type.values().length) {
         throw new RuntimeException(
-          "descriptor.proto has a new declared type but Desrciptors.java " +
+          "descriptor.proto has a new declared type but Descriptors.java " +
           "wasn't updated.");
       }
     }

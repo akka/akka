@@ -32,8 +32,8 @@ Akka itself uses Protocol Buffers to serialize internal messages (for example cl
 
 ### Configuration
 
-For Akka to know which `Serializer` to use for what, you need edit your configuration,
-in the "akka.actor.serializers"-section you bind names to implementations of the `akka.serialization.Serializer`
+For Akka to know which `Serializer` to use for what, you need to edit your configuration: 
+in the "akka.actor.serializers"-section, you bind names to implementations of the `akka.serialization.Serializer`
 you wish to use, like this:
 
 @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialize-serializers-config }
@@ -43,11 +43,11 @@ should be serialized using which `Serializer`, this is done in the "akka.actor.s
 
 @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #serialization-bindings-config }
 
-You only need to specify the name of an interface or abstract base class of the
+You only need to specify the name of @scala[a trait]@java[an interface] or abstract base class of the
 messages. In case of ambiguity, i.e. the message implements several of the
 configured classes, the most specific configured class will be used, i.e. the
 one of which all other candidates are superclasses. If this condition cannot be
-met, because e.g. two marker interfaces that have been configured for serialization
+met, because e.g. two marker @scala[traits]@java[interfaces] that have been configured for serialization
 both apply and neither is a subtype of the other, a warning will be issued.
 
 @@@ note
@@ -67,7 +67,7 @@ configuration for that if you send raw protobuf messages as actor messages.
 ### Programmatic
 
 If you want to programmatically serialize/deserialize using Akka Serialization,
-here's some examples:
+here are some examples:
 
 Scala
 :  @@snip [SerializationDocSpec.scala](/akka-docs/src/test/scala/docs/serialization/SerializationDocSpec.scala) { #imports }
@@ -124,8 +124,8 @@ classes. The manifest parameter in @scala[`fromBinary`]@java[`fromBinaryJava`] i
 was serialized. In `fromBinary` you can match on the class and deserialize the
 bytes to different objects.
 
-Then you only need to fill in the blanks, bind it to a name in your configuration and then
-list which classes that should be serialized using it.
+Then you only need to fill in the blanks, bind it to a name in your configuration and
+list which classes should be deserialized with it.
 
 The serializers are initialized eagerly by the `SerializationExtension` when the `ActorSystem` is started and
 therefore a serializer itself must not access the `SerializationExtension` from its constructor. Instead, it
@@ -145,7 +145,7 @@ The manifest string can also encode a version number that can be used in `fromBi
 deserialize in different ways to migrate old data to new domain objects.
 
 If the data was originally serialized with `Serializer` and in a later version of the
-system you change to `SerializerWithStringManifest` the manifest string will be the full
+system you change to `SerializerWithStringManifest` then the manifest string will be the full
 class name if you used `includeManifest=true`, otherwise it will be the empty string.
 
 This is how a `SerializerWithStringManifest` looks like:
@@ -157,14 +157,14 @@ Java
 :  @@snip [SerializationDocTest.java](/akka-docs/src/test/java/jdocs/serialization/SerializationDocTest.java) { #my-own-serializer2 }
 
 You must also bind it to a name in your configuration and then list which classes
-that should be serialized using it.
+should be serialized by it.
 
-It's recommended to throw `IllegalArgumentException` or ``java.io.NotSerializableException` in
+It's recommended to throw `IllegalArgumentException` or `java.io.NotSerializableException` in
 `fromBinary` if the manifest is unknown. This makes it possible to introduce new message types and
 send them to nodes that don't know about them. This is typically needed when performing
-rolling upgrades, i.e. running a cluster with mixed versions for while.
+rolling upgrades, i.e. running a cluster with mixed versions for a while.
 Those exceptions are treated as a transient problem in the classic remoting
-layer. The problem will be logged and message is dropped. Other exceptions will tear down
+layer. The problem will be logged and the message dropped. Other exceptions will tear down
 the TCP connection because it can be an indication of corrupt bytes from the underlying
 transport. Artery TCP handles all deserialization exceptions as transient problems.
 

@@ -200,7 +200,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/GracefulStopDocTest.java)  { #master-actor-watch }
 
-An alternative to `watch` is `watchWith`, which allows specifying a custom message instead of the `Terminted`.
+An alternative to `watch` is `watchWith`, which allows specifying a custom message instead of the `Terminated`.
 This is often preferred over using `watch` and the `Terminated` signal because additional information can
 be included in the message that can be used later when receiving it.
 

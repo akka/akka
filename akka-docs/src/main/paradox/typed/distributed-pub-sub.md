@@ -33,7 +33,7 @@ Until @github[#26338](#26338), [this simple example]($github.base_url$/akka-clus
 ### The DistributedPubSub extension
 
 The mediator can either be started and accessed with the `akka.cluster.pubsub.DistributedPubSub` extension as shown below,
-or started as an ordinary actor, see the full Akka Classic documentation @ref:[Clasic Distributed PubSub Extension](../distributed-pub-sub.md#distributedpubsub-extension).
+or started as an ordinary actor, see the full Akka Classic documentation @ref:[Classic Distributed PubSub Extension](../distributed-pub-sub.md#distributedpubsub-extension).
 
 Scala
 :  @@snip [DistributedPubSubExample.scala](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/DistributedPubSubExample.scala) { #mediator }
@@ -42,7 +42,7 @@ Actors register to a topic for Pub-Sub mode, or register to a path for point-to-
 
 ## Publish
 
-Pub-Sub mode. For the full Akka Classic documentation of this feature see @ref:[Clasic Distributed PubSub Publish](../distributed-pub-sub.md#publish).
+Pub-Sub mode. For the full Akka Classic documentation of this feature see @ref:[Classic Distributed PubSub Publish](../distributed-pub-sub.md#publish).
 
 ### Subscribers
 
@@ -71,7 +71,7 @@ Scala
 
 ## Send
 
-Messages can be sent in point-to-point or broadcast mode. For the full Akka Classic documentation of this feature see @ref:[Clasic Distributed PubSub Send](../distributed-pub-sub.md#send). 
+Messages can be sent in point-to-point or broadcast mode. For the full Akka Classic documentation of this feature see @ref:[Classic Distributed PubSub Send](../distributed-pub-sub.md#send). 
 
 First, an actor must register a destination to send to:
 
@@ -88,4 +88,4 @@ can explicitly remove entries with `DistributedPubSubMediator.Remove`.
  
 ## Delivery Guarantee
 
-For the full Akka Classic documentation of this see @ref:[Clasic Distributed PubSub Delivery Guarantee](../distributed-pub-sub.md#delivery-guarantee).
+For the full Akka Classic documentation of this see @ref:[Classic Distributed PubSub Delivery Guarantee](../distributed-pub-sub.md#delivery-guarantee).

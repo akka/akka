@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.fsm
@@ -497,7 +497,7 @@ abstract class AbstractPersistentFSM[S <: FSMState, D, E]
   /**
    * Adapter from Java 8 Functional Interface to Scala Function
    * @param action - Java 8 lambda expression defining the action
-   * @return action represented as a Scala Functin
+   * @return action represented as a Scala Function
    */
   final def exec(action: Consumer[D]): D => Unit =
     data => action.accept(data)
