@@ -14,7 +14,7 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
-  val junitVersion = "4.12"
+  val junitVersion = "4.13"
   val slf4jVersion = "1.7.29"
   // check agrona version when updating this
   val aeronVersion = "1.24.0"
