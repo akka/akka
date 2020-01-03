@@ -121,6 +121,7 @@ class InetAddressDnsResolver(cache: SimpleDnsCache, config: Config) extends Acto
       val answer = cache.cached(r) match {
         case Some(a) => a
         case None =>
+          log.debug("Request for [{}] was not yet cached", name)
           try {
             val addresses: Array[InetAddress] = InetAddress.getAllByName(name)
             val records = addressToRecords(name, addresses.toList, ipv4, ipv6)
