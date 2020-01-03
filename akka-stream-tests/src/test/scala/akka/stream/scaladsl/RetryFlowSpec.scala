@@ -103,6 +103,32 @@ class RetryFlowSpec extends StreamSpec("""
       source.sendComplete()
       sink.expectComplete()
     }
+
+    "retry up to maxRetries times and then return failed element" in {
+
+      // The flow will ignore input and always return -1
+      val flow: Flow[Int, Int, NotUsed] = Flow[Int].map(_ => -1)
+
+      // The retry flow will retry on negative input values
+      val retryFlow: Flow[Int, Int, NotUsed] =
+        RetryFlow.withBackoff(minBackoff = 10.millis, maxBackoff = 100.millis, randomFactor = 0d, maxRetries = 5, flow)(
+          decideRetry = {
+            case (x, result) if result < 0 => Some(x)
+            case (_, _)                    => None
+          })
+
+      val (source, sink) = TestSource.probe[Int].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
+
+      sink.request(5)
+
+      source.sendNext(1)
+
+      // The sink will get -1 after the retryFlow has retried maxRetries number of times
+      sink.expectNext(-1)
+
+      source.sendComplete()
+      sink.expectComplete()
+    }
   }
 
   "RetryFlow.withBackoffAndContext" should {
