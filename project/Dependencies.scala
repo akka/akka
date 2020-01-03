@@ -109,7 +109,7 @@ object Dependencies {
     object Test {
       val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % "test" // ApacheV2
       val commonsIo = "commons-io" % "commons-io" % "2.6" % "test" // ApacheV2
-      val commonsCodec = "commons-codec" % "commons-codec" % "1.13" % "test" // ApacheV2
+      val commonsCodec = "commons-codec" % "commons-codec" % "1.14" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
       val mockito = "org.mockito" % "mockito-core" % "3.2.4" % "test" // MIT
