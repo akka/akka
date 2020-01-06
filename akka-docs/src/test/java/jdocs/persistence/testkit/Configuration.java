@@ -23,7 +23,7 @@ public class Configuration {
             .config()
             .withFallback(ConfigFactory.defaultApplication());
 
-    ActorSystem<Command> system = ActorSystem.create(new SomeBehavior(),"example", conf);
+    ActorSystem<Command> system = ActorSystem.create(new SomeBehavior(), "example", conf);
 
     PersistenceTestKit testKit = PersistenceTestKit.create(system);
   }
@@ -37,7 +37,7 @@ public class Configuration {
             .config()
             .withFallback(ConfigFactory.defaultApplication());
 
-    ActorSystem<Command> system = ActorSystem.create(new SomeBehavior(),"example", conf);
+    ActorSystem<Command> system = ActorSystem.create(new SomeBehavior(), "example", conf);
 
     SnapshotTestKit testKit = SnapshotTestKit.create(system);
   }
@@ -45,10 +45,10 @@ public class Configuration {
 
 }
 
-class SomeBehavior extends Behavior<Command>{
+class SomeBehavior extends Behavior<Command> {
   public SomeBehavior() {
     super(1);
   }
 }
 
-class Command{}
+class Command {}
