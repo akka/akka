@@ -909,6 +909,7 @@ private[stream] object Collect {
 
       private val buffer: BufferImpl[T] = BufferImpl(size, inheritedAttributes)
 
+      private val name = inheritedAttributes.nameOrDefault(getClass.toString)
       val enqueueAction: T => Unit =
         overflowStrategy match {
           case s: DropHead =>
@@ -916,7 +917,8 @@ private[stream] object Collect {
               if (buffer.isFull) {
                 log.log(
                   s.logLevel,
-                  "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
+                  "Dropping the head element because buffer is full and overflowStrategy is: [DropHead] in stream [{}]",
+                  name)
                 buffer.dropHead()
               }
               buffer.enqueue(elem)
@@ -926,7 +928,8 @@ private[stream] object Collect {
               if (buffer.isFull) {
                 log.log(
                   s.logLevel,
-                  "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
+                  "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail] in stream [{}]",
+                  name)
                 buffer.dropTail()
               }
               buffer.enqueue(elem)
@@ -936,7 +939,8 @@ private[stream] object Collect {
               if (buffer.isFull) {
                 log.log(
                   s.logLevel,
-                  "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
+                  "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer] in stream [{}]",
+                  name)
                 buffer.clear()
               }
               buffer.enqueue(elem)
@@ -947,17 +951,25 @@ private[stream] object Collect {
               else
                 log.log(
                   s.logLevel,
-                  "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
+                  "Dropping the new element because buffer is full and overflowStrategy is: [DropNew] in stream [{}]",
+                  name)
               pull(in)
           case s: Backpressure =>
             elem =>
               buffer.enqueue(elem)
               if (!buffer.isFull) pull(in)
-              else log.log(s.logLevel, "Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")
+              else
+                log.log(
+                  s.logLevel,
+                  "Backpressuring because buffer is full and overflowStrategy is: [Backpressure] in stream [{}]",
+                  name)
           case s: Fail =>
             elem =>
               if (buffer.isFull) {
-                log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
+                log.log(
+                  s.logLevel,
+                  "Failing because buffer is full and overflowStrategy is: [Fail] in stream [{}]",
+                  name)
                 failStage(BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
               } else {
                 buffer.enqueue(elem)
