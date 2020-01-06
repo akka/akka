@@ -2,7 +2,7 @@
  * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.testkit
+package akka.persistence.testkit.internal
 
 import java.util.{ List => JList }
 

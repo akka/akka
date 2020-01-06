@@ -5,7 +5,8 @@
 package akka.persistence.testkit.scaladsl
 
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
-import akka.persistence.testkit.{ ExpectedFailure, ExpectedRejection, TestKitStorage }
+import akka.persistence.testkit.internal.TestKitStorage
+import akka.persistence.testkit.{ ExpectedFailure, ExpectedRejection }
 import akka.testkit.TestKitBase
 
 import scala.collection.immutable
@@ -124,13 +125,13 @@ private[testkit] trait ExpectOps[U] {
   private[testkit] def reprToAny(repr: U): Any
 
   /**
-   * Check that next persisted in storage for particular persistence id message was `msg`.
+   * Check that next persisted in storage for particular persistence id event was `msg`.
    */
   def expectNextPersisted[A](persistenceId: String, msg: A): A =
     expectNextPersisted(persistenceId, msg, maxTimeout)
 
   /**
-   * Check for `max` time that next persisted in storage for particular persistence id message was `msg`.
+   * Check for `max` time that next persisted in storage for particular persistence id event was `msg`.
    */
   def expectNextPersisted[A](persistenceId: String, msg: A, max: FiniteDuration): A = {
     val nextInd = nextIndex(persistenceId)
@@ -146,19 +147,19 @@ private[testkit] trait ExpectOps[U] {
   }
 
   /**
-   * Check that next persisted in storage for particular persistence id message matches partial function `pf`.
+   * Check that next persisted in storage for particular persistence id event matches partial function `pf`.
    */
   def expectNextPersistedPF[A](persistenceId: String)(pf: PartialFunction[Any, A]): A =
     expectNextPersistedPF(persistenceId, maxTimeout)(pf)
 
   /**
-   * Check that next persisted in storage for particular persistence id message matches partial function `pf`.
+   * Check that next persisted in storage for particular persistence id event matches partial function `pf`.
    */
   def expectNextPersistedPF[A](persistenceId: String, hint: String)(pf: PartialFunction[Any, A]): A =
     expectNextPersistedPF(persistenceId, maxTimeout, hint)(pf)
 
   /**
-   * Check for `max` time that next persisted in storage for particular persistence id message matches partial function `pf`.
+   * Check for `max` time that next persisted in storage for particular persistence id event matches partial function `pf`.
    */
   def expectNextPersistedPF[A](persistenceId: String, max: FiniteDuration, hint: String = "")(
       pf: PartialFunction[Any, A]): A = {
@@ -189,12 +190,12 @@ private[testkit] trait ExpectOps[U] {
     assertForDuration({
       val actual = storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
       val res = actual.isEmpty
-      assert(res, s"Found persisted message $actual, but expected None instead")
+      assert(res, s"Found persisted event $actual, but expected None instead")
     }, max = max.dilated, interval = pollInterval)
   }
 
   /**
-   * Check for `max` time that `msgs` messages have been persisted in the storage in order.
+   * Check for `max` time that `msgs` events have been persisted in the storage in order.
    */
   def expectPersistedInOrder[A](
       persistenceId: String,
@@ -209,8 +210,8 @@ private[testkit] trait ExpectOps[U] {
             val ls = reprs.map(reprToAny)
             assert(
               ls.size == msgs.size && ls.zip(msgs).forall(e => e._1 == e._2),
-              "Persisted messages do not correspond to expected ones")
-          case None => assert(false, "No messages were persisted")
+              "Persisted events do not correspond to expected ones")
+          case None => assert(false, "No events were persisted")
         }
         actual.get.map(reprToAny)
       },
@@ -222,13 +223,13 @@ private[testkit] trait ExpectOps[U] {
   }
 
   /**
-   * Check that `msgs` messages have been persisted in the storage in order.
+   * Check that `msgs` events have been persisted in the storage in order.
    */
   def expectPersistedInOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A] =
     expectPersistedInOrder(persistenceId, msgs, maxTimeout)
 
   /**
-   * Check for `max` time that `msgs` messages have been persisted in the storage regardless of order.
+   * Check for `max` time that `msgs` events have been persisted in the storage regardless of order.
    */
   def expectPersistedInAnyOrder[A](
       persistenceId: String,
@@ -243,8 +244,8 @@ private[testkit] trait ExpectOps[U] {
             val ls = reprs.map(reprToAny)
             assert(
               ls.size == msgs.size && ls.diff(msgs).isEmpty,
-              "Persisted messages do not correspond to the expected ones.")
-          case None => assert(false, "No messages were persisted.")
+              "Persisted events do not correspond to the expected ones.")
+          case None => assert(false, "No events were persisted.")
         }
         actual.get.map(reprToAny)
       },
@@ -256,7 +257,7 @@ private[testkit] trait ExpectOps[U] {
   }
 
   /**
-   * Check that `msgs` messages have been persisted in the storage regardless of order.
+   * Check that `msgs` events have been persisted in the storage regardless of order.
    */
   def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A] =
     expectPersistedInAnyOrder(persistenceId, msgs, maxTimeout)

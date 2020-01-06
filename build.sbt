@@ -271,7 +271,7 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .disablePlugins(MimaPlugin)
 
 lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
-  .dependsOn(persistence % "compile->compile;provided->provided;test->test", testkit % "compile->compile;test->test", persistenceTck % "test")
+  .dependsOn(persistenceTyped % "compile->compile;provided->provided;test->test", testkit % "compile->compile;test->test", persistenceTck % "test")
   .settings(Dependencies.persistenceTestKit)
   .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
   .disablePlugins(MimaPlugin)

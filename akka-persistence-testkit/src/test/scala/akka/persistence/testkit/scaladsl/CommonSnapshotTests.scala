@@ -15,7 +15,7 @@ import org.scalatest.Matchers._
 
 trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils {
 
-  lazy val testKit = new SnapshotTestKit()(system)
+  lazy val testKit = new SnapshotTestKit(system)
 
   implicit lazy val sys: ActorSystem = system
 

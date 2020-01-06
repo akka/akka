@@ -3,36 +3,40 @@
  */
 
 package docs.persistence.testkit
-import akka.actor.ActorSystem
+
+import akka.actor.typed.ActorSystem
 import akka.persistence.testkit.{ PersistenceTestKitPlugin, PersistenceTestKitSnapshotPlugin }
 import akka.persistence.testkit.scaladsl.{ PersistenceTestKit, SnapshotTestKit }
 import com.typesafe.config.ConfigFactory
 
-object TestKitConf {
+object TestKitTypedConf {
 
-  //#testkit-conf
+  //#testkit-typed-conf
 
   val yourConfiguration = ConfigFactory.defaultApplication()
 
-  implicit val system = ActorSystem("test-system", PersistenceTestKitPlugin.config.withFallback(yourConfiguration))
+  val system =
+    ActorSystem(??? /*some behavior*/, "test-system", PersistenceTestKitPlugin.config.withFallback(yourConfiguration))
 
-  val testKit = new PersistenceTestKit
+  val testKit = PersistenceTestKit(system)
 
-  //#testkit-conf
+  //#testkit-typed-conf
 
 }
 
-object SnapshotConf {
+object SnapshotTypedConf {
 
-  //#snapshot-conf
+  //#snapshot-typed-conf
 
   val yourConfiguration = ConfigFactory.defaultApplication()
 
-  implicit val system =
-    ActorSystem("test-system", PersistenceTestKitSnapshotPlugin.config.withFallback(yourConfiguration))
+  val system = ActorSystem(
+    ??? /*some behavior*/,
+    "test-system",
+    PersistenceTestKitSnapshotPlugin.config.withFallback(yourConfiguration))
 
-  val testKit = new SnapshotTestKit
+  val testKit = SnapshotTestKit(system)
 
-  //#snapshot-conf
+  //#snapshot-typed-conf
 
 }

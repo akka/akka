@@ -5,7 +5,8 @@
 package akka.persistence.testkit.scaladsl
 
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId }
-import akka.persistence.testkit.{ ExpectedFailure, ExpectedRejection }
+import akka.actor.typed.{ ActorSystem => TypedActorSystem }
+import akka.annotation.ApiMayChange
 import akka.persistence.testkit._
 import akka.persistence.{ Persistence, PersistentRepr, SnapshotMetadata }
 import akka.testkit.TestProbe
@@ -29,52 +30,52 @@ private[testkit] trait CommonTestKitOps[S, P] extends ClearOps with PolicyOpsTes
   def expectNothingPersisted(persistenceId: String, max: FiniteDuration): Unit
 
   /**
-   * Check that `msg` message has been saved in the storage.
+   * Check that `msg` event has been saved in the storage.
    */
   def expectNextPersisted[A](persistenceId: String, msg: A): A
 
   /**
-   * Check for `max` time that `msg` message has been saved in the storage.
+   * Check for `max` time that `msg` event has been saved in the storage.
    */
   def expectNextPersisted[A](persistenceId: String, msg: A, max: FiniteDuration): A
 
   /**
-   * Fail next `n` persisted messages with the `cause` exception for particular persistence id.
+   * Fail next `n` persisted events with the `cause` exception for particular persistence id.
    */
   def failNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit
 
   /**
-   * Fail next `n` persisted messages for particular persistence id.
+   * Fail next `n` persisted events for particular persistence id.
    */
   def failNextNPersisted(persistenceId: String, n: Int): Unit = failNextNPersisted(persistenceId, n, ExpectedFailure)
 
   /**
-   * Fail next `n` persisted messages with the `cause` exception for any persistence id.
+   * Fail next `n` persisted events with the `cause` exception for any persistence id.
    */
   def failNextNPersisted(n: Int, cause: Throwable): Unit
 
   /**
-   * Fail next `n` persisted messages with default exception for any persistence id.
+   * Fail next `n` persisted events with default exception for any persistence id.
    */
   def failNextNPersisted(n: Int): Unit = failNextNPersisted(n, ExpectedFailure)
 
   /**
-   * Fail next persisted message with `cause` exception for particular persistence id.
+   * Fail next persisted event with `cause` exception for particular persistence id.
    */
   def failNextPersisted(persistenceId: String, cause: Throwable): Unit = failNextNPersisted(persistenceId, 1, cause)
 
   /**
-   * Fail next persisted message with default exception for particular persistence id.
+   * Fail next persisted event with default exception for particular persistence id.
    */
   def failNextPersisted(persistenceId: String): Unit = failNextNPersisted(persistenceId, 1)
 
   /**
-   * Fail next persisted message with `cause` exception for any persistence id.
+   * Fail next persisted event with `cause` exception for any persistence id.
    */
   def failNextPersisted(cause: Throwable): Unit = failNextNPersisted(1, cause)
 
   /**
-   * Fail next persisted message with default exception for any persistence id.
+   * Fail next persisted event with default exception for any persistence id.
    */
   def failNextPersisted(): Unit = failNextNPersisted(1)
 
@@ -288,24 +289,25 @@ private[testkit] trait PersistenceTestKitOps[S, P]
   def rejectNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit
 
   /**
-   * Persist `elems` messages into storage in order.
+   * Persist `elems` events into storage in order.
    */
   def persistForRecovery(persistenceId: String, elems: immutable.Seq[Any]): Unit
 
   /**
-   * Retrieve all messages saved in storage by persistence id.
+   * Retrieve all events saved in storage by persistence id.
    */
   def persistedInStorage(persistenceId: String): immutable.Seq[Any]
 
 }
 
 /**
- * Snapshot testkit is for testing persistent actors using snapshots.
+ * Class for testing snapshots of persistent actors.
  *
  * NOTE! ActorSystem must be configured with [[PersistenceTestKitSnapshotPlugin]].
  * The configuration can be retrieved with [[PersistenceTestKitSnapshotPlugin.config]].
  */
-class SnapshotTestKit(implicit val system: ActorSystem)
+@ApiMayChange
+class SnapshotTestKit(system: ActorSystem)
     extends CommonTestKitOps[(SnapshotMetadata, Any), SnapshotOperation]
     with PolicyOpsTestKit[SnapshotOperation]
     with ExpectOps[(SnapshotMetadata, Any)]
@@ -320,7 +322,7 @@ class SnapshotTestKit(implicit val system: ActorSystem)
 
   private val settings = Settings(system)
 
-  override private[testkit] val probe = TestProbe()
+  override private[testkit] val probe = TestProbe()(system)
 
   override private[testkit] val pollInterval: FiniteDuration = settings.pollInterval
 
@@ -375,7 +377,12 @@ class SnapshotTestKit(implicit val system: ActorSystem)
 
 }
 
+@ApiMayChange
 object SnapshotTestKit {
+
+  def apply(implicit system: ActorSystem): SnapshotTestKit = new SnapshotTestKit(system)
+
+  def apply(implicit system: TypedActorSystem[_]): SnapshotTestKit = apply(system.classicSystem)
 
   object Settings extends ExtensionId[Settings] {
 
@@ -401,12 +408,13 @@ object SnapshotTestKit {
 }
 
 /**
- * Persistence testkit for testing persistent actors.
+ * Class for testing events of persistent actors.
  *
  * NOTE! ActorSystem must be configured with [[PersistenceTestKitPlugin]].
  * The configuration can be retrieved with [[PersistenceTestKitPlugin.config]].
  */
-class PersistenceTestKit(implicit val system: ActorSystem)
+@ApiMayChange
+class PersistenceTestKit(system: ActorSystem)
     extends PersistenceTestKitOps[PersistentRepr, JournalOperation]
     with ExpectOps[PersistentRepr]
     with HasStorage[JournalOperation, PersistentRepr] {
@@ -420,55 +428,55 @@ class PersistenceTestKit(implicit val system: ActorSystem)
 
   private final lazy val settings = Settings(system)
 
-  override private[testkit] val probe = TestProbe()
+  override private[testkit] val probe = TestProbe()(system)
 
-  override private[testkit] val Policies = MessageStorage.JournalPolicies
+  override private[testkit] val Policies = EventStorage.JournalPolicies
 
   override private[testkit] val pollInterval: FiniteDuration = settings.pollInterval
 
   override private[testkit] val maxTimeout: FiniteDuration = settings.assertTimeout
 
   override def rejectNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[WriteMessages], n, cause)
+    rejectNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[WriteEvents], n, cause)
 
   override def rejectNextNPersisted(n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((_, op) => op.isInstanceOf[WriteMessages], n, cause)
+    rejectNextNOpsCond((_, op) => op.isInstanceOf[WriteEvents], n, cause)
 
   override def rejectNextNReads(n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((_, op) => op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type], n, cause)
+    rejectNextNOpsCond((_, op) => op.isInstanceOf[ReadEvents] || op.isInstanceOf[ReadSeqNum.type], n, cause)
 
   override def rejectNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit =
     rejectNextNOpsCond(
-      (pid, op) => (pid == persistenceId) && (op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type]),
+      (pid, op) => (pid == persistenceId) && (op.isInstanceOf[ReadEvents] || op.isInstanceOf[ReadSeqNum.type]),
       n,
       cause)
 
   override def rejectNextNDeletes(n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((_, op) => op.isInstanceOf[DeleteMessages], n, cause)
+    rejectNextNOpsCond((_, op) => op.isInstanceOf[DeleteEvents], n, cause)
 
   override def rejectNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit =
-    rejectNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[DeleteMessages], n, cause)
+    rejectNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[DeleteEvents], n, cause)
 
   override def failNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[WriteMessages], n, cause)
+    failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[WriteEvents], n, cause)
 
   override def failNextNPersisted(n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((_, op) => op.isInstanceOf[WriteMessages], n, cause)
+    failNextNOpsCond((_, op) => op.isInstanceOf[WriteEvents], n, cause)
 
   override def failNextNReads(n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((_, op) => op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type], n, cause)
+    failNextNOpsCond((_, op) => op.isInstanceOf[ReadEvents] || op.isInstanceOf[ReadSeqNum.type], n, cause)
 
   override def failNextNReads(persistenceId: String, n: Int, cause: Throwable): Unit =
     failNextNOpsCond(
-      (pid, op) => (pid == persistenceId) && (op.isInstanceOf[ReadMessages] || op.isInstanceOf[ReadSeqNum.type]),
+      (pid, op) => (pid == persistenceId) && (op.isInstanceOf[ReadEvents] || op.isInstanceOf[ReadSeqNum.type]),
       n,
       cause)
 
   override def failNextNDeletes(n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((_, op) => op.isInstanceOf[DeleteMessages], n, cause)
+    failNextNOpsCond((_, op) => op.isInstanceOf[DeleteEvents], n, cause)
 
   override def failNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit =
-    failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[DeleteMessages], n, cause)
+    failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[DeleteEvents], n, cause)
 
   def persistForRecovery(persistenceId: String, elems: immutable.Seq[Any]): Unit = {
     storage.addAny(persistenceId, elems)
@@ -481,11 +489,16 @@ class PersistenceTestKit(implicit val system: ActorSystem)
   override private[testkit] def reprToAny(repr: PersistentRepr): Any = repr.payload
 }
 
+@ApiMayChange
 object PersistenceTestKit {
+
+  def apply(system: ActorSystem): PersistenceTestKit = new PersistenceTestKit(system)
+
+  def apply(system: TypedActorSystem[_]): PersistenceTestKit = apply(system.classicSystem)
 
   object Settings extends ExtensionId[Settings] {
 
-    val configPath = "akka.persistence.testkit.messages"
+    val configPath = "akka.persistence.testkit.events"
 
     override def get(system: ActorSystem): Settings = super.get(system)
 

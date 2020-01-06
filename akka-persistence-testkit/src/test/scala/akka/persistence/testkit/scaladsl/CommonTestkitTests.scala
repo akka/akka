@@ -6,8 +6,8 @@ package akka.persistence.testkit.scaladsl
 
 import akka.actor.{ ActorSystem, Props }
 import akka.persistence._
-import akka.persistence.testkit.{ CommonUtils, MessageStorage }
-import akka.persistence.testkit.WriteMessages
+import akka.persistence.testkit.{ CommonUtils, EventStorage }
+import akka.persistence.testkit.WriteEvents
 import akka.persistence.testkit.{ ExpectedFailure, ProcessingSuccess, StorageFailure }
 import akka.testkit.{ EventFilter, TestKitBase }
 import org.scalatest._
@@ -16,7 +16,7 @@ import org.scalatest.Matchers._
 
 trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils {
 
-  lazy val testKit = new PersistenceTestKit()(system)
+  lazy val testKit = new PersistenceTestKit(system)
 
   import testKit._
 
@@ -120,10 +120,10 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
 
       val err = new Exception("BOOM!")
 
-      val newPolicy = new MessageStorage.JournalPolicies.PolicyType {
+      val newPolicy = new EventStorage.JournalPolicies.PolicyType {
         override def tryProcess(persistenceId: String, processingUnit: JournalOperation): ProcessingResult = {
           processingUnit match {
-            case WriteMessages(msgs) =>
+            case WriteEvents(msgs) =>
               val ex = msgs.exists({
                 case B(666) => true
                 case _      => false

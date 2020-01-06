@@ -4,8 +4,6 @@
 
 package akka.persistence.testkit
 
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.atomic.AtomicReference
 import java.util.{ List => JList }
 
 import akka.util.ccompat.JavaConverters._
@@ -13,10 +11,10 @@ import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, Ex
 import akka.annotation.InternalApi
 import akka.persistence.testkit.ProcessingPolicy._
 import akka.persistence._
+import akka.persistence.testkit.internal.TestKitStorage
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.persistence.testkit.scaladsl.{ PersistenceTestKit, SnapshotTestKit }
 
-import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 
@@ -24,207 +22,17 @@ import scala.util.{ Failure, Success, Try }
  * INTERNAL API
  */
 @InternalApi
-sealed trait InternalReprSupport[R] {
+sealed trait EventStorage extends TestKitStorage[JournalOperation, PersistentRepr] {
 
-  type InternalRepr
-
-  private[testkit] def toInternal(repr: R): InternalRepr
-
-  private[testkit] def toRepr(internal: InternalRepr): R
-
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-sealed trait InMemStorage[K, R] extends InternalReprSupport[R] {
-
-  import akka.persistence.testkit.Utils.JavaFuncConversions._
-
-  private val parallelism = Runtime.getRuntime.availableProcessors()
-
-  private final val eventsMap: ConcurrentHashMap[K, Vector[InternalRepr]] =
-    new ConcurrentHashMap()
-
-  def forEachKey(f: K => Unit): Unit = eventsMap.forEachKey(parallelism, f)
-
-  def findMany(key: K, fromInclusive: Int, maxNum: Int): Option[Vector[R]] =
-    read(key).flatMap(
-      value =>
-        if (value.size > fromInclusive)
-          Some(value.drop(fromInclusive).take(maxNum))
-        else None)
-
-  def findOneByIndex(key: K, index: Int): Option[R] =
-    Option(eventsMap.get(key)).flatMap(value => if (value.size > index) Some(value(index)) else None).map(toRepr)
-
-  def add(key: K, p: R): Unit =
-    add(key, List(p))
-
-  /**
-   *
-   * Note! `elems` is call by name to preserve atomicity
-   *
-   * @param elems elements to insert
-   */
-  def add(key: K, elems: => immutable.Seq[R]): Unit =
-    eventsMap.compute(
-      key,
-      (_: K, value: Vector[InternalRepr]) =>
-        value match {
-          case null     => elems.map(toInternal).toVector
-          case existing => existing ++ elems.map(toInternal)
-        })
-
-  def delete(key: K, needsToBeDeleted: R => Boolean): Vector[R] =
-    eventsMap
-      .computeIfPresent(key, (_: K, value: Vector[InternalRepr]) => {
-        value.map(toRepr).filterNot(needsToBeDeleted).map(toInternal)
-      })
-      .map(toRepr)
-
-  def updateExisting(key: K, updater: Vector[R] => Vector[R]): Vector[R] =
-    eventsMap
-      .computeIfPresent(key, (_: K, value: Vector[InternalRepr]) => {
-        updater(value.map(toRepr)).map(toInternal)
-      })
-      .map(toRepr)
-
-  def read(key: K): Option[Vector[R]] =
-    Option(eventsMap.get(key)).map(_.map(toRepr))
-
-  protected def readInternal(key: K): Option[Vector[InternalRepr]] =
-    Option(eventsMap.get(key))
-
-  def clearAll(): Unit =
-    eventsMap.clear()
-
-  def removeKey(key: K): Vector[R] =
-    Option(eventsMap.remove(key)).getOrElse(Vector.empty).map(toRepr)
-
-  protected def removeKeyInternal(key: K, value: Vector[InternalRepr]): Boolean =
-    eventsMap.remove(key, value)
-
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-sealed trait HighestSeqNumSupportStorage[K, R] extends InMemStorage[K, R] {
-
-  private final val seqNumbers = new ConcurrentHashMap[K, Long]()
-
-  import scala.math._
-
-  def reprToSeqNum(repr: R): Long
-
-  def read(key: K, fromInclusive: Long, toInclusive: Long, maxNumber: Long): immutable.Seq[R] =
-    read(key)
-      .getOrElse(Vector.empty)
-      .dropWhile(reprToSeqNum(_) < fromInclusive)
-      //we dont need to read highestSeqNumber because it will in any case stop at it if toInclusive > highestSeqNumber
-      .takeWhile(reprToSeqNum(_) <= toInclusive)
-      .take(if (maxNumber > Int.MaxValue) Int.MaxValue else maxNumber.toInt)
-
-  override def removeKey(key: K): Vector[R] = {
-    var re: Vector[R] = Vector.empty
-    seqNumbers.compute(key, (_, _) => {
-      re = super.removeKey(key)
-      null: java.lang.Long
-    })
-    re
-  }
-
-  @tailrec
-  final def removePreservingSeqNumber(key: K): Unit = {
-    val value = readInternal(key)
-    value match {
-      case Some(v) =>
-        reloadHighestSequenceNum(key)
-        if (!removeKeyInternal(key, v)) removePreservingSeqNumber(key)
-      case None =>
-    }
-  }
-
-  def reloadHighestSequenceNum(key: K): Long =
-    seqNumbers.compute(
-      key,
-      (_: K, sn: Long) => {
-        val savedSn = Option(sn)
-        val storeSn =
-          read(key).flatMap(_.lastOption).map(reprToSeqNum)
-        (for {
-          fsn <- savedSn
-          ssn <- storeSn
-        } yield max(fsn, ssn)).orElse(savedSn).orElse(storeSn).getOrElse(0L)
-      })
-
-  def deleteToSeqNumber(key: K, toSeqNumberInclusive: Long): Unit =
-    updateExisting(key, value => {
-      reloadHighestSequenceNum(key)
-      value.dropWhile(reprToSeqNum(_) <= toSeqNumberInclusive)
-    })
-
-  override def clearAll(): Unit = {
-    seqNumbers.clear()
-    super.clearAll()
-  }
-
-  def clearAllPreservingSeqNumbers(): Unit =
-    forEachKey(removePreservingSeqNumber)
-
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-sealed trait PolicyOps[U] {
-
-  type Policy = ProcessingPolicy[U]
-
-  protected val DefaultPolicy: Policy
-
-  private lazy val _processingPolicy: AtomicReference[Policy] =
-    new AtomicReference(DefaultPolicy)
-
-  def currentPolicy = _processingPolicy.get()
-
-  def setPolicy(policy: Policy) = _processingPolicy.set(policy)
-
-  def returnDefaultPolicy(): Unit = setPolicy(DefaultPolicy)
-
-  def compareAndSetWritingPolicy(previousPolicy: Policy, newPolicy: Policy) =
-    _processingPolicy.compareAndSet(previousPolicy, newPolicy)
-
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-sealed trait TestKitStorage[P, R] extends HighestSeqNumSupportStorage[String, R] with PolicyOps[P] with Extension
-
-/**
- * INTERNAL API
- */
-@InternalApi
-sealed trait MessageStorage extends TestKitStorage[JournalOperation, PersistentRepr] {
-
-  import MessageStorage._
-
-  def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
-    val sn = reloadHighestSequenceNum(key) + 1
-    elems.zipWithIndex.map(p => PersistentRepr(p._1, p._2 + sn, key))
-  }
+  import EventStorage._
 
   def addAny(key: String, elem: Any): Unit =
     addAny(key, immutable.Seq(elem))
 
   def addAny(key: String, elems: immutable.Seq[Any]): Unit =
-    add(key, mapAny(key, elems))
+    // need to use `updateExisting` because `mapAny` reads latest seqnum
+    // and therefore must be done at the same time with the update, not before
+    updateOrSetNew(key, v => v ++ mapAny(key, elems).toVector)
 
   override def reprToSeqNum(repr: PersistentRepr): Long = repr.sequenceNr
 
@@ -240,7 +48,7 @@ sealed trait MessageStorage extends TestKitStorage[JournalOperation, PersistentR
     val grouped = elems.groupBy(_.persistenceId)
 
     val processed = grouped.map {
-      case (pid, els) => currentPolicy.tryProcess(pid, WriteMessages(els.map(_.payload)))
+      case (pid, els) => currentPolicy.tryProcess(pid, WriteEvents(els.map(_.payload)))
     }
 
     val reduced: ProcessingResult =
@@ -268,7 +76,7 @@ sealed trait MessageStorage extends TestKitStorage[JournalOperation, PersistentR
       toSequenceNr: Long,
       max: Long): immutable.Seq[PersistentRepr] = {
     val batch = read(persistenceId, fromSequenceNr, toSequenceNr, max)
-    currentPolicy.tryProcess(persistenceId, ReadMessages(batch)) match {
+    currentPolicy.tryProcess(persistenceId, ReadEvents(batch)) match {
       case ProcessingSuccess  => batch
       case Reject(ex)         => throw ex
       case StorageFailure(ex) => throw ex
@@ -277,23 +85,28 @@ sealed trait MessageStorage extends TestKitStorage[JournalOperation, PersistentR
 
   def tryReadSeqNumber(persistenceId: String): Long = {
     currentPolicy.tryProcess(persistenceId, ReadSeqNum) match {
-      case ProcessingSuccess  => reloadHighestSequenceNum(persistenceId)
+      case ProcessingSuccess  => getHighestSeqNumber(persistenceId)
       case Reject(ex)         => throw ex
       case StorageFailure(ex) => throw ex
     }
   }
 
   def tryDelete(persistenceId: String, toSeqNumber: Long): Unit = {
-    currentPolicy.tryProcess(persistenceId, DeleteMessages(toSeqNumber)) match {
+    currentPolicy.tryProcess(persistenceId, DeleteEvents(toSeqNumber)) match {
       case ProcessingSuccess  => deleteToSeqNumber(persistenceId, toSeqNumber)
       case Reject(ex)         => throw ex
       case StorageFailure(ex) => throw ex
     }
   }
 
+  private def mapAny(key: String, elems: immutable.Seq[Any]): immutable.Seq[PersistentRepr] = {
+    val sn = getHighestSeqNumber(key) + 1
+    elems.zipWithIndex.map(p => PersistentRepr(p._1, p._2 + sn, key))
+  }
+
 }
 
-object MessageStorage {
+object EventStorage {
 
   object JournalPolicies extends DefaultPolicies[JournalOperation]
 
@@ -308,18 +121,18 @@ object MessageStorage {
 sealed trait JournalOperation
 
 /**
- * Read from journal operation with messages that were read.
+ * Read from journal operation with events that were read.
  */
-final case class ReadMessages(batch: immutable.Seq[Any]) extends JournalOperation {
+final case class ReadEvents(batch: immutable.Seq[Any]) extends JournalOperation {
 
   def getBatch(): JList[Any] = batch.asJava
 
 }
 
 /**
- * Write in journal operation with messages to be written.
+ * Write in journal operation with events to be written.
  */
-final case class WriteMessages(batch: immutable.Seq[Any]) extends JournalOperation {
+final case class WriteEvents(batch: immutable.Seq[Any]) extends JournalOperation {
 
   def getBatch(): JList[Any] = batch.asJava
 
@@ -338,9 +151,9 @@ case object ReadSeqNum extends JournalOperation {
 }
 
 /**
- * Delete messages in journal up to `toSeqNumber` operation.
+ * Delete events in the journal up to `toSeqNumber` operation.
  */
-final case class DeleteMessages(toSeqNumber: Long) extends JournalOperation {
+final case class DeleteEvents(toSeqNumber: Long) extends JournalOperation {
 
   def getToSeqNumber() = toSeqNumber
 
@@ -350,7 +163,7 @@ final case class DeleteMessages(toSeqNumber: Long) extends JournalOperation {
  * INTERNAL API
  */
 @InternalApi
-private[testkit] class SimpleMessageStorageImpl extends MessageStorage {
+private[testkit] class SimpleEventStorageImpl extends EventStorage {
 
   override type InternalRepr = PersistentRepr
 
@@ -364,7 +177,7 @@ private[testkit] class SimpleMessageStorageImpl extends MessageStorage {
  * INTERNAL API
  */
 @InternalApi
-private[testkit] class SerializedMessageStorageImpl(system: ActorSystem) extends MessageStorage {
+private[testkit] class SerializedEventStorageImpl(system: ActorSystem) extends EventStorage {
 
   override type InternalRepr = (Int, Array[Byte])
 
@@ -588,15 +401,15 @@ object SnapshotStorageEmulatorExtension extends ExtensionId[SnapshotStorage] wit
  * INTERNAL API
  */
 @InternalApi
-object InMemStorageExtension extends ExtensionId[MessageStorage] with ExtensionIdProvider {
+object InMemStorageExtension extends ExtensionId[EventStorage] with ExtensionIdProvider {
 
-  override def get(system: ActorSystem): MessageStorage = super.get(system)
+  override def get(system: ActorSystem): EventStorage = super.get(system)
 
   override def createExtension(system: ExtendedActorSystem) =
     if (PersistenceTestKit.Settings(system).serialize) {
-      new SerializedMessageStorageImpl(system)
+      new SerializedEventStorageImpl(system)
     } else {
-      new SimpleMessageStorageImpl
+      new SimpleEventStorageImpl
     }
 
   override def lookup() = InMemStorageExtension

@@ -17,7 +17,7 @@ import scala.util.Try
 /**
  * INTERNAL API
  *
- * Persistence testkit plugin for messages.
+ * Persistence testkit plugin for events.
  */
 @InternalApi
 class PersistenceTestKitPlugin extends AsyncWriteJournal {

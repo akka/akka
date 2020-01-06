@@ -10,7 +10,7 @@ import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
 import akka.persistence.snapshot.SnapshotStoreSpec
 import akka.persistence.testkit._
-import akka.persistence.testkit.MessageStorage.JournalPolicies
+import akka.persistence.testkit.EventStorage.JournalPolicies
 import akka.persistence.testkit.Reject
 
 class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = PersistenceTestKitPlugin.config) {
@@ -20,7 +20,7 @@ class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = Persisten
     InMemStorageExtension(system).setPolicy(new JournalPolicies.PolicyType {
       override def tryProcess(persistenceId: String, op: JournalOperation): ProcessingResult = {
         op match {
-          case WriteMessages(batch) =>
+          case WriteEvents(batch) =>
             val allSerializable =
               batch.filter(_.isInstanceOf[AnyRef]).forall(_.isInstanceOf[java.io.Serializable])
             if (allSerializable) {

@@ -4,13 +4,14 @@
 
 package akka.persistence.testkit
 
-import akka.annotation.InternalApi
+import akka.annotation.{ ApiMayChange, InternalApi }
 
 /**
  * Policies allow to emulate behavior of the storage (failures and rejections).
  *
  * @tparam U type determines operations which storage can perform.
  */
+@ApiMayChange
 trait ProcessingPolicy[U] {
 
   /**

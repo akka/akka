@@ -28,7 +28,7 @@ object CommonUtils {
         .withFallback(
           ConfigFactory.parseMap(
             Map(
-              "akka.persistence.testkit.messages.serialize" -> serializeMessages,
+              "akka.persistence.testkit.events.serialize" -> serializeMessages,
               "akka.persistence.testkit.snapshots.serialize" -> serializeSnapshots).asJava))
         .withFallback(ConfigFactory.parseString("akka.loggers = [\"akka.testkit.TestEventListener\"]"))
         .withFallback(ConfigFactory.defaultApplication()))

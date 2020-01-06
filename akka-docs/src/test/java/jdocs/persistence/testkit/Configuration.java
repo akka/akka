@@ -4,7 +4,8 @@
 
 package jdocs.persistence.testkit;
 
-import akka.actor.ActorSystem;
+import akka.actor.typed.ActorSystem;
+import akka.actor.typed.Behavior;
 import akka.persistence.testkit.PersistenceTestKitPlugin;
 import akka.persistence.testkit.PersistenceTestKitSnapshotPlugin;
 import akka.persistence.testkit.javadsl.PersistenceTestKit;
@@ -14,32 +15,40 @@ import com.typesafe.config.ConfigFactory;
 
 public class Configuration {
 
-  // #testkit-conf
+  // #testkit-typed-conf
   public class PersistenceTestKitConfig {
 
-    private final Config conf =
+    Config conf =
         PersistenceTestKitPlugin.getInstance()
             .config()
             .withFallback(ConfigFactory.defaultApplication());
 
-    private final ActorSystem system = ActorSystem.create("example", conf);
+    ActorSystem<Command> system = ActorSystem.create(new SomeBehavior(),"example", conf);
 
-    private final PersistenceTestKit testKit = new PersistenceTestKit(system);
+    PersistenceTestKit testKit = PersistenceTestKit.create(system);
   }
-  // #testkit-conf
+  // #testkit-typed-conf
 
-  // #snapshot-conf
+  // #snapshot-typed-conf
   public class SnapshotTestKitConfig {
 
-    private final Config conf =
+    Config conf =
         PersistenceTestKitSnapshotPlugin.getInstance()
             .config()
             .withFallback(ConfigFactory.defaultApplication());
 
-    private final ActorSystem system = ActorSystem.create("example", conf);
+    ActorSystem<Command> system = ActorSystem.create(new SomeBehavior(),"example", conf);
 
-    private final SnapshotTestKit testKit = new SnapshotTestKit(system);
+    SnapshotTestKit testKit = SnapshotTestKit.create(system);
   }
-  // #snapshot-conf
+  // #snapshot-typed-conf
 
 }
+
+class SomeBehavior extends Behavior<Command>{
+  public SomeBehavior() {
+    super(1);
+  }
+}
+
+class Command{}

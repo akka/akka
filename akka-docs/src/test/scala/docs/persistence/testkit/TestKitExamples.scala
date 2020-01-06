@@ -4,44 +4,49 @@
 
 package docs.persistence.testkit
 
-import akka.actor.{ ActorSystem, Props }
-import akka.persistence.PersistentActor
-import akka.persistence.testkit.{ ProcessingSuccess, Reject, StorageFailure }
+import akka.actor.typed.ActorSystem
 import akka.persistence.testkit._
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
+import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.WordSpecLike
 
 class TestKitExamples {
 
-  //#testkit-usecase
-  class SampleSpec extends WordSpecLike {
+  //#testkit-typed-usecase
+  class TypedSampleSpec extends WordSpecLike {
 
-    implicit val system: ActorSystem =
-      ActorSystem("example", PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication()))
-
-    val testKit = new PersistenceTestKit
+    val system: ActorSystem[Cmd] = ActorSystem(
+      EventSourcedBehavior[Cmd, Evt, State](
+        persistenceId = ???,
+        eventHandler = ???,
+        commandHandler = (_, cmd) => Effect.persist(Evt(cmd.data)),
+        emptyState = ???),
+      "name",
+      PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication()))
+    val testKit = PersistenceTestKit(system)
 
     "Persistent actor" should {
 
-      "persist all messages" in {
+      "persist all events" in {
 
-        val persistentActor = system.actorOf(Props[YourPersistentActor]())
-        val msg = Msg("data")
+        val persistentActor = system
+        val cmd = Cmd("data")
 
-        persistentActor ! msg
+        persistentActor ! cmd
 
-        testKit.expectNextPersisted("your-persistence-id", msg)
+        val expectedPersistedEvent = Evt(cmd.data)
+
+        testKit.expectNextPersisted("your-persistence-id", expectedPersistedEvent)
 
       }
 
     }
   }
+  //#testkit-typed-usecase
 
-  //#testkit-usecase
-
-  //#set-message-storage-policy
-  class SampleMessageStoragePolicy extends MessageStorage.JournalPolicies.PolicyType {
+  //#set-event-storage-policy
+  class SamplEventStoragePolicy extends EventStorage.JournalPolicies.PolicyType {
 
     //you can use internal state, it need not to be thread safe
     var count = 1
@@ -52,19 +57,19 @@ class TestKitExamples {
         //check the type of operation and react with success or with reject or with failure.
         //if you return ProcessingSuccess the operation will be performed, otherwise not.
         processingUnit match {
-          case ReadMessages(batch) if batch.nonEmpty => ProcessingSuccess
-          case WriteMessages(batch) if batch.size > 1 =>
+          case ReadEvents(batch) if batch.nonEmpty => ProcessingSuccess
+          case WriteEvents(batch) if batch.size > 1 =>
             ProcessingSuccess
-          case ReadSeqNum        => StorageFailure()
-          case DeleteMessages(_) => Reject()
-          case _                 => StorageFailure()
+          case ReadSeqNum      => StorageFailure()
+          case DeleteEvents(_) => Reject()
+          case _               => StorageFailure()
         }
       } else {
         ProcessingSuccess
       }
 
   }
-  //#set-message-storage-policy
+  //#set-event-storage-policy
 
   //#set-snapshot-storage-policy
   class SampleSnapshotStoragePolicy extends SnapshotStorage.SnapshotPolicies.PolicyType {
@@ -95,13 +100,6 @@ class TestKitExamples {
 
 }
 
-case class Msg(data: String)
-
-class YourPersistentActor extends PersistentActor {
-
-  override def receiveRecover: Receive = ???
-
-  override def receiveCommand: Receive = ???
-
-  override def persistenceId: String = "example-pid"
-}
+case class Cmd(data: String)
+case class Evt(data: String)
+trait State
