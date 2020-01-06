@@ -4,29 +4,32 @@
 
 package akka.persistence.testkit.javadsl
 
-import akka.actor.{ ActorSystem, Props }
+import akka.actor.Props
 import akka.persistence._
-import akka.persistence.testkit.WriteEvents
-import akka.persistence.testkit.{ ExpectedFailure, ProcessingSuccess, StorageFailure }
 import akka.persistence.testkit._
-import akka.persistence.testkit.{ CommonUtils, EventStorage }
-import akka.testkit.{ EventFilter, TestKitBase }
+import akka.testkit.EventFilter
 import org.scalatest.Matchers._
-import org.scalatest._
-
 import akka.util.ccompat.JavaConverters._
+import akka.actor.typed.javadsl.Adapter
 
-trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils {
+trait CommonTestkitTests extends JavaDslUtils {
 
   lazy val testKit = new PersistenceTestKit(system)
-
-  implicit lazy val sys: ActorSystem = system
-
   import testKit._
 
   def specificTests(): Unit
 
   "PersistenceTestkit" should {
+
+    "work with typed actors" in {
+      val expectedId = randomPid()
+      val pid = randomPid()
+      val act = Adapter.spawn(system, eventSourcedBehavior(pid), pid)
+      act ! Cmd(expectedId)
+
+      testKit.expectNextPersisted(pid, Evt(expectedId))
+      testKit.expectNothingPersisted(pid)
+    }
 
     "expect next valid message" in {
 

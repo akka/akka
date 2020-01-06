@@ -4,27 +4,31 @@
 
 package akka.persistence.testkit.scaladsl
 
-import akka.actor.{ ActorSystem, Props }
-import akka.persistence._
-import akka.persistence.testkit.{ CommonUtils, EventStorage }
-import akka.persistence.testkit.WriteEvents
-import akka.persistence.testkit.{ ExpectedFailure, ProcessingSuccess, StorageFailure }
-import akka.testkit.{ EventFilter, TestKitBase }
-import org.scalatest._
+import akka.actor.Props
+import akka.persistence.{ DeleteMessagesFailure, DeleteMessagesSuccess }
+import akka.testkit.EventFilter
 import akka.persistence.testkit._
 import org.scalatest.Matchers._
+import akka.actor.typed.scaladsl.adapter._
 
-trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils {
+trait CommonTestkitTests extends ScalaDslUtils {
 
   lazy val testKit = new PersistenceTestKit(system)
-
   import testKit._
-
-  implicit lazy val sys: ActorSystem = system
 
   def specificTests(): Unit
 
   "PersistenceTestkit" should {
+
+    "work with typed actors" in {
+      val expectedId = randomPid()
+      val pid = randomPid()
+      val act = system.spawn(eventSourcedBehavior(pid), pid)
+      act ! Cmd(expectedId)
+
+      testKit.expectNextPersisted(pid, Evt(expectedId))
+      testKit.expectNothingPersisted(pid)
+    }
 
     "expect next valid message" in {
 
@@ -150,11 +154,9 @@ trait CommonTestkitTests extends WordSpecLike with TestKitBase with CommonUtils 
       expectTerminated(a)
 
       val aa = system.actorOf(Props(classOf[A], pid, None))
-
       aa ! B(666)
 
       expectNextPersisted(pid, B(666))
-
       returnDefaultPolicy()
 
     }

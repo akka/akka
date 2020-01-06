@@ -4,26 +4,29 @@
 
 package akka.persistence.testkit.scaladsl
 
-import akka.actor.{ ActorSystem, Props }
+import akka.actor.Props
 import akka.persistence._
-import akka.persistence.testkit.{ CommonUtils, SnapshotStorage }
-import akka.persistence.testkit.{ ExpectedFailure, ProcessingSuccess, StorageFailure }
 import akka.persistence.testkit._
-import akka.testkit.{ EventFilter, TestKitBase }
-import org.scalatest.WordSpecLike
+import akka.testkit.EventFilter
 import org.scalatest.Matchers._
+import akka.actor.typed.scaladsl.adapter._
 
-trait CommonSnapshotTests extends WordSpecLike with TestKitBase with CommonUtils {
+trait CommonSnapshotTests extends ScalaDslUtils {
 
   lazy val testKit = new SnapshotTestKit(system)
-
-  implicit lazy val sys: ActorSystem = system
-
   import testKit._
 
   def specificTests(): Unit
 
   "SnapshotTestkit" should {
+
+    "work with typed actors" in {
+      val pid = randomPid()
+      val act = system.spawn(eventSourcedBehavior(pid), pid)
+      act ! Cmd("")
+      testKit.expectNextPersisted(pid, EmptyState())
+      testKit.expectNothingPersisted(pid)
+    }
 
     "save snapshot" in {
 

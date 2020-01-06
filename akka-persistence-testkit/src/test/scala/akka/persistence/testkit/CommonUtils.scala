@@ -8,15 +8,13 @@ import java.util.UUID
 
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.persistence._
+import akka.testkit.TestKitBase
 import com.typesafe.config.ConfigFactory
+import org.scalatest.WordSpecLike
 
-trait CommonUtils {
+trait CommonUtils extends WordSpecLike with TestKitBase {
 
   protected def randomPid() = UUID.randomUUID().toString
-
-}
-
-object CommonUtils {
 
   import akka.util.ccompat.JavaConverters._
 
@@ -94,3 +92,7 @@ class A(pid: String, notifyOnStateChange: Option[ActorRef]) extends PersistentAc
 
   override def persistenceId = pid
 }
+
+case class Cmd(data: String)
+case class Evt(data: String)
+case class EmptyState()
