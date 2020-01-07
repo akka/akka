@@ -193,7 +193,7 @@ can be replaced by a probe or being stubbed out in tests.
 
 ## Supervision
 
-An important difference between classic and typed is that, in typed, actors are by default stopped if
+An important difference between classic and typed is that in typed, actors are stopped by default if
 an exception is thrown and no supervision strategy is defined. In contrast,
 in Classic, by default, actors are restarted.
 
