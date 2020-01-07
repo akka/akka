@@ -1,6 +1,6 @@
 # limitWeighted
 
-Limit a max total weight for incoming elements
+Limit the total weight of incoming elements
 
 @ref[Simple operators](../index.md#simple-operators)
 
