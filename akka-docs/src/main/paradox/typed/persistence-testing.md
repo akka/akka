@@ -67,8 +67,9 @@ Java
 
 ## Persistence TestKit
 
-Persistence testkit allows to check events saved in a storage, emulate storage operations and exceptions.
+**Note!** The testkit is a new feature, api may have changes breaking source compatibility in future versions.
 
+Persistence testkit allows to check events saved in a storage, emulate storage operations and exceptions.
 To use the testkit you need to add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
