@@ -205,6 +205,19 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
       probe.expectNext().timestamp should be > 0L
       probe.cancel()
     }
-  }
 
+    "not complete for empty persistence id" in {
+      val src = queries.eventsByPersistenceId("o", 0L, Long.MaxValue)
+      val probe =
+        src.map(_.event).runWith(TestSink.probe[Any]).request(2)
+
+      probe.expectNoMessage(200.millis) // must not complete
+
+      val ref = setupEmpty("o")
+      ref ! "o-1"
+      expectMsg(s"o-1-done")
+
+      probe.cancel()
+    }
+  }
 }
