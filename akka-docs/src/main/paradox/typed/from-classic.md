@@ -195,7 +195,7 @@ can be replaced by a probe or being stubbed out in tests.
 
 An important difference between classic and typed is that in typed, actors are stopped by default if
 an exception is thrown and no supervision strategy is defined. In contrast,
-in Classic, by default, actors are restarted.
+in classic, by default, actors are restarted.
 
 In classic actors the supervision strategy for child actors are defined by overriding the `supervisorStrategy`
 method in the parent actor.
