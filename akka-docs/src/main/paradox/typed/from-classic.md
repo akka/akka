@@ -404,7 +404,7 @@ Links to reference documentation:
 
 ## Synchronous Testing
 
-The Test Kits for synchronous testing are completely different between classic and typed.
+Classic and typed have different Test Kits.
 
 Behaviors in Typed can be tested in isolation without having to be packaged into an actor.
 As a consequence, tests can run fully synchronously without having to worry about timeouts and spurious failures.
