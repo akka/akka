@@ -117,8 +117,8 @@ The `actorOf` method takes an `akka.actor.Props` parameter, which is like a fact
 also used when creating a new instance when the actor is restarted. The `Props` may also define additional
 properties such as which dispatcher to use for the actor.
 
-Instead of creating an actor via a `Props` factory in classic, in typed, a `spawn` method creates an actor 
-from a given `Behavior`.
+In typed, the `spawn` method creates an actor directly from a given `Behavior` without using a `Props` factory.
+It does however accept an optional `akka.actor.typed.Props` for specifying Actor metadata.
 The factory aspect is instead defined via `Behaviors.setup` when using the object-oriented style with
 a class extending `AbstractBehavior`. For the function style there is typically no need for the factory.
 
