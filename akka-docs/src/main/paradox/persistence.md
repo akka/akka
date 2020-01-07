@@ -4,7 +4,7 @@ project.description: Akka Persistence Classic, event sourcing with Akka, At-Leas
 # Classic Persistence
 
 @@include[includes.md](includes.md) { #actor-api }
-For the full documentation of this feature and for new projects see @ref:[persistence](typed/persistence.md).
+For the full documentation of this feature and for new projects see @ref:[Event Sourcing](typed/persistence.md).
 
 ## Module info
 
