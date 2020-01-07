@@ -146,7 +146,7 @@ understand it.
 when creating an `ActorSystem` in Typed you give it a `Behavior` that will be used as the top level actor, also known 
 as the user guardian.
 
-Additional actors for an application can be created from the user guardian alongside performing the initialization
+Additional actors for an application are created from the user guardian alongside performing the initialization
 of Akka components such as Cluster Sharding. In contrast, in a classic `ActorSystem`, such initialization is
 typically performed from the "outside".
 
