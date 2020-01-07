@@ -333,10 +333,10 @@ Retrieving the children from the `ActorContext` can still be useful for some use
 
 Starting an actor on a remote node—so called remote deployment—isn't supported in Typed.
 
-The main reason is that we would discourage this feature since it often results in a too tight coupling
-between nodes and failure handling. For example if the node of the parent actor crashes,
-all remote deployed child actors are brought down with it. Sometimes that can be desired but many
-times it is used without realizing. This can be achieve by other means, such as using `watch`.
+This feature would be discouraged because it often results in tight coupling between nodes and undesirable
+failure handling. For example if the node of the parent actor crashes, all remote deployed child actors are
+brought down with it. Sometimes that can be desired but many times it is used without realizing. This can be
+achieved by other means, such as using `watch`.
 
 ## Routers
 
