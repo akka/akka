@@ -203,11 +203,10 @@ import scala.util.control.NonFatal
       }
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
-        if (null != subSink) {
-          subSink.cancel(cause)
-        } else {
+        if(null == subSink) {
           materializeFlow()
         }
+        subSink.cancel(cause)
       }
 
       def materializeFlow(): Unit = {

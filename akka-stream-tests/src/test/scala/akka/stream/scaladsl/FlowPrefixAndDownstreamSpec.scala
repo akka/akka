@@ -4,10 +4,10 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.{ AbruptTerminationException, Materializer, NeverMaterializedException }
-import akka.{ Done, NotUsed }
+import akka.stream.{AbruptTerminationException, Materializer, NeverMaterializedException, SubscriptionWithCancelException}
+import akka.{Done, NotUsed}
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 //import scala.concurrent.Future
@@ -284,6 +284,76 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
       suffixF.futureValue should ===(Seq(22))
       srcWatchTermF.futureValue should ===(Done)
+    }
+
+    "early downstream cancellation triggers flow materialization" in assertAllStagesStopped {
+      val publisher = TestPublisher.manualProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
+
+      val (srcWatchTermF, matFlowWatchTermFF) = Source.fromPublisher(publisher)
+        .watchTermination()(Keep.right)
+        .prefixAndDownstreamMat(8) { prefix =>
+          println("materializing!")
+          prefix should ===(0 until 2)
+          Flow[Int].watchTermination()(Keep.right)
+          //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
+        }(Keep.both)
+        .to(Sink.fromSubscriber(subscriber))
+        .run()
+      val matFlowWatchTerm = matFlowWatchTermFF.flatten
+
+      matFlowWatchTerm.value should be(empty)
+      srcWatchTermF.value should be(empty)
+
+      val subDownstream = subscriber.expectSubscription()
+      val subUpstream = publisher.expectSubscription()
+      subDownstream.request(1)
+      subUpstream.expectRequest() should be >= (1L)
+      subUpstream.sendNext(0)
+      //subUpstream.expectRequest() should be >= (1L)
+      subUpstream.sendNext(1)
+      //subUpstream.expectRequest() should be >= (1L)
+      subDownstream.cancel()
+
+      matFlowWatchTerm.futureValue should ===(Done)
+      srcWatchTermF.futureValue should ===(Done)
+
+      subUpstream.expectCancellation()
+    }
+
+    "early downstream failure triggers flow materialization" in assertAllStagesStopped {
+      val publisher = TestPublisher.manualProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[Int]()
+
+      val (srcWatchTermF, matFlowWatchTermFF) = Source.fromPublisher(publisher)
+        .watchTermination()(Keep.right)
+        .prefixAndDownstreamMat(8) { prefix =>
+          println("materializing!")
+          prefix should ===(0 until 2)
+          Flow[Int].watchTermination()(Keep.right)
+          //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
+        }(Keep.both)
+        .to(Sink.fromSubscriber(subscriber))
+        .run()
+      val matFlowWatchTerm = matFlowWatchTermFF.flatten
+
+      matFlowWatchTerm.value should be(empty)
+      srcWatchTermF.value should be(empty)
+
+      val subDownstream = subscriber.expectSubscription()
+      val subUpstream = publisher.expectSubscription()
+      subDownstream.request(1)
+      subUpstream.expectRequest() should be >= (1L)
+      subUpstream.sendNext(0)
+      //subUpstream.expectRequest() should be >= (1L)
+      subUpstream.sendNext(1)
+      //subUpstream.expectRequest() should be >= (1L)
+      subDownstream.asInstanceOf[SubscriptionWithCancelException].cancel(TE("that again?!"))
+
+      matFlowWatchTerm.failed.futureValue should ===(TE("that again?!"))
+      srcWatchTermF.failed.futureValue should ===(TE("that again?!"))
+
+      subUpstream.expectCancellation()
     }
 
     "downstream failure is propagated via the materialized flow" in assertAllStagesStopped {
