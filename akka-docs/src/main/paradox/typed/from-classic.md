@@ -90,9 +90,10 @@ Java
 
 Why is it called `Behavior` and not `Actor`?
 
-In Typed, the `Behavior` defines how to handle incoming messages and after processing a message, a potentially
-different `Behavior` is returned for processing the next message. This means that an actor is started with an initial `Behavior`
-and may change `Behavior` over its lifecycle. This is described more in the section about @ref:[become](#become).
+In Typed, the `Behavior` defines how to handle incoming messages. After processing a message, a different
+`Behavior` may be returned for processing the next message. This means that an actor is started with an
+initial `Behavior` and may change `Behavior` over its lifecycle. This is described more in the section
+about @ref:[become](#become).
 
 Note that the `Behavior` has a type parameter describing the type of messages that it can handle. This information
 is not defined explicitly for a classic actor.
