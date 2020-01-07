@@ -127,10 +127,6 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
     akka.loglevel = INFO
     akka.remote.log-remote-lifecycle-events = off
 
-    akka.remote.artery.advanced.aeron {
-      idle-cpu-level = 1
-    }
-
     akka.actor.default-dispatcher.fork-join-executor {
       parallelism-min = 8
       parallelism-max = 8
@@ -1168,10 +1164,6 @@ abstract class StressSpec
       }
       enterBarrier("after-" + step)
     }
-
-    // FIXME issue #21810
-    // note: there must be one test step before pending, otherwise afterTermination will not run
-    if (isArteryEnabled) pending
 
     "join seed nodes" taggedAs LongRunningTest in within(30 seconds) {
 
