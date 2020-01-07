@@ -307,7 +307,7 @@ The type of the returned `ActorRef` is unknown, since different types can be use
 children. Therefore, this is not a useful way to lookup children when the purpose is to send
 messages to them.
 
-Instead of finding children via the `ActorContext`, it's recommended to use an application specific
+Instead of finding children via the `ActorContext`, it is recommended to use an application specific
 collection for bookkeeping of children, such as a @scala[`Map[String, ActorRef[Child.Command]]`]
 @java[`Map<String, ActorRef<Child.Command>>`]. It can look like this:
 
