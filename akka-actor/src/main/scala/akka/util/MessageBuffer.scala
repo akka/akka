@@ -137,10 +137,12 @@ final class MessageBuffer private (private var _head: MessageBuffer.Node, privat
       _head = result.head
       _tail = result.last
       _tail.next = null
-      result.zipWithIndex.foreach {
-        case (node, i) =>
-          if (node ne _tail)
-            node.next = result(i + 1)
+      var i = 0
+      while (i < result.size) {
+        val node = result(i)
+        if (node ne _tail)
+          node.next = result(i + 1)
+        i += 1
       }
     }
   }
