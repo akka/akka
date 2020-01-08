@@ -332,6 +332,7 @@ object Replicator {
 
   /**
    * INTERNAL API
+   * Obtain the instance of this class with the [[#flushChanges]] method.
    */
   @InternalApi private[akka] case object FlushChanges extends Command
 
