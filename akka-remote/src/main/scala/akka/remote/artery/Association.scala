@@ -274,7 +274,6 @@ private[remote] class Association(
       case _ =>
         // clear outbound compression, it's safe to do that several times if someone else
         // completes handshake at same time, but it's important to clear it before
-        // we signal that the handshake is completed (uniqueRemoteAddressPromise.trySuccess)
         import transport.system.dispatcher
         clearOutboundCompression().map { _ =>
           current.completeUniqueRemoteAddress(peer)

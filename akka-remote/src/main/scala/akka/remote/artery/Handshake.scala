@@ -77,6 +77,7 @@ private[remote] class OutboundHandshake(
             pull(in)
         }
       }
+      // this must be a `val` because function equality is used when removing in postStop
       private val uniqueRemoteAddressListener: UniqueAddress => Unit =
         peer => uniqueRemoteAddressAsyncCallback.invoke(peer)
 
@@ -135,7 +136,7 @@ private[remote] class OutboundHandshake(
               case Some(_) =>
                 handshakeCompleted()
               case None =>
-                // will pull when handshake reply is received (uniqueRemoteAddress completed)
+                // will pull when handshake reply is received (uniqueRemoteAddress populated)
                 handshakeState = ReqInProgress
                 schedulePeriodically(HandshakeRetryTick, retryInterval)
 
