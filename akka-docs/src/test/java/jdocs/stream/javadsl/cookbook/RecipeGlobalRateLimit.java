@@ -145,8 +145,7 @@ public class RecipeGlobalRateLimit extends RecipeTest {
     @Override
     public void postStop() {
       replenishTimer.cancel();
-      waitQueue
-          .stream()
+      waitQueue.stream()
           .forEach(
               ref -> {
                 ref.tell(
