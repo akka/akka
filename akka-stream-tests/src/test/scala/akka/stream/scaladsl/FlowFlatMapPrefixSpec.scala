@@ -19,7 +19,7 @@ import akka.{ Done, NotUsed }
 //import org.scalatest.concurrent.PatienceConfiguration.Interval
 //import org.scalatest.time.{Minutes, Span}
 
-class FlowPrefixAndDownstreamSpec extends StreamSpec {
+class FlowFlatMapPrefixSpec extends StreamSpec {
   //import system.dispatcher
 
   def src10(i: Int = 0) = Source(i until (i + 10))

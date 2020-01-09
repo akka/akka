@@ -7,7 +7,7 @@ package akka.stream.tck
 import akka.stream.scaladsl.{ Flow, Keep, Sink, Source }
 import org.reactivestreams.Publisher
 
-class PrefixAndDownstreamTest extends AkkaPublisherVerification[Int] {
+class FlatMapPrefixTest extends AkkaPublisherVerification[Int] {
   override def createPublisher(elements: Long): Publisher[Int] = {
     val publisher = Source(iterable(elements))
       .map(_.toInt)

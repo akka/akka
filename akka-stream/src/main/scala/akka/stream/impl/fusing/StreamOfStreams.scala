@@ -133,10 +133,10 @@ import scala.util.control.NonFatal
 
   override def toString: String = s"FlattenMerge($breadth)"
 }
-@InternalApi private[akka] final class PrefixAndDownstream[In, Out, M](n: Int, f: immutable.Seq[In] => Flow[In, Out, M])
+@InternalApi private[akka] final class FlatMapPrefix[In, Out, M](n: Int, f: immutable.Seq[In] => Flow[In, Out, M])
     extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {
 
-  require(n >= 0, s"PrefixAndDownstream: n ($n) must be non-negative.")
+  require(n >= 0, s"FlatMapPrefix: n ($n) must be non-negative.")
 
   val in = Inlet[In](s"${this}.in")
   val out = Outlet[Out](s"${this}.out")

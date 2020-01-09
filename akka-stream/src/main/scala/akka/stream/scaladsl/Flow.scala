@@ -1950,7 +1950,7 @@ trait FlowOps[+Out, +Mat] {
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
    **/
   def flatMapPrefix[Out2, Mat2](n: Int)(f: immutable.Seq[Out] => Flow[Out, Out2, Mat2]): Repr[Out2] = {
-    via(new PrefixAndDownstream(n, f))
+    via(new FlatMapPrefix(n, f))
   }
 
   /**
@@ -3153,7 +3153,7 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    */
   def flatMapPrefixMat[Out2, Mat2, Mat3](n: Int)(f: immutable.Seq[Out] => Flow[Out, Out2, Mat2])(
       matF: (Mat, Future[Mat2]) => Mat3): ReprMat[Out2, Mat3] = {
-    viaMat(new PrefixAndDownstream(n, f))(matF)
+    viaMat(new FlatMapPrefix(n, f))(matF)
   }
 
   /**
