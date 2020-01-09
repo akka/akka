@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
+import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
 import akka.stream.{AbruptTerminationException, Materializer, NeverMaterializedException, SubscriptionWithCancelException}
 import akka.{Done, NotUsed}
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 //import scala.concurrent.Future
 //import org.scalatest.concurrent.PatienceConfiguration.Interval
@@ -480,6 +480,46 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       prefixF.failed.futureValue should be(a[NeverMaterializedException])
       prefixF.failed.futureValue.getCause === (TE("Bang! no materialization this time"))
       suffixF.failed.futureValue should ===(TE("Bang! no materialization this time"))
+    }
+
+    "run a detached flow" in assertAllStagesStopped {
+      val publisher = TestPublisher.manualProbe[Int]()
+      val subscriber = TestSubscriber.manualProbe[String]()
+
+      val detachedFlow = Flow
+        .fromSinkAndSource(Sink.cancelled[Int], Source(List("a", "b", "c")))
+        .map{ x =>
+          println(x)
+          x
+        }
+        .via{
+          Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.empty[Int])
+        }
+      val fHeadOpt = Source
+        .fromPublisher(publisher)
+        .prefixAndDownstream(2){ prefix =>
+          prefix should === (0 until 2)
+          detachedFlow
+        }
+        .runWith(Sink.headOption)
+
+      subscriber.expectNoMessage()
+      val subsc = publisher.expectSubscription()
+      subsc.expectRequest() should be >= 2L
+      subsc.sendNext(0)
+      subscriber.expectNoMessage()
+      subsc.sendNext(1)
+      val sinkSubscription = subscriber.expectSubscription()
+      //this indicates
+      fHeadOpt.futureValue should be (empty)
+
+      //materializef flow immediately cancels upstream
+      subsc.expectCancellation()
+      //at this point both ends of the 'external' fow are closed
+
+      sinkSubscription.request(10)
+      subscriber.expectNext("a", "b", "c")
+      subscriber.expectComplete()
     }
 
   }
