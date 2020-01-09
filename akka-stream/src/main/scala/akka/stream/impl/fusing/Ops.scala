@@ -79,14 +79,19 @@ import com.github.ghik.silencer.silent
     new GraphStageLogic(shape) with OutHandler with InHandler {
       def decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
-      override def onPush(): Unit = {
+      private var buffer: OptionVal[T] = OptionVal.none
+
+      override def preStart(): Unit = pull(in)
+      override def onPush(): Unit =
         try {
           val elem = grab(in)
-          if (p(elem)) {
-            push(out, elem)
-          } else {
-            pull(in)
-          }
+          if (p(elem))
+            if (isAvailable(out)) {
+              push(out, elem)
+              pull(in)
+            } else
+              buffer = OptionVal.Some(elem)
+          else pull(in)
         } catch {
           case NonFatal(ex) =>
             decider(ex) match {
@@ -94,9 +99,20 @@ import com.github.ghik.silencer.silent
               case _                => pull(in)
             }
         }
-      }
 
-      override def onPull(): Unit = pull(in)
+      override def onPull(): Unit =
+        buffer match {
+          case OptionVal.Some(value) =>
+            push(out, value)
+            buffer = OptionVal.none
+            if (!isClosed(in)) pull(in)
+            else completeStage()
+          case _ => // already pulled
+        }
+
+      override def onUpstreamFinish(): Unit =
+        if (buffer.isEmpty) super.onUpstreamFinish()
+      // else onPull will complete
 
       setHandlers(in, out, this)
     }
