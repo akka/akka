@@ -15,15 +15,16 @@ wait for intermediate libraries to update.
 ## Patch versions
 
 When releasing a new patch version of Akka (e.g. 2.5.22), we typically don't
-immediately bump the Akka version in sattelite projects.
+immediately bump the Akka version in satellite projects.
 
 The reason for this is this will make it more low-friction for users to update
-those sattelite projects: say their project is on akka 2.5.22 and
-akka-management 1.0.0, and we release akka-management 1.0.1 (still against
-Akka 2.5.22) and Akka 2.5.23. They can safely update to akka-managemenet 1.0.1
-without also updating to akka 2.5.23.
+those satellite projects: say their project is on Akka 2.5.22 and
+Akka Management 1.0.0, and we release Akka Management 1.0.1 (still built with
+Akka 2.5.22) and Akka 2.5.23. They can safely update to Akka Management 1.0.1
+without also updating to Akka 2.5.23, or update to Akka 2.5.23 without updating
+to Akka Management 1.0.1.
 
-When there is any advantage for the sattelite project to upgrade the Akka patch
+When there is any advantage for the satellite project to upgrade the Akka patch
 version, they are free to do so at any time.
 
 ## Minor versions
@@ -31,7 +32,7 @@ version, they are free to do so at any time.
 When releasing a new minor version of Akka (e.g. 2.6.0), satellite projects are
 also usually not updated immediately, but as needed.
 
-When the sattelite project does update to a new minor version of Akka, it will
+When the satellite project does update to a new minor version of Akka, it will
 also increase its own minor version. The previous stable branch will enter the
 usual end-of-support lifecycle for Lightbend customers, and only important
 bugfixes will be backported to the previous version and released.
