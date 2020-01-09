@@ -8,7 +8,7 @@ For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers
 ## Dependency
 
 Dispatchers are part of core Akka, which means that they are part of the `akka-actor` dependency. This
-page describes how to use mailboxes with `akka-actor-typed`, which has dependency:
+page describes how to use dispatchers with `akka-actor-typed`, which has dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
