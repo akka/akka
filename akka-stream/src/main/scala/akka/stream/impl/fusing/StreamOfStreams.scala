@@ -137,6 +137,8 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] final class PrefixAndDownstream[In, Out, M](n: Int, f: immutable.Seq[In] => Flow[In, Out, M])
     extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {
 
+  require(n >= 0, s"PrefixAndDownstream: n ($n) must be non-negative.")
+
   val in = Inlet[In](s"${this}.in")
   val out = Outlet[Out](s"${this}.out")
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
@@ -145,23 +147,24 @@ import scala.util.control.NonFatal
     val matPromise = Promise[M]
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
       var accumulated = List.empty[In]
-      var subSource: SubSourceOutlet[In] = null
-      var subSink: SubSinkInlet[Out] = null
+
+      private var subSource = OptionVal.none[SubSourceOutlet[In]]
+      private var subSink = OptionVal.none[SubSinkInlet[Out]]
 
       setHandlers(in, out, this)
 
       override def postStop(): Unit = {
         matPromise.tryFailure(new AbruptStageTerminationException(this))
-        if (null != subSource && !subSource.isClosed)
-          subSource.complete()
-        if (null != subSink && !subSink.isClosed)
-          subSink.cancel()
+        if (subSource.isDefined && !subSource.get.isClosed)
+          subSource.get.complete()
+        if (subSink.isDefined && !subSink.get.isClosed)
+          subSink.get.cancel()
         super.postStop()
       }
 
       override def onPush(): Unit = {
-        if (null != subSource) {
-          subSource.push(grab(in))
+        if (subSource.isDefined) {
+          subSource.get.push(grab(in))
         } else {
           accumulated ::= grab(in)
           if (accumulated.size == n) {
@@ -174,16 +177,16 @@ import scala.util.control.NonFatal
       }
 
       override def onUpstreamFinish(): Unit = {
-        if (null != subSource) {
-          subSource.complete()
+        if (subSource.isDefined) {
+          subSource.get.complete()
         } else {
           materializeFlow()
         }
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        if (null != subSource) {
-          subSource.fail(ex)
+        if (subSource.isDefined) {
+          subSource.get.fail(ex)
         } else {
           //flow won't be materialized, so we have to complete the future with a failure indicating this
           matPromise.failure(new NeverMaterializedException(ex))
@@ -192,9 +195,9 @@ import scala.util.control.NonFatal
       }
 
       override def onPull(): Unit = {
-        if (null != subSink) {
+        if (subSink.isDefined) {
           //delegate to subSink
-          subSink.pull()
+          subSink.get.pull()
         } else if (accumulated.size < n) {
           pull(in)
         } else if (accumulated.size == n) { //corner case for n = 0, can be handled in FlowOps
@@ -203,17 +206,17 @@ import scala.util.control.NonFatal
       }
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
-        if (null == subSink) {
+        if (subSink.isEmpty) {
           materializeFlow()
         }
-        subSink.cancel(cause)
+        subSink.get.cancel(cause)
       }
 
       def materializeFlow(): Unit = {
         val prefix = accumulated.reverse
         accumulated = Nil
-        subSource = new SubSourceOutlet[In]("subSource")
-        subSource.setHandler {
+        subSource = OptionVal.Some( new SubSourceOutlet[In]("subSource") )
+        subSource.get.setHandler {
           new OutHandler {
             override def onPull(): Unit = {
               if (!isClosed(in) && !hasBeenPulled(in)) {
@@ -229,11 +232,11 @@ import scala.util.control.NonFatal
             }
           }
         }
-        subSink = new SubSinkInlet[Out]("subSink")
-        subSink.setHandler {
+        subSink = OptionVal.Some( new SubSinkInlet[Out]("subSink"))
+        subSink.get.setHandler {
           new InHandler {
             override def onPush(): Unit = {
-              push(out, subSink.grab())
+              push(out, subSink.get.grab())
             }
 
             override def onUpstreamFinish(): Unit = {
@@ -247,7 +250,7 @@ import scala.util.control.NonFatal
         }
         val matValueTry = Try {
           val flow = f(prefix)
-          val runnableGraph = Source.fromGraph(subSource.source).viaMat(flow)(Keep.right).to(subSink.sink)
+          val runnableGraph = Source.fromGraph(subSource.get.source).viaMat(flow)(Keep.right).to(subSink.get.sink)
           interpreter.subFusingMaterializer.materialize(runnableGraph)
         }
 
@@ -260,17 +263,17 @@ import scala.util.control.NonFatal
         matValueTry.foreach { _ =>
           //in case we've materialized due to upstream completion
           if (isClosed(in)) {
-            subSource.complete()
+            subSource.get.complete()
           }
           //in case we've been pulled by downstream
           if (isAvailable(out)) {
-            subSink.pull()
+            subSink.get.pull()
           }
         }
 
         matValueTry.failed.foreach { ex =>
-          subSource = null
-          subSink = null
+          subSource = OptionVal.None
+          subSink = OptionVal.None
           failStage(ex)
         }
 

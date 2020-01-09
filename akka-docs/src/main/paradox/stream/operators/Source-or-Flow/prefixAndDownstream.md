@@ -1,6 +1,6 @@
 # prefixAndDownstream
 
-Use the first _n_ elements from the stream to determine how to process the rest.
+Use the first `n` elements from the stream to determine how to process the rest.
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
@@ -22,7 +22,7 @@ This method returns a flow consuming the rest of the stream producing the materi
 
 @@@div { .callout }
 
-**emits** the materialized flow emits.
+**emits** when the materialized flow emits.
     Notice the first `n` elements are buffered internally before materializing the flow, This flow will then be materialized and connected to the rest of the upstream - producing elements at its own discretion (might 'swallow' or multiply elements).
 
 **backpressures** when the materialized flow backpressures
