@@ -214,7 +214,7 @@ import scala.util.control.NonFatal
       def materializeFlow(): Unit = {
         val prefix = accumulated.reverse
         accumulated = Nil
-        subSource = OptionVal.Some( new SubSourceOutlet[In]("subSource") )
+        subSource = OptionVal.Some(new SubSourceOutlet[In]("subSource"))
         subSource.get.setHandler {
           new OutHandler {
             override def onPull(): Unit = {
@@ -231,7 +231,7 @@ import scala.util.control.NonFatal
             }
           }
         }
-        subSink = OptionVal.Some( new SubSinkInlet[Out]("subSink"))
+        subSink = OptionVal.Some(new SubSinkInlet[Out]("subSink"))
         subSink.get.setHandler {
           new InHandler {
             override def onPush(): Unit = {
@@ -251,7 +251,7 @@ import scala.util.control.NonFatal
           val flow = f(prefix)
           val runnableGraph = Source.fromGraph(subSource.get.source).viaMat(flow)(Keep.right).to(subSink.get.sink)
           interpreter.subFusingMaterializer.materialize(runnableGraph)
-        } catch{
+        } catch {
           case NonFatal(ex) =>
             matPromise.failure(new NeverMaterializedException(ex))
             subSource = OptionVal.None
