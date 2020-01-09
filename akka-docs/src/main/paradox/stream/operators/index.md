@@ -241,8 +241,8 @@ See the @ref:[Substreams](../stream-substream.md) page for more detail and code 
 |--|--|--|
 |Source/Flow|<a name="flatmapconcat"></a>@ref[flatMapConcat](Source-or-Flow/flatMapConcat.md)|Transform each input element into a `Source` whose elements are then flattened into the output stream through concatenation.|
 |Source/Flow|<a name="flatmapmerge"></a>@ref[flatMapMerge](Source-or-Flow/flatMapMerge.md)|Transform each input element into a `Source` whose elements are then flattened into the output stream through merging.|
+|Source/Flow|<a name="flatmapprefix"></a>@ref[flatMapPrefix](Source-or-Flow/flatMapPrefix.md)|Use the first `n` elements from the stream to determine how to process the rest.|
 |Source/Flow|<a name="groupby"></a>@ref[groupBy](Source-or-Flow/groupBy.md)|Demultiplex the incoming stream into separate output streams.|
-|Source/Flow|<a name="prefixanddownstream"></a>@ref[prefixAndDownstream](Source-or-Flow/prefixAndDownstream.md)|Use the first _n_ elements from the stream to determine how to process the rest.|
 |Source/Flow|<a name="prefixandtail"></a>@ref[prefixAndTail](Source-or-Flow/prefixAndTail.md)|Take up to *n* elements from the stream (less than *n* only if the upstream completes before emitting *n* elements) and returns a pair containing a strict sequence of the taken element and a stream representing the remaining elements.|
 |Source/Flow|<a name="splitafter"></a>@ref[splitAfter](Source-or-Flow/splitAfter.md)|End the current substream whenever a predicate returns `true`, starting a new substream for the next element.|
 |Source/Flow|<a name="splitwhen"></a>@ref[splitWhen](Source-or-Flow/splitWhen.md)|Split off elements into a new substream whenever a predicate function return `true`.|
@@ -441,7 +441,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [extrapolate](Source-or-Flow/extrapolate.md)
 * [buffer](Source-or-Flow/buffer.md)
 * [prefixAndTail](Source-or-Flow/prefixAndTail.md)
-* [prefixAndDownstream](Source-or-Flow/prefixAndDownstream.md)
+* [flatMapPrefix](Source-or-Flow/flatMapPrefix.md)
 * [groupBy](Source-or-Flow/groupBy.md)
 * [splitWhen](Source-or-Flow/splitWhen.md)
 * [splitAfter](Source-or-Flow/splitAfter.md)

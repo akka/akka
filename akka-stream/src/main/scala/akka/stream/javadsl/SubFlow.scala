@@ -1400,10 +1400,10 @@ class SubFlow[In, Out, Mat](
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
    **/
-  def prefixAndDownstream[Out2, Mat2](
+  def flatMapPrefix[Out2, Mat2](
       n: Int,
       f: function.Function[java.lang.Iterable[Out], javadsl.Flow[Out, Out2, Mat2]]): SubFlow[In, Out2, Mat] = {
-    val newDelegate = delegate.prefixAndDownstream(n)(seq => f(seq.asJava).asScala)
+    val newDelegate = delegate.flatMapPrefix(n)(seq => f(seq.asJava).asScala)
     new javadsl.SubFlow(newDelegate)
   }
 

@@ -28,7 +28,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "work in the simple identity case" in assertAllStagesStopped {
       src10()
-        .prefixAndDownstreamMat(2) { _ =>
+        .flatMapPrefixMat(2) { _ =>
           println("materializing flow")
           Flow[Int]
         }(Keep.left)
@@ -39,7 +39,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "expose mat value in the simple identity case" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
-        .prefixAndDownstreamMat(2) { prefix =>
+        .flatMapPrefixMat(2) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
@@ -51,7 +51,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "work when source is exactly the required prefix" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
-        .prefixAndDownstreamMat(10) { prefix =>
+        .flatMapPrefixMat(10) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
@@ -63,7 +63,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "work when source has less than the required prefix" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
-        .prefixAndDownstreamMat(20) { prefix =>
+        .flatMapPrefixMat(20) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
@@ -75,7 +75,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "simple identity case when downstream completes before consuming the entire stream" in assertAllStagesStopped {
       val (prefixF, suffixF) = Source(0 until 100)
-        .prefixAndDownstreamMat(10) { prefix =>
+        .flatMapPrefixMat(10) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix)
         }(Keep.right)
         .take(10)
@@ -88,7 +88,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "propagate failure to create the downstream flow" in assertAllStagesStopped {
       val suffixF = Source(0 until 100)
-        .prefixAndDownstreamMat(10) { prefix =>
+        .flatMapPrefixMat(10) { prefix =>
           throw TE(s"I hate mondays! (${prefix.size})")
         }(Keep.right)
         .to(Sink.ignore)
@@ -101,7 +101,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "propagate flow failures" in assertAllStagesStopped {
       val (prefixF, suffixF) = Source(0 until 100)
-        .prefixAndDownstreamMat(10) { prefix =>
+        .flatMapPrefixMat(10) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix).map {
             case 15 => throw TE("don't like 15 either!")
             case n  => n
@@ -117,7 +117,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "produce multiple elements per input" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
-        .prefixAndDownstreamMat(7) { prefix =>
+        .flatMapPrefixMat(7) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix).mapConcat(n => List.fill(n - 6)(n))
         }(Keep.right)
         .toMat(Sink.seq[Int])(Keep.both)
@@ -130,7 +130,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
     "succeed when upstream produces no elements" in assertAllStagesStopped {
       val (prefixF, suffixF) = Source
         .empty[Int]
-        .prefixAndDownstreamMat(7) { prefix =>
+        .flatMapPrefixMat(7) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix).mapConcat(n => List.fill(n - 6)(n))
         }(Keep.right)
         .toMat(Sink.seq[Int])(Keep.both)
@@ -143,7 +143,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
     "apply materialized flow's semantics when upstream produces no elements" in assertAllStagesStopped {
       val (prefixF, suffixF) = Source
         .empty[Int]
-        .prefixAndDownstreamMat(7) { prefix =>
+        .flatMapPrefixMat(7) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix).mapConcat(n => List.fill(n - 6)(n)).prepend(Source(100 to 101))
         }(Keep.right)
         .toMat(Sink.seq[Int])(Keep.both)
@@ -159,7 +159,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
       val matValue = Source
         .fromPublisher(publisher)
-        .prefixAndDownstreamMat(2) { prefix =>
+        .flatMapPrefixMat(2) { prefix =>
           println("materializing flow")
           Flow[Int].mapMaterializedValue(_ => prefix).prepend(Source(100 to 101)).alsoTo(Sink.foreach(println(_)))
         }(Keep.right)
@@ -187,7 +187,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "work when materialized flow produces no downstream elements" in assertAllStagesStopped {
       val (prefixF, suffixF) = Source(0 until 100)
-        .prefixAndDownstreamMat(4) { prefix =>
+        .flatMapPrefixMat(4) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix).filter(_ => false)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
@@ -203,7 +203,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
           i should be <= 4
           i
         }
-        .prefixAndDownstreamMat(4) { prefix =>
+        .flatMapPrefixMat(4) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix).take(0)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
@@ -215,7 +215,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "work when materialized flow cancels upstream but keep producing" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
-        .prefixAndDownstreamMat(4) { prefix =>
+        .flatMapPrefixMat(4) { prefix =>
           Flow[Int].mapMaterializedValue(_ => prefix).take(0).concat(Source(11 to 12))
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
@@ -228,7 +228,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "propagate materialization failure (when application of 'f' succeeds" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
-        .prefixAndDownstreamMat(4) { prefix =>
+        .flatMapPrefixMat(4) { prefix =>
           Flow[Int].mapMaterializedValue(_ => throw TE(s"boom-bada-bang (${prefix.size})"))
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
@@ -241,7 +241,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "succeed when materialized flow completes downstream but keep consuming elements" in assertAllStagesStopped {
       val (prefixAndTailF, suffixF) = src10()
-        .prefixAndDownstreamMat(4) { prefix =>
+        .flatMapPrefixMat(4) { prefix =>
           Flow[Int]
             .mapMaterializedValue(_ => prefix)
             .viaMat {
@@ -263,7 +263,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
       val ((srcWatchTermF, notUsedF), suffixF) = src10()
         .watchTermination()(Keep.right)
-        .prefixAndDownstreamMat(2) { prefix =>
+        .flatMapPrefixMat(2) { prefix =>
           prefix should ===(0 until 2)
           Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
         }(Keep.both)
@@ -298,7 +298,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       val (srcWatchTermF, matFlowWatchTermFF) = Source
         .fromPublisher(publisher)
         .watchTermination()(Keep.right)
-        .prefixAndDownstreamMat(8) { prefix =>
+        .flatMapPrefixMat(8) { prefix =>
           println("materializing!")
           prefix should ===(0 until 2)
           Flow[Int].watchTermination()(Keep.right)
@@ -334,7 +334,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       val (srcWatchTermF, matFlowWatchTermFF) = Source
         .fromPublisher(publisher)
         .watchTermination()(Keep.right)
-        .prefixAndDownstreamMat(8) { prefix =>
+        .flatMapPrefixMat(8) { prefix =>
           println("materializing!")
           prefix should ===(0 until 2)
           Flow[Int].watchTermination()(Keep.right)
@@ -369,7 +369,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
       val ((srcWatchTermF, notUsedF), suffixF) = src10()
         .watchTermination()(Keep.right)
-        .prefixAndDownstreamMat(2) { prefix =>
+        .flatMapPrefixMat(2) { prefix =>
           prefix should ===(0 until 2)
           Flow.fromSinkAndSourceCoupled(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
         }(Keep.both)
@@ -410,7 +410,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
       val flow = Source
         .fromPublisher(publisher)
-        .prefixAndDownstreamMat(2) { prefix =>
+        .flatMapPrefixMat(2) { prefix =>
           fail(s"unexpected prefix (length = ${prefix.size})")
           Flow[Int]
         }(Keep.right)
@@ -435,7 +435,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "behave like via when n = 0" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
-        .prefixAndDownstreamMat(0) { prefix =>
+        .flatMapPrefixMat(0) { prefix =>
           prefix should be(empty)
           Flow[Int].mapMaterializedValue(_ => prefix)
         }(Keep.right)
@@ -449,7 +449,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
     "behave like via when n = 0 and upstream produces no elements" in assertAllStagesStopped {
       val (prefixF, suffixF) = Source
         .empty[Int]
-        .prefixAndDownstreamMat(0) { prefix =>
+        .flatMapPrefixMat(0) { prefix =>
           prefix should be(empty)
           Flow[Int].mapMaterializedValue(_ => prefix)
         }(Keep.right)
@@ -462,7 +462,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "propagate errors during flow's creation when n = 0" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
-        .prefixAndDownstreamMat(0) { prefix =>
+        .flatMapPrefixMat(0) { prefix =>
           prefix should be(empty)
           throw TE("not this time my friend!")
           Flow[Int].mapMaterializedValue(_ => prefix)
@@ -477,7 +477,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
     "propagate materialization failures when n = 0" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
-        .prefixAndDownstreamMat(0) { prefix =>
+        .flatMapPrefixMat(0) { prefix =>
           prefix should be(empty)
           Flow[Int].mapMaterializedValue(_ => throw TE("Bang! no materialization this time"))
         }(Keep.right)
@@ -504,7 +504,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
         }
       val fHeadOpt = Source
         .fromPublisher(publisher)
-        .prefixAndDownstream(2) { prefix =>
+        .flatMapPrefix(2) { prefix =>
           prefix should ===(0 until 2)
           detachedFlow
         }

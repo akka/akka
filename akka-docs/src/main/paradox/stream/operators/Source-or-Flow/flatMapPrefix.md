@@ -1,4 +1,4 @@
-# prefixAndDownstream
+# flatMapPrefix
 
 Use the first `n` elements from the stream to determine how to process the rest.
 
@@ -8,7 +8,7 @@ Use the first `n` elements from the stream to determine how to process the rest.
 
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #prefixAndDownstream }
+@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #flatMapPrefix }
 
 @@@
 

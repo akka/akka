@@ -11,7 +11,7 @@ class PrefixAndDownstreamTest extends AkkaPublisherVerification[Int] {
   override def createPublisher(elements: Long): Publisher[Int] = {
     val publisher = Source(iterable(elements))
       .map(_.toInt)
-      .prefixAndDownstreamMat(1) { seq =>
+      .flatMapPrefixMat(1) { seq =>
         Flow[Int].prepend(Source(seq))
       }(Keep.left)
       .runWith(Sink.asPublisher(false))
