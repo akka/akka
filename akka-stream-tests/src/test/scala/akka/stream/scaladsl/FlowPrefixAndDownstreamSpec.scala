@@ -6,9 +6,14 @@ package akka.stream.scaladsl
 
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.stream.testkit.{StreamSpec, TestPublisher, TestSubscriber}
-import akka.stream.{AbruptTerminationException, Materializer, NeverMaterializedException, SubscriptionWithCancelException}
-import akka.{Done, NotUsed}
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.{
+  AbruptTerminationException,
+  Materializer,
+  NeverMaterializedException,
+  SubscriptionWithCancelException
+}
+import akka.{ Done, NotUsed }
 
 //import scala.concurrent.Future
 //import org.scalatest.concurrent.PatienceConfiguration.Interval
@@ -290,13 +295,14 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      val (srcWatchTermF, matFlowWatchTermFF) = Source.fromPublisher(publisher)
+      val (srcWatchTermF, matFlowWatchTermFF) = Source
+        .fromPublisher(publisher)
         .watchTermination()(Keep.right)
         .prefixAndDownstreamMat(8) { prefix =>
           println("materializing!")
           prefix should ===(0 until 2)
           Flow[Int].watchTermination()(Keep.right)
-          //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
+        //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
         }(Keep.both)
         .to(Sink.fromSubscriber(subscriber))
         .run()
@@ -325,13 +331,14 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      val (srcWatchTermF, matFlowWatchTermFF) = Source.fromPublisher(publisher)
+      val (srcWatchTermF, matFlowWatchTermFF) = Source
+        .fromPublisher(publisher)
         .watchTermination()(Keep.right)
         .prefixAndDownstreamMat(8) { prefix =>
           println("materializing!")
           prefix should ===(0 until 2)
           Flow[Int].watchTermination()(Keep.right)
-          //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
+        //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
         }(Keep.both)
         .to(Sink.fromSubscriber(subscriber))
         .run()
@@ -488,17 +495,17 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
 
       val detachedFlow = Flow
         .fromSinkAndSource(Sink.cancelled[Int], Source(List("a", "b", "c")))
-        .map{ x =>
+        .map { x =>
           println(x)
           x
         }
-        .via{
+        .via {
           Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.empty[Int])
         }
       val fHeadOpt = Source
         .fromPublisher(publisher)
-        .prefixAndDownstream(2){ prefix =>
-          prefix should === (0 until 2)
+        .prefixAndDownstream(2) { prefix =>
+          prefix should ===(0 until 2)
           detachedFlow
         }
         .runWith(Sink.headOption)
@@ -511,7 +518,7 @@ class FlowPrefixAndDownstreamSpec extends StreamSpec {
       subsc.sendNext(1)
       val sinkSubscription = subscriber.expectSubscription()
       //this indicates
-      fHeadOpt.futureValue should be (empty)
+      fHeadOpt.futureValue should be(empty)
 
       //materializef flow immediately cancels upstream
       subsc.expectCancellation()
