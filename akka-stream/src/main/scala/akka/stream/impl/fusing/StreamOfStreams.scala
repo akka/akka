@@ -27,7 +27,6 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.{ Future, Promise }
 import scala.concurrent.duration.FiniteDuration
-import scala.util.Try
 import scala.util.control.NonFatal
 
 /**
@@ -248,35 +247,27 @@ import scala.util.control.NonFatal
             }
           }
         }
-        val matValueTry = Try {
+        val matVal = try {
           val flow = f(prefix)
           val runnableGraph = Source.fromGraph(subSource.get.source).viaMat(flow)(Keep.right).to(subSink.get.sink)
           interpreter.subFusingMaterializer.materialize(runnableGraph)
+        } catch{
+          case NonFatal(ex) =>
+            matPromise.failure(new NeverMaterializedException(ex))
+            subSource = OptionVal.None
+            subSink = OptionVal.None
+            throw ex
         }
+        matPromise.success(matVal)
 
-        matPromise.complete {
-          matValueTry.recoverWith {
-            case ex => scala.util.Failure(new NeverMaterializedException(ex))
-          }
+        //in case we've materialized due to upstream completion
+        if (isClosed(in)) {
+          subSource.get.complete()
         }
-
-        matValueTry.foreach { _ =>
-          //in case we've materialized due to upstream completion
-          if (isClosed(in)) {
-            subSource.get.complete()
-          }
-          //in case we've been pulled by downstream
-          if (isAvailable(out)) {
-            subSink.get.pull()
-          }
+        //in case we've been pulled by downstream
+        if (isAvailable(out)) {
+          subSink.get.pull()
         }
-
-        matValueTry.failed.foreach { ex =>
-          subSource = OptionVal.None
-          subSink = OptionVal.None
-          failStage(ex)
-        }
-
       }
     }
     (logic, matPromise.future)
