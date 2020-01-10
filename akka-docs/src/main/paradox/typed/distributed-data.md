@@ -40,12 +40,11 @@ out-of-date value.
 
 ## Using the Replicator
 
-The @apidoc[typed.*.Replicator]
-actor provides the API for interacting with the data and is accessed through the extension 
-@apidoc[typed.*.DistributedData].
+You can interact with the data through the replicator actor which can be
+accessed through the @apidoc[typed.*.DistributedData] extension.
 
-The messages for the replicator, such as `Replicator.Update` are defined in
-@scala[`akka.cluster.ddata.typed.scaladsl.Replicator`]@java[`akka.cluster.ddata.typed.javaadsl.Replicator`]
+The messages for the replicator, such as @apidoc[typed.*Replicator.Update] are defined as
+subclasses of @apidoc[typed.*Replicator.Command]
 and the actual CRDTs are defined in the `akka.cluster.ddata` package, for example
 @apidoc[akka.cluster.ddata.GCounter]. It requires a @scala[implicit] `akka.cluster.ddata.SelfUniqueAddress`,
 available from:

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -14,7 +14,7 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
-  val junitVersion = "4.12"
+  val junitVersion = "4.13"
   val slf4jVersion = "1.7.29"
   // check agrona version when updating this
   val aeronVersion = "1.24.0"
@@ -22,7 +22,7 @@ object Dependencies {
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
   val agronaVersion = "1.1.0"
   val nettyVersion = "3.10.6.Final"
-  val jacksonVersion = "2.10.1"
+  val jacksonVersion = "2.10.2"
   val protobufJavaVersion = "3.10.0"
   val logbackVersion = "1.2.3"
 
@@ -68,7 +68,7 @@ object Dependencies {
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
-    val jctools = "org.jctools" % "jctools-core" % "2.1.2" // ApacheV2
+    val jctools = "org.jctools" % "jctools-core" % "3.0.0" // ApacheV2
 
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
@@ -109,10 +109,10 @@ object Dependencies {
     object Test {
       val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % "test" // ApacheV2
       val commonsIo = "commons-io" % "commons-io" % "2.6" % "test" // ApacheV2
-      val commonsCodec = "commons-codec" % "commons-codec" % "1.13" % "test" // ApacheV2
+      val commonsCodec = "commons-codec" % "commons-codec" % "1.14" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
-      val mockito = "org.mockito" % "mockito-core" % "3.2.0" % "test" // MIT
+      val mockito = "org.mockito" % "mockito-core" % "3.2.4" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
       val scalacheck = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value % "test" } // New BSD

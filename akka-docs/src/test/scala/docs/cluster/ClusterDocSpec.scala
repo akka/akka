@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package scala.docs.cluster
@@ -42,7 +42,7 @@ class ClusterDocSpec extends AkkaSpec(ClusterDocSpec.config) with CompileOnlySpe
     }
   }
 
-  "demonstrate programatic joining to seed nodes" in compileOnlySpec {
+  "demonstrate programmatic joining to seed nodes" in compileOnlySpec {
     //#join-seed-nodes
     import akka.actor.Address
     import akka.cluster.Cluster

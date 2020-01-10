@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -32,8 +32,7 @@ object RemotingFlightRecorder extends ExtensionId[RemotingFlightRecorder] with E
         (classOf[ExtendedActorSystem], system) :: Nil) match {
         case Success(jfr) => jfr
         case Failure(ex) =>
-          system.log
-            .warning("Failed to load JFR remoting flight recorder, falling back to noop. Exception: {}", ex.getMessage)
+          system.log.warning("Failed to load JFR remoting flight recorder, falling back to noop. Exception: {}", ex)
           NoOpRemotingFlightRecorder
       } // fallback if not possible to dynamically load for some reason
     } else

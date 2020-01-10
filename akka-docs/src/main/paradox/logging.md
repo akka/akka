@@ -561,10 +561,10 @@ The slf4j bridge provided by Akka in `akka-slf4j` will automatically pick up thi
 Akka is logging some events with markers. Some of these events also include structured MDC properties. 
 
 * The "SECURITY" marker is used for highlighting security related events or incidents.
-* Akka Actor is using the markers defined in @apidoc[akka.actor.ActorLogMarker].
-* Akka Cluster is using the markers defined in @apidoc[akka.cluster.ClusterLogMarker].
-* Akka Remoting is using the markers defined in @apidoc[akka.remote.RemoteLogMarker].
-* Akka Cluster Sharding is using the markers defined in @apidoc[akka.cluster.sharding.ShardingLogMarker].
+* Akka Actor is using the markers defined in @apidoc[akka.actor.ActorLogMarker$].
+* Akka Cluster is using the markers defined in @apidoc[akka.cluster.ClusterLogMarker$].
+* Akka Remoting is using the markers defined in @apidoc[akka.remote.RemoteLogMarker$].
+* Akka Cluster Sharding is using the markers defined in @apidoc[akka.cluster.sharding.ShardingLogMarker$].
 
 Markers and MDC properties are automatically picked up by the [Logstash Logback encoder](https://github.com/logstash/logstash-logback-encoder).
 

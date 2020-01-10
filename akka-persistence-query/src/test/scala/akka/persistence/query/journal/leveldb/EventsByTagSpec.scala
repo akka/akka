@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
@@ -157,6 +157,17 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
         .expectComplete()
 
     }
+
+    "include timestamp in EventEnvelope" in {
+      system.actorOf(TestActor.props("testTimestamp"))
+      val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(0L))
+      val probe = greenSrc.runWith(TestSink.probe[EventEnvelope])
+
+      probe.request(2)
+      probe.expectNext().timestamp should be > 0L
+      probe.expectNext().timestamp should be > 0L
+      probe.cancel()
+    }
   }
 
   "Leveldb live query EventsByTag" must {
@@ -228,6 +239,15 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       probe.cancel()
     }
 
+    "not complete for empty stream" in {
+      val src = queries.eventsByTag(tag = "red", offset = NoOffset)
+      val probe =
+        src.map(_.event).runWith(TestSink.probe[Any]).request(2)
+
+      probe.expectNoMessage(200.millis)
+
+      probe.cancel()
+    }
   }
 
 }

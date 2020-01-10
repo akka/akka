@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -27,47 +27,7 @@ object AkkaBuild {
 
   lazy val buildSettings = Def.settings(
     organization := "com.typesafe.akka",
-    Dependencies.Versions,
-    // use the same value as in the build scope
-    // TODO #26675 this can be removed once we use sbt-dynver instead of timestamps
-    // everywhere
-    version := (version in ThisBuild).value)
-
-  // TODO #26675 this can be removed once we use sbt-dynver instead of timestamps
-  // everywhere
-  lazy val currentDateTime = {
-    // storing the first accessed timestamp in system property so that it will be the
-    // same when build is reloaded or when using `+`.
-    // `+` actually doesn't re-initialize this part of the build but that may change in the future.
-    sys.props.getOrElseUpdate("akka.build.timestamp",
-      DateTimeFormatter
-        .ofPattern("yyyyMMdd-HHmmss")
-        .format(ZonedDateTime.now(ZoneOffset.UTC)))
-  }
-
-  // TODO #26675 this can be removed once we use sbt-dynver instead of timestamps
-  // everywhere
-  def akkaVersion: String = {
-    val default = "2.6-SNAPSHOT"
-    sys.props.getOrElse("akka.build.version", default) match {
-      case "timestamp" => s"2.6-$currentDateTime" // used when publishing timestamped snapshots
-      case "file" => akkaVersionFromFile(default)  
-      case v => v
-    }
-  }
-
-  // TODO #26675 this can be removed once we use sbt-dynver instead of timestamps
-  // everywhere
-  def akkaVersionFromFile(default: String): String = {
-    val versionFile = "akka-actor/target/classes/version.conf"
-    if (new File(versionFile).exists()) {
-      val versionProps = new Properties()
-      val reader = new FileReader(versionFile)
-      try versionProps.load(reader) finally reader.close()
-      versionProps.getProperty("akka.version", default).replaceAll("\"", "")
-    } else
-      default
-  }
+    Dependencies.Versions)
 
   lazy val rootSettings = Def.settings(
     Release.settings,

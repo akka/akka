@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.javadsl
@@ -47,7 +47,7 @@ object Behaviors {
     BehaviorImpl.DeferredBehavior(ctx => factory.apply(ctx.asJava))
 
   /**
-   * Support for stashing messages to unstash at a later timej.
+   * Support for stashing messages to unstash at a later time.
    */
   def withStash[T](capacity: Int, factory: java.util.function.Function[StashBuffer[T], Behavior[T]]): Behavior[T] =
     setup(ctx => {
@@ -261,7 +261,7 @@ object Behaviors {
       Supervisor(Behavior.validateAsInitial(wrapped), strategy)(ClassTag(clazz))
 
     /**
-     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behaior throws.
+     * Specify the [[SupervisorStrategy]] to be invoked when the wrapped behavior throws.
      *
      * All non-fatal (see [[scala.util.control.NonFatal]]) exceptions types will be handled using the given strategy.
      */

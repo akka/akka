@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
@@ -106,7 +106,8 @@ final private[leveldb] class EventsByTagStage(
                 offset = Sequence(offset),
                 persistenceId = p.persistenceId,
                 sequenceNr = p.sequenceNr,
-                event = p.payload))
+                event = p.payload,
+                timestamp = p.timestamp))
             currOffset = offset
             deliverBuf(out)
 

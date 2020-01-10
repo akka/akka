@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.typed.extensions
@@ -33,7 +33,7 @@ object DatabasePool extends ExtensionId[DatabasePool] {
 @silent
 //#extension
 class DatabasePool(system: ActorSystem[_]) extends Extension {
-  // database configuration can be laoded from config
+  // database configuration can be loaded from config
   // from the actor system
   private val _connection = new ExpensiveDatabaseConnection()
 
