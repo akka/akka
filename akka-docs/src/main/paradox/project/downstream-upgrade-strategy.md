@@ -24,7 +24,7 @@ Akka 2.5.22) and Akka 2.5.23. They can safely update to Akka Management 1.0.1
 without also updating to Akka 2.5.23, or update to Akka 2.5.23 without updating
 to Akka Management 1.0.1.
 
-When there is any advantage for the satellite project to upgrade the Akka patch
+When there is reason for a satellite project to upgrade the Akka patch
 version, they are free to do so at any time.
 
 ## Minor versions
