@@ -1194,6 +1194,14 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
         iterator.copyToArray(array, 4, 2)
         assert(new String(array) === "123456")
       }
+
+      "calling copyToArray with length passing end of destination" in {
+        // Pre fix len passing the end of the destination would cause never ending loop inside iterator copyToArray
+        val iterator = (ByteString(1, 2) ++ ByteString(3) ++ ByteString(4)).iterator
+        val array = Array.fill[Byte](3)(0)
+        iterator.copyToArray(array, 2, 2)
+        array.toSeq should ===(Seq(0, 0, 1))
+      }
     }
 
     "decode data correctly" when {
