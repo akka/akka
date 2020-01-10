@@ -447,11 +447,11 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteString1C.fromString("0123456789").dropRight(5).take(4).drop(1).take(2) should ===(ByteString("12"))
     }
     "take" in {
-      ByteString1C.fromString("abcdefg").drop(1).take(0) should ===(ByteString(""))
-      ByteString1C.fromString("abcdefg").drop(1).take(-1) should ===(ByteString(""))
-      ByteString1C.fromString("abcdefg").drop(1).take(-2) should ===(ByteString(""))
-      ByteString1C.fromString("abcdefg").drop(2) should ===(ByteString("cdefg"))
-      ByteString1C.fromString("abcdefg").drop(2).take(1) should ===(ByteString("c"))
+      ByteString1.fromString("abcdefg").drop(1).take(0) should ===(ByteString(""))
+      ByteString1.fromString("abcdefg").drop(1).take(-1) should ===(ByteString(""))
+      ByteString1.fromString("abcdefg").drop(1).take(-2) should ===(ByteString(""))
+      ByteString1.fromString("abcdefg").drop(2) should ===(ByteString("cdefg"))
+      ByteString1.fromString("abcdefg").drop(2).take(1) should ===(ByteString("c"))
     }
     "copyToArray" in {
       val byteString = ByteString1C(Array[Byte](1, 2, 3))
