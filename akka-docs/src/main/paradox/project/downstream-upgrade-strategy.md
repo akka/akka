@@ -40,4 +40,4 @@ bugfixes will be backported to the previous version and released.
 For example, when Akka 2.5.0 was released, Akka HTTP 10.0.x continued to depend
 on Akka 2.4. When it was time to update Akka HTTP to Akka 2.5, 10.1.0 was
 created, but 10.0.x was maintained for backward compatibility for a period of
-time according to Lightbend support policy.
+time according to Lightbend's support policy.
