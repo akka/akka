@@ -74,9 +74,9 @@ object IntroSpec {
   //#hello-world-main
   object HelloWorldMain {
 
-    final case class Start(name: String)
+    final case class SayHello(name: String)
 
-    def apply(): Behavior[Start] =
+    def apply(): Behavior[SayHello] =
       Behaviors.setup { context =>
         val greeter = context.spawn(HelloWorld(), "greeter")
 
@@ -232,11 +232,11 @@ class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapt
       //#fiddle_code
       //#hello-world
 
-      val system: ActorSystem[HelloWorldMain.Start] =
+      val system: ActorSystem[HelloWorldMain.SayHello] =
         ActorSystem(HelloWorldMain(), "hello")
 
-      system ! HelloWorldMain.Start("World")
-      system ! HelloWorldMain.Start("Akka")
+      system ! HelloWorldMain.SayHello("World")
+      system ! HelloWorldMain.SayHello("Akka")
 
       //#hello-world
       //#fiddle_code
