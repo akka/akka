@@ -32,7 +32,7 @@ version, they are free to do so at any time.
 When releasing a new minor version of Akka (e.g. 2.6.0), satellite projects are
 also usually not updated immediately, but as needed.
 
-When the satellite project does update to a new minor version of Akka, it will
+When a satellite project does update to a new minor version of Akka, it will
 also increase its own minor version. The previous stable branch will enter the
 usual end-of-support lifecycle for Lightbend customers, and only important
 bugfixes will be backported to the previous version and released.
