@@ -34,8 +34,9 @@ a `Listing`, which contains a `Set` of actor references that are registered for 
 registered to the same key.
 
 The registry is dynamic. New actors can be registered during the lifecycle of the system. Entries are removed when 
-registered actors are stopped or a node is removed from the @ref:[Cluster](cluster.md). To facilitate this dynamic aspect you can also subscribe 
-to changes with the `Receptionist.Subscribe` message. It will send `Listing` messages to the subscriber when entries for a key are changed.
+registered actors are stopped, manually deregistered or the node they live on is removed from the @ref:[Cluster](cluster.md). 
+To facilitate this dynamic aspect you can also subscribe to changes with the `Receptionist.Subscribe` message. It will send 
+`Listing` messages to the subscriber when entries for a key are changed.
 
 These imports are used in the following example:
 
@@ -89,6 +90,18 @@ Java
 Also note how a `messageAdapter` is used to convert the `Receptionist.Listing` to a message type that
 the `PingManager` understands.
 
+If a server no longer wish to be associated with a service key it can deregister using the command `Receptionist.Deregister`
+which will remove the association and inform all subscribers.
+
+The command can optionally send an acknowledgement once the local receptionist has removed the registration. The acknowledgement does not guarantee
+that all subscribers has seen that the instance has been removed, it may still receive messages from subscribers for some time after this.
+
+Scala
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/scala/docs/akka/cluster/typed/ReceptionistExample.scala) { #deregister }
+
+Java
+:  @@snip [ReceptionistExample](/akka-cluster-typed/src/test/java/jdocs/akka/cluster/typed/ReceptionistExample.java) { #deregister }
+
 ## Cluster Receptionist
 
 The `Receptionist` also works in a cluster, an actor registered to the receptionist will appear in the receptionist 
@@ -103,3 +116,9 @@ registered actors that are reachable. The full set of actors, including unreacha
 
 One important difference from local only receptions are the serialization concerns, all messages sent to and back from 
 an actor on another node must be serializable, see @ref:[serialization](../serialization.md).
+
+## Receptionist Scalability
+
+The receptionist does not scale up to any number of services or very high turnaround of services. 
+It will likely handle up to thousands or tens of thousands of services. Use cases with higher 
+demands the receptionist for initial contact between actors on the nodes while the actual logic of those is up to the applications own actors. 

@@ -109,7 +109,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * by sending this command to the [[Receptionist.ref]].
    *
    * Multiple registrations can be made for the same key. De-registration is implied by
-   * the end of the referenced Actor’s lifecycle.
+   * the end of the referenced Actor’s lifecycle, but it can also be explicitly deregistered before termination.
    *
    * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor
    * if there is one.
@@ -135,7 +135,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * by sending this command to the [[Receptionist.ref]].
    *
    * Multiple registrations can be made for the same key. De-registration is implied by
-   * the end of the referenced Actor’s lifecycle.
+   * the end of the referenced Actor’s lifecycle, but it can also be explicitly deregistered before termination.
    */
   def register[T](key: ServiceKey[T], service: ActorRef[T]): Command = Register(key, service)
 
@@ -145,7 +145,7 @@ object Receptionist extends ExtensionId[Receptionist] {
    * by sending this command to the [[Receptionist.ref]].
    *
    * Multiple registrations can be made for the same key. De-registration is implied by
-   * the end of the referenced Actor’s lifecycle.
+   * the end of the referenced Actor’s lifecycle, but it can also be explicitly deregistered before termination.
    *
    * Registration will be acknowledged with the [[Registered]] message to the given replyTo actor.
    */
@@ -201,9 +201,91 @@ object Receptionist extends ExtensionId[Receptionist] {
     Registered(key, serviceInstance)
 
   /**
+   * Remove association between the given [[akka.actor.typed.ActorRef]] and the given [[ServiceKey]].
+   *
+   * Deregistration can be acknowledged with the [[Deregistered]] message if the deregister message is created with a
+   * `replyTo` actor.
+   *
+   * Note that getting the [[Deregistered]] confirmation does not mean all service key subscribers has seen the fact
+   * that the actor has been deregistered yet (especially in a clustered context) so it will be possible that messages
+   * sent to the actor in the role of service provider arrive even after getting the confirmation.
+   */
+  object Deregister {
+
+    /**
+     * Create a Deregister without Ack that the service was deregistered
+     */
+    def apply[T](key: ServiceKey[T], service: ActorRef[T]): Command =
+      new ReceptionistMessages.Deregister[T](key, service, None)
+
+    /**
+     * Create a Deregister with an actor that will get an ack that the service was unregistered
+     */
+    def apply[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Deregistered]): Command =
+      new ReceptionistMessages.Deregister[T](key, service, Some(replyTo))
+  }
+
+  /**
+   * Java API: A Deregister message without Ack that the service was unregistered
+   */
+  def deregister[T](key: ServiceKey[T], service: ActorRef[T]): Command = Deregister(key, service)
+
+  /**
+   * Java API: A Deregister message with an actor that will get an ack that the service was unregistered
+   */
+  def deregister[T](key: ServiceKey[T], service: ActorRef[T], replyTo: ActorRef[Deregistered]): Command =
+    Deregister(key, service, replyTo)
+
+  /**
+   * Confirmation that the given [[akka.actor.typed.ActorRef]] no more associated with the [[ServiceKey]] in the local receptionist.
+   * Note that this does not guarantee that subscribers has yet seen that the service is deregistered.
+   *
+   * Not for user extension
+   */
+  @DoNotInherit
+  trait Deregistered {
+
+    def isForKey(key: ServiceKey[_]): Boolean
+
+    /** Scala API */
+    def key: ServiceKey[_]
+
+    /** Java API */
+    def getKey: ServiceKey[_] = key
+
+    /**
+     * Scala API
+     *
+     * Also, see [[ServiceKey.Listing]] for more convenient pattern matching
+     */
+    def serviceInstance[T](key: ServiceKey[T]): ActorRef[T]
+
+    /** Java API */
+    def getServiceInstance[T](key: ServiceKey[T]): ActorRef[T]
+  }
+
+  /**
+   * Sent by the receptionist, available here for easier testing
+   */
+  object Deregistered {
+
+    /**
+     * Scala API
+     */
+    def apply[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Deregistered =
+      new ReceptionistMessages.Deregistered(key, serviceInstance)
+  }
+
+  /**
+   * Java API: Sent by the receptionist, available here for easier testing
+   */
+  def deregistered[T](key: ServiceKey[T], serviceInstance: ActorRef[T]): Deregistered =
+    Deregistered(key, serviceInstance)
+
+  /**
    * `Subscribe` message. The given actor will subscribe to service updates when this command is sent to
-   * the [[Receptionist.ref]]. When new instances are registered or unregistered to the given key
-   * the given subscriber will be sent a [[Listing]] with the new set of instances for that service.
+   * the [[Receptionist.ref]]. When the set of instances registered for the given key changes
+   * the subscriber will be sent a [[Listing]] with the new set of instances for that service.
    *
    * The subscription will be acknowledged by sending out a first [[Listing]]. The subscription automatically ends
    * with the termination of the subscriber.
@@ -220,8 +302,8 @@ object Receptionist extends ExtensionId[Receptionist] {
 
   /**
    * Java API: `Subscribe` message. The given actor to service updates when this command is sent to
-   * * the [[Receptionist.ref]]. When new instances are registered or unregistered to the given key
-   * the given subscriber will be sent a [[Listing]] with the new set of instances for that service.
+   * the [[Receptionist.ref]]. When the set of instances registered for the given key changes
+   * the subscriber will be sent a [[Listing]] with the new set of instances for that service.
    *
    * The subscription will be acknowledged by sending out a first [[Listing]]. The subscription automatically ends
    * with the termination of the subscriber.
