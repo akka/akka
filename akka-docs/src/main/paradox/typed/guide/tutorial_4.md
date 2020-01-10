@@ -85,7 +85,7 @@ A group actor has some work to do when it comes to registrations, including:
 
 ### Handling the registration request
 
-A device group actor must either reply to the request with the `ActorRef` of an existing child, or it should create one. To look up child actors by their device IDs we will use a .
+A device group actor must either reply to the request with the `ActorRef` of an existing child, or it should create one. To look up child actors by their device IDs we will use a `Map`.
 
 Add the following to your source file:
 
