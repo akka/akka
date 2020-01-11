@@ -28,9 +28,9 @@ import akka.serialization.jackson.CborSerializable
 import akka.util.unused
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorRetentionSpec extends Matchers {
 
@@ -126,7 +126,7 @@ object EventSourcedBehaviorRetentionSpec extends Matchers {
 
 class EventSourcedBehaviorRetentionSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorRetentionSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import EventSourcedBehaviorRetentionSpec._

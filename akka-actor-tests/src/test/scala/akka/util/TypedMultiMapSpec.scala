@@ -4,9 +4,9 @@
 
 package akka.util
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import org.scalactic.TypeCheckedTripleEquals
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object TypedMultiMapSpec {
   trait AbstractKey { type Type }
@@ -16,7 +16,7 @@ object TypedMultiMapSpec {
   type KV[K <: AbstractKey] = MyValue[K#Type]
 }
 
-class TypedMultiMapSpec extends WordSpec with Matchers with TypeCheckedTripleEquals {
+class TypedMultiMapSpec extends AnyWordSpec with Matchers with TypeCheckedTripleEquals {
   import TypedMultiMapSpec._
 
   "A TypedMultiMap" must {

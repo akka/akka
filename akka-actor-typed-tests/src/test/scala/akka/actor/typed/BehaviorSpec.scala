@@ -15,9 +15,9 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ BehaviorTestKit, TestInbox }
 import org.scalactic.TypeCheckedTripleEquals
-import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
 import com.github.ghik.silencer.silent
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object BehaviorSpec {
   sealed trait Command {
@@ -69,7 +69,7 @@ object BehaviorSpec {
     override def next = StateA
   }
 
-  trait Common extends WordSpecLike with Matchers with TypeCheckedTripleEquals with LogCapturing {
+  trait Common extends AnyWordSpecLike with Matchers with TypeCheckedTripleEquals with LogCapturing {
     type Aux >: Null <: AnyRef
     def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux)
     @silent("never used")

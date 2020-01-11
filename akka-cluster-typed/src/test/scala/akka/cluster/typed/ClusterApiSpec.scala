@@ -14,7 +14,7 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import com.typesafe.config.ConfigFactory
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterApiSpec {
   val config =
@@ -33,7 +33,7 @@ object ClusterApiSpec {
     """)
 }
 
-class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) with WordSpecLike with LogCapturing {
+class ClusterApiSpec extends ScalaTestWithActorTestKit(ClusterApiSpec.config) with AnyWordSpecLike with LogCapturing {
 
   val testSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)

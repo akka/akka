@@ -8,9 +8,10 @@ import akka.actor.ActorSystem
 import akka.testkit.SocketUtil
 import com.typesafe.config.ConfigFactory
 import org.jboss.netty.channel.ChannelException
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class RemotingFailedToBindSpec extends WordSpec with Matchers {
+class RemotingFailedToBindSpec extends AnyWordSpec with Matchers {
 
   "an ActorSystem" must {
     "not start if port is taken" in {

@@ -23,7 +23,7 @@ import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
 import akka.testkit.JavaSerializable
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedEventAdapterSpec {
 
@@ -82,7 +82,7 @@ object EventSourcedEventAdapterSpec {
 
 class EventSourcedEventAdapterSpec
     extends ScalaTestWithActorTestKit(EventSourcedEventAdapterSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
   import EventSourcedEventAdapterSpec._
   import EventSourcedBehaviorSpec.{

@@ -11,12 +11,13 @@ import akka.io.dns.ARecord
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol
 import akka.io.dns.DnsProtocol.Ip
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
 import scala.collection.immutable
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class SimpleDnsCacheSpec extends WordSpec with Matchers {
+class SimpleDnsCacheSpec extends AnyWordSpec with Matchers {
   "Cache" should {
     "not reply with expired but not yet swept out entries" in {
       val localClock = new AtomicLong(0)

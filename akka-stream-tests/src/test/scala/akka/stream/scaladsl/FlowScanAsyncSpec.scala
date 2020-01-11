@@ -10,16 +10,15 @@ import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl._
-import org.scalatest.Matchers
 import akka.stream.ActorAttributes
 import akka.stream.Supervision
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.Failure
+import org.scalatest.matchers.should.Matchers
 
 class FlowScanAsyncSpec extends StreamSpec with Matchers {
 

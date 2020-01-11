@@ -7,7 +7,7 @@ package akka.actor.typed;
 import akka.Done;
 import akka.actor.typed.javadsl.Behaviors;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.concurrent.CompletionStage;
 

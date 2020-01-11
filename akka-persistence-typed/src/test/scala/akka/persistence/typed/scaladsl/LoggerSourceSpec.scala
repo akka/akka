@@ -14,14 +14,14 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
-import org.scalatest.WordSpecLike
 import org.slf4j.event.Level
+import org.scalatest.wordspec.AnyWordSpecLike
 
 // Note that the spec name here is important since there are heuristics in place to avoid names
 // starting with EventSourcedBehavior
 class LoggerSourceSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   private val pidCounter = new AtomicInteger(0)

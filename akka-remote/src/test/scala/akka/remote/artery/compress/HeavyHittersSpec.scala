@@ -4,9 +4,10 @@
 
 package akka.remote.artery.compress
 
-import org.scalatest.{ Matchers, WordSpecLike }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class HeavyHittersSpec extends WordSpecLike with Matchers {
+class HeavyHittersSpec extends AnyWordSpecLike with Matchers {
 
   "TopHeavyHitters" must {
     "should work" in {

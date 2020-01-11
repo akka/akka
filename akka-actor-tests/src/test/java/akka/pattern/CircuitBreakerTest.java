@@ -10,7 +10,7 @@ import akka.testkit.AkkaSpec;
 import akka.util.JavaDurationConverters;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import scala.compat.java8.FutureConverters;
 import scala.concurrent.Await;
 

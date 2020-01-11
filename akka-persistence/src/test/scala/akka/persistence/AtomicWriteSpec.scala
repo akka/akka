@@ -4,9 +4,10 @@
 
 package akka.persistence
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class AtomicWriteSpec extends WordSpec with Matchers {
+class AtomicWriteSpec extends AnyWordSpec with Matchers {
 
   "AtomicWrite" must {
     "only contain messages for the same persistence id" in {

@@ -11,9 +11,9 @@ import akka.serialization.SerializationExtension
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class AkkaClusterTypedSerializerSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class AkkaClusterTypedSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   val ref = spawn(Behaviors.empty[String])
   val classicSystem = system.toClassic

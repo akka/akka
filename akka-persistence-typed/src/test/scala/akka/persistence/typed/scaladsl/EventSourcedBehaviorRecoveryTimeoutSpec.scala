@@ -19,7 +19,7 @@ import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.internal.JournalFailureException
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorRecoveryTimeoutSpec {
 
@@ -51,7 +51,7 @@ object EventSourcedBehaviorRecoveryTimeoutSpec {
 
 class EventSourcedBehaviorRecoveryTimeoutSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorRecoveryTimeoutSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import EventSourcedBehaviorRecoveryTimeoutSpec._

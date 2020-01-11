@@ -11,11 +11,11 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import org.scalatest.WordSpecLike
 import scala.concurrent.duration._
 
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object TransformMessagesSpec {
 
@@ -33,7 +33,7 @@ object TransformMessagesSpec {
       }
 }
 
-class TransformMessagesSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class TransformMessagesSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   implicit val classicSystem = system.toClassic
 

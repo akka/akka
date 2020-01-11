@@ -6,8 +6,10 @@ package akka.testkit.metrics
 
 import org.scalatest._
 import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MetricsKitSpec extends WordSpec with Matchers with BeforeAndAfter with BeforeAndAfterAll with MetricsKit {
+class MetricsKitSpec extends AnyWordSpec with Matchers with BeforeAndAfter with BeforeAndAfterAll with MetricsKit {
 
   import scala.concurrent.duration._
 

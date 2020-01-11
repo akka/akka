@@ -8,9 +8,10 @@ import akka.actor.typed.Behavior
 import akka.actor.testkit.typed.internal.StubbedActorContext
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class StashBufferSpec extends WordSpec with Matchers with LogCapturing {
+class StashBufferSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   val context = new StubbedActorContext[String](
     "StashBufferSpec",

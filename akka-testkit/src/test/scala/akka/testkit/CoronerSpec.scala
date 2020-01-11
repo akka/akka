@@ -8,12 +8,12 @@ import java.io._
 import java.lang.management.ManagementFactory
 import java.util.concurrent.Semaphore
 import java.util.concurrent.locks.ReentrantLock
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import scala.concurrent.duration._
 import scala.concurrent.Await
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class CoronerSpec extends WordSpec with Matchers {
+class CoronerSpec extends AnyWordSpec with Matchers {
 
   private def captureOutput[A](f: PrintStream => A): (A, String) = {
     val bytes = new ByteArrayOutputStream()

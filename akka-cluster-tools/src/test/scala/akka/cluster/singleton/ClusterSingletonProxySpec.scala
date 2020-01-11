@@ -4,14 +4,16 @@
 
 package akka.cluster.singleton
 
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
 import akka.testkit.{ TestKit, TestProbe }
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 import akka.cluster.Cluster
 import scala.concurrent.duration._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class ClusterSingletonProxySpec extends WordSpecLike with Matchers with BeforeAndAfterAll {
+class ClusterSingletonProxySpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll {
 
   import ClusterSingletonProxySpec._
 

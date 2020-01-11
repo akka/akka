@@ -9,12 +9,12 @@ import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.testkit.TestKit
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class VersionVectorSpec
     extends TestKit(ActorSystem("VersionVectorSpec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
 

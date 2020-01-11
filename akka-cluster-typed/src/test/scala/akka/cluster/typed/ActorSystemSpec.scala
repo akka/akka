@@ -30,6 +30,8 @@ import org.scalatest._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.Span
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object ActorSystemSpec {
 
@@ -58,7 +60,7 @@ object ActorSystemSpec {
 }
 
 class ActorSystemSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures

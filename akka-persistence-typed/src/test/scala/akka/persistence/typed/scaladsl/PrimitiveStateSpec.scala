@@ -10,7 +10,7 @@ import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object PrimitiveStateSpec {
 
@@ -22,7 +22,7 @@ object PrimitiveStateSpec {
 
 class PrimitiveStateSpec
     extends ScalaTestWithActorTestKit(PrimitiveStateSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[Int] =

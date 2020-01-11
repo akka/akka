@@ -4,12 +4,10 @@
 
 package akka.cluster.ddata.protobuf
 
-import java.lang.IllegalArgumentException
-
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
@@ -40,7 +38,7 @@ class ReplicatorMessageSerializerSpec
     akka.remote.classic.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
     """)))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
 

@@ -34,7 +34,7 @@ import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterShardingPersistenceSpec {
   val config = ConfigFactory.parseString("""
@@ -145,7 +145,7 @@ object ClusterShardingPersistenceSpec {
 
 class ClusterShardingPersistenceSpec
     extends ScalaTestWithActorTestKit(ClusterShardingPersistenceSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
   import ClusterShardingPersistenceSpec._
 

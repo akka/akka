@@ -6,7 +6,7 @@ package akka.stream;
 
 import akka.actor.ActorSystem;
 import akka.testkit.AkkaJUnitActorSystemResource;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public abstract class StreamTest extends JUnitSuite {
   protected final ActorSystem system;

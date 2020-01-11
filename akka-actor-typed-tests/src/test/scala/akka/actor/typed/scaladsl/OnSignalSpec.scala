@@ -9,9 +9,9 @@ import akka.Done
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
-final class OnSignalSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "An Actor.OnSignal behavior" must {
     "must correctly install the signal handler" in {

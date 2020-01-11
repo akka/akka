@@ -15,7 +15,8 @@ import org.scalatest.exceptions.TestFailedDueToTimeoutException
 import org.scalatest.matchers.{ MatchResult, Matcher }
 import org.scalatest.time.Span
 import org.scalatest.time.SpanSugar._
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import akka.util.ccompat.JavaConverters._
 import scala.collection.mutable
@@ -23,7 +24,7 @@ import scala.concurrent.{ Await, ExecutionContext, ExecutionContextExecutor, Fut
 import scala.util.control.Exception
 
 class BoundedBlockingQueueSpec
-    extends WordSpec
+    extends AnyWordSpec
     with Matchers
     with QueueSetupHelper
     with CustomContainsMatcher

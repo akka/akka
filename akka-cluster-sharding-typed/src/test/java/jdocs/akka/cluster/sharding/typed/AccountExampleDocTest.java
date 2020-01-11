@@ -20,7 +20,7 @@ import akka.persistence.typed.PersistenceId;
 
 // #test
 
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity;
 

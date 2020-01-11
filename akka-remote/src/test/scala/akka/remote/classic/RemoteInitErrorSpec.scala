@@ -7,20 +7,21 @@ package akka.remote.classic
 import akka.actor.ActorSystem
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.Eventually._
-import org.scalatest.{ Matchers, WordSpec }
 
 import akka.util.ccompat.JavaConverters._
 import scala.collection.mutable.Set
 import scala.concurrent.duration._
 import scala.language.postfixOps
 import scala.util.control.NonFatal
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 /**
  * The 192.0.2.1 is a Documentation IP-address and should not be used at all
  * by any network node. Therefore we assume here that the initialization of
  * the ActorSystem with the use of remoting will intentionally fail.
  */
-class RemoteInitErrorSpec extends WordSpec with Matchers {
+class RemoteInitErrorSpec extends AnyWordSpec with Matchers {
   val conf = ConfigFactory.parseString("""
       akka {
         actor {

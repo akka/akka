@@ -10,7 +10,7 @@ import akka.actor.testkit.typed.javadsl.TestProbe;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import akka.actor.typed.Behavior;
 import akka.actor.typed.Terminated;

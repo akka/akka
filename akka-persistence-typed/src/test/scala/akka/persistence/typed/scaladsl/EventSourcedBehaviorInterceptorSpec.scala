@@ -15,7 +15,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorInterceptorSpec {
 
@@ -44,7 +44,7 @@ object EventSourcedBehaviorInterceptorSpec {
 
 class EventSourcedBehaviorInterceptorSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorTimersSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import EventSourcedBehaviorInterceptorSpec._

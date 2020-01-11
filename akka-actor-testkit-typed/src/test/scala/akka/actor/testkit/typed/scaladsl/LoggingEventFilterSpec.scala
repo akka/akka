@@ -5,10 +5,10 @@
 package akka.actor.testkit.typed.scaladsl
 
 import akka.actor.testkit.typed.LoggingEvent
-import org.scalatest.WordSpecLike
 import org.slf4j.event.Level
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class LoggingTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class LoggingTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   private class AnError extends Exception
   private def errorNoCause =

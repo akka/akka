@@ -13,8 +13,8 @@ import akka.actor._
 import java.nio.charset.StandardCharsets
 import java.util.{ Calendar, Date, GregorianCalendar, TimeZone }
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 import akka.serialization.SerializationExtension
 import akka.event.Logging._
 import akka.util.Helpers
@@ -139,7 +139,7 @@ object LoggerSpec {
 
 }
 
-class LoggerSpec extends WordSpec with Matchers {
+class LoggerSpec extends AnyWordSpec with Matchers {
 
   import LoggerSpec._
 

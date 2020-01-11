@@ -13,8 +13,8 @@ import akka.actor.typed._
 import akka.actor.typed.scaladsl._
 import org.slf4j.event.Level
 //#imports
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object SyncTestingExampleSpec {
   //#child
@@ -61,7 +61,7 @@ object SyncTestingExampleSpec {
 
 }
 
-class SyncTestingExampleSpec extends WordSpec with Matchers {
+class SyncTestingExampleSpec extends AnyWordSpec with Matchers {
 
   import SyncTestingExampleSpec._
 

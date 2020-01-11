@@ -10,11 +10,11 @@ import akka.actor.ActorSystemImpl
 import akka.actor.MinimalActorRef
 import akka.actor.RootActorPath
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
 import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ActorRefResolverSpec extends WordSpec with ScalaFutures with Matchers {
+class ActorRefResolverSpec extends AnyWordSpec with ScalaFutures with Matchers {
   "ActorRefResolver" should {
     "not allow serialization of ref originating from other system" in {
       val system1 = ActorSystem(Behaviors.empty[String], "sys1")
