@@ -5,13 +5,13 @@
 package akka.stream.impl.fusing
 
 import akka.annotation.InternalApi
-import akka.stream.scaladsl.{Flow, Keep, Source}
-import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
+import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.stream._
 import akka.util.OptionVal
 
 import scala.collection.immutable
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 
 @InternalApi private[akka] final class FlatMapPrefix[In, Out, M](n: Int, f: immutable.Seq[In] => Flow[In, Out, M])
