@@ -17,7 +17,7 @@ object Dependencies {
   val junitVersion = "4.13"
   val slf4jVersion = "1.7.29"
   // check agrona version when updating this
-  val aeronVersion = "1.24.0"
+  val aeronVersion = "1.25.0"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
   val agronaVersion = "1.1.0"
