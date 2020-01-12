@@ -34,7 +34,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         }(Keep.left)
         .alsoTo(Sink.foreach(println(_)))
         .runWith(Sink.seq[Int])
-        .futureValue /*(Interval(Span(1000, Minutes)))*/ should ===(2 until 10)
+        .futureValue should ===(2 until 10)
     }
 
     "expose mat value in the simple identity case" in assertAllStagesStopped {
@@ -46,7 +46,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .run
 
       prefixF.futureValue should ===(0 until 2)
-      suffixF.futureValue /*(Interval(Span(1000, Minutes)))*/ should ===(2 until 10)
+      suffixF.futureValue should ===(2 until 10)
     }
 
     "work when source is exactly the required prefix" in assertAllStagesStopped {
@@ -70,7 +70,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .run
 
       prefixF.futureValue should ===(0 until 10)
-      suffixF.futureValue /*(Interval(Span(1000, Minutes)))*/ should be(empty)
+      suffixF.futureValue should be(empty)
     }
 
     "simple identity case when downstream completes before consuming the entire stream" in assertAllStagesStopped {
@@ -83,7 +83,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .run
 
       prefixF.futureValue should ===(0 until 10)
-      suffixF.futureValue /*(Interval(Span(1000, Minutes)))*/ should ===(10 until 20)
+      suffixF.futureValue should ===(10 until 20)
     }
 
     "propagate failure to create the downstream flow" in assertAllStagesStopped {
@@ -194,7 +194,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .run
 
       prefixF.futureValue should ===(0 until 4)
-      suffixF.futureValue /*(Interval(Span(1000, Minutes)))*/ should be(empty)
+      suffixF.futureValue should be(empty)
     }
 
     "work when materialized flow does not consume upstream" in assertAllStagesStopped {
@@ -210,7 +210,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .run
 
       prefixF.futureValue should ===(0 until 4)
-      suffixF.futureValue /*(Interval(Span(1000, Minutes)))*/ should be(empty)
+      suffixF.futureValue should be(empty)
     }
 
     "work when materialized flow cancels upstream but keep producing" in assertAllStagesStopped {
@@ -223,10 +223,10 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
 
       prefixF.futureValue should ===(0 until 4)
       //Thread.sleep(1000 * 60 * 60)
-      suffixF.futureValue /*(Interval(Span(1000, Minutes)))*/ should ===(11 :: 12 :: Nil)
+      suffixF.futureValue should ===(11 :: 12 :: Nil)
     }
 
-    "propagate materialization failure (when application of 'f' succeeds" in assertAllStagesStopped {
+    "propagate materialization failure (when application of 'f' succeeds)" in assertAllStagesStopped {
       val (prefixF, suffixF) = src10()
         .flatMapPrefixMat(4) { prefix =>
           Flow[Int].mapMaterializedValue(_ => throw TE(s"boom-bada-bang (${prefix.size})"))
