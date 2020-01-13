@@ -26,23 +26,24 @@ public class Split {
         .throttle(1, Duration.ofMillis(100))
         .map(elem -> new Pair<>(elem, Instant.now()))
         .statefulMapConcat(
-            new Creator<Function<Pair<Integer, Instant>, Iterable<Pair<Integer, Boolean>>>>() {
-              // stateful decision in statefulMapConcat
-              // keep track of time bucket (one per second)
-              LocalDateTime currentTimeBucket =
-                  LocalDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneOffset.UTC);
+            () -> {
+              return new Function<Pair<Integer, Instant>, Iterable<Pair<Integer, Boolean>>>() {
+                // stateful decision in statefulMapConcat
+                // keep track of time bucket (one per second)
+                LocalDateTime currentTimeBucket =
+                    LocalDateTime.ofInstant(Instant.ofEpochMilli(0), ZoneOffset.UTC);
 
-              @Override
-              public Function<Pair<Integer, Instant>, Iterable<Pair<Integer, Boolean>>> create() {
-                return elemTimestamp -> {
+                @Override
+                public Iterable<Pair<Integer, Boolean>> apply(
+                    Pair<Integer, Instant> elemTimestamp) {
                   LocalDateTime time =
                       LocalDateTime.ofInstant(elemTimestamp.second(), ZoneOffset.UTC);
                   LocalDateTime bucket = time.withNano(0);
                   boolean newBucket = !bucket.equals(currentTimeBucket);
                   if (newBucket) currentTimeBucket = bucket;
                   return Collections.singleton(new Pair<>(elemTimestamp.first(), newBucket));
-                };
-              }
+                }
+              };
             })
         .splitWhen(elemDecision -> elemDecision.second()) // split when time bucket changes
         .map(elemDecision -> elemDecision.first())
