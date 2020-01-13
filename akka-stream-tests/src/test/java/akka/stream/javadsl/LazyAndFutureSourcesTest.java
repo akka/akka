@@ -4,7 +4,6 @@
 
 package akka.stream.javadsl;
 
-import akka.Done;
 import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.StreamTest;
@@ -60,7 +59,9 @@ public class LazyAndFutureSourcesTest extends StreamTest {
     CompletionStage<NotUsed> nestedMatVal = result.first();
     CompletionStage<List<String>> list = result.second();
     assertEquals(Arrays.asList("one"), list.toCompletableFuture().get(3, TimeUnit.SECONDS));
-    assertEquals(true, nestedMatVal.toCompletableFuture().isDone());
+    // Future adaption to completionstage of matval means we cannot count on matval future being
+    // completed just because stream is
+    nestedMatVal.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -87,20 +88,24 @@ public class LazyAndFutureSourcesTest extends StreamTest {
     CompletionStage<NotUsed> nestedMatVal = result.first();
     CompletionStage<List<String>> list = result.second();
     assertEquals(Arrays.asList("one"), list.toCompletableFuture().get(3, TimeUnit.SECONDS));
-    assertEquals(true, nestedMatVal.toCompletableFuture().isDone());
+    // Future adaption to completionstage of matval means we cannot count on matval future being
+    // completed just because stream is
+    nestedMatVal.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
   public void lazyCompletionStageSource() throws Exception {
     Pair<CompletionStage<NotUsed>, CompletionStage<List<String>>> result =
         Source.lazyCompletionStageSource(
-                () -> CompletableFuture.completedFuture(Source.single("one")))
+            () -> CompletableFuture.completedFuture(Source.single("one")))
             .toMat(Sink.seq(), Keep.both())
             .run(system);
 
     CompletionStage<NotUsed> nestedMatVal = result.first();
     CompletionStage<List<String>> list = result.second();
     assertEquals(Arrays.asList("one"), list.toCompletableFuture().get(3, TimeUnit.SECONDS));
-    assertEquals(true, nestedMatVal.toCompletableFuture().isDone());
+    // flatMap/thenCompose of matval means we cannot count on matval future being completed just
+    // because stream is
+    nestedMatVal.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 }
