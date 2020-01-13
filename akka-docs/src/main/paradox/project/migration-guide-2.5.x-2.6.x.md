@@ -3,6 +3,9 @@ project.description: Migrating to Akka 2.6.
 ---
 # Migration Guide 2.5.x to 2.6.x
 
+An overview of the changes in Akka 2.6 is presented in the [What's new in Akka 2.6 video](https://akka.io/blog/news/2019/12/12/akka-26-intro)
+and the [release announcement](https://akka.io/blog/news/2019/11/06/akka-2.6.0-released).
+
 Akka 2.6.x is binary backwards compatible with 2.5.x with the ordinary exceptions listed in the
 @ref:[Binary Compatibility Rules](../common/circuitbreaker.md).
 
