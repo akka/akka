@@ -4,6 +4,8 @@
 
 package akka.remote.artery
 
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
@@ -11,6 +13,7 @@ import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.RootActorPath
 import akka.remote.RARP
+import akka.remote.UniqueAddress
 import akka.testkit.ImplicitSender
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
@@ -45,6 +48,12 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
       association.isStreamActive(queueIndex) shouldBe expected
     }
 
+  }
+
+  private def futureUniqueRemoteAddress(association: Association): Future[UniqueAddress] = {
+    val p = Promise[UniqueAddress]()
+    association.associationState.addUniqueRemoteAddressListener(a => p.success(a))
+    p.future
   }
 
   "Outbound streams" should {
@@ -91,7 +100,7 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
         assertStreamActive(association, Association.OrdinaryQueueIndex, expected = true)
       }
 
-      val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
+      val remoteUid = futureUniqueRemoteAddress(association).futureValue.uid
 
       localArtery.quarantine(remoteAddress, Some(remoteUid), "Test")
 
@@ -108,7 +117,7 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
 
     "remove inbound compression after quarantine" in withAssociation { (_, remoteAddress, _, localArtery, _) =>
       val association = localArtery.association(remoteAddress)
-      val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
+      val remoteUid = futureUniqueRemoteAddress(association).futureValue.uid
 
       localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should contain(remoteUid)
 
@@ -128,7 +137,7 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
     "remove inbound compression after restart with same host:port" in withAssociation {
       (remoteSystem, remoteAddress, _, localArtery, localProbe) =>
         val association = localArtery.association(remoteAddress)
-        val remoteUid = association.associationState.uniqueRemoteAddress.futureValue.uid
+        val remoteUid = futureUniqueRemoteAddress(association).futureValue.uid
 
         localArtery.inboundCompressionAccess.get.currentCompressionOriginUids.futureValue should contain(remoteUid)
 
@@ -154,7 +163,7 @@ class OutboundIdleShutdownSpec extends ArteryMultiNodeSpec(s"""
           localProbe.expectMsg("ping2")
 
           val association2 = localArtery.association(remoteAddress)
-          val remoteUid2 = association2.associationState.uniqueRemoteAddress.futureValue.uid
+          val remoteUid2 = futureUniqueRemoteAddress(association2).futureValue.uid
 
           remoteUid2 should !==(remoteUid)
 
