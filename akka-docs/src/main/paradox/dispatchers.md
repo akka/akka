@@ -48,7 +48,7 @@ Another example that uses the "thread-pool-executor":
 
 @@@ note
 
-The thread pool executor dispatcher is implemented using by a `java.util.concurrent.ThreadPoolExecutor`.
+The thread pool executor dispatcher is implemented using a `java.util.concurrent.ThreadPoolExecutor`.
 You can read more about it in the JDK's [ThreadPoolExecutor documentation](https://docs.oracle.com/javase/8/docs/api/java/util/concurrent/ThreadPoolExecutor.html).
 
 @@@
