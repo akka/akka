@@ -73,9 +73,9 @@ abstract class ClusterConsistentHashingGroupSpec
       for (_ <- 1 to 10; k <- keys) { router ! k }
       enterBarrier("messages-sent")
       router ! Broadcast(Get)
-      val a = expectMsgType[Collected].messages
-      val b = expectMsgType[Collected].messages
-      val c = expectMsgType[Collected].messages
+      val a = expectMsgType[ClusterConsistentHashingGroupMultiJvmSpec.Collected].messages
+      val b = expectMsgType[ClusterConsistentHashingGroupMultiJvmSpec.Collected].messages
+      val c = expectMsgType[ClusterConsistentHashingGroupMultiJvmSpec.Collected].messages
 
       a.intersect(b) should ===(Set.empty)
       a.intersect(c) should ===(Set.empty)
