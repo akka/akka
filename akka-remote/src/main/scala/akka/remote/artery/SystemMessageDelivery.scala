@@ -99,7 +99,7 @@ import akka.util.OptionVal
       private def localAddress = outboundContext.localAddress
       private def remoteAddress = outboundContext.remoteAddress
       private def remoteAddressLogParam: String =
-        outboundContext.associationState.uniqueRemoteAddressValue().getOrElse(remoteAddress).toString
+        outboundContext.associationState.uniqueRemoteAddress().getOrElse(remoteAddress).toString
 
       override protected def logSource: Class[_] = classOf[SystemMessageDelivery]
 

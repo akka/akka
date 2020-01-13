@@ -8,8 +8,6 @@ import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.CopyOnWriteArrayList
 import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.Success
 import akka.Done
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -80,11 +78,11 @@ private[remote] class TestOutboundContext(
   }
 
   def completeHandshake(peer: UniqueAddress): Future[Done] = synchronized {
-    _associationState.uniqueRemoteAddressPromise.trySuccess(peer)
-    _associationState.uniqueRemoteAddress.value match {
-      case Some(Success(`peer`)) => // our value
+    _associationState.completeUniqueRemoteAddress(peer)
+    _associationState.uniqueRemoteAddress() match {
+      case Some(`peer`) => // our value
       case _ =>
-        _associationState = _associationState.newIncarnation(Promise.successful(peer))
+        _associationState = _associationState.newIncarnation(peer)
     }
     Future.successful(Done)
   }

@@ -16,11 +16,10 @@ import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
+
 import akka.Done
 import akka.NotUsed
 import akka.actor.Actor
@@ -97,15 +96,19 @@ private[remote] object AssociationState {
   def apply(): AssociationState =
     new AssociationState(
       incarnation = 1,
-      uniqueRemoteAddressPromise = Promise(),
       lastUsedTimestamp = new AtomicLong(System.nanoTime()),
       controlIdleKillSwitch = OptionVal.None,
-      quarantined = ImmutableLongMap.empty[QuarantinedTimestamp])
+      quarantined = ImmutableLongMap.empty[QuarantinedTimestamp],
+      new AtomicReference(UniqueRemoteAddressValue(None, Nil)))
 
   final case class QuarantinedTimestamp(nanoTime: Long) {
     override def toString: String =
       s"Quarantined ${TimeUnit.NANOSECONDS.toSeconds(System.nanoTime() - nanoTime)} seconds ago"
   }
+
+  private final case class UniqueRemoteAddressValue(
+      uniqueRemoteAddress: Option[UniqueAddress],
+      listeners: List[UniqueAddress => Unit])
 }
 
 /**
@@ -113,59 +116,73 @@ private[remote] object AssociationState {
  */
 private[remote] final class AssociationState(
     val incarnation: Int,
-    val uniqueRemoteAddressPromise: Promise[UniqueAddress],
     val lastUsedTimestamp: AtomicLong, // System.nanoTime timestamp
     val controlIdleKillSwitch: OptionVal[SharedKillSwitch],
-    val quarantined: ImmutableLongMap[AssociationState.QuarantinedTimestamp]) {
+    val quarantined: ImmutableLongMap[AssociationState.QuarantinedTimestamp],
+    _uniqueRemoteAddress: AtomicReference[AssociationState.UniqueRemoteAddressValue]) {
 
   import AssociationState.QuarantinedTimestamp
-
-  // doesn't have to be volatile since it's only a cache changed once
-  private var uniqueRemoteAddressValueCache: Option[UniqueAddress] = null
+  import AssociationState.UniqueRemoteAddressValue
 
   /**
    * Full outbound address with UID for this association.
-   * Completed when by the handshake.
+   * Completed by the handshake.
    */
-  def uniqueRemoteAddress: Future[UniqueAddress] = uniqueRemoteAddressPromise.future
+  def uniqueRemoteAddress(): Option[UniqueAddress] = _uniqueRemoteAddress.get().uniqueRemoteAddress
 
-  def uniqueRemoteAddressValue(): Option[UniqueAddress] = {
-    if (uniqueRemoteAddressValueCache ne null)
-      uniqueRemoteAddressValueCache
-    else {
-      uniqueRemoteAddress.value match {
-        case Some(Success(peer)) =>
-          uniqueRemoteAddressValueCache = Some(peer)
-          uniqueRemoteAddressValueCache
-        case _ => None
-      }
+  @tailrec def completeUniqueRemoteAddress(peer: UniqueAddress): Unit = {
+    val current = _uniqueRemoteAddress.get()
+    if (current.uniqueRemoteAddress.isEmpty) {
+      val newValue = UniqueRemoteAddressValue(Some(peer), Nil)
+      if (_uniqueRemoteAddress.compareAndSet(current, newValue))
+        current.listeners.foreach(_.apply(peer))
+      else
+        completeUniqueRemoteAddress(peer) // cas failed, retry
     }
   }
 
-  def newIncarnation(remoteAddressPromise: Promise[UniqueAddress]): AssociationState =
+  @tailrec def addUniqueRemoteAddressListener(callback: UniqueAddress => Unit): Unit = {
+    val current = _uniqueRemoteAddress.get
+    current.uniqueRemoteAddress match {
+      case Some(peer) => callback(peer)
+      case None =>
+        val newValue = UniqueRemoteAddressValue(None, callback :: current.listeners)
+        if (!_uniqueRemoteAddress.compareAndSet(current, newValue))
+          addUniqueRemoteAddressListener(callback) // cas failed, retry
+    }
+  }
+
+  @tailrec def removeUniqueRemoteAddressListener(callback: UniqueAddress => Unit): Unit = {
+    val current = _uniqueRemoteAddress.get
+    val newValue = UniqueRemoteAddressValue(current.uniqueRemoteAddress, current.listeners.filterNot(_ == callback))
+    if (!_uniqueRemoteAddress.compareAndSet(current, newValue))
+      removeUniqueRemoteAddressListener(callback) // cas failed, retry
+  }
+
+  def newIncarnation(remoteAddress: UniqueAddress): AssociationState =
     new AssociationState(
       incarnation + 1,
-      remoteAddressPromise,
       lastUsedTimestamp = new AtomicLong(System.nanoTime()),
       controlIdleKillSwitch,
-      quarantined)
+      quarantined,
+      new AtomicReference(UniqueRemoteAddressValue(Some(remoteAddress), Nil)))
 
   def newQuarantined(): AssociationState =
-    uniqueRemoteAddressPromise.future.value match {
-      case Some(Success(a)) =>
+    uniqueRemoteAddress() match {
+      case Some(a) =>
         new AssociationState(
           incarnation,
-          uniqueRemoteAddressPromise,
           lastUsedTimestamp = new AtomicLong(System.nanoTime()),
           controlIdleKillSwitch,
-          quarantined = quarantined.updated(a.uid, QuarantinedTimestamp(System.nanoTime())))
-      case _ => this
+          quarantined = quarantined.updated(a.uid, QuarantinedTimestamp(System.nanoTime())),
+          _uniqueRemoteAddress)
+      case None => this
     }
 
   def isQuarantined(): Boolean = {
-    uniqueRemoteAddressValue match {
+    uniqueRemoteAddress() match {
       case Some(a) => isQuarantined(a.uid)
-      case _       => false // handshake not completed yet
+      case None    => false // handshake not completed yet
     }
   }
 
@@ -174,16 +191,15 @@ private[remote] final class AssociationState(
   def withControlIdleKillSwitch(killSwitch: OptionVal[SharedKillSwitch]): AssociationState =
     new AssociationState(
       incarnation,
-      uniqueRemoteAddressPromise,
       lastUsedTimestamp,
       controlIdleKillSwitch = killSwitch,
-      quarantined)
+      quarantined,
+      _uniqueRemoteAddress)
 
   override def toString(): String = {
-    val a = uniqueRemoteAddressPromise.future.value match {
-      case Some(Success(a)) => a
-      case Some(Failure(e)) => s"Failure($e)"
-      case None             => "unknown"
+    val a = uniqueRemoteAddress() match {
+      case Some(a) => a
+      case None    => "unknown"
     }
     s"AssociationState($incarnation, $a)"
   }
@@ -266,7 +282,7 @@ private[remote] class FlushOnShutdown(
     try {
       associations.foreach { a =>
         val acksExpected = a.sendTerminationHint(self)
-        a.associationState.uniqueRemoteAddressValue() match {
+        a.associationState.uniqueRemoteAddress() match {
           case Some(address) => remaining += address -> acksExpected
           case None          => // Ignore, handshake was not completed on this association
         }
@@ -558,7 +574,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
                     log.debug("Incoming ActorRef compression advertisement from [{}], table: [{}]", from, table)
                     val a = association(from.address)
                     // make sure uid is same for active association
-                    if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
+                    if (a.associationState.uniqueRemoteAddress().contains(from)) {
                       import system.dispatcher
                       a.changeActorRefCompression(table).foreach { _ =>
                         a.sendControl(ActorRefCompressionAdvertisementAck(localAddress, table.version))
@@ -589,7 +605,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
                     log.debug("Incoming Class Manifest compression advertisement from [{}], table: [{}]", from, table)
                     val a = association(from.address)
                     // make sure uid is same for active association
-                    if (a.associationState.uniqueRemoteAddressValue().contains(from)) {
+                    if (a.associationState.uniqueRemoteAddress().contains(from)) {
                       import system.dispatcher
                       a.changeClassManifestCompression(table).foreach { _ =>
                         a.sendControl(ClassManifestCompressionAdvertisementAck(localAddress, table.version))

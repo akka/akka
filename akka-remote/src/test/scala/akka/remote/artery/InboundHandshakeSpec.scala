@@ -5,7 +5,10 @@
 package akka.remote.artery
 
 import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
+
 import akka.actor.Address
 import akka.remote.UniqueAddress
 import akka.remote.artery.OutboundHandshake.HandshakeReq
@@ -48,6 +51,12 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       .run()
   }
 
+  private def futureUniqueRemoteAddress(association: OutboundContext): Future[UniqueAddress] = {
+    val p = Promise[UniqueAddress]()
+    association.associationState.addUniqueRemoteAddressListener(a => p.success(a))
+    p.future
+  }
+
   "InboundHandshake stage" must {
 
     "send HandshakeRsp as reply to HandshakeReq" in {
@@ -72,9 +81,7 @@ class InboundHandshakeSpec extends AkkaSpec with ImplicitSender {
       upstream.sendNext("msg1")
       downstream.expectNext("msg1")
       val uniqueRemoteAddress =
-        Await.result(
-          inboundContext.association(addressA.address).associationState.uniqueRemoteAddress,
-          remainingOrDefault)
+        Await.result(futureUniqueRemoteAddress(inboundContext.association(addressA.address)), remainingOrDefault)
       uniqueRemoteAddress should ===(addressA)
       downstream.cancel()
     }
