@@ -7,6 +7,7 @@ package akka.persistence.query.journal.leveldb
 import scala.concurrent.duration._
 
 import akka.actor.ActorRef
+import akka.persistence.query.EventEnvelope
 import akka.persistence.query.PersistenceQuery
 import akka.persistence.query.journal.leveldb.scaladsl.LeveldbReadJournal
 import akka.persistence.query.scaladsl.EventsByTagQuery
@@ -143,6 +144,19 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
       src.map(_.event).runWith(TestSink.probe[Any]).request(1).expectComplete()
     }
 
+    "include timestamp in EventEnvelope" in {
+      setup("m")
+
+      val src = queries.currentEventsByPersistenceId("m", 0L, Long.MaxValue)
+      val probe = src.runWith(TestSink.probe[EventEnvelope])
+
+      probe.request(5)
+      probe.expectNext().timestamp should be > 0L
+      probe.expectNext().timestamp should be > 0L
+      probe.expectNext().timestamp should be > 0L
+      probe.expectComplete()
+    }
+
   }
 
   "Leveldb live query EventsByPersistenceId" must {
@@ -178,6 +192,18 @@ class EventsByPersistenceIdSpec extends AkkaSpec(EventsByPersistenceIdSpec.confi
       expectMsg("e-4-done")
 
       probe.expectNoMessage(100.millis).request(5).expectNext("e-3").expectNext("e-4")
+    }
+
+    "include timestamp in EventEnvelope" in {
+      setup("n")
+
+      val src = queries.eventsByPersistenceId("n", 0L, Long.MaxValue)
+      val probe = src.runWith(TestSink.probe[EventEnvelope])
+
+      probe.request(5)
+      probe.expectNext().timestamp should be > 0L
+      probe.expectNext().timestamp should be > 0L
+      probe.cancel()
     }
   }
 

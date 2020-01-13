@@ -80,7 +80,7 @@ abstract class JournalSpec(config: Config)
     extension.journalFor(null)
 
   def replayedMessage(snr: Long, deleted: Boolean = false, confirms: Seq[String] = Nil): ReplayedMessage =
-    ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, "", deleted, Actor.noSender, writerUuid))
+    ReplayedMessage(PersistentImpl(s"a-${snr}", snr, pid, "", deleted, Actor.noSender, writerUuid, 0L))
 
   def writeMessages(fromSnr: Int, toSnr: Int, pid: String, sender: ActorRef, writerUuid: String): Unit = {
 
@@ -113,7 +113,7 @@ abstract class JournalSpec(config: Config)
     probe.expectMsg(WriteMessagesSuccessful)
     (fromSnr to toSnr).foreach { i =>
       probe.expectMsgPF() {
-        case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`, `writerUuid`), _) =>
+        case WriteMessageSuccess(PersistentImpl(payload, `i`, `pid`, _, _, `sender`, `writerUuid`, _), _) =>
           payload should be(s"a-${i}")
       }
     }
@@ -264,15 +264,15 @@ abstract class JournalSpec(config: Config)
         val Pid = pid
         val WriterUuid = writerUuid
         probe.expectMsgPF() {
-          case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid), _) =>
+          case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _), _) =>
             payload should be(s"b-6")
         }
         probe.expectMsgPF() {
-          case WriteMessageRejected(PersistentImpl(payload, 7L, Pid, _, _, Actor.noSender, WriterUuid), _, _) =>
+          case WriteMessageRejected(PersistentImpl(payload, 7L, Pid, _, _, Actor.noSender, WriterUuid, _), _, _) =>
             payload should be(notSerializableEvent)
         }
         probe.expectMsgPF() {
-          case WriteMessageSuccess(PersistentImpl(payload, 8L, Pid, _, _, Actor.noSender, WriterUuid), _) =>
+          case WriteMessageSuccess(PersistentImpl(payload, 8L, Pid, _, _, Actor.noSender, WriterUuid, _), _) =>
             payload should be(s"b-8")
         }
       }
@@ -297,13 +297,13 @@ abstract class JournalSpec(config: Config)
         val Pid = pid
         val WriterUuid = writerUuid
         probe.expectMsgPF() {
-          case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid), _) =>
+          case WriteMessageSuccess(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _), _) =>
             payload should be(event)
         }
 
         journal ! ReplayMessages(6, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
         receiverProbe.expectMsgPF() {
-          case ReplayedMessage(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid)) =>
+          case ReplayedMessage(PersistentImpl(payload, 6L, Pid, _, _, Actor.noSender, WriterUuid, _)) =>
             payload should be(event)
         }
         receiverProbe.expectMsgPF() {

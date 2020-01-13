@@ -1,0 +1,9 @@
+# #28331 Add optional timestamp to PersistentRepr
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.PersistentRepr.timestamp")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.PersistentRepr.withTimestamp")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.PersistentImpl.apply")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.PersistentImpl.copy")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.persistence.PersistentImpl.this")
+ProblemFilters.exclude[Problem]("akka.persistence.PersistentImpl*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentMessageOrBuilder.hasTimestamp")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.persistence.serialization.MessageFormats#PersistentMessageOrBuilder.getTimestamp")

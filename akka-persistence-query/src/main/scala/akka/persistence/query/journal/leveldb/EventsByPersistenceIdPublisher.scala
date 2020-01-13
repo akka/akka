@@ -118,7 +118,8 @@ private[akka] abstract class AbstractEventsByPersistenceIdPublisher(
         offset = Sequence(p.sequenceNr),
         persistenceId = persistenceId,
         sequenceNr = p.sequenceNr,
-        event = p.payload)
+        event = p.payload,
+        timestamp = p.timestamp)
       currSeqNo = p.sequenceNr + 1
       deliverBuf()
 

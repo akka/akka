@@ -140,6 +140,16 @@ public final class MessageFormats {
      */
     akka.protobuf.ByteString
         getWriterUuidBytes();
+
+    // optional sint64 timestamp = 14;
+    /**
+     * <code>optional sint64 timestamp = 14;</code>
+     */
+    boolean hasTimestamp();
+    /**
+     * <code>optional sint64 timestamp = 14;</code>
+     */
+    long getTimestamp();
   }
   /**
    * Protobuf type {@code PersistentMessage}
@@ -233,6 +243,11 @@ public final class MessageFormats {
             case 106: {
               bitField0_ |= 0x00000040;
               writerUuid_ = input.readBytes();
+              break;
+            }
+            case 112: {
+              bitField0_ |= 0x00000080;
+              timestamp_ = input.readSInt64();
               break;
             }
           }
@@ -533,6 +548,22 @@ public final class MessageFormats {
       }
     }
 
+    // optional sint64 timestamp = 14;
+    public static final int TIMESTAMP_FIELD_NUMBER = 14;
+    private long timestamp_;
+    /**
+     * <code>optional sint64 timestamp = 14;</code>
+     */
+    public boolean hasTimestamp() {
+      return ((bitField0_ & 0x00000080) == 0x00000080);
+    }
+    /**
+     * <code>optional sint64 timestamp = 14;</code>
+     */
+    public long getTimestamp() {
+      return timestamp_;
+    }
+
     private void initFields() {
       payload_ = akka.persistence.serialization.MessageFormats.PersistentPayload.getDefaultInstance();
       sequenceNr_ = 0L;
@@ -541,6 +572,7 @@ public final class MessageFormats {
       sender_ = "";
       manifest_ = "";
       writerUuid_ = "";
+      timestamp_ = 0L;
     }
     private byte memoizedIsInitialized = -1;
     public final boolean isInitialized() {
@@ -581,6 +613,9 @@ public final class MessageFormats {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         output.writeBytes(13, getWriterUuidBytes());
       }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        output.writeSInt64(14, timestamp_);
+      }
       getUnknownFields().writeTo(output);
     }
 
@@ -617,6 +652,10 @@ public final class MessageFormats {
       if (((bitField0_ & 0x00000040) == 0x00000040)) {
         size += akka.protobuf.CodedOutputStream
           .computeBytesSize(13, getWriterUuidBytes());
+      }
+      if (((bitField0_ & 0x00000080) == 0x00000080)) {
+        size += akka.protobuf.CodedOutputStream
+          .computeSInt64Size(14, timestamp_);
       }
       size += getUnknownFields().getSerializedSize();
       memoizedSerializedSize = size;
@@ -753,6 +792,8 @@ public final class MessageFormats {
         bitField0_ = (bitField0_ & ~0x00000020);
         writerUuid_ = "";
         bitField0_ = (bitField0_ & ~0x00000040);
+        timestamp_ = 0L;
+        bitField0_ = (bitField0_ & ~0x00000080);
         return this;
       }
 
@@ -813,6 +854,10 @@ public final class MessageFormats {
           to_bitField0_ |= 0x00000040;
         }
         result.writerUuid_ = writerUuid_;
+        if (((from_bitField0_ & 0x00000080) == 0x00000080)) {
+          to_bitField0_ |= 0x00000080;
+        }
+        result.timestamp_ = timestamp_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -857,6 +902,9 @@ public final class MessageFormats {
           bitField0_ |= 0x00000040;
           writerUuid_ = other.writerUuid_;
           onChanged();
+        }
+        if (other.hasTimestamp()) {
+          setTimestamp(other.getTimestamp());
         }
         this.mergeUnknownFields(other.getUnknownFields());
         return this;
@@ -1430,6 +1478,39 @@ public final class MessageFormats {
   }
   bitField0_ |= 0x00000040;
         writerUuid_ = value;
+        onChanged();
+        return this;
+      }
+
+      // optional sint64 timestamp = 14;
+      private long timestamp_ ;
+      /**
+       * <code>optional sint64 timestamp = 14;</code>
+       */
+      public boolean hasTimestamp() {
+        return ((bitField0_ & 0x00000080) == 0x00000080);
+      }
+      /**
+       * <code>optional sint64 timestamp = 14;</code>
+       */
+      public long getTimestamp() {
+        return timestamp_;
+      }
+      /**
+       * <code>optional sint64 timestamp = 14;</code>
+       */
+      public Builder setTimestamp(long value) {
+        bitField0_ |= 0x00000080;
+        timestamp_ = value;
+        onChanged();
+        return this;
+      }
+      /**
+       * <code>optional sint64 timestamp = 14;</code>
+       */
+      public Builder clearTimestamp() {
+        bitField0_ = (bitField0_ & ~0x00000080);
+        timestamp_ = 0L;
         onChanged();
         return this;
       }
@@ -5841,27 +5922,27 @@ public final class MessageFormats {
       descriptor;
   static {
     java.lang.String[] descriptorData = {
-      "\n\024MessageFormats.proto\"\252\001\n\021PersistentMes" +
+      "\n\024MessageFormats.proto\"\275\001\n\021PersistentMes" +
       "sage\022#\n\007payload\030\001 \001(\0132\022.PersistentPayloa" +
       "d\022\022\n\nsequenceNr\030\002 \001(\003\022\025\n\rpersistenceId\030\003" +
       " \001(\t\022\017\n\007deleted\030\004 \001(\010\022\016\n\006sender\030\013 \001(\t\022\020\n" +
-      "\010manifest\030\014 \001(\t\022\022\n\nwriterUuid\030\r \001(\t\"S\n\021P" +
-      "ersistentPayload\022\024\n\014serializerId\030\001 \002(\005\022\017" +
-      "\n\007payload\030\002 \002(\014\022\027\n\017payloadManifest\030\003 \001(\014" +
-      "\"2\n\013AtomicWrite\022#\n\007payload\030\001 \003(\0132\022.Persi" +
-      "stentMessage\"\356\001\n\033AtLeastOnceDeliverySnap" +
-      "shot\022\031\n\021currentDeliveryId\030\001 \002(\003\022O\n\025uncon",
-      "firmedDeliveries\030\002 \003(\01320.AtLeastOnceDeli" +
-      "verySnapshot.UnconfirmedDelivery\032c\n\023Unco" +
-      "nfirmedDelivery\022\022\n\ndeliveryId\030\001 \002(\003\022\023\n\013d" +
-      "estination\030\002 \002(\t\022#\n\007payload\030\003 \002(\0132\022.Pers" +
-      "istentPayload\"\\\n\032PersistentStateChangeEv" +
-      "ent\022\027\n\017stateIdentifier\030\001 \002(\t\022\017\n\007timeout\030" +
-      "\002 \001(\t\022\024\n\014timeoutNanos\030\003 \001(\003\"h\n\025Persisten" +
-      "tFSMSnapshot\022\027\n\017stateIdentifier\030\001 \002(\t\022 \n" +
-      "\004data\030\002 \002(\0132\022.PersistentPayload\022\024\n\014timeo" +
-      "utNanos\030\003 \001(\003B\"\n\036akka.persistence.serial",
-      "izationH\001"
+      "\010manifest\030\014 \001(\t\022\022\n\nwriterUuid\030\r \001(\t\022\021\n\tt" +
+      "imestamp\030\016 \001(\022\"S\n\021PersistentPayload\022\024\n\014s" +
+      "erializerId\030\001 \002(\005\022\017\n\007payload\030\002 \002(\014\022\027\n\017pa" +
+      "yloadManifest\030\003 \001(\014\"2\n\013AtomicWrite\022#\n\007pa" +
+      "yload\030\001 \003(\0132\022.PersistentMessage\"\356\001\n\033AtLe" +
+      "astOnceDeliverySnapshot\022\031\n\021currentDelive",
+      "ryId\030\001 \002(\003\022O\n\025unconfirmedDeliveries\030\002 \003(" +
+      "\01320.AtLeastOnceDeliverySnapshot.Unconfir" +
+      "medDelivery\032c\n\023UnconfirmedDelivery\022\022\n\nde" +
+      "liveryId\030\001 \002(\003\022\023\n\013destination\030\002 \002(\t\022#\n\007p" +
+      "ayload\030\003 \002(\0132\022.PersistentPayload\"\\\n\032Pers" +
+      "istentStateChangeEvent\022\027\n\017stateIdentifie" +
+      "r\030\001 \002(\t\022\017\n\007timeout\030\002 \001(\t\022\024\n\014timeoutNanos" +
+      "\030\003 \001(\003\"h\n\025PersistentFSMSnapshot\022\027\n\017state" +
+      "Identifier\030\001 \002(\t\022 \n\004data\030\002 \002(\0132\022.Persist" +
+      "entPayload\022\024\n\014timeoutNanos\030\003 \001(\003B\"\n\036akka",
+      ".persistence.serializationH\001"
     };
     akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner assigner =
       new akka.protobuf.Descriptors.FileDescriptor.InternalDescriptorAssigner() {
@@ -5873,7 +5954,7 @@ public final class MessageFormats {
           internal_static_PersistentMessage_fieldAccessorTable = new
             akka.protobuf.GeneratedMessage.FieldAccessorTable(
               internal_static_PersistentMessage_descriptor,
-              new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Sender", "Manifest", "WriterUuid", });
+              new java.lang.String[] { "Payload", "SequenceNr", "PersistenceId", "Deleted", "Sender", "Manifest", "WriterUuid", "Timestamp", });
           internal_static_PersistentPayload_descriptor =
             getDescriptor().getMessageTypes().get(1);
           internal_static_PersistentPayload_fieldAccessorTable = new
