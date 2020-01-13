@@ -94,10 +94,10 @@ object IntroSpec {
   object CustomDispatchersExample {
     object HelloWorldMain {
 
-      final case class Start(name: String)
+      final case class SayHello(name: String)
 
       //#hello-world-main-with-dispatchers
-      def apply(): Behavior[Start] =
+      def apply(): Behavior[SayHello] =
         Behaviors.setup { context =>
           val dispatcherPath = "akka.actor.default-blocking-io-dispatcher"
 

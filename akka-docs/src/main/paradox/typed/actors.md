@@ -132,7 +132,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
 
-We start an Actor system from the defined `HelloWorldMain` behavior and send two `Start` messages that
+We start an Actor system from the defined `HelloWorldMain` behavior and send two `SayHello` messages that
 will kick-off the interaction between two separate `HelloWorldBot` actors and the single `Greeter` actor.
 
 An application normally consists of a single `ActorSystem`, running many actors, per JVM. 
