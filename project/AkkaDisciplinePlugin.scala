@@ -27,8 +27,8 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     val silencerVersion = "1.4.4"
     Seq(
       libraryDependencies ++= Seq(
-          compilerPlugin("com.github.ghik" %% "silencer-plugin" % silencerVersion cross CrossVersion.patch),
-          "com.github.ghik" %% "silencer-lib" % silencerVersion % Provided cross CrossVersion.patch))
+          compilerPlugin(("com.github.ghik" %% "silencer-plugin" % silencerVersion).cross(CrossVersion.patch)),
+          ("com.github.ghik" %% "silencer-lib" % silencerVersion % Provided).cross(CrossVersion.patch)))
   }
 
   lazy val disciplineSettings =
@@ -39,7 +39,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
           else Seq.empty
         ),
       Test / scalacOptions --= testUndicipline,
-      Compile / console / scalacOptions --= Seq("-deprecation", "-Xfatal-warnings", "-Xlint", "-Ywarn-unused:imports"),
       Compile / scalacOptions ++= (CrossVersion.partialVersion(scalaVersion.value) match {
           case Some((2, 13)) =>
             disciplineScalacOptions -- Set(
@@ -61,7 +60,9 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
       // different compiler phases from the regular run), and in particular
       // '-Ywarn-unused:explicits' breaks 'sbt ++2.13.0-M5 akka-actor/doc'
       // https://github.com/akka/akka/issues/26119
-      Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq :+ "-Xfatal-warnings")
+      Compile / doc / scalacOptions --= disciplineScalacOptions.toSeq :+ "-Xfatal-warnings",
+      // having discipline warnings in console is just an annoyance
+      Compile / console / scalacOptions --= disciplineScalacOptions.toSeq)
 
   val testUndicipline = Seq(
     "-Ywarn-dead-code", // ??? used in compile only specs
