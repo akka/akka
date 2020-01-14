@@ -6,11 +6,12 @@ package akka.actor
 import java.net.URI
 import java.net.URISyntaxException
 import java.net.MalformedURLException
+import java.util.Optional
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-
 import akka.annotation.InternalApi
+import scala.compat.java8.OptionConverters._
 
 /**
  * The address specifies the physical location under which an Actor can be
@@ -30,6 +31,16 @@ final case class Address private (protocol: String, system: String, host: Option
 
   def this(protocol: String, system: String) = this(protocol, system, None, None)
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
+
+  /**
+   * JAVA API: The hostname if specified or empty optional if not
+   */
+  def getHost(): Optional[String] = host.asJava
+
+  /**
+   * JAVA API: The port if specified or empty optional if not
+   */
+  def getPort(): Optional[Int] = port.asJava
 
   /**
    * Returns true if this Address is only defined locally. It is not safe to send locally scoped addresses to remote
