@@ -92,7 +92,7 @@ Java
 
 @@@ note
 
-Using the `CircuitBreaker` companion object's @scala[*apply*]@java[*create*] method
+Using the `CircuitBreaker`'s companion object @scala[*apply*]@java[*create*] method
 will return a `CircuitBreaker` where callbacks are executed in the caller's thread.
 This can be useful if the asynchronous `Future` behavior is unnecessary, for
 example invoking a synchronous-only API.
@@ -101,11 +101,11 @@ example invoking a synchronous-only API.
 
 ### Control failure count explicitly
 
-By default, the circuit breaker treat `Exception` as failure in synchronized API, or failed `Future` as failure in future based API.
-Failure will increment failure count, when failure count reach the *maxFailures*, circuit breaker will be opened.
-However, some applications might requires certain exception to not increase failure count, or vice versa,
-sometime we want to increase the failure count even if the call succeeded.
-Akka circuit breaker provides a way to achieve such use case:
+By default, the circuit breaker treats `Exception` as failure in synchronized API, or failed `Future` as failure in future based API.
+On failure, the failure count will increment. If the failure count reaches the *maxFailures*, the circuit breaker will be opened.
+However, some applications may require certain exceptions to not increase the failure count.
+In other cases one may want to increase the failure count even if the call succeeded.
+Akka circuit breaker provides a way to achieve such use cases:
 
 * `withCircuitBreaker`
 * `withSyncCircuitBreaker`
@@ -113,7 +113,7 @@ Akka circuit breaker provides a way to achieve such use case:
 * `callWithCircuitBreakerCS`
 * `callWithSyncCircuitBreaker`
 
-All methods above accepts an argument `defineFailureFn`
+All methods above accept an argument `defineFailureFn`
 
 Type of `defineFailureFn`: @scala[`Try[T] => Boolean`]@java[`BiFunction[Optional[T], Optional[Throwable], java.lang.Boolean]`]
 
@@ -128,9 +128,14 @@ Java
 
 ### Low level API
 
-The low-level API allows you to describe the behavior of the CircuitBreaker in detail, including deciding what to return to the calling `Actor` in case of success or failure. This is especially useful when expecting the remote call to send a reply. CircuitBreaker doesn't support `Tell Protection` (protecting against calls that expect a reply) natively at the moment, so you need to use the low-level power-user APIs, `succeed`  and  `fail` methods, as well as `isClose`, `isOpen`, `isHalfOpen` to implement it.
+The low-level API allows you to describe the behavior of the CircuitBreaker in detail, including deciding what to return to the calling `Actor` in case of success or failure. This is especially useful when expecting the remote call to send a reply.
+CircuitBreaker doesn't support `Tell Protection` (protecting against calls that expect a reply) natively at the moment.
+Thus you need to use the low-level power-user APIs, `succeed`  and  `fail` methods, as well as `isClose`, `isOpen`, `isHalfOpen` to implement it.
 
-As can be seen in the examples below, a `Tell Protection` pattern could be implemented by using the `succeed` and `fail` methods, which would count towards the `CircuitBreaker` counts. In the example, a call is made to the remote service if the `breaker.isClosed`, and once a response is received, the `succeed` method is invoked, which tells the `CircuitBreaker` to keep the breaker closed. If on the other hand an error or timeout is received, we trigger a `fail` and the breaker accrues this failure towards its count for opening the breaker.
+As can be seen in the examples below, a `Tell Protection` pattern could be implemented by using the `succeed` and `fail` methods, which would count towards the `CircuitBreaker` counts. 
+In the example, a call is made to the remote service if the `breaker.isClosed`. 
+Once a response is received, the `succeed` method is invoked, which tells the `CircuitBreaker` to keep the breaker closed. 
+On the other hand, if an error or timeout is received we trigger a `fail`, and the breaker accrues this failure towards its count for opening the breaker.
 
 @@@ note
 

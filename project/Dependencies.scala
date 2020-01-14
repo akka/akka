@@ -16,12 +16,12 @@ object Dependencies {
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
   val junitVersion = "4.13"
-  val slf4jVersion = "1.7.29"
+  val slf4jVersion = "1.7.30"
   // check agrona version when updating this
-  val aeronVersion = "1.24.0"
+  val aeronVersion = "1.25.0"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
-  val agronaVersion = "1.1.0"
+  val agronaVersion = "1.2.0"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.10.2"
   val protobufJavaVersion = "3.10.0"
@@ -37,7 +37,7 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq(scala212Version, scala213Version),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
-    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.2"),
+    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.3"),
     scalaTestVersion := "3.1.0",
     scalaTestPlusVersion := "3.1.0.0",
     java8CompatVersion := {
@@ -128,8 +128,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.1" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.1" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.2" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.2" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)

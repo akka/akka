@@ -191,7 +191,7 @@ class EventSourcedEventAdapterSpec
       replyProbe.expectMessage(State(1, Vector(0)))
 
       val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1))))
+      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1)), 0L))
 
       val c2 =
         spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new GenericWrapperEventAdapter[Event])))
@@ -212,8 +212,8 @@ class EventSourcedEventAdapterSpec
 
       val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
       events shouldEqual List(
-        EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1))),
-        EventEnvelope(Sequence(2), pid.id, 2, GenericWrapper(Incremented(1))))
+        EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1)), 0L),
+        EventEnvelope(Sequence(2), pid.id, 2, GenericWrapper(Incremented(1)), 0L))
 
       val c2 =
         spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new GenericWrapperEventAdapter[Event])))
@@ -232,7 +232,7 @@ class EventSourcedEventAdapterSpec
       replyProbe.expectMessage(State(1, Vector(0)))
 
       val events = queries.currentEventsByPersistenceId(pid.id).runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1))))
+      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1)), 0L))
 
       val c2 =
         spawn(Behaviors.setup[Command](ctx => counter(ctx, pid).eventAdapter(new GenericWrapperEventAdapter[Event])))
@@ -240,7 +240,7 @@ class EventSourcedEventAdapterSpec
       replyProbe.expectMessage(State(1, Vector(0)))
 
       val taggedEvents = queries.currentEventsByTag("tag99").runWith(Sink.seq).futureValue
-      taggedEvents shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1))))
+      taggedEvents shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, GenericWrapper(Incremented(1)), 0L))
     }
   }
 }

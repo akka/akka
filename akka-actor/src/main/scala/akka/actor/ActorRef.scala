@@ -7,10 +7,11 @@ package akka.actor
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.annotation.InternalApi
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
+
+import akka.annotation.DoNotInherit
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.AddressTerminatedTopic
@@ -478,8 +479,11 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 /**
  * Subscribe to this class to be notified about all [[DeadLetter]] (also the suppressed ones)
  * and [[Dropped]].
+ *
+ * Not for user extension
  */
-sealed trait AllDeadLetters extends WrappedMessage {
+@DoNotInherit
+trait AllDeadLetters extends WrappedMessage {
   def message: Any
   def sender: ActorRef
   def recipient: ActorRef

@@ -253,11 +253,11 @@ object ByteString {
     }
 
     override def copyToArray[B >: Byte](dest: Array[B], start: Int, len: Int): Int = {
-      val copied = math.min(math.min(len, bytes.length), dest.length - start)
-      if (copied > 0) {
-        System.arraycopy(bytes, 0, dest, start, copied)
+      val toCopy = math.min(math.min(len, bytes.length), dest.length - start)
+      if (toCopy > 0) {
+        Array.copy(bytes, 0, dest, start, toCopy)
       }
-      copied
+      toCopy
     }
 
   }
@@ -395,11 +395,11 @@ object ByteString {
 
     override def copyToArray[B >: Byte](dest: Array[B], start: Int, len: Int): Int = {
       // min of the bytes available to copy, bytes there is room for in dest and the requested number of bytes
-      val copied = math.max(math.min(math.min(len, length), dest.length - start), 0)
-      if (copied > 0) {
-        System.arraycopy(bytes, 0, dest, start, copied)
+      val toCopy = math.min(math.min(len, length), dest.length - start)
+      if (toCopy > 0) {
+        Array.copy(bytes, startIndex, dest, start, toCopy)
       }
-      copied
+      toCopy
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
@@ -645,20 +645,19 @@ object ByteString {
     }
 
     override def copyToArray[B >: Byte](dest: Array[B], start: Int, len: Int): Int = {
-      if (isCompact) bytestrings.head.copyToArray(dest, start, len)
+      if (bytestrings.size == 1) bytestrings.head.copyToArray(dest, start, len)
       else {
-        // min of the bytes available top copy, bytes there is room for in dest and the requested number of bytes
-        val copied = math.min(math.min(len, length), dest.length - start)
-        if (copied > 0) {
+        // min of the bytes available to copy, bytes there is room for in dest and the requested number of bytes
+        val totalToCopy = math.min(math.min(len, length), dest.length - start)
+        if (totalToCopy > 0) {
           val bsIterator = bytestrings.iterator
-          var pos = 0
-          while (pos < copied) {
+          var copied = 0
+          while (copied < totalToCopy) {
             val current = bsIterator.next()
-            val copied = current.copyToArray(dest, pos, len - pos)
-            pos += copied
+            copied += current.copyToArray(dest, start + copied, totalToCopy - copied)
           }
         }
-        copied
+        totalToCopy
       }
     }
 
