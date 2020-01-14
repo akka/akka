@@ -28,6 +28,7 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-bench-jmh",
     "akka-cluster",
     "akka-cluster-metrics",
+    "akka-cluster-sharding",
     "akka-distributed-data",
     "akka-persistence",
     "akka-persistence-tck",
