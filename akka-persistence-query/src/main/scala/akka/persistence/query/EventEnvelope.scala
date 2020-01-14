@@ -13,6 +13,7 @@ object EventEnvelope extends AbstractFunction4[Offset, String, Long, Any, EventE
   def apply(offset: Offset, persistenceId: String, sequenceNr: Long, event: Any, timestamp: Long): EventEnvelope =
     new EventEnvelope(offset, persistenceId, sequenceNr, event, timestamp)
 
+  @deprecated("for binary compatibility", "2.6.2")
   override def apply(offset: Offset, persistenceId: String, sequenceNr: Long, event: Any): EventEnvelope =
     new EventEnvelope(offset, persistenceId, sequenceNr, event)
 
@@ -37,7 +38,7 @@ final class EventEnvelope(
     extends Product4[Offset, String, Long, Any]
     with Serializable {
 
-  // for binary compatibility
+  @deprecated("for binary compatibility", "2.6.2")
   def this(offset: Offset, persistenceId: String, sequenceNr: Long, event: Any) =
     this(offset, persistenceId, sequenceNr, event, 0L)
 
