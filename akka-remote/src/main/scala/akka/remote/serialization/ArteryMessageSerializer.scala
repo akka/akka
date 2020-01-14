@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.serialization
@@ -162,7 +162,7 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
         .map(keyDeserializer)
         .zip(protoAdv.getValuesList.asScala.asInstanceOf[Iterable[Int]] /* to avoid having to call toInt explicitly */ )
 
-    val table = CompressionTable(protoAdv.getOriginUid, protoAdv.getTableVersion.byteValue, kvs.toMap)
+    val table = CompressionTable[T](protoAdv.getOriginUid, protoAdv.getTableVersion.byteValue, kvs.toMap)
     create(deserializeUniqueAddress(protoAdv.getFrom), table)
   }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.serialization
@@ -168,6 +168,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
     builder.setSequenceNr(persistent.sequenceNr)
     // deleted is not used in new records from 2.4
     if (persistent.writerUuid != Undefined) builder.setWriterUuid(persistent.writerUuid)
+    if (persistent.timestamp > 0L) builder.setTimestamp(persistent.timestamp)
     builder
   }
 
@@ -197,7 +198,7 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
   //
 
   private def persistent(persistentMessage: mf.PersistentMessage): PersistentRepr = {
-    PersistentRepr(
+    val repr = PersistentRepr(
       payload(persistentMessage.getPayload),
       persistentMessage.getSequenceNr,
       if (persistentMessage.hasPersistenceId) persistentMessage.getPersistenceId else Undefined,
@@ -206,6 +207,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       if (persistentMessage.hasSender) system.provider.resolveActorRef(persistentMessage.getSender)
       else Actor.noSender,
       if (persistentMessage.hasWriterUuid) persistentMessage.getWriterUuid else Undefined)
+
+    if (persistentMessage.hasTimestamp) repr.withTimestamp(persistentMessage.getTimestamp) else repr
   }
 
   private def atomicWrite(atomicWrite: mf.AtomicWrite): AtomicWrite = {

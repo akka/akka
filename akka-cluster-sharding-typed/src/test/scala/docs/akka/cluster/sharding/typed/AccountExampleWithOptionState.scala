@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.sharding.typed
@@ -115,6 +115,7 @@ object AccountExampleWithOptionState {
         throw new IllegalStateException(s"unexpected event [$event] in state [ClosedAccount]")
     }
 
+    // when used with sharding, this TypeKey can be used in `sharding.init` and `sharding.entityRefFor`:
     val TypeKey: EntityTypeKey[Command[_]] =
       EntityTypeKey[Command[_]]("Account")
 

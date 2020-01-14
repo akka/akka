@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -206,7 +206,7 @@ class GraphStageTimersSpec extends StreamSpec {
             override def preStart(): Unit = scheduleOnce("tick", 100.millis)
 
             setHandler(in, new InHandler {
-              override def onPush() = () // Ingore
+              override def onPush() = () // Ignore
             })
 
             setHandler(out, new OutHandler {

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl;
@@ -13,6 +13,7 @@ import akka.japi.function.*;
 import akka.japi.pf.PFBuilder;
 import akka.stream.*;
 import akka.stream.scaladsl.FlowSpec;
+import akka.stream.testkit.javadsl.TestSink;
 import akka.util.ConstantFun;
 import akka.stream.javadsl.GraphDSL.Builder;
 import akka.stream.stage.*;
@@ -1078,6 +1079,54 @@ public class FlowTest extends StreamTest {
     probe.expectMsgEquals(55);
     probe.expectMsgEquals(0);
     future.toCompletableFuture().get(3, TimeUnit.SECONDS);
+  }
+
+  @Test
+  public void mustBeAbleToMapErrorClass() {
+    final String head = "foo";
+    final Source<Optional<String>, NotUsed> source =
+        Source.from(Arrays.asList(Optional.of(head), Optional.empty()));
+    final IllegalArgumentException boom = new IllegalArgumentException("boom");
+    final Flow<Optional<String>, String, NotUsed> flow =
+        Flow.<Optional<String>, String>fromFunction(Optional::get)
+            .mapError(NoSuchElementException.class, (NoSuchElementException e) -> boom);
+
+    source
+        .via(flow)
+        .runWith(TestSink.probe(system), system)
+        .request(2)
+        .expectNext(head)
+        .expectError(boom);
+  }
+
+  @Test
+  public void mustBeAbleToMapErrorClassExactly() {
+    final Source<String, NotUsed> source = Source.single("foo");
+    final Flow<String, Character, NotUsed> flow =
+        Flow.<String, Character>fromFunction(str -> str.charAt(-1))
+            .mapError(NoSuchElementException.class, IllegalArgumentException::new);
+
+    final Throwable actual =
+        source.via(flow).runWith(TestSink.probe(system), system).request(1).expectError();
+    org.junit.Assert.assertTrue(actual instanceof IndexOutOfBoundsException);
+  }
+
+  @Test
+  public void mustBeAbleToMapErrorSuperClass() {
+    final String head = "foo";
+    final Source<Optional<String>, NotUsed> source =
+        Source.from(Arrays.asList(Optional.of(head), Optional.empty()));
+    final IllegalArgumentException boom = new IllegalArgumentException("boom");
+    final Flow<Optional<String>, String, NotUsed> flow =
+        Flow.<Optional<String>, String>fromFunction(Optional::get)
+            .mapError(RuntimeException.class, (RuntimeException e) -> boom);
+
+    source
+        .via(flow)
+        .runWith(TestSink.probe(system), system)
+        .request(2)
+        .expectNext(head)
+        .expectError(boom);
   }
 
   @Test

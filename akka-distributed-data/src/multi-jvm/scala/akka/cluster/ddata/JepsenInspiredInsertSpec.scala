@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.ddata
@@ -253,7 +253,7 @@ class JepsenInspiredInsertSpec
         failureWriteAcks should be(Nil)
       }
       runOn(n2, n3) {
-        // without delays all could teoretically have been written before the blackhole
+        // without delays all could theoretically have been written before the blackhole
         if (delayMillis != 0)
           failureWriteAcks should not be (Nil)
       }

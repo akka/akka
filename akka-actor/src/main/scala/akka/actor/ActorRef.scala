@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -7,10 +7,11 @@ package akka.actor
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.annotation.InternalApi
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
+
+import akka.annotation.DoNotInherit
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.AddressTerminatedTopic
@@ -478,8 +479,11 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 /**
  * Subscribe to this class to be notified about all [[DeadLetter]] (also the suppressed ones)
  * and [[Dropped]].
+ *
+ * Not for user extension
  */
-sealed trait AllDeadLetters extends WrappedMessage {
+@DoNotInherit
+trait AllDeadLetters extends WrappedMessage {
   def message: Any
   def sender: ActorRef
   def recipient: ActorRef
@@ -608,13 +612,22 @@ private[akka] class EmptyLocalActorRef(
         case Some(identify) =>
           if (!sel.wildcardFanOut) sender ! ActorIdentity(identify.messageId, None)
         case None =>
-          eventStream.publish(DeadLetter(sel.msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+          sel.msg match {
+            case m: DeadLetterSuppression => publishSupressedDeadLetter(m, sender)
+            case _ =>
+              eventStream.publish(
+                DeadLetter(sel.msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+          }
       }
       true
     case m: DeadLetterSuppression =>
-      eventStream.publish(SuppressedDeadLetter(m, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
+      publishSupressedDeadLetter(m, sender)
       true
     case _ => false
+  }
+
+  private def publishSupressedDeadLetter(msg: DeadLetterSuppression, sender: ActorRef): Unit = {
+    eventStream.publish(SuppressedDeadLetter(msg, if (sender eq Actor.noSender) provider.deadLetters else sender, this))
   }
 }
 

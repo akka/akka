@@ -34,7 +34,8 @@ systems. The API of Akka’s Actors has borrowed some of its syntax from Erlang.
 ## First example
 
 If you are new to Akka you might want to start with reading the @ref:[Getting Started Guide](guide/introduction.md)
-and then come back here to learn more. 
+and then come back here to learn more. We also recommend watching the short 
+[introduction video to Akka actors](https://akka.io/blog/news/2019/12/03/akka-typed-actor-intro-video).  
 
 It is helpful to become familiar with the foundational, external and internal
 ecosystem of your Actors, to see what you can leverage and customize as needed, see
@@ -132,7 +133,7 @@ Scala
 Java
 :  @@snip [IntroSpec.scala](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/IntroTest.java) { #hello-world }
 
-We start an Actor system from the defined `HelloWorldMain` behavior and send two `Start` messages that
+We start an Actor system from the defined `HelloWorldMain` behavior and send two `SayHello` messages that
 will kick-off the interaction between two separate `HelloWorldBot` actors and the single `Greeter` actor.
 
 An application normally consists of a single `ActorSystem`, running many actors, per JVM. 
@@ -153,6 +154,8 @@ The console output may look like this:
 [INFO] [03/13/2018 15:50:05.816] [hello-akka.actor.default-dispatcher-4] [akka://hello/user/World] Greeting 3 for World
 [INFO] [03/13/2018 15:50:05.816] [hello-akka.actor.default-dispatcher-6] [akka://hello/user/Akka] Greeting 3 for Akka
 ```
+
+You will also need to add a @ref:[logging dependency](logging.md) to see that output when running.
 
 @@@ div { .group-scala }
 

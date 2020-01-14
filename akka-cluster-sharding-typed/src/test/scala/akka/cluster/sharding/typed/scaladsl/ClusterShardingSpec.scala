@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed.scaladsl
@@ -359,7 +359,7 @@ class ClusterShardingSpec
     }
 
     "use the stopMessage for leaving/rebalance" in {
-      // use many entites to reduce the risk that all are hashed to the same shard/node
+      // use many entities to reduce the risk that all are hashed to the same shard/node
       val numberOfEntities = 100
       val probe1 = TestProbe[String]()
       (1 to numberOfEntities).foreach { n =>

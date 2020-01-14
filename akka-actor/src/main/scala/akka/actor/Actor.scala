@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -289,6 +289,7 @@ final case class UnhandledMessage(
     @BeanProperty recipient: ActorRef)
     extends NoSerializationVerificationNeeded
     with WrappedMessage
+    with AllDeadLetters
 
 /**
  * Classes for passing status back to the sender.

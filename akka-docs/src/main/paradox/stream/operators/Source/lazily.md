@@ -1,6 +1,6 @@
 # lazily
 
-`lazily` has been deprecated in 2.6.0, use `Source.lazySource` instead.
+Deprecated by @ref:[`Source.lazySource`](lazySource.md).
 
 @ref[Source operators](../index.md#source-operators)
 

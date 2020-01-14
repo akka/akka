@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -581,7 +581,7 @@ object Source {
    * The stream can be completed successfully by sending the actor reference a [[akka.actor.Status.Success]].
    * If the content is [[akka.stream.CompletionStrategy.immediately]] the completion will be signaled immediately,
    * otherwise if the content is [[akka.stream.CompletionStrategy.draining]] (or anything else)
-   * already buffered element will be signaled before siganling completion.
+   * already buffered element will be signaled before signaling completion.
    *
    * The stream can be completed with failure by sending a [[akka.actor.Status.Failure]] to the
    * actor reference. In case the Actor is still draining its internal buffer (after having received
@@ -1846,6 +1846,30 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def mapError(pf: PartialFunction[Throwable, Throwable]): javadsl.Source[Out, Mat] =
     new Source(delegate.mapError(pf))
+
+  /**
+   * While similar to [[recover]] this operator can be used to transform an error signal to a different one *without* logging
+   * it as an error in the process. So in that sense it is NOT exactly equivalent to `recover(t => throw t2)` since recover
+   * would log the `t2` error.
+   *
+   * Since the underlying failure signal onError arrives out-of-band, it might jump over existing elements.
+   * This operator can recover the failure signal, but not the skipped elements, which will be dropped.
+   *
+   * Similarly to [[recover]] throwing an exception inside `mapError` _will_ be logged.
+   *
+   * '''Emits when''' element is available from the upstream or upstream is failed and pf returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes or upstream failed with exception pf can handle
+   *
+   * '''Cancels when''' downstream cancels
+   *
+   */
+  def mapError[E <: Throwable](clazz: Class[E], f: function.Function[E, Throwable]): javadsl.Source[Out, Mat] =
+    mapError {
+      case err if clazz.isInstance(err) => f(clazz.cast(err))
+    }
 
   /**
    * RecoverWith allows to switch to alternative Source on flow failure. It will stay in effect after

@@ -18,6 +18,13 @@ Prepends the given source to the flow, consuming it until completion before the 
 
 If materialized values needs to be collected `prependMat` is available.
 
+## Example
+Scala
+:   @@snip [FlowOrElseSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowPrependSpec.scala) { #prepend }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #prepend }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -29,11 +36,3 @@ If materialized values needs to be collected `prependMat` is available.
 **completes** when all upstreams complete
 
 @@@
-
-
-## Example
-Scala
-:   @@snip [FlowOrElseSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowPrependSpec.scala) { #prepend }
-
-Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #prepend }

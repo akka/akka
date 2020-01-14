@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -218,7 +218,7 @@ class OrElseSpec extends WordSpec with Matchers with LogCapturing {
       testFirstMatching(CompositionWithPartialFunction.ping(Map.empty))
     }
 
-    "use first matching behavor via delegating interceptor" in {
+    "use first matching behavior via delegating interceptor" in {
       testFirstMatching(CompositionWithInterceptor.ping())
     }
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.pattern
@@ -116,8 +116,8 @@ object CircuitBreaker {
 }
 
 /**
- * Provides circuit breaker functionality to provide stability when working with "dangerous" operations, e.g. calls to
- * remote systems
+ * Provides circuit breaker functionality for stability when working with "dangerous" operations, e.g. calls to
+ * remote systems.
  *
  * Transitions through three states:
  * - In *Closed* state, calls pass through until the `maxFailures` count is reached.  This causes the circuit breaker
@@ -244,7 +244,7 @@ class CircuitBreaker(
     Unsafe.instance.getObjectVolatile(this, AbstractCircuitBreaker.resetTimeoutOffset).asInstanceOf[FiniteDuration]
 
   /**
-   * Wraps invocations of asynchronous calls that need to be protected
+   * Wraps invocations of asynchronous calls that need to be protected.
    *
    * @param body Call needing protected
    * @param defineFailureFn function that define what should be consider failure and thus increase failure count
@@ -255,7 +255,7 @@ class CircuitBreaker(
     currentState.invoke(body, defineFailureFn)
 
   /**
-   * Wraps invocations of asynchronous calls that need to be protected
+   * Wraps invocations of asynchronous calls that need to be protected.
    *
    * @param body Call needing protected
    * @return [[scala.concurrent.Future]] containing the call result or a
@@ -266,7 +266,7 @@ class CircuitBreaker(
     currentState.invoke(body, CircuitBreaker.exceptionAsFailure)
 
   /**
-   * Java API for [[#withCircuitBreaker]]
+   * Java API for [[#withCircuitBreaker]].
    *
    * @param body Call needing protected
    * @return [[scala.concurrent.Future]] containing the call result or a
@@ -276,7 +276,7 @@ class CircuitBreaker(
     callWithCircuitBreaker(body, CircuitBreaker.exceptionAsFailureJava[T])
 
   /**
-   * Java API for [[#withCircuitBreaker]]
+   * Java API for [[#withCircuitBreaker]].
    *
    * @param body Call needing protected
    * @param defineFailureFn function that define what should be consider failure and thus increase failure count
@@ -292,7 +292,7 @@ class CircuitBreaker(
   }
 
   /**
-   * Java API (8) for [[#withCircuitBreaker]]
+   * Java API (8) for [[#withCircuitBreaker]].
    *
    * @param body Call needing protected
    * @return [[java.util.concurrent.CompletionStage]] containing the call result or a
@@ -302,7 +302,7 @@ class CircuitBreaker(
     callWithCircuitBreakerCS(body, CircuitBreaker.exceptionAsFailureJava)
 
   /**
-   * Java API (8) for [[#withCircuitBreaker]]
+   * Java API (8) for [[#withCircuitBreaker]].
    *
    * @param body Call needing protected
    * @param defineFailureFn function that define what should be consider failure and thus increase failure count
@@ -317,10 +317,10 @@ class CircuitBreaker(
     }, defineFailureFn))
 
   /**
-   * Wraps invocations of synchronous calls that need to be protected
+   * Wraps invocations of synchronous calls that need to be protected.
    *
-   * Calls are run in caller's thread. Because of the synchronous nature of
-   * this call the  `scala.concurrent.TimeoutException` will only be thrown
+   * Calls are run in the caller's thread. Because of the synchronous nature of
+   * this call, the `scala.concurrent.TimeoutException` will only be thrown
    * after the body has completed.
    *
    * Throws java.util.concurrent.TimeoutException if the call timed out.
@@ -332,7 +332,7 @@ class CircuitBreaker(
     withSyncCircuitBreaker(body, CircuitBreaker.exceptionAsFailure)
 
   /**
-   * Wraps invocations of synchronous calls that need to be protected
+   * Wraps invocations of synchronous calls that need to be protected.
    *
    * Calls are run in caller's thread. Because of the synchronous nature of
    * this call the  `scala.concurrent.TimeoutException` will only be thrown
@@ -510,7 +510,7 @@ class CircuitBreaker(
   }
 
   /**
-   * Adds a callback to execute when call finished with failure.
+   * Adds a callback to execute if the call finished with failure.
    *
    * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
    *
@@ -523,7 +523,7 @@ class CircuitBreaker(
     })
 
   /**
-   * JavaAPI for onCallFailure
+   * JavaAPI for onCallFailure.
    *
    * @param callback Handler to be invoked on failed call, where passed value is elapsed time in nanoseconds.
    * @return CircuitBreaker for fluent usage
@@ -534,7 +534,7 @@ class CircuitBreaker(
   }
 
   /**
-   * Adds a callback to execute when call finished with timeout.
+   * Adds a callback to execute if a call finished with timeout.
    *
    * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
    *
@@ -547,7 +547,7 @@ class CircuitBreaker(
     })
 
   /**
-   * JavaAPI for onCallTimeout
+   * JavaAPI for onCallTimeout.
    *
    * @param callback Handler to be invoked on call finished with timeout, where passed value is elapsed time in nanoseconds.
    * @return CircuitBreaker for fluent usage
@@ -558,7 +558,7 @@ class CircuitBreaker(
   }
 
   /**
-   * Adds a callback to execute when call was failed due to open breaker.
+   * Adds a callback to execute if call was failed due to open breaker.
    *
    * The callback is run in the [[scala.concurrent.ExecutionContext]] supplied in the constructor.
    *
@@ -607,7 +607,6 @@ class CircuitBreaker(
 
   /**
    * Resets breaker to a closed state.  This is valid from an Half-Open state only.
-   *
    */
   private def resetBreaker(): Unit = transition(HalfOpen, Closed)
 
@@ -672,7 +671,6 @@ class CircuitBreaker(
 
   /**
    * Attempts to reset breaker by transitioning to a half-open state.  This is valid from an Open state only.
-   *
    */
   private def attemptReset(): Unit = transition(Open, HalfOpen)
 

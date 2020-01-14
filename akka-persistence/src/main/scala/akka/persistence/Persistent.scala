@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -9,6 +9,7 @@ import akka.persistence.serialization.Message
 import scala.collection.immutable
 
 import akka.annotation.DoNotInherit
+import akka.util.HashCode
 
 /**
  * INTERNAL API
@@ -92,6 +93,16 @@ final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends Per
   def sequenceNr: Long
 
   /**
+   * The `timestamp` is the time the event was stored, in milliseconds since midnight, January 1, 1970 UTC
+   * (same as `System.currentTimeMillis`).
+   *
+   * Value `0` is used if undefined.
+   */
+  def timestamp: Long
+
+  def withTimestamp(newTimestamp: Long): PersistentRepr
+
+  /**
    * Unique identifier of the writing persistent actor.
    * Used to detect anomalies with overlapping writes from multiple
    * persistent actors, which can result in inconsistent replays.
@@ -152,7 +163,7 @@ object PersistentRepr {
       deleted: Boolean = false,
       sender: ActorRef = null,
       writerUuid: String = PersistentRepr.Undefined): PersistentRepr =
-    PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender, writerUuid)
+    PersistentImpl(payload, sequenceNr, persistenceId, manifest, deleted, sender, writerUuid, 0L)
 
   /**
    * Java API, Plugin API.
@@ -176,7 +187,8 @@ private[persistence] final case class PersistentImpl(
     override val manifest: String,
     override val deleted: Boolean,
     override val sender: ActorRef,
-    override val writerUuid: String)
+    override val writerUuid: String,
+    override val timestamp: Long)
     extends PersistentRepr
     with NoSerializationVerificationNeeded {
 
@@ -187,6 +199,10 @@ private[persistence] final case class PersistentImpl(
     if (this.manifest == manifest) this
     else copy(manifest = manifest)
 
+  override def withTimestamp(newTimestamp: Long): PersistentRepr =
+    if (this.timestamp == newTimestamp) this
+    else copy(timestamp = newTimestamp)
+
   def update(sequenceNr: Long, persistenceId: String, deleted: Boolean, sender: ActorRef, writerUuid: String) =
     copy(
       sequenceNr = sequenceNr,
@@ -194,5 +210,26 @@ private[persistence] final case class PersistentImpl(
       deleted = deleted,
       sender = sender,
       writerUuid = writerUuid)
+
+  override def hashCode(): Int = {
+    var result = HashCode.SEED
+    result = HashCode.hash(result, payload)
+    result = HashCode.hash(result, sequenceNr)
+    result = HashCode.hash(result, persistenceId)
+    result = HashCode.hash(result, manifest)
+    result = HashCode.hash(result, deleted)
+    result = HashCode.hash(result, sender)
+    result = HashCode.hash(result, writerUuid)
+    // timestamp not included in equals for backwards compatibility
+    result
+  }
+
+  override def equals(obj: Any): Boolean = obj match {
+    case other: PersistentImpl =>
+      payload == other.payload && sequenceNr == other.sequenceNr && persistenceId == other.persistenceId &&
+      manifest == other.manifest && deleted == other.deleted &&
+      sender == other.sender && writerUuid == other.writerUuid // timestamp not included in equals for backwards compatibility
+    case _ => false
+  }
 
 }

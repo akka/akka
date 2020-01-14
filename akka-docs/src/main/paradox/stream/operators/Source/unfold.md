@@ -1,24 +1,48 @@
 # Source.unfold
 
-Stream the result of a function as long as it returns a @scala[`Some`] @java[`Optional`].
+Stream the result of a function as long as it returns a @scala[`Some`] @java[non empty `Optional`].
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfold }
+Scala
+:   @@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfold }
 
-@@@
+Java
+:   @@snip [SourceUnfoldTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceUnfoldTest.java) { #signature }
 
 ## Description
 
-Stream the result of a function as long as it returns a @scala[`Some`] @java[`Optional`]. The value inside the option
-consists of a @scala[tuple] @java[pair] where the first value is a state passed back into the next call to the function allowing
-to pass a state. The first invocation of the provided fold function will receive the `zero` state.
+Stream the result of a function as long as it returns a @scala[`Some`] @java[non empty `Optional`]. The value inside the option consists of a @scala[tuple] @java[pair] where the first value is a state passed back into the next call to the function allowing to pass a state. The first invocation of the provided fold function will receive the `zero` state. 
 
-Can be used to implement many stateful sources without having to touch the more low level @ref[`GraphStage`](../../stream-customize.md) API.
+@@@ warning
+
+The same `zero` state object will be used for every materialization of the `Source` so it is **mandatory** that the state is immutable. For example a `java.util.Iterator`, `Array` or Java standard library collection would not be safe as the fold operation could mutate the value. If you must use a mutable value, combining with @ref:[Source.lazySource](lazySource.md) to make sure a new mutable `zero` value is created for each materialization is one solution.
+
+@@@
+
+Note that for unfolding a source of elements through a blocking API, such as a network or filesystem resource you should prefer using @ref:[unfoldResource](unfoldResource.md).
+
+## Examples
+
+This first sample starts at a user provided integer and counts down to zero using `unfold` :
+
+Scala
+ :   @@snip [Unfold.scala](/akka-docs/src/test/scala/docs/stream/operators/source/Unfold.scala) { #countdown }
+ 
+Java
+ :   @@snip [Unfold.java](/akka-docs/src/test/java/jdocs/stream/operators/source/Unfold.java) { #countdown }
+
+
+It is also possible to express unfolds that don't have an end, which will never return @scala[`None`] @java[`Optional.empty`] and must be combined with for example `.take(n)` to not produce infinite streams. Here we have implemented the Fibonacci numbers (0, 1, 1, 2, 3, 5, 8, 13, etc) with `unfold`:
+
+Scala
+ :   @@snip [Unfold.scala](/akka-docs/src/test/scala/docs/stream/operators/source/Unfold.scala) { #fibonacci }
+ 
+Java
+ :   @@snip [Unfold.java](/akka-docs/src/test/java/jdocs/stream/operators/source/Unfold.java) { #fibonacci }
+
 
 ## Reactive Streams semantics
 

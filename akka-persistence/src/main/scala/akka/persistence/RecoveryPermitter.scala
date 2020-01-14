@@ -1,16 +1,16 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
 
-import java.util.LinkedList
 import akka.annotation.InternalApi
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.actor.Terminated
+import akka.util.MessageBuffer
 
 /**
  * INTERNAL API
@@ -37,7 +37,7 @@ import akka.actor.Terminated
   import RecoveryPermitter._
 
   private var usedPermits = 0
-  private val pending = new LinkedList[ActorRef]
+  private val pending = MessageBuffer.empty
   private var maxPendingStats = 0
 
   def receive = {
@@ -46,7 +46,7 @@ import akka.actor.Terminated
       if (usedPermits >= maxPermits) {
         if (pending.isEmpty)
           log.debug("Exceeded max-concurrent-recoveries [{}]. First pending {}", maxPermits, sender())
-        pending.offer(sender())
+        pending.append(RequestRecoveryPermit, sender())
         maxPendingStats = math.max(maxPendingStats, pending.size)
       } else {
         recoveryPermitGranted(sender())
@@ -57,8 +57,10 @@ import akka.actor.Terminated
 
     case Terminated(ref) =>
       // pre-mature termination should be rare
-      if (!pending.remove(ref))
-        onReturnRecoveryPermit(ref)
+      val before = pending.size
+      pending.filterNot { case (_, r) => r == ref }
+      if (before == pending.size)
+        onReturnRecoveryPermit(ref) // it wasn't pending, so return permit
   }
 
   private def onReturnRecoveryPermit(ref: ActorRef): Unit = {
@@ -66,7 +68,8 @@ import akka.actor.Terminated
     context.unwatch(ref)
     if (usedPermits < 0) throw new IllegalStateException(s"permits must not be negative (returned by: ${ref})")
     if (!pending.isEmpty) {
-      val ref = pending.poll()
+      val ref = pending.head()._2
+      pending.dropHead()
       recoveryPermitGranted(ref)
     }
     if (pending.isEmpty && maxPendingStats > 0) {

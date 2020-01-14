@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -1637,6 +1637,8 @@ class LogMarker(val name: String, val properties: Map[String, Any]) {
     import akka.util.ccompat.JavaConverters._
     properties.map { case (k, v) => (k, v.asInstanceOf[AnyRef]) }.asJava
   }
+
+  override def toString: String = s"LogMarker($name,$properties)"
 }
 
 object LogMarker {

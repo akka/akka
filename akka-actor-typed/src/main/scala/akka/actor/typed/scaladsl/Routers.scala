@@ -1,9 +1,9 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
-import akka.actor.typed.Behavior
+import akka.actor.typed.{ Behavior, Props }
 import akka.actor.typed.internal.routing.{ GroupRouterBuilder, PoolRouterBuilder }
 import akka.actor.typed.receptionist.ServiceKey
 import akka.annotation.DoNotInherit
@@ -18,8 +18,8 @@ object Routers {
    * The current impl does not try to avoid sending messages to unreachable cluster nodes.
    *
    * Note that there is a delay between a routee stopping and this being detected by the receptionist and another
-   * before the group detects this. Because of this it is best to unregister routees from the receptionist and not stop
-   * until the deregistration is complete to minimize the risk of lost messages.
+   * before the group detects this. Because of this it is best to deregister routees from the receptionist and not stop
+   * until the deregistration is complete if you want to minimize the risk of lost messages.
    */
   def group[T](key: ServiceKey[T]): GroupRouter[T] =
     new GroupRouterBuilder[T](key)
@@ -166,4 +166,9 @@ trait PoolRouter[T] extends Behavior[T] {
    * Set a new pool size from the one set at construction
    */
   def withPoolSize(poolSize: Int): PoolRouter[T]
+
+  /**
+   * Set the props used to spawn the pool's routees
+   */
+  def withRouteeProps(routeeProps: Props): PoolRouter[T]
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -43,9 +43,11 @@ private[io] class UdpConnection(
   if (remoteAddress.isUnresolved) {
     Dns.resolve(DnsProtocol.Resolve(remoteAddress.getHostName), context.system, self) match {
       case Some(r) =>
-        doConnect(new InetSocketAddress(r.address(), remoteAddress.getPort))
+        reportConnectFailure {
+          doConnect(new InetSocketAddress(r.address(), remoteAddress.getPort))
+        }
       case None =>
-        context.become(resolving(), discardOld = true)
+        context.become(resolving())
     }
   } else {
     doConnect(remoteAddress)

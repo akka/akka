@@ -50,18 +50,18 @@ class MyActor extends Actor with akka.actor.ActorLogging {
 @@@
 
 The first parameter to @scala[`Logging`] @java[`Logging.getLogger`] could also be any
-`LoggingBus`, specifically @scala[`system.eventStream`] @scala[`system.eventStream()`]; in the demonstrated
-case, the actor system's address is included in the `akkaSource`
-representation of the log source (see @ref:[Logging Thread, Akka Source and Actor System in MDC](#logging-thread-akka-source-and-actor-system-in-mdc))
+`LoggingBus`, specifically @scala[`system.eventStream`] @scala[`system.eventStream()`]. 
+In the demonstrated case, the actor system's address is included in the `akkaSource`
+representation of the log source (see @ref:[Logging Thread, Akka Source and Actor System in MDC](#logging-thread-akka-source-and-actor-system-in-mdc)),
 while in the second case this is not automatically done.
 The second parameter to @scala[`Logging`] @java[`Logging.getLogger`] is the source of this logging channel.
 The source object is translated to a String according to the following rules:
 
  * if it is an Actor or ActorRef, its path is used
  * in case of a String it is used as is
- * in case of a class an approximation of its simpleName
- * and in all other cases @scala[a compile error occurs unless an implicit
-`LogSource[T]` is in scope for the type in question] @java[the simpleName of its class]
+ * in case of a Class an approximation of its `simpleName` is used
+ * in all other cases @scala[a compile error occurs unless an implicit
+`LogSource[T]` is in scope for the type in question] @java[the `simpleName` of its class] is used
 
 The log message may contain argument placeholders `{}`, which will be
 substituted if the log level is enabled. Giving more arguments than
@@ -561,10 +561,10 @@ The slf4j bridge provided by Akka in `akka-slf4j` will automatically pick up thi
 Akka is logging some events with markers. Some of these events also include structured MDC properties. 
 
 * The "SECURITY" marker is used for highlighting security related events or incidents.
-* Akka Actor is using the markers defined in @apidoc[akka.actor.ActorLogMarker].
-* Akka Cluster is using the markers defined in @apidoc[akka.cluster.ClusterLogMarker].
-* Akka Remoting is using the markers defined in @apidoc[akka.remote.RemoteLogMarker].
-* Akka Cluster Sharding is using the markers defined in @apidoc[akka.cluster.sharding.ShardingLogMarker].
+* Akka Actor is using the markers defined in @apidoc[akka.actor.ActorLogMarker$].
+* Akka Cluster is using the markers defined in @apidoc[akka.cluster.ClusterLogMarker$].
+* Akka Remoting is using the markers defined in @apidoc[akka.remote.RemoteLogMarker$].
+* Akka Cluster Sharding is using the markers defined in @apidoc[akka.cluster.sharding.ShardingLogMarker$].
 
 Markers and MDC properties are automatically picked up by the [Logstash Logback encoder](https://github.com/logstash/logstash-logback-encoder).
 

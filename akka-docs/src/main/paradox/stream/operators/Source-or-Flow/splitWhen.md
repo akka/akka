@@ -16,6 +16,20 @@ Split off elements into a new substream whenever a predicate function return `tr
 
 Split off elements into a new substream whenever a predicate function return `true`.
 
+## Example
+
+Given some time series data source we would like to split the stream into sub-streams for each second.
+We need to compare the timestamp of the previous and current element to decide when to split. This
+decision can be implemented in a `statefulMapConcat` operator preceding the `splitWhen`.  
+
+Scala
+:  @@snip [Scan.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Split.scala) { #splitWhen }
+
+Java
+:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/Split.java) { #splitWhen }
+
+An alternative way of implementing this is shown in @ref:[splitAfter example](splitAfter.md#example).
+
 ## Reactive Streams semantics
 
 @@@div { .callout }

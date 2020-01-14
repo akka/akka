@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -14,15 +14,15 @@ object Dependencies {
   lazy val scalaCheckVersion = settingKey[String]("The version of ScalaCheck to use.")
   lazy val java8CompatVersion = settingKey[String]("The version of scala-java8-compat to use.")
 
-  val junitVersion = "4.12"
-  val slf4jVersion = "1.7.29"
+  val junitVersion = "4.13"
+  val slf4jVersion = "1.7.30"
   // check agrona version when updating this
-  val aeronVersion = "1.24.0"
+  val aeronVersion = "1.25.0"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
-  val agronaVersion = "1.1.0"
+  val agronaVersion = "1.2.0"
   val nettyVersion = "3.10.6.Final"
-  val jacksonVersion = "2.10.1"
+  val jacksonVersion = "2.10.2"
   val protobufJavaVersion = "3.10.0"
   val logbackVersion = "1.2.3"
 
@@ -36,7 +36,7 @@ object Dependencies {
   val Versions = Seq(
     crossScalaVersions := Seq(scala212Version, scala213Version),
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
-    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.2"),
+    scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.3"),
     scalaTestVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         case Some((2, n)) if n >= 13 => "3.0.8"
@@ -68,7 +68,7 @@ object Dependencies {
 
     val sigar = "org.fusesource" % "sigar" % "1.6.4" // ApacheV2
 
-    val jctools = "org.jctools" % "jctools-core" % "2.1.2" // ApacheV2
+    val jctools = "org.jctools" % "jctools-core" % "3.0.0" // ApacheV2
 
     // reactive streams
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
@@ -109,10 +109,10 @@ object Dependencies {
     object Test {
       val commonsMath = "org.apache.commons" % "commons-math" % "2.2" % "test" // ApacheV2
       val commonsIo = "commons-io" % "commons-io" % "2.6" % "test" // ApacheV2
-      val commonsCodec = "commons-codec" % "commons-codec" % "1.13" % "test" // ApacheV2
+      val commonsCodec = "commons-codec" % "commons-codec" % "1.14" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
-      val mockito = "org.mockito" % "mockito-core" % "3.2.0" % "test" // MIT
+      val mockito = "org.mockito" % "mockito-core" % "3.2.4" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
       val scalacheck = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value % "test" } // New BSD
@@ -127,10 +127,10 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.1" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.1" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.2" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.2" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
-      val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.11" % "test" // CC0
+      val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
 
       // sigar logging

@@ -8,7 +8,7 @@ For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers
 ## Dependency
 
 Dispatchers are part of core Akka, which means that they are part of the `akka-actor` dependency. This
-page describes how to use mailboxes with `akka-actor-typed`, which has dependency:
+page describes how to use dispatchers with `akka-actor-typed`, which has dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -206,11 +206,11 @@ In the thread state diagrams below the colours have the following meaning:
  * Green - Runnable state
 
 The thread information was recorded using the YourKit profiler, however any good JVM profiler
-has this feature (including the free and bundled with the Oracle JDK VisualVM, as well as Oracle Flight Recorder).
+has this feature (including the free and bundled with the Oracle JDK [VisualVM](https://visualvm.github.io/), as well as [Java Mission Control](https://openjdk.java.net/projects/jmc/)).
 
 The orange portion of the thread shows that it is idle. Idle threads are fine -
-they're ready to accept new work. However, large amount of turquoise (blocked, or sleeping as in our example) threads
-is very bad and leads to thread starvation.
+they're ready to accept new work. However, a large number of turquoise (blocked, or sleeping as in our example) threads
+leads to thread starvation.
 
 @@@ note
 
@@ -267,7 +267,7 @@ unless you @ref:[set up a separate dispatcher for the actor](../dispatchers.md#s
 
 ### Solution: Dedicated dispatcher for blocking operations
 
-One of the most efficient methods of isolating the blocking behavior such that it does not impact the rest of the system
+One of the most efficient methods of isolating the blocking behavior, such that it does not impact the rest of the system,
 is to prepare and use a dedicated dispatcher for all those blocking operations.
 This technique is often referred to as "bulk-heading" or simply "isolating blocking".
 

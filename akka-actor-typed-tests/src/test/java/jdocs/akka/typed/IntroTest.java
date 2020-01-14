@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.typed;
@@ -106,36 +106,36 @@ public interface IntroTest {
 
   // #hello-world-main
   // #hello-world-main-setup
-  public class HelloWorldMain extends AbstractBehavior<HelloWorldMain.Start> {
+  public class HelloWorldMain extends AbstractBehavior<HelloWorldMain.SayHello> {
     // #hello-world-main-setup
 
-    public static class Start {
+    public static class SayHello {
       public final String name;
 
-      public Start(String name) {
+      public SayHello(String name) {
         this.name = name;
       }
     }
 
     // #hello-world-main-setup
-    public static Behavior<Start> create() {
+    public static Behavior<SayHello> create() {
       return Behaviors.setup(HelloWorldMain::new);
     }
 
     private final ActorRef<HelloWorld.Greet> greeter;
 
-    private HelloWorldMain(ActorContext<Start> context) {
+    private HelloWorldMain(ActorContext<SayHello> context) {
       super(context);
       greeter = context.spawn(HelloWorld.create(), "greeter");
     }
     // #hello-world-main-setup
 
     @Override
-    public Receive<Start> createReceive() {
-      return newReceiveBuilder().onMessage(Start.class, this::onStart).build();
+    public Receive<SayHello> createReceive() {
+      return newReceiveBuilder().onMessage(SayHello.class, this::onStart).build();
     }
 
-    private Behavior<Start> onStart(Start command) {
+    private Behavior<SayHello> onStart(SayHello command) {
       ActorRef<HelloWorld.Greeted> replyTo =
           getContext().spawn(HelloWorldBot.create(3), command.name);
       greeter.tell(new HelloWorld.Greet(command.name, replyTo));
@@ -148,35 +148,35 @@ public interface IntroTest {
 
   interface CustomDispatchersExample {
 
-    public static class Start {
+    public static class SayHello {
       public final String name;
 
-      public Start(String name) {
+      public SayHello(String name) {
         this.name = name;
       }
     }
 
     // #hello-world-main-with-dispatchers
-    public class HelloWorldMain extends AbstractBehavior<HelloWorldMain.Start> {
+    public class HelloWorldMain extends AbstractBehavior<HelloWorldMain.SayHello> {
 
       // Start message...
       // #hello-world-main-with-dispatchers
-      public static class Start {
+      public static class SayHello {
         public final String name;
 
-        public Start(String name) {
+        public SayHello(String name) {
           this.name = name;
         }
       }
       // #hello-world-main-with-dispatchers
 
-      public static Behavior<Start> create() {
+      public static Behavior<SayHello> create() {
         return Behaviors.setup(HelloWorldMain::new);
       }
 
       private final ActorRef<HelloWorld.Greet> greeter;
 
-      private HelloWorldMain(ActorContext<Start> context) {
+      private HelloWorldMain(ActorContext<SayHello> context) {
         super(context);
 
         final String dispatcherPath = "akka.actor.default-blocking-io-dispatcher";
@@ -187,7 +187,7 @@ public interface IntroTest {
       // createReceive ...
       // #hello-world-main-with-dispatchers
       @Override
-      public Receive<HelloWorldMain.Start> createReceive() {
+      public Receive<SayHello> createReceive() {
         return null;
       }
       // #hello-world-main-with-dispatchers
@@ -197,11 +197,11 @@ public interface IntroTest {
 
   public static void main(String[] args) throws Exception {
     // #hello-world
-    final ActorSystem<HelloWorldMain.Start> system =
+    final ActorSystem<HelloWorldMain.SayHello> system =
         ActorSystem.create(HelloWorldMain.create(), "hello");
 
-    system.tell(new HelloWorldMain.Start("World"));
-    system.tell(new HelloWorldMain.Start("Akka"));
+    system.tell(new HelloWorldMain.SayHello("World"));
+    system.tell(new HelloWorldMain.SayHello("Akka"));
     // #hello-world
 
     Thread.sleep(3000);

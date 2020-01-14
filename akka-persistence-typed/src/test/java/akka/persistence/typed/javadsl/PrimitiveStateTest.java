@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl;
@@ -45,7 +45,7 @@ public class PrimitiveStateTest extends JUnitSuite {
     }
 
     @Override
-    public SignalHandler signalHandler() {
+    public SignalHandler<Integer> signalHandler() {
       return newSignalHandlerBuilder()
           .onSignal(
               RecoveryCompleted.instance(),

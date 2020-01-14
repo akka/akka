@@ -1,6 +1,6 @@
 # Flow.lazyInitAsync
 
-`lazyInitAsync` has been deprecated in 2.6.0 use `Flow.lazyFutureFlow` in combination with `prefixAndTail` instead.
+Deprecated by @ref:[`Flow.lazyFutureFlow`](lazyFutureFlow.md) in combination with @ref:[`prefixAndTail`](../Source-or-Flow/prefixAndTail.md).
 
 @ref[Simple operators](../index.md#simple-operators)
 
@@ -14,7 +14,7 @@
 
 ## Description
 
-`fromCompletionStage` has been deprecated in 2.6.0 use @ref:[lazyFutureFlow](lazyFutureFlow.md) in combination with `prefixAndTail` instead.
+`fromCompletionStage` has been deprecated in 2.6.0 use @ref:[lazyFutureFlow](lazyFutureFlow.md) in combination with @ref:[`prefixAndTail`](../Source-or-Flow/prefixAndTail.md)) instead.
 
 Defers creation until a first element arrives.
 

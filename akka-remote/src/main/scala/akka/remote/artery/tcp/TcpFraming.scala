@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -9,7 +9,6 @@ import java.nio.ByteBuffer
 import java.nio.ByteOrder
 
 import akka.annotation.InternalApi
-import akka.remote.artery.FlightRecorderEvents.TcpInbound_Received
 import akka.stream.Attributes
 import akka.stream.impl.io.ByteStringParser
 import akka.stream.impl.io.ByteStringParser.ByteReader
@@ -59,9 +58,8 @@ import akka.util.ByteString
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class TcpFraming extends ByteStringParser[EnvelopeBuffer] {
-
-  val flightRecorder = IgnoreEventSink
+@InternalApi private[akka] class TcpFraming(flightRecorder: RemotingFlightRecorder = NoOpRemotingFlightRecorder)
+    extends ByteStringParser[EnvelopeBuffer] {
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new ParsingLogic {
 
@@ -97,7 +95,7 @@ import akka.util.ByteString
       private def createBuffer(bs: ByteString): EnvelopeBuffer = {
         val buffer = ByteBuffer.wrap(bs.toArray)
         buffer.order(ByteOrder.LITTLE_ENDIAN)
-        flightRecorder.hiFreq(TcpInbound_Received, buffer.limit)
+        flightRecorder.tcpInboundReceived(buffer.limit)
         val res = new EnvelopeBuffer(buffer)
         res.setStreamId(streamId)
         res

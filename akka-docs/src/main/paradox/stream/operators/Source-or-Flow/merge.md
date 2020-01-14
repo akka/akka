@@ -16,6 +16,13 @@ Merge multiple sources.
 
 Merge multiple sources. Picks elements randomly if all sources has elements ready.
 
+## Example
+Scala
+:   @@snip [FlowMergeSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowMergeSpec.scala) { #merge }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #merge }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -27,11 +34,3 @@ Merge multiple sources. Picks elements randomly if all sources has elements read
 **completes** when all upstreams complete (This behavior is changeable to completing when any upstream completes by setting `eagerComplete=true`.)
 
 @@@
-
-
-## Example
-Scala
-:   @@snip [FlowMergeSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowMergeSpec.scala) { #merge }
-
-Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #merge }

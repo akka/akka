@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -65,7 +65,7 @@ class StreamBuffersRateSpec extends AkkaSpec {
     //#buffering-abstraction-leak
   }
 
-  "explcit buffers" in {
+  "explicit buffers" in {
     trait Job
     def inboundJobsConnector(): Source[Job, NotUsed] = Source.empty
     //#explicit-buffers-backpressure

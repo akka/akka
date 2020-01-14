@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.cluster.sharding.typed;
@@ -179,7 +179,7 @@ public class AccountExampleTest extends JUnitSuite {
         .serializationTestKit()
         .verifySerialization(new CurrentBalance(BigDecimal.valueOf(100)), false);
 
-    testKit.serializationTestKit().verifySerialization(new AccountCreated(), false);
+    testKit.serializationTestKit().verifySerialization(AccountCreated.INSTANCE, false);
     testKit
         .serializationTestKit()
         .verifySerialization(new Deposited(BigDecimal.valueOf(100)), false);

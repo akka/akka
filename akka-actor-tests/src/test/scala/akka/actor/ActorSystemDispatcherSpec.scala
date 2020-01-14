@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -98,7 +98,7 @@ class ActorSystemDispatchersSpec extends AkkaSpec(ConfigFactory.parseString("""
              akka.actor.internal-dispatcher = akka.actor.default-dispatcher
            """))
       try {
-        // that the user guardian runs on the overriden dispatcher instead of internal
+        // that the user guardian runs on the overridden dispatcher instead of internal
         // isn't really a guarantee any internal actor has been made running on the right one
         // but it's better than no test coverage at all
         userGuardianDispatcher(sys) should ===("akka.actor.default-dispatcher")
