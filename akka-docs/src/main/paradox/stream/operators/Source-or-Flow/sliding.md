@@ -6,7 +6,7 @@ Provide a sliding window over the incoming stream and pass the windows as groups
 
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #sliding }
+@apidoc[Flow.sliding](Flow) { scala="#sliding(n:Int,step:Int):FlowOps.this.Repr[scala.collection.immutable.Seq[Out]]" java="#sliding(int,int)" } 
 
 ## Description
 
@@ -41,6 +41,8 @@ Scala
 
 Java
 :   @@snip [Sliding.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/Sliding.java) { #moving-average }
+
+Sliding can also be used to do simple windowing, see @ref[splitAfter](splitAfter.md).
 
 
 ## Reactive Streams semantics
