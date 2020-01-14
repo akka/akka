@@ -97,7 +97,7 @@ public class LazyAndFutureSourcesTest extends StreamTest {
   public void lazyCompletionStageSource() throws Exception {
     Pair<CompletionStage<NotUsed>, CompletionStage<List<String>>> result =
         Source.lazyCompletionStageSource(
-            () -> CompletableFuture.completedFuture(Source.single("one")))
+                () -> CompletableFuture.completedFuture(Source.single("one")))
             .toMat(Sink.seq(), Keep.both())
             .run(system);
 
