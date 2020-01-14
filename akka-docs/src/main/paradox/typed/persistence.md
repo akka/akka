@@ -30,6 +30,9 @@ allows for very high transaction rates and efficient replication. A stateful act
 events to the actor, allowing it to rebuild its state. This can be either the full history of changes
 or starting from a checkpoint in a snapshot which can dramatically reduce recovery times.
 
+The [Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video)
+is a good starting point for learning Event Sourcing.
+
 @@@ note
 
 The General Data Protection Regulation (GDPR) requires that personal information must be deleted at the request of users.

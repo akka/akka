@@ -27,6 +27,9 @@ It could for example be actors representing Aggregate Roots in Domain-Driven Des
 Here we call these actors "entities". These actors typically have persistent (durable) state,
 but this feature is not limited to actors with persistent state.
 
+The [Introduction to Akka Cluster Sharding video](https://akka.io/blog/news/2019/12/16/akka-cluster-sharding-intro-video)
+is a good starting point for learning Cluster Sharding.
+
 Cluster sharding is typically used when you have many stateful actors that together consume
 more resources (e.g. memory) than fit on one machine. If you only have a few stateful actors
 it might be easier to run them on a @ref:[Cluster Singleton](cluster-singleton.md) node. 
