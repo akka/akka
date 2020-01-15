@@ -15,10 +15,12 @@ Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when 
 ## Description
 
 This @apidoc[Source] will never emit a failure, since the failure of the wrapped @apidoc[Source] is always handled by
-restarting. The wrapped @apidoc[Source] can be cancelled by cancelling this @apidoc[Source].
+restarting. The wrapped @apidoc[Source] can be completed by completing this @apidoc[Source].
 When that happens, the wrapped @apidoc[Source], if currently running will be cancelled, and it will not be restarted.
-This can be triggered simply by the downstream cancelling, or externally by introducing a @apidoc[KillSwitch] right
+This can be triggered by the downstream cancelling, or externally by introducing a @ref[KillSwitch](../../stream-dynamic.md#controlling-stream-completion-with-killswitch) right
 after this @apidoc[Source] in the graph.
+
+See also @ref:[RestartFlow](../Re).
 
 ## Examples
 
