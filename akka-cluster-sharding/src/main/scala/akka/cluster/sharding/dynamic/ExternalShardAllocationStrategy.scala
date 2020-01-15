@@ -59,7 +59,6 @@ object ExternalShardAllocationStrategy {
   private class DDataStateActor(typeName: String) extends Actor with ActorLogging with Stash {
 
     private val DataKeys: immutable.Seq[LWWMapKey[ShardId, String]] = ddataKeys(context.system, typeName)
-    // it's own replicator or configurable?
     private val replicator = DistributedData(context.system).replicator
 
     override def preStart(): Unit = {
