@@ -40,7 +40,7 @@ final case class Address private (protocol: String, system: String, host: Option
   /**
    * Java API: The port if specified or empty optional if not
    */
-  def getPort(): Optional[Int] = port.asJava
+  def getPort(): Optional[Integer] = port.asJava.asInstanceOf[Optional[Integer]]
 
   /**
    * Returns true if this Address is only defined locally. It is not safe to send locally scoped addresses to remote
