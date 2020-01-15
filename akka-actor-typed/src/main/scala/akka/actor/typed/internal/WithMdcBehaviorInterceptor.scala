@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
@@ -26,7 +26,7 @@ import scala.reflect.ClassTag
 }
 
 /**
- * Support for Mapped Dagnostic Context for logging
+ * Support for Mapped Diagnostic Context for logging
  *
  * INTERNAL API
  */

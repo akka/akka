@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -82,6 +82,7 @@ object JournalPuppet extends ExtensionId[JournalProbe] with ExtensionIdProvider 
     new JournalProbe()(system)
 
   override def get(system: ActorSystem): JournalProbe = super.get(system)
+  override def get(system: ClassicActorSystemProvider): JournalProbe = super.get(system)
 }
 class JournalProbe(implicit private val system: ExtendedActorSystem) extends Extension {
   val probe = TestProbe()

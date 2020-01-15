@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.stream
@@ -7,7 +7,6 @@ package docs.stream
 import akka.NotUsed
 import akka.stream.scaladsl.{ Flow, Sink, Source }
 import akka.stream.testkit._
-import org.reactivestreams.Processor
 import akka.testkit.AkkaSpec
 
 class ReactiveStreamsDocSpec extends AkkaSpec {
@@ -16,6 +15,7 @@ class ReactiveStreamsDocSpec extends AkkaSpec {
   //#imports
   import org.reactivestreams.Publisher
   import org.reactivestreams.Subscriber
+  import org.reactivestreams.Processor
   //#imports
 
   trait Fixture {

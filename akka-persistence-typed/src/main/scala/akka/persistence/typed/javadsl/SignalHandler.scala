@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.javadsl
@@ -45,7 +45,7 @@ final class SignalHandlerBuilder[State] {
   private var handler: PartialFunction[(State, Signal), Unit] = PartialFunction.empty
 
   /**
-   * If the behavior recieves a signal of type `T`, `callback` is invoked with the signal instance as input.
+   * If the behavior receives a signal of type `T`, `callback` is invoked with the signal instance as input.
    */
   def onSignal[T <: Signal](signalType: Class[T], callback: BiConsumer[State, T]): SignalHandlerBuilder[State] = {
     val newPF: PartialFunction[(State, Signal), Unit] = {

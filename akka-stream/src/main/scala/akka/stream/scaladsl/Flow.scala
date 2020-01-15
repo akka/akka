@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -26,7 +26,6 @@ import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
-import scala.language.higherKinds
 import akka.stream.impl.fusing.FlattenMerge
 import akka.NotUsed
 import akka.actor.ActorRef
@@ -1601,8 +1600,10 @@ trait FlowOps[+Out, +Mat] {
    * @param of time to shift all messages
    * @param strategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
-  def delay(of: FiniteDuration, strategy: DelayOverflowStrategy = DelayOverflowStrategy.dropTail): Repr[Out] =
-    via(new Delay[Out](() => DelayStrategy.fixedDelay(of), strategy))
+  def delay(of: FiniteDuration, strategy: DelayOverflowStrategy = DelayOverflowStrategy.dropTail): Repr[Out] = {
+    val fixedDelay = DelayStrategy.fixedDelay(of)
+    via(new Delay[Out](() => fixedDelay, strategy))
+  }
 
   /**
    * Shifts elements emission in time by an amount individually determined through delay strategy a specified amount.

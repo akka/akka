@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.cluster.typed;
@@ -186,6 +186,19 @@ public interface ReceptionistExample {
     }
   }
   // #find
+
+  default void deregisterSample() {
+    Behaviors.<PingService.Ping>setup(
+        context -> {
+          // #deregister
+          context
+              .getSystem()
+              .receptionist()
+              .tell(Receptionist.deregister(PingService.pingServiceKey, context.getSelf()));
+          // #deregister
+          return Behaviors.empty();
+        });
+  }
 
   public static void main(String[] args) throws Exception {
     ActorSystem<Void> system = ActorSystem.create(Guardian.create(), "ReceptionistExample");

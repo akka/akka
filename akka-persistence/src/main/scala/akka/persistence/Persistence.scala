@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence
@@ -157,6 +157,8 @@ object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
 
   /** Java API. */
   override def get(system: ActorSystem): Persistence = super.get(system)
+
+  override def get(system: ClassicActorSystemProvider): Persistence = super.get(system)
 
   def createExtension(system: ExtendedActorSystem): Persistence = new Persistence(system)
 

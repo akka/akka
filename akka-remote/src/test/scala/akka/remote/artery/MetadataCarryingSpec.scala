@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -18,6 +18,7 @@ import akka.testkit.JavaSerializable
 
 object MetadataCarryingSpy extends ExtensionId[MetadataCarryingSpy] with ExtensionIdProvider {
   override def get(system: ActorSystem): MetadataCarryingSpy = super.get(system)
+  override def get(system: ClassicActorSystemProvider): MetadataCarryingSpy = super.get(system)
   override def lookup = MetadataCarryingSpy
   override def createExtension(system: ExtendedActorSystem): MetadataCarryingSpy = new MetadataCarryingSpy
 

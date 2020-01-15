@@ -17,6 +17,14 @@ Combines elements from multiple sources through a `combine` function and passes 
 Combines elements from multiple sources through a `combine` function and passes the
 returned value downstream.
 
+## Examples
+
+Scala
+:   @@snip [FlowZipWithSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowZipWithSpec.scala) { #zip-with }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #zip-with }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -28,11 +36,3 @@ returned value downstream.
 **completes** when any upstream completes
 
 @@@
-
-
-## Example
-Scala
-:   @@snip [FlowZipWithSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowZipWithSpec.scala) { #zip-with }
-
-Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #zip-with }

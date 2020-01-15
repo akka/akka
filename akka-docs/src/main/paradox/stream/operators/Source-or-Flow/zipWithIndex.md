@@ -16,6 +16,14 @@ Zips elements of current flow with its indices.
 
 Zips elements of current flow with its indices.
 
+## Example
+
+Scala
+:   @@snip [FlowZipWithIndexSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowZipWithIndexSpec.scala) { #zip-with-index }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #zip-with-index }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -27,11 +35,3 @@ Zips elements of current flow with its indices.
 **completes** when upstream completes
 
 @@@
-
-## Example
-
-Scala
-:   @@snip [FlowZipWithIndexSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowZipWithIndexSpec.scala) { #zip-with-index }
-
-Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #zip-with-index }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -31,6 +31,7 @@ package akka.actor
  *
  *   // Java API: retrieve the extension for the given system.
  *   override def get(system: ActorSystem): UdpExt = super.get(system)
+ *   override def get(system: ClassicActorSystemProvider): UdpExt = super.get(system)
  * }
  *
  * class Ext(system: ExtendedActorSystem) extends Extension {
@@ -79,6 +80,11 @@ trait ExtensionId[T <: Extension] {
 
   /**
    * Returns an instance of the extension identified by this ExtensionId instance.
+   */
+  def apply(system: ClassicActorSystemProvider): T = apply(system.classicSystem)
+
+  /**
+   * Returns an instance of the extension identified by this ExtensionId instance.
    * Java API
    * For extensions written in Scala that are to be used from Java also,
    * this method should be overridden to get correct return type.
@@ -88,6 +94,18 @@ trait ExtensionId[T <: Extension] {
    *
    */
   def get(system: ActorSystem): T = apply(system)
+
+  /**
+   * Returns an instance of the extension identified by this ExtensionId instance.
+   * Java API
+   * For extensions written in Scala that are to be used from Java also,
+   * this method should be overridden to get correct return type.
+   * {{{
+   * override def get(system: ClassicActorSystemProvider): TheExtension = super.get(system)
+   * }}}
+   *
+   */
+  def get(system: ClassicActorSystemProvider): T = apply(system)
 
   /**
    * Is used by Akka to instantiate the Extension identified by this ExtensionId,

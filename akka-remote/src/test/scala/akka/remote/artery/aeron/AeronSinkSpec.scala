@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -58,7 +58,7 @@ class AeronSinkSpec extends AkkaSpec("""
       val channel = s"aeron:udp?endpoint=localhost:$port"
 
       Source
-        .fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, IgnoreEventSink, 0))
+        .fromGraph(new AeronSource(channel, 1, aeron, taskRunner, pool, NoOpRemotingFlightRecorder, 0))
         // fail receiver stream on first message
         .map(_ => throw new RuntimeException("stop") with NoStackTrace)
         .runWith(Sink.ignore)
@@ -73,7 +73,7 @@ class AeronSinkSpec extends AkkaSpec("""
           envelope.byteBuffer.flip()
           envelope
         }
-        .runWith(new AeronSink(channel, 1, aeron, taskRunner, pool, 500.millis, IgnoreEventSink))
+        .runWith(new AeronSink(channel, 1, aeron, taskRunner, pool, 500.millis, NoOpRemotingFlightRecorder))
 
       // without the give up timeout the stream would not complete/fail
       intercept[GaveUpMessageException] {

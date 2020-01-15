@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed.internal.receptionist
@@ -12,8 +12,6 @@ import akka.cluster.UniqueAddress
 import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, SelfUniqueAddress }
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist.{ DDataKey, EmptyORMultiMap, Entry }
 
-import scala.concurrent.duration.Deadline
-
 /**
  * INTERNAL API
  */
@@ -23,7 +21,7 @@ import scala.concurrent.duration.Deadline
       val key = ORMultiMapKey[ServiceKey[_], Entry](s"ReceptionistKey_$n")
       key -> new ServiceRegistry(EmptyORMultiMap)
     }.toMap
-    new ShardedServiceRegistry(emptyRegistries, Map.empty, Set.empty, Set.empty)
+    new ShardedServiceRegistry(emptyRegistries, Set.empty, Set.empty)
   }
 
 }
@@ -34,14 +32,11 @@ import scala.concurrent.duration.Deadline
  * Two level structure for keeping service registry to be able to shard entries over multiple ddata keys (to not
  * get too large ddata messages)
  *
- * @param tombstones Local actors that were stopped and should not be re-added to the available set of actors
- *                   for a key. Since the only way to unregister is to stop, we don't need to keep track of
- *                   the service key
+
  *
  */
 @InternalApi private[akka] final case class ShardedServiceRegistry(
     serviceRegistries: Map[DDataKey, ServiceRegistry],
-    tombstones: Map[ActorRef[_], Deadline],
     nodes: Set[UniqueAddress],
     unreachable: Set[UniqueAddress]) {
 
@@ -70,32 +65,8 @@ import scala.concurrent.duration.Deadline
   def keysFor(address: UniqueAddress)(implicit node: SelfUniqueAddress): Set[AbstractServiceKey] =
     serviceRegistries.valuesIterator.flatMap(_.keysFor(address)).toSet
 
-  /**
-   * @return (reachable-nodes, all)
-   */
-  def activeActorRefsFor[T](
-      key: ServiceKey[T],
-      selfUniqueAddress: UniqueAddress): (Set[ActorRef[T]], Set[ActorRef[T]]) = {
-    val ddataKey = ddataKeyFor(key)
-    val entries = serviceRegistries(ddataKey).entriesFor(key)
-    val selfAddress = selfUniqueAddress.address
-    val reachable = Set.newBuilder[ActorRef[T]]
-    val all = Set.newBuilder[ActorRef[T]]
-    entries.foreach { entry =>
-      val entryAddress = entry.uniqueAddress(selfAddress)
-      if (nodes.contains(entryAddress) && !hasTombstone(entry.ref)) {
-        val ref = entry.ref.asInstanceOf[ActorRef[key.Protocol]]
-        all += ref
-        if (!unreachable.contains(entryAddress)) {
-          reachable += ref
-        }
-      }
-    }
-    (reachable.result(), all.result())
-  }
-
   def withServiceRegistry(ddataKey: DDataKey, registry: ServiceRegistry): ShardedServiceRegistry =
-    copy(serviceRegistries + (ddataKey -> registry), tombstones)
+    copy(serviceRegistries + (ddataKey -> registry))
 
   def allUniqueAddressesInState(selfUniqueAddress: UniqueAddress): Set[UniqueAddress] =
     allEntries.collect {
@@ -117,18 +88,6 @@ import scala.concurrent.duration.Deadline
         val updated = acc.getOrElse(ddataKey, Map.empty) + (key -> entries)
         acc + (ddataKey -> updated)
     }
-
-  def addTombstone(actorRef: ActorRef[_], deadline: Deadline): ShardedServiceRegistry =
-    copy(tombstones = tombstones + (actorRef -> deadline))
-
-  def hasTombstone(actorRef: ActorRef[_]): Boolean =
-    tombstones.nonEmpty && tombstones.contains(actorRef)
-
-  def pruneTombstones(): ShardedServiceRegistry = {
-    copy(tombstones = tombstones.filter {
-      case (_, deadline) => deadline.hasTimeLeft
-    })
-  }
 
   def addNode(node: UniqueAddress): ShardedServiceRegistry =
     copy(nodes = nodes + node)

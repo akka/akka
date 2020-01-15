@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery
@@ -168,7 +168,7 @@ abstract class AeronStreamMaxThroughputSpec
       val done = TestLatch(1)
       val killSwitch = KillSwitches.shared(testName)
       Source
-        .fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, IgnoreEventSink, 0))
+        .fromGraph(new AeronSource(channel(second), streamId, aeron, taskRunner, pool, NoOpRemotingFlightRecorder, 0))
         .via(killSwitch.flow)
         .runForeach { envelope =>
           val bytes = ByteString.fromByteBuffer(envelope.byteBuffer)
@@ -205,7 +205,15 @@ abstract class AeronStreamMaxThroughputSpec
           envelope.byteBuffer.flip()
           envelope
         }
-        .runWith(new AeronSink(channel(second), streamId, aeron, taskRunner, pool, giveUpMessageAfter, IgnoreEventSink))
+        .runWith(
+          new AeronSink(
+            channel(second),
+            streamId,
+            aeron,
+            taskRunner,
+            pool,
+            giveUpMessageAfter,
+            NoOpRemotingFlightRecorder))
 
       printStats("sender")
       enterBarrier(testName + "-done")

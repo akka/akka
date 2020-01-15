@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.artery.compress
@@ -18,7 +18,7 @@ import scala.reflect.ClassTag
  *
  * See also Section 5.2 of http://dimacs.rutgers.edu/~graham/pubs/papers/cm-full.pdf
  * for a discussion about the assumptions made and guarantees about the Heavy Hitters made in this model.
- * We assume the Cash Register model in which there are only additions, which simplifies HH detecion significantly.
+ * We assume the Cash Register model in which there are only additions, which simplifies HH detection significantly.
  *
  * This class is a hybrid data structure containing a hashmap and a heap pointing to slots in the hashmap. The capacity
  * of the hashmap is twice that of the heap to reduce clumping of entries on collisions.

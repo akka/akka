@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 syntax = "proto2";
@@ -20,6 +20,7 @@ message PersistentMessage {
   optional string sender = 11; // not stored in journal, needed for remote serialization 
   optional string manifest = 12;
   optional string writerUuid = 13;
+  optional sint64 timestamp = 14;
 }
 
 message PersistentPayload {

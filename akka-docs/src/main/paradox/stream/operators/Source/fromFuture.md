@@ -1,6 +1,6 @@
 # fromFuture
 
-`fromFuture` has been deprecated in 2.6.0, use `Source.future` instead.
+Deprecated by @ref[`Source.future`](future.md).
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -28,6 +28,3 @@ If the future fails the stream is failed with that exception.
 **completes** after the future has completed
 
 @@@
-
-## Example
-

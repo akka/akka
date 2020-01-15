@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -27,46 +27,13 @@ object AkkaBuild {
 
   lazy val buildSettings = Def.settings(
     organization := "com.typesafe.akka",
-    Dependencies.Versions,
-    // use the same value as in the build scope
-    version := (version in ThisBuild).value)
-
-  lazy val currentDateTime = {
-    // storing the first accessed timestamp in system property so that it will be the
-    // same when build is reloaded or when using `+`.
-    // `+` actually doesn't re-initialize this part of the build but that may change in the future.
-    sys.props.getOrElseUpdate("akka.build.timestamp",
-      DateTimeFormatter
-        .ofPattern("yyyyMMdd-HHmmss")
-        .format(ZonedDateTime.now(ZoneOffset.UTC)))
-  }
-
-  def akkaVersion: String = {
-    val default = "2.6-SNAPSHOT"
-    sys.props.getOrElse("akka.build.version", default) match {
-      case "timestamp" => s"2.6-$currentDateTime" // used when publishing timestamped snapshots
-      case "file" => akkaVersionFromFile(default)  
-      case v => v
-    }
-  }
-
-  def akkaVersionFromFile(default: String): String = {
-    val versionFile = "akka-actor/target/classes/version.conf"
-    if (new File(versionFile).exists()) {
-      val versionProps = new Properties()
-      val reader = new FileReader(versionFile)
-      try versionProps.load(reader) finally reader.close()
-      versionProps.getProperty("akka.version", default).replaceAll("\"", "")
-    } else
-      default
-  }
+    Dependencies.Versions)
 
   lazy val rootSettings = Def.settings(
     Release.settings,
     UnidocRoot.akkaSettings,
     Protobuf.settings,
     parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
-    version in ThisBuild := akkaVersion,
     // used for linking to API docs (overwrites `project-info.version`)
     ThisBuild / projectInfoVersion := { if (isSnapshot.value) "snapshot" else version.value }
   )
@@ -121,7 +88,13 @@ object AkkaBuild {
 
   private def allWarnings: Boolean = System.getProperty("akka.allwarnings", "false").toBoolean
 
-  final val DefaultScalacOptions = Seq("-encoding", "UTF-8", "-feature", "-unchecked", "-Xlog-reflective-calls")
+  final val DefaultScalacOptions = Seq(
+    "-encoding", "UTF-8",
+    "-feature",
+    "-unchecked",
+    "-Xlog-reflective-calls",
+    // 'blessed' since 2.13.1
+    "-language:higherKinds")
 
   // -XDignore.symbol.file suppresses sun.misc.Unsafe warnings
   final val DefaultJavacOptions = Seq("-encoding", "UTF-8", "-Xlint:unchecked", "-XDignore.symbol.file")

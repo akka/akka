@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -47,6 +47,8 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * Java API: retrieve the Tcp extension for the given system.
    */
   override def get(system: ActorSystem): TcpExt = super.get(system)
+
+  override def get(system: ClassicActorSystemProvider): TcpExt = super.get(system)
 
   /**
    * Scala API: this object contains all applicable socket options for TCP.

@@ -1,9 +1,10 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.internal
 
+import akka.actor.WrappedMessage
 import akka.annotation.InternalApi
 
 /**
@@ -22,6 +23,8 @@ import akka.annotation.InternalApi
  * function. Used by `ActorContext.spawnMessageAdapter` and `ActorContext.ask` so that the function is
  * applied in the "parent" actor (for better thread safety)..
  */
-@InternalApi private[akka] final case class AdaptMessage[U, T](msg: U, adapter: U => T) extends InternalMessage {
-  def adapt(): T = adapter(msg)
+@InternalApi private[akka] final case class AdaptMessage[U, T](message: U, adapter: U => T)
+    extends InternalMessage
+    with WrappedMessage {
+  def adapt(): T = adapter(message)
 }

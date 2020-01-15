@@ -1,10 +1,9 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl;
 
-import akka.Done;
 import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.StreamTest;
@@ -60,7 +59,9 @@ public class LazyAndFutureSourcesTest extends StreamTest {
     CompletionStage<NotUsed> nestedMatVal = result.first();
     CompletionStage<List<String>> list = result.second();
     assertEquals(Arrays.asList("one"), list.toCompletableFuture().get(3, TimeUnit.SECONDS));
-    assertEquals(true, nestedMatVal.toCompletableFuture().isDone());
+    // Future adaption to completionstage of matval means we cannot count on matval future being
+    // completed just because stream is
+    nestedMatVal.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -87,7 +88,9 @@ public class LazyAndFutureSourcesTest extends StreamTest {
     CompletionStage<NotUsed> nestedMatVal = result.first();
     CompletionStage<List<String>> list = result.second();
     assertEquals(Arrays.asList("one"), list.toCompletableFuture().get(3, TimeUnit.SECONDS));
-    assertEquals(true, nestedMatVal.toCompletableFuture().isDone());
+    // Future adaption to completionstage of matval means we cannot count on matval future being
+    // completed just because stream is
+    nestedMatVal.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 
   @Test
@@ -101,6 +104,8 @@ public class LazyAndFutureSourcesTest extends StreamTest {
     CompletionStage<NotUsed> nestedMatVal = result.first();
     CompletionStage<List<String>> list = result.second();
     assertEquals(Arrays.asList("one"), list.toCompletableFuture().get(3, TimeUnit.SECONDS));
-    assertEquals(true, nestedMatVal.toCompletableFuture().isDone());
+    // flatMap/thenCompose of matval means we cannot count on matval future being completed just
+    // because stream is
+    nestedMatVal.toCompletableFuture().get(3, TimeUnit.SECONDS);
   }
 }

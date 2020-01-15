@@ -1,10 +1,8 @@
 /*
- * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
-
-import language.higherKinds
 
 /**
  * An immutable multi-map that expresses the value type as a type function of the key

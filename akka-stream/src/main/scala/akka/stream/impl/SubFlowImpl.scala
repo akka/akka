@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl
@@ -8,8 +8,6 @@ import akka.NotUsed
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.scaladsl._
-
-import language.higherKinds
 
 /**
  * INTERNAL API

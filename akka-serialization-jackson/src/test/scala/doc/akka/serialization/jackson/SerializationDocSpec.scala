@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package doc.akka.serialization.jackson
@@ -99,6 +99,31 @@ object SerializationDocSpec {
       }
     }
     #//#several-config
+  """
+
+  val configManifestless = """
+    #//#manifestless
+    akka.actor {
+      serializers {
+        jackson-json-event = "akka.serialization.jackson.JacksonJsonSerializer"
+      }
+      serialization-identifiers {
+        jackson-json-event = 9001
+      }
+      serialization-bindings {
+        "com.myservice.MyEvent" = jackson-json-event
+      }
+    }
+    akka.serialization.jackson {
+      jackson-json-event {
+        type-in-manifest = off
+        # Since there is exactly one serialization binding declared for this
+        # serializer above, this is optional, but if there were none or many,
+        # this would be mandatory.
+        deserialization-type = "com.myservice.MyEvent"
+      }
+    }
+    #//#manifestless
   """
 
   //#polymorphism

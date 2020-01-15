@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.persistence;
@@ -246,15 +246,15 @@ public class PersistenceSchemaEvolutionDocTest {
   }
 
   // #split-events-during-recovery
-  interface V1 {};
+  interface Version1 {};
 
-  interface V2 {}
+  interface Version2 {}
 
   // #split-events-during-recovery
   public
   // #split-events-during-recovery
   // V1 event:
-  static class UserDetailsChanged implements V1 {
+  static class UserDetailsChanged implements Version1 {
     public final String name;
     public final String address;
 
@@ -268,7 +268,7 @@ public class PersistenceSchemaEvolutionDocTest {
   public
   // #split-events-during-recovery
   // corresponding V2 events:
-  static class UserNameChanged implements V2 {
+  static class UserNameChanged implements Version2 {
     public final String name;
 
     public UserNameChanged(String name) {
@@ -278,7 +278,7 @@ public class PersistenceSchemaEvolutionDocTest {
   // #split-events-during-recovery
   public
   // #split-events-during-recovery
-  static class UserAddressChanged implements V2 {
+  static class UserAddressChanged implements Version2 {
     public final String address;
 
     public UserAddressChanged(String address) {

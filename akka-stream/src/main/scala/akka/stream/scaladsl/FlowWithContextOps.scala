@@ -1,12 +1,11 @@
 /*
- * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
 
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.language.higherKinds
 import scala.annotation.unchecked.uncheckedVariance
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts

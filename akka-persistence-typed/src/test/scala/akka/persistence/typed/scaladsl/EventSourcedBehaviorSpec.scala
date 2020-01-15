@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.typed.scaladsl
@@ -74,7 +74,7 @@ object EventSourcedBehaviorSpec {
     }
   }
 
-  // also used from PersistentActorTest
+  // also used from PersistentActorTest, EventSourcedBehaviorWatchSpec
   def conf: Config = ConfigFactory.parseString(s"""
     akka.loglevel = INFO
     # akka.persistence.typed.log-stashing = on
@@ -283,10 +283,9 @@ class EventSourcedBehaviorSpec
     with LogCapturing {
 
   import EventSourcedBehaviorSpec._
-  import akka.actor.typed.scaladsl.adapter._
 
   val queries: LeveldbReadJournal =
-    PersistenceQuery(system.toClassic).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
+    PersistenceQuery(system).readJournalFor[LeveldbReadJournal](LeveldbReadJournal.Identifier)
 
   val pidCounter = new AtomicInteger(0)
   private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
@@ -462,7 +461,7 @@ class EventSourcedBehaviorSpec
       replyProbe.expectMessage(State(1, Vector(0)))
 
       val events = queries.currentEventsByTag("tag1").runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Incremented(1)))
+      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Incremented(1), 0L))
     }
 
     "handle scheduled message arriving before recovery completed " in {

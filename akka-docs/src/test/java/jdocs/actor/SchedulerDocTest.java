@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.actor;
@@ -64,7 +64,7 @@ public class SchedulerDocTest extends AbstractJavaTest {
             .matchEquals(
                 "Tick",
                 m -> {
-                  // Do someting
+                  // Do something
                 })
             .build();
       }

@@ -4,7 +4,7 @@ project.description: Akka Persistence Classic, event sourcing with Akka, At-Leas
 # Classic Persistence
 
 @@include[includes.md](includes.md) { #actor-api }
-For the full documentation of this feature and for new projects see @ref:[persistence](typed/persistence.md).
+For the full documentation of this feature and for new projects see @ref:[Event Sourcing](typed/persistence.md).
 
 ## Module info
 
@@ -764,7 +764,7 @@ A simple `toJournal:MyModel=>MyDataModel` and `fromJournal:MyDataModel=>MyModel`
 understand JSON it is possible to write an EventAdapter `toJournal:Any=>JSON` such that the Journal can *directly* store the
 json instead of serializing the object to its binary representation.
 
-Implementing an EventAdapter is rather stright forward:
+Implementing an EventAdapter is rather straightforward:
 
 Scala
 :  @@snip [PersistenceEventAdapterDocSpec.scala](/akka-docs/src/test/scala/docs/persistence/PersistenceEventAdapterDocSpec.scala) { #identity-event-adapter }

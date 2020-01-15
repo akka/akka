@@ -11,6 +11,9 @@ In the rest of this document whenever *binary compatibility* is mentioned "*back
 This means that the new JARs are a drop-in replacement for the old one 
 (but not the other way around) as long as your build does not enable the inliner (Scala-only restriction).
 
+Because of this approach applications can upgrade to the latest version of Akka
+even when @ref[intermediate satellite projects are not yet upgraded](../project/downstream-upgrade-strategy.md)
+
 ## Binary compatibility rules explained
 
 Binary compatibility is maintained between:

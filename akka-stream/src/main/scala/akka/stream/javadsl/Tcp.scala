@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.javadsl
@@ -129,6 +129,8 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   }
 
   override def get(system: ActorSystem): Tcp = super.get(system)
+
+  override def get(system: ClassicActorSystemProvider): Tcp = super.get(system)
 
   def lookup() = Tcp
 

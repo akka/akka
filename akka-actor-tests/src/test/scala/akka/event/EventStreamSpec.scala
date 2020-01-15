@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -26,6 +26,7 @@ object EventStreamSpec {
         stdout-loglevel = WARNING
         loglevel = WARNING
         actor.debug.unhandled = on
+        log-dead-letters = off
       }
       """)
 

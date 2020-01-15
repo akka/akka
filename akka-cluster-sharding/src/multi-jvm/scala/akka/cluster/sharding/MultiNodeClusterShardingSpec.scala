@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -45,6 +45,10 @@ object MultiNodeClusterShardingSpec {
 
 }
 
+/**
+ * Note that this class is not used anywhere yet, but could be a good starting point
+ * for new or refactored multi-node sharding specs
+ */
 abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterShardingConfig)
     extends MultiNodeSpec(config)
     with MultiNodeClusterSpec {

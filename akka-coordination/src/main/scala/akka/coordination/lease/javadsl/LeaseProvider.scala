@@ -1,15 +1,17 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.coordination.lease.javadsl
 
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.coordination.lease.internal.LeaseAdapter
 import akka.coordination.lease.scaladsl.{ LeaseProvider => ScalaLeaseProvider }
 
 object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): LeaseProvider = super.get(system)
+  override def get(system: ClassicActorSystemProvider): LeaseProvider = super.get(system)
 
   override def lookup = LeaseProvider
 

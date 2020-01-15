@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote.transport
@@ -49,6 +49,7 @@ class TransportAdapters(system: ExtendedActorSystem) extends Extension {
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object TransportAdaptersExtension extends ExtensionId[TransportAdapters] with ExtensionIdProvider {
   override def get(system: ActorSystem): TransportAdapters = super.get(system)
+  override def get(system: ClassicActorSystemProvider): TransportAdapters = super.get(system)
   override def lookup = TransportAdaptersExtension
   override def createExtension(system: ExtendedActorSystem): TransportAdapters =
     new TransportAdapters(system)

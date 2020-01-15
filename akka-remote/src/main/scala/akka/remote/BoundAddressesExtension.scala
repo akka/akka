@@ -1,11 +1,12 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
 
 import akka.actor.ActorSystem
 import akka.actor.Address
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -17,6 +18,7 @@ import akka.remote.artery.ArteryTransport
  */
 object BoundAddressesExtension extends ExtensionId[BoundAddressesExtension] with ExtensionIdProvider {
   override def get(system: ActorSystem): BoundAddressesExtension = super.get(system)
+  override def get(system: ClassicActorSystemProvider): BoundAddressesExtension = super.get(system)
 
   override def lookup = BoundAddressesExtension
 

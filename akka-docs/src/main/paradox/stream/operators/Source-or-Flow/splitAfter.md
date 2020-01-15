@@ -16,6 +16,19 @@ End the current substream whenever a predicate returns `true`, starting a new su
 
 End the current substream whenever a predicate returns `true`, starting a new substream for the next element.
 
+## Example
+
+Given some time series data source we would like to split the stream into sub-streams for each second.
+By using `sliding` we can compare the timestamp of the current and next element to decide when to split.
+
+Scala
+:  @@snip [Scan.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Split.scala) { #splitAfter }
+
+Java
+:  @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/Split.java) { #splitAfter }
+
+An alternative way of implementing this is shown in @ref:[splitWhen example](splitWhen.md#example).
+
 ## Reactive Streams semantics
 
 @@@div { .callout }

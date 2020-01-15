@@ -1,10 +1,11 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
 
 import akka.actor.ActorRef
+import akka.annotation.InternalApi
 import akka.japi.function.Procedure2
 
 /**
@@ -109,6 +110,42 @@ final class MessageBuffer private (private var _head: MessageBuffer.Node, privat
    * @param f the function to apply to each element
    */
   def forEach(f: Procedure2[Any, ActorRef]): Unit = foreach { case (message, ref) => f(message, ref) }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def filterNot(p: (Any, ActorRef) => Boolean): Unit = {
+    // easiest to collect a new list, and then re-link the nodes
+    var result = Vector.empty[Node]
+    var node = _head
+    while (node ne null) {
+      if (!p(node.message, node.ref)) {
+        result :+= node
+      }
+      node = node.next
+    }
+
+    _size = result.size
+    if (_size == 0) {
+      _head = null
+      _tail = null
+    } else if (_size == 1) {
+      _head = result.head
+      _tail = result.head
+      _tail.next = null
+    } else {
+      _head = result.head
+      _tail = result.last
+      _tail.next = null
+      var i = 0
+      while (i < result.size) {
+        val node = result(i)
+        if (node ne _tail)
+          node.next = result(i + 1)
+        i += 1
+      }
+    }
+  }
 }
 
 object MessageBuffer {
@@ -116,6 +153,8 @@ object MessageBuffer {
     def apply(f: (Any, ActorRef) => Unit): Unit = {
       f(message, ref)
     }
+
+    override def toString: String = s"Node($message,$ref)"
   }
 
   /**

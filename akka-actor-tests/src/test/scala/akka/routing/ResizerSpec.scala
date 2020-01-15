@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.routing
@@ -193,7 +193,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
         }
       }
 
-      // 2 more should go thru without triggering more
+      // 2 more should go through without triggering more
       loop(2, 200 millis)
       routeeSize(router) should ===(resizer.lowerBound)
 

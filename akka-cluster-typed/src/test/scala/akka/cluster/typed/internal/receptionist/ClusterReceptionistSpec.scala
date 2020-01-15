@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed.internal.receptionist
@@ -17,7 +17,6 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.MemberStatus
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Down
@@ -67,6 +66,7 @@ object ClusterReceptionistSpec {
   }
 
   val PingKey = ServiceKey[PingProtocol]("pingy")
+  val AnotherKey = ServiceKey[PingProtocol]("pingy-2")
 }
 
 class ClusterReceptionistSpec extends WordSpec with Matchers with LogCapturing {
@@ -210,7 +210,7 @@ class ClusterReceptionistSpec extends WordSpec with Matchers with LogCapturing {
 
         regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(2)
 
-        akka.cluster.Cluster(system1.toClassic).shutdown()
+        akka.cluster.Cluster(system1).shutdown()
 
         regProbe2.expectNoMessage(3.seconds)
 
@@ -526,7 +526,6 @@ class ClusterReceptionistSpec extends WordSpec with Matchers with LogCapturing {
         system2.receptionist ! Subscribe(TheKey, regProbe2.ref)
         regProbe2.fishForMessage(10.seconds) {
           case TheKey.Listing(actors) if actors.nonEmpty =>
-            println(actors)
             FishingOutcomes.complete
           case _ => FishingOutcomes.continue
         }
@@ -568,5 +567,173 @@ class ClusterReceptionistSpec extends WordSpec with Matchers with LogCapturing {
       }
     }
 
+    "handle unregistration and re-registration of services" in {
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-10", ClusterReceptionistSpec.config)
+      val system1 = testKit1.system
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
+      val system2 = testKit2.system
+      try {
+
+        val clusterNode1 = Cluster(system1)
+        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+        val clusterNode2 = Cluster(system2)
+        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+
+        val regProbe1 = TestProbe[Any]()(system1)
+        val regProbe2 = TestProbe[Any]()(system2)
+
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2), 10.seconds)
+
+        system2.receptionist ! Subscribe(PingKey, regProbe2.ref)
+        regProbe2.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+
+        // register and verify seen on remote side
+        val service1 = testKit1.spawn(pingPongBehavior)
+        system1.receptionist ! Register(PingKey, service1, regProbe1.ref)
+        regProbe1.expectMessage(Registered(PingKey, service1))
+        regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(1)
+
+        // another service for the same key
+        val service2 = testKit1.spawn(pingPongBehavior)
+        system1.receptionist ! Register(PingKey, service2, regProbe1.ref)
+        regProbe1.expectMessage(Registered(PingKey, service2))
+        regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(2)
+
+        // unregister service1 and verify
+        system1.receptionist ! Deregister(PingKey, service1, regProbe1.ref)
+        regProbe1.expectMessage(Deregistered(PingKey, service1))
+        regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(1)
+
+        // re-register and verify
+        system1.receptionist ! Register(PingKey, service1, regProbe1.ref)
+        regProbe1.expectMessage(Registered(PingKey, service1))
+        regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(2)
+
+        // cover a race between termination and unregistration as well (should lead to only one update)
+        system1.receptionist ! Deregister(PingKey, service1, regProbe1.ref)
+        service1 ! Perish
+
+        regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(1)
+        regProbe2.expectNoMessage(1.second)
+
+        akka.cluster.Cluster(system1).shutdown()
+        clusterNode2.manager ! Down(clusterNode1.selfMember.address)
+      } finally {
+        testKit1.shutdownTestKit()
+        testKit2.shutdownTestKit()
+      }
+
+    }
+
+    "handle unregistration per key not per actor" in {
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-11", ClusterReceptionistSpec.config)
+      val system1 = testKit1.system
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
+      val system2 = testKit2.system
+      try {
+
+        val clusterNode1 = Cluster(system1)
+        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+        val clusterNode2 = Cluster(system2)
+        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+
+        val regProbe1 = TestProbe[Any]()(system1)
+        val regProbe2 = TestProbe[Any]()(system2)
+
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2), 10.seconds)
+
+        system2.receptionist ! Subscribe(PingKey, regProbe2.ref)
+        regProbe2.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+        system2.receptionist ! Subscribe(AnotherKey, regProbe2.ref)
+        regProbe2.expectMessage(Listing(AnotherKey, Set.empty[ActorRef[PingProtocol]]))
+
+        // register same actor for two service keys and verify seen on remote side
+        val service1 = testKit1.spawn(pingPongBehavior)
+        system1.receptionist ! Register(PingKey, service1, regProbe1.ref)
+        regProbe1.expectMessage(Registered(PingKey, service1))
+        regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(1)
+        system1.receptionist ! Register(AnotherKey, service1, regProbe1.ref)
+        regProbe1.expectMessage(Registered(AnotherKey, service1))
+        regProbe2.expectMessageType[Listing].serviceInstances(AnotherKey).size should ===(1)
+
+        // unregister service1 for one of the keys and verify
+        system1.receptionist ! Deregister(PingKey, service1, regProbe1.ref)
+        regProbe1.expectMessage(Deregistered(PingKey, service1))
+        regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(0)
+        system2.receptionist ! Find(AnotherKey, regProbe2.ref)
+        regProbe2.expectMessageType[Listing].serviceInstances(AnotherKey).size should ===(1)
+
+        system1.receptionist ! Find(PingKey, regProbe1.ref)
+        regProbe1.expectMessageType[Listing].serviceInstances(PingKey).size should ===(0)
+        system1.receptionist ! Find(AnotherKey, regProbe1.ref)
+        regProbe1.expectMessageType[Listing].serviceInstances(AnotherKey).size should ===(1)
+
+        akka.cluster.Cluster(system1).shutdown()
+        clusterNode2.manager ! Down(clusterNode1.selfMember.address)
+      } finally {
+        testKit1.shutdownTestKit()
+        testKit2.shutdownTestKit()
+      }
+
+    }
+
+    "handle concurrent unregistration and registration on different nodes" in {
+      // this covers the fact that with ddata a removal can be lost
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-12", ClusterReceptionistSpec.config)
+      val system1 = testKit1.system
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
+      val system2 = testKit2.system
+      try {
+
+        val clusterNode1 = Cluster(system1)
+        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+        val clusterNode2 = Cluster(system2)
+        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+
+        val regProbe1 = TestProbe[Any]()(system1)
+        val regProbe2 = TestProbe[Any]()(system2)
+
+        regProbe1.awaitAssert(clusterNode1.state.members.count(_.status == MemberStatus.Up) should ===(2), 10.seconds)
+
+        system2.receptionist ! Subscribe(PingKey, regProbe2.ref)
+        regProbe2.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+        system1.receptionist ! Subscribe(PingKey, regProbe1.ref)
+        regProbe1.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+
+        // register an actor on one side and verify seen on both
+        val service1 = testKit1.spawn(pingPongBehavior)
+        val service2 = testKit2.spawn(pingPongBehavior)
+        system1.receptionist ! Register(PingKey, service1, regProbe1.ref)
+        regProbe1.expectMessage(Registered(PingKey, service1))
+        regProbe1.expectMessage(Listing(PingKey, Set(service1)))
+        regProbe2.expectMessageType[Listing].serviceInstances(PingKey).size should ===(1)
+
+        // then concurrently register on one node and unregister on the other node for the same key (ofc racy)
+        system1.receptionist ! Deregister(PingKey, service1, regProbe1.ref)
+        system2.receptionist ! Register(PingKey, service2, regProbe2.ref)
+        regProbe1.expectMessage(Deregistered(PingKey, service1))
+        regProbe2.expectMessage(Registered(PingKey, service2))
+
+        regProbe2.fishForMessage(3.seconds) {
+          case PingKey.Listing(actors) if actors == Set(service2) => FishingOutcomes.complete
+          case PingKey.Listing(actors) if actors.size == 2        =>
+            // we may see both actors before we see the removal
+            FishingOutcomes.continueAndIgnore
+        }
+
+        regProbe1.fishForMessage(3.seconds) {
+          case PingKey.Listing(actors) if actors.size == 1 => FishingOutcomes.complete
+          case PingKey.Listing(actors) if actors.isEmpty   => FishingOutcomes.continueAndIgnore
+        }
+
+        akka.cluster.Cluster(system1).shutdown()
+        clusterNode2.manager ! Down(clusterNode1.selfMember.address)
+      } finally {
+        testKit1.shutdownTestKit()
+        testKit2.shutdownTestKit()
+      }
+
+    }
+    // Fixme concurrent registration and unregistration
   }
 }

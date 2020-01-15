@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor
@@ -180,6 +180,8 @@ object CoordinatedShutdown extends ExtensionId[CoordinatedShutdown] with Extensi
   @volatile private var runningJvmHook = false
 
   override def get(system: ActorSystem): CoordinatedShutdown = super.get(system)
+
+  override def get(system: ClassicActorSystemProvider): CoordinatedShutdown = super.get(system)
 
   override def lookup = CoordinatedShutdown
 

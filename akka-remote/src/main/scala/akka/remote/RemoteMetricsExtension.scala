@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.remote
@@ -7,9 +7,9 @@ package akka.remote
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.annotation.tailrec
-
 import akka.actor.ActorSelectionMessage
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -26,6 +26,7 @@ import com.github.ghik.silencer.silent
 @silent("deprecated")
 private[akka] object RemoteMetricsExtension extends ExtensionId[RemoteMetrics] with ExtensionIdProvider {
   override def get(system: ActorSystem): RemoteMetrics = super.get(system)
+  override def get(system: ClassicActorSystemProvider): RemoteMetrics = super.get(system)
 
   override def lookup = RemoteMetricsExtension
 

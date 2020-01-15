@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.event
@@ -8,11 +8,15 @@ import scala.concurrent.duration.Deadline
 import scala.concurrent.duration.FiniteDuration
 
 import akka.actor.Actor
+import akka.actor.ActorLogMarker
 import akka.actor.ActorRef
 import akka.actor.AllDeadLetters
 import akka.actor.DeadLetter
 import akka.actor.DeadLetterActorRef
+import akka.actor.DeadLetterSuppression
 import akka.actor.Dropped
+import akka.actor.UnhandledMessage
+import akka.actor.WrappedMessage
 import akka.event.Logging.Info
 import akka.util.PrettyDuration._
 
@@ -26,6 +30,7 @@ class DeadLetterListener extends Actor {
   override def preStart(): Unit = {
     eventStream.subscribe(self, classOf[DeadLetter])
     eventStream.subscribe(self, classOf[Dropped])
+    eventStream.subscribe(self, classOf[UnhandledMessage])
   }
 
   // don't re-subscribe, skip call to preStart
@@ -57,52 +62,67 @@ class DeadLetterListener extends Actor {
 
   private def receiveWithAlwaysLogging: Receive = {
     case d: AllDeadLetters =>
-      incrementCount()
-      logDeadLetter(d, doneMsg = "")
+      if (!isWrappedSuppressed(d)) {
+        incrementCount()
+        logDeadLetter(d, doneMsg = "")
+      }
   }
 
   private def receiveWithMaxCountLogging: Receive = {
     case d: AllDeadLetters =>
-      incrementCount()
-      if (count == maxCount) {
-        logDeadLetter(d, ", no more dead letters will be logged")
-        context.stop(self)
-      } else {
-        logDeadLetter(d, "")
+      if (!isWrappedSuppressed(d)) {
+        incrementCount()
+        if (count == maxCount) {
+          logDeadLetter(d, ", no more dead letters will be logged")
+          context.stop(self)
+        } else {
+          logDeadLetter(d, "")
+        }
       }
   }
 
   private def receiveWithSuspendLogging(suspendDuration: FiniteDuration): Receive = {
     case d: AllDeadLetters =>
-      incrementCount()
-      if (count == maxCount) {
-        val doneMsg = s", no more dead letters will be logged in next [${suspendDuration.pretty}]"
-        logDeadLetter(d, doneMsg)
-        context.become(receiveWhenSuspended(suspendDuration, Deadline.now + suspendDuration))
-      } else
-        logDeadLetter(d, "")
+      if (!isWrappedSuppressed(d)) {
+        incrementCount()
+        if (count == maxCount) {
+          val doneMsg = s", no more dead letters will be logged in next [${suspendDuration.pretty}]"
+          logDeadLetter(d, doneMsg)
+          context.become(receiveWhenSuspended(suspendDuration, Deadline.now + suspendDuration))
+        } else
+          logDeadLetter(d, "")
+      }
   }
 
   private def receiveWhenSuspended(suspendDuration: FiniteDuration, suspendDeadline: Deadline): Receive = {
     case d: AllDeadLetters =>
-      incrementCount()
-      if (suspendDeadline.isOverdue()) {
-        val doneMsg = s", of which ${count - maxCount - 1} were not logged. The counter will be reset now"
-        logDeadLetter(d, doneMsg)
-        count = 0
-        context.become(receiveWithSuspendLogging(suspendDuration))
+      if (!isWrappedSuppressed(d)) {
+        incrementCount()
+        if (suspendDeadline.isOverdue()) {
+          val doneMsg = s", of which ${count - maxCount - 1} were not logged. The counter will be reset now"
+          logDeadLetter(d, doneMsg)
+          count = 0
+          context.become(receiveWithSuspendLogging(suspendDuration))
+        }
       }
   }
 
   private def logDeadLetter(d: AllDeadLetters, doneMsg: String): Unit = {
     val origin = if (isReal(d.sender)) s" from ${d.sender}" else ""
+    val unwrapped = WrappedMessage.unwrap(d.message)
+    val messageStr = unwrapped.getClass.getName
+    val wrappedIn = if (d.message.isInstanceOf[WrappedMessage]) s" wrapped in [${d.message.getClass.getName}]" else ""
     val logMessage = d match {
       case dropped: Dropped =>
         val destination = if (isReal(d.recipient)) s" to ${d.recipient}" else ""
-        s"Message [${d.message.getClass.getName}]$origin$destination was dropped. ${dropped.reason}. " +
+        s"Message [$messageStr]$wrappedIn$origin$destination was dropped. ${dropped.reason}. " +
+        s"[$count] dead letters encountered$doneMsg. "
+      case _: UnhandledMessage =>
+        val destination = if (isReal(d.recipient)) s" to ${d.recipient}" else ""
+        s"Message [$messageStr]$wrappedIn$origin$destination was unhandled. " +
         s"[$count] dead letters encountered$doneMsg. "
       case _ =>
-        s"Message [${d.message.getClass.getName}]$origin to ${d.recipient} was not delivered. " +
+        s"Message [$messageStr]$wrappedIn$origin to ${d.recipient} was not delivered. " +
         s"[$count] dead letters encountered$doneMsg. " +
         s"If this is not an expected behavior then ${d.recipient} may have terminated unexpectedly. "
     }
@@ -112,11 +132,20 @@ class DeadLetterListener extends Actor {
         d.recipient.getClass,
         logMessage +
         "This logging can be turned off or adjusted with configuration settings 'akka.log-dead-letters' " +
-        "and 'akka.log-dead-letters-during-shutdown'."))
+        "and 'akka.log-dead-letters-during-shutdown'.",
+        Logging.emptyMDC,
+        ActorLogMarker.deadLetter(messageStr)))
   }
 
   private def isReal(snd: ActorRef): Boolean = {
     (snd ne ActorRef.noSender) && (snd ne context.system.deadLetters) && !snd.isInstanceOf[DeadLetterActorRef]
+  }
+
+  private def isWrappedSuppressed(d: AllDeadLetters): Boolean = {
+    d.message match {
+      case w: WrappedMessage if w.message.isInstanceOf[DeadLetterSuppression] => true
+      case _                                                                  => false
+    }
   }
 
 }

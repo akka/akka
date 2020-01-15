@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.scaladsl
@@ -157,6 +157,60 @@ class GraphPartitionSpec extends StreamSpec("""
       c2.expectNext(8)
       sub1.cancel()
       p1Sub.expectCancellation()
+    }
+
+    "handle upstream completes and downstream cancel" in assertAllStagesStopped {
+      val c1 = TestSubscriber.probe[String]()
+      val c2 = TestSubscriber.probe[String]()
+
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val partition = b.add(Partition[String](2, {
+            case s if s == "a" || s == "b" => 0
+            case _                         => 1
+          }))
+          Source(List("a", "b", "c", "d")) ~> partition.in
+          partition.out(0) ~> Sink.fromSubscriber(c1)
+          partition.out(1) ~> Sink.fromSubscriber(c2)
+          ClosedShape
+        })
+        .run()
+
+      c1.request(10)
+      c2.request(1)
+      c1.expectNext("a")
+      c1.expectNext("b")
+      c2.expectNext("c")
+      c2.cancel()
+      c1.expectComplete()
+    }
+
+    "handle upstream completes and downstream pulls" in assertAllStagesStopped {
+      val c1 = TestSubscriber.probe[String]()
+      val c2 = TestSubscriber.probe[String]()
+
+      RunnableGraph
+        .fromGraph(GraphDSL.create() { implicit b =>
+          val partition = b.add(Partition[String](2, {
+            case s if s == "a" || s == "b" => 0
+            case _                         => 1
+          }))
+          Source(List("a", "b", "c")) ~> partition.in
+          partition.out(0) ~> Sink.fromSubscriber(c1)
+          partition.out(1) ~> Sink.fromSubscriber(c2)
+          ClosedShape
+        })
+        .run()
+
+      c1.request(10)
+      // no demand from c2 yet
+      c1.expectNext("a")
+      c1.expectNext("b")
+      c2.request(1)
+      c2.expectNext("c")
+
+      c1.expectComplete()
+      c2.expectComplete()
     }
 
     "work with merge" in assertAllStagesStopped {

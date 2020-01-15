@@ -4,11 +4,11 @@
 
 The section about @ref:[Changing Behavior](persistence.md#changing-behavior) described how commands and events
 can be handled differently depending on the state. One can take that one step further and define the event
-handler inside the state classes. @scala[In @ref:[next section the command handlers](#command-handlers-in-the-state) are
-also defined in the state.]
+handler inside the state classes. @scala[In @ref:[the next section](#command-handlers-in-the-state)
+the command handlers are also defined in the state.]
 
 The state can be seen as your domain object and it should contain the core business logic. Then it's a matter
-of taste if event handlers and command handlers should be defined in the state or be kept outside it.
+of taste if event handlers and command handlers should be defined in the state or be kept outside of it.
 
 Here we are using a bank account as the example domain. It has 3 state classes that are representing the lifecycle
 of the account; `EmptyAccount`, `OpenedAccount`, and `ClosedAccount`.

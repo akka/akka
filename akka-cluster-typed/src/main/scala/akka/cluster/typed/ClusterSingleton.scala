@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.typed
@@ -203,7 +203,6 @@ abstract class ClusterSingleton extends Extension {
 }
 
 object ClusterSingletonManagerSettings {
-  import akka.actor.typed.scaladsl.adapter._
 
   /**
    * Create settings from the default configuration
@@ -211,7 +210,7 @@ object ClusterSingletonManagerSettings {
    */
   def apply(system: ActorSystem[_]): ClusterSingletonManagerSettings =
     apply(system.settings.config.getConfig("akka.cluster.singleton"))
-      .withRemovalMargin(akka.cluster.Cluster(system.toClassic).downingProvider.downRemovalMargin)
+      .withRemovalMargin(akka.cluster.Cluster(system).downingProvider.downRemovalMargin)
 
   /**
    * Create settings from a configuration with the same layout as

@@ -4,20 +4,15 @@ Allows coupling termination (cancellation, completion, erroring) of Sinks and So
 
 @ref[Flow operators composed of Sinks and Sources](../index.md#flow-operators-composed-of-sinks-and-sources)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #fromSinkAndSourceCoupled }
-
-@@@
+@apidoc[Flow.fromSinkAndSourceCoupled](Flow$) { scala="#fromSinkAndSourceCoupled[I,O](sink:akka.stream.Graph[akka.stream.SinkShape[I],_],source:akka.stream.Graph[akka.stream.SourceShape[O],_]):akka.stream.scaladsl.Flow[I,O,akka.NotUsed]" java="#fromSinkAndSourceCoupled(akka.stream.Graph,akka.stream.Graph)" }
 
 ## Description
 
-Allows coupling termination (cancellation, completion, erroring) of Sinks and Sources while creating a Flow between them.
-Similar to `Flow.fromSinkAndSource` however couples the termination of these two operators.
+See @ref[Flow.fromSinkAndSource](fromSinkAndSource.md) for docs on the general workings and examples.
 
-E.g. if the emitted `Flow` gets a cancellation, the `Source` is cancelled,
+This operator only adds coupled termination to what `fromSinkAndSource` does: If the emitted `Flow` gets a cancellation, the `Source` is cancelled,
 however the Sink will also be completed. The table below illustrates the effects in detail:
 
 | Returned Flow                                   | Sink (in)                   | Source (out)                    |

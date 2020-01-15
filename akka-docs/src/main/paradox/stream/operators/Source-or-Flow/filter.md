@@ -41,3 +41,6 @@ Java
 
 @@@
 
+## API docs
+
+@apidoc[Flow.filter](Flow) { scala="#filter(p:Out=%3EBoolean):FlowOps.this.Repr[Out]" java="#filter(akka.japi.function.Predicate)" }

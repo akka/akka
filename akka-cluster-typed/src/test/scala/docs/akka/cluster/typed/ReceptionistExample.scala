@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package docs.akka.cluster.typed
@@ -94,6 +94,12 @@ object PingPongExample {
   }
   //#find
 
+  Behaviors.setup[PingService.Ping] { context =>
+    //#deregister
+    context.system.receptionist ! Receptionist.Deregister(PingService.PingServiceKey, context.self)
+    //#deregister
+    Behaviors.empty
+  }
 }
 
 object ReceptionistExample {

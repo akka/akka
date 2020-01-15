@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -39,7 +39,7 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
    * To get Srv or just one type use DnsProtocol
    *
    * This method is deprecated and involves a copy from the new protocol to
-   * remain compatable
+   * remain compatible
    */
   @silent("deprecated")
   override def cached(name: String): Option[Dns.Resolved] = {

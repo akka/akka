@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed
@@ -14,7 +14,6 @@ import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
 import org.scalatest._
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
@@ -62,8 +61,7 @@ class ActorSystemSpec
         }
         inbox.receiveAll() should ===("hello" :: Nil)
         sys.whenTerminated.futureValue
-        CoordinatedShutdown(sys.toClassic).shutdownReason() should ===(
-          Some(CoordinatedShutdown.ActorSystemTerminateReason))
+        CoordinatedShutdown(sys).shutdownReason() should ===(Some(CoordinatedShutdown.ActorSystemTerminateReason))
       }
     }
 
@@ -98,8 +96,7 @@ class ActorSystemSpec
       // now we know that the guardian has started, and should receive PostStop
       sys.terminate()
       sys.whenTerminated.futureValue
-      CoordinatedShutdown(sys.toClassic).shutdownReason() should ===(
-        Some(CoordinatedShutdown.ActorSystemTerminateReason))
+      CoordinatedShutdown(sys).shutdownReason() should ===(Some(CoordinatedShutdown.ActorSystemTerminateReason))
       inbox.receiveAll() should ===("done" :: Nil)
     }
 

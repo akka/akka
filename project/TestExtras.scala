@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka
@@ -14,6 +14,8 @@ object TestExtras {
       val excludeTestNames = settingKey[Set[String]]("Names of tests to be excluded. Not supported by MultiJVM tests. Example usage: -Dakka.test.names.exclude=TimingSpec")
       val excludeTestTags = settingKey[Set[String]]("Tags of tests to be excluded. It will not be used if you specify -Dakka.test.tags.only. Example usage: -Dakka.test.tags.exclude=long-running")
       val onlyTestTags = settingKey[Set[String]]("Tags of tests to be ran. Example usage: -Dakka.test.tags.only=long-running")
+
+      val checkTestsHaveRun = taskKey[Unit]("Verify a number of notable tests have actually run");
     }
 
     import Keys._
@@ -46,7 +48,19 @@ object TestExtras {
         testOptions in Test ++= {
           val tags = onlyTestTags.value
           if (tags.isEmpty) Seq.empty else Seq(Tests.Argument("-n", tags.mkString(" ")))
-        })
+        },
+
+        checkTestsHaveRun := {
+          require(
+            file("akka-stream-tests/target/test-reports/TEST-akka.stream.scaladsl.FlowPublisherSinkSpec.xml").exists,
+            "The jdk9-only FlowPublisherSinkSpec.scala should be run as part of the build"
+          )
+          require(
+            file("akka-stream-tests/target/test-reports/TEST-akka.stream.javadsl.JavaFlowSupportCompileTest.xml").exists,
+            "The jdk9-only JavaFlowSupportCompileTest.java should be run as part of the build"
+          )
+        }
+      )
     }
 
     def containsOrNotExcludesTag(tag: String) = {

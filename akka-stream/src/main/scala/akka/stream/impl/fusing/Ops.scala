@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.stream.impl.fusing
@@ -909,6 +909,7 @@ private[stream] object Collect {
 
       private val buffer: BufferImpl[T] = BufferImpl(size, inheritedAttributes)
 
+      private val name = inheritedAttributes.nameOrDefault(getClass.toString)
       val enqueueAction: T => Unit =
         overflowStrategy match {
           case s: DropHead =>
@@ -916,7 +917,8 @@ private[stream] object Collect {
               if (buffer.isFull) {
                 log.log(
                   s.logLevel,
-                  "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
+                  "Dropping the head element because buffer is full and overflowStrategy is: [DropHead] in stream [{}]",
+                  name)
                 buffer.dropHead()
               }
               buffer.enqueue(elem)
@@ -926,7 +928,8 @@ private[stream] object Collect {
               if (buffer.isFull) {
                 log.log(
                   s.logLevel,
-                  "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
+                  "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail] in stream [{}]",
+                  name)
                 buffer.dropTail()
               }
               buffer.enqueue(elem)
@@ -936,7 +939,8 @@ private[stream] object Collect {
               if (buffer.isFull) {
                 log.log(
                   s.logLevel,
-                  "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
+                  "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer] in stream [{}]",
+                  name)
                 buffer.clear()
               }
               buffer.enqueue(elem)
@@ -947,17 +951,25 @@ private[stream] object Collect {
               else
                 log.log(
                   s.logLevel,
-                  "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
+                  "Dropping the new element because buffer is full and overflowStrategy is: [DropNew] in stream [{}]",
+                  name)
               pull(in)
           case s: Backpressure =>
             elem =>
               buffer.enqueue(elem)
               if (!buffer.isFull) pull(in)
-              else log.log(s.logLevel, "Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")
+              else
+                log.log(
+                  s.logLevel,
+                  "Backpressuring because buffer is full and overflowStrategy is: [Backpressure] in stream [{}]",
+                  name)
           case s: Fail =>
             elem =>
               if (buffer.isFull) {
-                log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
+                log.log(
+                  s.logLevel,
+                  "Failing because buffer is full and overflowStrategy is: [Fail] in stream [{}]",
+                  name)
                 failStage(BufferOverflowException(s"Buffer overflow (max capacity was: $size)!"))
               } else {
                 buffer.enqueue(elem)
@@ -1700,37 +1712,46 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class Delay[T](
-    private[this] val delayStrategySupplier: () => DelayStrategy[_ >: T],
-    private[this] val overflowStrategy: DelayOverflowStrategy)
-    extends SimpleLinearGraphStage[T] {
-  private[this] def timerName = "DelayedTimer"
+@InternalApi object Delay {
+  private val TimerName = "DelayedTimer"
+  private val DelayPrecisionMS = 10
+}
 
-  private[this] val DelayPrecisionMS = 10
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class Delay[T](
+    delayStrategySupplier: () => DelayStrategy[T],
+    overflowStrategy: DelayOverflowStrategy)
+    extends SimpleLinearGraphStage[T] {
 
   override def initialAttributes: Attributes = DefaultAttributes.delay
 
   override def createLogic(inheritedAttributes: Attributes): GraphStageLogic =
     new TimerGraphStageLogic(shape) with InHandler with OutHandler {
+      import Delay._
+
       private[this] val size = inheritedAttributes.mandatoryAttribute[InputBuffer].max
 
       private[this] val delayStrategy = delayStrategySupplier()
 
-      private[this] var buffer
-          : BufferImpl[(Long, T)] = _ // buffer has pairs timestamp of expected push with upstream element
-
-      override def preStart(): Unit = buffer = BufferImpl(size, inheritedAttributes)
+      // buffer has pairs of timestamp of expected push and element
+      private[this] val buffer = BufferImpl[(Long, T)](size, inheritedAttributes)
 
       private[this] val onPushWhenBufferFull: () => Unit = overflowStrategy match {
         case EmitEarly =>
           () => {
             if (isAvailable(out)) {
-              if (isTimerActive(timerName))
-                cancelTimer(timerName)
+              if (isTimerActive(TimerName)) {
+                cancelTimer(TimerName)
+              }
 
               push(out, buffer.dequeue()._2)
               grabAndPull()
               completeIfReady()
+            } else {
+              throw new IllegalStateException(
+                "Was configured to emitEarly and got element when out is not ready and buffer is full, should not be possible.")
             }
           }
         case _: DropHead =>
@@ -1746,7 +1767,7 @@ private[stream] object Collect {
         case _: DropNew =>
           () => {
             grab(in)
-            if (pullCondition) pull(in)
+            if (shouldPull) pull(in)
           }
         case _: DropBuffer =>
           () => {
@@ -1768,39 +1789,41 @@ private[stream] object Collect {
           onPushWhenBufferFull()
         else {
           grabAndPull()
-          if (!isTimerActive(timerName)) {
+          if (!isTimerActive(TimerName)) {
             val waitTime = nextElementWaitTime()
             if (waitTime <= DelayPrecisionMS && isAvailable(out)) {
               push(out, buffer.dequeue()._2)
               completeIfReady()
             } else
-              scheduleOnce(timerName, waitTime.millis)
+              scheduleOnce(TimerName, waitTime.millis)
           }
         }
       }
 
-      private def pullCondition: Boolean =
-        !overflowStrategy.isBackpressure || buffer.used < size
+      private def shouldPull: Boolean =
+        buffer.used < size || !overflowStrategy.isBackpressure ||
+        // we can only emit early if output is ready
+        (overflowStrategy == EmitEarly && isAvailable(out))
 
       private def grabAndPull(): Unit = {
         val element = grab(in)
         buffer.enqueue((System.nanoTime() + delayStrategy.nextDelay(element).toNanos, element))
-        if (pullCondition) pull(in)
+        if (shouldPull) pull(in)
       }
 
       override def onUpstreamFinish(): Unit =
         completeIfReady()
 
       def onPull(): Unit = {
-        if (!isTimerActive(timerName) && !buffer.isEmpty) {
+        if (!isTimerActive(TimerName) && !buffer.isEmpty) {
           val waitTime = nextElementWaitTime()
           if (waitTime <= DelayPrecisionMS)
             push(out, buffer.dequeue()._2)
           else
-            scheduleOnce(timerName, waitTime.millis)
+            scheduleOnce(TimerName, waitTime.millis)
         }
 
-        if (!isClosed(in) && !hasBeenPulled(in) && pullCondition)
+        if (!isClosed(in) && !hasBeenPulled(in) && shouldPull)
           pull(in)
 
         completeIfReady()

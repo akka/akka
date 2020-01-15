@@ -205,8 +205,8 @@ Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #standalone-ask }
 
 Note that validation errors are also explicit in the message protocol. The `GiveMeCookies` request can reply
-with `Cookies` or `InvalidRequest`. The requestor has to decide how to handle `InvalidRequest` reply. Sometimes
-that should be treated as a failed @scala[`Future`]@java[`Future`] and for that the reply can be mapped on the
+with `Cookies` or `InvalidRequest`. The requestor has to decide how to handle an `InvalidRequest` reply. Sometimes
+it should be treated as a failed @scala[`Future`]@java[`Future`] and for that the reply can be mapped on the
 requestor side.
 
 Scala
@@ -228,7 +228,7 @@ Java
 ## Send Future result to self
 
 When using an API that returns a @scala[`Future`]@java[`CompletionStage`] from an actor it's common that you would
-like to use the value of the in the actor when the @scala[`Future`]@java[`CompletionStage`] is completed. For
+like to use the value of the response in the actor when the @scala[`Future`]@java[`CompletionStage`] is completed. For
 this purpose the `ActorContext` provides a `pipeToSelf` method.
 
 **Example:**
@@ -401,7 +401,7 @@ This can be used with any type of `Behavior`, including `receive`, `receiveMessa
 * Each timer has a key and if a new timer with the same key is started, the previous is cancelled. It is guaranteed that a message from the previous timer is not received, even if it was already enqueued in the mailbox when the new timer was started.
 * Both periodic and single message timers are supported. 
 * The `TimerScheduler` is mutable in itself, because it performs and manages the side effects of registering the scheduled tasks.
-* The `TimerScheduler` is bound to the lifecycle of the actor that owns it and it's cancelled automatically when the actor is stopped.
+* The `TimerScheduler` is bound to the lifecycle of the actor that owns it and is cancelled automatically when the actor is stopped.
 * `Behaviors.withTimers` can also be used inside `Behaviors.supervise` and it will automatically cancel the started timers correctly when the actor is restarted, so that the new incarnation will not receive scheduled messages from a previous incarnation.
 
 ### Schedule periodically

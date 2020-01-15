@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.scaladsl
@@ -204,7 +204,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
     "not route to unreachable when there are reachable" in {
       val serviceKey = ServiceKey[String]("group-routing-4")
       val router = spawn(Behaviors.setup[String](context =>
-        new GroupRouterImpl(context, serviceKey, new RoutingLogics.RoundRobinLogic[String], true)))
+        new GroupRouterImpl(context, serviceKey, false, new RoutingLogics.RoundRobinLogic[String], true)))
 
       val reachableProbe = createTestProbe[String]
       val unreachableProbe = createTestProbe[String]
@@ -219,7 +219,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
     "route to unreachable when there are no reachable" in {
       val serviceKey = ServiceKey[String]("group-routing-4")
       val router = spawn(Behaviors.setup[String](context =>
-        new GroupRouterImpl(context, serviceKey, new RoutingLogics.RoundRobinLogic[String], true)))
+        new GroupRouterImpl(context, serviceKey, false, new RoutingLogics.RoundRobinLogic[String], true)))
 
       val unreachableProbe = createTestProbe[String]
       router.unsafeUpcast[Any] ! Receptionist.Listing(

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization.jackson
@@ -12,6 +12,7 @@ import scala.compat.java8.OptionConverters._
 import scala.util.Failure
 import scala.util.Success
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.DynamicAccess
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
@@ -44,6 +45,7 @@ import com.fasterxml.jackson.databind.json.JsonMapper
 
 object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): JacksonObjectMapperProvider = super.get(system)
+  override def get(system: ClassicActorSystemProvider): JacksonObjectMapperProvider = super.get(system)
 
   override def lookup = JacksonObjectMapperProvider
 

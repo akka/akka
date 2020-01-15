@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2017-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2017-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.discovery
@@ -102,6 +102,8 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
   override def lookup: Discovery.type = Discovery
 
   override def get(system: ActorSystem): Discovery = super.get(system)
+
+  override def get(system: ClassicActorSystemProvider): Discovery = super.get(system)
 
   override def createExtension(system: ExtendedActorSystem): Discovery = new Discovery()(system)
 

@@ -322,7 +322,7 @@ Java
 
 @@@ div {.group-java}
 
-## Lamdas versus method references
+## Lambdas versus method references
 
 It's recommended to keep the message matching with the `ReceiveBuilder` as short and clean as possible
 and delegate to methods. This improves readability and ease of method navigation with an IDE.

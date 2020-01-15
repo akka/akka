@@ -1,13 +1,12 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.japi.pf;
 
+import akka.actor.AbstractActor.Receive;
 import scala.PartialFunction;
 import scala.runtime.BoxedUnit;
-import akka.actor.AbstractActor;
-import akka.actor.AbstractActor.Receive;
 
 /**
  * Used for building a partial function for {@link akka.actor.AbstractActor#createReceive()
@@ -169,7 +168,7 @@ public class ReceiveBuilder {
    * List.class</code> and <code>(List&lt;String&gt; list) -> {}</code>.
    *
    * @param type a type to match the argument against
-   * @param externalPredicate a external predicate that will be evaluated if the type matches
+   * @param externalPredicate an external predicate that will be evaluated if the type matches
    * @param apply an action to apply to the argument if the type matches and the predicate returns
    *     true
    * @return a builder with the case statement added
@@ -241,21 +240,49 @@ public class ReceiveBuilder {
   }
 
   /**
+   * Add a new case statement to this builder.
+   *
+   * @param object the object to compare equals with
+   * @param externalPredicate an external predicate that will be evaluated if the object compares
+   *     equal
+   * @param apply an action to apply to the argument if the object compares equal
+   * @return a builder with the case statement added
+   */
+  @SuppressWarnings("unchecked")
+  public <P> ReceiveBuilder matchEquals(
+      final P object,
+      final java.util.function.BooleanSupplier externalPredicate,
+      final FI.UnitApply<P> apply) {
+    final FI.Predicate predicate = o -> object.equals(o) && externalPredicate.getAsBoolean();
+    addStatement(new UnitCaseStatement<>(predicate, (FI.UnitApply<Object>) apply));
+    return this;
+  }
+
+  private static final FI.Predicate ALWAYS_TRUE = (input) -> true;
+
+  /**
    * Add a new case statement to this builder, that matches any argument.
    *
    * @param apply an action to apply to the argument
    * @return a builder with the case statement added
    */
   public ReceiveBuilder matchAny(final FI.UnitApply<Object> apply) {
-    addStatement(
-        new UnitCaseStatement<Object, Object>(
-            new FI.Predicate() {
-              @Override
-              public boolean defined(Object o) {
-                return true;
-              }
-            },
-            apply));
+    addStatement(new UnitCaseStatement<>(ALWAYS_TRUE, apply));
+    return this;
+  }
+
+  /**
+   * Add a new case statement to this builder, that pass the test of the predicate.
+   *
+   * @param externalPredicate an external predicate that will always be evaluated.
+   * @param apply an action to apply to the argument
+   * @return a builder with the case statement added
+   */
+  public ReceiveBuilder matchAny(
+      final java.util.function.BooleanSupplier externalPredicate,
+      final FI.UnitApply<Object> apply) {
+    final FI.Predicate predicate = o -> externalPredicate.getAsBoolean();
+    addStatement(new UnitCaseStatement<>(predicate, apply));
     return this;
   }
 }

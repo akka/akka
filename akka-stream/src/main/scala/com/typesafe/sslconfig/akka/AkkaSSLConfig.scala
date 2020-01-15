@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package com.typesafe.sslconfig.akka
@@ -22,6 +22,7 @@ object AkkaSSLConfig extends ExtensionId[AkkaSSLConfig] with ExtensionIdProvider
   //////////////////// EXTENSION SETUP ///////////////////
 
   override def get(system: ActorSystem): AkkaSSLConfig = super.get(system)
+  override def get(system: ClassicActorSystemProvider): AkkaSSLConfig = super.get(system)
   def apply()(implicit system: ActorSystem): AkkaSSLConfig = super.apply(system)
 
   override def lookup() = AkkaSSLConfig

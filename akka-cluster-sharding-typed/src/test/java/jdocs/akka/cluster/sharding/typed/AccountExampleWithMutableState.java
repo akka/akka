@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2018-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package jdocs.akka.cluster.sharding.typed;
@@ -114,7 +114,9 @@ public interface AccountExampleWithMutableState {
     // Event
     interface Event extends CborSerializable {}
 
-    public static class AccountCreated implements Event {}
+    public enum AccountCreated implements Event {
+      INSTANCE
+    }
 
     public static class Deposited implements Event {
       public final BigDecimal amount;
@@ -212,7 +214,7 @@ public interface AccountExampleWithMutableState {
 
     private ReplyEffect<Event, Account> createAccount(EmptyAccount account, CreateAccount command) {
       return Effect()
-          .persist(new AccountCreated())
+          .persist(AccountCreated.INSTANCE)
           .thenReply(command.replyTo, account2 -> Confirmed.INSTANCE);
     }
 

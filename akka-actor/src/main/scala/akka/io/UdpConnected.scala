@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -38,6 +38,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * Java API: retrieve the UdpConnected extension for the given system.
    */
   override def get(system: ActorSystem): UdpConnectedExt = super.get(system)
+  override def get(system: ClassicActorSystemProvider): UdpConnectedExt = super.get(system)
 
   /**
    * The common interface for [[Command]] and [[Event]].

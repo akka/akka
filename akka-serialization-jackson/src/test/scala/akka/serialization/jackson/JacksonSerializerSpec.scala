@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2016-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2016-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.serialization.jackson
@@ -476,6 +476,70 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       val msg = SimpleCommand("0" * 1000)
       val bytes = serializeToBinary(msg)
       JacksonSerializer.isGZipped(bytes) should ===(false)
+    }
+  }
+
+  "JacksonJsonSerializer without type in manifest" should {
+    import ScalaTestMessages._
+
+    "deserialize messages using the serialization bindings" in withSystem(
+      """
+        akka.actor {
+          serializers.animal = "akka.serialization.jackson.JacksonJsonSerializer"
+          serialization-identifiers.animal = 9091
+          serialization-bindings {
+            "akka.serialization.jackson.ScalaTestMessages$Animal" = animal
+          }
+        }
+        akka.serialization.jackson.animal.type-in-manifest = off
+        """) { sys =>
+      val msg = Elephant("Dumbo", 1)
+      val serializer = serializerFor(msg, sys)
+      serializer.manifest(msg) should ===("")
+      val bytes = serializer.toBinary(msg)
+      val deserialized = serializer.fromBinary(bytes, "")
+      deserialized should ===(msg)
+    }
+
+    "deserialize messages using the configured deserialization type" in withSystem(
+      """
+        akka.actor {
+          serializers.animal = "akka.serialization.jackson.JacksonJsonSerializer"
+          serialization-identifiers.animal = 9091
+          serialization-bindings {
+            "akka.serialization.jackson.ScalaTestMessages$Elephant" = animal
+            "akka.serialization.jackson.ScalaTestMessages$Lion" = animal
+          }
+        }
+        akka.serialization.jackson.animal {
+          type-in-manifest = off
+          deserialization-type = "akka.serialization.jackson.ScalaTestMessages$Animal"
+        }
+      """) { sys =>
+      val msg = Elephant("Dumbo", 1)
+      val serializer = serializerFor(msg, sys)
+      serializer.manifest(msg) should ===("")
+      val bytes = serializer.toBinary(msg)
+      val deserialized = serializer.fromBinary(bytes, "")
+      deserialized should ===(msg)
+    }
+
+    "fail if multiple serialization bindings are declared with no deserialization type" in {
+      an[IllegalArgumentException] should be thrownBy {
+        withSystem("""
+        akka.actor {
+          serializers.animal = "akka.serialization.jackson.JacksonJsonSerializer"
+          serialization-identifiers.animal = 9091
+          serialization-bindings {
+            "akka.serialization.jackson.ScalaTestMessages$Elephant" = animal
+            "akka.serialization.jackson.ScalaTestMessages$Lion" = animal
+          }
+        }
+        akka.serialization.jackson.animal {
+          type-in-manifest = off
+        }
+      """)(sys => checkSerialization(Elephant("Dumbo", 1), sys))
+      }
     }
   }
 }

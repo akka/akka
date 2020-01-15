@@ -16,6 +16,14 @@ Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*
 
 Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream.
 
+## Examples
+
+Scala
+:   @@snip [FlowZipSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowZipSpec.scala) { #zip }
+
+Java
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #zip }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
@@ -27,10 +35,3 @@ Combines elements from each of multiple sources into @scala[tuples] @java[*Pair*
 **completes** when any upstream completes
 
 @@@
-
-## Example
-Scala
-:   @@snip [FlowZipSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowZipSpec.scala) { #zip }
-
-Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #zip }

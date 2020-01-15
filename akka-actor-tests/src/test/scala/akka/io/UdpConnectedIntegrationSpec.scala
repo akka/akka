@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.io
@@ -40,6 +40,15 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
   "The UDP connection oriented implementation" must {
 
     "report error if can not resolve" in {
+      val serverAddress = "doesnotexist.local"
+      val commander = TestProbe()
+      val handler = TestProbe()
+      val command = UdpConnected.Connect(handler.ref, InetSocketAddress.createUnresolved(serverAddress, 1234), None)
+      commander.send(IO(UdpConnected), command)
+      commander.expectMsg(6.seconds, UdpConnected.CommandFailed(command))
+    }
+
+    "report error if can not resolve (cached)" in {
       val serverAddress = "doesnotexist.local"
       val commander = TestProbe()
       val handler = TestProbe()

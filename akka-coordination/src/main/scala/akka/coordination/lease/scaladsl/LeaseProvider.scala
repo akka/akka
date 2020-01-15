@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.coordination.lease.scaladsl
@@ -10,6 +10,7 @@ import java.util.function.{ Function => JFunction }
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -19,6 +20,7 @@ import akka.coordination.lease.LeaseSettings
 
 object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): LeaseProvider = super.get(system)
+  override def get(system: ClassicActorSystemProvider): LeaseProvider = super.get(system)
 
   override def lookup = LeaseProvider
 

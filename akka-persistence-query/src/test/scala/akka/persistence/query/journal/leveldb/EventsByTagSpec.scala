@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2015-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2015-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.persistence.query.journal.leveldb
@@ -86,18 +86,18 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       greenSrc
         .runWith(TestSink.probe[Any])
         .request(2)
-        .expectNext(EventEnvelope(Sequence(1L), "a", 2L, "a green apple"))
-        .expectNext(EventEnvelope(Sequence(2L), "a", 3L, "a green banana"))
+        .expectNext(EventEnvelope(Sequence(1L), "a", 2L, "a green apple", 0L))
+        .expectNext(EventEnvelope(Sequence(2L), "a", 3L, "a green banana", 0L))
         .expectNoMessage(500.millis)
         .request(2)
-        .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf"))
+        .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf", 0L))
         .expectComplete()
 
       val blackSrc = queries.currentEventsByTag(tag = "black", offset = Sequence(0L))
       blackSrc
         .runWith(TestSink.probe[Any])
         .request(5)
-        .expectNext(EventEnvelope(Sequence(1L), "b", 1L, "a black car"))
+        .expectNext(EventEnvelope(Sequence(1L), "b", 1L, "a black car", 0L))
         .expectComplete()
     }
 
@@ -108,8 +108,8 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       val probe = greenSrc
         .runWith(TestSink.probe[Any])
         .request(2)
-        .expectNext(EventEnvelope(Sequence(1L), "a", 2L, "a green apple"))
-        .expectNext(EventEnvelope(Sequence(2L), "a", 3L, "a green banana"))
+        .expectNext(EventEnvelope(Sequence(1L), "a", 2L, "a green apple", 0L))
+        .expectNext(EventEnvelope(Sequence(2L), "a", 3L, "a green banana", 0L))
         .expectNoMessage(100.millis)
 
       c ! "a green cucumber"
@@ -118,7 +118,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       probe
         .expectNoMessage(100.millis)
         .request(5)
-        .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf"))
+        .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf", 0L))
         .expectComplete() // green cucumber not seen
     }
 
@@ -128,8 +128,8 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
         .runWith(TestSink.probe[Any])
         .request(10)
         // note that banana is not included, since exclusive offset
-        .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf"))
-        .expectNext(EventEnvelope(Sequence(4L), "c", 1L, "a green cucumber"))
+        .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf", 0L))
+        .expectNext(EventEnvelope(Sequence(4L), "c", 1L, "a green cucumber", 0L))
         .expectComplete()
     }
 
@@ -145,17 +145,28 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       val pinkSrc = queries.currentEventsByTag(tag = "pink")
       val probe = pinkSrc.runWith(TestSink.probe[Any])
 
-      probe.request(1).expectNext(EventEnvelope(Sequence(1L), "z", 1L, "a pink apple"))
+      probe.request(1).expectNext(EventEnvelope(Sequence(1L), "z", 1L, "a pink apple", 0L))
 
       system.log.info("delay before demand")
 
       probe
         .expectNoMessage(200.millis)
         .request(3)
-        .expectNext(EventEnvelope(Sequence(2L), "z", 2L, "a pink banana"))
-        .expectNext(EventEnvelope(Sequence(3L), "z", 3L, "a pink orange"))
+        .expectNext(EventEnvelope(Sequence(2L), "z", 2L, "a pink banana", 0L))
+        .expectNext(EventEnvelope(Sequence(3L), "z", 3L, "a pink orange", 0L))
         .expectComplete()
 
+    }
+
+    "include timestamp in EventEnvelope" in {
+      system.actorOf(TestActor.props("testTimestamp"))
+      val greenSrc = queries.currentEventsByTag(tag = "green", offset = Sequence(0L))
+      val probe = greenSrc.runWith(TestSink.probe[EventEnvelope])
+
+      probe.request(2)
+      probe.expectNext().timestamp should be > 0L
+      probe.expectNext().timestamp should be > 0L
+      probe.cancel()
     }
   }
 
@@ -168,7 +179,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
 
       try {
 
-        probe.request(2).expectNext(EventEnvelope(Sequence(1L), "b", 1L, "a black car")).expectNoMessage(100.millis)
+        probe.request(2).expectNext(EventEnvelope(Sequence(1L), "b", 1L, "a black car", 0L)).expectNoMessage(100.millis)
 
         d ! "a black dog"
         expectMsg(s"a black dog-done")
@@ -176,10 +187,10 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
         expectMsg(s"a black night-done")
 
         probe
-          .expectNext(EventEnvelope(Sequence(2L), "d", 1L, "a black dog"))
+          .expectNext(EventEnvelope(Sequence(2L), "d", 1L, "a black dog", 0L))
           .expectNoMessage(100.millis)
           .request(10)
-          .expectNext(EventEnvelope(Sequence(3L), "d", 2L, "a black night"))
+          .expectNext(EventEnvelope(Sequence(3L), "d", 2L, "a black night", 0L))
       } finally {
         probe.cancel()
       }
@@ -192,8 +203,8 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
         probe
           .request(10)
           // note that banana is not included, since exclusive offset
-          .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf"))
-          .expectNext(EventEnvelope(Sequence(4L), "c", 1L, "a green cucumber"))
+          .expectNext(EventEnvelope(Sequence(3L), "b", 2L, "a green leaf", 0L))
+          .expectNext(EventEnvelope(Sequence(4L), "c", 1L, "a green cucumber", 0L))
           .expectNoMessage(100.millis)
       } finally {
         probe.cancel()
@@ -211,7 +222,7 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       val probe = yellowSrc
         .runWith(TestSink.probe[Any])
         .request(2)
-        .expectNext(EventEnvelope(Sequence(1L), "y", 1L, "a yellow car"))
+        .expectNext(EventEnvelope(Sequence(1L), "y", 1L, "a yellow car", 0L))
         .expectNoMessage(100.millis)
 
       d ! "a yellow dog"
@@ -220,14 +231,23 @@ class EventsByTagSpec extends AkkaSpec(EventsByTagSpec.config) with Cleanup with
       expectMsg(s"a yellow night-done")
 
       probe
-        .expectNext(EventEnvelope(Sequence(2L), "y", 2L, "a yellow dog"))
+        .expectNext(EventEnvelope(Sequence(2L), "y", 2L, "a yellow dog", 0L))
         .expectNoMessage(100.millis)
         .request(10)
-        .expectNext(EventEnvelope(Sequence(3L), "y", 3L, "a yellow night"))
+        .expectNext(EventEnvelope(Sequence(3L), "y", 3L, "a yellow night", 0L))
 
       probe.cancel()
     }
 
+    "not complete for empty stream" in {
+      val src = queries.eventsByTag(tag = "red", offset = NoOffset)
+      val probe =
+        src.map(_.event).runWith(TestSink.probe[Any]).request(2)
+
+      probe.expectNoMessage(200.millis)
+
+      probe.cancel()
+    }
   }
 
 }
