@@ -20,9 +20,7 @@ class SystemMaterializerEagerStartupSpec extends StreamSpec with ScalaFutures {
 
     "provide a materializer when invoked" in {
       implicit val mat: Materializer = SystemMaterializer(system).materializer
-      Source.single("asdf")
-        .runWith(Sink.seq)
-        .futureValue should be(Seq("asdf"))
+      Source.single("asdf").runWith(Sink.seq).futureValue should be(Seq("asdf"))
     }
 
     "provide the same materializer when invoked multiple times" in {
