@@ -182,9 +182,5 @@ abstract class ExternalShardAllocationSpec
       }
       enterBarrier("finished")
     }
-
-    "continue to work when shard coordinator is moved" in {
-      pending
-    }
   }
 }

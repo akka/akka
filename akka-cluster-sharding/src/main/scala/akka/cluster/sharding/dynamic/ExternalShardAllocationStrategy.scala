@@ -47,25 +47,21 @@ object ExternalShardAllocationStrategy {
     def props(typeName: String) = Props(new DDataStateActor(typeName))
   }
 
-  private[akka] def numberOfDdataKeys(system: ActorSystem) =
-    system.settings.config.getInt("akka.cluster.sharding.external-shard-allocation-strategy.ddata-keys")
-
   // uses a string primitive types are optimized in ddata to not serialize every entity
   // separately
-  private[akka] def ddataKeys(system: ActorSystem, typeName: String): immutable.Seq[LWWMapKey[ShardId, String]] = {
-    (0 until numberOfDdataKeys(system)).map(i => LWWMapKey[ShardId, String](s"external-sharding-$typeName-$i"))
+  private[akka] def ddataKey(typeName: String): LWWMapKey[ShardId, String] = {
+    LWWMapKey[ShardId, String](s"external-sharding-$typeName")
   }
 
   private class DDataStateActor(typeName: String) extends Actor with ActorLogging with Stash {
 
-    private val DataKeys: immutable.Seq[LWWMapKey[ShardId, String]] = ddataKeys(context.system, typeName)
     private val replicator = DistributedData(context.system).replicator
+
+    private val Key = ddataKey(typeName)
 
     override def preStart(): Unit = {
       log.debug("Starting ddata state actor for [{}]", typeName)
-      DataKeys.foreach { key =>
-        replicator ! Subscribe(key, self)
-      }
+      replicator ! Subscribe(Key, self)
     }
 
     var currentLocations: Map[ShardId, String] = Map.empty

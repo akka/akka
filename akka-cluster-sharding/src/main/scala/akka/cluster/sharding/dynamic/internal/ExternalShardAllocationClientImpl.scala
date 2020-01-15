@@ -50,8 +50,6 @@ final private[dynamic] class ExternalShardAllocationClientImpl(system: ActorSyst
   private val replicator: ActorRef = DistributedData(system).replicator
   private val self: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
 
-  private val DataKeys = ExternalShardAllocationStrategy.ddataKeys(system, typeName)
-
   private val timeout =
     system.settings.config
       .getDuration("akka.cluster.sharding.external-shard-allocation-strategy.client-timeout")
@@ -59,10 +57,11 @@ final private[dynamic] class ExternalShardAllocationClientImpl(system: ActorSyst
   private implicit val askTimeout = Timeout(timeout * 2)
   private implicit val ec = system.dispatchers.internalDispatcher
 
+  private val Key = ExternalShardAllocationStrategy.ddataKey(typeName)
+
   override def updateShardLocation(shard: ShardId, location: Address): Future[Done] = {
-    val key = DataKeys(math.abs(shard.hashCode() % ExternalShardAllocationStrategy.numberOfDdataKeys(system)))
-    log.debug("updateShardLocation {} {} key {}", shard, location, key)
-    (replicator ? Update(key, LWWMap.empty[ShardId, String], WriteLocal, None) { existing =>
+    log.debug("updateShardLocation {} {} key {}", shard, location, Key)
+    (replicator ? Update(Key, LWWMap.empty[ShardId, String], WriteLocal, None) { existing =>
       existing.put(self, shard, location.toString)
     }).flatMap {
       case UpdateSuccess(_, _) => Future.successful(Done)
@@ -75,21 +74,17 @@ final private[dynamic] class ExternalShardAllocationClientImpl(system: ActorSyst
     updateShardLocation(shard, location).toJava
 
   override def shardLocations(): Future[ShardLocations] = {
-    Future
-      .traverse(DataKeys) { key =>
-        (replicator ? Get(key, ReadMajority(timeout))).flatMap {
-          case success @ GetSuccess(`key`, _) =>
-            Future.successful(
-              success.get(key).entries.transform((_, asStr) => ShardLocation(AddressFromURIString(asStr))))
-          case GetFailure(_, _) =>
-            Future.failed(
-              (new ClientTimeoutException(s"Unable to get shard locations after ${timeout.duration.pretty}")))
-        }
+    (replicator ? Get(Key, ReadMajority(timeout)))
+      .flatMap {
+        case success @ GetSuccess(`Key`, _) =>
+          Future.successful(
+            success.get(Key).entries.transform((_, asStr) => ShardLocation(AddressFromURIString(asStr))))
+        case GetFailure(_, _) =>
+          Future.failed((new ClientTimeoutException(s"Unable to get shard locations after ${timeout.duration.pretty}")))
       }
-      .map { all =>
-        new ShardLocations(all.reduce(_ ++ _).toMap)
+      .map { locations =>
+        new ShardLocations(locations)
       }
-
   }
 
   override def getShardLocations(): CompletionStage[ShardLocations] = shardLocations().toJava
