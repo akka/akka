@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.dynamic.internal
@@ -14,7 +14,6 @@ import akka.actor.AddressFromURIString
 import akka.annotation.InternalApi
 import akka.cluster.ddata.DistributedData
 import akka.cluster.ddata.LWWMap
-import akka.cluster.ddata.LWWMapKey
 import akka.cluster.ddata.Replicator.Get
 import akka.cluster.ddata.Replicator.GetFailure
 import akka.cluster.ddata.Replicator.GetSuccess
@@ -26,7 +25,8 @@ import akka.cluster.ddata.Replicator.WriteLocal
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.dynamic.ClientTimeoutException
-import akka.cluster.sharding.dynamic.DynamicShardAllocationStrategy.ShardLocation
+import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy
+import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy.ShardLocation
 import akka.cluster.sharding.dynamic.ShardLocations
 import akka.event.Logging
 import akka.util.Timeout
@@ -42,26 +42,26 @@ import com.github.ghik.silencer.silent
  * INTERNAL API
  */
 @InternalApi
-final private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSystem, typeName: String)
-    extends akka.cluster.sharding.dynamic.scaladsl.DynamicShardAllocationClient
-    with akka.cluster.sharding.dynamic.javadsl.DynamicShardAllocationClient {
+final private[dynamic] class ExternalShardAllocationClientImpl(system: ActorSystem, typeName: String)
+    extends akka.cluster.sharding.dynamic.scaladsl.ExternalShardAllocationClient
+    with akka.cluster.sharding.dynamic.javadsl.ExternalShardAllocationClient {
 
-  private val log = Logging(system, classOf[DynamicShardAllocationClientImpl])
+  private val log = Logging(system, classOf[ExternalShardAllocationClientImpl])
 
   private val replicator: ActorRef = DistributedData(system).replicator
   private val self: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
-  private val ddataKeys =
-    system.settings.config.getInt("akka.cluster.sharding.dynamic-shard-allocation-strategy.ddata-keys")
 
-  private val DataKeys = (0 until ddataKeys).map(i => LWWMapKey[ShardId, String](s"dynamic-sharding-$typeName-$i"))
+  private val DataKeys = ExternalShardAllocationStrategy.ddataKeys(system, typeName)
 
   private val timeout =
-    system.settings.config.getDuration("akka.cluster.sharding.dynamic-shard-allocation-strategy.client-timeout").asScala
+    system.settings.config
+      .getDuration("akka.cluster.sharding.external-shard-allocation-strategy.client-timeout")
+      .asScala
   private implicit val askTimeout = Timeout(timeout * 2)
   private implicit val ec = system.dispatchers.internalDispatcher
 
   override def updateShardLocation(shard: ShardId, location: Address): Future[Done] = {
-    val key = DataKeys(math.abs(shard.hashCode() % ddataKeys))
+    val key = DataKeys(math.abs(shard.hashCode() % ExternalShardAllocationStrategy.numberOfDdataKeys(system)))
     log.debug("updateShardLocation {} {} key {}", shard, location, key)
     (replicator ? Update(key, LWWMap.empty[ShardId, String], WriteLocal, None) { existing =>
       existing.put(self, shard, location.toString)

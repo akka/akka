@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.dynamic.scaladsl
@@ -16,7 +16,7 @@ import scala.concurrent.Future
  * API May Change
  */
 @ApiMayChange
-trait DynamicShardAllocationClient {
+trait ExternalShardAllocationClient {
 
   /**
    * Update the given shard's location. The [[Address]] should

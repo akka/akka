@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.dynamic
@@ -25,24 +25,20 @@ import akka.cluster.sharding.ShardRegion.ShardId
 import akka.event.Logging
 import akka.pattern.AskTimeoutException
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-object DynamicShardAllocationStrategy {
+object ExternalShardAllocationStrategy {
 
   type ShardRegion = ActorRef
 
   // local only messages
-  private[akka] final case class GetShardLocation(shard: ShardId) extends NoSerializationVerificationNeeded
-  private[akka] final case object GetShardLocations extends NoSerializationVerificationNeeded
-
+  private[akka] final case class GetShardLocation(shard: ShardId)
+  private[akka] final case object GetShardLocations
   private[akka] final case class GetShardLocationsResponse(desiredAllocations: Map[ShardId, Address])
-      extends NoSerializationVerificationNeeded
   private[akka] final case class GetShardLocationResponse(address: Option[Address])
-      extends NoSerializationVerificationNeeded
 
   // only returned locally, serialized as a string
   final case class ShardLocation(address: Address) extends NoSerializationVerificationNeeded
@@ -51,14 +47,18 @@ object DynamicShardAllocationStrategy {
     def props(typeName: String) = Props(new DDataStateActor(typeName))
   }
 
+  private[akka] def numberOfDdataKeys(system: ActorSystem) =
+    system.settings.config.getInt("akka.cluster.sharding.external-shard-allocation-strategy.ddata-keys")
+
+  // uses a string primitive types are optimized in ddata to not serialize every entity
+  // separately
+  private[akka] def ddataKeys(system: ActorSystem, typeName: String): immutable.Seq[LWWMapKey[ShardId, String]] = {
+    (0 until numberOfDdataKeys(system)).map(i => LWWMapKey[ShardId, String](s"external-sharding-$typeName-$i"))
+  }
+
   private class DDataStateActor(typeName: String) extends Actor with ActorLogging with Stash {
 
-    private val ddataKeys =
-      context.system.settings.config.getInt("akka.cluster.sharding.dynamic-shard-allocation-strategy.ddata-keys")
-
-    // uses a string primitive types are optimized in ddata to not serialize every entity
-    // separately
-    private val DataKeys = (0 until ddataKeys).map(i => LWWMapKey[ShardId, String](s"dynamic-sharding-$typeName-$i"))
+    private val DataKeys: immutable.Seq[LWWMapKey[ShardId, String]] = ddataKeys(context.system, typeName)
     // it's own replicator or configurable?
     private val replicator = DistributedData(context.system).replicator
 
@@ -73,7 +73,6 @@ object DynamicShardAllocationStrategy {
 
     override def receive: Receive = active
 
-    @silent("deprecated") // mapValues dance
     private def active: Receive = {
       case c @ Changed(key: LWWMapKey[ShardId, String] @unchecked) =>
         val newLocations = c.get(key).entries
@@ -85,28 +84,28 @@ object DynamicShardAllocationStrategy {
         sender() ! GetShardLocationResponse(shardLocation)
       case GetShardLocations =>
         log.debug("GetShardLocations")
-        sender() ! GetShardLocationsResponse(currentLocations.mapValues(asStr => AddressFromURIString(asStr)).toMap)
+        sender() ! GetShardLocationsResponse(currentLocations.transform((_, asStr) => AddressFromURIString(asStr)))
     }
   }
 }
 
-class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)(
+class ExternalShardAllocationStrategy(system: ActorSystem, typeName: String)(
     // local only ask
     implicit val timeout: Timeout = Timeout(5.seconds))
     extends ShardCoordinator.StartableAllocationStrategy {
 
-  import DynamicShardAllocationStrategy._
+  import ExternalShardAllocationStrategy._
   import akka.pattern.ask
   import system.dispatcher
 
-  private val log = Logging(system, classOf[DynamicShardAllocationStrategy])
+  private val log = Logging(system, classOf[ExternalShardAllocationStrategy])
 
   private var shardState: ActorRef = _
 
   private[akka] def createShardStateActor(): ActorRef = {
     system
       .asInstanceOf[ExtendedActorSystem]
-      .systemActorOf(DDataStateActor.props(typeName), s"dynamic-allocation-state-$typeName")
+      .systemActorOf(DDataStateActor.props(typeName), s"external-allocation-state-$typeName")
   }
 
   private val cluster = Cluster(system)
@@ -144,7 +143,7 @@ class DynamicShardAllocationStrategy(system: ActorSystem, typeName: String)(
             currentShardAllocations.keys.find(_.path.address == address) match {
               case None =>
                 log.warning(
-                  "Dynamic shard location [{}] for shard [{}[ not found in members [{}]",
+                  "External shard location [{}] for shard [{}] not found in members [{}]",
                   address,
                   shardId,
                   currentShardAllocations.keys.mkString(","))

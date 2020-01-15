@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding
@@ -11,12 +11,13 @@ import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.MultiNodeClusterSpec
-import akka.cluster.sharding.DynamicShardAllocationSpec.GiveMeYourHome.Get
-import akka.cluster.sharding.DynamicShardAllocationSpec.GiveMeYourHome.Home
-import akka.cluster.sharding.dynamic.DynamicShardAllocation
-import akka.cluster.sharding.dynamic.DynamicShardAllocationStrategy
+import akka.cluster.sharding.ExternalShardAllocationSpec.GiveMeYourHome.Get
+import akka.cluster.sharding.ExternalShardAllocationSpec.GiveMeYourHome.Home
+import akka.cluster.sharding.dynamic.ExternalShardAllocation
+import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
+import akka.serialization.jackson.CborSerializable
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
@@ -24,16 +25,14 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 
-object DynamicShardAllocationSpecConfig extends MultiNodeConfig {
+object ExternalShardAllocationSpecConfig extends MultiNodeConfig {
 
   commonConfig(ConfigFactory.parseString("""
       akka.loglevel = INFO
       akka.actor.provider = "cluster"
-      // FIXME create protobuf for serialization
-      akka.actor.allow-java-serialization = on
       akka.cluster.sharding {
         distributed-data.durable.lmdb {
-          dir = target/DynamicShardAllocationSpec/sharding-ddata
+          dir = target/ExternalShardAllocationSpec/sharding-ddata
           map-size = 10 MiB
         }
         retry-interval = 2000ms
@@ -48,16 +47,16 @@ object DynamicShardAllocationSpecConfig extends MultiNodeConfig {
   val forth = role("forth")
 }
 
-class DynamicShardAllocationSpecMultiJvmNode1 extends DynamicShardAllocationSpec
-class DynamicShardAllocationSpecMultiJvmNode2 extends DynamicShardAllocationSpec
-class DynamicShardAllocationSpecMultiJvmNode3 extends DynamicShardAllocationSpec
-class DynamicShardAllocationSpecMultiJvmNode4 extends DynamicShardAllocationSpec
+class ExternalShardAllocationSpecMultiJvmNode1 extends ExternalShardAllocationSpec
+class ExternalShardAllocationSpecMultiJvmNode2 extends ExternalShardAllocationSpec
+class ExternalShardAllocationSpecMultiJvmNode3 extends ExternalShardAllocationSpec
+class ExternalShardAllocationSpecMultiJvmNode4 extends ExternalShardAllocationSpec
 
-object DynamicShardAllocationSpec {
+object ExternalShardAllocationSpec {
 
   object GiveMeYourHome {
-    case class Get(id: String)
-    case class Home(address: Address)
+    case class Get(id: String) extends CborSerializable
+    case class Home(address: Address) extends CborSerializable
 
     val extractEntityId: ShardRegion.ExtractEntityId = {
       case g @ Get(id) => (id, g)
@@ -82,15 +81,15 @@ object DynamicShardAllocationSpec {
   }
 }
 
-abstract class DynamicShardAllocationSpec
-    extends MultiNodeSpec(DynamicShardAllocationSpecConfig)
+abstract class ExternalShardAllocationSpec
+    extends MultiNodeSpec(ExternalShardAllocationSpecConfig)
     with MultiNodeClusterSpec
     with ImplicitSender
     with ScalaFutures {
 
-  import DynamicShardAllocationSpecConfig._
-  import DynamicShardAllocationSpec._
-  import DynamicShardAllocationSpec.GiveMeYourHome._
+  import ExternalShardAllocationSpecConfig._
+  import ExternalShardAllocationSpec._
+  import ExternalShardAllocationSpec.GiveMeYourHome._
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.second)
 
@@ -110,7 +109,7 @@ abstract class DynamicShardAllocationSpec
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId,
-        new DynamicShardAllocationStrategy(system, typeName),
+        new ExternalShardAllocationStrategy(system, typeName),
         PoisonPill)
     }
 
@@ -131,7 +130,7 @@ abstract class DynamicShardAllocationSpec
     "move shard via distributed data" in {
       val shardToSpecifyLocation = "cats"
       runOn(first) {
-        DynamicShardAllocation(system)
+        ExternalShardAllocation(system)
           .clientFor(typeName)
           .updateShardLocation(shardToSpecifyLocation, Cluster(system).selfAddress)
           .futureValue
@@ -153,7 +152,7 @@ abstract class DynamicShardAllocationSpec
       val forthAddress = address(forth)
       runOn(second) {
         system.log.info("Allocating {} on {}", onForthShardId, forthAddress)
-        DynamicShardAllocation(system).clientFor(typeName).updateShardLocation(onForthShardId, forthAddress)
+        ExternalShardAllocation(system).clientFor(typeName).updateShardLocation(onForthShardId, forthAddress)
       }
       enterBarrier("allocated-to-new-node")
       runOn(forth) {
@@ -172,7 +171,7 @@ abstract class DynamicShardAllocationSpec
     "move allocation" in {
       runOn(third) {
         system.log.info("Moving shard from forth to first: {}", address(first))
-        DynamicShardAllocation(system).clientFor(typeName).updateShardLocation(initiallyOnForth, address(first))
+        ExternalShardAllocation(system).clientFor(typeName).updateShardLocation(initiallyOnForth, address(first))
       }
       enterBarrier("shard-moved-from-forth-to-first")
       runOn(first, second, third, forth) {

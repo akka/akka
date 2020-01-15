@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.typed
@@ -64,6 +64,7 @@ object Murmur2MessageExtractor {
     h
   }
 
+  // To match https://github.com/apache/kafka/blob/trunk/clients/src/main/java/org/apache/kafka/clients/producer/internals/DefaultPartitioner.java#L59
   def shardId(entityId: String, nrShards: Int): String =
     (toPositive(murmur2(entityId.getBytes(StandardCharsets.UTF_8))) % nrShards).toString
 }
@@ -73,6 +74,14 @@ abstract class Murmur2NoEnvelopeMessageExtractor[M](val numberOfShards: Int) ext
   override def unwrapMessage(message: M): M = message
 }
 
+/**
+ * The murmur2 message extractor uses the same algorithm as the default kafka partitoiner
+ * allowing kafka partitions to be mapped to shards.
+ * This can be used with the [[akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy]] to have messages
+ * processed locally.
+ *
+ * Extend [[Murmur2NoEnvelopeMessageExtractor]] to not use a message envelope extractor.
+ */
 final class Murmur2MessageExtractor[M](val numberOfShards: Int)
     extends ShardingMessageExtractor[ShardingEnvelope[M], M] {
   override def entityId(envelope: ShardingEnvelope[M]): String = envelope.entityId

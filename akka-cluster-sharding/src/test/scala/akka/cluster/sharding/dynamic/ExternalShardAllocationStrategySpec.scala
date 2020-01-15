@@ -1,19 +1,19 @@
 /*
- * Copyright (C) 2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.cluster.sharding.dynamic
 
-import akka.cluster.sharding.dynamic.DynamicShardAllocationStrategy.GetShardLocation
-import akka.cluster.sharding.dynamic.DynamicShardAllocationStrategy.GetShardLocationResponse
-import akka.cluster.sharding.dynamic.DynamicShardAllocationStrategy.GetShardLocations
+import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy.GetShardLocation
+import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy.GetShardLocationResponse
+import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy.GetShardLocations
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.Timeout
 
 import scala.concurrent.duration._
 
-class DynamicShardAllocationStrategySpec extends AkkaSpec("""
+class ExternalShardAllocationStrategySpec extends AkkaSpec("""
     akka.actor.provider = cluster 
     akka.loglevel = INFO 
     """) {
@@ -43,9 +43,9 @@ class DynamicShardAllocationStrategySpec extends AkkaSpec("""
     }
   }
 
-  def createStrategy(): (DynamicShardAllocationStrategy, TestProbe) = {
+  def createStrategy(): (ExternalShardAllocationStrategy, TestProbe) = {
     val probe = TestProbe()
-    val strategy = new DynamicShardAllocationStrategy(system, "type")(Timeout(250.millis)) {
+    val strategy = new ExternalShardAllocationStrategy(system, "type")(Timeout(250.millis)) {
       override private[akka] def createShardStateActor() = probe.ref
     }
     strategy.start()

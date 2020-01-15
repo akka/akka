@@ -1,3 +1,0 @@
-# private[akka] constructors
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.sharding.typed.javadsl.Entity.this")
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.sharding.typed.scaladsl.Entity.this")
