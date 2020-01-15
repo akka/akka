@@ -69,11 +69,13 @@ class StatsSampleSpecMultiJvmNode3 extends StatsSampleSpec
 //#abstract-test
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 abstract class StatsSampleSpec
     extends MultiNodeSpec(StatsSampleSpecConfig)
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender {
