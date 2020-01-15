@@ -244,16 +244,9 @@ final class Entity[M, E] private[akka] (
     val entityProps: Props,
     val settings: Option[ClusterShardingSettings],
     val messageExtractor: Option[ShardingMessageExtractor[E, M]],
-    val allocationStrategyFactory: Option[() => ShardAllocationStrategy],
+    val allocationStrategy: Option[ShardAllocationStrategy],
     val role: Option[String],
     val dataCenter: Option[DataCenter]) {
-
-  /**
-   * Returns the allocation strategy, warning that calling this will instantiate the allocation
-   * strategy if it has been created with factory
-   * For bincompat
-   */
-  def allocationStrategy = allocationStrategyFactory.map(_.apply())
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -292,26 +285,15 @@ final class Entity[M, E] private[akka] (
       entityProps,
       settings,
       Option(newExtractor),
-      allocationStrategyFactory,
+      allocationStrategy,
       role,
       dataCenter)
 
-  // FIXME, deal with null
   /**
    * Allocation strategy which decides on which nodes to allocate new shards,
    * [[ClusterSharding#defaultShardAllocationStrategy]] is used if this is not specified.
    */
   def withAllocationStrategy(newAllocationStrategy: ShardAllocationStrategy): Entity[M, E] =
-    copy(allocationStrategy = Option(() => newAllocationStrategy))
-
-  /**
-   * Factory for setting the allocation strategy which decides on which nodes to allocate new shards,
-   * [[ClusterSharding#defaultShardAllocationStrategy]] is used if this is not specified.
-   *
-   * Use this variant if creating the allocation strategy should only be done once per node
-   * i.e. it is expensive
-   */
-  def withAllocationStrategy(newAllocationStrategy: () => ShardAllocationStrategy): Entity[M, E] =
     copy(allocationStrategy = Option(newAllocationStrategy))
 
   /**
@@ -333,7 +315,7 @@ final class Entity[M, E] private[akka] (
       stopMessage: Option[M] = stopMessage,
       entityProps: Props = entityProps,
       settings: Option[ClusterShardingSettings] = settings,
-      allocationStrategy: Option[() => ShardAllocationStrategy] = allocationStrategyFactory,
+      allocationStrategy: Option[ShardAllocationStrategy] = allocationStrategy,
       role: Option[String] = role,
       dataCenter: Option[DataCenter] = dataCenter): Entity[M, E] = {
     new Entity(
@@ -485,7 +467,7 @@ object EntityTypeKey {
    *
    * Please note that an implicit [[akka.util.Timeout]] must be available to use this pattern.
    *
-   * Note: it is preferrable to use the non-symbolic ask method as it easier allows for wildcards for
+   * Note: it is preferable to use the non-symbolic ask method as it easier allows for wildcards for
    * the `replyTo: ActorRef`.
    *
    * @tparam Res The response protocol, what the other actor sends back

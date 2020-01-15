@@ -8,9 +8,14 @@ import java.util.concurrent.CompletionStage
 
 import akka.Done
 import akka.actor.Address
+import akka.annotation.ApiMayChange
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.dynamic.ShardLocations
 
+/**
+ * API May Change
+ */
+@ApiMayChange
 trait DynamicShardAllocationClient {
 
   /**

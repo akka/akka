@@ -14,7 +14,12 @@ import akka.actor.ExtensionIdProvider
 import akka.cluster.sharding.dynamic.internal.DynamicShardAllocationClientImpl
 import java.util.function.{ Function => JFunction }
 
-// TODO typed extension that takes a EntityTypeKey?
+import akka.annotation.ApiMayChange
+
+/**
+ * API May Change
+ */
+@ApiMayChange
 final class DynamicShardAllocation(system: ExtendedActorSystem) extends Extension {
 
   private val clients = new ConcurrentHashMap[String, DynamicShardAllocationClientImpl]

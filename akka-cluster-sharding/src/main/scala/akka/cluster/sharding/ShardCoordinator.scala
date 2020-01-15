@@ -105,6 +105,16 @@ object ShardCoordinator {
   }
 
   /**
+   * Shard allocation strategy where start is called by the shard coordinator before any calls to
+   * rebalance or allocate shard. This can be used if there is any expensive initialization to be done
+   * that you do not want to to in the constructor as it will happen on every node rather than just
+   * the node that hosts the ShardCoordinator
+   */
+  trait StartableAllocationStrategy extends ShardAllocationStrategy {
+    def start(): Unit
+  }
+
+  /**
    * Java API: Java implementations of custom shard allocation and rebalancing logic used by the [[ShardCoordinator]]
    * should extend this abstract class and implement the two methods.
    */
@@ -533,6 +543,14 @@ abstract class ShardCoordinator(
   cluster.subscribe(self, initialStateMode = InitialStateAsEvents, ClusterShuttingDown.getClass)
 
   protected def typeName: String
+
+  override def preStart(): Unit = {
+    allocationStrategy match {
+      case strategy: StartableAllocationStrategy =>
+        strategy.start()
+      case _ =>
+    }
+  }
 
   override def postStop(): Unit = {
     super.postStop()

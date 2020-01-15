@@ -249,16 +249,9 @@ final class Entity[M, E] private (
     val entityProps: Props,
     val settings: Optional[ClusterShardingSettings],
     val messageExtractor: Optional[ShardingMessageExtractor[E, M]],
-    val allocationStrategyFactory: Optional[() => ShardAllocationStrategy],
+    val allocationStrategy: Optional[ShardAllocationStrategy],
     val role: Optional[String],
     val dataCenter: Optional[String]) {
-
-  /**
-   * Returns the allocation strategy, warning that calling this will instantiate the allocation
-   * strategy if it has been created with factory
-   * For bincompat
-   */
-  def allocationStrategy: Optional[ShardAllocationStrategy] = allocationStrategyFactory.map(factory => factory())
 
   /**
    * [[akka.actor.typed.Props]] of the entity actors, such as dispatcher settings.
@@ -297,7 +290,7 @@ final class Entity[M, E] private (
       entityProps,
       settings,
       Optional.ofNullable(newExtractor),
-      allocationStrategyFactory,
+      allocationStrategy,
       role,
       dataCenter)
 
@@ -320,15 +313,6 @@ final class Entity[M, E] private (
    * [[ClusterSharding#defaultShardAllocationStrategy]] is used if this is not specified.
    */
   def withAllocationStrategy(newAllocationStrategy: ShardAllocationStrategy): Entity[M, E] =
-    copy(
-      allocationStrategy =
-        if (newAllocationStrategy == null) Optional.empty() else Optional.of(() => newAllocationStrategy))
-
-  /**
-   * Allocation strategy which decides on which nodes to allocate new shards,
-   * [[ClusterSharding#defaultShardAllocationStrategy]] is used if this is not specified.
-   */
-  def withAllocationStrategy(newAllocationStrategy: () => ShardAllocationStrategy): Entity[M, E] =
     copy(allocationStrategy = Optional.ofNullable(newAllocationStrategy))
 
   private def copy(
@@ -337,7 +321,7 @@ final class Entity[M, E] private (
       stopMessage: Optional[M] = stopMessage,
       entityProps: Props = entityProps,
       settings: Optional[ClusterShardingSettings] = settings,
-      allocationStrategy: Optional[() => ShardAllocationStrategy] = allocationStrategyFactory,
+      allocationStrategy: Optional[ShardAllocationStrategy] = allocationStrategy,
       role: Optional[String] = role,
       dataCenter: Optional[String] = role): Entity[M, E] = {
     new Entity(

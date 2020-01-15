@@ -6,11 +6,16 @@ package akka.cluster.sharding.dynamic.scaladsl
 
 import akka.Done
 import akka.actor.Address
+import akka.annotation.ApiMayChange
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.dynamic.ShardLocations
 
 import scala.concurrent.Future
 
+/**
+ * API May Change
+ */
+@ApiMayChange
 trait DynamicShardAllocationClient {
 
   /**

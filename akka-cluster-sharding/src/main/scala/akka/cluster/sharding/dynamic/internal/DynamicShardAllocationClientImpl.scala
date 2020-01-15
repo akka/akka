@@ -22,7 +22,7 @@ import akka.cluster.ddata.Replicator.ReadMajority
 import akka.cluster.ddata.Replicator.Update
 import akka.cluster.ddata.Replicator.UpdateSuccess
 import akka.cluster.ddata.Replicator.UpdateTimeout
-import akka.cluster.ddata.Replicator.WriteMajority
+import akka.cluster.ddata.Replicator.WriteLocal
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.dynamic.ClientTimeoutException
@@ -36,6 +36,7 @@ import akka.pattern.ask
 import scala.concurrent.Future
 import scala.compat.java8.FutureConverters._
 import akka.util.JavaDurationConverters._
+import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -57,16 +58,13 @@ final private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSyste
   private val timeout =
     system.settings.config.getDuration("akka.cluster.sharding.dynamic-shard-allocation-strategy.client-timeout").asScala
   private implicit val askTimeout = Timeout(timeout * 2)
-  private implicit val ec = system.dispatcher
+  private implicit val ec = system.dispatchers.internalDispatcher
 
   override def updateShardLocation(shard: ShardId, location: Address): Future[Done] = {
-    val key = DataKeys(shard.hashCode() % ddataKeys)
+    val key = DataKeys(math.abs(shard.hashCode() % ddataKeys))
     log.debug("updateShardLocation {} {} key {}", shard, location, key)
-    (replicator ? Update(key, WriteMajority(timeout), None) {
-      case None =>
-        LWWMap.empty.put(self, shard, location.toString)
-      case Some(existing) =>
-        existing.put(self, shard, location.toString)
+    (replicator ? Update(key, LWWMap.empty[ShardId, String], WriteLocal, None) { existing =>
+      existing.put(self, shard, location.toString)
     }).flatMap {
       case UpdateSuccess(_, _) => Future.successful(Done)
       case UpdateTimeout =>
@@ -77,19 +75,21 @@ final private[dynamic] class DynamicShardAllocationClientImpl(system: ActorSyste
   override def setShardLocation(shard: ShardId, location: Address): CompletionStage[Done] =
     updateShardLocation(shard, location).toJava
 
+  @silent("deprecated") // mapValues dance
   override def shardLocations(): Future[ShardLocations] = {
     Future
       .traverse(DataKeys) { key =>
         (replicator ? Get(key, ReadMajority(timeout))).flatMap {
           case success @ GetSuccess(`key`, _) =>
-            Future.successful(success.get(key).entries.mapValues(asStr => ShardLocation(AddressFromURIString(asStr))))
+            Future.successful(
+              success.get(key).entries.mapValues(asStr => ShardLocation(AddressFromURIString(asStr))).toMap)
           case GetFailure(_, _) =>
             Future.failed(
               (new ClientTimeoutException(s"Unable to get shard locations after ${timeout.duration.pretty}")))
         }
       }
       .map { all =>
-        new ShardLocations(all.reduce(_ ++ _))
+        new ShardLocations(all.reduce(_ ++ _).toMap)
       }
 
   }
