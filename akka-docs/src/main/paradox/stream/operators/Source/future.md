@@ -1,4 +1,4 @@
-# fromFuture
+# future
 
 Send the single value of the `Future` when it completes and there is demand.
 
@@ -20,6 +20,7 @@ If the future fails the stream is failed with that exception.
 For the corresponding operator for the Java standard library `CompletionStage` see @ref:[completionStage](completionStage.md).
 
 ## Example
+
 Scala
 :  @@snip [SourceFromFuture.scala](/akka-docs/src/test/scala/docs/stream/operators/SourceOperators.scala) { #sourceFromFuture }
 
