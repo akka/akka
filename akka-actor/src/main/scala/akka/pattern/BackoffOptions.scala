@@ -350,9 +350,8 @@ private final case class BackoffOnStopOptionsImpl[T](
 
   // additional
   def withDefaultStoppingStrategy =
-    copy(
-      supervisorStrategy =
-        OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
+    copy(supervisorStrategy =
+      OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
   def withFinalStopMessage(action: Any => Boolean) = copy(finalStopMessage = Some(action))
 
   def props: Props = {

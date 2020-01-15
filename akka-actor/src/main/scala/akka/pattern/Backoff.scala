@@ -586,9 +586,8 @@ private final case class BackoffOptionsImpl(
   def withManualReset = copy(reset = Some(ManualReset))
   def withSupervisorStrategy(supervisorStrategy: OneForOneStrategy) = copy(supervisorStrategy = supervisorStrategy)
   def withDefaultStoppingStrategy =
-    copy(
-      supervisorStrategy =
-        OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
+    copy(supervisorStrategy =
+      OneForOneStrategy(supervisorStrategy.maxNrOfRetries)(SupervisorStrategy.stoppingStrategy.decider))
   def withReplyWhileStopped(replyWhileStopped: Any) = copy(replyWhileStopped = Some(replyWhileStopped))
   def withMaxNrOfRetries(maxNrOfRetries: Int) =
     copy(supervisorStrategy = supervisorStrategy.withMaxNrOfRetries(maxNrOfRetries))

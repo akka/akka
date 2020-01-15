@@ -595,11 +595,13 @@ abstract class GraphStageLogic private[stream] (val inCount: Int, val outCount: 
         connection.slot match {
           case Empty | _ @(_: Cancelled) => false // cancelled (element is discarded when cancelled)
           case _                         => true // completed but element still there to grab
-        } else if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed))
+        }
+      else if ((connection.portState & (InReady | InFailed)) == (InReady | InFailed))
         connection.slot match {
           case Failed(_, elem) => elem.asInstanceOf[AnyRef] ne Empty // failed but element still there to grab
           case _               => false
-        } else false
+        }
+      else false
     }
   }
 

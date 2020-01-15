@@ -871,8 +871,8 @@ import akka.util.unused
     if (toAppend.isEmpty) {
       copy(traversalSoFar = PushNotUsed.concat(LinearTraversalBuilder.addMatCompose(traversalSoFar, matCompose)))
     } else if (this.isEmpty) {
-      toAppend.copy(
-        traversalSoFar = toAppend.traversalSoFar.concat(LinearTraversalBuilder.addMatCompose(traversal, matCompose)))
+      toAppend.copy(traversalSoFar =
+        toAppend.traversalSoFar.concat(LinearTraversalBuilder.addMatCompose(traversal, matCompose)))
     } else {
       if (outPort.isDefined) {
         if (toAppend.inPort.isEmpty)

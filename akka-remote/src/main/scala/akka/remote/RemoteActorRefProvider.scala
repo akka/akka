@@ -245,7 +245,8 @@ private[akka] class RemoteActorRefProvider(
         case ArterySettings.AeronUpd => new ArteryAeronUdpTransport(system, this)
         case ArterySettings.Tcp      => new ArteryTcpTransport(system, this, tlsEnabled = false)
         case ArterySettings.TlsTcp   => new ArteryTcpTransport(system, this, tlsEnabled = true)
-      } else new Remoting(system, this))
+      }
+      else new Remoting(system, this))
     _internals = internals
     remotingTerminator ! internals
 
@@ -416,7 +417,8 @@ private[akka] class RemoteActorRefProvider(
             case "user" | "system" => deployer.lookup(elems.drop(1))
             case "remote"          => lookupRemotes(elems)
             case _                 => None
-          } else None
+          }
+        else None
 
       val deployment = {
         deploy.toList ::: lookup.toList match {

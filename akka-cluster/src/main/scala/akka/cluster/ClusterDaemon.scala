@@ -1056,10 +1056,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       // Don't mark gossip state as seen while exiting is in progress, e.g.
       // shutting down singleton actors. This delays removal of the member until
       // the exiting tasks have been completed.
-      membershipState = membershipState.copy(
-        latestGossip =
-          if (exitingTasksInProgress) winningGossip
-          else winningGossip.seen(selfUniqueAddress))
+      membershipState = membershipState.copy(latestGossip =
+        if (exitingTasksInProgress) winningGossip
+        else winningGossip.seen(selfUniqueAddress))
       assertLatestGossip()
 
       // for all new nodes we remove them from the failure detector

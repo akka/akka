@@ -134,9 +134,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
     "stop an underutilizationStreak when fully utilized" in {
       val resizer = DefaultOptimalSizeExploringResizer()
-      resizer.record = ResizeRecord(
-        underutilizationStreak =
-          Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(1), highestUtilization = 1)))
+      resizer.record = ResizeRecord(underutilizationStreak =
+        Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(1), highestUtilization = 1)))
 
       val router = TestRouter(routees(2))
       router.sendToAll(await = true)
@@ -159,8 +158,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
     "leave the underutilizationStreak highestUtilization unchanged if current utilization is lower" in {
       val resizer = DefaultOptimalSizeExploringResizer()
-      resizer.record = ResizeRecord(
-        underutilizationStreak = Some(UnderUtilizationStreak(start = LocalDateTime.now, highestUtilization = 2)))
+      resizer.record = ResizeRecord(underutilizationStreak =
+        Some(UnderUtilizationStreak(start = LocalDateTime.now, highestUtilization = 2)))
 
       val router = TestRouter(routees(2))
       router.mockSend(await = true)
@@ -173,8 +172,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
 
     "update the underutilizationStreak highestUtilization if current utilization is higher" in {
       val resizer = DefaultOptimalSizeExploringResizer()
-      resizer.record = ResizeRecord(
-        underutilizationStreak = Some(UnderUtilizationStreak(start = LocalDateTime.now, highestUtilization = 1)))
+      resizer.record = ResizeRecord(underutilizationStreak =
+        Some(UnderUtilizationStreak(start = LocalDateTime.now, highestUtilization = 1)))
 
       val router = TestRouter(routees(3))
       router.mockSend(await = true, routeeIdx = 0)
@@ -294,9 +293,8 @@ class MetricsBasedResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultT
     "downsize to close to the highest retention when a streak of underutilization started downsizeAfterUnderutilizedFor" in {
       val resizer = DefaultOptimalSizeExploringResizer(downsizeAfterUnderutilizedFor = 72.hours, downsizeRatio = 0.5)
 
-      resizer.record = ResizeRecord(
-        underutilizationStreak =
-          Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(73), highestUtilization = 8)))
+      resizer.record = ResizeRecord(underutilizationStreak =
+        Some(UnderUtilizationStreak(start = LocalDateTime.now.minusHours(73), highestUtilization = 8)))
       resizer.resize(routees(20)) should be(4 - 20)
     }
 

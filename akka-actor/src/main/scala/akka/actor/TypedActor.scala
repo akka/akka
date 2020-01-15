@@ -749,5 +749,6 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
           case handler: TypedActorInvocationHandler => handler
           case _                                    => null
         }
-    } else null
+    }
+    else null
 }

@@ -323,7 +323,7 @@ object BackoffSupervisor {
   }
 }
 
-final class BackoffSupervisor @deprecated("Use `BackoffSupervisor.props` method instead", since = "2.5.22")(
+final class BackoffSupervisor @deprecated("Use `BackoffSupervisor.props` method instead", since = "2.5.22") (
     override val childProps: Props,
     override val childName: String,
     minBackoff: FiniteDuration,

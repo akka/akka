@@ -217,10 +217,9 @@ class GossipSpec extends WordSpec with Matchers {
       state(g1).youngestMember should ===(b1)
       val g2 = Gossip(
         members = SortedSet(a2, b1.copyUp(3), e1),
-        overview = GossipOverview(
-          reachability = Reachability.empty
-            .unreachable(a2.uniqueAddress, b1.uniqueAddress)
-            .unreachable(a2.uniqueAddress, e1.uniqueAddress)))
+        overview = GossipOverview(reachability = Reachability.empty
+          .unreachable(a2.uniqueAddress, b1.uniqueAddress)
+          .unreachable(a2.uniqueAddress, e1.uniqueAddress)))
       state(g2).youngestMember should ===(b1)
       val g3 = Gossip(members = SortedSet(a2, b1.copyUp(3), e2.copyUp(4)))
       state(g3).youngestMember should ===(e2)
@@ -355,10 +354,9 @@ class GossipSpec extends WordSpec with Matchers {
     "clear out a bunch of stuff when removing a node" in {
       val g = Gossip(
         members = SortedSet(dc1a1, dc1b1, dc2d2),
-        overview = GossipOverview(
-          reachability = Reachability.empty
-            .unreachable(dc1b1.uniqueAddress, dc2d2.uniqueAddress)
-            .unreachable(dc2d2.uniqueAddress, dc1b1.uniqueAddress)))
+        overview = GossipOverview(reachability = Reachability.empty
+          .unreachable(dc1b1.uniqueAddress, dc2d2.uniqueAddress)
+          .unreachable(dc2d2.uniqueAddress, dc1b1.uniqueAddress)))
         .:+(VectorClock.Node(Gossip.vclockName(dc1b1.uniqueAddress)))
         .:+(VectorClock.Node(Gossip.vclockName(dc2d2.uniqueAddress)))
         .remove(dc1b1.uniqueAddress, System.currentTimeMillis())

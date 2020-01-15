@@ -83,11 +83,10 @@ class RetryFlowSpec extends StreamSpec("""
       // #withBackoff-demo
 
       val retryFlow: Flow[Int, Int, NotUsed] =
-        RetryFlow.withBackoff(minBackoff = 10.millis, maxBackoff = 5.seconds, randomFactor = 0d, maxRetries = 3, flow)(
-          decideRetry = {
-            case (_, result) if result > 0 => Some(result)
-            case _                         => None
-          })
+        RetryFlow.withBackoff(minBackoff = 10.millis, maxBackoff = 5.seconds, randomFactor = 0d, maxRetries = 3, flow)(decideRetry = {
+          case (_, result) if result > 0 => Some(result)
+          case _                         => None
+        })
       // #withBackoff-demo
 
       val (source, sink) = TestSource.probe[Int].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
@@ -111,11 +110,10 @@ class RetryFlowSpec extends StreamSpec("""
 
       // The retry flow will retry on negative input values
       val retryFlow: Flow[Int, Int, NotUsed] =
-        RetryFlow.withBackoff(minBackoff = 10.millis, maxBackoff = 100.millis, randomFactor = 0d, maxRetries = 5, flow)(
-          decideRetry = {
-            case (x, result) if result < 0 => Some(x)
-            case (_, _)                    => None
-          })
+        RetryFlow.withBackoff(minBackoff = 10.millis, maxBackoff = 100.millis, randomFactor = 0d, maxRetries = 5, flow)(decideRetry = {
+          case (x, result) if result < 0 => Some(x)
+          case (_, _)                    => None
+        })
 
       val (source, sink) = TestSource.probe[Int].via(retryFlow).toMat(TestSink.probe)(Keep.both).run()
 

@@ -364,7 +364,8 @@ private[remote] class ArteryTcpTransport(
         _ <- controlStreamCompleted.recover { case _          => Done }
         _ <- ordinaryMessagesStreamCompleted.recover { case _ => Done }
         _ <- if (largeMessageChannelEnabled)
-          largeMessagesStreamCompleted.recover { case _ => Done } else Future.successful(Done)
+          largeMessagesStreamCompleted.recover { case _ => Done }
+        else Future.successful(Done)
       } yield Done
       allStopped.foreach(_ => runInboundStreams(port, bindPort))
     }

@@ -439,7 +439,8 @@ final class ORSet[A] private[akka] (
     val entries00 = ORSet.mergeCommonKeys(commonKeys, this, that)
     val entries0 =
       if (addDeltaOp)
-        entries00 ++ this.elementsMap.filter { case (elem, _) => !that.elementsMap.contains(elem) } else {
+        entries00 ++ this.elementsMap.filter { case (elem, _) => !that.elementsMap.contains(elem) }
+      else {
         val thisUniqueKeys = this.elementsMap.keysIterator.filterNot(that.elementsMap.contains)
         ORSet.mergeDisjointKeys(thisUniqueKeys, this.elementsMap, that.vvector, entries00)
       }

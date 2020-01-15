@@ -173,7 +173,8 @@ private[akka] object ChildrenContainer {
       if (t.isEmpty) reason match {
         case Termination => TerminatedChildrenContainer
         case _           => NormalChildrenContainer(c - child.path.name)
-      } else copy(c - child.path.name, t)
+      }
+      else copy(c - child.path.name, t)
     }
 
     override def getByName(name: String): Option[ChildStats] = c.get(name)

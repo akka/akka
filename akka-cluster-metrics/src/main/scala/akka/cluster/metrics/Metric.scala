@@ -37,7 +37,8 @@ final case class Metric private[metrics] (name: String, value: Number, average: 
       case Some(avg)                        => copy(value = latest.value, average = Some(avg :+ latest.value.doubleValue))
       case None if latest.average.isDefined => copy(value = latest.value, average = latest.average)
       case _                                => copy(value = latest.value)
-    } else this
+    }
+    else this
 
   /**
    * The numerical value of the average, if defined, otherwise the latest value

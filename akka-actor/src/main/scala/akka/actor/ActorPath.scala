@@ -126,7 +126,8 @@ object ActorPath {
             case '%' if pos + 2 < len && isHexChar(s.charAt(pos + 1)) && isHexChar(s.charAt(pos + 2)) =>
               validate(pos + 3)
             case _ => pos
-          } else ValidPathCode
+          }
+        else ValidPathCode
 
       if (len > 0 && s.charAt(0) != '$') validate(0) else 0
     }

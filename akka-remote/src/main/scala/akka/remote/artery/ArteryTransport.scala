@@ -373,9 +373,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
 
   private val inboundEnvelopePool = ReusableInboundEnvelope.createObjectPool(capacity = 16)
   // The outboundEnvelopePool is shared among all outbound associations
-  private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(
-    capacity =
-      settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
+  private val outboundEnvelopePool = ReusableOutboundEnvelope.createObjectPool(capacity =
+    settings.Advanced.OutboundMessageQueueSize * settings.Advanced.OutboundLanes * 3)
 
   private val associationRegistry = new AssociationRegistry(
     remoteAddress =>

@@ -95,8 +95,9 @@ final class ORMultiMap[A, B] private[akka] (
    */
   def entries: Map[A, Set[B]] =
     if (withValueDeltas)
-      underlying.entries.collect { case (k, v) if underlying.keys.elements.contains(k) => k -> v.elements } else
-      underlying.entries.map { case (k, v)                                             => k -> v.elements }
+      underlying.entries.collect { case (k, v) if underlying.keys.elements.contains(k) => k -> v.elements }
+    else
+      underlying.entries.map { case (k, v) => k -> v.elements }
 
   /**
    * Java API: All entries of a multimap where keys are strings and values are sets.
@@ -107,7 +108,8 @@ final class ORMultiMap[A, B] private[akka] (
     if (withValueDeltas)
       underlying.entries.foreach {
         case (k, v) => if (underlying.keys.elements.contains(k)) result.put(k, v.elements.asJava)
-      } else
+      }
+    else
       underlying.entries.foreach { case (k, v) => result.put(k, v.elements.asJava) }
     result
   }

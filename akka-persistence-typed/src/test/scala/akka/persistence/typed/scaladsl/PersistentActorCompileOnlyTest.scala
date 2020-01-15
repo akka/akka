@@ -272,7 +272,8 @@ object PersistentActorCompileOnlyTest {
               case GetTotalPrice(sender) =>
                 sender ! basket.items.map(_.price).sum
                 Effect.none
-            } else
+            }
+          else
             cmd match {
               case AddItem(id)    => addItem(id, ctx.self)
               case RemoveItem(id) => Effect.persist(ItemRemoved(id))

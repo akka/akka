@@ -145,8 +145,8 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
 
       private val receiveBuffer = FixedSizeBuffer[Out](bufferCapacity)
 
-      private val requestStrategy: WatermarkRequestStrategy = WatermarkRequestStrategy(
-        highWatermark = receiveBuffer.capacity)
+      private val requestStrategy: WatermarkRequestStrategy =
+        WatermarkRequestStrategy(highWatermark = receiveBuffer.capacity)
       // end of demand management ---
 
       // initialized with the originRef if present, that means we're the "remote" for an already active Source on the other side (the "origin")

@@ -551,8 +551,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     }
 
     "optionally NOT stop children when backoff" in {
-      testNotStopChildren(
-        strategy = SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0).withStopChildren(enabled = false))
+      testNotStopChildren(strategy =
+        SupervisorStrategy.restartWithBackoff(10.millis, 10.millis, 0).withStopChildren(enabled = false))
     }
 
     def testNotStopChildren(strategy: SupervisorStrategy): Unit = {

@@ -179,8 +179,7 @@ object PersistenceDocSpec {
 
       //#snapshot-criteria
       override def recovery =
-        Recovery(
-          fromSnapshot = SnapshotSelectionCriteria(maxSequenceNr = 457L, maxTimestamp = System.currentTimeMillis))
+        Recovery(fromSnapshot = SnapshotSelectionCriteria(maxSequenceNr = 457L, maxTimestamp = System.currentTimeMillis))
       //#snapshot-criteria
 
       //#snapshot-offer
