@@ -6,7 +6,6 @@ package akka.cluster.sharding.external
 
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -14,6 +13,7 @@ import akka.actor.ExtensionIdProvider
 import akka.cluster.sharding.external.internal.ExternalShardAllocationClientImpl
 import java.util.function.{ Function => JFunction }
 
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.ApiMayChange
 
 /**
@@ -51,5 +51,5 @@ object ExternalShardAllocation extends ExtensionId[ExternalShardAllocation] with
 
   override def lookup(): ExternalShardAllocation.type = ExternalShardAllocation
 
-  override def get(system: ActorSystem): ExternalShardAllocation = super.get(system)
+  override def get(system: ClassicActorSystemProvider): ExternalShardAllocation = super.get(system)
 }

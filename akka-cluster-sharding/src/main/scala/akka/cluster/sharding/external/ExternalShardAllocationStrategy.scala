@@ -8,10 +8,8 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorRefScope
-import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.AddressFromURIString
-import akka.actor.ClassicActorContextProvider
 import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.NoSerializationVerificationNeeded
