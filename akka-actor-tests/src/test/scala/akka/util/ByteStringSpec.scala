@@ -149,7 +149,13 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
 
   def likeVector(bs: ByteString)(body: IndexedSeq[Byte] => Any): Boolean = {
     val vec = Vector(bs: _*)
-    body(bs) == body(vec)
+    val a = body(bs)
+    val b = body(vec)
+    val result = a == b
+    if (!result) {
+      println(s"$bs => $a != $vec => $b")
+    }
+    result
   }
 
   def likeVectors(bsA: ByteString, bsB: ByteString)(body: (IndexedSeq[Byte], IndexedSeq[Byte]) => Any): Boolean = {
@@ -383,6 +389,27 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteString1.fromString("0123456789").take(3).drop(1) should ===(ByteString("12"))
       ByteString1.fromString("0123456789").take(10).take(8).drop(3).take(5) should ===(ByteString("34567"))
     }
+    "copyToArray" in {
+      val byteString = ByteString1(Array[Byte](1, 2, 3, 4, 5), startIndex = 1, length = 3)
+      def verify(f: Array[Byte] => Unit)(expected: Byte*): Unit = {
+        val array = Array.fill[Byte](3)(0)
+        f(array)
+        array should ===(expected.toArray)
+      }
+
+      verify(byteString.copyToArray(_, 0, 1))(2, 0, 0)
+      verify(byteString.copyToArray(_, 1, 1))(0, 2, 0)
+      verify(byteString.copyToArray(_, 2, 1))(0, 0, 2)
+      verify(byteString.copyToArray(_, 3, 1))(0, 0, 0)
+      verify(byteString.copyToArray(_, 0, 2))(2, 3, 0)
+      verify(byteString.copyToArray(_, 1, 2))(0, 2, 3)
+      verify(byteString.copyToArray(_, 2, 2))(0, 0, 2)
+      verify(byteString.copyToArray(_, 3, 2))(0, 0, 0)
+      verify(byteString.copyToArray(_, 0, 3))(2, 3, 4)
+      verify(byteString.copyToArray(_, 1, 3))(0, 2, 3)
+      verify(byteString.copyToArray(_, 2, 3))(0, 0, 2)
+      verify(byteString.copyToArray(_, 3, 3))(0, 0, 0)
+    }
   }
   "ByteString1C" must {
     "drop" in {
@@ -425,6 +452,27 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       ByteString1.fromString("abcdefg").drop(1).take(-2) should ===(ByteString(""))
       ByteString1.fromString("abcdefg").drop(2) should ===(ByteString("cdefg"))
       ByteString1.fromString("abcdefg").drop(2).take(1) should ===(ByteString("c"))
+    }
+    "copyToArray" in {
+      val byteString = ByteString1C(Array[Byte](1, 2, 3))
+      def verify(f: Array[Byte] => Unit)(expected: Byte*): Unit = {
+        val array = Array.fill[Byte](3)(0)
+        f(array)
+        array should ===(expected.toArray)
+      }
+
+      verify(byteString.copyToArray(_, 0, 1))(1, 0, 0)
+      verify(byteString.copyToArray(_, 1, 1))(0, 1, 0)
+      verify(byteString.copyToArray(_, 2, 1))(0, 0, 1)
+      verify(byteString.copyToArray(_, 3, 1))(0, 0, 0)
+      verify(byteString.copyToArray(_, 0, 2))(1, 2, 0)
+      verify(byteString.copyToArray(_, 1, 2))(0, 1, 2)
+      verify(byteString.copyToArray(_, 2, 2))(0, 0, 1)
+      verify(byteString.copyToArray(_, 3, 2))(0, 0, 0)
+      verify(byteString.copyToArray(_, 0, 3))(1, 2, 3)
+      verify(byteString.copyToArray(_, 1, 3))(0, 1, 2)
+      verify(byteString.copyToArray(_, 2, 3))(0, 0, 1)
+      verify(byteString.copyToArray(_, 3, 3))(0, 0, 0)
     }
   }
   "ByteStrings" must {
@@ -654,6 +702,28 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
       compact.indexOf('g', 4) should ===(5)
       compact.indexOf('g', 5) should ===(5)
       compact.indexOf('g', 6) should ===(-1)
+    }
+    "copyToArray" in {
+      val byteString = ByteString(1, 2) ++ ByteString(3) ++ ByteString(4)
+
+      def verify(f: Array[Byte] => Unit)(expected: Byte*): Unit = {
+        val array = Array.fill[Byte](3)(0)
+        f(array)
+        array should ===(expected.toArray)
+      }
+
+      verify(byteString.copyToArray(_, 0, 1))(1, 0, 0)
+      verify(byteString.copyToArray(_, 1, 1))(0, 1, 0)
+      verify(byteString.copyToArray(_, 2, 1))(0, 0, 1)
+      verify(byteString.copyToArray(_, 3, 1))(0, 0, 0)
+      verify(byteString.copyToArray(_, 0, 2))(1, 2, 0)
+      verify(byteString.copyToArray(_, 1, 2))(0, 1, 2)
+      verify(byteString.copyToArray(_, 2, 2))(0, 0, 1)
+      verify(byteString.copyToArray(_, 3, 2))(0, 0, 0)
+      verify(byteString.copyToArray(_, 0, 3))(1, 2, 3)
+      verify(byteString.copyToArray(_, 1, 3))(0, 1, 2)
+      verify(byteString.copyToArray(_, 2, 3))(0, 0, 1)
+      verify(byteString.copyToArray(_, 3, 3))(0, 0, 0)
     }
   }
 
@@ -885,7 +955,7 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
             case (xs, from, until) =>
               likeVector(xs)({ it =>
                 val array = new Array[Byte](xs.length)
-                it.slice(from, until).copyToArray(array, from, until)
+                it.copyToArray(array, from, until)
                 array.toSeq
               })
           }
@@ -1124,6 +1194,14 @@ class ByteStringSpec extends WordSpec with Matchers with Checkers {
         iterator.copyToArray(array, 2, 2)
         iterator.copyToArray(array, 4, 2)
         assert(new String(array) === "123456")
+      }
+
+      "calling copyToArray with length passing end of destination" in {
+        // Pre fix len passing the end of the destination would cause never ending loop inside iterator copyToArray
+        val iterator = (ByteString(1, 2) ++ ByteString(3) ++ ByteString(4)).iterator
+        val array = Array.fill[Byte](3)(0)
+        iterator.copyToArray(array, 2, 2)
+        array.toSeq should ===(Seq(0, 0, 1))
       }
     }
 

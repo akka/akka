@@ -14,7 +14,6 @@ import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.{ immutable, mutable }
 import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
 import scala.reflect.ClassTag
-
 import com.github.ghik.silencer.silent
 
 object ByteString {
@@ -253,6 +252,14 @@ object ByteString {
       buffer.putByteArrayUnsafe(bytes)
     }
 
+    override def copyToArray[B >: Byte](dest: Array[B], start: Int, len: Int): Int = {
+      val toCopy = math.min(math.min(len, bytes.length), dest.length - start)
+      if (toCopy > 0) {
+        Array.copy(bytes, 0, dest, start, toCopy)
+      }
+      toCopy
+    }
+
   }
 
   /** INTERNAL API: ByteString backed by exactly one array, with start / end markers */
@@ -384,6 +391,15 @@ object ByteString {
         }
         found
       }
+    }
+
+    override def copyToArray[B >: Byte](dest: Array[B], start: Int, len: Int): Int = {
+      // min of the bytes available to copy, bytes there is room for in dest and the requested number of bytes
+      val toCopy = math.min(math.min(len, length), dest.length - start)
+      if (toCopy > 0) {
+        Array.copy(bytes, startIndex, dest, start, toCopy)
+      }
+      toCopy
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
@@ -628,6 +644,23 @@ object ByteString {
       }
     }
 
+    override def copyToArray[B >: Byte](dest: Array[B], start: Int, len: Int): Int = {
+      if (bytestrings.size == 1) bytestrings.head.copyToArray(dest, start, len)
+      else {
+        // min of the bytes available to copy, bytes there is room for in dest and the requested number of bytes
+        val totalToCopy = math.min(math.min(len, length), dest.length - start)
+        if (totalToCopy > 0) {
+          val bsIterator = bytestrings.iterator
+          var copied = 0
+          while (copied < totalToCopy) {
+            val current = bsIterator.next()
+            copied += current.copyToArray(dest, start + copied, totalToCopy - copied)
+          }
+        }
+        totalToCopy
+      }
+    }
+
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
   }
 
@@ -754,10 +787,21 @@ sealed abstract class ByteString
    */
   protected[ByteString] def toArray: Array[Byte] = toArray[Byte]
 
-  override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = iterator.toArray
+  final override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = {
+    // super uses byteiterator
+    val array = new Array[B](size)
+    copyToArray(array, 0, size)
+    array
+  }
 
+  final override def copyToArray[B >: Byte](xs: Array[B], start: Int): Int = {
+    // super uses byteiterator
+    copyToArray(xs, start, size.min(xs.size))
+  }
+
+  // optimized in all subclasses, avoiding usage of the iterator to save allocations/transformations
   override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int =
-    iterator.copyToArray(xs, start, len)
+    throw new UnsupportedOperationException("Method copyToArray is not implemented in ByteString")
 
   override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 
