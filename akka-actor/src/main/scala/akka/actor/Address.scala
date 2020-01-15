@@ -33,12 +33,12 @@ final case class Address private (protocol: String, system: String, host: Option
   def this(protocol: String, system: String, host: String, port: Int) = this(protocol, system, Option(host), Some(port))
 
   /**
-   * JAVA API: The hostname if specified or empty optional if not
+   * Java API: The hostname if specified or empty optional if not
    */
   def getHost(): Optional[String] = host.asJava
 
   /**
-   * JAVA API: The port if specified or empty optional if not
+   * Java API: The port if specified or empty optional if not
    */
   def getPort(): Optional[Int] = port.asJava
 
