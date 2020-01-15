@@ -700,10 +700,13 @@ import scala.util.control.NonFatal
 
       case cmd: CommandScheduledBeforeMaterialization =>
         throw new IllegalStateException(
-          s"${newState.command} on subsink is illegal when ${cmd.command} is still pending")
+          s"${newState.command} on subsink($name) is illegal when ${cmd.command} is still pending")
     }
 
   override def createLogic(attr: Attributes) = new GraphStageLogic(shape) with InHandler {
+    // check for previous materialization eagerly so we fail already during materialization with a useful stacktrace
+    require(!status.get.isInstanceOf[AsyncCallback[_]], s"Substream Sink($name) cannot be materialized more than once")
+
     setHandler(in, this)
 
     override def onPush(): Unit = externalCallback(ActorSubscriberMessage.OnNext(grab(in)))
@@ -726,7 +729,7 @@ import scala.util.control.NonFatal
             setCallback(callback)
 
         case _: /* Materialized */ AsyncCallback[Command @unchecked] =>
-          failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
+          failStage(new IllegalStateException(s"Substream Sink($name) cannot be materialized more than once"))
       }
 
     override def preStart(): Unit =
@@ -778,9 +781,13 @@ import scala.util.control.NonFatal
     status.compareAndSet(
       null,
       ActorSubscriberMessage.OnError(
-        new SubscriptionTimeoutException(s"Substream Source has not been materialized in $d")))
+        new SubscriptionTimeoutException(s"Substream Source($name) has not been materialized in $d")))
 
   override def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with OutHandler {
+    // check for previous materialization eagerly so we fail already during materialization with a useful stacktrace
+    require(
+      !status.get.isInstanceOf[AsyncCallback[_]],
+      s"Substream Source($name) cannot be materialized more than once")
     setHandler(out, this)
 
     @tailrec private def setCB(cb: AsyncCallback[ActorSubscriberMessage]): Unit = {
@@ -789,7 +796,7 @@ import scala.util.control.NonFatal
         case ActorSubscriberMessage.OnComplete  => completeStage()
         case ActorSubscriberMessage.OnError(ex) => failStage(ex)
         case _: AsyncCallback[_] =>
-          failStage(new IllegalStateException("Substream Source cannot be materialized more than once"))
+          failStage(new IllegalStateException(s"Substream Source($name) cannot be materialized more than once"))
       }
     }
 
