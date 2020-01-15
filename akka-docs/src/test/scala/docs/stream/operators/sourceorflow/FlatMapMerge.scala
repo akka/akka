@@ -1,3 +1,7 @@
+/*
+ * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.operators.sourceorflow
 
 import akka.NotUsed
@@ -9,7 +13,7 @@ object FlatMapMerge {
   implicit val system: ActorSystem = ActorSystem()
 
   // #flatmap-merge
-  val source: Source[String, NotUsed] = Source(List("customer-1", "customer=2"))
+  val source: Source[String, NotUsed] = Source(List("customer-1", "customer-2"))
 
   // e.g. could b a query to a database
   def lookupCustomerEvents(customerId: String): Source[String, NotUsed] = {
@@ -21,7 +25,7 @@ object FlatMapMerge {
   // prints - events from different customers could interleave
   // customer-1-evt-1
   // customer-2-evt-1
-  // customer-2-evt-2
+  // customer-1-evt-2
   // customer-2-evt-2
   // #flatmap-merge
 

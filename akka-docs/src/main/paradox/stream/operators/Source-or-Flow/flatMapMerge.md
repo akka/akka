@@ -13,6 +13,8 @@ Transform each input element into a `Source` whose elements are then flattened i
 Transform each input element into a `Source` whose elements are then flattened into the output stream through
 merging. The maximum number of merged sources has to be specified. When this is met `flatMapMerge` does not
 request any more elements meaning that it back pressures until one of the existing `Source`s completes. 
+Order of the elements for each `Source` is preserved but there is no deterministic order between elements from
+different active `Source`s.
 
 See also: @ref:[flatMapConcat](flatMapConcat.md)
 
