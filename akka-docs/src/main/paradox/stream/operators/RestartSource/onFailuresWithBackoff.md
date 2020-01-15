@@ -14,13 +14,20 @@ Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when 
 
 ## Description
 
+Wraps the given @apidoc[Source] with a @apidoc[Source] that will restart it when it fails using an exponential backoff.
+The backoff resets back to `minbackOff` if there hasn't been a failure within `minBackoff`.
+ 
 This @apidoc[Source] will never emit a failure, since the failure of the wrapped @apidoc[Source] is always handled by
 restarting. The wrapped @apidoc[Source] can be completed by completing this @apidoc[Source].
 When that happens, the wrapped @apidoc[Source], if currently running will be cancelled, and it will not be restarted.
 This can be triggered by the downstream cancelling, or externally by introducing a @ref[KillSwitch](../../stream-dynamic.md#controlling-stream-completion-with-killswitch) right
 after this @apidoc[Source] in the graph.
 
-See also @ref:[RestartFlow](../Re).
+See also: 
+ 
+* @ref:[RestartFlow.onFailuresWithBackoff](../RestartFlow/onFailuresWithBackoff.md)
+* @ref:[RestartFlow.withBackoff](../RestartFlow/withBackoff.md)
+* @ref:[RestartSink.withBackoff](../RestartSink/withBackoff.md)
 
 ## Examples
 
@@ -33,7 +40,7 @@ Scala
 Java
 :  @@snip [Restart.java](/akka-docs/src/test/java/jdocs/stream/operators/source/Restart.java) { #restart-failure-inner-complete }
 
-If the inner source instead fails, it will be restarted with backoff. The source emits 1, 2, 3, and then throws an exception.
+If the inner source instead fails, it will be restarted with a backoff. The source emits 1, 2, 3, and then throws an exception.
 The first time the exception is thrown the source is restarted after 1s, then 2s etc, until the `maxBackoff` of 10s.
 
 Scala
