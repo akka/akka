@@ -9,6 +9,7 @@ import akka.NotUsed
 import akka.stream.Supervision.resumingDecider
 import akka.stream._
 import akka.stream.impl.SubscriptionTimeoutException
+import akka.stream.impl.fusing.Split
 import akka.stream.testkit.Utils._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
@@ -263,20 +264,24 @@ class FlowSplitWhenSpec extends StreamSpec("""
     }
 
     "fail substream if materialized twice" in assertAllStagesStopped {
-
       import system.dispatcher
-      val stream = Source(1 to 5)
-        .splitWhen(_ => true)
-        .lift
-        .map { src =>
-          src.runWith(Sink.ignore).flatMap(_ => src.runWith(Sink.ignore))
-        }
-        .toMat(TestSink.probe[Future[Done]])(Keep.right)
+      val stream =
+        Source(1 to 5)
+        // Need to drop to internal API to get a plain Source[Source[Int]] instead of a SubFlow.
+        // `lift` doesn't cut here because it will prevent the behavior we'd like to see.
+        // In fact, this test is somewhat useless, as a user cannot trigger double materialization using
+        // the public splitWhen => SubFlow API.
+          .via(Split.when(_ => true, SubstreamCancelStrategy.drain))
+          .map { source =>
+            // run twice, but make sure we return the result of the materialization that ran second
+            source.runWith(Sink.ignore).flatMap(_ => source.runWith(Sink.ignore))
+          }
+          .toMat(TestSink.probe[Future[Done]])(Keep.right)
       val probe = stream.withAttributes(Attributes.inputBuffer(1, 1)).run()
-      probe.request(1)
       val future = probe.requestNext()
       val ex = the[IllegalStateException] thrownBy Await.result(future, 3.seconds)
-      ex.getMessage should ===("Substream Source(TailSource) cannot be materialized more than once")
+      ex.getMessage should ===("Substream Source(SplitSource) cannot be materialized more than once")
+      ex.printStackTrace
       ex.getStackTrace.exists(_.getClassName contains "FlowSplitWhenSpec") shouldBe true
       probe.cancel()
     }
