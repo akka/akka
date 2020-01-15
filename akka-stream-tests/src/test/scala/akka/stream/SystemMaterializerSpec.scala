@@ -4,10 +4,6 @@
 
 package akka.stream
 
-import scala.concurrent.Future
-
-import akka.actor.ActorSystem
-import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.StreamSpec
@@ -27,6 +23,12 @@ class SystemMaterializerEagerStartupSpec extends StreamSpec with ScalaFutures {
       Source.single("asdf")
         .runWith(Sink.seq)
         .futureValue should be(Seq("asdf"))
+    }
+
+    "provide the same materializer when invoked multiple times" in {
+      val mat1: Materializer = SystemMaterializer(system).materializer
+      val mat2: Materializer = SystemMaterializer(system).materializer
+      (mat1 eq mat2) should be(true)
     }
   }
 

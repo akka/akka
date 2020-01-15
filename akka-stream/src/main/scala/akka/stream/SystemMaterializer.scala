@@ -5,20 +5,10 @@
 package akka.stream
 
 import akka.actor.ActorSystem
-import akka.actor.Deploy
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.annotation.InternalApi
-import akka.stream.impl.MaterializerGuardian
-
-import scala.concurrent.Await
-import scala.concurrent.Promise
-import akka.util.JavaDurationConverters._
-import akka.util.Timeout
-
-import com.github.ghik.silencer.silent
 
 /**
  * The system materializer is a default materializer to use for most cases running streams, it is a single instance
@@ -36,26 +26,5 @@ object SystemMaterializer extends ExtensionId[SystemMaterializer] with Extension
 }
 
 final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
-  private val systemMaterializerPromise = Promise[Materializer]()
-
-  // load these here so we can share the same instance across materializer guardian and other uses
-  /**
-   * INTERNAL API
-   */
-  @InternalApi @silent("deprecated")
-  private[akka] val materializerSettings = ActorMaterializerSettings(system)
-
-  private implicit val materializerTimeout: Timeout =
-    system.settings.config.getDuration("akka.stream.materializer.creation-timeout").asScala
-
-  //@InternalApi @silent("deprecated")
-  system.systemActorOf(
-    MaterializerGuardian
-      .props(systemMaterializerPromise, materializerSettings)
-      .withDeploy(Deploy.local),
-    "Materializers")
-
-  // block on async creation to make it effectively final
-  val materializer = Await.result(systemMaterializerPromise.future, materializerTimeout.duration)
-
+  val materializer = ActorMaterializer(ActorMaterializerSettings(system), "flow")(system)
 }
