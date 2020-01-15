@@ -72,37 +72,41 @@ public class Restart {
   }
 
   public static void onRestartWithBackoffInnerComplete() {
-     //#restart-failure-inner-complete
-     Source<String, Cancellable> finiteSource = Source.tick(Duration.ofSeconds(1), Duration.ofSeconds(1), "tick").take(3);
-     Source<String, NotUsed> forever = RestartSource.onFailuresWithBackoff(Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1, () -> finiteSource);
-     forever.runWith(Sink.foreach(System.out::println), system);
-     // prints
-     // tick
-     // tick
-     // tick
-     //#restart-failure-inner-complete
+    // #restart-failure-inner-complete
+    Source<String, Cancellable> finiteSource =
+        Source.tick(Duration.ofSeconds(1), Duration.ofSeconds(1), "tick").take(3);
+    Source<String, NotUsed> forever =
+        RestartSource.onFailuresWithBackoff(
+            Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1, () -> finiteSource);
+    forever.runWith(Sink.foreach(System.out::println), system);
+    // prints
+    // tick
+    // tick
+    // tick
+    // #restart-failure-inner-complete
   }
- public static void onRestartWitFailureKillSwitch() {
-    //#restart-failure-inner-complete-kill-switch
+
+  public static void onRestartWitFailureKillSwitch() {
+    // #restart-failure-inner-complete-kill-switch
     Source<Integer, NotUsed> flakySource =
-       Source.from(
-          Arrays.<Creator<Integer>>asList(
-             () -> 1,
-             () -> 2,
-             () -> 3,
-             () -> {
-                throw new RuntimeException("darn");
-             }))
-          .map(Creator::create);
+        Source.from(
+                Arrays.<Creator<Integer>>asList(
+                    () -> 1,
+                    () -> 2,
+                    () -> 3,
+                    () -> {
+                      throw new RuntimeException("darn");
+                    }))
+            .map(Creator::create);
     UniqueKillSwitch stopRestarting =
-      RestartSource
-        .onFailuresWithBackoff(Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1, () -> flakySource)
-        .viaMat(KillSwitches.single(), Keep.right())
-        .toMat(Sink.foreach(System.out::println), Keep.left())
-        .run(system);
-    //... from some where else
+        RestartSource.onFailuresWithBackoff(
+                Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1, () -> flakySource)
+            .viaMat(KillSwitches.single(), Keep.right())
+            .toMat(Sink.foreach(System.out::println), Keep.left())
+            .run(system);
+    // ... from some where else
     // stop the source from restarting
     stopRestarting.shutdown();
-    //#restart-failure-inner-complete-kill-switch
+    // #restart-failure-inner-complete-kill-switch
   }
 }
