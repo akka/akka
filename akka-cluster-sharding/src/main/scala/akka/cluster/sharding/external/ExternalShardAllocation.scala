@@ -2,7 +2,7 @@
  * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster.sharding.dynamic
+package akka.cluster.sharding.external
 
 import java.util.concurrent.ConcurrentHashMap
 
@@ -11,7 +11,7 @@ import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.cluster.sharding.dynamic.internal.ExternalShardAllocationClientImpl
+import akka.cluster.sharding.external.internal.ExternalShardAllocationClientImpl
 import java.util.function.{ Function => JFunction }
 
 import akka.annotation.ApiMayChange

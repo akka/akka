@@ -165,6 +165,9 @@ The shards are allocated to the nodes in the cluster. The decision of where to a
 by a shard allocation strategy. The default implementation `akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy`
 allocates new shards to the `ShardRegion` (node) with least number of previously allocated shards.
 This strategy can be replaced by an application specific implementation.
+
+An alternative allocation strategy is the `akka.cluster.sharding.external.ExternalShardAllocationStrategy` which allows
+explicit control over where shards are allocated via the @api[ExternalShardAllocationClient]
    
 An optional custom shard allocation strategy can be passed into the optional parameter when initializing an entity type 
 or explicitly using the `withAllocationStrategy` function.

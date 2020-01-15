@@ -2,7 +2,7 @@
  * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster.sharding.dynamic.internal
+package akka.cluster.sharding.external.internal
 
 import java.util.concurrent.CompletionStage
 
@@ -24,10 +24,10 @@ import akka.cluster.ddata.Replicator.UpdateTimeout
 import akka.cluster.ddata.Replicator.WriteLocal
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.sharding.dynamic.ClientTimeoutException
-import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy
-import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy.ShardLocation
-import akka.cluster.sharding.dynamic.ShardLocations
+import akka.cluster.sharding.external.ClientTimeoutException
+import akka.cluster.sharding.external.ExternalShardAllocationStrategy
+import akka.cluster.sharding.external.ExternalShardAllocationStrategy.ShardLocation
+import akka.cluster.sharding.external.ShardLocations
 import akka.event.Logging
 import akka.util.Timeout
 import akka.util.PrettyDuration._
@@ -41,9 +41,9 @@ import akka.util.JavaDurationConverters._
  * INTERNAL API
  */
 @InternalApi
-final private[dynamic] class ExternalShardAllocationClientImpl(system: ActorSystem, typeName: String)
-    extends akka.cluster.sharding.dynamic.scaladsl.ExternalShardAllocationClient
-    with akka.cluster.sharding.dynamic.javadsl.ExternalShardAllocationClient {
+final private[external] class ExternalShardAllocationClientImpl(system: ActorSystem, typeName: String)
+    extends akka.cluster.sharding.external.scaladsl.ExternalShardAllocationClient
+    with akka.cluster.sharding.external.javadsl.ExternalShardAllocationClient {
 
   private val log = Logging(system, classOf[ExternalShardAllocationClientImpl])
 

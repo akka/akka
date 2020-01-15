@@ -13,8 +13,8 @@ import akka.cluster.Cluster
 import akka.cluster.MultiNodeClusterSpec
 import akka.cluster.sharding.ExternalShardAllocationSpec.GiveMeYourHome.Get
 import akka.cluster.sharding.ExternalShardAllocationSpec.GiveMeYourHome.Home
-import akka.cluster.sharding.dynamic.ExternalShardAllocation
-import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy
+import akka.cluster.sharding.external.ExternalShardAllocation
+import akka.cluster.sharding.external.ExternalShardAllocationStrategy
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable

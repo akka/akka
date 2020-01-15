@@ -2,11 +2,11 @@
  * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster.sharding.dynamic
+package akka.cluster.sharding.external
 
-import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy.GetShardLocation
-import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy.GetShardLocationResponse
-import akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy.GetShardLocations
+import akka.cluster.sharding.external.ExternalShardAllocationStrategy.GetShardLocation
+import akka.cluster.sharding.external.ExternalShardAllocationStrategy.GetShardLocationResponse
+import akka.cluster.sharding.external.ExternalShardAllocationStrategy.GetShardLocations
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
 import akka.util.Timeout

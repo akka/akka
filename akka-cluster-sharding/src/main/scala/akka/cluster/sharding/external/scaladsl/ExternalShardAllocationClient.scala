@@ -2,13 +2,13 @@
  * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster.sharding.dynamic.scaladsl
+package akka.cluster.sharding.external.scaladsl
 
 import akka.Done
 import akka.actor.Address
 import akka.annotation.ApiMayChange
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.cluster.sharding.dynamic.ShardLocations
+import akka.cluster.sharding.external.ShardLocations
 
 import scala.concurrent.Future
 

@@ -77,7 +77,7 @@ abstract class Murmur2NoEnvelopeMessageExtractor[M](val numberOfShards: Int) ext
 /**
  * The murmur2 message extractor uses the same algorithm as the default kafka partitoiner
  * allowing kafka partitions to be mapped to shards.
- * This can be used with the [[akka.cluster.sharding.dynamic.ExternalShardAllocationStrategy]] to have messages
+ * This can be used with the [[akka.cluster.sharding.external.ExternalShardAllocationStrategy]] to have messages
  * processed locally.
  *
  * Extend [[Murmur2NoEnvelopeMessageExtractor]] to not use a message envelope extractor.

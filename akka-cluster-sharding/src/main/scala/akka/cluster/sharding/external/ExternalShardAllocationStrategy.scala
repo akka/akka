@@ -2,7 +2,7 @@
  * Copyright (C) 2019-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.cluster.sharding.dynamic
+package akka.cluster.sharding.external
 
 import akka.actor.Actor
 import akka.actor.ActorLogging
@@ -11,6 +11,8 @@ import akka.actor.ActorRefScope
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.AddressFromURIString
+import akka.actor.ClassicActorContextProvider
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
@@ -84,10 +86,12 @@ object ExternalShardAllocationStrategy {
   }
 }
 
-class ExternalShardAllocationStrategy(system: ActorSystem, typeName: String)(
+class ExternalShardAllocationStrategy(systemProvider: ClassicActorSystemProvider, typeName: String)(
     // local only ask
     implicit val timeout: Timeout = Timeout(5.seconds))
     extends ShardCoordinator.StartableAllocationStrategy {
+
+  private val system = systemProvider.classicSystem
 
   import ExternalShardAllocationStrategy._
   import akka.pattern.ask
