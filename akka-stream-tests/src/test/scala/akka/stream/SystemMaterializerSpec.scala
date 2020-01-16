@@ -14,7 +14,7 @@ class SystemMaterializerEagerStartupSpec extends StreamSpec with ScalaFutures {
 
   "The SystemMaterializer" must {
 
-    "be eagerly started on system startup" in {
+    "not be eagerly started on system startup" in {
       system.hasExtension(SystemMaterializer.lookup) should ===(false)
     }
 
