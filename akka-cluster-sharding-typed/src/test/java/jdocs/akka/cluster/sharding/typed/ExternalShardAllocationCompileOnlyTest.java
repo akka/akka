@@ -17,22 +17,24 @@ import static jdocs.akka.cluster.sharding.typed.ShardingCompileOnlyTest.Counter;
 
 public class ExternalShardAllocationCompileOnlyTest {
 
-    void example() {
-        ActorSystem<?> system = null;
+  void example() {
+    ActorSystem<?> system = null;
 
-        ClusterSharding sharding = ClusterSharding.get(system);
+    ClusterSharding sharding = ClusterSharding.get(system);
 
-        // #entity
-        EntityTypeKey<Counter.Command> typeKey = EntityTypeKey.create(Counter.Command.class, "Counter");
+    // #entity
+    EntityTypeKey<Counter.Command> typeKey = EntityTypeKey.create(Counter.Command.class, "Counter");
 
-        ActorRef<ShardingEnvelope<Counter.Command>> shardRegion =
-                sharding.init(Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId())));
-        // #entity
+    ActorRef<ShardingEnvelope<Counter.Command>> shardRegion =
+        sharding.init(Entity.of(typeKey, ctx -> Counter.create(ctx.getEntityId())));
+    // #entity
 
-        // #client
-        ExternalShardAllocationClient client = ExternalShardAllocation.get(system).getClient(typeKey.name());
-        CompletionStage<Done> done = client.setShardLocation("shard-id-1", new Address("akka", "system", "127.0.0.1", 2552));
-        // #client
+    // #client
+    ExternalShardAllocationClient client =
+        ExternalShardAllocation.get(system).getClient(typeKey.name());
+    CompletionStage<Done> done =
+        client.setShardLocation("shard-id-1", new Address("akka", "system", "127.0.0.1", 2552));
+    // #client
 
-    }
+  }
 }
