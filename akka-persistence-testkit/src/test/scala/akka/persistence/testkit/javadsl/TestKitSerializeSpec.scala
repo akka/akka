@@ -7,7 +7,7 @@ package akka.persistence.testkit.javadsl
 import akka.actor.Props
 import akka.persistence.testkit._
 
-class TestKitSerializeSpec extends CommonTestkitTests {
+class TestKitSerializeSpec extends CommonTestKitTests {
   override lazy val system = initSystemWithEnabledPlugin("TestKitSerializeSpec", true, true)
 
   override def specificTests(): Unit = "fail next nonserializable persisted" in {

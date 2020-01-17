@@ -12,8 +12,9 @@ import akka.persistence.snapshot.SnapshotStoreSpec
 import akka.persistence.testkit._
 import akka.persistence.testkit.EventStorage.JournalPolicies
 import akka.persistence.testkit.Reject
+import akka.persistence.testkit.internal.InMemStorageExtension
 
-class PersistenceTestkitJournalCompatSpec extends JournalSpec(config = PersistenceTestKitPlugin.config) {
+class PersistenceTestKitJournalCompatSpec extends JournalSpec(config = PersistenceTestKitPlugin.config) {
 
   override def beforeAll(): Unit = {
     super.beforeAll()

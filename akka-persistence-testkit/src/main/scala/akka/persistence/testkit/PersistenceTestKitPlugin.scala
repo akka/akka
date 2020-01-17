@@ -8,6 +8,7 @@ import akka.annotation.InternalApi
 import akka.persistence._
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.snapshot.SnapshotStore
+import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.collection.immutable

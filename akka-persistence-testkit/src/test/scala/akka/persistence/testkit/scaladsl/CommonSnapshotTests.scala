@@ -18,7 +18,7 @@ trait CommonSnapshotTests extends ScalaDslUtils {
 
   def specificTests(): Unit
 
-  "SnapshotTestkit" should {
+  "SnapshotTestKit" should {
 
     "work with typed actors" in {
       val pid = randomPid()

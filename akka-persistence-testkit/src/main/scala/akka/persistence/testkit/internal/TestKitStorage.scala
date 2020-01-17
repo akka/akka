@@ -139,14 +139,11 @@ sealed trait PolicyOps[U] {
   private lazy val _processingPolicy: AtomicReference[Policy] =
     new AtomicReference(DefaultPolicy)
 
-  def currentPolicy = _processingPolicy.get()
+  def currentPolicy: Policy = _processingPolicy.get()
 
-  def setPolicy(policy: Policy) = _processingPolicy.set(policy)
+  def setPolicy(policy: Policy): Unit = _processingPolicy.set(policy)
 
   def returnDefaultPolicy(): Unit = setPolicy(DefaultPolicy)
-
-  def compareAndSetWritingPolicy(previousPolicy: Policy, newPolicy: Policy) =
-    _processingPolicy.compareAndSet(previousPolicy, newPolicy)
 
 }
 

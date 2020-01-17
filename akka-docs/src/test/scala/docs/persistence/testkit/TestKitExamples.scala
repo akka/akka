@@ -46,9 +46,9 @@ class TestKitExamples {
   //#testkit-typed-usecase
 
   //#set-event-storage-policy
-  class SamplEventStoragePolicy extends EventStorage.JournalPolicies.PolicyType {
+  class SampleEventStoragePolicy extends EventStorage.JournalPolicies.PolicyType {
 
-    //you can use internal state, it need not to be thread safe
+    //you can use internal state, it does not need to be thread safe
     var count = 1
 
     override def tryProcess(persistenceId: String, processingUnit: JournalOperation): ProcessingResult =
@@ -74,7 +74,7 @@ class TestKitExamples {
   //#set-snapshot-storage-policy
   class SampleSnapshotStoragePolicy extends SnapshotStorage.SnapshotPolicies.PolicyType {
 
-    //you can use internal state, it need not to be thread safe
+    //you can use internal state, it does not need to be thread safe
     var count = 1
 
     override def tryProcess(persistenceId: String, processingUnit: SnapshotOperation): ProcessingResult =

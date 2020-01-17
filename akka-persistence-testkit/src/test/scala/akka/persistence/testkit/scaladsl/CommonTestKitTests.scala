@@ -11,14 +11,14 @@ import akka.persistence.testkit._
 import org.scalatest.Matchers._
 import akka.actor.typed.scaladsl.adapter._
 
-trait CommonTestkitTests extends ScalaDslUtils {
+trait CommonTestKitTests extends ScalaDslUtils {
 
   lazy val testKit = new PersistenceTestKit(system)
   import testKit._
 
   def specificTests(): Unit
 
-  "PersistenceTestkit" should {
+  "PersistenceTestKit" should {
 
     "work with typed actors" in {
       val expectedId = randomPid()

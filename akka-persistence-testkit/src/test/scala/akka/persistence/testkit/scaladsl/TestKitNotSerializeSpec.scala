@@ -2,14 +2,14 @@
  * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.persistence.testkit.javadsl
+package akka.persistence.testkit.scaladsl
 
 import akka.actor.Props
 import akka.persistence.testkit._
 
-class TestKitNOTSerializeSpec extends CommonTestkitTests {
+class TestKitNotSerializeSpec extends CommonTestKitTests {
 
-  override lazy val system = initSystemWithEnabledPlugin("TestKitNOTSerializeSpec", false, false)
+  override lazy val system = initSystemWithEnabledPlugin("TestKitNotSerializeSpec", false, false)
 
   import testKit._
 

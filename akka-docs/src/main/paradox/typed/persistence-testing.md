@@ -124,19 +124,18 @@ The main methods of the api allow to (see @apidoc[PersistenceTestKit] and @apido
  * clear the events/snapshots persisted in the storage.
  * reject the events, but not snapshots (rejections are not supported for snapshots in the original api).
  * set your own [policy](#setting-your-own-policy-for-the-storage) which emulates the work of the storage. 
-Policy determines what to do when persistence needs to execute some operation on the storage (i.e. read, delete etc.).
+Policy determines what to do when persistence needs to execute some operation on the storage (i.e. read, delete, etc.).
  * get all the events/snapshots persisted in the storage
  * put the events/snapshots in the storage to test recovery
  
-<a id="setting-your-own-policy-for-the-storage"></a>
 #### Setting your own policy for the storage
 
 You can implement and set your own policy for the storage to control its actions on particular operations, for example you can fail or reject events on your own conditions.
-Implement the @scala[`ProcessingPolicy[EventStorage.JournalOperation] trait`]@java[`ProcessingPolicy<EventStorage.JournalOperation> interface`] for event storage
-or @scala[`ProcessingPolicy[SnapshotStorage.SnapshotOperation] trait`]@java[`ProcessingPolicy<SnapshotStorage.SnapshotOperation> interface`] for snapshot storage,
+Implement the @apidoc[ProcessingPolicy[EventStorage.JournalOperation]] @scala[trait]@java[interface] for event storage
+or @apidoc[ProcessingPolicy[SnapshotStorage.SnapshotOperation]] @scala[trait]@java[interface] for snapshot storage,
 and set it with `withPolicy()` method.
 
-`tryProcess()` method of the `ProcessingPolicy` has two arguments: persistence id and the storage operation. 
+`tryProcess()` method of the @apidoc[ProcessingPolicy] has two arguments: persistence id and the storage operation. 
 
 Event storage has the following operations:
 

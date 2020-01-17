@@ -27,6 +27,10 @@ trait ProcessingPolicy[U] {
 
 }
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 object ProcessingPolicy {
 
   /**

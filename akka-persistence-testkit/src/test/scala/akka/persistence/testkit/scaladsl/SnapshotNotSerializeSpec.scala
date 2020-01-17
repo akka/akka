@@ -7,9 +7,9 @@ package akka.persistence.testkit.scaladsl
 import akka.actor.Props
 import akka.persistence.testkit._
 
-class SnapshotNOTSerializeSpec extends CommonSnapshotTests {
+class SnapshotNotSerializeSpec extends CommonSnapshotTests {
 
-  override lazy val system = initSystemWithEnabledPlugin("SnapshotNOTSerializeSpec", false, false)
+  override lazy val system = initSystemWithEnabledPlugin("SnapshotNotSerializeSpec", false, false)
 
   import testKit._
 
