@@ -43,7 +43,7 @@ import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorSpec {
 
@@ -279,7 +279,7 @@ object EventSourcedBehaviorSpec {
 
 class EventSourcedBehaviorSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import EventSourcedBehaviorSpec._

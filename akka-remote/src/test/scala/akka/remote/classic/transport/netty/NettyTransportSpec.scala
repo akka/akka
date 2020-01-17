@@ -11,10 +11,11 @@ import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.remote.BoundAddressesExtension
 import akka.testkit.SocketUtil
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.Await
 import scala.concurrent.duration.Duration
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object NettyTransportSpec {
   val commonConfig = ConfigFactory.parseString("""
@@ -38,7 +39,7 @@ object NettyTransportSpec {
   }
 }
 
-class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
+class NettyTransportSpec extends AnyWordSpec with Matchers with BindBehavior {
   import NettyTransportSpec._
 
   "NettyTransport" should {
@@ -124,7 +125,7 @@ class NettyTransportSpec extends WordSpec with Matchers with BindBehavior {
 }
 
 trait BindBehavior {
-  this: WordSpec with Matchers =>
+  this: AnyWordSpec with Matchers =>
 
   import NettyTransportSpec._
 

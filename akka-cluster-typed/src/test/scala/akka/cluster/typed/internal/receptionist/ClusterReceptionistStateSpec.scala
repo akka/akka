@@ -11,13 +11,13 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.cluster.UniqueAddress
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist.SubscriptionsKV
 import akka.util.TypedMultiMap
-import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration.Deadline
 import scala.concurrent.duration._
 
-class ClusterReceptionistStateSpec extends ScalaTestWithActorTestKit with WordSpecLike with Matchers {
+class ClusterReceptionistStateSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with Matchers {
 
   val SomeService = ServiceKey[Int]("boy-oh-boy!")
   val SomeOtherService = ServiceKey[Int]("disappointing!")

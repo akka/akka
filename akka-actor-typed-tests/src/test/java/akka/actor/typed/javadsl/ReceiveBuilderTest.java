@@ -12,7 +12,7 @@ import akka.actor.typed.PostStop;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import akka.actor.typed.Behavior;
 

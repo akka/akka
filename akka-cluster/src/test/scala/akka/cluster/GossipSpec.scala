@@ -4,15 +4,15 @@
 
 package akka.cluster
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import akka.actor.Address
 import akka.cluster.Gossip.vclockName
 import akka.cluster.ClusterSettings.DefaultDataCenter
 
 import scala.collection.immutable.SortedSet
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class GossipSpec extends WordSpec with Matchers {
+class GossipSpec extends AnyWordSpec with Matchers {
 
   import MemberStatus._
 

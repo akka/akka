@@ -11,7 +11,7 @@ import akka.actor.typed.scaladsl.Behaviors
 
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 //#imports
 import akka.stream.testkit.TestSubscriber
@@ -24,7 +24,7 @@ object ActorFlowSpec {
   final case class Reply(s: String)
 }
 
-class ActorFlowSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
   import ActorFlowSpec._
 
   "ActorFlow" should {

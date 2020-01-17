@@ -15,8 +15,8 @@ import akka.testkit.TestKit.awaitCond
 import akka.testkit.TestKit.shutdownActorSystem
 import akka.util.unused
 import com.typesafe.config.ConfigFactory
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 class FailingDowningProvider(@unused system: ActorSystem) extends DowningProvider {
   override val downRemovalMargin: FiniteDuration = 20.seconds
@@ -35,7 +35,7 @@ class DummyDowningProvider(@unused system: ActorSystem) extends DowningProvider 
   }
 }
 
-class DowningProviderSpec extends WordSpec with Matchers {
+class DowningProviderSpec extends AnyWordSpec with Matchers {
 
   val baseConf = ConfigFactory.parseString("""
       akka {

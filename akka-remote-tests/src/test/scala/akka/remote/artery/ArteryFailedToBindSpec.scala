@@ -10,9 +10,10 @@ import akka.remote.RemoteTransportException
 import akka.testkit.SocketUtil
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ArteryFailedToBindSpec extends WordSpec with Matchers {
+class ArteryFailedToBindSpec extends AnyWordSpec with Matchers {
 
   "an ActorSystem" must {
     "not start if port is taken" in {

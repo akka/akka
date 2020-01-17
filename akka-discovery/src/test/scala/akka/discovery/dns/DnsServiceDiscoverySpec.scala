@@ -16,14 +16,14 @@ import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, SRVRecord }
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 import scala.collection.{ immutable => im }
 import scala.concurrent.duration._
 
-class DnsServiceDiscoverySpec extends AkkaSpec with WordSpecLike with Matchers with ScalaFutures {
+class DnsServiceDiscoverySpec extends AkkaSpec with AnyWordSpecLike with Matchers with ScalaFutures {
 
   "DnsServiceDiscovery" must {
     "fail future with DiscoveryTimeoutException if IP dns resolve does not respond" in {

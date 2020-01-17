@@ -4,9 +4,9 @@
 
 package akka.persistence.journal.leveldb
 
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 
-class CompactionSegmentManagementSpec extends WordSpec {
+class CompactionSegmentManagementSpec extends AnyWordSpec {
 
   "A CompactionSegmentManagement compatible object" must {
     "ignore persistence ids without declared compaction intervals" in {

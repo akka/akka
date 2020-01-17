@@ -12,7 +12,8 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.TestProbe
 import akka.{ actor => u }
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ProbedBehavior {
   def behavior(probe: u.ActorRef): Behavior[String] = {
@@ -45,7 +46,7 @@ object ClassicSupervisingTypedSpec {
   }
 }
 
-class ClassicSupervisingTypedSpec extends WordSpecLike with LogCapturing with BeforeAndAfterAll {
+class ClassicSupervisingTypedSpec extends AnyWordSpecLike with LogCapturing with BeforeAndAfterAll {
 
   import ClassicSupervisingTypedSpec._
 

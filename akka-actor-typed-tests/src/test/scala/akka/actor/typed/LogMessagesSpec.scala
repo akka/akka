@@ -10,12 +10,12 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
-import org.scalatest.WordSpecLike
 import org.slf4j.event.Level
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class LogMessagesSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = DEBUG # test verifies debug
-    """) with WordSpecLike with LogCapturing {
+    """) with AnyWordSpecLike with LogCapturing {
 
   implicit val classic: actor.ActorSystem = system.toClassic
 

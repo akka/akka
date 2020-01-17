@@ -6,14 +6,10 @@ package docs.dispatcher
 
 import language.postfixOps
 
-import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.Matchers
 import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.actor._
-import docs.dispatcher.DispatcherDocSpec.MyBoundedActor
-import akka.dispatch.RequiresMessageQueue
 
 object DispatcherDocSpec {
   val javaConfig = """

@@ -7,11 +7,12 @@ package akka.cluster
 import akka.actor.Address
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus.Up
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.collection.immutable.SortedSet
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class GossipTargetSelectorSpec extends WordSpec with Matchers {
+class GossipTargetSelectorSpec extends AnyWordSpec with Matchers {
 
   val aDc1 = TestMember(Address("akka", "sys", "a", 2552), Up, Set.empty, dataCenter = "dc1")
   val bDc1 = TestMember(Address("akka", "sys", "b", 2552), Up, Set.empty, dataCenter = "dc1")

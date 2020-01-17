@@ -7,7 +7,7 @@ package docs.akka.typed
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import com.github.ghik.silencer.silent
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object FaultToleranceDocSpec {
   // #bubbling-example
@@ -81,7 +81,7 @@ object FaultToleranceDocSpec {
 class FaultToleranceDocSpec extends ScalaTestWithActorTestKit("""
       # silenced to not put noise in test logs
       akka.loglevel = off
-    """) with WordSpecLike {
+    """) with AnyWordSpecLike {
   import FaultToleranceDocSpec._
 
   "Bubbling of failures" must {

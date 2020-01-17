@@ -10,7 +10,7 @@ import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestK
 import akka.actor.typed.{ Behavior, SupervisorStrategy }
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.{ Behaviors, Routers }
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 // #pool
 
@@ -39,7 +39,7 @@ object RouterSpec {
   // #group
 }
 
-class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with WordSpecLike with LogCapturing {
+class RouterSpec extends ScalaTestWithActorTestKit("akka.loglevel=warning") with AnyWordSpecLike with LogCapturing {
   import RouterSpec._
 
   "The routing sample" must {

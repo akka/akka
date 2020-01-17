@@ -4,9 +4,10 @@
 
 package akka.util
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class WildcardIndexSpec extends WordSpec with Matchers {
+class WildcardIndexSpec extends AnyWordSpec with Matchers {
 
   "wildcard index" must {
     "allow to insert elements using Arrays of strings" in {

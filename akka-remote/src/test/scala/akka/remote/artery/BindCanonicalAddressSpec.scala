@@ -9,15 +9,15 @@ import akka.actor.{ ActorSystem, Address }
 import akka.remote.classic.transport.netty.NettyTransportSpec._
 
 import scala.concurrent.Await
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 
 import scala.concurrent.duration.Duration
 import akka.testkit.SocketUtil
 import java.net.InetAddress
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 trait BindCanonicalAddressBehaviors {
-  this: WordSpec with Matchers =>
+  this: AnyWordSpec with Matchers =>
   def arteryConnectionTest(transport: String, isUDP: Boolean): Unit = {
 
     val commonConfig = BindCanonicalAddressSpec.commonConfig(transport)
@@ -100,7 +100,7 @@ trait BindCanonicalAddressBehaviors {
   }
 }
 
-class BindCanonicalAddressSpec extends WordSpec with Matchers with BindCanonicalAddressBehaviors {
+class BindCanonicalAddressSpec extends AnyWordSpec with Matchers with BindCanonicalAddressBehaviors {
   s"artery with aeron-udp transport" should {
     behave.like(arteryConnectionTest("aeron-udp", isUDP = true))
   }

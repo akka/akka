@@ -24,10 +24,9 @@ import akka.actor.typed.scaladsl.Behaviors._
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
-import org.scalatest.WordSpecLike
 import org.slf4j.event.Level
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
 
 object SupervisionSpec {
 
@@ -94,7 +93,7 @@ object SupervisionSpec {
   }
 }
 
-class StubbedSupervisionSpec extends WordSpec with Matchers with LogCapturing {
+class StubbedSupervisionSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   import SupervisionSpec._
 
@@ -255,7 +254,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers with LogCapturing {
 
 class SupervisionSpec extends ScalaTestWithActorTestKit("""
     akka.log-dead-letters = off
-    """) with WordSpecLike with LogCapturing {
+    """) with AnyWordSpecLike with LogCapturing {
 
   import BehaviorInterceptor._
   import SupervisionSpec._

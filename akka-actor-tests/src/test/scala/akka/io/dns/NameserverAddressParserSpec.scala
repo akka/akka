@@ -6,9 +6,10 @@ package akka.io.dns
 
 import java.net.InetSocketAddress
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class NameserverAddressParserSpec extends WordSpec with Matchers {
+class NameserverAddressParserSpec extends AnyWordSpec with Matchers {
   "Parser" should {
     "handle explicit port in IPv4 address" in {
       DnsSettings.parseNameserverAddress("8.8.8.8:153") shouldEqual new InetSocketAddress("8.8.8.8", 153)

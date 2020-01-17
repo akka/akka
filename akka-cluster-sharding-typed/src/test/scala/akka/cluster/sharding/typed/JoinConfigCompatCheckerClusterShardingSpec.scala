@@ -11,11 +11,12 @@ import akka.actor.typed.ActorSystem
 import akka.cluster.{ Cluster => ClassicCluster }
 import akka.testkit.LongRunningTest
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ Matchers, WordSpecLike }
 
 import scala.collection.{ immutable => im }
 import scala.concurrent.duration._
 import scala.util.Try
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object JoinConfig {
 
@@ -40,7 +41,7 @@ object JoinConfig {
 
 abstract class JoinConfigCompatCheckerClusterShardingSpec
     extends ScalaTestWithActorTestKit(JoinConfig.joinConfig(JoinConfig.Shards))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with LogCapturing {
 

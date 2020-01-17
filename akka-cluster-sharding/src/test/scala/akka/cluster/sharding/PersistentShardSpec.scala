@@ -10,7 +10,7 @@ import akka.cluster.sharding.Shard.{ GetShardStats, ShardStats }
 import akka.cluster.sharding.ShardRegion.{ StartEntity, StartEntityAck }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object PersistentShardSpec {
   class EntityActor extends Actor {
@@ -24,7 +24,7 @@ object PersistentShardSpec {
     """.stripMargin)
 }
 
-class PersistentShardSpec extends AkkaSpec(PersistentShardSpec.config) with WordSpecLike with ImplicitSender {
+class PersistentShardSpec extends AkkaSpec(PersistentShardSpec.config) with AnyWordSpecLike with ImplicitSender {
 
   "Persistent Shard" must {
 

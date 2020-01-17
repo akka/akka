@@ -12,11 +12,12 @@ import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
 import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.{ ActorSystem, Dropped }
-import org.scalatest.{ Matchers, WordSpecLike }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class RoutersSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel=debug
-  """) with WordSpecLike with Matchers with LogCapturing {
+  """) with AnyWordSpecLike with Matchers with LogCapturing {
 
   // needed for the event filter
   implicit val classicSystem: ActorSystem = system.toClassic

@@ -8,7 +8,8 @@ import akka.testkit.AkkaJUnitActorSystemResource;
 import akka.testkit.AkkaSpec;
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
+
 import java.time.Duration;
 
 import java.util.concurrent.CompletionStage;

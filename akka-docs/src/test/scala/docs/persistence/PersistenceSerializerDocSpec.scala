@@ -5,13 +5,14 @@
 package docs.persistence
 
 import com.typesafe.config._
+
 import scala.concurrent.duration._
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 import akka.actor.ActorSystem
 import akka.serialization.{ SerializationExtension, Serializer }
 import akka.testkit.TestKit
 
-class PersistenceSerializerDocSpec extends WordSpec {
+class PersistenceSerializerDocSpec extends AnyWordSpec {
 
   val customSerializerConfig =
     """

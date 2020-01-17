@@ -16,8 +16,8 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
 import org.slf4j.event.Level
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString("""
@@ -35,7 +35,7 @@ object MessageAdapterSpec {
 
 class MessageAdapterSpec
     extends ScalaTestWithActorTestKit(MessageAdapterSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   "Message adapters" must {

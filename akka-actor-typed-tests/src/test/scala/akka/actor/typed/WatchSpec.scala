@@ -16,7 +16,7 @@ import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object WatchSpec {
 
@@ -43,7 +43,7 @@ object WatchSpec {
   case class StartWatchingWith(watchee: ActorRef[Stop.type], message: CustomTerminationMessage) extends Message
 }
 
-class WatchSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class WatchSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   implicit def classicSystem = system.toClassic
 

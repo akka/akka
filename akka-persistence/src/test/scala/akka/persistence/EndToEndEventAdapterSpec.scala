@@ -7,13 +7,14 @@ package akka.persistence
 import java.io.File
 
 import akka.actor._
-import akka.persistence.EndToEndEventAdapterSpec.NewA
 import akka.persistence.journal.{ EventAdapter, EventSeq }
 import akka.testkit.{ EventFilter, TestProbe }
 import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -96,7 +97,7 @@ object EndToEndEventAdapterSpec {
 }
 
 abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Config)
-    extends WordSpecLike
+    extends AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
   import EndToEndEventAdapterSpec._

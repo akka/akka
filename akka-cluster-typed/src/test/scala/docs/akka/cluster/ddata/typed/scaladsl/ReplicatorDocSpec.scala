@@ -8,10 +8,9 @@ import scala.concurrent.duration._
 import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.ddata.typed.scaladsl.DistributedData
 import akka.cluster.ddata.typed.scaladsl.Replicator
-import org.scalatest.WordSpecLike
-
 import akka.actor.testkit.typed.scaladsl._
 import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
 
 // #sample
 import akka.actor.typed.ActorRef
@@ -113,7 +112,7 @@ object ReplicatorDocSpec {
 
 class ReplicatorDocSpec
     extends ScalaTestWithActorTestKit(ReplicatorDocSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import ReplicatorDocSpec._

@@ -17,7 +17,7 @@ import akka.Done
 import akka.actor.typed.{ DispatcherSelector, Terminated }
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import java.net.URLEncoder
@@ -223,7 +223,7 @@ object IntroSpec {
 
 }
 
-class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class IntroSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import IntroSpec._
 

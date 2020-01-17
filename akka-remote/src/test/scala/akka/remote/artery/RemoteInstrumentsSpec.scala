@@ -6,9 +6,10 @@ package akka.remote.artery
 
 import org.scalacheck.{ Arbitrary, Gen }
 import org.scalatestplus.scalacheck.Checkers
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class RemoteInstrumentsSpec extends WordSpec with Matchers with Checkers {
+class RemoteInstrumentsSpec extends AnyWordSpec with Matchers with Checkers {
 
   case class KeyLen(k: Key, l: Len) {
     override def toString = s" key = ${k}, len = ${l}"

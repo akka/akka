@@ -8,9 +8,9 @@ import java.util.Arrays;
 import java.util.List;
 import org.junit.Test;
 import org.junit.Before;
-import org.scalatest.junit.JUnitSuite;
 
 import akka.actor.AbstractActor.Receive;
+import org.scalatestplus.junit.JUnitSuite;
 
 import static org.junit.Assert.*;
 

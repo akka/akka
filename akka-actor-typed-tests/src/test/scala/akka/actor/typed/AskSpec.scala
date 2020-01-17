@@ -15,7 +15,6 @@ import scala.concurrent.{ ExecutionContext, TimeoutException }
 import scala.util.Success
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
 import scala.concurrent.Future
 
 import akka.actor.DeadLetter
@@ -23,6 +22,7 @@ import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object AskSpec {
   sealed trait Msg
@@ -30,7 +30,7 @@ object AskSpec {
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class AskSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import AskSpec._
 

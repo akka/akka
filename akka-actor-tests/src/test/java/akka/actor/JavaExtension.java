@@ -8,7 +8,7 @@ import akka.testkit.AkkaJUnitActorSystemResource;
 import org.junit.*;
 import akka.testkit.AkkaSpec;
 import com.typesafe.config.ConfigFactory;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import static org.junit.Assert.*;
 

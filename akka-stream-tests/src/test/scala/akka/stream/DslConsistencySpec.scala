@@ -6,8 +6,8 @@ package akka.stream
 
 import java.lang.reflect.Method
 import java.lang.reflect.Modifier
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object DslConsistencySpec {
   class ScalaSubSource[Out, Mat]
@@ -22,7 +22,7 @@ object DslConsistencySpec {
         null)
 }
 
-class DslConsistencySpec extends WordSpec with Matchers {
+class DslConsistencySpec extends AnyWordSpec with Matchers {
 
   val sFlowClass: Class[_] = classOf[akka.stream.scaladsl.Flow[_, _, _]]
   val jFlowClass: Class[_] = classOf[akka.stream.javadsl.Flow[_, _, _]]

@@ -8,7 +8,7 @@ import akka.actor.ActorSystem
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber
 import org.reactivestreams.Subscriber
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 class FlowAppendSpec extends StreamSpec with River {
 

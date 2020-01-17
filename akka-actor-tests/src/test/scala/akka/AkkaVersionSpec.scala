@@ -4,9 +4,10 @@
 
 package akka
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class AkkaVersionSpec extends WordSpec with Matchers {
+class AkkaVersionSpec extends AnyWordSpec with Matchers {
 
   "The Akka version check" must {
 

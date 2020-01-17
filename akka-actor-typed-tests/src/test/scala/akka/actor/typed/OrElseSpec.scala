@@ -8,8 +8,8 @@ import scala.annotation.tailrec
 
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 /**
  * Background: Originally there was an `OrElseBehavior` that could compose two `Behavior`, but that
@@ -183,7 +183,7 @@ object OrElseSpec {
 
 }
 
-class OrElseSpec extends WordSpec with Matchers with LogCapturing {
+class OrElseSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   import OrElseSpec._
 

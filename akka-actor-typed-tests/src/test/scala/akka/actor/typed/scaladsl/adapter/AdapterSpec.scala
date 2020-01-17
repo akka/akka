@@ -21,7 +21,9 @@ import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.typed.internal.adapter.SchedulerAdapter
 import akka.serialization.SerializationExtension
 import akka.{ actor => classic }
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpec }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object AdapterSpec {
   val classic1: classic.Props = classic.Props(new Classic1)
@@ -179,7 +181,7 @@ object AdapterSpec {
 
 }
 
-class AdapterSpec extends WordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
+class AdapterSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
   import AdapterSpec._
 
   implicit val system = akka.actor.ActorSystem("AdapterSpec")

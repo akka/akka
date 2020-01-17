@@ -17,7 +17,7 @@ import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorReplySpec {
   def conf: Config = ConfigFactory.parseString(s"""
@@ -75,7 +75,7 @@ object EventSourcedBehaviorReplySpec {
 
 class EventSourcedBehaviorReplySpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorReplySpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import EventSourcedBehaviorReplySpec._

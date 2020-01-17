@@ -4,9 +4,11 @@
 
 package akka.discovery
 
-import org.scalatest.{ Matchers, OptionValues, WordSpec }
+import org.scalatest.OptionValues
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class LookupSpec extends WordSpec with Matchers with OptionValues {
+class LookupSpec extends AnyWordSpec with Matchers with OptionValues {
 
   val (srvWithInvalidDomainNames, srvWithValidDomainNames) = {
 

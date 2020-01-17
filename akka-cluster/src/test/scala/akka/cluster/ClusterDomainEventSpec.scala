@@ -4,13 +4,13 @@
 
 package akka.cluster
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import akka.actor.Address
 
 import scala.collection.immutable.SortedSet
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ClusterDomainEventSpec extends WordSpec with Matchers {
+class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
 
   import MemberStatus._
   import ClusterEvent._

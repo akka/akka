@@ -12,7 +12,7 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.Props
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ActorContextPipeToSelfSpec {
   val config = ConfigFactory.parseString("""
@@ -25,7 +25,7 @@ object ActorContextPipeToSelfSpec {
 
 final class ActorContextPipeToSelfSpec
     extends ScalaTestWithActorTestKit(ActorContextPipeToSelfSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   "The Scala DSL ActorContext pipeToSelf" must {

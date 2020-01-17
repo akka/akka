@@ -8,7 +8,8 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.testkit.SocketUtil
 import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.should.Matchers
 //#cluster-imports
 import akka.actor.typed._
 import akka.actor.typed.scaladsl._
@@ -102,7 +103,7 @@ akka {
   }
 }
 
-class BasicClusterConfigSpec extends WordSpec with ScalaFutures with Eventually with Matchers with LogCapturing {
+class BasicClusterConfigSpec extends AnyWordSpec with ScalaFutures with Eventually with Matchers with LogCapturing {
   import BasicClusterExampleSpec._
 
   implicit override val patienceConfig =
@@ -156,7 +157,7 @@ akka {
 
 }
 
-class BasicClusterManualSpec extends WordSpec with ScalaFutures with Eventually with Matchers with LogCapturing {
+class BasicClusterManualSpec extends AnyWordSpec with ScalaFutures with Eventually with Matchers with LogCapturing {
 
   import BasicClusterManualSpec._
 

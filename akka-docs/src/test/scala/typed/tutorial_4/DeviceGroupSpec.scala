@@ -5,13 +5,12 @@
 package typed.tutorial_4
 
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 import typed.tutorial_4.Device._
 import typed.tutorial_4.DeviceManager._
 
-class DeviceGroupSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class DeviceGroupSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 
   "DeviceGroup actor" must {
 

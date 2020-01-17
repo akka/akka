@@ -7,9 +7,10 @@ package akka.discovery.config
 import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
 import akka.discovery.config.ConfigServicesParserSpec._
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.collection.immutable
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object ConfigServicesParserSpec {
   val exampleConfig: Config = ConfigFactory.parseString("""
@@ -32,7 +33,7 @@ object ConfigServicesParserSpec {
     """.stripMargin)
 }
 
-class ConfigServicesParserSpec extends WordSpec with Matchers {
+class ConfigServicesParserSpec extends AnyWordSpec with Matchers {
 
   "Config parsing" must {
     "parse" in {

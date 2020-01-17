@@ -5,12 +5,12 @@
 package akka.cluster
 
 import akka.actor.{ Address, AddressFromURIString }
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
 import scala.collection.immutable.SortedSet
 import scala.util.Random
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MemberOrderingSpec extends WordSpec with Matchers {
+class MemberOrderingSpec extends AnyWordSpec with Matchers {
   import Member.ordering
   import Member.addressOrdering
   import MemberStatus._

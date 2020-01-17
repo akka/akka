@@ -22,7 +22,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WriterIdentity
 import akka.persistence.typed.{ NoOpEventAdapter, PersistenceId, RecoveryCompleted }
 import akka.serialization.jackson.CborSerializable
 import akka.util.ConstantFun
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorWatchSpec {
   sealed trait Command extends CborSerializable
@@ -34,7 +34,7 @@ object EventSourcedBehaviorWatchSpec {
 
 class EventSourcedBehaviorWatchSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import EventSourcedBehaviorWatchSpec._

@@ -9,7 +9,7 @@ import language.postfixOps
 import org.scalatest.BeforeAndAfterAll
 import scala.concurrent.duration._
 import akka.testkit._
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 import com.typesafe.config.ConfigFactory
 import akka.util.ccompat.JavaConverters._
 import akka.actor._
@@ -23,7 +23,7 @@ object LoggingReceiveSpec {
   }
 }
 
-class LoggingReceiveSpec extends WordSpec with BeforeAndAfterAll {
+class LoggingReceiveSpec extends AnyWordSpec with BeforeAndAfterAll {
 
   import LoggingReceiveSpec._
   val config = ConfigFactory.parseString("""

@@ -11,7 +11,8 @@ import scala.util.control.NoStackTrace
 
 import akka.actor.ActorInitializationException
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
-import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
 
 object DeferredSpec {
   sealed trait Command
@@ -30,7 +31,7 @@ object DeferredSpec {
       })
 }
 
-class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class DeferredSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import DeferredSpec._
   implicit val testSettings = TestKitSettings(system)
@@ -146,7 +147,7 @@ class DeferredSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogC
   }
 }
 
-class DeferredStubbedSpec extends WordSpec with Matchers with LogCapturing {
+class DeferredStubbedSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   import DeferredSpec._
 

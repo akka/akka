@@ -178,10 +178,10 @@ classpath. Here is a similar example to the one above but using ScalaTest:
 ```scala
 package sample
 
-import org.scalatest.WordSpec
-import org.scalatest.matchers.MustMatchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.matchers.must.Matchers
 
-class SpecMultiJvmNode1 extends WordSpec with MustMatchers {
+class SpecMultiJvmNode1 extends AnyWordSpec with Matchers {
   "A node" should {
     "be able to say hello" in {
       val message = "Hello from node 1"
@@ -190,7 +190,7 @@ class SpecMultiJvmNode1 extends WordSpec with MustMatchers {
   }
 }
 
-class SpecMultiJvmNode2 extends WordSpec with MustMatchers {
+class SpecMultiJvmNode2 extends AnyWordSpec with Matchers {
   "A node" should {
     "be able to say hello" in {
       val message = "Hello from node 2"

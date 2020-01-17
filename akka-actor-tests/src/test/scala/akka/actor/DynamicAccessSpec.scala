@@ -4,7 +4,9 @@
 
 package akka.actor
 
-import org.scalatest._
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 import scala.collection.immutable
 import scala.concurrent.Await
@@ -20,7 +22,7 @@ class TestClassWithDefaultConstructor extends TestSuperclass {
   override def name = "default"
 }
 
-class DynamicAccessSpec extends WordSpec with Matchers with BeforeAndAfterAll {
+class DynamicAccessSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll {
   val system = ActorSystem()
 
   "The DynamicAccess of a system" should {

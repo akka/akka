@@ -5,10 +5,10 @@
 package akka.persistence.typed
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class PersistenceIdSpec extends WordSpec with Matchers with LogCapturing {
+class PersistenceIdSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   "PersistenceId" must {
     "use | as default entityIdSeparator for compatibility with Lagom's scaladsl" in {

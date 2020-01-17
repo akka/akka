@@ -19,7 +19,7 @@ import akka.serialization.SerializationExtension
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object SnapshotRecoveryWithEmptyJournalSpec {
   val survivingSnapshotPath = s"target/survivingSnapshotPath-${UUID.randomUUID().toString}"
@@ -57,7 +57,7 @@ object SnapshotRecoveryWithEmptyJournalSpec {
 
 class SnapshotRecoveryWithEmptyJournalSpec
     extends ScalaTestWithActorTestKit(SnapshotRecoveryWithEmptyJournalSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
   import SnapshotRecoveryWithEmptyJournalSpec._
 

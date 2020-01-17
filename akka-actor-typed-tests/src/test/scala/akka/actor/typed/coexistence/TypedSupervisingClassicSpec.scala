@@ -9,9 +9,9 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.WordSpecLike
 import akka.actor.typed.scaladsl.adapter._
 import akka.{ actor => classic }
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object TypedSupervisingClassicSpec {
 
@@ -43,7 +43,7 @@ object TypedSupervisingClassicSpec {
 
 class TypedSupervisingClassicSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = INFO
-  """.stripMargin) with WordSpecLike with LogCapturing {
+  """.stripMargin) with AnyWordSpecLike with LogCapturing {
   import TypedSupervisingClassicSpec._
 
   "Typed supervising classic" should {

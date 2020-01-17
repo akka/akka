@@ -16,7 +16,7 @@ import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ActorSpecMessages {
 
@@ -66,7 +66,7 @@ object ActorSpecMessages {
 
 }
 
-abstract class ActorContextSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import ActorSpecMessages._
 

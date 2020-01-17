@@ -17,7 +17,7 @@ import akka.testkit.TestProbe
 //#import-alias
 import akka.{ actor => classic }
 //#import-alias
-import org.scalatest.WordSpec
+import org.scalatest.wordspec.AnyWordSpec
 import scala.concurrent.duration._
 
 object TypedWatchingClassicSpec {
@@ -68,7 +68,7 @@ object TypedWatchingClassicSpec {
   //#classic
 }
 
-class TypedWatchingClassicSpec extends WordSpec with LogCapturing {
+class TypedWatchingClassicSpec extends AnyWordSpec with LogCapturing {
 
   import TypedWatchingClassicSpec._
 

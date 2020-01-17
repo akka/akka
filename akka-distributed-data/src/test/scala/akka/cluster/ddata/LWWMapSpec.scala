@@ -7,10 +7,10 @@ package akka.cluster.ddata
 import akka.actor.Address
 import akka.cluster.UniqueAddress
 import akka.cluster.ddata.Replicator.Changed
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class LWWMapSpec extends WordSpec with Matchers {
+class LWWMapSpec extends AnyWordSpec with Matchers {
   import LWWRegister.defaultClock
 
   val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)

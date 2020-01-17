@@ -6,7 +6,7 @@ package akka.remote.artery
 
 import akka.testkit.AkkaSpec
 import akka.util.JavaVersion
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 
 class RemotingFlightRecorderSpec extends AkkaSpec with Matchers {
 
