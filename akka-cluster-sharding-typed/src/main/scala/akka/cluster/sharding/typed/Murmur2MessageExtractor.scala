@@ -52,12 +52,18 @@ object Murmur2MessageExtractor {
     length % 4 match {
       case 3 =>
         h ^= (data((length & ~3) + 2) & 0xff) << 16
+        h ^= (data((length & ~3) + 1) & 0xff) << 8
+        h ^= data(length & ~3) & 0xff
+        h *= m
       case 2 =>
         h ^= (data((length & ~3) + 1) & 0xff) << 8
+        h ^= data(length & ~3) & 0xff
+        h *= m
       case 1 =>
         h ^= data(length & ~3) & 0xff
         h *= m
     }
+
     h ^= h >>> 13
     h *= m
     h ^= h >>> 15

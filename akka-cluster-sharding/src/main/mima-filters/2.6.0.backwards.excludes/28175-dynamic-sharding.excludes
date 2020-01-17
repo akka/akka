@@ -1,8 +1,0 @@
-# private[akka] Start class changes
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ClusterSharding.internalStart")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ClusterShardingGuardian#Start.allocationStrategy")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ClusterShardingGuardian#Start.copy")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.cluster.sharding.ClusterShardingGuardian#Start.copy$default$6")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ClusterShardingGuardian#Start.this")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.sharding.ClusterShardingGuardian#Start.apply")
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.cluster.sharding.ClusterShardingGuardian#Start.unapply")
