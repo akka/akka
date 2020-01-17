@@ -39,7 +39,7 @@ object Dependencies {
     scalaVersion := System.getProperty("akka.build.scalaVersion", crossScalaVersions.value.head),
     scalaCheckVersion := sys.props.get("akka.build.scalaCheckVersion").getOrElse("1.14.3"),
     scalaTestVersion := "3.1.0",
-    scalaTestPlusVersion := "3.1.0.0",
+    scalaTestPlusVersion := "3.1.0.1",
     java8CompatVersion := {
       CrossVersion.partialVersion(scalaVersion.value) match {
         // java8-compat is only used in a couple of places for 2.13,
