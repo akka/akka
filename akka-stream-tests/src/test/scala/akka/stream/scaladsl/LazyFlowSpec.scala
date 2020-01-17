@@ -158,6 +158,17 @@ class LazyFlowSpec extends StreamSpec("""
       deferredMatVal.failed.futureValue shouldBe a[TE]
     }
 
+    "work for a single element when the future is completed after the fact" in assertAllStagesStopped {
+      val promise = Promise[Flow[Int, String, NotUsed]]()
+
+      val result: Future[immutable.Seq[String]] =
+        Source(List(1)).viaMat(Flow.lazyFutureFlow(() => promise.future))(Keep.right).runWith(Sink.seq)
+
+      promise.success(Flow[Int].map(_.toString))
+
+      result.futureValue shouldBe List("1")
+    }
+
     "fail the flow when the future materialization fails" in assertAllStagesStopped {
       val result: (Future[NotUsed], Future[immutable.Seq[String]]) =
         Source(List(1, 2, 3))

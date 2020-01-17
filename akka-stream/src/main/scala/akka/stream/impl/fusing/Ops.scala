@@ -2155,12 +2155,11 @@ private[stream] object Collect {
         }
 
       override def onUpstreamFinish(): Unit = {
-        if (!matPromise.isCompleted)
-          matPromise.tryFailure(new NeverMaterializedException)
         // ignore onUpstreamFinish while the stage is switching but setKeepGoing
         if (switching) {
           setKeepGoing(true)
         } else {
+          matPromise.tryFailure(new NeverMaterializedException)
           super.onUpstreamFinish()
         }
       }
@@ -2185,6 +2184,8 @@ private[stream] object Collect {
 
       private def switchTo(flow: Flow[I, O, M], firstElement: I): M = {
 
+        var firstElementPushed = false
+
         //
         // ports are wired in the following way:
         //
@@ -2196,7 +2197,6 @@ private[stream] object Collect {
 
         val matVal = Source
           .fromGraph(subOutlet.source)
-          .prepend(Source.single(firstElement))
           .viaMat(flow)(Keep.right)
           .toMat(subInlet.sink)(Keep.left)
           .run()(interpreter.subFusingMaterializer)
@@ -2226,8 +2226,10 @@ private[stream] object Collect {
               subOutlet.push(grab(in))
             }
             override def onUpstreamFinish(): Unit = {
-              subOutlet.complete()
-              maybeCompleteStage()
+              if (firstElementPushed) {
+                subOutlet.complete()
+                maybeCompleteStage()
+              }
             }
             override def onUpstreamFailure(ex: Throwable): Unit = {
               // propagate exception irrespective if the cached element has been pushed or not
@@ -2248,7 +2250,19 @@ private[stream] object Collect {
 
         subOutlet.setHandler(new OutHandler {
           override def onPull(): Unit = {
-            pull(in)
+            if (firstElementPushed) {
+              pull(in)
+            } else {
+              // the demand can be satisfied right away by the cached element
+              firstElementPushed = true
+              subOutlet.push(firstElement)
+              // in.onUpstreamFinished was not propagated if it arrived before the cached element was pushed
+              // -> check if the completion must be propagated now
+              if (isClosed(in)) {
+                subOutlet.complete()
+                maybeCompleteStage()
+              }
+            }
           }
           override def onDownstreamFinish(cause: Throwable): Unit = {
             if (!isClosed(in)) {
