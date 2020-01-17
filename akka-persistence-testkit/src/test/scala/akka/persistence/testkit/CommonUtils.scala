@@ -10,9 +10,9 @@ import akka.actor.{ ActorRef, ActorSystem }
 import akka.persistence._
 import akka.testkit.TestKitBase
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
-trait CommonUtils extends WordSpecLike with TestKitBase {
+trait CommonUtils extends AnyWordSpecLike with TestKitBase {
 
   protected def randomPid() = UUID.randomUUID().toString
 

@@ -8,7 +8,7 @@ import akka.actor.Props
 import akka.persistence._
 import akka.persistence.testkit._
 import akka.testkit.EventFilter
-import org.scalatest.Matchers._
+import org.scalatest.matchers.should.Matchers._
 import akka.util.ccompat.JavaConverters._
 import akka.japi.Pair
 import akka.actor.typed.javadsl.Adapter

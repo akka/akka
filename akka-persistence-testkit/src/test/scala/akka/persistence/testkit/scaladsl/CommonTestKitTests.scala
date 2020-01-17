@@ -8,7 +8,7 @@ import akka.actor.Props
 import akka.persistence.{ DeleteMessagesFailure, DeleteMessagesSuccess }
 import akka.testkit.EventFilter
 import akka.persistence.testkit._
-import org.scalatest.Matchers._
+import org.scalatest.matchers.should.Matchers._
 import akka.actor.typed.scaladsl.adapter._
 
 trait CommonTestKitTests extends ScalaDslUtils {
