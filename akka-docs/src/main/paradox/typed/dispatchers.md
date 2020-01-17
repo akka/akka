@@ -144,7 +144,7 @@ is typically that (network) I/O occurs under the covers.
 
 ### Problem: Blocking on default dispatcher
 
-Simply add blocking calls to your actor message processing like this is problematic:
+Simply adding blocking calls to your actor message processing like this is problematic:
 
 Scala
 :   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingActor.scala) { #blocking-in-actor }
@@ -154,7 +154,7 @@ Java
 
 Without any further configuration the default dispatcher runs this actor along
 with all other actors. This is very efficient when all actor message processing is
-non-blocking. If all of the available threads are blocked, however, then all the actors on the same dispatcher will starve for threads and
+non-blocking. When all of the available threads are blocked, however, then all the actors on the same dispatcher will starve for threads and
 will not be able to process incoming messages.
 
 @@@ note
@@ -187,7 +187,7 @@ Java
 :   @@snip [BlockingDispatcherTest.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingDispatcherTest.java) { #blocking-main }
 
 
-Here the app is sending 100 messages to `BlockingActor` and `PrintActor` and large numbers
+Here the app is sending 100 messages to `BlockingActor`s and `PrintActor`s and large numbers
 of `akka.actor.default-dispatcher` threads are handling requests. When you run the above code,
 you will likely to see the entire application gets stuck somewhere like this:
 
@@ -197,7 +197,7 @@ you will likely to see the entire application gets stuck somewhere like this:
 ```
 
 `PrintActor` is considered non-blocking, however it is not able to proceed with handling the remaining messages,
-since all the threads are occupied and blocked by the other blocking actor - thus leading to thread starvation.
+since all the threads are occupied and blocked by the other blocking actors - thus leading to thread starvation.
 
 In the thread state diagrams below the colours have the following meaning:
 
@@ -223,7 +223,7 @@ and then you can apply the proposed solutions as explained below.
 
 ![dispatcher-behaviour-on-bad-code.png](../images/dispatcher-behaviour-on-bad-code.png)
 
-In the above example we put the code under load by sending hundreds of messages to the blocking actor
+In the above example we put the code under load by sending hundreds of messages to blocking actors
 which causes threads of the default dispatcher to be blocked.
 The fork join pool based dispatcher in Akka then attempts to compensate for this blocking by adding more threads to the pool
 (`default-akka.actor.default-dispatcher 18,19,20,...`).
@@ -246,7 +246,7 @@ that you have not configured an explicit dispatcher for).
 
 When facing this, you
 may be tempted to wrap the blocking call inside a `Future` and work
-with that instead, but this strategy is too simple: you are quite likely to
+with that instead, but this strategy is too simplistic: you are quite likely to
 find bottlenecks or run out of memory or threads when the application runs
 under increased load.
 
@@ -267,7 +267,7 @@ unless you @ref:[set up a separate dispatcher for the actor](../dispatchers.md#s
 
 ### Solution: Dedicated dispatcher for blocking operations
 
-One of the most efficient methods of isolating the blocking behavior, such that it does not impact the rest of the system,
+An efficient method of isolating the blocking behavior, such that it does not impact the rest of the system,
 is to prepare and use a dedicated dispatcher for all those blocking operations.
 This technique is often referred to as "bulk-heading" or simply "isolating blocking".
 
@@ -276,7 +276,6 @@ be configured as follows:
 
 <!--same config text for Scala & Java-->
 @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingDispatcherSample.scala) { #my-blocking-dispatcher-config }
-
 
 A `thread-pool-executor` based dispatcher allows us to limit the number of threads it will host,
 and this way we gain tight control over the maximum number of blocked threads the system may use.
@@ -296,7 +295,7 @@ The thread pool behavior is shown in the below diagram.
 
 ![dispatcher-behaviour-on-good-code.png](../images/dispatcher-behaviour-on-good-code.png)
 
-Messages sent to `SeparateDispatcherCompletionStageActor` and `PrintActor` are handled by the default dispatcher - the
+Messages sent to @scala[`SeparateDispatcherFutureActor`]@java[`SeparateDispatcherCompletionStageActor`] and `PrintActor` are handled by the default dispatcher - the
 green lines, which represent the actual execution.
 
 When blocking operations are run on the `my-blocking-dispatcher`,
