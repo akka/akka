@@ -157,7 +157,6 @@ object Dependencies {
       val junit = Compile.junit % "optional;provided;test"
 
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "optional;provided;test" } // ApacheV2
-      val scalatestJUnit = Def.setting { "org.scalatestplus" %% "junit-4-12" % scalaTestPlusVersion.value % "optional;provided;test" } // ApacheV2
 
       val logback = Compile.logback % "optional;provided;test" // EPL 1.0
 
@@ -192,7 +191,7 @@ object Dependencies {
         Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
       )
 
-  val actorTestkitTyped = l ++= Seq(Provided.logback, Provided.junit, Provided.scalatest.value, Provided.scalatestJUnit.value)
+  val actorTestkitTyped = l ++= Seq(Provided.logback, Provided.junit, Provided.scalatest.value, Test.scalatestJUnit.value)
 
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
