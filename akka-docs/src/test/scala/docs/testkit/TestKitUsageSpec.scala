@@ -10,8 +10,8 @@ import language.postfixOps
 import scala.util.Random
 
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.WordSpecLike
-import org.scalatest.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.scalatest.matchers.should.Matchers
 
 import com.typesafe.config.ConfigFactory
 
@@ -30,7 +30,7 @@ class TestKitUsageSpec
     extends TestKit(ActorSystem("TestKitUsageSpec", ConfigFactory.parseString(TestKitUsageSpec.config)))
     with DefaultTimeout
     with ImplicitSender
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
   import TestKitUsageSpec._
