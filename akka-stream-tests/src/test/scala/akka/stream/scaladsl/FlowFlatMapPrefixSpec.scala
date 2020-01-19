@@ -325,7 +325,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
       matFlowWatchTerm.futureValue should ===(Done)
       srcWatchTermF.futureValue should ===(Done)
 
-
     }
 
     "early downstream failure is deferred until prefix completion" in assertAllStagesStopped {

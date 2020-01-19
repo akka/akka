@@ -93,8 +93,7 @@ import scala.util.control.NonFatal
             case ex =>
               super.onDownstreamFinish(ex)
           }
-        }
-        else {
+        } else {
           subSink.get.cancel(cause)
         }
       }
@@ -149,7 +148,7 @@ import scala.util.control.NonFatal
         matPromise.success(matVal)
 
         //in case downstream was closed
-        if(downstreamCause.isDefined){
+        if (downstreamCause.isDefined) {
           subSink.get.cancel(downstreamCause.get)
         }
 
@@ -157,7 +156,6 @@ import scala.util.control.NonFatal
         if (isClosed(in)) {
           subSource.get.complete()
         }
-
 
         //in case we've been pulled by downstream
         if (isAvailable(out)) {
