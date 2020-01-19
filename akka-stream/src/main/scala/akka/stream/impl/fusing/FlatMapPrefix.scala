@@ -31,6 +31,8 @@ import scala.util.control.NonFatal
       private var subSource = OptionVal.none[SubSourceOutlet[In]]
       private var subSink = OptionVal.none[SubSinkInlet[Out]]
 
+      private var downstreamCause = OptionVal.none[Throwable]
+
       setHandlers(in, out, this)
 
       override def postStop(): Unit = {
@@ -85,9 +87,16 @@ import scala.util.control.NonFatal
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         if (subSink.isEmpty) {
-          materializeFlow()
+          cause match {
+            case NonFatal(ex) =>
+              downstreamCause = OptionVal.Some(ex)
+            case ex =>
+              super.onDownstreamFinish(ex)
+          }
         }
-        subSink.get.cancel(cause)
+        else {
+          subSink.get.cancel(cause)
+        }
       }
 
       def materializeFlow(): Unit = {
@@ -139,10 +148,17 @@ import scala.util.control.NonFatal
         }
         matPromise.success(matVal)
 
+        //in case downstream was closed
+        if(downstreamCause.isDefined){
+          subSink.get.cancel(downstreamCause.get)
+        }
+
         //in case we've materialized due to upstream completion
         if (isClosed(in)) {
           subSource.get.complete()
         }
+
+
         //in case we've been pulled by downstream
         if (isAvailable(out)) {
           subSink.get.pull()
