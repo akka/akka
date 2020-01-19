@@ -8,6 +8,7 @@ import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
 import akka.stream.{
+  AbruptStageTerminationException,
   AbruptTerminationException,
   Materializer,
   NeverMaterializedException,
@@ -421,6 +422,27 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           ex.getCause should be(a[AbruptTerminationException])
       }
       doneF.failed.futureValue should be(a[AbruptTerminationException])
+    }
+
+    "respond to abrupt termination after flow materialization" in assertAllStagesStopped {
+      val mat = Materializer(system)
+      val countFF = src10()
+        .flatMapPrefixMat(2) { prefix =>
+          prefix should ===(0 until 2)
+          Flow[Int]
+            .concat(Source.repeat(3))
+            .fold(0L) {
+              case (acc, _) => acc + 1
+            }
+            .alsoToMat(Sink.head)(Keep.right)
+        }(Keep.right)
+        .to(Sink.ignore)
+        .run()(mat)
+      val countF = countFF.futureValue
+      //at this point we know the flow was materialized, now we can stop the materializer
+      mat.shutdown()
+      //expect the nested flow to be terminated abruptly.
+      countF.failed.futureValue should be(a[AbruptStageTerminationException])
     }
 
     "behave like via when n = 0" in assertAllStagesStopped {

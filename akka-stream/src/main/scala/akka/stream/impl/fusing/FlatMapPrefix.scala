@@ -34,11 +34,8 @@ import scala.util.control.NonFatal
       setHandlers(in, out, this)
 
       override def postStop(): Unit = {
+        //this covers the case when the nested flow was never materialized
         matPromise.tryFailure(new AbruptStageTerminationException(this))
-        if (subSource.isDefined && !subSource.get.isClosed)
-          subSource.get.complete()
-        if (subSink.isDefined && !subSink.get.isClosed)
-          subSink.get.cancel()
         super.postStop()
       }
 
