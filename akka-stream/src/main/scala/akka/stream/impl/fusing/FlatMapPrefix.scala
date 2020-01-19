@@ -26,7 +26,7 @@ import scala.util.control.NonFatal
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
     val matPromise = Promise[M]
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
-      var accumulated = List.empty[In]
+      var accumulated = (List.empty[In], 0)
 
       private var subSource = OptionVal.none[SubSourceOutlet[In]]
       private var subSink = OptionVal.none[SubSinkInlet[Out]]
@@ -43,8 +43,9 @@ import scala.util.control.NonFatal
         if (subSource.isDefined) {
           subSource.get.push(grab(in))
         } else {
-          accumulated ::= grab(in)
-          if (accumulated.size == n) {
+          val (prefix, count) = accumulated
+          accumulated = (grab(in) :: prefix, count + 1)
+          if (accumulated._2 == n) {
             materializeFlow()
           } else {
             //gi'me some more!
@@ -75,9 +76,9 @@ import scala.util.control.NonFatal
         if (subSink.isDefined) {
           //delegate to subSink
           subSink.get.pull()
-        } else if (accumulated.size < n) {
+        } else if (accumulated._2 < n) {
           pull(in)
-        } else if (accumulated.size == n) { //corner case for n = 0, can be handled in FlowOps
+        } else if (accumulated._2 == n) { //corner case for n = 0, can be handled in FlowOps
           materializeFlow()
         }
       }
@@ -90,8 +91,8 @@ import scala.util.control.NonFatal
       }
 
       def materializeFlow(): Unit = {
-        val prefix = accumulated.reverse
-        accumulated = Nil
+        val prefix = accumulated._1.reverse
+        accumulated = (Nil, accumulated._2)
         subSource = OptionVal.Some(new SubSourceOutlet[In]("subSource"))
         subSource.get.setHandler {
           new OutHandler {
