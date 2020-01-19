@@ -483,11 +483,9 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[String]()
 
-      val detachedFlow = Flow
-        .fromSinkAndSource(Sink.cancelled[Int], Source(List("a", "b", "c")))
-        .via {
-          Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.empty[Int])
-        }
+      val detachedFlow = Flow.fromSinkAndSource(Sink.cancelled[Int], Source(List("a", "b", "c"))).via {
+        Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.empty[Int])
+      }
       val fHeadOpt = Source
         .fromPublisher(publisher)
         .flatMapPrefix(2) { prefix =>
