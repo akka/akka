@@ -15,10 +15,6 @@ import akka.stream.{
 }
 import akka.{ Done, NotUsed }
 
-//import scala.concurrent.Future
-//import org.scalatest.concurrent.PatienceConfiguration.Interval
-//import org.scalatest.time.{Minutes, Span}
-
 class FlowFlatMapPrefixSpec extends StreamSpec {
   //import system.dispatcher
 
@@ -29,10 +25,8 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
     "work in the simple identity case" in assertAllStagesStopped {
       src10()
         .flatMapPrefixMat(2) { _ =>
-          println("materializing flow")
           Flow[Int]
         }(Keep.left)
-        .alsoTo(Sink.foreach(println(_)))
         .runWith(Sink.seq[Int])
         .futureValue should ===(2 until 10)
     }
@@ -153,15 +147,14 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
       suffixF.futureValue should ===(100 :: 101 :: Nil)
     }
 
-    "handles upstream cancellation" in assertAllStagesStopped {
+    "handles upstream completion" in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
       val matValue = Source
         .fromPublisher(publisher)
         .flatMapPrefixMat(2) { prefix =>
-          println("materializing flow")
-          Flow[Int].mapMaterializedValue(_ => prefix).prepend(Source(100 to 101)).alsoTo(Sink.foreach(println(_)))
+          Flow[Int].mapMaterializedValue(_ => prefix).prepend(Source(100 to 101))
         }(Keep.right)
         .to(Sink.fromSubscriber(subscriber))
         .run()
@@ -222,7 +215,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .run
 
       prefixF.futureValue should ===(0 until 4)
-      //Thread.sleep(1000 * 60 * 60)
       suffixF.futureValue should ===(11 :: 12 :: Nil)
     }
 
@@ -299,7 +291,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .fromPublisher(publisher)
         .watchTermination()(Keep.right)
         .flatMapPrefixMat(8) { prefix =>
-          println("materializing!")
           prefix should ===(0 until 2)
           Flow[Int].watchTermination()(Keep.right)
         //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
@@ -335,7 +326,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .fromPublisher(publisher)
         .watchTermination()(Keep.right)
         .flatMapPrefixMat(8) { prefix =>
-          println("materializing!")
           prefix should ===(0 until 2)
           Flow[Int].watchTermination()(Keep.right)
         //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
@@ -495,10 +485,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
 
       val detachedFlow = Flow
         .fromSinkAndSource(Sink.cancelled[Int], Source(List("a", "b", "c")))
-        .map { x =>
-          println(x)
-          x
-        }
         .via {
           Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.empty[Int])
         }

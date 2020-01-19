@@ -1372,7 +1372,7 @@ class SubSource[Out, Mat](
    *  the resulting flow will be materialized and signalled for upstream completion, it can then cancel/complete at its own discretion.
    *
    * '''Cancels when''' upstream cancels, application of `f` fails, materialization of the resulting flow fails or the materialized flow cancels.
-   *  Notice the materialized flow may apply its own logic in case of upstream or downstream cancellations.
+   *  Notice that the materialized flow may apply its own logic in case of upstream or downstream cancellations.
    *
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.

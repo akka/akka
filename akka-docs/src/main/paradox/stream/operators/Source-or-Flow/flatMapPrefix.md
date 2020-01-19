@@ -23,13 +23,13 @@ This method returns a flow consuming the rest of the stream producing the materi
 @@@div { .callout }
 
 **emits** when the materialized flow emits.
-    Notice the first `n` elements are buffered internally before materializing the flow, This flow will then be materialized and connected to the rest of the upstream - producing elements at its own discretion (might 'swallow' or multiply elements).
+    Notice the first `n` elements are buffered internally before materializing the flow and connecting it to the rest of the upstream - producing elements at its own discretion (might 'swallow' or multiply elements).
 
 **backpressures** when the materialized flow backpressures
 
 **completes**  the materialized flow completes.
     If upstream completes before producing `n` elements, `f` will be applied with the provided elements,
-    the resulting flow will be materialized and signalled for upstream completion, it can then cancel/complete at its own discretion.
+    the resulting flow will be materialized and signalled for upstream completion, it can then or continue to emit elements at its own discretion.
 
 
 @@@

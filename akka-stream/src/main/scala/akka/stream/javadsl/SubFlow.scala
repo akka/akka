@@ -1382,20 +1382,20 @@ class SubFlow[In, Out, Mat](
 
   /**
    * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements),
-   * then apply f on these elements in order to obtain a flow, this flow is then materialized and the rest of the input is processed by this flow (similar to via ).
+   * then apply `f`` on these elements in order to obtain a flow, this flow is then materialized and the rest of the input is processed by this flow (similar to via ).
    * This method returns a flow consuming the rest of the stream producing the materialized flow's output.
    *
    * '''Emits when''' the materialized flow emits.
-   *  Notice the first `n` elements are buffered internally before materializing the flow, This flow will then be materialized and connected to the rest of the upstream - producing elements at its own discretion (might 'swallow' or multiply elements).
+   *  Notice the first `n` elements are buffered internally before materializing the flow and connecting it to the rest of the upstream - producing elements at its own discretion (might 'swallow' or multiply elements).
    *
    * '''Backpressures when''' downstream backpressures
    *
    * '''Completes when''' the materialized flow completes.
    *  If upstream completes before producing `n` elements, `f` will be applied with the provided elements,
-   *  the resulting flow will be materialized and signalled for upstream completion, it can then cancel/complete at its own discretion.
+   *  the resulting flow will be materialized and signalled for upstream completion, it can then complete or continue to emit elements at its own discretion.
    *
    * '''Cancels when''' upstream cancels, application of `f` fails, materialization of the resulting flow fails or the materialized flow cancels.
-   *  Notice the materialized flow may apply its own logic in case of upstream or downstream cancellations.
+   *  Notice that the materialized flow may apply its own logic in case of upstream or downstream cancellations.
    *
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
