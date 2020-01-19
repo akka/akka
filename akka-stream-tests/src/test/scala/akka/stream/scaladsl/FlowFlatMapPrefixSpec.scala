@@ -328,15 +328,15 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
 
     }
 
-    "early downstream failure triggers flow materialization" in assertAllStagesStopped {
+    "early downstream failure is deferred until prefix completion" in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
       val (srcWatchTermF, matFlowWatchTermFF) = Source
         .fromPublisher(publisher)
         .watchTermination()(Keep.right)
-        .flatMapPrefixMat(8) { prefix =>
-          prefix should ===(0 until 2)
+        .flatMapPrefixMat(3) { prefix =>
+          prefix should ===(0 until 3)
           Flow[Int].watchTermination()(Keep.right)
         //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
         }(Keep.both)
@@ -356,6 +356,11 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
       subUpstream.sendNext(1)
       //subUpstream.expectRequest() should be >= (1L)
       subDownstream.asInstanceOf[SubscriptionWithCancelException].cancel(TE("that again?!"))
+
+      matFlowWatchTerm.value should be(empty)
+      srcWatchTermF.value should be(empty)
+
+      subUpstream.sendNext(2)
 
       matFlowWatchTerm.failed.futureValue should ===(TE("that again?!"))
       srcWatchTermF.failed.futureValue should ===(TE("that again?!"))
