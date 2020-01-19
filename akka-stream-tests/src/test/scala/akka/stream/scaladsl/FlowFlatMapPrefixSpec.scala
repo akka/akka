@@ -284,15 +284,15 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
       srcWatchTermF.futureValue should ===(Done)
     }
 
-    "early downstream cancellation triggers flow materialization" in assertAllStagesStopped {
+    "early downstream cancellation is later handed out to materialized flow" in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
       val (srcWatchTermF, matFlowWatchTermFF) = Source
         .fromPublisher(publisher)
         .watchTermination()(Keep.right)
-        .flatMapPrefixMat(8) { prefix =>
-          prefix should ===(0 until 2)
+        .flatMapPrefixMat(3) { prefix =>
+          prefix should ===(0 until 3)
           Flow[Int].watchTermination()(Keep.right)
         //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
         }(Keep.both)
@@ -313,10 +313,19 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
       //subUpstream.expectRequest() should be >= (1L)
       subDownstream.cancel()
 
+      //subflow not materialized yet, hence mat value (future) isn't ready yet
+      matFlowWatchTerm.value should be(empty)
+      srcWatchTermF.value should be(empty)
+
+      //this one is sent AFTER downstream cancellation
+      subUpstream.sendNext(2)
+
+      subUpstream.expectCancellation()
+
       matFlowWatchTerm.futureValue should ===(Done)
       srcWatchTermF.futureValue should ===(Done)
 
-      subUpstream.expectCancellation()
+
     }
 
     "early downstream failure triggers flow materialization" in assertAllStagesStopped {
