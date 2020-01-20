@@ -14,6 +14,8 @@ import akka.cluster.sharding.external.ShardLocations
 
 /**
  * API May Change
+ *
+ * Not for user extension
  */
 @ApiMayChange
 trait ExternalShardAllocationClient {

@@ -14,6 +14,8 @@ import scala.concurrent.Future
 
 /**
  * API May Change
+ *
+ * Not for user extension
  */
 @ApiMayChange
 trait ExternalShardAllocationClient {

@@ -66,9 +66,7 @@ object ExternalShardAllocationStrategy {
 
     var currentLocations: Map[ShardId, String] = Map.empty
 
-    override def receive: Receive = active
-
-    private def active: Receive = {
+    override def receive: Receive = {
       case c @ Changed(key: LWWMapKey[ShardId, String] @unchecked) =>
         val newLocations = c.get(key).entries
         currentLocations ++= newLocations
@@ -81,6 +79,7 @@ object ExternalShardAllocationStrategy {
         log.debug("GetShardLocations")
         sender() ! GetShardLocationsResponse(currentLocations.transform((_, asStr) => AddressFromURIString(asStr)))
     }
+
   }
 }
 
@@ -153,7 +152,10 @@ class ExternalShardAllocationStrategy(systemProvider: ClassicActorSystemProvider
       }
       .recover {
         case _: AskTimeoutException =>
-          log.warning("allocate timed out waiting for shard allocation state")
+          log.warning(
+            "allocate timed out waiting for shard allocation state [{}]. Allocating to requester [{}]",
+            shardId,
+            requester)
           requester
       }
 
@@ -209,7 +211,7 @@ class ExternalShardAllocationStrategy(systemProvider: ClassicActorSystemProvider
       }
       .recover {
         case _: AskTimeoutException =>
-          log.warning("rebalance timed out waiting for shard allocation state")
+          log.warning("rebalance timed out waiting for shard allocation state. Keeping existing allocations")
           Set.empty
       }
   }

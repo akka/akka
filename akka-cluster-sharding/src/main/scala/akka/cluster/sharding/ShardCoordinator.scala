@@ -619,7 +619,7 @@ abstract class ShardCoordinator(
                   }
                   .recover {
                     case t =>
-                      log.warning("Shard [{}] allocation failed. Exception: [{}]", shard, t)
+                      log.error(t, "Shard [{}] allocation failed.", shard)
                       AllocateShardResult(shard, None, getShardHomeSender)
                   }
                   .pipeTo(self)
