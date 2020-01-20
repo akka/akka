@@ -148,7 +148,7 @@ private[remote] class ArteryTcpTransport(
           log.debug(
             RemoteLogMarker.connect(
               outboundContext.remoteAddress,
-              outboundContext.associationState.uniqueRemoteAddressValue().map(_.uid)),
+              outboundContext.associationState.uniqueRemoteAddress().map(_.uid)),
             "Outbound connection opened to [{}]",
             outboundContext.remoteAddress)
       }
@@ -158,7 +158,7 @@ private[remote] class ArteryTcpTransport(
           log.debug(
             RemoteLogMarker.disconnected(
               outboundContext.remoteAddress,
-              outboundContext.associationState.uniqueRemoteAddressValue().map(_.uid)),
+              outboundContext.associationState.uniqueRemoteAddress().map(_.uid)),
             "Outbound connection closed to [{}]",
             outboundContext.remoteAddress)
       }
