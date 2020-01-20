@@ -1,6 +1,6 @@
 # Style guide
 
-This is a style guide with recommendations of idioms and pattern for writing Akka actors.
+This is a style guide with recommendations of idioms and patterns for writing Akka actors.
 Note that this guide does not cover the classic actor API.
 
 As with all style guides, treat this as a list of rules to be broken. There are certainly times
