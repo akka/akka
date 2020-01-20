@@ -4,18 +4,21 @@
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
+import akka.{ Done, NotUsed }
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, ActorSystemImpl, Identify, Props }
+import akka.actor.Status.Failure
 import akka.pattern._
 import akka.stream._
 import akka.stream.impl.streamref.{ SinkRefImpl, SourceRefImpl }
 import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl._
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit, TestProbe }
+import akka.testkit.{ AkkaSpec, TestKit, TestProbe }
 import akka.util.ByteString
 import com.typesafe.config._
 
 import scala.collection.immutable
+import scala.concurrent.Promise
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
@@ -23,13 +26,15 @@ import scala.util.control.NoStackTrace
 object StreamRefsSpec {
 
   object DataSourceActor {
-    def props(probe: ActorRef): Props =
-      Props(new DataSourceActor(probe)).withDispatcher("akka.test.stream-dispatcher")
+    def props(): Props = Props(new DataSourceActor()).withDispatcher("akka.test.stream-dispatcher")
   }
 
-  class DataSourceActor(probe: ActorRef) extends Actor with ActorLogging {
+  case class Command(cmd: String, probe: ActorRef)
+
+  class DataSourceActor() extends Actor with ActorLogging {
 
     import context.system
+    import context.dispatcher
 
     def receive = {
       case "give" =>
@@ -42,6 +47,26 @@ object StreamRefsSpec {
         val ref: SourceRef[String] = source.runWith(StreamRefs.sourceRef())
 
         sender() ! ref
+
+      case "give-nothing-watch" =>
+        val source: Source[String, NotUsed] = Source.future(Future.never.mapTo[String])
+        val (done: Future[Done], ref: SourceRef[String]) =
+          source.watchTermination()(Keep.right).toMat(StreamRefs.sourceRef())(Keep.both).run()
+
+        sender() ! ref
+
+        import context.dispatcher
+        done.pipeTo(sender())
+
+      case "give-only-one-watch" =>
+        val source: Source[String, NotUsed] = Source.single("hello").concat(Source.future(Future.never))
+        val (done: Future[Done], ref: SourceRef[String]) =
+          source.watchTermination()(Keep.right).toMat(StreamRefs.sourceRef())(Keep.both).run()
+
+        sender() ! ref
+
+        import context.dispatcher
+        done.pipeTo(sender())
 
       case "give-infinite" =>
         val source: Source[String, NotUsed] = Source.fromIterator(() => Iterator.from(1)).map("ping-" + _)
@@ -57,6 +82,12 @@ object StreamRefsSpec {
         val ref = Source.empty.runWith(StreamRefs.sourceRef())
         sender() ! ref
 
+      case "give-maybe" =>
+        val ((maybe, termination), sourceRef) =
+          Source.maybe[String].watchTermination()(Keep.both).toMat(StreamRefs.sourceRef())(Keep.both).run()
+        sender() ! (maybe -> sourceRef)
+        termination.pipeTo(sender())
+
       case "give-subscribe-timeout" =>
         val ref = Source
           .repeat("is anyone there?")
@@ -65,18 +96,7 @@ object StreamRefsSpec {
           .run()
         sender() ! ref
 
-      //      case "send-bulk" =>
-      //        /*
-      //         * Here we're able to send a source to a remote recipient
-      //         * The source is a "bulk transfer one, in which we're ready to send a lot of data"
-      //         *
-      //         * For them it's a Source; for us it is a Sink we run data "into"
-      //         */
-      //        val source: Source[ByteString, NotUsed] = Source.single(ByteString("huge-file-"))
-      //        val ref: SourceRef[ByteString] = source.runWith(SourceRef.bulkTransfer())
-      //        sender() ! BulkSourceMsg(ref)
-
-      case "receive" =>
+      case Command("receive", probe) =>
         /*
          * We write out code, knowing that the other side will stream the data into it.
          *
@@ -86,12 +106,31 @@ object StreamRefsSpec {
           StreamRefs.sinkRef[String]().to(Sink.actorRef(probe, "<COMPLETE>", f => "<FAILED>: " + f.getMessage)).run()
         sender() ! sink
 
+      case Command("receive-one-cancel", probe) =>
+        // will shutdown the stream after the first element using a kill switch
+        val (sink, done) =
+          StreamRefs
+            .sinkRef[String]()
+            .viaMat(KillSwitches.single)(Keep.both)
+            .alsoToMat(Sink.head)(Keep.both)
+            .mapMaterializedValue {
+              case ((sink, ks), firstF) =>
+                // shutdown the stream after first element
+                firstF.foreach(_ => ks.shutdown())(context.dispatcher)
+                sink
+            }
+            .watchTermination()(Keep.both)
+            .to(Sink.actorRef(probe, "<COMPLETE>", f => "<FAILED>: " + f.getMessage))
+            .run()
+        sender() ! sink
+        done.pipeTo(sender())
+
       case "receive-ignore" =>
         val sink =
           StreamRefs.sinkRef[String]().to(Sink.ignore).run()
         sender() ! sink
 
-      case "receive-subscribe-timeout" =>
+      case Command("receive-subscribe-timeout", probe) =>
         val sink = StreamRefs
           .sinkRef[String]()
           .withAttributes(StreamRefAttributes.subscriptionTimeout(500.millis))
@@ -99,7 +138,7 @@ object StreamRefsSpec {
           .run()
         sender() ! sink
 
-      case "receive-32" =>
+      case Command("receive-32", probe) =>
         val (sink, driver) = StreamRefs.sinkRef[String]().toMat(TestSink.probe(context.system))(Keep.both).run()
 
         import context.dispatcher
@@ -117,22 +156,7 @@ object StreamRefsSpec {
 
         sender() ! sink
 
-      //      case "receive-bulk" =>
-      //        /*
-      //         * We write out code, knowing that the other side will stream the data into it.
-      //         * This will open a dedicated connection per transfer.
-      //         *
-      //         * For them it's a Sink; for us it's a Source.
-      //         */
-      //        val sink: SinkRef[ByteString] =
-      //          SinkRef.bulkTransferSource()
-      //            .to(Sink.actorRef(probe, "<COMPLETE>"))
-      //            .run()
-      //
-      //
-      //        sender() ! BulkSinkMsg(sink)
     }
-
   }
 
   // -------------------------
@@ -171,7 +195,7 @@ object StreamRefsSpec {
   }
 }
 
-class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSender {
+class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) {
   import StreamRefsSpec._
 
   val remoteSystem = ActorSystem("RemoteSystem", StreamRefsSpec.config())
@@ -179,55 +203,61 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
   override protected def beforeTermination(): Unit =
     TestKit.shutdownActorSystem(remoteSystem)
 
-  val p = TestProbe()
-
   // obtain the remoteActor ref via selection in order to use _real_ remoting in this test
   val remoteActor = {
-    val it = remoteSystem.actorOf(DataSourceActor.props(p.ref), "remoteActor")
+    val probe = TestProbe()(remoteSystem)
+    val it = remoteSystem.actorOf(DataSourceActor.props(), "remoteActor")
     val remoteAddress = remoteSystem.asInstanceOf[ActorSystemImpl].provider.getDefaultAddress
-    system.actorSelection(it.path.toStringWithAddress(remoteAddress)) ! Identify("hi")
-    expectMsgType[ActorIdentity].ref.get
+    system.actorSelection(it.path.toStringWithAddress(remoteAddress)).tell(Identify("hi"), probe.ref)
+    probe.expectMsgType[ActorIdentity].ref.get
   }
 
   "A SourceRef" must {
 
     "send messages via remoting" in {
-      remoteActor ! "give"
-      val sourceRef = expectMsgType[SourceRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give", remoteProbe.ref)
+      val sourceRef = remoteProbe.expectMsgType[SourceRef[String]]
 
-      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>", _ => "<FAILED>"))
+      val localProbe = TestProbe()
+      sourceRef.runWith(Sink.actorRef(localProbe.ref, "<COMPLETE>", ex => s"<FAILED> ${ex.getMessage}"))
 
-      p.expectMsg("hello")
-      p.expectMsg("world")
-      p.expectMsg("<COMPLETE>")
+      localProbe.expectMsg(5.seconds, "hello")
+      localProbe.expectMsg("world")
+      localProbe.expectMsg("<COMPLETE>")
     }
 
     "fail when remote source failed" in {
-      remoteActor ! "give-fail"
-      val sourceRef = expectMsgType[SourceRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give-fail", remoteProbe.ref)
+      val sourceRef = remoteProbe.expectMsgType[SourceRef[String]]
 
-      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>", t => "<FAILED>: " + t.getMessage))
+      val localProbe = TestProbe()
+      sourceRef.runWith(Sink.actorRef(localProbe.ref, "<COMPLETE>", t => "<FAILED>: " + t.getMessage))
 
-      val f = p.expectMsgType[String]
+      val f = localProbe.expectMsgType[String]
       f should include("Remote stream (")
       // actor name here, for easier identification
       f should include("failed, reason: Booooom!")
     }
 
     "complete properly when remote source is empty" in {
+      val remoteProbe = TestProbe()(remoteSystem)
       // this is a special case since it makes sure that the remote stage is still there when we connect to it
 
-      remoteActor ! "give-complete-asap"
-      val sourceRef = expectMsgType[SourceRef[String]]
+      remoteActor.tell("give-complete-asap", remoteProbe.ref)
+      val sourceRef = remoteProbe.expectMsgType[SourceRef[String]]
 
-      sourceRef.runWith(Sink.actorRef(p.ref, "<COMPLETE>", _ => "<FAILED>"))
+      val localProbe = TestProbe()
+      sourceRef.runWith(Sink.actorRef(localProbe.ref, "<COMPLETE>", _ => "<FAILED>"))
 
-      p.expectMsg("<COMPLETE>")
+      localProbe.expectMsg("<COMPLETE>")
     }
 
     "respect back-pressure from (implied by target Sink)" in {
-      remoteActor ! "give-infinite"
-      val sourceRef = expectMsgType[SourceRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give-infinite", remoteProbe.ref)
+      val sourceRef = remoteProbe.expectMsgType[SourceRef[String]]
 
       val probe = sourceRef.runWith(TestSink.probe)
 
@@ -251,10 +281,12 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
     }
 
     "receive timeout if subscribing too late to the source ref" in {
-      remoteActor ! "give-subscribe-timeout"
-      val remoteSource: SourceRef[String] = expectMsgType[SourceRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give-subscribe-timeout", remoteProbe.ref)
+      val remoteSource: SourceRef[String] = remoteProbe.expectMsgType[SourceRef[String]]
 
       // not materializing it, awaiting the timeout...
+
       Thread.sleep(800) // the timeout is 500ms
 
       val probe = remoteSource.runWith(TestSink.probe[String](system))
@@ -270,8 +302,9 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
 
     // bug #24626
     "not receive subscription timeout when got subscribed" in {
-      remoteActor ! "give-subscribe-timeout"
-      val remoteSource: SourceRef[String] = expectMsgType[SourceRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give-subscribe-timeout", remoteProbe.ref)
+      val remoteSource: SourceRef[String] = remoteProbe.expectMsgType[SourceRef[String]]
       // materialize directly and start consuming, timeout is 500ms
       val eventualStrings: Future[immutable.Seq[String]] = remoteSource
         .throttle(1, 100.millis, 1, ThrottleMode.Shaping)
@@ -283,8 +316,9 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
 
     // bug #24934
     "not receive timeout while data is being sent" in {
-      remoteActor ! "give-infinite"
-      val remoteSource: SourceRef[String] = expectMsgType[SourceRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give-infinite", remoteProbe.ref)
+      val remoteSource: SourceRef[String] = remoteProbe.expectMsgType[SourceRef[String]]
 
       val done =
         remoteSource
@@ -294,58 +328,168 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
 
       Await.result(done, 8.seconds)
     }
+
+    "pass cancellation upstream across remoting after elements passed through" in {
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give-only-one-watch", remoteProbe.ref)
+      val sourceRef = remoteProbe.expectMsgType[SourceRef[String]]
+
+      val localProbe = TestProbe()
+      val ks =
+        sourceRef
+          .viaMat(KillSwitches.single)(Keep.right)
+          .to(Sink.actorRef(localProbe.ref, "<COMPLETE>", ex => s"<FAILED> ${ex.getMessage}"))
+          .run()
+
+      localProbe.expectMsg("hello")
+      ks.shutdown()
+      localProbe.expectMsg("<COMPLETE>")
+      remoteProbe.expectMsg(Done)
+    }
+
+    "pass cancellation upstream across remoting before elements has been emitted" in {
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give-nothing-watch", remoteProbe.ref)
+      val sourceRef = remoteProbe.expectMsgType[SourceRef[String]]
+
+      val localProbe = TestProbe()
+      val ks =
+        sourceRef
+          .viaMat(KillSwitches.single)(Keep.right)
+          .to(Sink.actorRef(localProbe.ref, "<COMPLETE>", ex => s"<FAILED> ${ex.getMessage}"))
+          .run()
+
+      ks.shutdown()
+      localProbe.expectMsg("<COMPLETE>")
+      remoteProbe.expectMsg(Done)
+    }
+
+    "pass failure upstream across remoting before elements has been emitted" in {
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give-nothing-watch", remoteProbe.ref)
+      val sourceRef = remoteProbe.expectMsgType[SourceRef[String]]
+
+      val localProbe = TestProbe()
+      val ks =
+        sourceRef
+          .viaMat(KillSwitches.single)(Keep.right)
+          .to(Sink.actorRef(localProbe.ref, "<COMPLETE>", ex => s"<FAILED> ${ex.getMessage}"))
+          .run()
+
+      ks.abort(TE("det gick åt skogen"))
+      localProbe.expectMsg("<FAILED> det gick åt skogen")
+      remoteProbe.expectMsgType[Failure].cause shouldBe a[RemoteStreamRefActorTerminatedException]
+    }
+
+    "pass failure upstream across remoting after elements passed through" in {
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give-only-one-watch", remoteProbe.ref)
+      val sourceRef = remoteProbe.expectMsgType[SourceRef[String]]
+
+      val localProbe = TestProbe()
+      val ks =
+        sourceRef
+          .viaMat(KillSwitches.single)(Keep.right)
+          .to(Sink.actorRef(localProbe.ref, "<COMPLETE>", ex => s"<FAILED> ${ex.getMessage}"))
+          .run()
+
+      localProbe.expectMsg("hello")
+      ks.abort(TE("det gick åt pipan"))
+      localProbe.expectMsg("<FAILED> det gick åt pipan")
+      remoteProbe.expectMsgType[Failure].cause shouldBe a[RemoteStreamRefActorTerminatedException]
+    }
+
+    "handle concurrent cancel and failure" in {
+      // this is not possible to deterministically trigger but what we try to
+      // do is have a cancel in the SourceRef and a complete on the SinkRef side happen
+      // concurrently before they have managed to tell each other about it
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("give-maybe", remoteProbe.ref)
+      // this is somewhat weird, but we are local to the remote system with the remoteProbe so promise
+      // is not sent across the wire
+      val (remoteControl, sourceRef) = remoteProbe.expectMsgType[(Promise[Option[String]], SourceRef[String])]
+
+      val localProbe = TestProbe()
+      val ks =
+        sourceRef
+          .viaMat(KillSwitches.single)(Keep.right)
+          .to(Sink.actorRef(localProbe.ref, "<COMPLETE>", ex => s"<FAILED> ${ex.getMessage}"))
+          .run()
+
+      // "concurrently"
+      ks.shutdown()
+      remoteControl.success(None)
+
+      // since it is a race we can only confirm that it either completes or fails both sides
+      // if it didn't work
+      val localComplete = localProbe.expectMsgType[String]
+      localComplete should startWith("<COMPLETE>").or(startWith("<FAILED>"))
+      val remoteCompleted = remoteProbe.expectMsgType[AnyRef]
+      remoteCompleted match {
+        case Done       =>
+        case Failure(_) =>
+        case _          => fail()
+      }
+    }
+
   }
 
   "A SinkRef" must {
 
     "receive elements via remoting" in {
-
-      remoteActor ! "receive"
-      val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      val elementProbe = TestProbe()(remoteSystem)
+      remoteActor.tell(Command("receive", elementProbe.ref), remoteProbe.ref)
+      val remoteSink: SinkRef[String] = remoteProbe.expectMsgType[SinkRef[String]]
 
       Source("hello" :: "world" :: Nil).to(remoteSink).run()
 
-      p.expectMsg("hello")
-      p.expectMsg("world")
-      p.expectMsg("<COMPLETE>")
+      elementProbe.expectMsg("hello")
+      elementProbe.expectMsg("world")
+      elementProbe.expectMsg("<COMPLETE>")
     }
 
     "fail origin if remote Sink gets a failure" in {
-
-      remoteActor ! "receive"
-      val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      val elementProbe = TestProbe()(remoteSystem)
+      remoteActor.tell(Command("receive", elementProbe.ref), remoteProbe.ref)
+      val remoteSink: SinkRef[String] = remoteProbe.expectMsgType[SinkRef[String]]
 
       val remoteFailureMessage = "Booom!"
       Source.failed(new Exception(remoteFailureMessage)).to(remoteSink).run()
 
-      val f = p.expectMsgType[String]
+      val f = elementProbe.expectMsgType[String]
       f should include(s"Remote stream (")
       // actor name ere, for easier identification
       f should include(s"failed, reason: $remoteFailureMessage")
     }
 
     "receive hundreds of elements via remoting" in {
-      remoteActor ! "receive"
-      val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      val elementProbe = TestProbe()(remoteSystem)
+      remoteActor.tell(Command("receive", elementProbe.ref), remoteProbe.ref)
+      val remoteSink: SinkRef[String] = remoteProbe.expectMsgType[SinkRef[String]]
 
       val msgs = (1 to 100).toList.map(i => s"payload-$i")
 
       Source(msgs).runWith(remoteSink)
 
-      msgs.foreach(t => p.expectMsg(t))
-      p.expectMsg("<COMPLETE>")
+      msgs.foreach(t => elementProbe.expectMsg(t))
+      elementProbe.expectMsg("<COMPLETE>")
     }
 
     "receive timeout if subscribing too late to the sink ref" in {
-      remoteActor ! "receive-subscribe-timeout"
-      val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      val elementProbe = TestProbe()(remoteSystem)
+      remoteActor.tell(Command("receive-subscribe-timeout", elementProbe.ref), remoteProbe.ref)
+      val remoteSink: SinkRef[String] = remoteProbe.expectMsgType[SinkRef[String]]
 
       // not materializing it, awaiting the timeout...
       Thread.sleep(800) // the timeout is 500ms
 
       val probe = TestSource.probe[String](system).to(remoteSink).run()
 
-      val failure = p.expectMsgType[String]
+      val failure = elementProbe.expectMsgType[String]
       failure should include("Remote side did not subscribe (materialize) handed out Sink reference")
 
       // the local "remote sink" should cancel, since it should notice the origin target actor is dead
@@ -354,8 +498,10 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
 
     // bug #24626
     "not receive timeout if subscribing is already done to the sink ref" in {
-      remoteActor ! "receive-subscribe-timeout"
-      val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      val elementProbe = TestProbe()(remoteSystem)
+      remoteActor.tell(Command("receive-subscribe-timeout", elementProbe.ref), remoteProbe.ref)
+      val remoteSink: SinkRef[String] = remoteProbe.expectMsgType[SinkRef[String]]
       Source
         .repeat("whatever")
         .throttle(1, 100.millis)
@@ -363,15 +509,16 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
         .runWith(remoteSink)
 
       (0 to 9).foreach { _ =>
-        p.expectMsg("whatever")
+        elementProbe.expectMsg("whatever")
       }
-      p.expectMsg("<COMPLETE>")
+      elementProbe.expectMsg("<COMPLETE>")
     }
 
     // bug #24934
     "not receive timeout while data is being sent" in {
-      remoteActor ! "receive-ignore"
-      val remoteSink: SinkRef[String] = expectMsgType[SinkRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      remoteActor.tell("receive-ignore", remoteProbe.ref)
+      val remoteSink: SinkRef[String] = remoteProbe.expectMsgType[SinkRef[String]]
 
       val done =
         Source
@@ -386,18 +533,37 @@ class StreamRefsSpec extends AkkaSpec(StreamRefsSpec.config()) with ImplicitSend
     }
 
     "respect back -pressure from (implied by origin Sink)" in {
-      remoteActor ! "receive-32"
-      val sinkRef = expectMsgType[SinkRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      val elementProbe = TestProbe()(remoteSystem)
+      remoteActor.tell(Command("receive-32", elementProbe.ref), remoteProbe.ref)
+      val sinkRef = remoteProbe.expectMsgType[SinkRef[String]]
 
       Source.repeat("hello").runWith(sinkRef)
 
       // if we get this message, it means no checks in the request/expect semantics were broken, good!
-      p.expectMsg("<COMPLETED>")
+      elementProbe.expectMsg("<COMPLETED>")
+    }
+
+    "trigger local shutdown on remote shutdown" in {
+      val remoteProbe = TestProbe()(remoteSystem)
+      val elementProbe = TestProbe()(remoteSystem)
+      remoteActor.tell(Command("receive-one-cancel", elementProbe.ref), remoteProbe.ref)
+      val remoteSink: SinkRef[String] = remoteProbe.expectMsgType[SinkRef[String]]
+
+      val done =
+        Source.single("hello").concat(Source.future(Future.never)).watchTermination()(Keep.right).to(remoteSink).run()
+
+      elementProbe.expectMsg("hello")
+      elementProbe.expectMsg("<COMPLETE>")
+      remoteProbe.expectMsg(Done)
+      Await.result(done, 5.seconds) shouldBe Done
     }
 
     "not allow materializing multiple times" in {
-      remoteActor ! "receive"
-      val sinkRef = expectMsgType[SinkRef[String]]
+      val remoteProbe = TestProbe()(remoteSystem)
+      val elementProbe = TestProbe()(remoteSystem)
+      remoteActor.tell(Command("receive", elementProbe.ref), remoteProbe.ref)
+      val sinkRef = remoteProbe.expectMsgType[SinkRef[String]]
 
       val p1: TestPublisher.Probe[String] = TestSource.probe[String].to(sinkRef).run()
       val p2: TestPublisher.Probe[String] = TestSource.probe[String].to(sinkRef).run()
