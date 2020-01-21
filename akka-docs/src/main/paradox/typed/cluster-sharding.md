@@ -174,16 +174,24 @@ This can be used, for example, to match up Kafka Partition consumption with shar
 
 To use it set it as the allocation strategy on your `Entity`:
 
-@@snip [ExternalShardAllocationCompileOnlySpec](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlySpec.scala) { #entity }
+Scala
+: @@snip [ExternalShardAllocationCompileOnlySpec](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlySpec.scala) { #entity }
+
+Java
+: @@snip [ExternalShardAllocationCompileOnlyTest](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlyTest.java) { #entity }
 
 For any shardId that has not been allocated it will be allocated to the requesting node. To make explicit allocations:
-   
-@@snip [ExternalShardAllocationCompileOnlySpec](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlySpec.scala) { #client }
 
-Any new or moved shard allocatins will be moved on the next rebalance.
+Scala
+: @@snip [ExternalShardAllocationCompileOnlySpec](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlySpec.scala) { #client }
+
+Java
+: @@snip [ExternalShardAllocationCompileOnlyTest](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlyTest.java) { #client }
+
+Any new or moved shard allocations will be moved on the next rebalance.
 
 The communication from the client to the shard allocation strategy is via @ref[Distributed Data](./distributed-data.md).
-It uses a single `LWWMap` that can support 10s of thousands of shards. Later versions could use multiple keys are
+It uses a single `LWWMap` that can support 10s of thousands of shards. Later versions could use multiple keys to 
 support a greater number of shards.
 
 ### Custom shard allocation

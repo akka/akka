@@ -129,7 +129,7 @@ class ExternalShardAllocationStrategy(systemProvider: ClassicActorSystemProvider
           if (address == cluster.selfAddress) {
             currentShardAllocations.keys.find(_.path.address.hasLocalScope) match {
               case None =>
-                log.warning("unable to find local shard in currentShardAllocation. Using requester")
+                log.debug("unable to find local shard in currentShardAllocation. Using requester")
                 requester
               case Some(localShardRegion) =>
                 log.debug("allocating to local shard")
@@ -138,7 +138,7 @@ class ExternalShardAllocationStrategy(systemProvider: ClassicActorSystemProvider
           } else {
             currentShardAllocations.keys.find(_.path.address == address) match {
               case None =>
-                log.warning(
+                log.debug(
                   "External shard location [{}] for shard [{}] not found in members [{}]",
                   address,
                   shardId,

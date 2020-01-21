@@ -20,7 +20,7 @@ class ExternalShardAllocationStrategySpec extends AkkaSpec("""
 
   val requester = TestProbe()
 
-  "DynamicShardAllocation allocate" must {
+  "ExternalShardAllocation allocate" must {
     "default to requester if query times out" in {
       val (strat, _) = createStrategy()
       strat.allocateShard(requester.ref, "shard-1", Map.empty).futureValue shouldEqual requester.ref
@@ -34,7 +34,7 @@ class ExternalShardAllocationStrategySpec extends AkkaSpec("""
     }
   }
 
-  "DynamicShardAllocation rebalance" must {
+  "ExternalShardAllocation rebalance" must {
     "default to no rebalance if query times out" in {
       val (strat, probe) = createStrategy()
       val rebalance = strat.rebalance(Map.empty, Set.empty)

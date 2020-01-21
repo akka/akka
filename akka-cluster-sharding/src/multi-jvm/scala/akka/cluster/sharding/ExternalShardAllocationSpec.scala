@@ -96,7 +96,7 @@ abstract class ExternalShardAllocationSpec
   val typeName = "home"
   val initiallyOnForth = "on-forth"
 
-  "Dynamic shard allocation" must {
+  "External shard allocation" must {
     "form cluster" in {
       awaitClusterUp(first, second, third)
       enterBarrier("cluster-started")
