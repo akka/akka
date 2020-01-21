@@ -111,6 +111,11 @@ object ShardCoordinator {
    * the node that hosts the ShardCoordinator
    */
   trait StartableAllocationStrategy extends ShardAllocationStrategy {
+    /**
+     * Called before any calls to allocate/rebalance.
+     * Do not block. If asynchronous actions are required they can be started here and
+     * delay the Futures returned by allocate/rebalance.
+     */
     def start(): Unit
   }
 
