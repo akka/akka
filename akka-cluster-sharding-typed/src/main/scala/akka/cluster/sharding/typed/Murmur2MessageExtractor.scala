@@ -6,8 +6,6 @@ package akka.cluster.sharding.typed
 
 import akka.cluster.sharding.typed.internal.Murmur2
 
-object Murmur2MessageExtractor {}
-
 abstract class Murmur2NoEnvelopeMessageExtractor[M](val numberOfShards: Int) extends ShardingMessageExtractor[M, M] {
   override def shardId(entityId: String): String = Murmur2.shardId(entityId, numberOfShards)
   override def unwrapMessage(message: M): M = message
