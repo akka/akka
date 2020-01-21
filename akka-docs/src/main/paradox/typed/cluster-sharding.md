@@ -180,7 +180,11 @@ For any shardId that has not been allocated it will be allocated to the requesti
    
 @@snip [ExternalShardAllocationCompileOnlySpec](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlySpec.scala) { #client }
 
-Any new or moved shard allocatins will be moved on the next rebalance
+Any new or moved shard allocatins will be moved on the next rebalance.
+
+The communication from the client to the shard allocation strategy is via @ref[Distributed Data](./distributed-data.md).
+It uses a single `LWWMap` that can support 10s of thousands of shards. Later versions could use multiple keys are
+support a greater number of shards.
 
 ### Custom shard allocation
 
