@@ -4,7 +4,7 @@
 
 package akka.persistence
 
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -37,17 +37,19 @@ import akka.util.MessageBuffer
   import RecoveryPermitter._
 
   private var usedPermits = 0
-  private val pending = MessageBuffer.empty
+
+  @InternalStableApi
+  private val pendingBuffer = MessageBuffer.empty
   private var maxPendingStats = 0
 
   def receive = {
     case RequestRecoveryPermit =>
       context.watch(sender())
       if (usedPermits >= maxPermits) {
-        if (pending.isEmpty)
+        if (pendingBuffer.isEmpty)
           log.debug("Exceeded max-concurrent-recoveries [{}]. First pending {}", maxPermits, sender())
-        pending.append(RequestRecoveryPermit, sender())
-        maxPendingStats = math.max(maxPendingStats, pending.size)
+        pendingBuffer.append(RequestRecoveryPermit, sender())
+        maxPendingStats = math.max(maxPendingStats, pendingBuffer.size)
       } else {
         recoveryPermitGranted(sender())
       }
@@ -57,9 +59,9 @@ import akka.util.MessageBuffer
 
     case Terminated(ref) =>
       // pre-mature termination should be rare
-      val before = pending.size
-      pending.filterNot { case (_, r) => r == ref }
-      if (before == pending.size)
+      val before = pendingBuffer.size
+      pendingBuffer.filterNot { case (_, r) => r == ref }
+      if (before == pendingBuffer.size)
         onReturnRecoveryPermit(ref) // it wasn't pending, so return permit
   }
 
@@ -67,12 +69,12 @@ import akka.util.MessageBuffer
     usedPermits -= 1
     context.unwatch(ref)
     if (usedPermits < 0) throw new IllegalStateException(s"permits must not be negative (returned by: ${ref})")
-    if (!pending.isEmpty) {
-      val ref = pending.head()._2
-      pending.dropHead()
+    if (!pendingBuffer.isEmpty) {
+      val ref = pendingBuffer.head()._2
+      pendingBuffer.dropHead()
       recoveryPermitGranted(ref)
     }
-    if (pending.isEmpty && maxPendingStats > 0) {
+    if (pendingBuffer.isEmpty && maxPendingStats > 0) {
       log.debug(
         "Drained pending recovery permit requests, max in progress was [{}], still [{}] in progress",
         usedPermits + maxPendingStats,
