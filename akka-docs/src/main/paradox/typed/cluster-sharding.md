@@ -162,10 +162,40 @@ The `number-of-shards` configuration value must be the same for all nodes in the
 configuration check when joining. Changing the value requires stopping all nodes in the cluster.
 
 The shards are allocated to the nodes in the cluster. The decision of where to allocate a shard is done
-by a shard allocation strategy. The default implementation `akka.cluster.sharding.ShardCoordinator.LeastShardAllocationStrategy`
+by a shard allocation strategy. The default implementation @apidoc[ShardCoordinator.LeastShardAllocationStrategy]
 allocates new shards to the `ShardRegion` (node) with least number of previously allocated shards.
 This strategy can be replaced by an application specific implementation.
-   
+
+### External shard allocation
+
+An alternative allocation strategy is the @apidoc[ExternalShardAllocationStrategy] which allows
+explicit control over where shards are allocated via the @apidoc[ExternalShardAllocation] extension.
+This can be used, for example, to match up Kafka Partition consumption with shard locations.
+
+To use it set it as the allocation strategy on your `Entity`:
+
+Scala
+: @@snip [ExternalShardAllocationCompileOnlySpec](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlySpec.scala) { #entity }
+
+Java
+: @@snip [ExternalShardAllocationCompileOnlyTest](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlyTest.java) { #entity }
+
+For any shardId that has not been allocated it will be allocated to the requesting node. To make explicit allocations:
+
+Scala
+: @@snip [ExternalShardAllocationCompileOnlySpec](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlySpec.scala) { #client }
+
+Java
+: @@snip [ExternalShardAllocationCompileOnlyTest](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ExternalShardAllocationCompileOnlyTest.java) { #client }
+
+Any new or moved shard allocations will be moved on the next rebalance.
+
+The communication from the client to the shard allocation strategy is via @ref[Distributed Data](./distributed-data.md).
+It uses a single `LWWMap` that can support 10s of thousands of shards. Later versions could use multiple keys to 
+support a greater number of shards.
+
+### Custom shard allocation
+
 An optional custom shard allocation strategy can be passed into the optional parameter when initializing an entity type 
 or explicitly using the `withAllocationStrategy` function.
 See the API documentation of @scala[`akka.cluster.sharding.ShardAllocationStrategy`]@java[`akka.cluster.sharding.AbstractShardAllocationStrategy`] for details of how to implement a custom `ShardAllocationStrategy`.
