@@ -16,6 +16,13 @@ Combines all elements from each of multiple sources into @scala[tuples] @java[*P
 
 Combines all elements from each of multiple sources into @scala[tuples] @java[*Pair*] and passes the @scala[tuples] @java[pairs] downstream.
 
+See also:
+
+ * @ref:[zip](zip.md)
+ * @ref:[zipWith](zipWith.md)
+ * @ref:[zipWith](zipWith.md)  
+ * @ref:[zipWithIndex](zipWithIndex.md)
+
 ## Example
 Scala
 :   @@snip [FlowZipSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowZipSpec.scala) { #zip }
