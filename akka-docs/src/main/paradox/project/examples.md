@@ -79,3 +79,9 @@ Illustrates how to use Akka Cluster with Docker compose.
 @extref[Cluster with Kubernetes example project](samples:akka-sample-cluster-kubernetes-java)
 
 This sample illustrates how to form an Akka Cluster with Akka Bootstrap when running in Kubernetes.
+
+## Distributed workers
+
+@extref[Distributed workers example project](samples:akka-samples-distributed-workers-scala)
+
+This project demonstrates the work pulling pattern using Akka Cluster.
