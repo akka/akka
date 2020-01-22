@@ -277,8 +277,8 @@ object ByteIterator {
 
     final override def takeWhile(p: Byte => Boolean): this.type = {
       var stop = false
-      var builder = new ListBuffer[ByteArrayIterator]
-      while (!stop && !iterators.isEmpty) {
+      val builder = new ListBuffer[ByteArrayIterator]
+      while (!stop && iterators.nonEmpty) {
         val lastLen = current.len
         current.takeWhile(p)
         if (current.hasNext) builder += current
@@ -300,7 +300,7 @@ object ByteIterator {
     final override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Unit = {
       var pos = start
       var rest = len
-      while ((rest > 0) && !iterators.isEmpty) {
+      while ((rest > 0) && !iterators.isEmpty && pos < xs.length) {
         val n = 0 max ((xs.length - pos) min current.len min rest)
         current.copyToArray(xs, pos, n)
         pos += n
