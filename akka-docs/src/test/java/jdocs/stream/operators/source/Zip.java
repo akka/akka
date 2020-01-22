@@ -18,7 +18,8 @@ public class Zip {
     // #zipN-simple
     Source<Object, NotUsed> chars = Source.from(Arrays.asList("a", "b", "c", "e", "f"));
     Source<Object, NotUsed> numbers = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6));
-    Source<Object, NotUsed> colors = Source.from(Arrays.asList("red", "green", "blue", "yellow", "purple"));
+    Source<Object, NotUsed> colors =
+        Source.from(Arrays.asList("red", "green", "blue", "yellow", "purple"));
 
     Source.zipN(Arrays.asList(chars, numbers, colors)).runForeach(System.out::println, system);
     // prints:
@@ -39,9 +40,10 @@ public class Zip {
     Source<Integer, NotUsed> otherNumbers = Source.from(Arrays.asList(5, 2, 1, 4, 10, 4));
     Source<Integer, NotUsed> andSomeOtherNumbers = Source.from(Arrays.asList(3, 7, 2, 1, 1));
 
-    Source
-      .zipWithN((List<Integer> seq) -> seq.stream().mapToInt(i -> i).max().getAsInt(), Arrays.asList(numbers, otherNumbers, andSomeOtherNumbers))
-      .runForeach(System.out::println, system);
+    Source.zipWithN(
+            (List<Integer> seq) -> seq.stream().mapToInt(i -> i).max().getAsInt(),
+            Arrays.asList(numbers, otherNumbers, andSomeOtherNumbers))
+        .runForeach(System.out::println, system);
     // prints:
     // 5
     // 7
