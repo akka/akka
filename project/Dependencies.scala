@@ -18,10 +18,10 @@ object Dependencies {
   val junitVersion = "4.13"
   val slf4jVersion = "1.7.30"
   // check agrona version when updating this
-  val aeronVersion = "1.25.0"
+  val aeronVersion = "1.25.1"
   // needs to be inline with the aeron version, check
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
-  val agronaVersion = "1.2.0"
+  val agronaVersion = "1.3.0"
   val nettyVersion = "3.10.6.Final"
   val jacksonVersion = "2.10.2"
   val protobufJavaVersion = "3.10.0"
@@ -114,7 +114,9 @@ object Dependencies {
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
       val scalatestJUnit = Def.setting { "org.scalatestplus" %% "junit-4-12" % scalaTestPlusVersion.value % "test" } // ApacheV2
       val scalatestTestNG = Def.setting { "org.scalatestplus" %% "testng-6-7" % scalaTestPlusVersion.value % "test" } // ApacheV2
-      val scalatestScalaCheck = Def.setting { "org.scalatestplus" %% "scalacheck-1-14" % scalaTestPlusVersion.value % "test" } // ApacheV2
+      val scalatestScalaCheck = Def.setting {
+        "org.scalatestplus" %% "scalacheck-1-14" % scalaTestPlusVersion.value % "test"
+      } // ApacheV2
       val scalatestMockito = Def.setting { "org.scalatestplus" %% "mockito-1-10" % scalaTestPlusVersion.value % "test" } // ApacheV2
       val scalacheck = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value % "test" } // New BSD
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
@@ -191,7 +193,11 @@ object Dependencies {
         Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
       )
 
-  val actorTestkitTyped = l ++= Seq(Provided.logback, Provided.junit, Provided.scalatest.value, Test.scalatestJUnit.value)
+  val actorTestkitTyped = l ++= Seq(
+        Provided.logback,
+        Provided.junit,
+        Provided.scalatest.value,
+        Test.scalatestJUnit.value)
 
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
@@ -213,7 +219,13 @@ object Dependencies {
         Test.scalatest.value,
         Test.commonsIo)
 
-  val clusterMetrics = l ++= Seq(Provided.sigarLoader, Test.slf4jJul, Test.slf4jLog4j, Test.logback, Test.mockito, Test.scalatestMockito.value)
+  val clusterMetrics = l ++= Seq(
+        Provided.sigarLoader,
+        Test.slf4jJul,
+        Test.slf4jLog4j,
+        Test.logback,
+        Test.mockito,
+        Test.scalatestMockito.value)
 
   val distributedData = l ++= Seq(lmdb, Test.junit, Test.scalatest.value)
 
@@ -275,9 +287,20 @@ object Dependencies {
 
   lazy val streamTestkit = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.junit)
 
-  lazy val streamTests = l ++= Seq(Test.scalatest.value, Test.scalacheck.value, Test.scalatestScalaCheck.value, Test.junit, Test.commonsIo, Test.jimfs)
+  lazy val streamTests = l ++= Seq(
+        Test.scalatest.value,
+        Test.scalacheck.value,
+        Test.scalatestScalaCheck.value,
+        Test.junit,
+        Test.commonsIo,
+        Test.jimfs)
 
-  lazy val streamTestsTck = l ++= Seq(Test.scalatest.value, Test.scalatestTestNG.value, Test.scalacheck.value, Test.junit, Test.reactiveStreamsTck)
+  lazy val streamTestsTck = l ++= Seq(
+        Test.scalatest.value,
+        Test.scalatestTestNG.value,
+        Test.scalacheck.value,
+        Test.junit,
+        Test.reactiveStreamsTck)
 
 }
 
