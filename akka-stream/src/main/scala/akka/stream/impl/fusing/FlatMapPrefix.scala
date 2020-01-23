@@ -92,72 +92,73 @@ import scala.util.control.NonFatal
         }
       }
 
-      def materializeFlow(): Unit = try {
-        val prefix = accumulated.toVector
-        accumulated.clear()
-        subSource = OptionVal.Some(new SubSourceOutlet[In]("subSource"))
-        subSource.get.setHandler {
-          new OutHandler {
-            override def onPull(): Unit = {
-              if (!isClosed(in) && !hasBeenPulled(in)) {
-                pull(in)
+      def materializeFlow(): Unit =
+        try {
+          val prefix = accumulated.toVector
+          accumulated.clear()
+          subSource = OptionVal.Some(new SubSourceOutlet[In]("subSource"))
+          subSource.get.setHandler {
+            new OutHandler {
+              override def onPull(): Unit = {
+                if (!isClosed(in) && !hasBeenPulled(in)) {
+                  pull(in)
+                }
+              }
+
+              override def onDownstreamFinish(cause: Throwable): Unit = {
+                if (!isClosed(in)) {
+                  cancel(in, cause)
+                }
+                //super.onDownstreamFinish(cause)
               }
             }
-
-            override def onDownstreamFinish(cause: Throwable): Unit = {
-              if (!isClosed(in)) {
-                cancel(in, cause)
+          }
+          subSink = OptionVal.Some(new SubSinkInlet[Out]("subSink"))
+          subSink.get.setHandler {
+            new InHandler {
+              override def onPush(): Unit = {
+                push(out, subSink.get.grab())
               }
-              //super.onDownstreamFinish(cause)
+
+              override def onUpstreamFinish(): Unit = {
+                complete(out)
+              }
+
+              override def onUpstreamFailure(ex: Throwable): Unit = {
+                fail(out, ex)
+              }
             }
           }
-        }
-        subSink = OptionVal.Some(new SubSinkInlet[Out]("subSink"))
-        subSink.get.setHandler {
-          new InHandler {
-            override def onPush(): Unit = {
-              push(out, subSink.get.grab())
-            }
-
-            override def onUpstreamFinish(): Unit = {
-              complete(out)
-            }
-
-            override def onUpstreamFailure(ex: Throwable): Unit = {
-              fail(out, ex)
-            }
+          val matVal = try {
+            val flow = f(prefix)
+            val runnableGraph = Source.fromGraph(subSource.get.source).viaMat(flow)(Keep.right).to(subSink.get.sink)
+            interpreter.subFusingMaterializer.materialize(runnableGraph)
+          } catch {
+            case NonFatal(ex) =>
+              matPromise.failure(new NeverMaterializedException(ex))
+              subSource = OptionVal.None
+              subSink = OptionVal.None
+              throw ex
           }
-        }
-        val matVal = try {
-          val flow = f(prefix)
-          val runnableGraph = Source.fromGraph(subSource.get.source).viaMat(flow)(Keep.right).to(subSink.get.sink)
-          interpreter.subFusingMaterializer.materialize(runnableGraph)
+          matPromise.success(matVal)
+
+          //in case downstream was closed
+          if (downstreamCause.isDefined) {
+            subSink.get.cancel(downstreamCause.get)
+          }
+
+          //in case we've materialized due to upstream completion
+          if (isClosed(in)) {
+            subSource.get.complete()
+          }
+
+          //in case we've been pulled by downstream
+          if (isAvailable(out)) {
+            subSink.get.pull()
+          }
         } catch {
-          case NonFatal(ex) =>
-            matPromise.failure(new NeverMaterializedException(ex))
-            subSource = OptionVal.None
-            subSink = OptionVal.None
-            throw ex
+          case NonFatal(ex) => failStage(ex)
         }
-        matPromise.success(matVal)
-
-        //in case downstream was closed
-        if (downstreamCause.isDefined) {
-          subSink.get.cancel(downstreamCause.get)
-        }
-
-        //in case we've materialized due to upstream completion
-        if (isClosed(in)) {
-          subSource.get.complete()
-        }
-
-        //in case we've been pulled by downstream
-        if (isAvailable(out)) {
-          subSink.get.pull()
-        }
-      } catch {
-        case NonFatal(ex) => failStage(ex)
-      }
     }
     (logic, matPromise.future)
   }

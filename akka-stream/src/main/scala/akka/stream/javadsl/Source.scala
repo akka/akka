@@ -3150,7 +3150,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
 
   /**
    * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements),
-   * then apply `f`` on these elements in order to obtain a flow, this flow is then materialized and the rest of the input is processed by this flow (similar to via ).
+   * then apply `f` on these elements in order to obtain a flow, this flow is then materialized and the rest of the input is processed by this flow (similar to via).
    * This method returns a flow consuming the rest of the stream producing the materialized flow's output.
    *
    * '''Emits when''' the materialized flow emits.
@@ -3162,8 +3162,8 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    *  If upstream completes before producing `n` elements, `f` will be applied with the provided elements,
    *  the resulting flow will be materialized and signalled for upstream completion, it can then complete or continue to emit elements at its own discretion.
    *
-   * '''Cancels when''' upstream cancels, application of `f` fails, materialization of the resulting flow fails or the materialized flow cancels.
-   *  Notice that the materialized flow may apply its own logic in case of upstream or downstream cancellations.
+   * '''Cancels when''' the materialized flow cancels.
+   *  Notice that when downstream cancels prior to prefix completion, the cancellation cause is stashed until prefix completion (or upstream completion) and then handed to the materialized flow.
    *
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.
