@@ -26,7 +26,7 @@ import scala.util.control.NonFatal
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
     val matPromise = Promise[M]
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
-      var accumulated = (List.empty[In], 0)
+      val accumulated = collection.mutable.Buffer.empty[In]
 
       private var subSource = OptionVal.none[SubSourceOutlet[In]]
       private var subSink = OptionVal.none[SubSinkInlet[Out]]
@@ -45,9 +45,8 @@ import scala.util.control.NonFatal
         if (subSource.isDefined) {
           subSource.get.push(grab(in))
         } else {
-          val (prefix, count) = accumulated
-          accumulated = (grab(in) :: prefix, count + 1)
-          if (accumulated._2 == n) {
+          accumulated.append(grab(in))
+          if (accumulated.size == n) {
             materializeFlow()
           } else {
             //gi'me some more!
@@ -78,29 +77,24 @@ import scala.util.control.NonFatal
         if (subSink.isDefined) {
           //delegate to subSink
           subSink.get.pull()
-        } else if (accumulated._2 < n) {
+        } else if (accumulated.size < n) {
           pull(in)
-        } else if (accumulated._2 == n) { //corner case for n = 0, can be handled in FlowOps
+        } else if (accumulated.size == n) { //corner case for n = 0, can be handled in FlowOps
           materializeFlow()
         }
       }
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         if (subSink.isEmpty) {
-          cause match {
-            case NonFatal(ex) =>
-              downstreamCause = OptionVal.Some(ex)
-            case ex =>
-              super.onDownstreamFinish(ex)
-          }
+          downstreamCause = OptionVal.Some(cause)
         } else {
           subSink.get.cancel(cause)
         }
       }
 
-      def materializeFlow(): Unit = {
-        val prefix = accumulated._1.reverse
-        accumulated = (Nil, accumulated._2)
+      def materializeFlow(): Unit = try {
+        val prefix = accumulated.toVector
+        accumulated.clear()
         subSource = OptionVal.Some(new SubSourceOutlet[In]("subSource"))
         subSource.get.setHandler {
           new OutHandler {
@@ -161,6 +155,8 @@ import scala.util.control.NonFatal
         if (isAvailable(out)) {
           subSink.get.pull()
         }
+      } catch {
+        case NonFatal(ex) => failStage(ex)
       }
     }
     (logic, matPromise.future)

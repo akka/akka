@@ -17,8 +17,6 @@ import akka.stream.{
 import akka.{ Done, NotUsed }
 
 class FlowFlatMapPrefixSpec extends StreamSpec {
-  //import system.dispatcher
-
   def src10(i: Int = 0) = Source(i until (i + 10))
 
   "A PrefixAndDownstream" must {
@@ -106,7 +104,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .run
       prefixF.futureValue should ===(0 until 10)
       val ex = suffixF.failed.futureValue
-      //ex.printStackTrace()
       ex should ===(TE("don't like 15 either!"))
     }
 
@@ -294,7 +291,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .flatMapPrefixMat(3) { prefix =>
           prefix should ===(0 until 3)
           Flow[Int].watchTermination()(Keep.right)
-        //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
         }(Keep.both)
         .to(Sink.fromSubscriber(subscriber))
         .run()
@@ -308,9 +304,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
       subDownstream.request(1)
       subUpstream.expectRequest() should be >= (1L)
       subUpstream.sendNext(0)
-      //subUpstream.expectRequest() should be >= (1L)
       subUpstream.sendNext(1)
-      //subUpstream.expectRequest() should be >= (1L)
       subDownstream.cancel()
 
       //subflow not materialized yet, hence mat value (future) isn't ready yet
@@ -337,7 +331,6 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .flatMapPrefixMat(3) { prefix =>
           prefix should ===(0 until 3)
           Flow[Int].watchTermination()(Keep.right)
-        //Flow.fromSinkAndSource(Sink.fromSubscriber(subscriber), Source.fromPublisher(publisher))
         }(Keep.both)
         .to(Sink.fromSubscriber(subscriber))
         .run()
@@ -351,9 +344,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
       subDownstream.request(1)
       subUpstream.expectRequest() should be >= (1L)
       subUpstream.sendNext(0)
-      //subUpstream.expectRequest() should be >= (1L)
       subUpstream.sendNext(1)
-      //subUpstream.expectRequest() should be >= (1L)
       subDownstream.asInstanceOf[SubscriptionWithCancelException].cancel(TE("that again?!"))
 
       matFlowWatchTerm.value should be(empty)
