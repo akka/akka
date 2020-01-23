@@ -110,7 +110,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       val serializedInitJoinAckPre2510 = serializer.addressToProto(initJoinAck.address).build().toByteArray
 
       val deserialized =
-        serializer.fromBinary(serializedInitJoinAckPre2510, ClusterMessageSerializer.InitJoinAckManifest)
+        serializer.fromBinary(serializedInitJoinAckPre2510, ClusterMessageSerializer.OldInitJoinAckManifest)
       deserialized shouldEqual initJoinAck
     }
 
