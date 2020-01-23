@@ -36,7 +36,22 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       case (_, ref) =>
         ref should ===(obj)
     }
+  }
 
+  private def roundtripWithManifest[T <: AnyRef](obj: T, manifest: String): T = {
+    val blob = serializer.toBinary(obj)
+    serializer.fromBinary(blob, manifest).asInstanceOf[T]
+  }
+
+  private def checkDeserializationWithManifest(obj: AnyRef, deserializationManifest: String): Unit = {
+    (obj, roundtripWithManifest(obj, deserializationManifest)) match {
+      case (env: GossipEnvelope, env2: GossipEnvelope) =>
+        env2.from should ===(env.from)
+        env2.to should ===(env.to)
+        env2.gossip should ===(env.gossip)
+      case (_, ref) =>
+        ref should ===(obj)
+    }
   }
 
   import MemberStatus._
@@ -87,6 +102,62 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
       checkSerialization(GossipStatus(a1.uniqueAddress, g3.version))
 
       checkSerialization(InternalClusterAction.Welcome(uniqueAddress, g2))
+    }
+
+    // can be removed in 2.6.3 only checks deserialization with new not yet in effect manifests for 2.6.2
+    "be serializable with new manifests for 2.6.3" in {
+      val address = Address("akka", "system", "some.host.org", 4711)
+      val uniqueAddress = UniqueAddress(address, 17L)
+      val address2 = Address("akka", "system", "other.host.org", 4711)
+      val uniqueAddress2 = UniqueAddress(address2, 18L)
+      checkDeserializationWithManifest(
+        InternalClusterAction.Join(uniqueAddress, Set("foo", "bar", "dc-A")),
+        ClusterMessageSerializer.JoinManifest)
+      checkDeserializationWithManifest(ClusterUserAction.Leave(address), ClusterMessageSerializer.LeaveManifest)
+      checkDeserializationWithManifest(ClusterUserAction.Down(address), ClusterMessageSerializer.DownManifest)
+      checkDeserializationWithManifest(
+        InternalClusterAction.InitJoin(ConfigFactory.empty),
+        ClusterMessageSerializer.InitJoinManifest)
+      checkDeserializationWithManifest(
+        InternalClusterAction.InitJoinAck(address, CompatibleConfig(ConfigFactory.empty)),
+        ClusterMessageSerializer.InitJoinAckManifest)
+      checkDeserializationWithManifest(
+        InternalClusterAction.InitJoinNack(address),
+        ClusterMessageSerializer.InitJoinNackManifest)
+      /* this has changed in 2.5.23 but it seems we forgot to add the next step in 2.5.24
+       so we can't do two-way like this, the new manifest actually expects an address + timestamp + seqnr only when the new manifest is used
+       see test below.
+      checkDeserializationWithManifest(
+        ClusterHeartbeatSender.Heartbeat(address, -1, -1),
+        ClusterMessageSerializer.HeartbeatManifest)
+      checkDeserializationWithManifest(
+        ClusterHeartbeatSender.HeartbeatRsp(uniqueAddress, -1, -1),
+        ClusterMessageSerializer.HeartbeatRspManifest)
+       */
+      checkDeserializationWithManifest(
+        InternalClusterAction.ExitingConfirmed(uniqueAddress),
+        ClusterMessageSerializer.ExitingConfirmedManifest)
+
+      val node1 = VectorClock.Node("node1")
+      val node2 = VectorClock.Node("node2")
+      val node3 = VectorClock.Node("node3")
+      val node4 = VectorClock.Node("node4")
+      val g1 = (Gossip(SortedSet(a1, b1, c1, d1)) :+ node1 :+ node2).seen(a1.uniqueAddress).seen(b1.uniqueAddress)
+      val g2 = (g1 :+ node3 :+ node4).seen(a1.uniqueAddress).seen(c1.uniqueAddress)
+      val reachability3 = Reachability.empty
+        .unreachable(a1.uniqueAddress, e1.uniqueAddress)
+        .unreachable(b1.uniqueAddress, e1.uniqueAddress)
+      checkDeserializationWithManifest(
+        GossipEnvelope(a1.uniqueAddress, uniqueAddress2, g1),
+        ClusterMessageSerializer.GossipEnvelopeManifest)
+
+      checkDeserializationWithManifest(
+        GossipStatus(a1.uniqueAddress, g1.version),
+        ClusterMessageSerializer.GossipStatusManifest)
+
+      checkDeserializationWithManifest(
+        InternalClusterAction.Welcome(uniqueAddress, g2),
+        ClusterMessageSerializer.WelcomeManifest)
     }
 
     "be compatible with wire format of version 2.5.9 (using InitJoin singleton instead of class)" in {
@@ -193,7 +264,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
         .build()
         .toByteArray
 
-      serializer.fromBinary(hbProtobuf, ClusterMessageSerializer.HeartBeatManifest) should ===(
+      serializer.fromBinary(hbProtobuf, ClusterMessageSerializer.HeartbeatManifest) should ===(
         ClusterHeartbeatSender.Heartbeat(a1.address, 1, 2))
     }
 
@@ -206,7 +277,7 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
         .build()
         .toByteArray
 
-      serializer.fromBinary(hbrProtobuf, ClusterMessageSerializer.HeartBeatRspManifest) should ===(
+      serializer.fromBinary(hbrProtobuf, ClusterMessageSerializer.HeartbeatRspManifest) should ===(
         ClusterHeartbeatSender.HeartbeatRsp(a1.uniqueAddress, 1, 2))
     }
   }

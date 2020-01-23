@@ -59,8 +59,8 @@ private[akka] object ClusterMessageSerializer {
   val InitJoinManifest = "IJ"
   val InitJoinAckManifest = "IJA"
   val InitJoinNackManifest = "IJN"
-  val HeartBeatManifest = "HB"
-  val HeartBeatRspManifest = "HBR"
+  val HeartbeatManifest = "HB"
+  val HeartbeatRspManifest = "HBR"
   val ExitingConfirmedManifest = "EC"
   val GossipStatusManifest = "GS"
   val GossipEnvelopeManifest = "GE"
@@ -120,8 +120,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
     case HeartBeatManifestPre2523     => deserializeHeartBeatAsAddress(bytes)
     case HeartBeatRspManifest2523     => deserializeHeartBeatRspAsUniqueAddress(bytes)
-    case HeartBeatManifest            => deserializeHeartBeat(bytes)
-    case HeartBeatRspManifest         => deserializeHeartBeatResponse(bytes)
+    case HeartbeatManifest            => deserializeHeartBeat(bytes)
+    case HeartbeatRspManifest         => deserializeHeartBeatResponse(bytes)
     case OldGossipStatusManifest      => deserializeGossipStatus(bytes)
     case OldGossipEnvelopeManifest    => deserializeGossipEnvelope(bytes)
     case OldInitJoinManifest          => deserializeInitJoin(bytes)
