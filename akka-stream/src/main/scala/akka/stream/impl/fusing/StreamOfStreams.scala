@@ -9,11 +9,15 @@ import java.util.concurrent.atomic.AtomicReference
 
 import akka.NotUsed
 import akka.annotation.InternalApi
-import akka.stream.ActorAttributes.{ StreamSubscriptionTimeout, SupervisionStrategy }
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
+import akka.stream.ActorAttributes.SupervisionStrategy
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SingleSource
-import akka.stream.impl.{ ActorSubscriberMessage, SubscriptionTimeoutException, TraversalBuilder, Buffer => BufferImpl }
+import akka.stream.impl.ActorSubscriberMessage
+import akka.stream.impl.SubscriptionTimeoutException
+import akka.stream.impl.TraversalBuilder
+import akka.stream.impl.{ Buffer => BufferImpl }
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.OptionVal
