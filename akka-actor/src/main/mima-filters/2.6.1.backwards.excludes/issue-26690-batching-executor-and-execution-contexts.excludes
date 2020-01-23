@@ -1,3 +1,4 @@
 # Internals changed
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorSystemImpl.internalCallingThreadExecutionContext")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.pattern.PromiseActorRef.internalCallingThreadExecutionContext")
+ProblemFilters.exclude[MissingClassProblem]("akka.dispatch.ExecutionContexts$sameThreadExecutionContext$")

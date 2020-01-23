@@ -751,8 +751,6 @@ class CircuitBreaker(
         val start = System.nanoTime()
         val p = Promise[T]()
 
-        implicit val ec = sameThreadExecutionContext
-
         p.future.onComplete { fResult =>
           if (defineFailureFn(fResult)) {
             callFails()
@@ -760,13 +758,13 @@ class CircuitBreaker(
             notifyCallSuccessListeners(start)
             callSucceeds()
           }
-        }
+        }(sameThreadExecutionContext)
 
         val timeout = scheduler.scheduleOnce(callTimeout) {
           if (p.tryFailure(timeoutEx)) {
             notifyCallTimeoutListeners(start)
           }
-        }
+        }(sameThreadExecutionContext)
 
         materialize(body).onComplete {
           case Success(result) =>
@@ -777,7 +775,7 @@ class CircuitBreaker(
               notifyCallFailureListeners(start)
             }
             timeout.cancel
-        }
+        }(sameThreadExecutionContext)
         p.future
       }
     }
