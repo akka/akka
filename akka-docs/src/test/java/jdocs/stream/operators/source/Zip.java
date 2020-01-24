@@ -54,4 +54,20 @@ public class Zip {
 
     // #zipWithN-simple
   }
+
+  void zipAllSample() {
+    ActorSystem system = null;
+    // #zipAll-simple
+
+    Source<Integer, NotUsed> numbers = Source.from(Arrays.asList(1, 2, 3, 4));
+    Source<String, NotUsed> letters = Source.from(Arrays.asList("a", "b", "c"));
+
+    numbers.zipAll(letters, -1, "default").runForeach(System.out::println, system);
+    // prints:
+    // Pair(1,a)
+    // Pair(2,b)
+    // Pair(3,c)
+    // Pair(4,default)
+    // #zipAll-simple
+  }
 }
