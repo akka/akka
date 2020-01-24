@@ -4,10 +4,12 @@
 
 package akka.util.internal
 
+import akka.Done
 import akka.testkit.AkkaSpec
 import org.scalatest.matchers.should.Matchers
 
-import scala.concurrent.Future
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Promise
 
 class SameThreadExecutionContextSpec extends AkkaSpec with Matchers {
 
@@ -23,14 +25,31 @@ class SameThreadExecutionContextSpec extends AkkaSpec with Matchers {
       }
     }
 
-    "should run follow up future operations in the same thread" in {
+    "should run follow up future operations in the same dispatcher" in {
       // covered by the respective impl test suites for sure but just in case
-      val (threadName1, threadName2) = Future {
-        Thread.currentThread().getName
-      }(system.dispatcher)
-        .map(firstName => (firstName -> Thread.currentThread().getName))(SameThreadExecutionContext())
-        .futureValue
+      val promise = Promise[Done]()
+      val futureThreadNames = promise.future
+        .map { _ =>
+          Thread.currentThread().getName
+        }(system.dispatcher)
+        .map(firstName => firstName -> Thread.currentThread().getName)(SameThreadExecutionContext())
 
+      promise.success(Done)
+      val (threadName1, threadName2) = futureThreadNames.futureValue
+      threadName1 should ===(threadName2)
+    }
+
+    "should run follow up future operations in the same execution context" in {
+      // covered by the respective impl test suites for sure but just in case
+      val promise = Promise[Done]()
+      val futureThreadNames = promise.future
+        .map { _ =>
+          Thread.currentThread().getName
+        }(ExecutionContext.global)
+        .map(firstName => firstName -> Thread.currentThread().getName)(SameThreadExecutionContext())
+
+      promise.success(Done)
+      val (threadName1, threadName2) = futureThreadNames.futureValue
       threadName1 should ===(threadName2)
     }
 
