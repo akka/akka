@@ -23,13 +23,6 @@ See also:
  * @ref:[zipWith](zipWith.md)  
  * @ref:[zipWithIndex](zipWithIndex.md)
 
-## Example
-Scala
-:   @@snip [FlowZipSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/FlowZipSpec.scala) { #zip }
-
-Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #zip }
-
 ## Reactive Streams semantics
 
 @@@div { .callout }
