@@ -11,7 +11,7 @@ Combine the elements of multiple sources into a source of sequences of value.
 ## Description
 
 Collects one element for every upstream and when all upstreams has emitted one element all of them are emitted downstream as a collection.
-The element order in the downstream collection will be according to the order their respective sources was listed.
+The element order in the downstream collection will be the same order as the sources were listed.
 
 Since the sources are provided as a list the individual types are lost and @scala[the downstream sequences will end up containing the closest supertype shared by all sources]@java[you may have to make sure to have sources type casted to the same common supertype of all stream elements to use `zipN`].
 
