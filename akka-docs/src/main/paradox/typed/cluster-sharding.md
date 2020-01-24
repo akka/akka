@@ -194,6 +194,12 @@ The communication from the client to the shard allocation strategy is via @ref[D
 It uses a single `LWWMap` that can support 10s of thousands of shards. Later versions could use multiple keys to 
 support a greater number of shards.
 
+#### Example project for external allocation strategy
+
+@extref[Kafka to Cluster Sharding](samples:akka-samples-kafka-to-sharding)
+is an example project that can be downloaded, and with instructions of how to run, that demonstrates how to use
+external sharding to co-locate Kafka partition consumption with shards.
+
 ### Custom shard allocation
 
 An optional custom shard allocation strategy can be passed into the optional parameter when initializing an entity type 
