@@ -4,16 +4,17 @@
 
 package akka.stream.scaladsl
 
-import akka.actor.Status
 import akka.pattern.pipe
+import akka.stream.AbruptTerminationException
 import akka.stream.Attributes.inputBuffer
+import akka.stream.Materializer
 import akka.stream.StreamDetachedException
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-
-import scala.concurrent.duration._
+import akka.stream.testkit.scaladsl.TestSource
 import scala.concurrent.Await
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
 class QueueSinkSpec extends StreamSpec {
@@ -34,7 +35,8 @@ class QueueSinkSpec extends StreamSpec {
       }
     }
 
-    "allow to have only one future waiting for result in each point of time" in assertAllStagesStopped {
+    "allow to have only one future waiting for result in each point of time with default maxConcurrentOffers" in
+    assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue())
       val sub = probe.expectSubscription()
@@ -50,6 +52,68 @@ class QueueSinkSpec extends StreamSpec {
       queue.pull()
     }
 
+    "allow to have `n` futures waiting for result in each point of time with `n` maxConcurrentOffers" in
+    assertAllStagesStopped {
+      val n = 2
+      val probe = TestPublisher.manualProbe[Int]()
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))
+      val sub = probe.expectSubscription()
+      val future1 = queue.pull()
+      val future2 = queue.pull()
+      val future3 = queue.pull()
+      an[IllegalStateException] shouldBe thrownBy { Await.result(future3, remainingOrDefault) }
+
+      sub.sendNext(1)
+      future1.pipeTo(testActor)
+      expectMsg(Some(1))
+
+      sub.sendNext(2)
+      future2.pipeTo(testActor)
+      expectMsg(Some(2))
+
+      sub.sendComplete()
+      queue.pull()
+    }
+
+    "fail all futures on abrupt termination" in assertAllStagesStopped {
+      val n = 2
+      val mat = Materializer(system)
+      val queue = TestSource.probe.runWith(Sink.queue(n))(mat)
+
+      val future1 = queue.pull()
+      val future2 = queue.pull()
+      mat.shutdown()
+
+      // async callback can be executed after materializer shutdown so you should also expect StreamDetachedException
+      val fail1 = future1.failed.futureValue
+      val fail2 = future2.failed.futureValue
+      assert(fail1.isInstanceOf[AbruptTerminationException] || fail1.isInstanceOf[StreamDetachedException])
+      assert(fail2.isInstanceOf[AbruptTerminationException] || fail2.isInstanceOf[StreamDetachedException])
+    }
+
+    "complete all futures with None on upstream complete" in assertAllStagesStopped {
+      val n = 2
+      val probe = TestPublisher.probe[Int]()
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))
+      val future1 = queue.pull()
+      val future2 = queue.pull()
+      probe.sendComplete()
+      future1.futureValue shouldBe None
+      future2.futureValue shouldBe None
+    }
+
+    "fail all futures on upstream fail" in assertAllStagesStopped {
+      val n = 2
+      val probe = TestPublisher.probe[Int]()
+      val queue = Source.fromPublisher(probe).runWith(Sink.queue(n))
+      val future1 = queue.pull()
+      val future2 = queue.pull()
+      val ex = new IllegalArgumentException
+      probe.sendError(ex)
+      future1.failed.futureValue shouldBe ex
+      future2.failed.futureValue shouldBe ex
+    }
+
     "wait for next element from upstream" in assertAllStagesStopped {
       val probe = TestPublisher.manualProbe[Int]()
       val queue = Source.fromPublisher(probe).runWith(Sink.queue())
@@ -62,27 +126,6 @@ class QueueSinkSpec extends StreamSpec {
       expectMsg(Some(1))
       sub.sendComplete()
       queue.pull()
-    }
-
-    "fail future on stream failure" in assertAllStagesStopped {
-      val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source.fromPublisher(probe).runWith(Sink.queue())
-      val sub = probe.expectSubscription()
-
-      queue.pull().pipeTo(testActor)
-      expectNoMessage(noMsgTimeout)
-
-      sub.sendError(ex)
-      expectMsg(Status.Failure(ex))
-    }
-
-    "fail future when stream failed" in assertAllStagesStopped {
-      val probe = TestPublisher.manualProbe[Int]()
-      val queue = Source.fromPublisher(probe).runWith(Sink.queue())
-      val sub = probe.expectSubscription()
-      sub.sendError(ex)
-
-      the[Exception] thrownBy { Await.result(queue.pull(), remainingOrDefault) } should be(ex)
     }
 
     "fail future immediately if stream already canceled" in assertAllStagesStopped {

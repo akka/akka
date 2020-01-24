@@ -179,7 +179,7 @@ object StreamConverters {
   def asJavaStream[T](): Sink[T, java.util.stream.Stream[T]] = {
     // TODO removing the QueueSink name, see issue #22523
     Sink
-      .fromGraph(new QueueSink[T]().withAttributes(Attributes.none))
+      .fromGraph(new QueueSink[T](1).withAttributes(Attributes.none))
       .mapMaterializedValue(
         queue =>
           StreamSupport
