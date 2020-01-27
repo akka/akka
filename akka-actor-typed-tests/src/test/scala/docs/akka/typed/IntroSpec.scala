@@ -86,8 +86,21 @@ object IntroSpec {
           Behaviors.same
         }
       }
+
+    //#hello-world-main
+    def main(args: Array[String]): Unit = {
+      val system: ActorSystem[HelloWorldMain.SayHello] =
+        ActorSystem(HelloWorldMain(), "hello")
+
+      system ! HelloWorldMain.SayHello("World")
+      system ! HelloWorldMain.SayHello("Akka")
+    }
+    //#hello-world-main
   }
   //#hello-world-main
+
+  // This is run by ScalaFiddle
+  HelloWorldMain.main(Array.empty)
   //#fiddle_code
   //format: ON
 
@@ -229,7 +242,6 @@ class IntroSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
 
   "Intro sample" must {
     "say hello" in {
-      //#fiddle_code
       //#hello-world
 
       val system: ActorSystem[HelloWorldMain.SayHello] =
@@ -239,7 +251,6 @@ class IntroSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
       system ! HelloWorldMain.SayHello("Akka")
 
       //#hello-world
-      //#fiddle_code
 
       Thread.sleep(500) // it will not fail if too short
       ActorTestKit.shutdown(system)
