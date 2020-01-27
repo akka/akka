@@ -31,27 +31,40 @@ import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
 @InternalApi
 @ccompatUsedUntil213
 private[akka] object ClusterMessageSerializer {
-  // FIXME use short manifests when we can break wire compatibility
+  // Kept for one version iteration from 2.6.2 to allow rolling migration to short manifests
+  // will be removed in 2.6.3
   // needs to be full class names for backwards compatibility
-  val JoinManifest = s"akka.cluster.InternalClusterAction$$Join"
-  val WelcomeManifest = s"akka.cluster.InternalClusterAction$$Welcome"
-  val LeaveManifest = s"akka.cluster.ClusterUserAction$$Leave"
-  val DownManifest = s"akka.cluster.ClusterUserAction$$Down"
+  val OldJoinManifest = s"akka.cluster.InternalClusterAction$$Join"
+  val OldWelcomeManifest = s"akka.cluster.InternalClusterAction$$Welcome"
+  val OldLeaveManifest = s"akka.cluster.ClusterUserAction$$Leave"
+  val OldDownManifest = s"akka.cluster.ClusterUserAction$$Down"
   // #24622 wire compatibility
   // we need to use this object name rather than classname to be able to join a 2.5.9 cluster during rolling upgrades
-  val InitJoinManifest = s"akka.cluster.InternalClusterAction$$InitJoin$$"
-  val InitJoinAckManifest = s"akka.cluster.InternalClusterAction$$InitJoinAck"
-  val InitJoinNackManifest = s"akka.cluster.InternalClusterAction$$InitJoinNack"
+  val OldInitJoinManifest = s"akka.cluster.InternalClusterAction$$InitJoin$$"
+  val OldInitJoinAckManifest = s"akka.cluster.InternalClusterAction$$InitJoinAck"
+  val OldInitJoinNackManifest = s"akka.cluster.InternalClusterAction$$InitJoinNack"
   // FIXME, remove in a later version (2.6?) and make 2.5.24+ a mandatory step for rolling upgrade
   val HeartBeatManifestPre2523 = s"akka.cluster.ClusterHeartbeatSender$$Heartbeat"
   val HeartBeatRspManifest2523 = s"akka.cluster.ClusterHeartbeatSender$$HeartbeatRsp"
+  val OldExitingConfirmedManifest = s"akka.cluster.InternalClusterAction$$ExitingConfirmed"
+  val OldGossipStatusManifest = "akka.cluster.GossipStatus"
+  val OldGossipEnvelopeManifest = "akka.cluster.GossipEnvelope"
+  val OldClusterRouterPoolManifest = "akka.cluster.routing.ClusterRouterPool"
 
-  val HeartBeatManifest = "HB"
-  val HeartBeatRspManifest = "HBR"
-  val ExitingConfirmedManifest = s"akka.cluster.InternalClusterAction$$ExitingConfirmed"
-  val GossipStatusManifest = "akka.cluster.GossipStatus"
-  val GossipEnvelopeManifest = "akka.cluster.GossipEnvelope"
-  val ClusterRouterPoolManifest = "akka.cluster.routing.ClusterRouterPool"
+  // is handled on the deserializing side in 2.6.2 and then on the serializing side in 2.6.3
+  val JoinManifest = "J"
+  val WelcomeManifest = "W"
+  val LeaveManifest = "L"
+  val DownManifest = "D"
+  val InitJoinManifest = "IJ"
+  val InitJoinAckManifest = "IJA"
+  val InitJoinNackManifest = "IJN"
+  val HeartbeatManifest = "HB"
+  val HeartbeatRspManifest = "HBR"
+  val ExitingConfirmedManifest = "EC"
+  val GossipStatusManifest = "GS"
+  val GossipEnvelopeManifest = "GE"
+  val ClusterRouterPoolManifest = "CRP"
 
   private final val BufferSize = 1024 * 4
 }
@@ -69,19 +82,19 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   private lazy val GossipTimeToLive = Cluster(system).settings.GossipTimeToLive
 
   def manifest(o: AnyRef): String = o match {
-    case _: InternalClusterAction.Join          => JoinManifest
-    case _: InternalClusterAction.Welcome       => WelcomeManifest
-    case _: ClusterUserAction.Leave             => LeaveManifest
-    case _: ClusterUserAction.Down              => DownManifest
-    case _: InternalClusterAction.InitJoin      => InitJoinManifest
-    case _: InternalClusterAction.InitJoinAck   => InitJoinAckManifest
-    case _: InternalClusterAction.InitJoinNack  => InitJoinNackManifest
+    case _: InternalClusterAction.Join          => OldJoinManifest
+    case _: InternalClusterAction.Welcome       => OldWelcomeManifest
+    case _: ClusterUserAction.Leave             => OldLeaveManifest
+    case _: ClusterUserAction.Down              => OldDownManifest
+    case _: InternalClusterAction.InitJoin      => OldInitJoinManifest
+    case _: InternalClusterAction.InitJoinAck   => OldInitJoinAckManifest
+    case _: InternalClusterAction.InitJoinNack  => OldInitJoinNackManifest
     case _: ClusterHeartbeatSender.Heartbeat    => HeartBeatManifestPre2523
     case _: ClusterHeartbeatSender.HeartbeatRsp => HeartBeatRspManifest2523
-    case _: ExitingConfirmed                    => ExitingConfirmedManifest
-    case _: GossipStatus                        => GossipStatusManifest
-    case _: GossipEnvelope                      => GossipEnvelopeManifest
-    case _: ClusterRouterPool                   => ClusterRouterPoolManifest
+    case _: ExitingConfirmed                    => OldExitingConfirmedManifest
+    case _: GossipStatus                        => OldGossipStatusManifest
+    case _: GossipEnvelope                      => OldGossipEnvelopeManifest
+    case _: ClusterRouterPool                   => OldClusterRouterPoolManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -105,22 +118,33 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
   }
 
   def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = manifest match {
-    case HeartBeatManifestPre2523  => deserializeHeartBeatAsAddress(bytes)
-    case HeartBeatRspManifest2523  => deserializeHeartBeatRspAsUniqueAddress(bytes)
-    case HeartBeatManifest         => deserializeHeartBeat(bytes)
-    case HeartBeatRspManifest      => deserializeHeartBeatResponse(bytes)
-    case GossipStatusManifest      => deserializeGossipStatus(bytes)
-    case GossipEnvelopeManifest    => deserializeGossipEnvelope(bytes)
-    case InitJoinManifest          => deserializeInitJoin(bytes)
-    case InitJoinAckManifest       => deserializeInitJoinAck(bytes)
-    case InitJoinNackManifest      => deserializeInitJoinNack(bytes)
-    case JoinManifest              => deserializeJoin(bytes)
-    case WelcomeManifest           => deserializeWelcome(bytes)
-    case LeaveManifest             => deserializeLeave(bytes)
-    case DownManifest              => deserializeDown(bytes)
-    case ExitingConfirmedManifest  => deserializeExitingConfirmed(bytes)
-    case ClusterRouterPoolManifest => deserializeClusterRouterPool(bytes)
-    case _                         => throw new IllegalArgumentException(s"Unknown manifest [${manifest}]")
+    case HeartBeatManifestPre2523     => deserializeHeartBeatAsAddress(bytes)
+    case HeartBeatRspManifest2523     => deserializeHeartBeatRspAsUniqueAddress(bytes)
+    case HeartbeatManifest            => deserializeHeartBeat(bytes)
+    case HeartbeatRspManifest         => deserializeHeartBeatResponse(bytes)
+    case OldGossipStatusManifest      => deserializeGossipStatus(bytes)
+    case OldGossipEnvelopeManifest    => deserializeGossipEnvelope(bytes)
+    case OldInitJoinManifest          => deserializeInitJoin(bytes)
+    case OldInitJoinAckManifest       => deserializeInitJoinAck(bytes)
+    case OldInitJoinNackManifest      => deserializeInitJoinNack(bytes)
+    case OldJoinManifest              => deserializeJoin(bytes)
+    case OldWelcomeManifest           => deserializeWelcome(bytes)
+    case OldLeaveManifest             => deserializeLeave(bytes)
+    case OldDownManifest              => deserializeDown(bytes)
+    case OldExitingConfirmedManifest  => deserializeExitingConfirmed(bytes)
+    case OldClusterRouterPoolManifest => deserializeClusterRouterPool(bytes)
+    case GossipStatusManifest         => deserializeGossipStatus(bytes)
+    case GossipEnvelopeManifest       => deserializeGossipEnvelope(bytes)
+    case InitJoinManifest             => deserializeInitJoin(bytes)
+    case InitJoinAckManifest          => deserializeInitJoinAck(bytes)
+    case InitJoinNackManifest         => deserializeInitJoinNack(bytes)
+    case JoinManifest                 => deserializeJoin(bytes)
+    case WelcomeManifest              => deserializeWelcome(bytes)
+    case LeaveManifest                => deserializeLeave(bytes)
+    case DownManifest                 => deserializeDown(bytes)
+    case ExitingConfirmedManifest     => deserializeExitingConfirmed(bytes)
+    case ClusterRouterPoolManifest    => deserializeClusterRouterPool(bytes)
+    case _                            => throw new IllegalArgumentException(s"Unknown manifest [${manifest}]")
   }
 
   def compress(msg: MessageLite): Array[Byte] = {
