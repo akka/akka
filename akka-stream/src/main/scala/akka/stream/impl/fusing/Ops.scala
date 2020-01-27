@@ -1262,7 +1262,7 @@ private[stream] object Collect {
               case Supervision.Stop => failStage(ex)
               case _                => pushNextIfPossible()
             }
-        })
+      })
 
       override def preStart(): Unit = buffer = BufferImpl(parallelism, inheritedAttributes)
 
@@ -1740,48 +1740,55 @@ private[stream] object Collect {
 
       private[this] val onPushWhenBufferFull: () => Unit = overflowStrategy match {
         case EmitEarly =>
-          () => {
-            if (isAvailable(out)) {
-              if (isTimerActive(TimerName)) {
-                cancelTimer(TimerName)
-              }
+          () =>
+            {
+              if (isAvailable(out)) {
+                if (isTimerActive(TimerName)) {
+                  cancelTimer(TimerName)
+                }
 
-              push(out, buffer.dequeue()._2)
-              grabAndPull()
-              completeIfReady()
-            } else {
-              throw new IllegalStateException(
-                "Was configured to emitEarly and got element when out is not ready and buffer is full, should not be possible.")
+                push(out, buffer.dequeue()._2)
+                grabAndPull()
+                completeIfReady()
+              } else {
+                throw new IllegalStateException(
+                  "Was configured to emitEarly and got element when out is not ready and buffer is full, should not be possible.")
+              }
             }
-          }
         case _: DropHead =>
-          () => {
-            buffer.dropHead()
-            grabAndPull()
-          }
+          () =>
+            {
+              buffer.dropHead()
+              grabAndPull()
+            }
         case _: DropTail =>
-          () => {
-            buffer.dropTail()
-            grabAndPull()
-          }
+          () =>
+            {
+              buffer.dropTail()
+              grabAndPull()
+            }
         case _: DropNew =>
-          () => {
-            grab(in)
-            if (shouldPull) pull(in)
-          }
+          () =>
+            {
+              grab(in)
+              if (shouldPull) pull(in)
+            }
         case _: DropBuffer =>
-          () => {
-            buffer.clear()
-            grabAndPull()
-          }
+          () =>
+            {
+              buffer.clear()
+              grabAndPull()
+            }
         case _: Fail =>
-          () => {
-            failStage(new BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
-          }
+          () =>
+            {
+              failStage(new BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
+            }
         case _: Backpressure =>
-          () => {
-            throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
-          }
+          () =>
+            {
+              throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
+            }
       }
 
       def onPush(): Unit = {
@@ -2184,7 +2191,7 @@ private[stream] object Collect {
 
       private def switchTo(flow: Flow[I, O, M], firstElement: I): M = {
 
-        var firstElementPushed = false
+        var unpushedFirstElement = OptionVal.Some(firstElement)
 
         //
         // ports are wired in the following way:
@@ -2226,7 +2233,7 @@ private[stream] object Collect {
               subOutlet.push(grab(in))
             }
             override def onUpstreamFinish(): Unit = {
-              if (firstElementPushed) {
+              if (unpushedFirstElement.isEmpty) {
                 subOutlet.complete()
                 maybeCompleteStage()
               }
@@ -2249,20 +2256,18 @@ private[stream] object Collect {
         })
 
         subOutlet.setHandler(new OutHandler {
-          override def onPull(): Unit = {
-            if (firstElementPushed) {
-              pull(in)
-            } else {
+          override def onPull(): Unit = unpushedFirstElement match {
+            case OptionVal.Some(firstElem) =>
               // the demand can be satisfied right away by the cached element
-              firstElementPushed = true
-              subOutlet.push(firstElement)
+              unpushedFirstElement = OptionVal.none
+              subOutlet.push(firstElem)
               // in.onUpstreamFinished was not propagated if it arrived before the cached element was pushed
               // -> check if the completion must be propagated now
               if (isClosed(in)) {
                 subOutlet.complete()
                 maybeCompleteStage()
               }
-            }
+            case OptionVal.None => pull(in)
           }
           override def onDownstreamFinish(cause: Throwable): Unit = {
             if (!isClosed(in)) {
