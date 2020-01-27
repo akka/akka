@@ -9,10 +9,10 @@ import java.util.concurrent.TimeUnit
 import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
-
 import akka.Done
 import akka.actor.{ EmptyLocalActorRef, _ }
 import akka.event.Logging
+import akka.pattern.PromiseActorRef
 import akka.remote.artery.Decoder.{
   AdvertiseActorRefsCompressionTable,
   AdvertiseClassManifestsCompressionTable,
@@ -62,11 +62,8 @@ private[remote] class Encoder(
 
   override def createLogicAndMaterializedValue(
       inheritedAttributes: Attributes): (GraphStageLogic, OutboundCompressionAccess) = {
-    val logic = new GraphStageLogic(shape)
-      with InHandler
-      with OutHandler
-      with StageLogging
-      with OutboundCompressionAccess {
+    val logic = new GraphStageLogic(shape) with InHandler with OutHandler with StageLogging
+    with OutboundCompressionAccess {
 
       private val headerBuilder = HeaderBuilder.out()
       headerBuilder.setVersion(version)
@@ -329,7 +326,14 @@ private[remote] final class ActorRefResolveCacheWithAddress(
 
   override protected def hash(k: String): Int = Unsafe.fastHash(k)
 
-  override protected def isCacheable(v: InternalActorRef): Boolean = !v.isInstanceOf[EmptyLocalActorRef]
+  override protected def isCacheable(v: InternalActorRef): Boolean =
+    v match {
+      case _: EmptyLocalActorRef => false
+      case _: PromiseActorRef    =>
+        // each of these are only for one request-response interaction so don't cache
+        false
+      case _ => true
+    }
 }
 
 /**
@@ -350,11 +354,8 @@ private[remote] class Decoder(
   val shape: FlowShape[EnvelopeBuffer, InboundEnvelope] = FlowShape(in, out)
 
   def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, InboundCompressionAccess) = {
-    val logic = new TimerGraphStageLogic(shape)
-      with InboundCompressionAccessImpl
-      with InHandler
-      with OutHandler
-      with StageLogging {
+    val logic = new TimerGraphStageLogic(shape) with InboundCompressionAccessImpl with InHandler with OutHandler
+    with StageLogging {
       import Decoder.RetryResolveRemoteDeployedRecipient
 
       override val compressions = inboundCompressions
