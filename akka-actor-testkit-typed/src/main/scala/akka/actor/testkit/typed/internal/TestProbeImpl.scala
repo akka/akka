@@ -7,7 +7,6 @@ package akka.actor.testkit.typed.internal
 import java.time.{ Duration => JDuration }
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Supplier
 import java.util.{ List => JList }
 
@@ -23,6 +22,7 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.javadsl.{ TestProbe => JavaTestProbe }
 import akka.actor.testkit.typed.scaladsl.TestDuration
 import akka.actor.testkit.typed.scaladsl.{ TestProbe => ScalaTestProbe }
+import akka.testkit.TestKit.testActorId
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -36,8 +36,6 @@ import akka.util.PrettyDuration._
 
 @InternalApi
 private[akka] object TestProbeImpl {
-  private val testActorId = new AtomicInteger(0)
-
   private final case class WatchActor[U](actor: ActorRef[U])
   private case object Stop
 
