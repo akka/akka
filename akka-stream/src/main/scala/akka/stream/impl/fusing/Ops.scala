@@ -1262,7 +1262,7 @@ private[stream] object Collect {
               case Supervision.Stop => failStage(ex)
               case _                => pushNextIfPossible()
             }
-      })
+        })
 
       override def preStart(): Unit = buffer = BufferImpl(parallelism, inheritedAttributes)
 
@@ -1740,55 +1740,48 @@ private[stream] object Collect {
 
       private[this] val onPushWhenBufferFull: () => Unit = overflowStrategy match {
         case EmitEarly =>
-          () =>
-            {
-              if (isAvailable(out)) {
-                if (isTimerActive(TimerName)) {
-                  cancelTimer(TimerName)
-                }
-
-                push(out, buffer.dequeue()._2)
-                grabAndPull()
-                completeIfReady()
-              } else {
-                throw new IllegalStateException(
-                  "Was configured to emitEarly and got element when out is not ready and buffer is full, should not be possible.")
+          () => {
+            if (isAvailable(out)) {
+              if (isTimerActive(TimerName)) {
+                cancelTimer(TimerName)
               }
+
+              push(out, buffer.dequeue()._2)
+              grabAndPull()
+              completeIfReady()
+            } else {
+              throw new IllegalStateException(
+                "Was configured to emitEarly and got element when out is not ready and buffer is full, should not be possible.")
             }
+          }
         case _: DropHead =>
-          () =>
-            {
-              buffer.dropHead()
-              grabAndPull()
-            }
+          () => {
+            buffer.dropHead()
+            grabAndPull()
+          }
         case _: DropTail =>
-          () =>
-            {
-              buffer.dropTail()
-              grabAndPull()
-            }
+          () => {
+            buffer.dropTail()
+            grabAndPull()
+          }
         case _: DropNew =>
-          () =>
-            {
-              grab(in)
-              if (shouldPull) pull(in)
-            }
+          () => {
+            grab(in)
+            if (shouldPull) pull(in)
+          }
         case _: DropBuffer =>
-          () =>
-            {
-              buffer.clear()
-              grabAndPull()
-            }
+          () => {
+            buffer.clear()
+            grabAndPull()
+          }
         case _: Fail =>
-          () =>
-            {
-              failStage(new BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
-            }
+          () => {
+            failStage(new BufferOverflowException(s"Buffer overflow for delay operator (max capacity was: $size)!"))
+          }
         case _: Backpressure =>
-          () =>
-            {
-              throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
-            }
+          () => {
+            throw new IllegalStateException("Delay buffer must never overflow in Backpressure mode")
+          }
       }
 
       def onPush(): Unit = {
