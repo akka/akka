@@ -17,7 +17,7 @@ object EventEnvelope extends AbstractFunction4[Offset, String, Long, Any, EventE
     new EventEnvelope(offset, persistenceId, sequenceNr, event)
 
   def unapply(arg: EventEnvelope): Option[(Offset, String, Long, Any)] =
-    Some((arg.offset, arg.persistenceId, arg.sequenceNr, arg.timestamp))
+    Some((arg.offset, arg.persistenceId, arg.sequenceNr, arg.event))
 
 }
 
