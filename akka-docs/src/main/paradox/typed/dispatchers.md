@@ -349,14 +349,22 @@ it in `application.conf` and instantiate through an
 
 ## More dispatcher configuration examples
 
+### Fixed pool size
+
 Configuring a dispatcher with fixed thread pool size, e.g. for actors that perform blocking IO:
 
 @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
+
+### Cores
 
 Another example that uses the thread pool based on the number of cores (e.g. for CPU bound tasks)
 
 <!--same config text for Scala & Java-->
 @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-thread-pool-dispatcher-config }
+
+### Pinned
+
+A separate thread is dedicated for each actor that is configured to use the pinned dispatcher.  
 
 Configuring a `PinnedDispatcher`:
 
@@ -371,3 +379,14 @@ Note that it's not guaranteed that the *same* thread is used over time, since th
 is used for `PinnedDispatcher` to keep resource usage down in case of idle actors. To use the same
 thread all the time you need to add `thread-pool-executor.allow-core-timeout=off` to the
 configuration of the `PinnedDispatcher`.
+
+### Thread shutdown timeout
+
+Both the `fork-join-executor` and `thread-pool-executor` may shutdown threads when they are not used.
+If it's desired to keep the threads alive longer there are some timeout settings that can be adjusted.
+
+<!--same config text for Scala & Java-->
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-dispatcher-with-timeouts-config }
+ 
+When using the dispatcher as an `ExecutionContext` without assigning actors to it the `shutdown-timeout` should
+typically be increased, since the default of 1 second may cause too frequent shutdown of the entire thread pool.
