@@ -14,14 +14,22 @@ To use Akka Actor Typed, you must add the following dependency in your project:
 
 ## Obtaining Actor references
 
-There are two general ways to obtain @ref:[Actor references](../general/addressing.md#what-is-an-actor-reference): by
-@ref:[creating actors](actor-lifecycle.md#creating-actors) and by discovery using the @ref:[Receptionist](#receptionist).
+In order for an actor to send a message to one or more other actors it needs to obtain an @ref:[Actor reference](../general/addressing.md#what-is-an-actor-reference). 
+This reference relates to the notion of locality.
+In his 2010 paper, [Actor Model of Computation: Scalable Robust Information Systems](https://arxiv.org/abs/1008.1459), 
+Carl Hewitt relays locality and message processing as, 
+“an Actor can send messages only to addresses for which it has information by the following means: 
+1. that it receives in the message 
+2. that it already had before it received the message 
+3. that it creates while processing the message. “
 
-You can pass actor references between actors as constructor parameters or part of messages.
-
-Sometimes you need something to bootstrap the interaction, for example when actors are running on
-different nodes in the Cluster or when "dependency injection" with constructor parameters is not
-applicable.
+Similarly, Akka has three general ways to obtain Actor references, but also adds a discovery method
+1. By @ref:[creating actors](actor-lifecycle.md#creating-actors) 
+2. Passed as constructor parameters to an actor on its creation
+3. Passed as parameters of a message received by an actor
+4. By discovery using the @ref:[Receptionist](#receptionist), which is useful if you need something to bootstrap the interaction. 
+For example when they need to be discoverable by actors running either on different nodes in the Cluster, 
+or if the above three general methods are not applicable.
 
 ## Receptionist
 
