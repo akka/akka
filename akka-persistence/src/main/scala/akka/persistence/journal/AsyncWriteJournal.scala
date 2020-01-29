@@ -69,7 +69,8 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         val atomicWriteCount = messages.count(_.isInstanceOf[AtomicWrite])
         val prepared = Try(preparePersistentBatch(messages))
         val writeResult = (prepared match {
-          case Success(prep) =>
+          case Success(prep) if prep.isEmpty => Future.successful(Nil)
+          case Success(prep)                 =>
             // try in case the asyncWriteMessages throws
             try breaker.withCircuitBreaker(asyncWriteMessages(prep))
             catch { case NonFatal(e) => Future.failed(e) }
