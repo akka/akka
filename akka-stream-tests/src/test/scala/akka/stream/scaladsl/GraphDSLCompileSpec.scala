@@ -4,6 +4,7 @@
 
 package akka.stream.scaladsl
 
+import akka.NotUsed
 import akka.stream.impl.fusing.GraphStages
 import akka.stream._
 import akka.stream.testkit._
@@ -410,6 +411,18 @@ class GraphDSLCompileSpec extends StreamSpec {
 
       ga.traversalBuilder.attributes.getFirst[Name] shouldEqual Some(Name("useless"))
       ga.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
+    }
+
+    "support mapMaterializedValue" in {
+      val anOp = op[String, String]
+      val anOpWithMappedMatVal = anOp.mapMaterializedValue{
+        case NotUsed => (NotUsed, NotUsed)
+      }
+      val g = Source.empty[String]
+        .viaMat(anOpWithMappedMatVal)(Keep.right)
+        .to(Sink.cancelled)
+      val matVal = g.run()
+      matVal shouldEqual ((NotUsed, NotUsed))
     }
   }
 }

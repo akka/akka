@@ -37,6 +37,10 @@ private[stream] final class GenericGraph[S <: Shape, Mat](
 
   override def withAttributes(attr: Attributes): Graph[S, Mat] =
     new GenericGraphWithChangedAttributes(shape, traversalBuilder, attr)
+
+  def mapMaterializedValue[Mat2](f: Mat => Mat2): GenericGraph[S, Mat2] = {
+    new GenericGraph(shape, traversalBuilder.transformMat(f))
+  }
 }
 
 /**
