@@ -23,10 +23,17 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
     onPersistFailure: Optional[BackoffSupervisorStrategy])
     extends DeferredBehavior[Command] {
 
+  /**
+   * @param persistenceId stable unique identifier for the event sourced behavior
+   */
   def this(persistenceId: PersistenceId) = {
     this(persistenceId, Optional.empty[BackoffSupervisorStrategy])
   }
 
+  /**
+   * @param persistenceId stable unique identifier for the event sourced behavior
+   * @param onPersistFailure BackoffSupervisionStrategy for persist failures
+   */
   def this(persistenceId: PersistenceId, onPersistFailure: BackoffSupervisorStrategy) = {
     this(persistenceId, Optional.ofNullable(onPersistFailure))
   }
