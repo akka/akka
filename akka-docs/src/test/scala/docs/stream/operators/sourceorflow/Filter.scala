@@ -17,7 +17,7 @@ object Filter {
     val words: Source[String, NotUsed] =
       Source(
         ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt " +
-        "ut labore et dolore magna aliqua.").split(" ").toList)
+        "ut labore et dolore magna aliqua").split(" ").toList)
 
     val longWords: Source[String, NotUsed] = words.filter(_.length > 6)
 
@@ -25,7 +25,6 @@ object Filter {
     // consectetur
     // adipiscing
     // eiusmod
-    // tempor
     // incididunt
     // #filter
   }
@@ -35,7 +34,7 @@ object Filter {
     val words: Source[String, NotUsed] =
       Source(
         ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt " +
-        "ut labore et dolore magna aliqua.").split(" ").toList)
+        "ut labore et dolore magna aliqua").split(" ").toList)
 
     val longWords: Source[String, NotUsed] = words.filterNot(_.length <= 5)
 
@@ -45,6 +44,9 @@ object Filter {
     // eiusmod
     // tempor
     // incididunt
+    // labore
+    // dolore
+    // aliqua
     // #filterNot
   }
 }

@@ -355,7 +355,7 @@ class SourceOrFlow {
         Source.from(
             Arrays.asList(
                 ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
-                        + "ut labore et dolore magna aliqua.")
+                        + "ut labore et dolore magna aliqua")
                     .split(" ")));
 
     Source<String, NotUsed> longWords = words.filter(w -> w.length() > 6);
@@ -364,7 +364,6 @@ class SourceOrFlow {
     // consectetur
     // adipiscing
     // eiusmod
-    // tempor
     // incididunt
     // #filter
   }
@@ -375,7 +374,7 @@ class SourceOrFlow {
         Source.from(
             Arrays.asList(
                 ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
-                        + "ut labore et dolore magna aliqua.")
+                        + "ut labore et dolore magna aliqua")
                     .split(" ")));
 
     Source<String, NotUsed> longWords = words.filterNot(w -> w.length() <= 5);
@@ -386,6 +385,9 @@ class SourceOrFlow {
     // eiusmod
     // tempor
     // incididunt
+    // labore
+    // dolore
+    // aliqua
     // #filterNot
   }
 }
