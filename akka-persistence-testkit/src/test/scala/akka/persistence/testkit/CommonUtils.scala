@@ -26,6 +26,9 @@ trait CommonUtils extends AnyWordSpecLike with TestKitBase {
         .withFallback(
           ConfigFactory.parseMap(
             Map(
+              // testing serialization of the events when persisting in the storage
+              // using default java serializers for convenience
+              "akka.actor.allow-java-serialization" -> true,
               "akka.persistence.testkit.events.serialize" -> serializeMessages,
               "akka.persistence.testkit.snapshots.serialize" -> serializeSnapshots).asJava))
         .withFallback(ConfigFactory.parseString("akka.loggers = [\"akka.testkit.TestEventListener\"]"))
