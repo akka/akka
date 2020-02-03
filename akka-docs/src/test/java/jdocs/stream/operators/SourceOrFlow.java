@@ -377,17 +377,13 @@ class SourceOrFlow {
                         + "ut labore et dolore magna aliqua")
                     .split(" ")));
 
-    Source<String, NotUsed> longWords = words.filterNot(w -> w.length() <= 5);
+    Source<String, NotUsed> longWords = words.filterNot(w -> w.length() <= 6);
 
     longWords.runWith(Sink.foreach(System.out::print), system);
     // consectetur
     // adipiscing
     // eiusmod
-    // tempor
     // incididunt
-    // labore
-    // dolore
-    // aliqua
     // #filterNot
   }
 }

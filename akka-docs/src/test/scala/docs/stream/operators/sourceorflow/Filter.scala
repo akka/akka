@@ -36,17 +36,13 @@ object Filter {
         ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt " +
         "ut labore et dolore magna aliqua").split(" ").toList)
 
-    val longWords: Source[String, NotUsed] = words.filterNot(_.length <= 5)
+    val longWords: Source[String, NotUsed] = words.filterNot(_.length <= 6)
 
     longWords.runForeach(println)
     // consectetur
     // adipiscing
     // eiusmod
-    // tempor
     // incididunt
-    // labore
-    // dolore
-    // aliqua
     // #filterNot
   }
 }
