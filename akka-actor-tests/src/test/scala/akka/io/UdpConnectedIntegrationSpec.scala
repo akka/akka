@@ -45,7 +45,7 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
       val handler = TestProbe()
       val command = UdpConnected.Connect(handler.ref, InetSocketAddress.createUnresolved(serverAddress, 1234), None)
       commander.send(IO(UdpConnected), command)
-      commander.expectMsg(6.seconds, UdpConnected.CommandFailed(command))
+      commander.expectMsg(10.seconds, UdpConnected.CommandFailed(command))
     }
 
     "report error if can not resolve (cached)" in {
