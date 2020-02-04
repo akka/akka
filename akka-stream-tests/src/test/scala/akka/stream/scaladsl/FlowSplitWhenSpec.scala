@@ -281,7 +281,6 @@ class FlowSplitWhenSpec extends StreamSpec("""
       val future = probe.requestNext()
       val ex = the[IllegalStateException] thrownBy Await.result(future, 3.seconds)
       ex.getMessage should ===("Substream Source(SplitSource) cannot be materialized more than once")
-      ex.printStackTrace
       ex.getStackTrace.exists(_.getClassName contains "FlowSplitWhenSpec") shouldBe true
       probe.cancel()
     }
