@@ -5,14 +5,14 @@
 package akka.stream.impl.fusing
 
 import akka.annotation.InternalApi
-import akka.stream.scaladsl.{Flow, Keep, Source}
-import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
+import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.util.OptionVal
 
 import scala.collection.immutable
-import scala.concurrent.{Future, Promise}
+import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
 
 @InternalApi private[akka] final class FlatMapPrefix[In, Out, M](n: Int, f: immutable.Seq[In] => Flow[In, Out, M])
@@ -61,14 +61,14 @@ import scala.util.control.NonFatal
       override def onUpstreamFinish(): Unit = {
         subSource match {
           case OptionVal.Some(s) => s.complete()
-          case OptionVal.None =>  materializeFlow()
+          case OptionVal.None    => materializeFlow()
         }
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
         subSource match {
           case OptionVal.Some(s) => s.fail(ex)
-          case OptionVal.None =>
+          case OptionVal.None    =>
             //flow won't be materialized, so we have to complete the future with a failure indicating this
             matPromise.failure(new NeverMaterializedException(ex))
             super.onUpstreamFailure(ex)
@@ -90,7 +90,7 @@ import scala.util.control.NonFatal
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         subSink match {
-          case OptionVal.None => downstreamCause = OptionVal.Some(cause)
+          case OptionVal.None    => downstreamCause = OptionVal.Some(cause)
           case OptionVal.Some(s) => s.cancel(cause)
         }
       }
