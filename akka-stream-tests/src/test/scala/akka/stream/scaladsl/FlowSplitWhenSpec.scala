@@ -8,6 +8,7 @@ import akka.{ Done, NotUsed }
 import akka.stream._
 import akka.stream.Supervision.resumingDecider
 import akka.stream.impl.SubscriptionTimeoutException
+import akka.stream.impl.fusing.Split
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._
@@ -263,22 +264,24 @@ class FlowSplitWhenSpec extends StreamSpec {
     }
 
     "fail substream if materialized twice" in assertAllStagesStopped {
-      implicit val mat =
-        ActorMaterializer(ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1))
-
       import system.dispatcher
-      val probe = Source(1 to 5)
-        .splitWhen(_ => true)
-        .lift
-        .map { src =>
-          src.runWith(Sink.ignore)(mat).flatMap(_ => src.runWith(Sink.ignore)(mat))
-        }
-        .runWith(TestSink.probe[Future[Done]])(mat)
-      probe.request(1)
+      val stream =
+        Source(1 to 5)
+        // Need to drop to internal API to get a plain Source[Source[Int]] instead of a SubFlow.
+        // `lift` doesn't cut here because it will prevent the behavior we'd like to see.
+        // In fact, this test is somewhat useless, as a user cannot trigger double materialization using
+        // the public splitWhen => SubFlow API.
+          .via(Split.when(_ => true, SubstreamCancelStrategy.drain))
+          .map { source =>
+            // run twice, but make sure we return the result of the materialization that ran second
+            source.runWith(Sink.ignore).flatMap(_ => source.runWith(Sink.ignore))
+          }
+          .toMat(TestSink.probe[Future[Done]])(Keep.right)
+      val probe = stream.withAttributes(Attributes.inputBuffer(1, 1)).run()
       val future = probe.requestNext()
-      an[IllegalStateException] mustBe thrownBy {
-        Await.result(future, 3.seconds)
-      }
+      val ex = the[IllegalStateException] thrownBy Await.result(future, 3.seconds)
+      ex.getMessage should ===("Substream Source(SplitSource) cannot be materialized more than once")
+      ex.getStackTrace.exists(_.getClassName contains "FlowSplitWhenSpec") shouldBe true
       probe.cancel()
     }
 
