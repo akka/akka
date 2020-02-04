@@ -26,5 +26,5 @@ object SystemMaterializer extends ExtensionId[SystemMaterializer] with Extension
 }
 
 final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
-  val materializer = ActorMaterializer(ActorMaterializerSettings(system), "flow")(system)
+  val materializer: Materializer = ActorMaterializer(ActorMaterializerSettings(system), "flow")(system)
 }
