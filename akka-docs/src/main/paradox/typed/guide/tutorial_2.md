@@ -8,7 +8,7 @@ With an understanding of actor hierarchy and behavior, the remaining question is
 
 We can define the first actor, the IotSupervisor, with a few lines of code. To start your tutorial application:
 
-1. Create a new `IotSupervisor` source file in the `com.lightbend.akka.sample` package.
+1. Create a new `IotSupervisor` source file in the `com.example` package.
 1. Paste the following code into the new file to define the IotSupervisor.
 
 Scala
