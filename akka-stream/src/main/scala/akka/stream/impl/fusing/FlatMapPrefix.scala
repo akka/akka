@@ -5,13 +5,14 @@
 package akka.stream.impl.fusing
 
 import akka.annotation.InternalApi
-import akka.stream.scaladsl.{ Flow, Keep, Source }
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
+import akka.stream.scaladsl.{Flow, Keep, Source}
+import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
 import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.util.OptionVal
 
 import scala.collection.immutable
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.{Future, Promise}
 import scala.util.control.NonFatal
 
 @InternalApi private[akka] final class FlatMapPrefix[In, Out, M](n: Int, f: immutable.Seq[In] => Flow[In, Out, M])
@@ -22,6 +23,8 @@ import scala.util.control.NonFatal
   val in = Inlet[In](s"${this}.in")
   val out = Outlet[Out](s"${this}.out")
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
+
+  override def initialAttributes: Attributes = DefaultAttributes.flatMapPrefix
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
     val matPromise = Promise[M]
@@ -42,53 +45,53 @@ import scala.util.control.NonFatal
       }
 
       override def onPush(): Unit = {
-        if (subSource.isDefined) {
-          subSource.get.push(grab(in))
-        } else {
-          accumulated.append(grab(in))
-          if (accumulated.size == n) {
-            materializeFlow()
-          } else {
-            //gi'me some more!
-            pull(in)
-          }
+        subSource match {
+          case OptionVal.Some(s) => s.push(grab(in))
+          case OptionVal.None =>
+            accumulated.append(grab(in))
+            if (accumulated.size == n) {
+              materializeFlow()
+            } else {
+              //gi'me some more!
+              pull(in)
+            }
         }
       }
 
       override def onUpstreamFinish(): Unit = {
-        if (subSource.isDefined) {
-          subSource.get.complete()
-        } else {
-          materializeFlow()
+        subSource match {
+          case OptionVal.Some(s) => s.complete()
+          case OptionVal.None =>  materializeFlow()
         }
       }
 
       override def onUpstreamFailure(ex: Throwable): Unit = {
-        if (subSource.isDefined) {
-          subSource.get.fail(ex)
-        } else {
-          //flow won't be materialized, so we have to complete the future with a failure indicating this
-          matPromise.failure(new NeverMaterializedException(ex))
-          super.onUpstreamFailure(ex)
+        subSource match {
+          case OptionVal.Some(s) => s.fail(ex)
+          case OptionVal.None =>
+            //flow won't be materialized, so we have to complete the future with a failure indicating this
+            matPromise.failure(new NeverMaterializedException(ex))
+            super.onUpstreamFailure(ex)
         }
       }
 
       override def onPull(): Unit = {
-        if (subSink.isDefined) {
-          //delegate to subSink
-          subSink.get.pull()
-        } else if (accumulated.size < n) {
-          pull(in)
-        } else if (accumulated.size == n) { //corner case for n = 0, can be handled in FlowOps
-          materializeFlow()
+        subSink match {
+          case OptionVal.Some(s) =>
+            //delegate to subSink
+            s.pull()
+          case OptionVal.None if accumulated.size < n =>
+            pull(in)
+          case OptionVal.None if accumulated.size == n =>
+            //corner case for n = 0, can be handled in FlowOps
+            materializeFlow()
         }
       }
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
-        if (subSink.isEmpty) {
-          downstreamCause = OptionVal.Some(cause)
-        } else {
-          subSink.get.cancel(cause)
+        subSink match {
+          case OptionVal.None => downstreamCause = OptionVal.Some(cause)
+          case OptionVal.Some(s) => s.cancel(cause)
         }
       }
 
@@ -96,8 +99,8 @@ import scala.util.control.NonFatal
         try {
           val prefix = accumulated.toVector
           accumulated.clear()
-          subSource = OptionVal.Some(new SubSourceOutlet[In]("subSource"))
-          subSource.get.setHandler {
+          subSource = OptionVal.Some(new SubSourceOutlet[In](s"${this}.subSource"))
+          subSource.x.setHandler {
             new OutHandler {
               override def onPull(): Unit = {
                 if (!isClosed(in) && !hasBeenPulled(in)) {
@@ -109,12 +112,11 @@ import scala.util.control.NonFatal
                 if (!isClosed(in)) {
                   cancel(in, cause)
                 }
-                //super.onDownstreamFinish(cause)
               }
             }
           }
-          subSink = OptionVal.Some(new SubSinkInlet[Out]("subSink"))
-          subSink.get.setHandler {
+          subSink = OptionVal.Some(new SubSinkInlet[Out](s"${this}.subSink"))
+          subSink.x.setHandler {
             new InHandler {
               override def onPush(): Unit = {
                 push(out, subSink.get.grab())
@@ -144,17 +146,17 @@ import scala.util.control.NonFatal
 
           //in case downstream was closed
           if (downstreamCause.isDefined) {
-            subSink.get.cancel(downstreamCause.get)
+            subSink.x.cancel(downstreamCause.get)
           }
 
           //in case we've materialized due to upstream completion
           if (isClosed(in)) {
-            subSource.get.complete()
+            subSource.x.complete()
           }
 
           //in case we've been pulled by downstream
           if (isAvailable(out)) {
-            subSink.get.pull()
+            subSink.x.pull()
           }
         } catch {
           case NonFatal(ex) => failStage(ex)
