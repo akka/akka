@@ -29,5 +29,36 @@ final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
       spawn[Nothing](behavior)
       probe.expectMessage(Done)
     }
+
+    def stopper(probe: TestProbe[Done]) = Behaviors
+      .receiveMessage[String] {
+        case "stop" =>
+          println("Stopping")
+          Behaviors.stopped
+      }
+      .receiveSignal {
+        case (_, PostStop) =>
+          println("Post stop called")
+          probe.ref ! Done
+          Behaviors.same
+      }
+    "execute post stop" in {
+      val probe = createTestProbe[Done]("post-stop-child")
+      val stopperRef = spawn(stopper(probe))
+      stopperRef ! "stop"
+      probe.expectMessage(Done)
+
+    }
+
+    "post stop for guardian behavior" in {
+      val probe = createTestProbe[Done]("post-stop-probe")
+      val system = ActorSystem(stopper(probe), "work")
+      try {
+        system ! "stop"
+        probe.expectMessage(Done)
+      } finally {
+        system.terminate()
+      }
+    }
   }
 }
