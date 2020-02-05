@@ -22,7 +22,6 @@ import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.javadsl.{ TestProbe => JavaTestProbe }
 import akka.actor.testkit.typed.scaladsl.TestDuration
 import akka.actor.testkit.typed.scaladsl.{ TestProbe => ScalaTestProbe }
-import akka.testkit.TestKit.testActorId
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -66,6 +65,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     with ScalaTestProbe[M] {
 
   import TestProbeImpl._
+
+  // have to use same global counter as Classic TestKit to ensure unique names
+  private def testActorId = akka.testkit.TestKit.testActorId
   protected implicit val settings: TestKitSettings = TestKitSettings(system)
   private val queue = new LinkedBlockingDeque[M]
   private val terminations = new LinkedBlockingDeque[Terminated]
