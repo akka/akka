@@ -122,7 +122,7 @@ The `ParameterNamesModule` is configured with `JsonCreator.Mode.PROPERTIES` as d
 
 @@@
 
-## Polymorphic types
+### Polymorphic types
 
 A polymorphic type is when a certain base type has multiple alternative implementations. When nested fields or
 collections are of polymorphic type the concrete implementations of the type must be listed with `@JsonTypeInfo`
