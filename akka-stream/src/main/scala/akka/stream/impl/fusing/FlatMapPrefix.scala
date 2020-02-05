@@ -147,9 +147,9 @@ import scala.util.control.NonFatal
           matPromise.success(matVal)
 
           //in case downstream was closed
-          downstreamCause match{
+          downstreamCause match {
             case OptionVal.Some(ex) => theSubSink.cancel(ex)
-            case OptionVal.None =>
+            case OptionVal.None     =>
           }
 
           //in case we've materialized due to upstream completion
@@ -159,7 +159,7 @@ import scala.util.control.NonFatal
 
           //in case we've been pulled by downstream
           if (isAvailable(out)) {
-           theSubSink.pull()
+            theSubSink.pull()
           }
         } catch {
           case NonFatal(ex) => failStage(ex)
