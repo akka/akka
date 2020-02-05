@@ -10,6 +10,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -30,7 +31,12 @@ final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
       probe.expectMessage(Done)
     }
 
-    def stopper(probe: TestProbe[Done]) =
+    def stopper(probe: TestProbe[Done], children: Int) = Behaviors.setup[String] { ctx =>
+      (0 until children).foreach { i =>
+        ctx.spawn(Behaviors.receiveMessage[String] { _ =>
+          Behaviors.same
+        }, s"$i")
+      }
       Behaviors
         .receiveMessage[String] {
           case "stop" =>
@@ -41,23 +47,26 @@ final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
             probe.ref ! Done
             Behaviors.same
         }
-
-    "execute post stop for child" in {
-      val probe = createTestProbe[Done]("post-stop-child")
-      val stopperRef = spawn(stopper(probe))
-      stopperRef ! "stop"
-      probe.expectMessage(Done)
-
     }
 
-    "execute post stop for guardian behavior" in {
-      val probe = createTestProbe[Done]("post-stop-probe")
-      val system = ActorSystem(stopper(probe), "work")
-      try {
-        system ! "stop"
+    List(0, 2).foreach { nrChildren =>
+      s"execute post stop for child $nrChildren" in {
+        val probe = createTestProbe[Done]("post-stop-child")
+        val stopperRef = spawn(stopper(probe, nrChildren))
+        stopperRef ! "stop"
         probe.expectMessage(Done)
-      } finally {
-        system.terminate()
+
+      }
+
+      s"execute post stop for guardian behavior $nrChildren" in {
+        val probe = createTestProbe[Done]("post-stop-probe")
+        val system = ActorSystem(stopper(probe, nrChildren), "work")
+        try {
+          system ! "stop"
+          probe.expectMessage(Done)
+        } finally {
+          ActorTestKit.shutdown(system)
+        }
       }
     }
   }
