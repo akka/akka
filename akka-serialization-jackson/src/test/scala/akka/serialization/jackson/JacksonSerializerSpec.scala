@@ -11,11 +11,13 @@ import java.time.temporal.ChronoUnit
 import java.util.Arrays
 import java.util.Locale
 import java.util.Optional
+import java.util.UUID
 import java.util.logging.FileHandler
 
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -69,6 +71,7 @@ object ScalaTestMessages {
   final case class BooleanCommand(published: Boolean) extends TestMessage
   final case class TimeCommand(timestamp: LocalDateTime, duration: FiniteDuration) extends TestMessage
   final case class InstantCommand(instant: Instant) extends TestMessage
+  final case class UUIDCommand(uuid: UUID) extends TestMessage
   final case class CollectionsCommand(strings: List[String], objects: Vector[SimpleCommand]) extends TestMessage
   final case class CommandWithActorRef(name: String, replyTo: ActorRef) extends TestMessage
   final case class CommandWithTypedActorRef(name: String, replyTo: akka.actor.typed.ActorRef[String])
@@ -746,6 +749,11 @@ abstract class JacksonSerializerSpec(serializerName: String)
         val deserialized = javaSerializer.fromBinary(blob, javaSerializer.manifest(javaMsg))
         deserialized should ===(javaMsg)
       }
+    }
+
+    "serialize message with UUID property" in {
+      val uuid = UUID.randomUUID()
+      checkSerialization(UUIDCommand(uuid))
     }
 
     "serialize case object" in {
