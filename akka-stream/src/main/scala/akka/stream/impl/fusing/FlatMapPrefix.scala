@@ -100,7 +100,8 @@ import scala.util.control.NonFatal
           val prefix = accumulated.toVector
           accumulated.clear()
           subSource = OptionVal.Some(new SubSourceOutlet[In](s"${this}.subSource"))
-          subSource.x.setHandler {
+          val OptionVal.Some(theSubSource) = subSource
+          theSubSource.setHandler {
             new OutHandler {
               override def onPull(): Unit = {
                 if (!isClosed(in) && !hasBeenPulled(in)) {
@@ -116,10 +117,11 @@ import scala.util.control.NonFatal
             }
           }
           subSink = OptionVal.Some(new SubSinkInlet[Out](s"${this}.subSink"))
-          subSink.x.setHandler {
+          val OptionVal.Some(theSubSink) = subSink
+          theSubSink.setHandler {
             new InHandler {
               override def onPush(): Unit = {
-                push(out, subSink.get.grab())
+                push(out, theSubSink.grab())
               }
 
               override def onUpstreamFinish(): Unit = {
