@@ -135,7 +135,7 @@ import scala.util.control.NonFatal
           }
           val matVal = try {
             val flow = f(prefix)
-            val runnableGraph = Source.fromGraph(subSource.get.source).viaMat(flow)(Keep.right).to(subSink.get.sink)
+            val runnableGraph = Source.fromGraph(theSubSource.source).viaMat(flow)(Keep.right).to(theSubSink.sink)
             interpreter.subFusingMaterializer.materialize(runnableGraph)
           } catch {
             case NonFatal(ex) =>
@@ -147,18 +147,19 @@ import scala.util.control.NonFatal
           matPromise.success(matVal)
 
           //in case downstream was closed
-          if (downstreamCause.isDefined) {
-            subSink.x.cancel(downstreamCause.get)
+          downstreamCause match{
+            case OptionVal.Some(ex) => theSubSink.cancel(ex)
+            case OptionVal.None =>
           }
 
           //in case we've materialized due to upstream completion
           if (isClosed(in)) {
-            subSource.x.complete()
+            theSubSource.complete()
           }
 
           //in case we've been pulled by downstream
           if (isAvailable(out)) {
-            subSink.x.pull()
+           theSubSink.pull()
           }
         } catch {
           case NonFatal(ex) => failStage(ex)
