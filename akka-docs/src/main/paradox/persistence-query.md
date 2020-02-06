@@ -29,7 +29,8 @@ recommend (in the spirit of CQRS) of splitting up the write/read sides into sepa
 
 
 The [CQRS with Akka 2.6 video](https://akka.io/blog/news/2020/02/05/akka-cqrs-video) is a good starting point for
-learning how to use `eventsByTag` to implement CQRS with Akka.
+learning how to use `eventsByTag` to implement CQRS with Akka. Also, watch the introduction to 
+[Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video).
 
 ## Design overview
 
