@@ -20,6 +20,7 @@ import akka.util.{ BoxedType, Timeout }
 import akka.actor.IllegalActorStateException
 import akka.actor.DeadLetter
 import akka.actor.Terminated
+import akka.annotation.InternalApi
 import com.github.ghik.silencer.silent
 
 object TestActor {
@@ -928,7 +929,12 @@ trait TestKitBase {
 class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
 
 object TestKit {
-  private[testkit] val testActorId = new AtomicInteger(0)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val testActorId = new AtomicInteger(0)
 
   /**
    * Await until the given condition evaluates to `true` or the timeout
