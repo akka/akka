@@ -14,10 +14,11 @@ import scala.util.{ Failure, Success }
 import com.github.ghik.silencer.silent
 
 import akka.actor._
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg._
 import akka.util.{ Timeout, Unsafe }
+import akka.util.unused
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,
@@ -339,9 +340,8 @@ final class AskableActorRef(val actorRef: ActorRef) extends AnyVal {
       if (timeout.duration.length <= 0)
         Future.failed[Any](AskableActorRef.negativeTimeoutException(actorRef, message, sender))
       else {
-        val a = PromiseActorRef(ref.provider, timeout, targetName = actorRef, message.getClass.getName, sender)
-        actorRef.tell(message, a)
-        a.result.future
+        PromiseActorRef(ref.provider, timeout, targetName = actorRef, message.getClass.getName, sender)
+          .ask(actorRef, message, timeout)
       }
     case _ => Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorRef, message, sender))
   }
@@ -376,8 +376,7 @@ final class ExplicitlyAskableActorRef(val actorRef: ActorRef) extends AnyVal {
           val a = PromiseActorRef(ref.provider, timeout, targetName = actorRef, "unknown", sender)
           val message = messageFactory(a)
           a.messageClassName = message.getClass.getName
-          actorRef.tell(message, a)
-          a.result.future
+          a.ask(actorRef, message, timeout)
         }
       case _ if sender eq null =>
         Future.failed[Any](
@@ -423,9 +422,8 @@ final class AskableActorSelection(val actorSel: ActorSelection) extends AnyVal {
         if (timeout.duration.length <= 0)
           Future.failed[Any](AskableActorRef.negativeTimeoutException(actorSel, message, sender))
         else {
-          val a = PromiseActorRef(ref.provider, timeout, targetName = actorSel, message.getClass.getName, sender)
-          actorSel.tell(message, a)
-          a.result.future
+          PromiseActorRef(ref.provider, timeout, targetName = actorSel, message.getClass.getName, sender)
+            .ask(actorSel, message, timeout)
         }
       case _ => Future.failed[Any](AskableActorRef.unsupportedRecipientType(actorSel, message, sender))
     }
@@ -455,8 +453,7 @@ final class ExplicitlyAskableActorSelection(val actorSel: ActorSelection) extend
           val a = PromiseActorRef(ref.provider, timeout, targetName = actorSel, "unknown", sender)
           val message = messageFactory(a)
           a.messageClassName = message.getClass.getName
-          actorSel.tell(message, a)
-          a.result.future
+          a.ask(actorSel, message, timeout)
         }
       case _ if sender eq null =>
         Future.failed[Any](
@@ -583,6 +580,8 @@ private[akka] final class PromiseActorRef private (
       }
       if (!result.tryComplete(promiseResult))
         provider.deadLetters ! message
+      else
+        onComplete(promiseResult)
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
@@ -632,6 +631,24 @@ private[akka] final class PromiseActorRef private (
       case Registering                  => stop() // spin until registration is completed before stopping
     }
   }
+
+  @InternalStableApi
+  private[akka] def ask(actorSel: ActorSelection, message: Any, @unused timeout: Timeout): Future[Any] = {
+    actorSel.tell(message, this)
+    result.future
+  }
+
+  @InternalStableApi
+  private[akka] def ask(actorRef: ActorRef, message: Any, @unused timeout: Timeout): Future[Any] = {
+    actorRef.tell(message, this)
+    result.future
+  }
+
+  @InternalStableApi
+  private[akka] def onComplete(@unused promiseResult: Try[Any]): Unit = {}
+
+  @InternalStableApi
+  private[akka] def onTimeout(@unused timeout: Timeout): Unit = {}
 }
 
 /**
@@ -658,7 +675,7 @@ private[akka] object PromiseActorRef {
     val a = new PromiseActorRef(provider, result, messageClassName)
     implicit val ec = ExecutionContexts.parasitic
     val f = scheduler.scheduleOnce(timeout.duration) {
-      result.tryComplete {
+      val timedOut = result.tryComplete {
         val wasSentBy = if (sender == ActorRef.noSender) "" else s" was sent by [$sender]"
         val messagePart = s"Message of type [${a.messageClassName}]$wasSentBy."
         Failure(
@@ -666,6 +683,9 @@ private[akka] object PromiseActorRef {
             s"Ask timed out on [$targetName] after [${timeout.duration.toMillis} ms]. " +
             messagePart +
             " A typical reason for `AskTimeoutException` is that the recipient actor didn't send a reply."))
+      }
+      if (timedOut) {
+        a.onTimeout(timeout)
       }
     }
     result.future.onComplete { _ =>
