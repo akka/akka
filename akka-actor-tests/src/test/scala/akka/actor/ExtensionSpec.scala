@@ -80,7 +80,7 @@ class ExtensionSpec extends WordSpec with Matchers {
         FailingTestExtension(system)
       }
 
-      // Second attempt, we expect to see the same exception:
+      // Second attempt, we expect to see the same (cached) exception:
       intercept[FailingTestExtension.TestException] {
         FailingTestExtension(system)
       }
