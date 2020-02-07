@@ -899,9 +899,18 @@ private[akka] class ShardRegion(
           shardBuffers.totalSize,
           coordinatorMessage)
       } else {
+        // Members start off as "Removed"
+        val partOfCluster = cluster.selfMember.status != MemberStatus.Removed
+        val possibleReason =
+          if (partOfCluster)
+            "Has Cluster Sharding been started on every node and nodes been configured with the correct role(s)?"
+          else
+            "Probably, no seed-nodes configured and manual cluster or bootstrap join not performed?"
+
         log.warning(
-          "{}: No coordinator found to register. Probably, no seed-nodes configured and manual cluster join not performed? Total [{}] buffered messages.",
+          "{}: No coordinator found to register. {} Total [{}] buffered messages.",
           typeName,
+          possibleReason,
           shardBuffers.totalSize)
       }
     }
