@@ -4,6 +4,7 @@
 
 package akka.stream.javadsl;
 
+import akka.Done;
 import akka.NotUsed;
 import akka.japi.Pair;
 import akka.stream.*;
@@ -215,5 +216,15 @@ public class GraphDslTest extends StreamTest {
     assertEquals("ax", result.get(0).toCompletableFuture().get(1, TimeUnit.SECONDS));
     assertEquals("bx", result.get(1).toCompletableFuture().get(1, TimeUnit.SECONDS));
     assertEquals("cx", result.get(2).toCompletableFuture().get(1, TimeUnit.SECONDS));
+  }
+
+  @Test
+  public void canUseMapMaterializedValueOnGraphs() {
+    Graph<SourceShape<Object>, NotUsed> srcGraph = Source.empty();
+    Graph<SourceShape<Object>, Pair> mappedMatValueSrcGraph =
+        Graph.mapMaterializedValue(srcGraph, notUsed -> new Pair(notUsed, notUsed));
+    Sink<Object, CompletionStage<Done>> snk = Sink.ignore();
+    Pair<NotUsed, NotUsed> pair = Source.fromGraph(mappedMatValueSrcGraph).to(snk).run(system);
+    assertEquals(pair, new Pair(NotUsed.getInstance(), NotUsed.getInstance()));
   }
 }
