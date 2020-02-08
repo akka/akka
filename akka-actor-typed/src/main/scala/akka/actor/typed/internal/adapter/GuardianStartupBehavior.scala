@@ -73,7 +73,8 @@ private[akka] object GuardianStartupBehavior {
       next
     else {
       ctx.asScala.system.terminate()
-      Behaviors.ignore
+      // return next so that the adapter can call post stop on the previous behavior
+      next
     }
   }
 }

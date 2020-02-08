@@ -63,7 +63,7 @@ final class Discovery(implicit system: ExtendedActorSystem) extends Extension {
       if (config.hasPath(path)) config.getString(path)
       else
         throw new IllegalArgumentException(
-          s"$path must contain field `class` that is a FQN of a `akka.discovery.ServiceDiscovery` implementation")
+          s"$path must point to a FQN of a `akka.discovery.ServiceDiscovery` implementation")
 
     def create(clazzName: String): Try[ServiceDiscovery] = {
       dynamic

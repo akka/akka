@@ -142,6 +142,10 @@ to sleep for an indeterminate time, waiting for an external event to occur.
 Examples are legacy RDBMS drivers or messaging APIs, and the underlying reason
 is typically that (network) I/O occurs under the covers.
 
+The [Managing Blocking in Akka video](https://akka.io/blog/news/2020/01/22/managing-blocking-video)
+explains why it is bad to block inside an actor, and how you can use custom dispatchers to manage
+blocking when you cannot avoid it.
+
 ### Problem: Blocking on default dispatcher
 
 Simply adding blocking calls to your actor message processing like this is problematic:

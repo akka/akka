@@ -10,6 +10,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.testkit.typed.scaladsl.ActorTestKit
 
 final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -28,6 +29,45 @@ final class OnSignalSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
         }
       spawn[Nothing](behavior)
       probe.expectMessage(Done)
+    }
+
+    def stopper(probe: TestProbe[Done], children: Int) = Behaviors.setup[String] { ctx =>
+      (0 until children).foreach { i =>
+        ctx.spawn(Behaviors.receiveMessage[String] { _ =>
+          Behaviors.same
+        }, s"$i")
+      }
+      Behaviors
+        .receiveMessage[String] {
+          case "stop" =>
+            Behaviors.stopped
+        }
+        .receiveSignal {
+          case (_, PostStop) =>
+            probe.ref ! Done
+            Behaviors.same
+        }
+    }
+
+    List(0, 2).foreach { nrChildren =>
+      s"execute post stop for child $nrChildren" in {
+        val probe = createTestProbe[Done]("post-stop-child")
+        val stopperRef = spawn(stopper(probe, nrChildren))
+        stopperRef ! "stop"
+        probe.expectMessage(Done)
+
+      }
+
+      s"execute post stop for guardian behavior $nrChildren" in {
+        val probe = createTestProbe[Done]("post-stop-probe")
+        val system = ActorSystem(stopper(probe, nrChildren), "work")
+        try {
+          system ! "stop"
+          probe.expectMessage(Done)
+        } finally {
+          ActorTestKit.shutdown(system)
+        }
+      }
     }
   }
 }

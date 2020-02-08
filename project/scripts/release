@@ -14,6 +14,10 @@
 #        shell> brew install gnupg
 #        shell> gpg --gen-key
 #
+#      On OS X the following should be added to ~/.bash_profile
+#      GPG_TTY=$(tty)
+#      export GPG_TTY
+#
 #      Default values for the key type and 2048 bits is OK.
 #      Make sure to use the email address that you will use later to register
 #      with Sonatype.

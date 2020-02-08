@@ -7,7 +7,6 @@ package akka.actor.testkit.typed.internal
 import java.time.{ Duration => JDuration }
 import java.util.concurrent.BlockingDeque
 import java.util.concurrent.LinkedBlockingDeque
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.function.Supplier
 import java.util.{ List => JList }
 
@@ -36,8 +35,6 @@ import akka.util.PrettyDuration._
 
 @InternalApi
 private[akka] object TestProbeImpl {
-  private val testActorId = new AtomicInteger(0)
-
   private final case class WatchActor[U](actor: ActorRef[U])
   private case object Stop
 
@@ -68,6 +65,9 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     with ScalaTestProbe[M] {
 
   import TestProbeImpl._
+
+  // have to use same global counter as Classic TestKit to ensure unique names
+  private def testActorId = akka.testkit.TestKit.testActorId
   protected implicit val settings: TestKitSettings = TestKitSettings(system)
   private val queue = new LinkedBlockingDeque[M]
   private val terminations = new LinkedBlockingDeque[Terminated]
