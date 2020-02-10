@@ -20,15 +20,12 @@ for each materialization, which is the reason the @scala[`method`] @java[`factor
 If the iterator perform blocking operations, make sure to run it on a separate dispatcher.
 
 ## Example
-
-In this sample we create infinite cyclic `Iterator` where each element is true or false.  
-Note that due to using `grouped(10)` and `Sink.head` stream gets only first ten values from iterator. 
-
+ 
 Scala
-:   @@snip [SourceSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SourceSpec.scala) { #iterate-simple }
+:   @@snip [From.scala](/akka-docs/src/test/scala/docs/stream/operators/source/From.scala) { #from-iterator }
 
 Java
-:   @@snip [SourceTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceTest.java) { #iterate-simple }
+:   @@snip [From.java](/akka-docs/src/test/java/jdocs/stream/operators/source/From.java) { #from-iterator }
 
 
 ## Reactive Streams semantics

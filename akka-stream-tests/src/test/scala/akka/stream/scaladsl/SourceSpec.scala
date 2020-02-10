@@ -267,10 +267,8 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
   "Iterator Source" must {
     "properly iterate" in {
-      //#iterate-simple
       Source.fromIterator(() => Iterator.iterate(false)(!_)).grouped(10).runWith(Sink.head).futureValue should ===(
         immutable.Seq(false, true, false, true, false, true, false, true, false, true))
-      //#iterate-simple
     }
 
     "fail stream when iterator throws" in {

@@ -1161,14 +1161,7 @@ public class SourceTest extends StreamTest {
 
   @Test
   public void mustProperlyIterate() throws Exception {
-    // #iterate-simple
-    final Creator<Iterator<Boolean>> input =
-        new Creator<Iterator<Boolean>>() {
-          @Override
-          public Iterator<Boolean> create() {
-            return Iterables.cycle(false, true).iterator();
-          }
-        };
+    final Creator<Iterator<Boolean>> input = () -> Iterables.cycle(false, true).iterator();
 
     final CompletableFuture<List<Boolean>> future =
         Source.fromIterator(input).grouped(10).runWith(Sink.head(), system).toCompletableFuture();
@@ -1176,6 +1169,5 @@ public class SourceTest extends StreamTest {
     assertArrayEquals(
         new Boolean[] {false, true, false, true, false, true, false, true, false, true},
         future.get(1, TimeUnit.SECONDS).toArray());
-    // #iterate-simple
   }
 }
