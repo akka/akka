@@ -50,7 +50,9 @@ private[io] class UdpConnection(
         context.become(resolving())
     }
   } else {
-    doConnect(remoteAddress)
+    reportConnectFailure {
+      doConnect(remoteAddress)
+    }
   }
 
   def resolving(): Receive = {
