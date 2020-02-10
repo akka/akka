@@ -1,4 +1,11 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
 package docs.stream.operators.sourceorflow
+import akka.NotUsed
+import akka.actor.ActorSystem
+import akka.stream.scaladsl.Source
 
 object FlatMapConcat {
 
@@ -12,7 +19,7 @@ object FlatMapConcat {
     Source(List(s"$customerId-event-1", s"$customerId-event-2"))
   }
 
-  source.flatMapConcat(10, customerId => lookupCustomerEvents(customerId)).runForeach(println)
+  source.flatMapConcat(customerId => lookupCustomerEvents(customerId)).runForeach(println)
 
   // prints - events from each customer consecutively
   // customer-1-event-1
@@ -22,4 +29,3 @@ object FlatMapConcat {
   // #flatmap-concat
 
 }
-
