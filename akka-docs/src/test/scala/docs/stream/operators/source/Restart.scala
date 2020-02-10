@@ -28,11 +28,11 @@ object Restart extends App {
   def onRestartWithBackoffInnerFailure(): Unit = {
     //#restart-failure-inner-failure
     // could throw if for example it used a database connection to get rows
-    val flakySource: Source[Int, NotUsed] =
-      Source(List(() => 1, () => 2, () => 3, () => throw CantConnectToDatabase("darn"))).map(_())
+    val flakySource: Source[() => Int, NotUsed] =
+      Source(List(() => 1, () => 2, () => 3, () => throw CantConnectToDatabase("darn")))
     val forever =
       RestartSource.onFailuresWithBackoff(minBackoff = 1.second, maxBackoff = 10.seconds, 0.1)(() => flakySource)
-    forever.runWith(Sink.foreach(nr => system.log.info("{}", nr)))
+    forever.runWith(Sink.foreach(nr => system.log.info("{}", nr())))
     // logs
     //[INFO] [12/10/2019 13:51:58.300] [default-akka.test.stream-dispatcher-7] [akka.actor.ActorSystemImpl(default)] 1
     //[INFO] [12/10/2019 13:51:58.301] [default-akka.test.stream-dispatcher-7] [akka.actor.ActorSystemImpl(default)] 2
@@ -67,13 +67,13 @@ object Restart extends App {
 
   def onRestartWitFailureKillSwitch(): Unit = {
     //#restart-failure-inner-complete-kill-switch
-    val flakySource: Source[Int, NotUsed] =
-      Source(List(() => 1, () => 2, () => 3, () => throw CantConnectToDatabase("darn"))).map(_())
+    val flakySource: Source[() => Int, NotUsed] =
+      Source(List(() => 1, () => 2, () => 3, () => throw CantConnectToDatabase("darn")))
     val stopRestarting: UniqueKillSwitch =
       RestartSource
         .onFailuresWithBackoff(1.second, 10.seconds, 0.1)(() => flakySource)
         .viaMat(KillSwitches.single)(Keep.right)
-        .toMat(Sink.foreach(println))(Keep.left)
+        .toMat(Sink.foreach(nr => println(s"Nr ${nr()}")))(Keep.left)
         .run()
     //... from some where else
     // stop the source from restarting
