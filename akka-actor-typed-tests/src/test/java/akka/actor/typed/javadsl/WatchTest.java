@@ -12,7 +12,7 @@ import akka.actor.testkit.typed.javadsl.LogCapturing;
 import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
 import org.junit.ClassRule;
 import org.junit.Rule;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import org.junit.Test;
 
 import akka.actor.typed.*;

@@ -116,9 +116,12 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
   def terminate(): Unit
 
   /**
-   * Scala API: Returns a Future which will be completed after the ActorSystem has been terminated
-   * and termination hooks have been executed. The `ActorSystem` can be stopped with [[ActorSystem.terminate]]
+   * Scala API: Returns a Future which will be completed after the ActorSystem has been terminated.
+   * The `ActorSystem` can be stopped with [[ActorSystem.terminate]]
    * or by stopping the guardian actor.
+   *
+   * Be careful to not schedule any operations, such as `onComplete`, on the dispatchers (`ExecutionContext`)
+   * of this actor system as they will have been shut down before this future completes.
    */
   def whenTerminated: Future[Done]
 
@@ -126,6 +129,9 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    * Java API: Returns a CompletionStage which will be completed after the ActorSystem has been terminated
    * and termination hooks have been executed. The `ActorSystem` can be stopped with [[ActorSystem.terminate]]
    * or by stopping the guardian actor.
+   *
+   * Be careful to not schedule any operations, such as `thenRunAsync`, on the dispatchers (`Executor`) of this
+   * actor system as they will have been shut down before this CompletionStage completes.
    */
   def getWhenTerminated: CompletionStage[Done]
 

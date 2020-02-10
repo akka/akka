@@ -11,7 +11,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedSequenceNumberSpec {
 
@@ -26,7 +26,7 @@ object EventSourcedSequenceNumberSpec {
 
 class EventSourcedSequenceNumberSpec
     extends ScalaTestWithActorTestKit(EventSourcedSequenceNumberSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   private def behavior(pid: PersistenceId, probe: ActorRef[String]): Behavior[String] =

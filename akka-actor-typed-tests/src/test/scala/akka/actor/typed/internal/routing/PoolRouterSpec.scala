@@ -7,7 +7,7 @@ package akka.actor.typed.internal.routing
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit }
 import akka.actor.typed.{ ActorRef, Behavior, DispatcherSelector }
 import akka.actor.typed.scaladsl.{ Behaviors, Routers }
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object PoolRouterSpec {
 
@@ -23,7 +23,7 @@ object PoolRouterSpec {
   }
 }
 
-class PoolRouterSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class PoolRouterSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
   import PoolRouterSpec.RouteeBehavior
   import RouteeBehavior.WhichDispatcher
 

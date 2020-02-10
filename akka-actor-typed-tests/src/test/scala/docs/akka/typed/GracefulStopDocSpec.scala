@@ -16,7 +16,7 @@ import akka.actor.typed.ActorRef
 import org.slf4j.Logger
 import scala.concurrent.duration._
 import scala.concurrent.Await
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.typed.Terminated
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -132,7 +132,7 @@ object GracefulStopDocSpec {
 
 }
 
-class GracefulStopDocSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class GracefulStopDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import GracefulStopDocSpec._
 

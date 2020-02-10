@@ -10,10 +10,10 @@ import akka.actor.ActorSystem
 import akka.discovery.ServiceDiscovery.Resolved
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DiscoveryConfigurationSpec extends WordSpec with Matchers {
+class DiscoveryConfigurationSpec extends AnyWordSpec with Matchers {
 
   "ServiceDiscovery" should {
     "throw when no default discovery configured" in {

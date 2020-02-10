@@ -11,11 +11,13 @@ import akka.testkit.TestKit
 import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.collection.immutable
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class StubbedServiceDiscovery(@unused system: ExtendedActorSystem) extends ServiceDiscovery {
 
@@ -76,7 +78,7 @@ object AggregateServiceDiscoverySpec {
 
 class AggregateServiceDiscoverySpec
     extends TestKit(ActorSystem("AggregateDiscoverySpec", AggregateServiceDiscoverySpec.config))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures {

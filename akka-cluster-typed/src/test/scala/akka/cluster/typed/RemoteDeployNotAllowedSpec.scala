@@ -13,7 +13,7 @@ import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object RemoteDeployNotAllowedSpec {
   def config = ConfigFactory.parseString(s"""
@@ -44,7 +44,7 @@ object RemoteDeployNotAllowedSpec {
 
 class RemoteDeployNotAllowedSpec
     extends ScalaTestWithActorTestKit(RemoteDeployNotAllowedSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   "Typed cluster" must {

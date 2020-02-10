@@ -18,7 +18,7 @@ import akka.persistence.typed.SnapshotAdapter
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedSnapshotAdapterSpec {
   private val conf: Config = ConfigFactory.parseString(s"""
@@ -35,7 +35,7 @@ object EventSourcedSnapshotAdapterSpec {
 
 class EventSourcedSnapshotAdapterSpec
     extends ScalaTestWithActorTestKit(EventSourcedSnapshotAdapterSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
   import EventSourcedSnapshotAdapterSpec._
   import akka.actor.typed.scaladsl.adapter._

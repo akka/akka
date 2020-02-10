@@ -13,7 +13,8 @@ import akka.cluster.{ ClusterEvent, MemberStatus }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.WatchedByCoroner
-import org.scalatest.{ Matchers, Suite }
+import org.scalatest.Suite
+import org.scalatest.matchers.should.Matchers
 
 import scala.concurrent.duration._
 import scala.language.implicitConversions

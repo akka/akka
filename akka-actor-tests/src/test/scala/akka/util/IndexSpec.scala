@@ -5,12 +5,12 @@
 package akka.util
 
 import java.util.Comparator
-import org.scalatest.Matchers
 import scala.concurrent.Future
 import akka.testkit.AkkaSpec
 import scala.concurrent.Await
 import scala.util.Random
 import akka.testkit.DefaultTimeout
+import org.scalatest.matchers.should.Matchers
 
 class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
   implicit val ec = system.dispatcher

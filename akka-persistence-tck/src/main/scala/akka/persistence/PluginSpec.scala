@@ -11,10 +11,12 @@ import akka.testkit._
 import com.typesafe.config._
 import org.scalatest._
 import java.util.UUID
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 abstract class PluginSpec(val config: Config)
     extends TestKitBase
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with BeforeAndAfterEach {

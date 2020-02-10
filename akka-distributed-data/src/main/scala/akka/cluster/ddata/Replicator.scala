@@ -1544,11 +1544,12 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         case None                                  => NotFound(key, req)
       }
       replyTo ! reply
-    } else
+    } else {
       context.actorOf(
         ReadAggregator
           .props(key, consistency, req, selfUniqueAddress, nodes, unreachable, localValue, replyTo)
           .withDispatcher(context.props.dispatcher))
+    }
   }
 
   def isLocalGet(readConsistency: ReadConsistency): Boolean =

@@ -13,15 +13,12 @@ import akka.actor.typed.Props;
 import akka.actor.typed.javadsl.Behaviors;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 import org.slf4j.event.Level;
 
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Optional;
-import java.util.function.Function;
 import java.util.stream.IntStream;
 
 import static org.junit.Assert.assertEquals;

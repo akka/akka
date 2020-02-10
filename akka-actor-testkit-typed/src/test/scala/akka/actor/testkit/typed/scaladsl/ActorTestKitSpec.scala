@@ -10,11 +10,10 @@ import scala.concurrent.Promise
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
-import org.scalatest.WordSpecLike
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
 
-class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class ActorTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "the Scala testkit" should {
 
@@ -86,12 +85,19 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with WordSpecLike with 
       scalaTestWithActorTestKit2.testKit.system.settings.config.hasPath("test.from-application") should ===(false)
     }
 
+    "have unique names for probes across untyped testkit" in {
+      import akka.actor.typed.scaladsl.adapter._
+      createTestProbe()
+      akka.testkit.TestProbe()(system.toClassic)
+      // not throw
+    }
+
   }
 
 }
 
 // derivative classes should also work fine (esp the naming part
-abstract class MyBaseSpec extends ScalaTestWithActorTestKit with Matchers with WordSpecLike with LogCapturing
+abstract class MyBaseSpec extends ScalaTestWithActorTestKit with Matchers with AnyWordSpecLike with LogCapturing
 
 class MyConcreteDerivateSpec extends MyBaseSpec {
   "A derivative test" should {
@@ -116,7 +122,7 @@ class MyConcreteDerivateSpec extends MyBaseSpec {
 
 }
 
-class CompositionSpec extends WordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
+class CompositionSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with LogCapturing {
   val testKit = ActorTestKit()
 
   override def afterAll(): Unit = {

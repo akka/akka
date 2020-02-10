@@ -10,7 +10,7 @@ import org.junit.Test;
 
 import java.util.concurrent.Flow;
 
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class JavaFlowSupportCompileTest extends JUnitSuite {
   @Test

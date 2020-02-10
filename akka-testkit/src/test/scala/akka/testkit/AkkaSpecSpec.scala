@@ -5,8 +5,6 @@
 package akka.testkit
 
 import language.postfixOps
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import akka.actor._
 import com.typesafe.config.ConfigFactory
 
@@ -15,9 +13,11 @@ import scala.concurrent.duration._
 import akka.actor.DeadLetter
 import akka.pattern.ask
 import com.github.ghik.silencer.silent
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 @silent
-class AkkaSpecSpec extends WordSpec with Matchers {
+class AkkaSpecSpec extends AnyWordSpec with Matchers {
 
   "An AkkaSpec" must {
 

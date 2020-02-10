@@ -12,10 +12,11 @@ import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
 import akka.actor.testkit.typed.Effect._
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.{ Child, Parent }
 import akka.actor.testkit.typed.scaladsl.BehaviorTestKitSpec.Parent._
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.reflect.ClassTag
 import org.slf4j.event.Level
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object BehaviorTestKitSpec {
   object Parent {
@@ -122,7 +123,7 @@ object BehaviorTestKitSpec {
 
 }
 
-class BehaviorTestKitSpec extends WordSpec with Matchers with LogCapturing {
+class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   private val props = Props.empty.withDispatcherFromConfig("cat")
 

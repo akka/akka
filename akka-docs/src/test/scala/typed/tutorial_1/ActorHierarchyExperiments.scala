@@ -5,7 +5,7 @@
 package typed.tutorial_1
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.typed.PostStop
 import akka.actor.typed.PreRestart
 import akka.actor.typed.Signal
@@ -151,7 +151,7 @@ object ActorHierarchyExperiments extends App {
 }
 //#print-refs
 
-class ActorHierarchyExperiments extends ScalaTestWithActorTestKit with WordSpecLike {
+class ActorHierarchyExperiments extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 
   "ActorHierarchyExperiments" must {
 

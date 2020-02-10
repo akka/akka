@@ -18,7 +18,6 @@ import akka.event.Logging
 
 import scala.concurrent.Future
 import akka.actor.{ ActorLogging, ActorRef, ActorSystem, PoisonPill, Terminated }
-import org.scalatest.{ BeforeAndAfterAll, WordSpec }
 import akka.testkit._
 import akka.util._
 import scala.concurrent.duration._

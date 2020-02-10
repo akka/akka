@@ -25,8 +25,8 @@ import akka.cluster.typed.JoinSeedNodes
 import akka.cluster.typed.Leave
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(s"""
@@ -69,7 +69,7 @@ object ClusterReceptionistSpec {
   val AnotherKey = ServiceKey[PingProtocol]("pingy-2")
 }
 
-class ClusterReceptionistSpec extends WordSpec with Matchers with LogCapturing {
+class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   import ClusterReceptionistSpec._
   import Receptionist._

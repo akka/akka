@@ -10,10 +10,12 @@ import akka.discovery.ServiceDiscovery.ResolvedTarget
 import akka.testkit.TestKit
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
 
 import scala.concurrent.duration._
 import scala.collection.immutable
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ConfigServiceDiscoverySpec {
 
@@ -48,7 +50,7 @@ akka {
 
 class ConfigServiceDiscoverySpec
     extends TestKit(ActorSystem("ConfigDiscoverySpec", ConfigServiceDiscoverySpec.config))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ScalaFutures {

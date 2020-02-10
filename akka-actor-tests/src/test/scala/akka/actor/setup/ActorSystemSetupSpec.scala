@@ -6,13 +6,14 @@ package akka.actor.setup
 
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 case class DummySetup(name: String) extends Setup
 case class DummySetup2(name: String) extends Setup
 case class DummySetup3(name: String) extends Setup
 
-class ActorSystemSetupSpec extends WordSpec with Matchers {
+class ActorSystemSetupSpec extends AnyWordSpec with Matchers {
 
   "The ActorSystemSettings" should {
 

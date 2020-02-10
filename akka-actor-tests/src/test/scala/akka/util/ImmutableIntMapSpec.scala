@@ -3,12 +3,12 @@
  */
 
 package akka.util
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
 
 import scala.util.Random
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ImmutableIntMapSpec extends WordSpec with Matchers {
+class ImmutableIntMapSpec extends AnyWordSpec with Matchers {
 
   "ImmutableIntMap" must {
 

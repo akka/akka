@@ -11,7 +11,7 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterSingletonPersistenceSpec {
   val config = ConfigFactory.parseString("""
@@ -49,7 +49,7 @@ object ClusterSingletonPersistenceSpec {
 
 class ClusterSingletonPersistenceSpec
     extends ScalaTestWithActorTestKit(ClusterSingletonPersistenceSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
   import ClusterSingletonPersistenceSpec._
   import akka.actor.typed.scaladsl.adapter._

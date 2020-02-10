@@ -28,7 +28,7 @@ import akka.serialization.jackson.CborSerializable
 import akka.util.Timeout
 import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 @ccompatUsedUntil213
 object ClusterShardingSpec {
@@ -113,7 +113,7 @@ object ClusterShardingSpec {
 
 class ClusterShardingSpec
     extends ScalaTestWithActorTestKit(ClusterShardingSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import ClusterShardingSpec._

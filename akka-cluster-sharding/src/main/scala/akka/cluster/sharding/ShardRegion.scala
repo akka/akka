@@ -6,6 +6,7 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 
+import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.concurrent.Future
@@ -506,6 +507,9 @@ private[akka] class ShardRegion(
   // sort by age, oldest first
   val ageOrdering = Member.ageOrdering
   var membersByAge: immutable.SortedSet[Member] = immutable.SortedSet.empty(ageOrdering)
+  // membersByAge contains members with these status
+  private val memberStatusOfInterest: Set[MemberStatus] =
+    Set(MemberStatus.Up, MemberStatus.Leaving, MemberStatus.Exiting)
 
   var regions = Map.empty[ActorRef, Set[ShardId]]
   var regionByShard = Map.empty[ShardId, ActorRef]
@@ -568,16 +572,26 @@ private[akka] class ShardRegion(
   def matchingRole(member: Member): Boolean =
     member.hasRole(targetDcRole) && role.forall(member.hasRole)
 
-  def coordinatorSelection: Option[ActorSelection] =
-    membersByAge.headOption.map(m => context.actorSelection(RootActorPath(m.address).toString + coordinatorPath))
-
   /**
    * When leaving the coordinator singleton is started rather quickly on next
-   * oldest node and therefore it is good to send the GracefulShutdownReq to
+   * oldest node and therefore it is good to send the Register and GracefulShutdownReq to
    * the likely locations of the coordinator.
    */
-  def gracefulShutdownCoordinatorSelections: List[ActorSelection] =
-    membersByAge.take(2).toList.map(m => context.actorSelection(RootActorPath(m.address).toString + coordinatorPath))
+  def coordinatorSelection: List[ActorSelection] = {
+    @tailrec def select(result: List[Member], remaining: immutable.SortedSet[Member]): List[Member] = {
+      if (remaining.isEmpty)
+        result
+      else {
+        val m = remaining.head
+        if (m.status == MemberStatus.Up)
+          m :: result
+        else
+          select(m :: result, remaining.tail)
+      }
+    }
+
+    select(Nil, membersByAge).map(m => context.actorSelection(RootActorPath(m.address).toString + coordinatorPath))
+  }
 
   var coordinator: Option[ActorRef] = None
 
@@ -616,14 +630,16 @@ private[akka] class ShardRegion(
     changeMembers(
       immutable.SortedSet
         .empty(ageOrdering)
-        .union(state.members.filter(m => m.status == MemberStatus.Up && matchingRole(m))))
+        .union(state.members.filter(m => memberStatusOfInterest(m.status) && matchingRole(m))))
   }
 
   def receiveClusterEvent(evt: ClusterDomainEvent): Unit = evt match {
     case MemberUp(m) =>
-      if (matchingRole(m))
-        // replace, it's possible that the upNumber is changed
-        changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress) + m)
+      addMember(m)
+    case MemberLeft(m) =>
+      addMember(m)
+    case MemberExited(m) =>
+      addMember(m)
 
     case MemberRemoved(m, _) =>
       if (m.uniqueAddress == cluster.selfUniqueAddress)
@@ -640,6 +656,13 @@ private[akka] class ShardRegion(
     case _: MemberEvent => // these are expected, no need to warn about them
 
     case _ => unhandled(evt)
+  }
+
+  private def addMember(m: Member): Unit = {
+    if (matchingRole(m) && memberStatusOfInterest(m.status)) {
+      // replace, it's possible that the status, or upNumber is changed
+      changeMembers(membersByAge.filterNot(_.uniqueAddress == m.uniqueAddress) + m)
+    }
   }
 
   def receiveCoordinatorMessage(msg: CoordinatorMessage): Unit = msg match {
@@ -862,23 +885,34 @@ private[akka] class ShardRegion(
   }
 
   def register(): Unit = {
-    coordinatorSelection.foreach(_ ! registrationMessage)
-    if (shardBuffers.nonEmpty && retryCount >= 5) coordinatorSelection match {
-      case Some(actorSelection) =>
+    val actorSelections = coordinatorSelection
+    actorSelections.foreach(_ ! registrationMessage)
+    if (shardBuffers.nonEmpty && retryCount >= 5) {
+      if (actorSelections.nonEmpty) {
         val coordinatorMessage =
           if (cluster.state.unreachable(membersByAge.head)) s"Coordinator [${membersByAge.head}] is unreachable."
           else s"Coordinator [${membersByAge.head}] is reachable."
         log.warning(
           "{}: Trying to register to coordinator at [{}], but no acknowledgement. Total [{}] buffered messages. [{}]",
           typeName,
-          actorSelection,
+          actorSelections.mkString(", "),
           shardBuffers.totalSize,
           coordinatorMessage)
-      case None =>
+      } else {
+        // Members start off as "Removed"
+        val partOfCluster = cluster.selfMember.status != MemberStatus.Removed
+        val possibleReason =
+          if (partOfCluster)
+            "Has Cluster Sharding been started on every node and nodes been configured with the correct role(s)?"
+          else
+            "Probably, no seed-nodes configured and manual cluster or bootstrap join not performed?"
+
         log.warning(
-          "{}: No coordinator found to register. Probably, no seed-nodes configured and manual cluster join not performed? Total [{}] buffered messages.",
+          "{}: No coordinator found to register. {} Total [{}] buffered messages.",
           typeName,
+          possibleReason,
           shardBuffers.totalSize)
+      }
     }
   }
 
@@ -1067,6 +1101,6 @@ private[akka] class ShardRegion(
 
   def sendGracefulShutdownToCoordinator(): Unit = {
     if (gracefulShutdownInProgress)
-      gracefulShutdownCoordinatorSelections.foreach(_ ! GracefulShutdownReq(self))
+      coordinatorSelection.foreach(_ ! GracefulShutdownReq(self))
   }
 }

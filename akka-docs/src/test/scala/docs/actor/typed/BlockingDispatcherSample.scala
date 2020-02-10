@@ -59,12 +59,9 @@ object BlockingDispatcherSample {
   def main(args: Array[String]): Unit = {
     // #blocking-main
     val root = Behaviors.setup[Nothing] { context =>
-      val actor1 = context.spawn(BlockingFutureActor(), "futureActor")
-      val actor2 = context.spawn(PrintActor(), "printActor")
-
       for (i <- 1 to 100) {
-        actor1 ! i
-        actor2 ! i
+        context.spawn(BlockingFutureActor(), s"futureActor-$i") ! i
+        context.spawn(PrintActor(), s"printActor-$i") ! i
       }
       Behaviors.empty
     }
@@ -91,12 +88,9 @@ object SeparateDispatcherSample {
 
     // #separate-dispatcher-main
     val root = Behaviors.setup[Nothing] { context =>
-      val actor1 = context.spawn(SeparateDispatcherFutureActor(), "futureActor")
-      val actor2 = context.spawn(PrintActor(), "printActor")
-
       for (i <- 1 to 100) {
-        actor1 ! i
-        actor2 ! i
+        context.spawn(SeparateDispatcherFutureActor(), s"futureActor-$i") ! i
+        context.spawn(PrintActor(), s"printActor-$i") ! i
       }
       Behaviors.ignore
     }

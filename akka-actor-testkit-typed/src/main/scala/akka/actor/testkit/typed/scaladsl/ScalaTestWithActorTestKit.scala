@@ -7,10 +7,11 @@ package akka.actor.testkit.typed.scaladsl
 import akka.actor.testkit.typed.TestKitSettings
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest._
+import org.scalatest.{ BeforeAndAfterAll, TestSuite }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.Span
+import org.scalatest.matchers.should.Matchers
 
 /**
  * A ScalaTest base class for the [[ActorTestKit]], making it possible to have ScalaTest manage the lifecycle of the testkit.

@@ -7,7 +7,6 @@ package docs.io
 import java.net.Inet6Address
 import java.net.NetworkInterface
 
-import akka.Done
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.io.Udp
@@ -15,14 +14,14 @@ import akka.testkit.SocketUtil
 import akka.testkit.TestKit
 import akka.util.ccompat.JavaConverters._
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.util.Random
 
 class ScalaUdpMulticastSpec
     extends TestKit(ActorSystem("ScalaUdpMulticastSpec"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
 

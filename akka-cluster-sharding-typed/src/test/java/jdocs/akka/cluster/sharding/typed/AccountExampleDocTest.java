@@ -27,7 +27,7 @@ import akka.persistence.journal.inmem.InmemJournal;
 
 // #test-events
 
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity;
 

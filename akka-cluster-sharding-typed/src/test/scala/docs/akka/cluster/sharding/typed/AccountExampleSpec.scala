@@ -6,7 +6,6 @@ package docs.akka.cluster.sharding.typed
 
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
@@ -15,7 +14,7 @@ import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object AccountExampleSpec {
   val config = ConfigFactory.parseString("""
@@ -33,7 +32,7 @@ object AccountExampleSpec {
 
 class AccountExampleSpec
     extends ScalaTestWithActorTestKit(AccountExampleSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
   import AccountExampleWithEventHandlersInState.AccountEntity
   import AccountExampleWithEventHandlersInState.AccountEntity._

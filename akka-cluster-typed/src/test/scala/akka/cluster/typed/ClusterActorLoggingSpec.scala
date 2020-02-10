@@ -11,8 +11,8 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.internal.ActorMdc
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
-import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterActorLoggingSpec {
   def config = ConfigFactory.parseString("""
@@ -25,7 +25,7 @@ object ClusterActorLoggingSpec {
 
 class ClusterActorLoggingSpec
     extends ScalaTestWithActorTestKit(ClusterActorLoggingSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with LogCapturing {
 

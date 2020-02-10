@@ -5,10 +5,10 @@
 package akka.util
 
 import akka.actor.{ ActorPath, ActorRef, ActorRefProvider, MinimalActorRef }
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MessageBufferSpec extends WordSpec with Matchers {
+class MessageBufferSpec extends AnyWordSpec with Matchers {
 
   import MessageBufferSpec._
 

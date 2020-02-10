@@ -70,7 +70,6 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     "orElseGraph",
     "divertToGraph",
     "zipWithGraph",
-    "actorRefWithAck" // deprecated
   )
 
   // FIXME document these methods as well
@@ -99,12 +98,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "actorSubscriber",
       "foldAsync",
       "newOnCompleteStage",
-      "actorRefWithAck" // deprecated
-    ),
-    "ActorSink" -> Seq("actorRefWithAck" // deprecated
-    ),
-    "ActorSource" -> Seq("actorRefWithAck" // deprecated
-    ))
+    )
+  )
 
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++

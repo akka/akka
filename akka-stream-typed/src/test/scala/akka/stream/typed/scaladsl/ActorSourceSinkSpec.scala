@@ -11,7 +11,7 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.actor.testkit.typed.scaladsl._
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ActorSourceSinkSpec {
 
@@ -22,7 +22,7 @@ object ActorSourceSinkSpec {
   case object Failed extends AckProto
 }
 
-class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class ActorSourceSinkSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
   import ActorSourceSinkSpec._
 
   "ActorSink" should {

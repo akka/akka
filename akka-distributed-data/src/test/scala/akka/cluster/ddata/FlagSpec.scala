@@ -5,10 +5,10 @@
 package akka.cluster.ddata
 
 import akka.cluster.ddata.Replicator.Changed
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class FlagSpec extends WordSpec with Matchers {
+class FlagSpec extends AnyWordSpec with Matchers {
 
   "A Flag" must {
 

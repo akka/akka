@@ -11,11 +11,11 @@ import akka.cluster.sharding.ShardRegion.{ CurrentShardRegionState, ShardState }
 import akka.cluster.sharding.typed.scaladsl.ClusterShardingSpec._
 import akka.cluster.sharding.typed.{ GetShardRegionState, ShardingMessageExtractor }
 import akka.cluster.typed.{ Cluster, Join }
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class ClusterShardingStateSpec
     extends ScalaTestWithActorTestKit(ClusterShardingSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   val sharding = ClusterSharding(system)

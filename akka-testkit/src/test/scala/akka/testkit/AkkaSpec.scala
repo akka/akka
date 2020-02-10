@@ -9,8 +9,9 @@ import java.lang.reflect.Modifier
 import org.scalactic.{ CanEqual, TypeCheckedTripleEquals }
 
 import language.postfixOps
-import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
-import org.scalatest.Matchers
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.ActorSystem
 import akka.event.{ Logging, LoggingAdapter }
 
@@ -92,7 +93,7 @@ object AkkaSpec {
 
 abstract class AkkaSpec(_system: ActorSystem)
     extends TestKit(_system)
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with WatchedByCoroner

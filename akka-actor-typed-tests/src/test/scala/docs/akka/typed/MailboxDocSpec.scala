@@ -11,11 +11,11 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.MailboxSelector
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class MailboxDocSpec
     extends ScalaTestWithActorTestKit(ConfigFactory.load("mailbox-config-sample.conf"))
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   "Specifying mailbox through props" must {

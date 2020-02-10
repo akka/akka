@@ -84,7 +84,9 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
     Await.result(started, materializerTimeout.duration).materializer
   }
 
-  // block on async creation to make it effectively final
-  val materializer = Await.result(systemMaterializerPromise.future, materializerTimeout.duration)
+  val materializer: Materializer = {
+    // block on async creation to make it effectively final
+    Await.result(systemMaterializerPromise.future, materializerTimeout.duration)
+  }
 
 }

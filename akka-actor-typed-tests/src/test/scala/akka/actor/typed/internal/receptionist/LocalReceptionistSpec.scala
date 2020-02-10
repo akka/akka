@@ -17,7 +17,8 @@ import akka.actor.typed.receptionist.Receptionist._
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.{ Matchers, WordSpec, WordSpecLike }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
 
 object LocalReceptionistSpec {
   trait ServiceA
@@ -38,7 +39,7 @@ object LocalReceptionistSpec {
 
 }
 
-class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class LocalReceptionistSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
   import LocalReceptionistSpec._
 
   "A local receptionist" must {
@@ -193,7 +194,7 @@ class LocalReceptionistSpec extends ScalaTestWithActorTestKit with WordSpecLike 
   }
 }
 
-class LocalReceptionistBehaviorSpec extends WordSpec with Matchers with LogCapturing {
+class LocalReceptionistBehaviorSpec extends AnyWordSpec with Matchers with LogCapturing {
   import LocalReceptionistSpec._
 
   def assertEmpty(inboxes: TestInbox[_]*): Unit = {

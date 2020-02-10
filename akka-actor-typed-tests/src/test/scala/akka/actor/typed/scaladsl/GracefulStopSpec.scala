@@ -10,9 +10,9 @@ import akka.NotUsed
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
-final class GracefulStopSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+final class GracefulStopSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "Graceful stop" must {
 

@@ -467,7 +467,7 @@ object EntityTypeKey {
    *
    * Please note that an implicit [[akka.util.Timeout]] must be available to use this pattern.
    *
-   * Note: it is preferrable to use the non-symbolic ask method as it easier allows for wildcards for
+   * Note: it is preferable to use the non-symbolic ask method as it easier allows for wildcards for
    * the `replyTo: ActorRef`.
    *
    * @tparam Res The response protocol, what the other actor sends back

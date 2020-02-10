@@ -6,9 +6,10 @@ package akka.actor
 
 import java.net.MalformedURLException
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ActorPathSpec extends WordSpec with Matchers {
+class ActorPathSpec extends AnyWordSpec with Matchers {
 
   "An ActorPath" must {
 

@@ -19,7 +19,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object PerformanceSpec {
 
@@ -117,7 +117,7 @@ class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshots-PerformanceSpec/"
       akka.test.single-expect-default = 10s
-      """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with WordSpecLike with LogCapturing {
+      """).withFallback(ConfigFactory.parseString(PerformanceSpec.config))) with AnyWordSpecLike with LogCapturing {
 
   import PerformanceSpec._
 

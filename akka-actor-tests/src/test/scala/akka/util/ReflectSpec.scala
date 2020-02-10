@@ -4,9 +4,9 @@
 
 package akka.util
 
-import org.scalatest.{ Matchers, WordSpec }
-
 import scala.collection.immutable
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object ReflectSpec {
   final class A
@@ -21,7 +21,7 @@ object ReflectSpec {
   }
 }
 
-class ReflectSpec extends WordSpec with Matchers {
+class ReflectSpec extends AnyWordSpec with Matchers {
 
   import akka.util.ReflectSpec._
 

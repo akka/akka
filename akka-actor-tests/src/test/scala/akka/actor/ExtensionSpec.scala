@@ -9,12 +9,12 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.testkit.EventFilter
 import akka.testkit.TestKit._
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpec }
-import org.scalatest.junit.JUnitSuiteLike
 
 import scala.util.control.NoStackTrace
-
 import com.github.ghik.silencer.silent
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.junit.JUnitSuiteLike
 @silent
 class JavaExtensionSpec extends JavaExtension with JUnitSuiteLike
 
@@ -54,7 +54,7 @@ class FailingTestExtension(val system: ExtendedActorSystem) extends Extension {
   throw new FailingTestExtension.TestException
 }
 
-class ExtensionSpec extends WordSpec with Matchers {
+class ExtensionSpec extends AnyWordSpec with Matchers {
 
   "The ActorSystem extensions support" should {
 

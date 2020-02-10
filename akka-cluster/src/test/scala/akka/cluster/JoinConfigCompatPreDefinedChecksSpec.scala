@@ -5,11 +5,12 @@
 package akka.cluster
 
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.collection.{ immutable => im }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class JoinConfigCompatPreDefinedChecksSpec extends WordSpec with Matchers {
+class JoinConfigCompatPreDefinedChecksSpec extends AnyWordSpec with Matchers {
 
   // Test for some of the pre-build helpers we offer
   "JoinConfigCompatChecker.exists" must {

@@ -11,9 +11,9 @@ import akka.actor.typed.scaladsl.{ Behaviors, GroupRouter, Routers }
 import akka.serialization.jackson.CborSerializable
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
 
 import scala.concurrent.Promise
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object GroupRouterSpec {
   def config = ConfigFactory.parseString(s"""
@@ -62,7 +62,7 @@ object GroupRouterSpec {
 
 }
 
-class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) with WordSpecLike with LogCapturing {
+class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) with AnyWordSpecLike with LogCapturing {
   import GroupRouterSpec._
 
   def checkGroupRouterBehavior[T](groupRouter: GroupRouter[Ping.type], settings: GroupRouterSpecSettings)(

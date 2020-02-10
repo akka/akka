@@ -4,13 +4,12 @@
 
 package akka.cluster.metrics
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
-
 import akka.actor.Address
 import akka.cluster.metrics.StandardMetrics._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MetricsSelectorSpec extends WordSpec with Matchers {
+class MetricsSelectorSpec extends AnyWordSpec with Matchers {
 
   val factor = 0.3 // TODO read from reference.conf
 

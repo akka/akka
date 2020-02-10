@@ -6,14 +6,10 @@ package docs.dispatcher
 
 import language.postfixOps
 
-import org.scalatest.{ BeforeAndAfterAll, WordSpec }
-import org.scalatest.Matchers
 import akka.testkit.AkkaSpec
 import akka.event.Logging
 import akka.event.LoggingAdapter
 import akka.actor._
-import docs.dispatcher.DispatcherDocSpec.MyBoundedActor
-import akka.dispatch.RequiresMessageQueue
 
 object DispatcherDocSpec {
   val javaConfig = """
@@ -92,6 +88,22 @@ object DispatcherDocSpec {
       throughput = 100
     }
     //#my-thread-pool-dispatcher-config
+    
+    //#my-dispatcher-with-timeouts-config
+    my-dispatcher-with-timeouts {
+      type = Dispatcher
+      executor = "thread-pool-executor"
+      thread-pool-executor {
+        fixed-pool-size = 16
+        # Keep alive time for threads
+        keep-alive-time = 60s
+        # Allow core threads to time out
+        allow-core-timeout = off
+      }
+      # How long time the dispatcher will wait for new actors until it shuts down
+      shutdown-timeout = 60s
+    }
+    //#my-dispatcher-with-timeouts-config
 
     //#affinity-pool-dispatcher-config
     affinity-pool-dispatcher {

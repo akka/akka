@@ -8,8 +8,8 @@ import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Matchers
 import org.scalatest.Suite
+import org.scalatest.matchers.should.Matchers
 
 trait CodecSpecSupport extends Matchers with BeforeAndAfterAll { self: Suite =>
 

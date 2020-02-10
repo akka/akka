@@ -16,8 +16,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.util.Timeout
 //#test-header
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 //#test-header
 import scala.concurrent.duration._
@@ -60,7 +60,7 @@ object AsyncTestingExampleSpec {
 
 //#test-header
 class AsyncTestingExampleSpec
-    extends WordSpec
+    extends AnyWordSpec
     with BeforeAndAfterAll
     //#test-header
     with LogCapturing

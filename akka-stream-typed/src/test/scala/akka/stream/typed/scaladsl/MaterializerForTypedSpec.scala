@@ -11,12 +11,12 @@ import akka.stream.AbruptStageTerminationException
 import akka.stream.Materializer
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import org.scalatest.WordSpecLike
 
 import scala.concurrent.Future
 import scala.util.Success
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class MaterializerForTypedSpec extends ScalaTestWithActorTestKit with WordSpecLike {
+class MaterializerForTypedSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
 
   "Materialization in typed" should {
 
