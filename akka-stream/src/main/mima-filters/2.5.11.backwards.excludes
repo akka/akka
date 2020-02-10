@@ -15,3 +15,6 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowO
 
 # #24699 throttle overload
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.throttle")
+
+# ??, only on 2.11
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.stage.GraphStageWithMaterializedValue.createLogicAndMaterializedValue")

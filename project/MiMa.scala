@@ -26,7 +26,11 @@ object MiMa extends AutoPlugin {
       scalaBinaryVersion: String): Set[sbt.ModuleID] = {
     val versions: Seq[String] = {
       val akka24NoStreamVersions = Seq("2.4.0", "2.4.1")
-      val akka25Versions = (0 to latestPatchOf25).map(patch => s"2.5.$patch")
+      // 2.5.18 is the only release built with Scala 2.12.7, which due to
+      // https://github.com/scala/bug/issues/11207 produced many more
+      // static methods than expected. These are hard to filter out, so
+      // we exclude it here and rely on the checks for 2.5.17 and 2.5.19.
+      val akka25Versions = ((0 to latestPatchOf25).toSet - 18).toSeq.map(patch => s"2.5.$patch")
       val akka24StreamVersions = (2 to 12).map("2.4." + _)
       val akka25DiscoveryVersions = (19 to latestPatchOf25).map(patch => s"2.5.$patch")
       val akka25CoordinationVersions = (22 to latestPatchOf25).map(patch => s"2.5.$patch")

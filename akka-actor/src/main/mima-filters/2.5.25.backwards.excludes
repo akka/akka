@@ -1,0 +1,4 @@
+# #27411 changes not caught by previous mima versions
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.actor.TypedActor.apply")
+## TimerMode parameter
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.FSM#Timer.unapply")

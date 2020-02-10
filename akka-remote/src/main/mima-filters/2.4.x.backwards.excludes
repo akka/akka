@@ -10,7 +10,7 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.routing.RemoteRo
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.serialization.ProtobufSerializer.ARRAY_OF_BYTE_ARRAY")
 
 # #21423 remove deprecated constructor in DeadlineFailureDetector
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.remote.DeadlineFailureDetector.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.remote.DeadlineFailureDetector.this")
 
 # #22015 removal of deprecated AESCounterSecureInetRNGs
 ProblemFilters.exclude[MissingClassProblem]("akka.remote.security.provider.AES128CounterInetRNG")

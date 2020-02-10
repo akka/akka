@@ -8,3 +8,6 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.AbstractActor#A
 # #24989 Fix NotInfluenceReceiveTimeout behavior when used with Timers trait
 ProblemFilters.exclude[IncompatibleTemplateDefProblem]("akka.actor.TimerSchedulerImpl$TimerMsg")
 ProblemFilters.exclude[MissingClassProblem]("akka.actor.TimerSchedulerImpl$TimerMsg$")
+
+# #27411 changes not caught by previous mima versions
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.serialization.Serialization.withTransportInformation")

@@ -1,5 +1,7 @@
 # #20795  IOResult construction exposed
 ProblemFilters.exclude[MissingTypesProblem]("akka.stream.IOResult$")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.IOResult.tupled")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.IOResult.curried")
 
 # #21727 moved all of Unfold.scala in package akka.stream.impl
 ProblemFilters.exclude[MissingClassProblem]("akka.stream.scaladsl.UnfoldAsync")

@@ -17,7 +17,6 @@ object Dependencies {
   val junitVersion = "4.12"
   val sslConfigVersion = "0.3.8"
   val slf4jVersion = "1.7.25"
-  val scalaXmlVersion = "1.0.6"
   val aeronVersion = "1.15.1"
 
   val Versions = Seq(
@@ -51,7 +50,6 @@ object Dependencies {
     val netty = "io.netty" % "netty" % "3.10.6.Final" // ApacheV2
     val scalaStm = Def.setting { "org.scala-stm" %% "scala-stm" % scalaStmVersion.value } // Modified BSD (Scala)
 
-    val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion // Scala License
     val scalaReflect = ScalaVersionDependentModuleID.versioned("org.scala-lang" % "scala-reflect" % _) // Scala License
 
     val slf4jApi = "org.slf4j" % "slf4j-api" % slf4jVersion // MIT
@@ -98,7 +96,6 @@ object Dependencies {
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
       val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "1.0.0" % "test" // ApacheV2
       val log4j = "log4j" % "log4j" % "1.2.17" % "test" // ApacheV2
-      val scalaXml = "org.scala-lang.modules" %% "scala-xml" % scalaXmlVersion % "test"
 
       // in-memory filesystem for file related tests
       val jimfs = "com.google.jimfs" % "jimfs" % "1.1" % "test" // ApacheV2
@@ -170,7 +167,7 @@ object Dependencies {
 
   val remote = l ++= Seq(netty, aeronDriver, aeronClient, Test.junit, Test.scalatest.value, Test.jimfs)
 
-  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value, Test.scalaXml)
+  val remoteTests = l ++= Seq(Test.junit, Test.scalatest.value)
 
   val cluster = l ++= Seq(Test.junit, Test.scalatest.value)
 
@@ -197,8 +194,7 @@ object Dependencies {
         Test.scalatest.value,
         Test.junit,
         Test.commonsIo,
-        Test.commonsCodec,
-        Test.scalaXml)
+        Test.commonsCodec)
 
   val persistenceQuery = l ++= Seq(
         Test.scalatest.value,

@@ -27,3 +27,7 @@ ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowO
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleaveGraph$default$3")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.stream.scaladsl.FlowOps.interleave")
 ProblemFilters.exclude[DirectMissingMethodProblem]("akka.stream.impl.SubFlowImpl.interleaveGraph")
+
+# #27411 changes not caught by previous mima versions
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.Shape.outlets")
+ProblemFilters.exclude[DirectAbstractMethodProblem]("akka.stream.Shape.inlets")

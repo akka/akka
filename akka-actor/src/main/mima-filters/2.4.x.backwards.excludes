@@ -46,7 +46,9 @@ ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.ActorPath.Element
 # #21423 remove some deprecated event bus classes
 ProblemFilters.exclude[MissingClassProblem]("akka.event.ActorClassification")
 ProblemFilters.exclude[MissingClassProblem]("akka.event.EventStream$")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.event.EventStream.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.event.EventStream.this")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.event.EventStream.<init>$default$1")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.event.EventStream.fromActorSystem")
 ProblemFilters.exclude[MissingClassProblem]("akka.event.japi.ActorEventBus")
 
 # #21423 remove deprecated util.Crypt
