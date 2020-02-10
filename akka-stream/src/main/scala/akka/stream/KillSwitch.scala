@@ -292,8 +292,9 @@ final class SharedKillSwitch private[stream] (val name: String) extends KillSwit
     override def createLogicAndMaterializedValue(
         inheritedAttributes: Attributes): (GraphStageLogic, SharedKillSwitch) = {
       val shutdownListener = terminationSignal.createListener()
-      val logic = new KillSwitches.KillableGraphStageLogic(shutdownListener.future, shape) with InHandler
-      with OutHandler {
+      val logic = new KillSwitches.KillableGraphStageLogic(shutdownListener.future, shape)
+        with InHandler
+        with OutHandler {
         setHandler(shape.in, this)
         setHandler(shape.out, this)
 
