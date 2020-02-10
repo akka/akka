@@ -61,15 +61,14 @@ private[io] class UdpConnection(
   }
 
   def doConnect(@unused address: InetSocketAddress): Unit = {
-    reportConnectFailure {
-      channel = DatagramChannel.open
-      channel.configureBlocking(false)
-      val socket = channel.socket
-      options.foreach(_.beforeDatagramBind(socket))
-      localAddress.foreach(socket.bind)
-      channel.connect(remoteAddress)
-      channelRegistry.register(channel, OP_READ)
-    }
+    channel = DatagramChannel.open
+    channel.configureBlocking(false)
+    val socket = channel.socket
+    options.foreach(_.beforeDatagramBind(socket))
+    localAddress.foreach(socket.bind)
+    channel.connect(remoteAddress)
+    channelRegistry.register(channel, OP_READ)
+
     log.debug("Successfully connected to [{}]", remoteAddress)
   }
 
