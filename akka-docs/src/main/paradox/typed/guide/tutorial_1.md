@@ -32,7 +32,7 @@ In fact, before your first actor is started, Akka has already created two actors
  
 The easiest way to see the actor hierarchy in action is to print `ActorRef` instances. In this small experiment, we create an actor, print its reference, create a child of this actor, and print the child's reference. We start with the Hello World project, if you have not downloaded it, download the Quickstart project from the @scala[[Lightbend Tech Hub](https://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-scala)]@java[[Lightbend Tech Hub](https://developer.lightbend.com/start/?group=akka&amp;project=akka-quickstart-java)].
 
-In your Hello World project, navigate to the `com.example` package and create a new @scala[Scala file called `ActorHierarchyExperiments.scala`]@java[Java file called `ActorHierarchyExperiments.java`] here. Copy and paste the code from the snippet below to this new source file. Save your file and run `sbt "runMain com.example.ActorHierarchyExperiments"` to observe the output.
+In your Hello World project, navigate to the `com.example` package and create @scala[a new Scala file called `ActorHierarchyExperiments.scala` here. Copy and paste the code from the snippet below to this new source file]@java[a Java file for each of the classes in the snippet below and copy the respective contents]. Save your @scala[file and run `sbt "runMain com.example.ActorHierarchyExperiments"`]@java[files and run `com.example.ActorHierarchyExperiments` from your build tool or IDE] to observe the output.
 
 Scala
 :   @@snip [ActorHierarchyExperiments.scala](/akka-docs/src/test/scala/typed/tutorial_1/ActorHierarchyExperiments.scala) { #print-refs }
@@ -65,7 +65,7 @@ This behavior greatly simplifies resource cleanup and helps avoid resource leaks
 
 To stop an actor, the recommended pattern is to return `Behaviors.stopped()` inside the actor to stop itself, usually as a response to some user defined stop message or when the actor is done with its job. Stopping a child actor is technically possible by calling `context.stop(childRef)` from the parent, but it's not possible to stop arbitrary (non-child) actors this way.
 
-The Akka actor API exposes some lifecycle signals, for example `PostStop` is sent just before the actor stops. No messages are processed after this point.
+The Akka actor API exposes some lifecycle signals, for example `PostStop` is sent just after the actor has been stopped. No messages are processed after this point.
 
 Let's use the `PostStop` lifecycle signal in a simple experiment to observe the behavior when we stop an actor. First, add the following 2 actor classes to your project:
 
