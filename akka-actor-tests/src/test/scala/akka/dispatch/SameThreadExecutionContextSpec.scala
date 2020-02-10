@@ -2,9 +2,10 @@
  * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.util.internal
+package akka.dispatch
 
 import akka.Done
+import akka.dispatch.internal.SameThreadExecutionContext
 import akka.testkit.AkkaSpec
 import org.scalatest.matchers.should.Matchers
 

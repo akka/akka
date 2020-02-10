@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture
 
 import akka.annotation.InternalApi
 import akka.compat
+import akka.dispatch.internal.SameThreadExecutionContext
 import akka.util.unused
 import com.github.ghik.silencer.silent
 
@@ -85,7 +86,7 @@ object ExecutionContexts {
    * INTERNAL API
    */
   @InternalApi
-  private[akka] val sameThreadExecutionContext: ExecutionContext = akka.util.internal.SameThreadExecutionContext()
+  private[akka] val sameThreadExecutionContext: ExecutionContext = SameThreadExecutionContext()
 
 }
 
