@@ -25,17 +25,18 @@ public class Restart {
     // could throw if for example it used a database connection to get rows
     Source<Creator<Integer>, NotUsed> flakySource =
         Source.from(
-                Arrays.<Creator<Integer>>asList(
-                    () -> 1,
-                    () -> 2,
-                    () -> 3,
-                    () -> {
-                      throw new RuntimeException("darn");
-                    }))
+            Arrays.<Creator<Integer>>asList(
+                () -> 1,
+                () -> 2,
+                () -> 3,
+                () -> {
+                  throw new RuntimeException("darn");
+                }));
     Source<Creator<Integer>, NotUsed> forever =
         RestartSource.onFailuresWithBackoff(
             Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1, () -> flakySource);
-    forever.runWith(Sink.foreach((Creator<Integer> nr) -> system.log().info("{}", nr.create())), system);
+    forever.runWith(
+        Sink.foreach((Creator<Integer> nr) -> system.log().info("{}", nr.create())), system);
     // logs
     // [INFO] [12/10/2019 13:51:58.300] [default-akka.test.stream-dispatcher-7]
     // [akka.actor.ActorSystemImpl(default)] 1
@@ -89,18 +90,18 @@ public class Restart {
     // #restart-failure-inner-complete-kill-switch
     Source<Creator<Integer>, NotUsed> flakySource =
         Source.from(
-                Arrays.<Creator<Integer>>asList(
-                    () -> 1,
-                    () -> 2,
-                    () -> 3,
-                    () -> {
-                      throw new RuntimeException("darn");
-                    }))
+            Arrays.<Creator<Integer>>asList(
+                () -> 1,
+                () -> 2,
+                () -> 3,
+                () -> {
+                  throw new RuntimeException("darn");
+                }));
     UniqueKillSwitch stopRestarting =
         RestartSource.onFailuresWithBackoff(
                 Duration.ofSeconds(1), Duration.ofSeconds(10), 0.1, () -> flakySource)
             .viaMat(KillSwitches.single(), Keep.right())
-            .toMat(Sink.foreach(nr -> System.out.println("nr " + nr.create()), Keep.left())
+            .toMat(Sink.foreach(nr -> System.out.println("nr " + nr.create())), Keep.left())
             .run(system);
     // ... from some where else
     // stop the source from restarting
