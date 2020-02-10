@@ -59,7 +59,7 @@ import scala.util.{ Failure, Success, Try }
         asyncHandler = ac.invoke
       }
 
-      def onPull(): Unit = f(state).onComplete(asyncHandler)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+      def onPull(): Unit = f(state).onComplete(asyncHandler)(akka.dispatch.ExecutionContexts.parasitic)
 
       setHandler(out, this)
     }

@@ -61,7 +61,7 @@ object KillSwitches {
         case _            =>
           // callback.invoke is a simple actor send, so it is fine to run on the invoking thread
           terminationSignal.onComplete(getAsyncCallback[Try[Done]](onSwitch).invoke)(
-            akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            akka.dispatch.ExecutionContexts.parasitic)
       }
     }
 
@@ -292,9 +292,8 @@ final class SharedKillSwitch private[stream] (val name: String) extends KillSwit
     override def createLogicAndMaterializedValue(
         inheritedAttributes: Attributes): (GraphStageLogic, SharedKillSwitch) = {
       val shutdownListener = terminationSignal.createListener()
-      val logic = new KillSwitches.KillableGraphStageLogic(shutdownListener.future, shape)
-        with InHandler
-        with OutHandler {
+      val logic = new KillSwitches.KillableGraphStageLogic(shutdownListener.future, shape) with InHandler
+      with OutHandler {
         setHandler(shape.in, this)
         setHandler(shape.out, this)
 

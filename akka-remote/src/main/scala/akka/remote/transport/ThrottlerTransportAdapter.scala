@@ -360,13 +360,10 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
       val ref = PromiseActorRef(internalTarget.provider, timeout, target, mode.getClass.getName)
       internalTarget.sendSystemMessage(Watch(internalTarget, ref))
       target.tell(mode, ref)
-      ref.result.future.transform(
-        {
-          case Terminated(t) if t.path == target.path => SetThrottleAck
-          case SetThrottleAck                         => { internalTarget.sendSystemMessage(Unwatch(target, ref)); SetThrottleAck }
-        },
-        t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(
-        ExecutionContexts.sameThreadExecutionContext)
+      ref.result.future.transform({
+        case Terminated(t) if t.path == target.path => SetThrottleAck
+        case SetThrottleAck                         => { internalTarget.sendSystemMessage(Unwatch(target, ref)); SetThrottleAck }
+      }, t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ExecutionContexts.parasitic)
     }
   }
 

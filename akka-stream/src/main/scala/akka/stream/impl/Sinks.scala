@@ -395,7 +395,7 @@ import scala.util.control.NonFatal
           .foreach {
             case NonFatal(e) => p.tryFailure(e)
             case _           => ()
-          }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+          }(akka.dispatch.ExecutionContexts.parasitic)
         p.future
       }
       override def cancel(): Unit = {
@@ -569,7 +569,7 @@ import scala.util.control.NonFatal
               failStage(e)
           }
         try {
-          sinkFactory(element).onComplete(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
+          sinkFactory(element).onComplete(cb.invoke)(ExecutionContexts.parasitic)
         } catch {
           case NonFatal(e) =>
             promise.failure(e)

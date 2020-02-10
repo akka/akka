@@ -605,7 +605,7 @@ object Flow {
   @deprecated("Use 'Flow.lazyFutureFlow' instead", "2.6.0")
   def lazyInitAsync[I, O, M](flowFactory: () => Future[Flow[I, O, M]]): Flow[I, O, Future[Option[M]]] =
     Flow.fromGraph(new LazyFlow[I, O, M](_ => flowFactory())).mapMaterializedValue { v =>
-      implicit val ec = akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+      implicit val ec = akka.dispatch.ExecutionContexts.parasitic
       v.map[Option[M]](Some.apply _).recover { case _: NeverMaterializedException => None }
     }
 

@@ -73,7 +73,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    */
   def mapAsync[Out2](parallelism: Int)(f: Out => Future[Out2]): Repr[Out2, Ctx] =
     via(flow.mapAsync(parallelism) {
-      case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContexts.sameThreadExecutionContext)
+      case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContexts.parasitic)
     })
 
   /**

@@ -103,14 +103,13 @@ import org.slf4j.Logger
 
     val task = mode match {
       case SingleMode =>
-        ctx.system.scheduler
-          .scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContexts.sameThreadExecutionContext)
+        ctx.system.scheduler.scheduleOnce(delay, () => ctx.self.unsafeUpcast ! timerMsg)(ExecutionContexts.parasitic)
       case FixedDelayMode =>
         ctx.system.scheduler.scheduleWithFixedDelay(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
-          ExecutionContexts.sameThreadExecutionContext)
+          ExecutionContexts.parasitic)
       case FixedRateMode =>
         ctx.system.scheduler.scheduleAtFixedRate(delay, delay)(() => ctx.self.unsafeUpcast ! timerMsg)(
-          ExecutionContexts.sameThreadExecutionContext)
+          ExecutionContexts.parasitic)
     }
 
     val nextTimer = Timer(key, msg, mode.repeat, nextGen, task)

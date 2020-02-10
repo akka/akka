@@ -85,8 +85,21 @@ object ExecutionContexts {
    *
    * INTERNAL API
    */
+  // Once Scala 2.12 is no longer supported this can be dropped in favour of directly using [[ExecutionContext.parasitic]]
   @InternalApi
-  private[akka] val sameThreadExecutionContext: ExecutionContext = SameThreadExecutionContext()
+  private[akka] val parasitic: ExecutionContext = SameThreadExecutionContext()
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  @deprecated("Use ExecutionContexts.parasitic instead", "2.6.4")
+  private[akka] object sameThreadExecutionContext extends ExecutionContext with BatchingExecutor {
+    override protected def unbatchedExecute(runnable: Runnable): Unit = parasitic.execute(runnable)
+    override protected def resubmitOnBlock: Boolean = false // No point since we execute on same thread
+    override def reportFailure(t: Throwable): Unit =
+      parasitic.reportFailure(t)
+  }
 
 }
 

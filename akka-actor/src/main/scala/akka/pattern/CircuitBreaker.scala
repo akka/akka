@@ -22,7 +22,7 @@ import scala.concurrent.duration._
 import scala.concurrent.TimeoutException
 import scala.util.control.NonFatal
 import scala.util.{ Failure, Success, Try }
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+import akka.dispatch.ExecutionContexts.parasitic
 import com.github.ghik.silencer.silent
 
 import scala.compat.java8.FutureConverters
@@ -49,7 +49,7 @@ object CircuitBreaker {
       maxFailures: Int,
       callTimeout: FiniteDuration,
       resetTimeout: FiniteDuration): CircuitBreaker =
-    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(sameThreadExecutionContext)
+    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(parasitic)
 
   /**
    * Java API: Create a new CircuitBreaker.
@@ -758,13 +758,13 @@ class CircuitBreaker(
             notifyCallSuccessListeners(start)
             callSucceeds()
           }
-        }(sameThreadExecutionContext)
+        }(parasitic)
 
         val timeout = scheduler.scheduleOnce(callTimeout) {
           if (p.tryFailure(timeoutEx)) {
             notifyCallTimeoutListeners(start)
           }
-        }(sameThreadExecutionContext)
+        }(parasitic)
 
         materialize(body).onComplete {
           case Success(result) =>
@@ -775,7 +775,7 @@ class CircuitBreaker(
               notifyCallFailureListeners(start)
             }
             timeout.cancel
-        }(sameThreadExecutionContext)
+        }(parasitic)
         p.future
       }
     }

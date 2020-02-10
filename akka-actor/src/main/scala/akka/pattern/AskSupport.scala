@@ -655,7 +655,7 @@ private[akka] object PromiseActorRef {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result, messageClassName)
-    implicit val ec = ExecutionContexts.sameThreadExecutionContext
+    implicit val ec = ExecutionContexts.parasitic
     val f = scheduler.scheduleOnce(timeout.duration) {
       result.tryComplete {
         val wasSentBy = if (sender == ActorRef.noSender) "" else s" was sent by [$sender]"

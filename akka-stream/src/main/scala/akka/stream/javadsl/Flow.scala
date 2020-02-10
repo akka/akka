@@ -263,8 +263,7 @@ object Flow {
       fallback: function.Creator[M]): Flow[I, O, M] = {
     import scala.compat.java8.FutureConverters._
     val sflow = scaladsl.Flow
-      .fromGraph(new LazyFlow[I, O, M](t =>
-        flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)))
+      .fromGraph(new LazyFlow[I, O, M](t => flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.parasitic)))
       .mapMaterializedValue(_ => fallback.create())
     new Flow(sflow)
   }
@@ -291,13 +290,9 @@ object Flow {
     import scala.compat.java8.FutureConverters._
 
     val sflow = scaladsl.Flow
-      .lazyInitAsync(() => flowFactory.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
-      .mapMaterializedValue(
-        fut =>
-          fut
-            .map(_.fold[Optional[M]](Optional.empty())(m => Optional.ofNullable(m)))(
-              ExecutionContexts.sameThreadExecutionContext)
-            .toJava)
+      .lazyInitAsync(() => flowFactory.create().toScala.map(_.asScala)(ExecutionContexts.parasitic))
+      .mapMaterializedValue(fut =>
+        fut.map(_.fold[Optional[M]](Optional.empty())(m => Optional.ofNullable(m)))(ExecutionContexts.parasitic).toJava)
     new Flow(sflow)
   }
 
@@ -353,8 +348,7 @@ object Flow {
   def lazyCompletionStageFlow[I, O, M](
       create: Creator[CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[M]] =
     scaladsl.Flow
-      .lazyFutureFlow[I, O, M](() =>
-        create.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
+      .lazyFutureFlow[I, O, M](() => create.create().toScala.map(_.asScala)(ExecutionContexts.parasitic))
       .mapMaterializedValue(_.toJava)
       .asJava
 

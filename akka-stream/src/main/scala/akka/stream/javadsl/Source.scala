@@ -61,7 +61,7 @@ object Source {
     new Source(scaladsl.Source.maybe[T].mapMaterializedValue { scalaOptionPromise: Promise[Option[T]] =>
       val javaOptionPromise = new CompletableFuture[Optional[T]]()
       scalaOptionPromise.completeWith(
-        javaOptionPromise.toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext))
+        javaOptionPromise.toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.parasitic))
 
       javaOptionPromise
     })
@@ -255,7 +255,7 @@ object Source {
    */
   def unfoldAsync[S, E](s: S, f: function.Function[S, CompletionStage[Optional[Pair[S, E]]]]): Source[E, NotUsed] =
     new Source(scaladsl.Source.unfoldAsync(s)((s: S) =>
-      f.apply(s).toScala.map(_.asScala.map(_.toScala))(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)))
+      f.apply(s).toScala.map(_.asScala.map(_.toScala))(akka.dispatch.ExecutionContexts.parasitic)))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
@@ -305,7 +305,7 @@ object Source {
    */
   def completionStageSource[T, M](completionStageSource: CompletionStage[Source[T, M]]): Source[T, CompletionStage[M]] =
     scaladsl.Source
-      .futureSource(completionStageSource.toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
+      .futureSource(completionStageSource.toScala.map(_.asScala)(ExecutionContexts.parasitic))
       .mapMaterializedValue(_.toJava)
       .asJava
 
@@ -766,7 +766,7 @@ object Source {
     new Source(
       scaladsl.Source.unfoldResourceAsync[T, S](
         () => create.create().toScala,
-        (s: S) => read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext),
+        (s: S) => read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.parasitic),
         (s: S) => close.apply(s).toScala))
 
   /**

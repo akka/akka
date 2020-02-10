@@ -97,11 +97,11 @@ import org.slf4j.{ Logger, LoggerFactory }
   override def uptime: Long = classicSystem.uptime
   override def printTree: String = system.printTree
 
-  import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+  import akka.dispatch.ExecutionContexts.parasitic
 
   override def terminate(): Unit = system.terminate()
   override lazy val whenTerminated: scala.concurrent.Future[akka.Done] =
-    system.whenTerminated.map(_ => Done)(sameThreadExecutionContext)
+    system.whenTerminated.map(_ => Done)(parasitic)
   override lazy val getWhenTerminated: CompletionStage[akka.Done] =
     FutureConverters.toJava(whenTerminated)
 
