@@ -333,6 +333,8 @@ It's recommended that you enable hostname verification with
 `akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on`.
 When enabled it will verify that the destination hostname matches the hostname in the peer's certificate.
 
+In deployments where hostnames are dynamic and not known up front it can make sense to leave the hostname verification off.
+
 You have a few choices how to set up certificates and hostname verification:
 
 * Have a single set of keys and a single certificate for all nodes and *disable* hostname checking
