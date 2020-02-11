@@ -1125,6 +1125,10 @@ private[akka] class ActorSystemImpl(
     case _            =>
   }
 
+  // For each ExtensionId, either:
+  // 1) a CountDownLatch (if it's still in the process of being registered),
+  // 2) a Throwable (if it failed initializing), or
+  // 3) the registered extension.
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
   /**
