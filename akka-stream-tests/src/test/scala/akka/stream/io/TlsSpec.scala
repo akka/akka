@@ -419,11 +419,11 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
             .collect { case SessionBytes(_, b) => b }
             .scan(ByteString.empty)(_ ++ _)
             .filter(_.nonEmpty)
-            .via(new Timeout(6.seconds))
+            .via(new Timeout(10.seconds))
             .dropWhile(_.size < scenario.output.size)
             .runWith(Sink.headOption)
 
-        Await.result(output, 8.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
+        Await.result(output, 12.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
 
         commPattern.cleanup()
       }

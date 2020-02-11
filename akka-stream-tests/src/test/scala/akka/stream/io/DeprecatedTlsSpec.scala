@@ -389,11 +389,11 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
             .collect { case SessionBytes(_, b) => b }
             .scan(ByteString.empty)(_ ++ _)
             .filter(_.nonEmpty)
-            .via(new Timeout(8.seconds))
+            .via(new Timeout(10.seconds))
             .dropWhile(_.size < scenario.output.size)
             .runWith(Sink.headOption)
 
-        Await.result(output, 10.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
+        Await.result(output, 12.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
 
         commPattern.cleanup()
       }
