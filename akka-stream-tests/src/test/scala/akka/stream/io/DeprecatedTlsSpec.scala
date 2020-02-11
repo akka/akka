@@ -58,7 +58,7 @@ object DeprecatedTlsSpec {
   def initSslContext(): SSLContext = initWithTrust("/truststore")
 
   /**
-   * This is an operator that fires a TimeoutException failure 2 seconds after it was started,
+   * This is an operator that fires a TimeoutException failure after it was started,
    * independent of the traffic going through. The purpose is to include the last seen
    * element in the exception message to help in figuring out what went wrong.
    */
@@ -389,11 +389,11 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
             .collect { case SessionBytes(_, b) => b }
             .scan(ByteString.empty)(_ ++ _)
             .filter(_.nonEmpty)
-            .via(new Timeout(6.seconds))
+            .via(new Timeout(8.seconds))
             .dropWhile(_.size < scenario.output.size)
             .runWith(Sink.headOption)
 
-        Await.result(output, 8.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
+        Await.result(output, 10.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
 
         commPattern.cleanup()
       }
