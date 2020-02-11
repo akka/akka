@@ -165,8 +165,11 @@ object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
   def lookup() = Persistence
 
   /** INTERNAL API. */
-  private[persistence] case class PluginHolder(actor: ActorRef, adapters: EventAdapters, config: Config)
-      extends Extension
+  private[persistence] case class PluginHolder(actorFactory: () => ActorRef, adapters: EventAdapters, config: Config)
+      extends Extension {
+    // lazy creation of actor so that it's not started when only lookup up adapters
+    lazy val actor: ActorRef = actorFactory()
+  }
 
   /** Config path to fall-back to if a setting is not defined in a specific plugin's config section */
   val JournalFallbackConfigPath = "akka.persistence.journal-plugin-fallback"
@@ -442,10 +445,10 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
         !isEmpty(configPath) && mergedConfig.hasPath(configPath),
         s"'reference.conf' is missing persistence plugin config path: '$configPath'")
       val config: Config = mergedConfig.getConfig(configPath).withFallback(mergedConfig.getConfig(fallbackPath))
-      val plugin: ActorRef = createPlugin(configPath, config)
+      val pluginActorFactory = () => createPlugin(configPath, config)
       val adapters: EventAdapters = createAdapters(configPath, mergedConfig)
 
-      PluginHolder(plugin, adapters, config)
+      PluginHolder(pluginActorFactory, adapters, config)
     }
   }
 
