@@ -12,7 +12,7 @@ import scala.concurrent.ExecutionContext
 import scala.util.control.NonFatal
 
 /**
- * Factory to create same thread ec. Not intended to be called from any other site than to create [[akka.dispatch.Dispatchers#sameThreadExecutionContext]]
+ * Factory to create same thread ec. Not intended to be called from any other site than to create [[akka.dispatch.ExecutionContexts#parasitic]]
  *
  * INTERNAL API
  */
