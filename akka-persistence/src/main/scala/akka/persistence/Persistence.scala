@@ -26,20 +26,6 @@ import akka.annotation.InternalApi
  */
 final class PersistenceSettings(config: Config) {
 
-  object view {
-    val autoUpdate: Boolean =
-      config.getBoolean("view.auto-update")
-
-    val autoUpdateInterval: FiniteDuration =
-      config.getMillisDuration("view.auto-update-interval")
-
-    val autoUpdateReplayMax: Long =
-      posMax(config.getLong("view.auto-update-replay-max"))
-
-    private def posMax(v: Long) =
-      if (v < 0) Long.MaxValue else v
-  }
-
   object atLeastOnceDelivery {
 
     val redeliverInterval: FiniteDuration =

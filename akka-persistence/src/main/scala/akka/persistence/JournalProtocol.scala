@@ -11,7 +11,7 @@ import scala.collection.immutable
 /**
  * INTERNAL API.
  *
- * Messages exchanged between persistent actors, views and a journal.
+ * Messages exchanged between persistent actors and a journal.
  */
 private[persistence] object JournalProtocol {
 
