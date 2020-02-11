@@ -8,25 +8,28 @@ import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
 import akka.persistence.testkit.internal.TestKitStorage
 import akka.persistence.testkit.{ ExpectedFailure, ExpectedRejection }
 import akka.testkit.TestKitBase
+import akka.util
+import akka.util.BoxedType
 
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 private[testkit] trait RejectSupport[U] {
   this: PolicyOpsTestKit[U] with HasStorage[U, _] =>
 
   /**
-   * Reject `n` following journal events depending on the condition `cond`.
-   * Rejection triggers, when `cond` returns true, .
-   * Reject events with default `ExpectedRejection` exception.
+   * Reject `n` following journal operations depending on the condition `cond`.
+   * Rejection triggers, when `cond` returns true.
+   * Reject operations with default `ExpectedRejection` exception.
    */
   def rejectNextNOpsCond(cond: (String, U) => Boolean, n: Int): Unit =
     rejectNextNOpsCond(cond, n, ExpectedRejection)
 
   /**
-   * Reject `n` following journal events depending on the condition `cond`.
-   * Rejection triggers, when `cond` returns true, .
-   * Rejects events with the `cause` exception.
+   * Reject `n` following journal operations depending on the condition `cond`.
+   * Rejection triggers, when `cond` returns true.
+   * Rejects operations with the `cause` exception.
    */
   def rejectNextNOpsCond(cond: (String, U) => Boolean, n: Int, cause: Throwable): Unit = {
     val current = storage.currentPolicy
@@ -35,15 +38,15 @@ private[testkit] trait RejectSupport[U] {
   }
 
   /**
-   * Reject n following journal events regardless of their type.
-   * Rejects events with default `ExpectedRejection` exception.
+   * Reject n following journal operations regardless of their type.
+   * Rejects operations with default `ExpectedRejection` exception.
    */
   def rejectNextNOps(n: Int): Unit =
     rejectNextNOps(n, ExpectedRejection)
 
   /**
-   * Reject `n` following journal events regardless of their type.
-   * Rejects events with the `cause` exception.
+   * Reject `n` following journal operations regardless of their type.
+   * Rejects operations with the `cause` exception.
    */
   def rejectNextNOps(n: Int, cause: Throwable): Unit = {
     val current = storage.currentPolicy
@@ -59,17 +62,17 @@ private[testkit] trait PolicyOpsTestKit[P] extends {
   private[testkit] val Policies: DefaultPolicies[P]
 
   /**
-   * Fail `n` following journal events depending on the condition `cond`.
-   * Failure triggers, when `cond` returns true, .
-   * Fails events with default `ExpectedFailure` exception.
+   * Fail `n` following journal operations depending on the condition `cond`.
+   * Failure triggers, when `cond` returns true.
+   * Fails operations with default `ExpectedFailure` exception.
    */
   def failNextNOpsCond(cond: (String, P) => Boolean, n: Int): Unit =
     failNextNOpsCond(cond, n, ExpectedFailure)
 
   /**
-   * Fail `n` following journal events depending on the condition `cond`.
-   * Failure triggers, when `cond` returns true, .
-   * Fails events with the `cause` exception.
+   * Fail `n` following journal operations depending on the condition `cond`.
+   * Failure triggers, when `cond` returns true.
+   * Fails operations with the `cause` exception.
    */
   def failNextNOpsCond(cond: (String, P) => Boolean, n: Int, cause: Throwable): Unit = {
     val current = storage.currentPolicy
@@ -78,15 +81,15 @@ private[testkit] trait PolicyOpsTestKit[P] extends {
   }
 
   /**
-   * Fail n following journal events regardless of their type.
-   * Fails events with default `ExpectedFailure` exception.
+   * Fail n following journal operations regardless of their type.
+   * Fails operations with default `ExpectedFailure` exception.
    */
   def failNextNOps(n: Int): Unit =
     failNextNOps(n, ExpectedFailure)
 
   /**
-   * Fail `n` following journal events regardless of their type.
-   * Fails events with the `cause` exception.
+   * Fail `n` following journal operations regardless of their type.
+   * Fails operations with the `cause` exception.
    */
   def failNextNOps(n: Int, cause: Throwable): Unit = {
     val current = storage.currentPolicy
@@ -95,7 +98,7 @@ private[testkit] trait PolicyOpsTestKit[P] extends {
   }
 
   /**
-   * Set new processing policy for journal events.
+   * Set new processing policy for journal operations.
    * NOTE! Overrides previously invoked `failNext...` or `rejectNext...`
    */
   def withPolicy(policy: Policies.PolicyType): this.type = {
@@ -125,20 +128,20 @@ private[testkit] trait ExpectOps[U] {
   private[testkit] def reprToAny(repr: U): Any
 
   /**
-   * Check that next persisted in storage for particular persistence id event was `msg`.
+   * Check that next persisted in storage for particular persistence id event/snapshot was `event`.
    */
-  def expectNextPersisted[A](persistenceId: String, msg: A): A =
-    expectNextPersisted(persistenceId, msg, maxTimeout)
+  def expectNextPersisted[A](persistenceId: String, event: A): A =
+    expectNextPersisted(persistenceId, event, maxTimeout)
 
   /**
-   * Check for `max` time that next persisted in storage for particular persistence id event was `msg`.
+   * Check for `max` time that next persisted in storage for particular persistence id event/snapshot was `event`.
    */
-  def expectNextPersisted[A](persistenceId: String, msg: A, max: FiniteDuration): A = {
+  def expectNextPersisted[A](persistenceId: String, event: A, max: FiniteDuration): A = {
     val nextInd = nextIndex(persistenceId)
-    val expected = Some(msg)
+    val expected = Some(event)
     val res = awaitAssert({
       val actual = storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
-      assert(actual == expected, s"Failed to persist $msg, got $actual instead")
+      assert(actual == expected, s"Failed to persist $event, got $actual instead")
       actual
     }, max = max.dilated, interval = pollInterval)
 
@@ -147,33 +150,38 @@ private[testkit] trait ExpectOps[U] {
   }
 
   /**
-   * Check that next persisted in storage for particular persistence id event matches partial function `pf`.
+   * Check that next persisted in storage for particular persistence id event/snapshot has expected type.
    */
-  def expectNextPersistedPF[A](persistenceId: String)(pf: PartialFunction[Any, A]): A =
-    expectNextPersistedPF(persistenceId, maxTimeout)(pf)
+  def expectNextPersistedType[A](persistenceId: String)(implicit t: ClassTag[A]): A =
+    expectNextPersistedType(persistenceId, maxTimeout)
 
   /**
-   * Check that next persisted in storage for particular persistence id event matches partial function `pf`.
+   * Check for `max` time that next persisted in storage for particular persistence id event/snapshot has expected type.
    */
-  def expectNextPersistedPF[A](persistenceId: String, hint: String)(pf: PartialFunction[Any, A]): A =
-    expectNextPersistedPF(persistenceId, maxTimeout, hint)(pf)
+  def expectNextPersistedType[A](persistenceId: String, max: FiniteDuration)(implicit t: ClassTag[A]): A =
+    expectNextPersistedClass(persistenceId, t.runtimeClass.asInstanceOf[Class[A]], max)
 
   /**
-   * Check for `max` time that next persisted in storage for particular persistence id event matches partial function `pf`.
+   * Check that next persisted in storage for particular persistence id event/snapshot has expected type.
    */
-  def expectNextPersistedPF[A](persistenceId: String, max: FiniteDuration, hint: String = "")(
-      pf: PartialFunction[Any, A]): A = {
+  def expectNextPersistedClass[A](persistenceId: String, cla: Class[A]): A =
+    expectNextPersistedClass(persistenceId, cla, maxTimeout)
+
+  /**
+   * Check for `max` time that next persisted in storage for particular persistence id event/snapshot has expected type.
+   */
+  def expectNextPersistedClass[A](persistenceId: String, cla: Class[A], max: FiniteDuration): A = {
     val nextInd = nextIndex(persistenceId)
+    val c = util.BoxedType(cla)
     val res = awaitAssert({
       val actual = storage.findOneByIndex(persistenceId, nextInd).map(reprToAny)
-      assert(actual.isDefined, s"Expected: $hint but got unexpected None")
+      assert(actual.isDefined, s"Expected: $cla but got no event")
       val a = actual.get
-      assert(pf.isDefinedAt(a), s"Expected: $hint but got unexpected $a")
-      a
+      assert(c.isInstance(a), s"Expected: $cla but got unexpected ${a.getClass}")
+      a.asInstanceOf[A]
     }, max.dilated, interval = pollInterval)
-
     setIndex(persistenceId, nextInd + 1)
-    pf(res)
+    res
   }
 
   /**
@@ -195,72 +203,47 @@ private[testkit] trait ExpectOps[U] {
   }
 
   /**
-   * Check for `max` time that `msgs` events have been persisted in the storage in order.
+   * Receive for `max` time next `n` events/snapshots that have been persisted in the storage.
    */
-  def expectPersistedInOrder[A](
-      persistenceId: String,
-      msgs: immutable.Seq[A],
-      max: FiniteDuration): immutable.Seq[A] = {
+  def receivePersisted[A](persistenceId: String, n: Int, max: FiniteDuration)(
+      implicit t: ClassTag[A]): immutable.Seq[A] =
+    receivePersisted(persistenceId, n, t.runtimeClass.asInstanceOf[Class[A]], max)
+
+  /**
+   * Receive next `n` events/snapshots that have been persisted in the storage.
+   */
+  def receivePersisted[A](persistenceId: String, n: Int)(implicit t: ClassTag[A]): immutable.Seq[A] =
+    receivePersisted(persistenceId, n, t.runtimeClass.asInstanceOf[Class[A]], maxTimeout)
+
+  /**
+   * Receive next `n` events/snapshots that have been persisted in the storage.
+   */
+  def receivePersisted[A](persistenceId: String, n: Int, cla: Class[A]): immutable.Seq[A] =
+    receivePersisted(persistenceId, n, cla, maxTimeout)
+
+  /**
+   * Receive for `max` time next `n` events/snapshots that have been persisted in the storage.
+   */
+  def receivePersisted[A](persistenceId: String, n: Int, cla: Class[A], max: FiniteDuration): immutable.Seq[A] = {
     val nextInd = nextIndex(persistenceId)
-    val res = awaitAssert(
-      {
-        val actual = storage.findMany(persistenceId, nextInd, msgs.size)
+    val bt = BoxedType(cla)
+    val res =
+      awaitAssert({
+        val actual = storage.findMany(persistenceId, nextInd, n)
         actual match {
           case Some(reprs) =>
             val ls = reprs.map(reprToAny)
-            assert(
-              ls.size == msgs.size && ls.zip(msgs).forall(e => e._1 == e._2),
-              "Persisted events do not correspond to expected ones")
+            val filtered = ls.filter(e => !bt.isInstance(e))
+            assert(ls.size == n, s"Could read only ${ls.size} events instead of expected $n")
+            assert(filtered.isEmpty, s"Persisted events $filtered do not correspond to expected type")
           case None => assert(false, "No events were persisted")
         }
         actual.get.map(reprToAny)
-      },
-      max = max.dilated,
-      interval = pollInterval)
+      }, max = max.dilated, interval = pollInterval)
 
-    setIndex(persistenceId, nextInd + msgs.size)
+    setIndex(persistenceId, nextInd + n)
     res.asInstanceOf[immutable.Seq[A]]
   }
-
-  /**
-   * Check that `msgs` events have been persisted in the storage in order.
-   */
-  def expectPersistedInOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A] =
-    expectPersistedInOrder(persistenceId, msgs, maxTimeout)
-
-  /**
-   * Check for `max` time that `msgs` events have been persisted in the storage regardless of order.
-   */
-  def expectPersistedInAnyOrder[A](
-      persistenceId: String,
-      msgs: immutable.Seq[A],
-      max: FiniteDuration): immutable.Seq[A] = {
-    val nextInd = nextIndex(persistenceId)
-    val res = probe.awaitAssert(
-      {
-        val actual = storage.findMany(persistenceId, nextInd, msgs.size)
-        actual match {
-          case Some(reprs) =>
-            val ls = reprs.map(reprToAny)
-            assert(
-              ls.size == msgs.size && ls.diff(msgs).isEmpty,
-              "Persisted events do not correspond to the expected ones.")
-          case None => assert(false, "No events were persisted.")
-        }
-        actual.get.map(reprToAny)
-      },
-      max = max.dilated,
-      interval = pollInterval)
-
-    setIndex(persistenceId, nextInd + msgs.size)
-    res.asInstanceOf[immutable.Seq[A]]
-  }
-
-  /**
-   * Check that `msgs` events have been persisted in the storage regardless of order.
-   */
-  def expectPersistedInAnyOrder[A](persistenceId: String, msgs: immutable.Seq[A]): immutable.Seq[A] =
-    expectPersistedInAnyOrder(persistenceId, msgs, maxTimeout)
 
 }
 
@@ -268,7 +251,7 @@ private[testkit] trait ClearOps {
   this: HasStorage[_, _] =>
 
   /**
-   * Clear all data from storage.
+   * Clear all data from the storage.
    *
    * NOTE! Also clears sequence numbers in storage!
    *
@@ -280,9 +263,9 @@ private[testkit] trait ClearOps {
   }
 
   /**
-   * Clear all data from storage for particular persistence id.
+   * Clear all data from the storage for particular persistence id.
    *
-   * NOTE! Also clears sequence number in storage!
+   * NOTE! Also clears sequence number in the storage!
    *
    * @see [[ClearPreservingSeqNums.clearByIdPreservingSeqNumbers()]]
    */
@@ -297,7 +280,7 @@ private[testkit] trait ClearPreservingSeqNums {
   this: HasStorage[_, _] =>
 
   /**
-   * Clear all data in storage preserving sequence numbers.
+   * Clear all data in the storage preserving sequence numbers.
    *
    * @see [[ClearOps.clearAll()]]
    */
@@ -307,7 +290,7 @@ private[testkit] trait ClearPreservingSeqNums {
   }
 
   /**
-   * Clear all data in storage for particular persistence id preserving sequence numbers.
+   * Clear all data in the storage for particular persistence id preserving sequence numbers.
    *
    * @see [[ClearOps.clearByPersistenceId()]]
    */
@@ -320,7 +303,7 @@ private[testkit] trait ClearPreservingSeqNums {
 
 /**
  * Abstract persistent storage for tests.
- * Has additional methods for keeping track of the indexes of last elements persisted in the storage during test.
+ * Has additional methods for keeping track of the indexes of last events persisted in the storage during test.
  */
 private[testkit] trait HasStorage[P, R] {
 

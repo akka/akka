@@ -51,7 +51,7 @@ trait CommonSnapshotTests extends ScalaDslUtils {
 
     }
 
-    "save snapshot and check with pf" in {
+    "save snapshot and check type" in {
 
       val pid = randomPid()
 
@@ -60,26 +60,17 @@ trait CommonSnapshotTests extends ScalaDslUtils {
       a ! NewSnapshot(1: Any)
       a ! NewSnapshot(2: Any)
 
-      expectNextPersistedPF(pid) {
-        case 1 =>
-      }
+      expectNextPersistedType[Int](pid) should be(1)
 
       assertThrows[AssertionError] {
-        expectNextPersistedPF(pid) {
-          case 3 =>
-        }
+        expectNextPersistedType[String](pid)
       }
 
-      expectNextPersistedPF(pid) {
-        case 2 =>
-      }
+      expectNextPersistedType[Int](pid) should be(2)
 
       assertThrows[AssertionError] {
-        expectNextPersistedPF(pid) {
-          case 3 =>
-        }
+        expectNextPersistedType(pid)
       }
-
     }
 
     "successfully set and execute custom policy" in {
@@ -134,28 +125,26 @@ trait CommonSnapshotTests extends ScalaDslUtils {
       a ! NewSnapshot(2)
 
       assertThrows[AssertionError] {
-        expectPersistedInOrder(pid, List(2, 1))
+        receivePersisted[Int](pid, 3)
       }
-
-      expectPersistedInOrder(pid, List(1, 2))
-
+      assertThrows[AssertionError] {
+        receivePersisted[String](pid, 2)
+      }
+      val li = receivePersisted[Int](pid, 2)
+      (li should contain).theSameElementsInOrderAs(List(1, 2))
     }
 
-    "expect next N valid snapshots in any order" in {
+    "fail when receives wrong type" in {
 
       val pid = randomPid()
 
       val a = system.actorOf(Props(classOf[A], pid, None))
 
-      a ! NewSnapshot(2)
       a ! NewSnapshot(1)
-
+      a ! NewSnapshot("data")
       assertThrows[AssertionError] {
-        expectPersistedInAnyOrder(pid, List(3, 2))
+        receivePersisted[Int](pid, 2)
       }
-
-      expectPersistedInAnyOrder(pid, List(1, 2))
-
     }
 
     "fail next snapshot" in {

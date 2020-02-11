@@ -117,10 +117,9 @@ You can safely use persistence testkit in combination with main akka testkit.
 The main methods of the api allow to (see @apidoc[PersistenceTestKit] and @apidoc[SnapshotTestKit] for more details):
 
  * check if the given event/snapshot object is the next persisted in the storage.
- * check if the next event/snapshot persisted in the storage matches a partial function.
+ * read a sequence of persisted events/snapshots.
  * check that no events/snapshots have been persisted in the storage.
  * throw the default exception from the storage on attempt to persist, read or delete the following event/snapshot.
- * check if the given events/snapshots have been persisted in the storage in order or regardless of order.
  * clear the events/snapshots persisted in the storage.
  * reject the events, but not snapshots (rejections are not supported for snapshots in the original api).
  * set your own [policy](#setting-your-own-policy-for-the-storage) which emulates the work of the storage. 

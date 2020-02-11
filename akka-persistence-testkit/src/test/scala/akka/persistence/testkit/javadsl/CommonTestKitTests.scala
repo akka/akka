@@ -64,28 +64,14 @@ trait CommonTestKitTests extends JavaDslUtils {
       a ! B(2)
 
       assertThrows[AssertionError] {
-        expectPersistedInOrder(pid, List(B(2), B(1)).asJava)
+        receivePersisted(pid, 3, classOf[B])
       }
-
-      expectPersistedInOrder(pid, List(B(1), B(2)).asJava)
-
-    }
-
-    "expect next N valid messages in any order" in {
-
-      val pid = randomPid()
-
-      val a = system.actorOf(Props(classOf[A], pid, None))
-
-      a ! B(2)
-      a ! B(1)
-
       assertThrows[AssertionError] {
-        expectPersistedInAnyOrder(pid, List(B(3), B(2)).asJava)
+        receivePersisted(pid, 2, classOf[C])
       }
 
-      expectPersistedInAnyOrder(pid, List(B(1), B(2)).asJava)
-
+      val li = receivePersisted(pid, 2, classOf[B])
+      (li should contain).theSameElementsInOrderAs(List(B(1), B(2)))
     }
 
     "successfully set and execute custom policy" in {

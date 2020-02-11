@@ -101,32 +101,44 @@ trait CommonSnapshotTests extends JavaDslUtils {
 
       val a = system.actorOf(Props(classOf[A], pid, None))
 
-      a ! NewSnapshot(1)
       a ! NewSnapshot(2)
+      a ! NewSnapshot(1)
 
       assertThrows[AssertionError] {
-        expectPersistedInOrder(pid, List(2, 1).asJava)
+        receivePersisted(pid, 3, classOf[Int])
       }
 
-      expectPersistedInOrder(pid, List(1, 2).asJava)
-
+      assertThrows[AssertionError] {
+        receivePersisted(pid, 2, classOf[String])
+      }
+      assertThrows[AssertionError] {
+        receivePersisted(pid, 3, classOf[Int])
+      }
+      val li = receivePersisted(pid, 2, classOf[Int])
+      (li should contain).theSameElementsInOrderAs(List(2, 1))
     }
 
-    "expect next N valid snapshots in any order" in {
+    "fail to receive" in {
 
       val pid = randomPid()
 
       val a = system.actorOf(Props(classOf[A], pid, None))
 
       a ! NewSnapshot(2)
-      a ! NewSnapshot(1)
+      a ! NewSnapshot("data")
 
       assertThrows[AssertionError] {
-        expectPersistedInAnyOrder(pid, List(3, 2).asJava)
+        receivePersisted(pid, 3, classOf[Int])
       }
 
-      expectPersistedInAnyOrder(pid, List(1, 2).asJava)
-
+      assertThrows[AssertionError] {
+        receivePersisted(pid, 2, classOf[String])
+      }
+      assertThrows[AssertionError] {
+        receivePersisted(pid, 3, classOf[Int])
+      }
+      val li = receivePersisted(pid, 2, classOf[Any])
+      (li should contain).theSameElementsInOrderAs(List(2, "data"))
     }
 
     "fail next snapshot" in {

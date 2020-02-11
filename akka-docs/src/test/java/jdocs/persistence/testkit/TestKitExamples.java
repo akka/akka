@@ -4,7 +4,8 @@
 
 package jdocs.persistence.testkit;
 
-import akka.actor.typed.ActorSystem;
+import akka.actor.testkit.typed.javadsl.TestKitJunitResource;
+import akka.actor.typed.ActorRef;
 import akka.persistence.testkit.DeleteEvents;
 import akka.persistence.testkit.DeleteSnapshotByMeta;
 import akka.persistence.testkit.DeleteSnapshotsByCriteria;
@@ -27,62 +28,13 @@ import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
 import com.typesafe.config.ConfigFactory;
-import jdocs.AbstractJavaTest;
+import org.junit.ClassRule;
 import org.junit.Test;
+import jdocs.persistence.testkit.YourPersistentBehavior.Cmd;
+import jdocs.persistence.testkit.YourPersistentBehavior.Evt;
+import jdocs.persistence.testkit.YourPersistentBehavior.State;
 
 public class TestKitExamples {
-
-  // #testkit-typed-usecase
-  class SampleTest extends AbstractJavaTest {
-
-    ActorSystem<Cmd> system =
-        ActorSystem.create(
-            new YourPersistentBehavior(PersistenceId.ofUniqueId("some-id")),
-            "example",
-            PersistenceTestKitPlugin.getInstance()
-                .config()
-                .withFallback(ConfigFactory.defaultApplication()));
-
-    @Test
-    void test() {
-      PersistenceTestKit testKit = PersistenceTestKit.create(system);
-
-      Cmd cmd = new Cmd("data");
-      system.tell(cmd);
-      Evt expectedEventPersisted = new Evt(cmd.getData());
-
-      testKit.expectNextPersisted("your-persistence-id", expectedEventPersisted);
-      testKit.clearAll();
-    }
-  }
-
-  class YourPersistentBehavior extends EventSourcedBehavior<Cmd, Evt, EmptyState> {
-
-    public YourPersistentBehavior(PersistenceId persistenceId) {
-      super(persistenceId);
-    }
-
-    @Override
-    public EmptyState emptyState() {
-      // some state
-      return new EmptyState();
-    }
-
-    @Override
-    public CommandHandler<Cmd, Evt, EmptyState> commandHandler() {
-      return newCommandHandlerBuilder()
-          .forAnyState()
-          .onCommand(Cmd.class, command -> Effect().persist(new Evt(command.getData())))
-          .build();
-    }
-
-    @Override
-    public EventHandler<EmptyState, Evt> eventHandler() {
-      // some logic
-      return null;
-    }
-  }
-  // #testkit-typed-usecase
 
   // #set-event-storage-policy
   class SampleEventStoragePolicy implements ProcessingPolicy<JournalOperation> {
@@ -156,38 +108,76 @@ public class TestKitExamples {
 
 }
 
-class Cmd {
+// #testkit-typed-usecase
+class SampleTest {
 
-  private String data;
+  @ClassRule
+  public static final TestKitJunitResource testKit =
+      new TestKitJunitResource(
+          PersistenceTestKitPlugin.getInstance()
+              .config()
+              .withFallback(ConfigFactory.defaultApplication()));
 
-  Cmd(String data) {
-    this.data = data;
-  }
+  PersistenceTestKit persistenceTestKit = PersistenceTestKit.create(testKit.system());
 
-  public String getData() {
-    return data;
-  }
+  @Test
+  void test() {
+    ActorRef<Cmd> ref =
+        testKit.spawn(new YourPersistentBehavior(PersistenceId.ofUniqueId("some-id")));
 
-  public void setData(String data) {
-    this.data = data;
-  }
-}
+    Cmd cmd = new Cmd("data");
+    ref.tell(cmd);
+    Evt expectedEventPersisted = new Evt(cmd.data);
 
-class Evt {
-
-  private String data;
-
-  Evt(String data) {
-    this.data = data;
-  }
-
-  public String getData() {
-    return data;
-  }
-
-  public void setData(String data) {
-    this.data = data;
+    persistenceTestKit.expectNextPersisted("your-persistence-id", expectedEventPersisted);
+    persistenceTestKit.clearAll();
   }
 }
 
-class EmptyState {}
+class YourPersistentBehavior extends EventSourcedBehavior<Cmd, Evt, State> {
+
+  public static final class Cmd {
+
+    public final String data;
+
+    public Cmd(String data) {
+      this.data = data;
+    }
+  }
+
+  public static final class Evt {
+
+    public final String data;
+
+    public Evt(String data) {
+      this.data = data;
+    }
+  }
+
+  public static final class State {}
+
+  public YourPersistentBehavior(PersistenceId persistenceId) {
+    super(persistenceId);
+  }
+
+  @Override
+  public State emptyState() {
+    // some state
+    return new State();
+  }
+
+  @Override
+  public CommandHandler<Cmd, Evt, State> commandHandler() {
+    return newCommandHandlerBuilder()
+        .forAnyState()
+        .onCommand(Cmd.class, command -> Effect().persist(new Evt(command.data)))
+        .build();
+  }
+
+  @Override
+  public EventHandler<State, Evt> eventHandler() {
+    // TODO handle events
+    return newEventHandlerBuilder().build();
+  }
+}
+// #testkit-typed-usecase

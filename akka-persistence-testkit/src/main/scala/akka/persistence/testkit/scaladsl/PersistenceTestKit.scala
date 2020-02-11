@@ -31,52 +31,52 @@ private[testkit] trait CommonTestKitOps[S, P] extends ClearOps with PolicyOpsTes
   def expectNothingPersisted(persistenceId: String, max: FiniteDuration): Unit
 
   /**
-   * Check that `msg` event has been saved in the storage.
+   * Check that `event` has been saved in the storage.
    */
-  def expectNextPersisted[A](persistenceId: String, msg: A): A
+  def expectNextPersisted[A](persistenceId: String, event: A): A
 
   /**
-   * Check for `max` time that `msg` event has been saved in the storage.
+   * Check for `max` time that `event` has been saved in the storage.
    */
-  def expectNextPersisted[A](persistenceId: String, msg: A, max: FiniteDuration): A
+  def expectNextPersisted[A](persistenceId: String, event: A, max: FiniteDuration): A
 
   /**
-   * Fail next `n` persisted events with the `cause` exception for particular persistence id.
+   * Fail next `n` write operations with the `cause` exception for particular persistence id.
    */
   def failNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit
 
   /**
-   * Fail next `n` persisted events for particular persistence id.
+   * Fail next `n` write operations for particular persistence id.
    */
   def failNextNPersisted(persistenceId: String, n: Int): Unit = failNextNPersisted(persistenceId, n, ExpectedFailure)
 
   /**
-   * Fail next `n` persisted events with the `cause` exception for any persistence id.
+   * Fail next `n` write operations with the `cause` exception for any persistence id.
    */
   def failNextNPersisted(n: Int, cause: Throwable): Unit
 
   /**
-   * Fail next `n` persisted events with default exception for any persistence id.
+   * Fail next `n` write operations with default exception for any persistence id.
    */
   def failNextNPersisted(n: Int): Unit = failNextNPersisted(n, ExpectedFailure)
 
   /**
-   * Fail next persisted event with `cause` exception for particular persistence id.
+   * Fail next write operation with `cause` exception for particular persistence id.
    */
   def failNextPersisted(persistenceId: String, cause: Throwable): Unit = failNextNPersisted(persistenceId, 1, cause)
 
   /**
-   * Fail next persisted event with default exception for particular persistence id.
+   * Fail next write operation with default exception for particular persistence id.
    */
   def failNextPersisted(persistenceId: String): Unit = failNextNPersisted(persistenceId, 1)
 
   /**
-   * Fail next persisted event with `cause` exception for any persistence id.
+   * Fail next write operation with `cause` exception for any persistence id.
    */
   def failNextPersisted(cause: Throwable): Unit = failNextNPersisted(1, cause)
 
   /**
-   * Fail next persisted event with default exception for any persistence id.
+   * Fail next write operation with default exception for any persistence id.
    */
   def failNextPersisted(): Unit = failNextNPersisted(1)
 
@@ -290,12 +290,12 @@ private[testkit] trait PersistenceTestKitOps[S, P]
   def rejectNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit
 
   /**
-   * Persist `elems` events into storage in order.
+   * Persist `snapshots` into storage in order.
    */
-  def persistForRecovery(persistenceId: String, elems: immutable.Seq[Any]): Unit
+  def persistForRecovery(persistenceId: String, snapshots: immutable.Seq[Any]): Unit
 
   /**
-   * Retrieve all events saved in storage by persistence id.
+   * Retrieve all snapshots saved in storage by persistence id.
    */
   def persistedInStorage(persistenceId: String): immutable.Seq[Any]
 
@@ -479,9 +479,9 @@ class PersistenceTestKit(system: ActorSystem)
   override def failNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit =
     failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[DeleteEvents], n, cause)
 
-  def persistForRecovery(persistenceId: String, elems: immutable.Seq[Any]): Unit = {
-    storage.addAny(persistenceId, elems)
-    addToIndex(persistenceId, elems.size)
+  def persistForRecovery(persistenceId: String, snapshots: immutable.Seq[Any]): Unit = {
+    storage.addAny(persistenceId, snapshots)
+    addToIndex(persistenceId, snapshots.size)
   }
 
   def persistedInStorage(persistenceId: String): immutable.Seq[Any] =

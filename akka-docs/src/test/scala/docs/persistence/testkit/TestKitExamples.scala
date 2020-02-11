@@ -9,12 +9,12 @@ import akka.persistence.testkit._
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class TestKitExamples {
 
   //#testkit-typed-usecase
-  class TypedSampleSpec extends WordSpecLike {
+  class TypedSampleSpec extends AnyWordSpecLike {
 
     val system: ActorSystem[Cmd] = ActorSystem(
       EventSourcedBehavior[Cmd, Evt, State](
@@ -24,7 +24,7 @@ class TestKitExamples {
         emptyState = ???),
       "name",
       PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication()))
-    val testKit = PersistenceTestKit(system)
+    val persistenceTestKit = PersistenceTestKit(system)
 
     "Persistent actor" should {
 
@@ -37,7 +37,7 @@ class TestKitExamples {
 
         val expectedPersistedEvent = Evt(cmd.data)
 
-        testKit.expectNextPersisted("your-persistence-id", expectedPersistedEvent)
+        persistenceTestKit.expectNextPersisted("your-persistence-id", expectedPersistedEvent)
 
       }
 

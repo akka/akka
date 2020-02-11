@@ -53,7 +53,7 @@ trait CommonTestKitTests extends ScalaDslUtils {
 
     }
 
-    "expect next valid message and check with pf" in {
+    "expect next valid message and check type" in {
 
       val pid = randomPid()
 
@@ -62,26 +62,14 @@ trait CommonTestKitTests extends ScalaDslUtils {
       a ! B(1)
       a ! B(2)
 
-      expectNextPersistedPF(pid) {
-        case B(1) =>
-      }
-
+      expectNextPersistedType[B](pid)
       assertThrows[AssertionError] {
-        expectNextPersistedPF(pid) {
-          case B(3) =>
-        }
+        expectNextPersistedType[A](pid)
       }
-
-      expectNextPersistedPF(pid) {
-        case B(2) =>
-      }
-
+      expectNextPersistedType[B](pid)
       assertThrows[AssertionError] {
-        expectNextPersistedPF(pid) {
-          case B(3) =>
-        }
+        expectNextPersistedType[B](pid)
       }
-
     }
 
     "expect next N valid messages in order" in {
@@ -94,28 +82,13 @@ trait CommonTestKitTests extends ScalaDslUtils {
       a ! B(2)
 
       assertThrows[AssertionError] {
-        expectPersistedInOrder(pid, List(B(2), B(1)))
+        receivePersisted[B](pid, 3)
       }
-
-      expectPersistedInOrder(pid, List(B(1), B(2)))
-
-    }
-
-    "expect next N valid messages in any order" in {
-
-      val pid = randomPid()
-
-      val a = system.actorOf(Props(classOf[A], pid, None))
-
-      a ! B(2)
-      a ! B(1)
-
       assertThrows[AssertionError] {
-        expectPersistedInAnyOrder(pid, List(B(3), B(2)))
+        receivePersisted[C](pid, 2)
       }
-
-      expectPersistedInAnyOrder(pid, List(B(1), B(2)))
-
+      val li = receivePersisted[B](pid, 2)
+      (li should contain).theSameElementsInOrderAs(List(B(1), B(2)))
     }
 
     "successfully set and execute custom policy" in {

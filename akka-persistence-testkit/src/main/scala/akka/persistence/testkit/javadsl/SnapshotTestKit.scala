@@ -15,15 +15,14 @@ import java.util.{ function => jf }
 
 import akka.annotation.ApiMayChange
 import akka.japi.Pair
-import akka.testkit.javadsl.CachingPartialFunction
+
+import scala.collection.immutable
 
 /**
  * Class for testing persisted snapshots in persistent actors.
  */
 @ApiMayChange
 class SnapshotTestKit(system: ActorSystem) {
-  import akka.persistence.testkit.internal.Utils.JavaCollectionConversions._
-  import akka.persistence.testkit.internal.Utils.JavaFuncConversions._
 
   private val scalaTestkit = new ScalaTestKit(system)
 
@@ -39,84 +38,67 @@ class SnapshotTestKit(system: ActorSystem) {
     scalaTestkit.expectNothingPersisted(persistenceId, max.asScala)
 
   /**
-   * Check that `msg` event has been saved in the storage.
+   * Check that `snapshot` has been saved in the storage.
    */
-  def expectNextPersisted[A](persistenceId: String, msg: A): A = scalaTestkit.expectNextPersisted(persistenceId, msg)
+  def expectNextPersisted[A](persistenceId: String, snapshot: A): A =
+    scalaTestkit.expectNextPersisted(persistenceId, snapshot)
 
   /**
-   * Check for `max` time that `msg` event has been saved in the storage.
+   * Check for `max` time that `snapshot` has been saved in the storage.
    */
-  def expectNextPersisted[A](persistenceId: String, msg: A, max: Duration): A =
-    scalaTestkit.expectNextPersisted(persistenceId, msg, max.asScala)
+  def expectNextPersisted[A](persistenceId: String, snapshot: A, max: Duration): A =
+    scalaTestkit.expectNextPersisted(persistenceId, snapshot, max.asScala)
 
   /**
-   * Check that next persisted in storage for particular persistence id event matches partial function `pf`.
+   * Check that next persisted in storage for particular persistence id snapshot has expected type.
    */
-  def expectNextPersistedPF[A](persistenceId: String, pf: jf.Function[Any, A]): A =
-    expectNextPersistedPF(persistenceId, "", pf)
+  def expectNextPersistedClass[A](persistenceId: String, cla: Class[A]): A =
+    scalaTestkit.expectNextPersistedClass[A](persistenceId, cla)
 
   /**
-   * Check that next persisted in storage for particular persistence id event matches partial function `pf`.
+   * Check for `max` time that next persisted in storage for particular persistence id snapshot has expected type.
    */
-  def expectNextPersistedPF[A](persistenceId: String, hint: String, pf: jf.Function[Any, A]): A =
-    scalaTestkit.expectNextPersistedPF(persistenceId, hint)(new CachingPartialFunction[Any, A] {
-      @throws(classOf[Exception])
-      override def `match`(x: Any): A = pf.apply(x)
-    })
+  def expectNextPersistedClass[A](persistenceId: String, cla: Class[A], max: Duration): A =
+    scalaTestkit.expectNextPersistedClass[A](persistenceId, cla, max.asScala)
 
   /**
-   * Check for `max` time that next persisted in storage for particular persistence id event matches partial function `pf`.
-   */
-  def expectNextPersistedPF[A](persistenceId: String, max: Duration, hint: String, pf: jf.Function[Any, A]): A =
-    scalaTestkit.expectNextPersistedPF(persistenceId, max.asScala, hint)(new CachingPartialFunction[Any, A] {
-      @throws(classOf[Exception])
-      override def `match`(x: Any): A = pf.apply(x)
-    })
-
-  /**
-   * Check for `max` time that next persisted in storage for particular persistence id event matches partial function `pf`.
-   */
-  def expectNextPersistedPF[A](persistenceId: String, max: Duration, pf: jf.Function[Any, A]): A =
-    expectNextPersistedPF(persistenceId, max, "", pf)
-
-  /**
-   * Fail next `n` persisted events with the `cause` exception for particular persistence id.
+   * Fail next `n` write operations with the `cause` exception for particular persistence id.
    */
   def failNextNPersisted(persistenceId: String, n: Int, cause: Throwable): Unit =
     scalaTestkit.failNextNPersisted(persistenceId, n, cause)
 
   /**
-   * Fail next `n` persisted events for particular persistence id.
+   * Fail next `n` write operations for particular persistence id.
    */
   def failNextNPersisted(persistenceId: String, n: Int): Unit = failNextNPersisted(persistenceId, n, ExpectedFailure)
 
   /**
-   * Fail next `n` persisted events with the `cause` exception for any persistence id.
+   * Fail next `n` write operations with the `cause` exception for any persistence id.
    */
   def failNextNPersisted(n: Int, cause: Throwable): Unit = scalaTestkit.failNextNPersisted(n, cause)
 
   /**
-   * Fail next `n` persisted events with default exception for any persistence id.
+   * Fail next `n` write operations with default exception for any persistence id.
    */
   def failNextNPersisted(n: Int): Unit = failNextNPersisted(n, ExpectedFailure)
 
   /**
-   * Fail next persisted event with `cause` exception for particular persistence id.
+   * Fail next write operations with `cause` exception for particular persistence id.
    */
   def failNextPersisted(persistenceId: String, cause: Throwable): Unit = failNextNPersisted(persistenceId, 1, cause)
 
   /**
-   * Fail next persisted event with default exception for particular persistence id.
+   * Fail next write operations with default exception for particular persistence id.
    */
   def failNextPersisted(persistenceId: String): Unit = failNextNPersisted(persistenceId, 1)
 
   /**
-   * Fail next persisted event with `cause` exception for any persistence id.
+   * Fail next write operations with `cause` exception for any persistence id.
    */
   def failNextPersisted(cause: Throwable): Unit = failNextNPersisted(1, cause)
 
   /**
-   * Fail next persisted event with default exception for any persistence id.
+   * Fail next write operations with default exception for any persistence id.
    */
   def failNextPersisted(): Unit = failNextNPersisted(1)
 
@@ -203,34 +185,22 @@ class SnapshotTestKit(system: ActorSystem) {
   def failNextNDeletes(persistenceId: String, n: Int): Unit = failNextNDeletes(persistenceId, n, ExpectedFailure)
 
   /**
-   * Check that `msgs` events have been persisted in the storage in order.
+   * Receive next `n` snapshots that have been persisted in the storage.
    */
-  def expectPersistedInOrder[A](persistenceId: String, msgs: JList[A]): JList[A] =
-    scalaTestkit.expectPersistedInOrder(persistenceId, msgs).asJava
+  def receivePersisted[A](persistenceId: String, n: Int, cla: Class[A]): JList[A] =
+    scalaTestkit.receivePersisted[A](persistenceId, n, cla).asJava
 
   /**
-   * Check for `max` time that `msgs` events have been persisted in the storage in order.
+   * Receive for `max` time next `n` snapshots that have been persisted in the storage.
    */
-  def expectPersistedInOrder[A](persistenceId: String, msgs: JList[A], max: Duration): JList[A] =
-    scalaTestkit.expectPersistedInOrder(persistenceId, msgs, max.asScala).asJava
+  def receivePersisted[A](persistenceId: String, n: Int, cla: Class[A], max: Duration): JList[A] =
+    scalaTestkit.receivePersisted[A](persistenceId, n, cla, max.asScala).asJava
 
   /**
-   * Check that `msgs` events have been persisted in the storage regardless of order.
+   * Persist `snapshots` with metadata into storage in order.
    */
-  def expectPersistedInAnyOrder[A](persistenceId: String, msgs: JList[A]): JList[A] =
-    scalaTestkit.expectPersistedInAnyOrder(persistenceId, msgs).asJava
-
-  /**
-   * Check for `max` time that `msgs` events have been persisted in the storage regardless of order.
-   */
-  def expectPersistedInAnyOrder[A](persistenceId: String, msgs: JList[A], max: Duration): JList[A] =
-    scalaTestkit.expectPersistedInAnyOrder(persistenceId, msgs, max.asScala).asJava
-
-  /**
-   * Persist `elems` snapshots with metadata into storage in order.
-   */
-  def persistForRecovery(persistenceId: String, elems: JList[Pair[SnapshotMeta, Any]]): Unit =
-    scalaTestkit.persistForRecovery(persistenceId, elems.map(_.toScala))
+  def persistForRecovery(persistenceId: String, snapshots: JList[Pair[SnapshotMeta, Any]]): Unit =
+    scalaTestkit.persistForRecovery(persistenceId, snapshots.asScala.to[immutable.Seq].map(_.toScala))
 
   /**
    * Retrieve all snapshots and their metadata saved in storage by persistence id.
@@ -249,40 +219,40 @@ class SnapshotTestKit(system: ActorSystem) {
   def clearByPersistenceId(persistenceId: String): Unit = scalaTestkit.clearByPersistenceId(persistenceId)
 
   /**
-   * Fail `n` following journal events depending on the condition `cond`.
-   * Failure triggers, when `cond` returns true, .
-   * Fails events with default `ExpectedFailure` exception.
+   * Fail `n` following journal operations depending on the condition `cond`.
+   * Failure triggers, when `cond` returns true.
+   * Fails operations with default `ExpectedFailure` exception.
    */
   def failNextNOpsCond(cond: jf.BiFunction[String, SnapshotOperation, Boolean], n: Int): Unit =
     failNextNOpsCond(cond, n, ExpectedFailure)
 
   /**
-   * Fail `n` following journal events depending on the condition `cond`.
-   * Failure triggers, when `cond` returns true, .
-   * Fails events with the `cause` exception.
+   * Fail `n` following journal operations depending on the condition `cond`.
+   * Failure triggers, when `cond` returns true.
+   * Fails operations with the `cause` exception.
    */
   def failNextNOpsCond(cond: jf.BiFunction[String, SnapshotOperation, Boolean], n: Int, cause: Throwable): Unit =
-    scalaTestkit.failNextNOpsCond(cond, n, cause)
+    scalaTestkit.failNextNOpsCond((l: String, r: SnapshotOperation) => cond.apply(l, r), n, cause)
 
   /**
-   * Fail n following journal events regardless of their type.
-   * Fails events with default `ExpectedFailure` exception.
+   * Fail n following journal operations regardless of their type.
+   * Fails operations with default `ExpectedFailure` exception.
    */
   def failNextNOps(n: Int): Unit =
     failNextNOps(n, ExpectedFailure)
 
   /**
-   * Fail `n` following journal events depending on the condition `cond`.
-   * Failure triggers, when `cond` returns true, .
-   * Fails events with the `cause` exception.
+   * Fail `n` following journal operations depending on the condition `cond`.
+   * Failure triggers, when `cond` returns true.
+   * Fails operations with the `cause` exception.
    */
   def failNextNOps(n: Int, cause: Throwable): Unit = scalaTestkit.failNextNOps(n, cause)
 
   /**
-   * Set new processing policy for journal events.
+   * Set new processing policy for journal operations.
    * NOTE! Overrides previously invoked `failNext...` or `rejectNext...`
    */
-  def withPolicy(policy: SnapshotStorage.SnapshotPolicies.PolicyType): this.type = {
+  def withPolicy(policy: SnapshotStorage.SnapshotPolicies.PolicyType): SnapshotTestKit = {
     scalaTestkit.withPolicy(policy)
     this
   }
