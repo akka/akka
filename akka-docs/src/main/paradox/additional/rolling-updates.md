@@ -154,6 +154,10 @@ which has a completely different protocol, a rolling update is not supported.
 For more details on this migration
 see @ref:[the migration guide](../project/migration-guide-2.5.x-2.6.x.md#migrating-from-classic-remoting-to-artery).
 
+### Changing remoting transport
+
+Rolling update is not supported when @ref:[changing the remoting transport](../remoting-artery.md#selecting-a-transport).
+
 ### Migrating from Classic Sharding to Typed Sharding
 
 If you have been using classic sharding it is possible to do a rolling upgrade to typed sharding using a 3 step procedure.
