@@ -19,6 +19,15 @@ for each materialization, which is the reason the @scala[`method`] @java[`factor
 
 If the iterator perform blocking operations, make sure to run it on a separate dispatcher.
 
+## Example
+ 
+Scala
+:   @@snip [From.scala](/akka-docs/src/test/scala/docs/stream/operators/source/From.scala) { #from-iterator }
+
+Java
+:   @@snip [From.java](/akka-docs/src/test/java/jdocs/stream/operators/source/From.java) { #from-iterator }
+
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
