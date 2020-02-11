@@ -92,7 +92,7 @@ import akka.util.OptionVal
         case classic.ReceiveTimeout =>
           handleMessage(ctx.receiveTimeoutMsg)
         case wrapped: AdaptMessage[Any, T] @unchecked =>
-          withSafelyAdapted(wrapped.adapt) {
+          withSafelyAdapted(() => wrapped.adapt()) {
             case AdaptWithRegisteredMessageAdapter(msg) =>
               adaptAndHandle(msg)
             case msg: T @unchecked =>
