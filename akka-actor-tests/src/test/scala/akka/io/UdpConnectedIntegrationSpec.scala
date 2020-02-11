@@ -6,15 +6,24 @@ package akka.io
 
 import java.net.InetSocketAddress
 
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-import akka.util.ByteString
 import akka.actor.ActorRef
 import akka.testkit.SocketUtil.temporaryServerAddresses
 import akka.testkit.WithLogCapturing
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
+import akka.testkit.TestProbe
+import akka.util.ByteString
+
 import scala.concurrent.duration._
 
 class UdpConnectedIntegrationSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
+    akka.actor.debug.lifecycle = on
+    akka.actor.debug.autoreceive = on
+    akka.io.udp-connected.trace-logging = on
+    # issues with dns resolution of non existent host hanging with the
+    # Java native host resolution
+    akka.io.dns.resolver = async-dns
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     """) with ImplicitSender with WithLogCapturing {
 
