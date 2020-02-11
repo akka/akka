@@ -220,9 +220,9 @@ import org.slf4j.LoggerFactory
       future: CompletionStage[Value],
       applyToResult: akka.japi.function.Function2[Value, Throwable, T]): Unit = {
     future.whenComplete { (value, ex) =>
-      if (value != null) self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
       if (ex != null)
         self.unsafeUpcast ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
+      else self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
     }
   }
 
