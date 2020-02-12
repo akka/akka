@@ -2183,9 +2183,6 @@ private[stream] object Collect {
       setHandler(out, this)
 
       private def switchTo(flow: Flow[I, O, M], firstElement: I): M = {
-
-        var unpushedFirstElement = OptionVal.Some(firstElement)
-
         //
         // ports are wired in the following way:
         //
@@ -2197,6 +2194,7 @@ private[stream] object Collect {
 
         val matVal = Source
           .fromGraph(subOutlet.source)
+          .prepend(Source.single(firstElement))
           .viaMat(flow)(Keep.right)
           .toMat(subInlet.sink)(Keep.left)
           .run()(interpreter.subFusingMaterializer)
@@ -2226,10 +2224,8 @@ private[stream] object Collect {
               subOutlet.push(grab(in))
             }
             override def onUpstreamFinish(): Unit = {
-              if (unpushedFirstElement.isEmpty) {
-                subOutlet.complete()
-                maybeCompleteStage()
-              }
+              subOutlet.complete()
+              maybeCompleteStage()
             }
             override def onUpstreamFailure(ex: Throwable): Unit = {
               // propagate exception irrespective if the cached element has been pushed or not
@@ -2249,18 +2245,13 @@ private[stream] object Collect {
         })
 
         subOutlet.setHandler(new OutHandler {
-          override def onPull(): Unit = unpushedFirstElement match {
-            case OptionVal.Some(firstElem) =>
-              // the demand can be satisfied right away by the cached element
-              unpushedFirstElement = OptionVal.none
-              subOutlet.push(firstElem)
-              // in.onUpstreamFinished was not propagated if it arrived before the cached element was pushed
-              // -> check if the completion must be propagated now
-              if (isClosed(in)) {
-                subOutlet.complete()
-                maybeCompleteStage()
-              }
-            case OptionVal.None => pull(in)
+          override def onPull(): Unit = {
+            if (!isClosed(in) && !hasBeenPulled(in)) {
+              pull(in)
+            } else if (isClosed(in)) {
+              subOutlet.complete()
+              maybeCompleteStage()
+            }
           }
           override def onDownstreamFinish(cause: Throwable): Unit = {
             if (!isClosed(in)) {
