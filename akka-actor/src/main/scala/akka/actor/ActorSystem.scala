@@ -1030,7 +1030,7 @@ private[akka] class ActorSystemImpl(
         "Please report at https://github.com/akka/akka/issues.")
   private lazy val _start: this.type = try {
 
-    registerOnTermination(stopScheduler())
+    registerOnTermination(stopScheduler)
     // the provider is expected to start default loggers, LocalActorRefProvider does this
     provider.init(this)
     // at this point it should be initialized "enough" for most extensions that we might want to guard against otherwise
