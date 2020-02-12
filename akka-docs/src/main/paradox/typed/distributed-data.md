@@ -569,8 +569,8 @@ Implement the additional methods of @scala[`DeltaReplicatedData`]@java[`Abstract
 #### Serialization
 
 The data types must be serializable with an @ref:[Akka Serializer](../serialization.md).
-It is highly recommended that you implement  efficient serialization with Protobuf or similar
-for your custom data types. The built in data types are marked with `ReplicatedDataSerialization`
+It is highly recommended that you implement efficient serialization with Protobuf or similar
+for your custom data types, otherwise inefficient Java serialization applies. The built in data types are marked with `ReplicatedDataSerialization`
 and serialized with `akka.cluster.ddata.protobuf.ReplicatedDataSerializer`.
 
 Serialization of the data types are used in remote messages and also for creating message
