@@ -25,6 +25,7 @@ import akka.stream.stage._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.WithLogCapturing
+import akka.testkit.TestDuration
 import akka.util.ByteString
 import akka.util.JavaVersion
 import com.github.ghik.silencer.silent
@@ -389,11 +390,12 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
             .collect { case SessionBytes(_, b) => b }
             .scan(ByteString.empty)(_ ++ _)
             .filter(_.nonEmpty)
-            .via(new Timeout(10.seconds))
+            .via(new Timeout(10.seconds.dilated))
             .dropWhile(_.size < scenario.output.size)
             .runWith(Sink.headOption)
 
-        Await.result(output, 12.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
+        Await.result(output, 12.seconds.dilated).getOrElse(ByteString.empty).utf8String should be(
+          scenario.output.utf8String)
 
         commPattern.cleanup()
       }
