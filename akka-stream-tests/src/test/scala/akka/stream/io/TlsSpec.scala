@@ -23,6 +23,7 @@ import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestDuration
 import akka.util.{ ByteString, JavaVersion }
 import javax.net.ssl._
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
@@ -419,11 +420,11 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
             .collect { case SessionBytes(_, b) => b }
             .scan(ByteString.empty)(_ ++ _)
             .filter(_.nonEmpty)
-            .via(new Timeout(6.seconds))
+            .via(new Timeout(10.seconds))
             .dropWhile(_.size < scenario.output.size)
             .runWith(Sink.headOption)
 
-        Await.result(output, 8.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
+        Await.result(output, 12.seconds).getOrElse(ByteString.empty).utf8String should be(scenario.output.utf8String)
 
         commPattern.cleanup()
       }
@@ -518,7 +519,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
       val inFlow = Flow[SslTlsInbound]
         .collect { case SessionBytes(_, b) => b }
         .scan(ByteString.empty)(_ ++ _)
-        .via(new Timeout(6.seconds))
+        .via(new Timeout(6.seconds.dilated))
         .dropWhile(_.size < scenario.output.size)
 
       val f =
@@ -530,7 +531,7 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
           })
           .runWith(Sink.last)
 
-      Await.result(f, 8.second).utf8String should be(scenario.output.utf8String)
+      Await.result(f, 8.second.dilated).utf8String should be(scenario.output.utf8String)
     }
 
     "verify hostname" in assertAllStagesStopped {
