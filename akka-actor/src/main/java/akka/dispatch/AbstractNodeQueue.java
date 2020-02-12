@@ -47,12 +47,12 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
     protected final Node<T> peekNode() {
         final Node<T> tail = ((Node<T>)Unsafe.instance.getObjectVolatile(this, tailOffset));
         Node<T> next = tail.next();
-        if (next == null && get() != tail) {
+        while (next == null && get() != tail && next != tail.next()) {
             // if tail != head this is not going to change until producer makes progress
             // we can avoid reading the head and just spin on next until it shows up
-            do {
-                next = tail.next();
-            } while (next == null);
+            // we're using Thread.yield to prevent use all available CPU
+            Thread.yield();
+            next = tail.next();
         }
         return next;
     }
@@ -155,12 +155,12 @@ public abstract class AbstractNodeQueue<T> extends AtomicReference<AbstractNodeQ
     public final Node<T> pollNode() {
       final Node<T> tail = (Node<T>) Unsafe.instance.getObjectVolatile(this, tailOffset);
       Node<T> next = tail.next();
-      if (next == null && get() != tail) {
+      while (next == null && get() != tail && next != tail.next()) {
           // if tail != head this is not going to change until producer makes progress
           // we can avoid reading the head and just spin on next until it shows up
-          do {
-              next = tail.next();
-          } while (next == null);
+          // we're using Thread.yield to prevent use all available CPU
+          Thread.yield();
+          next = tail.next();
       }
       if (next == null) return null;
       else {
