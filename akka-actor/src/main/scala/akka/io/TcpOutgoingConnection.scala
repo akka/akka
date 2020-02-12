@@ -7,6 +7,8 @@ package akka.io
 import java.net.{ ConnectException, InetSocketAddress }
 import java.nio.channels.{ SelectionKey, SocketChannel }
 
+import akka.actor.Status.Failure
+
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.concurrent.duration._
 import akka.actor.{ ActorRef, ReceiveTimeout }
@@ -15,8 +17,6 @@ import akka.io.TcpConnection.CloseInformation
 import akka.io.SelectionHandler._
 import akka.io.Tcp._
 import akka.io.dns.DnsProtocol
-
-import scala.util.Failure
 
 /**
  * An actor handling the connection state machine for an outgoing connection

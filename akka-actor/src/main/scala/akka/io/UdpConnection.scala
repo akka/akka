@@ -9,6 +9,8 @@ import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
 
+import akka.actor.Status.Failure
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ Actor, ActorLogging, ActorRef }
@@ -17,8 +19,6 @@ import akka.util.{ unused, ByteString }
 import akka.io.SelectionHandler._
 import akka.io.UdpConnected._
 import akka.io.dns.DnsProtocol
-
-import scala.util.Failure
 
 /**
  * INTERNAL API

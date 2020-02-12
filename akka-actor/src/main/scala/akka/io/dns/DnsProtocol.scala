@@ -48,7 +48,7 @@ object DnsProtocol {
   def srvRequestType(): RequestType = Srv
 
   /**
-   * Sending this to the [[AsyncDnsManager]] will either lead to a [[Resolved]] or a [[scala.util.Failure]] response.
+   * Sending this to the [[AsyncDnsManager]] will either lead to a [[Resolved]] or a [[akka.actor.Status.Failure]] response.
    * If request type are both, both resolutions must succeed or the response is a failure.
    */
   final case class Resolve(name: String, requestType: RequestType) extends ConsistentHashable {
