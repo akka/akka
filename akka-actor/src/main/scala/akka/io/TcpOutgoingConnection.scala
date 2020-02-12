@@ -16,6 +16,8 @@ import akka.io.SelectionHandler._
 import akka.io.Tcp._
 import akka.io.dns.DnsProtocol
 
+import scala.util.Failure
+
 /**
  * An actor handling the connection state machine for an outgoing connection
  * to be established.
@@ -83,6 +85,11 @@ private[io] class TcpOutgoingConnection(
       }
     case ReceiveTimeout =>
       connectionTimeout()
+    case Failure(ex) =>
+      // async-dns responds with a Failure on DNS server lookup failure
+      reportConnectFailure {
+        throw new RuntimeException(ex)
+      }
   }
 
   def register(address: InetSocketAddress, registration: ChannelRegistration): Unit = {

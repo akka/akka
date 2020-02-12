@@ -18,6 +18,8 @@ import akka.io.SelectionHandler._
 import akka.io.UdpConnected._
 import akka.io.dns.DnsProtocol
 
+import scala.util.Failure
+
 /**
  * INTERNAL API
  */
@@ -59,6 +61,11 @@ private[io] class UdpConnection(
     case r: DnsProtocol.Resolved =>
       reportConnectFailure {
         doConnect(new InetSocketAddress(r.address(), remoteAddress.getPort))
+      }
+    case Failure(ex) =>
+      // async-dns responds with a Failure on DNS server lookup failure
+      reportConnectFailure {
+        throw new RuntimeException(ex)
       }
   }
 
