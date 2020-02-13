@@ -280,6 +280,8 @@ Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `f
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration-reference.md#config-akka-remote).
 
+If you have a [Lightbend Platform Subscription](https://www.lightbend.com/lightbend-platform-subscription) you can use our [Config Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html) enhancement to flag any settings that have not been properly migrated.
+
 ### Persistent mode for Cluster Sharding
 
 Cluster Sharding coordinator and @ref:[Remembering Entities](../cluster-sharding.md#remembering-entities) state could previously be stored in Distributed Data or via Akka Persistence.
