@@ -70,12 +70,12 @@ trait Graph[+S <: Shape, +M] {
   def addAttributes(attr: Attributes): Graph[S, M] = withAttributes(traversalBuilder.attributes and attr)
 }
 
-object Graph{
-  def mapMaterializedValue[S <: Shape, M1, M2](g : Graph[S, M1])(f : M1 => M2) : Graph[S, M2] = {
+object Graph {
+  def mapMaterializedValue[S <: Shape, M1, M2](g: Graph[S, M1])(f: M1 => M2): Graph[S, M2] = {
     new GenericGraph(g.shape, g.traversalBuilder).mapMaterializedValue(f)
   }
-  implicit class GraphMapMatVal[S <: Shape, M](self : Graph[S, M]){
-    def mapMaterializedValue[M2](f : M => M2) : Graph[S, M2] = Graph.mapMaterializedValue(self)(f)
+  implicit class GraphMapMatVal[S <: Shape, M](self: Graph[S, M]) {
+    def mapMaterializedValue[M2](f: M => M2): Graph[S, M2] = Graph.mapMaterializedValue(self)(f)
   }
 }
 
