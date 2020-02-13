@@ -441,8 +441,7 @@ In addition to formatting the Akka build enforces code discipline through a set 
 the discipline may be more of a hindrance than a help so it is possible to disable it by setting the system property `akka.no.discipline`
 to any non-empty string value when starting up sbt: `sbt -Dakka.no.discipline=youbet`
 
-PR validation includes the discpline flags and will fail if the sources are not compiling with them enabled so if toggling
-the discpline flag make sure you enable it again and compile before submitting a PR.
+PR validation includes the discipline flags and therefore may fail if the flags were disabled during development. Make sure you compile your code at least once with discipline enabled before sending a PR.
 
 ### Preferred ways to use timeouts in tests
 
