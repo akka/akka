@@ -19,6 +19,8 @@ This can be used to flatten collections into individual stream elements.
 Returning an empty iterable results in zero elements being passed downstream
 rather than the stream being cancelled.
 
+See also @ref:[statefulMapConcat](statefulMapConcat.md)
+
 ## Example
 
 The following takes a stream of integers and emits each element twice downstream.
