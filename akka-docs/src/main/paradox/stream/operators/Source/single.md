@@ -1,20 +1,22 @@
 # Source.single
 
-Stream a single object
+Stream a single object once.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #single }
-
-@@@
+@apidoc[Source.single](Source$) { scala="#single[T](element:T):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#single(T)" }
 
 ## Description
 
-Stream a single object
+Stream a single object once and complete after thereafter.
+
+See also:
+
+* @ref:[`repeat`](repeat.md) Stream a single object repeatedly.
+* @ref:[`tick`](tick.md) A periodical repetition of an arbitrary object.
+* @ref:[`cycle`](cycle.md) Stream iterator in cycled manner.
 
 ## Examples
 

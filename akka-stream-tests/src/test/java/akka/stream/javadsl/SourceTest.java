@@ -627,6 +627,17 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustRepeatForDocs() throws Exception {
+    // #repeat
+    Source<Integer, NotUsed> source = Source.repeat(42);
+    CompletionStage<List<Integer>> f = source.take(17).runWith(Sink.seq(), system);
+    // #repeat
+    final List<Integer> result = f.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(result.size(), 17);
+    for (Integer i : result) assertEquals(i, (Integer) 42);
+  }
+
+  @Test
   public void mustBeAbleToUseQueue() throws Exception {
     final Pair<SourceQueueWithComplete<String>, CompletionStage<List<String>>> x =
         Flow.of(String.class).runWith(Source.queue(2, OverflowStrategy.fail()), Sink.seq(), system);
