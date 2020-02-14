@@ -427,14 +427,21 @@ Preferences > Editor > Code Style > Scala, select Scalafmt as formatter and enab
 IntelliJ will then use the same settings and version as defined in `.scalafmt.conf` file. Then it's
 not needed to use `sbt scalafmtAll` when editing with IntelliJ.
 
+PR validation includes checking that the Scala sources are formatted and will fail if they are not.
+
 ### Java style
 
-Java code is currently not automatically reformatted by sbt (expecting to have a plugin to do this soon).
-Thus we ask Java contributions to follow these simple guidelines:
+Akka uses [the sbt Java Formatter plugin](https://github.com/sbt/sbt-java-formatter) to format Java sources.
 
-- 2 spaces
-- `{` on same line as method name
-- in all other aspects, follow the [Oracle Java Style Guide](http://www.oracle.com/technetwork/java/codeconvtoc-136057.html)
+PR validation includes checking that the Java sources are formatted and will fail if they are not.
+
+### Code discipline opt out
+
+In addition to formatting the Akka build enforces code discipline through a set of compiler flags. While exploring ideas
+the discipline may be more of a hindrance than a help so it is possible to disable it by setting the system property `akka.no.discipline`
+to any non-empty string value when starting up sbt: `sbt -Dakka.no.discipline=youbet`
+
+PR validation includes the discipline flags and therefore may fail if the flags were disabled during development. Make sure you compile your code at least once with discipline enabled before sending a PR.
 
 ### Preferred ways to use timeouts in tests
 
