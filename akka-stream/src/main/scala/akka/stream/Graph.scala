@@ -71,6 +71,7 @@ trait Graph[+S <: Shape, +M] {
 }
 
 object Graph {
+
   /**
    * Java API
    * Transform the materialized value of this Flow, leaving all other properties as they were.
@@ -88,6 +89,7 @@ object Graph {
    * @param self the graph whose material value will be mapped
    */
   final implicit class GraphMapMatVal[S <: Shape, M](self: Graph[S, M]) {
+
     /**
      * Transform the materialized value of this Flow, leaving all other properties as they were.
      *
