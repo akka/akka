@@ -70,7 +70,13 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
   }
 
   private def scheduledTasks(runTo: Long): Seq[(Item, Long)] =
-    scheduled.entrySet().asScala.map(s => (s.getKey, s.getValue)).toSeq.filter { case (_, v) => v <= runTo }.sortBy(_._2)
+    scheduled
+      .entrySet()
+      .asScala
+      .map(s => (s.getKey, s.getValue))
+      .toSeq
+      .filter { case (_, v) => v <= runTo }
+      .sortBy(_._2)
 
   @tailrec
   private[testkit] final def executeTasks(runTo: Long): Unit = {
