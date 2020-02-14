@@ -386,4 +386,28 @@ class SourceOrFlow {
     // incididunt
     // #filterNot
   }
+
+  void dropExample() {
+    // #drop
+    Source<Integer, NotUsed> fiveIntegers = Source.from(Arrays.asList(1, 2, 3, 4, 5));
+    Source<Integer, NotUsed> droppedThreeInts = fiveIntegers.drop(3);
+
+    droppedThreeInts.runWith(Sink.foreach(System.out::print), system);
+    // 4
+    // 5
+    // #drop
+  }
+
+  void dropWhileExample() {
+    // #dropWhile
+    Source<Integer, NotUsed> droppedWhileNegative =
+        Source.from(Arrays.asList(-3, -2, -1, 0, 1, 2, 3, -1)).dropWhile(integer -> integer < 0);
+
+    droppedWhileNegative.runWith(Sink.foreach(System.out::print), system);
+    // 1
+    // 2
+    // 3
+    // -1
+    // #dropWhile
+  }
 }
