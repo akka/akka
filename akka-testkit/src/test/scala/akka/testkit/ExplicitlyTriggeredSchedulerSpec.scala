@@ -8,7 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration.DurationInt
 
-class TestExplicitlyTriggeredScheduler extends AkkaSpec {
+class ExplicitlyTriggeredSchedulerSpec extends AkkaSpec {
 
   "ExplicitlyTriggeredScheduler" must {
 
