@@ -219,9 +219,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "repeat example" in {
       // #repeat
       val source: Source[Int, NotUsed] = Source.repeat(42)
-      val f = source
-        .take(17)
-        .runWith(Sink.seq)
+      val f = source.take(17).runWith(Sink.seq)
       // #repeat
       f.futureValue.size should ===(17)
       f.futureValue.toSet should ===(Set(42))
