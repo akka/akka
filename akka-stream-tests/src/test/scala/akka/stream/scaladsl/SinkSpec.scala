@@ -228,6 +228,21 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
   }
 
+  "The seq sink" must {
+    "collect the streamed elements into a sequence" in {
+      // #seq-operator-example
+      val source = Source(1 to 3)
+      val result = source.runWith(Sink.seq[Int])
+      val seq = result.futureValue
+      seq.foreach(println)
+      // 1
+      // 2
+      // 3
+      // #seq-operator-example
+      assert(seq == Vector(1, 2, 3))
+    }
+  }
+
   "Sink pre-materialization" must {
     "materialize the sink and wrap its exposed publisher in a Source" in {
       val publisherSink: Sink[String, Publisher[String]] = Sink.asPublisher[String](false)
