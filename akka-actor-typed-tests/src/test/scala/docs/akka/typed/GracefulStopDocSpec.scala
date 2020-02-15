@@ -38,8 +38,8 @@ object GracefulStopDocSpec {
                 context.log.info("ToDo list {}!", tasks)
                 tasks.map(manager ! Manager.SpawnJob(_))
                 Behaviors.same
-              case Stop =>
-                manager ! Manager.GracefulShutdown(context.self)
+              case GracefulShutdown =>
+                manager ! Manager.Shutdown(context.self)
                 Behaviors.same
               case Clean =>
                 cleanup(context.log)
@@ -61,7 +61,7 @@ object GracefulStopDocSpec {
 
     final case class Tasks(names: List[String]) extends Command
 
-    final case object Stop extends Command
+    final case object GracefulShutdown extends Command
 
     final case object Clean extends Command
   }
@@ -76,7 +76,7 @@ object GracefulStopDocSpec {
             context.log.info("Spawning job {}!", jobName)
             context.spawn(Job(jobName), name = jobName)
             Behaviors.same
-          case GracefulShutdown(replyTo: ActorRef[MasterControlProgram.Command]) =>
+          case Shutdown(replyTo: ActorRef[MasterControlProgram.Command]) =>
             context.log.info("Initiating graceful shutdown...")
             // perform graceful stop, executing cleanup before final system termination
             // behavior executing cleanup is passed as a parameter to Actor.stopped
@@ -91,7 +91,7 @@ object GracefulStopDocSpec {
 
     final case class SpawnJob(name: String) extends Command
 
-    final case class GracefulShutdown(replyTo: ActorRef[MasterControlProgram.Command]) extends Command
+    final case class Shutdown(replyTo: ActorRef[MasterControlProgram.Command]) extends Command
   }
   //#manager-actor
 
@@ -195,14 +195,14 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
     "gracefully stop workers and master" in {
       import MasterControlProgram._
 
-      implicit val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B7700")
+      val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B7700")
 
       system ! Tasks(List("a", "b"))
 
       Thread.sleep(100)
 
       // gracefully stop the system
-      system ! Stop
+      system ! GracefulShutdown
 
       Thread.sleep(100)
 
