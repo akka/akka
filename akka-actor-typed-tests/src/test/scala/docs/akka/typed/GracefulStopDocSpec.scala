@@ -34,9 +34,9 @@ object GracefulStopDocSpec {
         Behaviors
           .receive[Command] { (context, message) =>
             message match {
-              case SpawnJobs(jobNames) =>
-                context.log.info("Spawning jobs {}!", jobNames)
-                jobNames.map(manager ! Manager.SpawnJob(_))
+              case Tasks(tasks) =>
+                context.log.info("ToDo list {}!", tasks)
+                tasks.map(manager ! Manager.SpawnJob(_))
                 Behaviors.same
               case Stop =>
                 manager ! Manager.GracefulShutdown(context.self)
