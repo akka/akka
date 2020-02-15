@@ -5,13 +5,13 @@
 package docs.akka.typed
 
 //#imports
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorSystem, PostStop }
+import akka.actor.typed.{ActorSystem, PostStop}
 
 //#imports
 
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorRef
 import org.slf4j.Logger
 import scala.concurrent.duration._
@@ -43,7 +43,7 @@ object GracefulStopDocSpec {
                 Behaviors.same
               case Clean =>
                 cleanup(context.log)
-                Behaviors.same
+                Behaviors.stopped
             }
           }
           .receiveSignal {
@@ -202,12 +202,11 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
       Thread.sleep(100)
 
       // gracefully stop the system
-
       system ! Stop
 
       Thread.sleep(100)
 
-      Await.result(system.whenTerminated, 3.seconds)
+      Await.result(system.whenTerminated, 6.seconds)
       //#graceful-shutdown
     }
   }
