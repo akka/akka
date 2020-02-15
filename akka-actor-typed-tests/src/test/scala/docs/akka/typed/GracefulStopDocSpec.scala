@@ -6,20 +6,18 @@ package docs.akka.typed
 
 //#imports
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ActorSystem, PostStop}
+import akka.actor.typed.{ ActorSystem, Behavior, PostStop }
 
 //#imports
 
-import akka.actor.typed.ActorRef
-import org.slf4j.Logger
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import org.scalatest.wordspec.AnyWordSpecLike
-import akka.actor.typed.Terminated
-
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.{ ActorRef, Terminated }
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.Logger
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
 object GracefulStopDocSpec {
 
@@ -98,8 +96,6 @@ object GracefulStopDocSpec {
   //#worker-actor
 
   object Job {
-    sealed trait Command
-
     def apply(name: String): Behavior[Command] = {
       Behaviors.receiveSignal[Command] {
         case (context, PostStop) =>
@@ -107,6 +103,8 @@ object GracefulStopDocSpec {
           Behaviors.same
       }
     }
+
+    sealed trait Command
   }
   //#worker-actor
 
@@ -114,9 +112,6 @@ object GracefulStopDocSpec {
     //#master-actor-watch
 
     object MasterControlProgram {
-      sealed trait Command
-      final case class SpawnJob(name: String) extends Command
-
       def apply(): Behavior[Command] = {
         Behaviors
           .receive[Command] { (context, message) =>
@@ -134,6 +129,10 @@ object GracefulStopDocSpec {
               Behaviors.same
           }
       }
+
+      sealed trait Command
+
+      final case class SpawnJob(name: String) extends Command
     }
     //#master-actor-watch
   }
@@ -142,11 +141,6 @@ object GracefulStopDocSpec {
     //#master-actor-watchWith
 
     object MasterControlProgram {
-      sealed trait Command
-      final case class SpawnJob(name: String, replyToWhenDone: ActorRef[JobDone]) extends Command
-      final case class JobDone(name: String)
-      private final case class JobTerminated(name: String, replyToWhenDone: ActorRef[JobDone]) extends Command
-
       def apply(): Behavior[Command] = {
         Behaviors.receive { (context, message) =>
           message match {
@@ -162,6 +156,14 @@ object GracefulStopDocSpec {
           }
         }
       }
+
+      sealed trait Command
+
+      final case class SpawnJob(name: String, replyToWhenDone: ActorRef[JobDone]) extends Command
+
+      final case class JobDone(name: String)
+
+      private final case class JobTerminated(name: String, replyToWhenDone: ActorRef[JobDone]) extends Command
     }
     //#master-actor-watchWith
   }
