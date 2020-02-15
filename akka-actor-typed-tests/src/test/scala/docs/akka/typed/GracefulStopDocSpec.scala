@@ -26,38 +26,74 @@ object GracefulStopDocSpec {
   //#master-actor
 
   object MasterControlProgram {
-    sealed trait Command
-    final case class SpawnJob(name: String) extends Command
-    final case object GracefulShutdown extends Command
+
+    def apply(): Behavior[Command] = {
+      Behaviors.setup { context =>
+        val manager = context.spawn(Manager(), "managerName")
+
+        Behaviors
+          .receive[Command] { (context, message) =>
+            message match {
+              case SpawnJobs(jobNames) =>
+                context.log.info("Spawning jobs {}!", jobNames)
+                jobNames.map(manager ! Manager.SpawnJob(_))
+                Behaviors.same
+              case Stop =>
+                manager ! Manager.GracefulShutdown(context.self)
+                Behaviors.same
+              case Clean =>
+                cleanup(context.log)
+                Behaviors.same
+            }
+          }
+          .receiveSignal {
+            case (context, PostStop) =>
+              context.log.info("Master Control Program stopped")
+              Behaviors.same
+          }
+      }
+    }
 
     // Predefined cleanup operation
     def cleanup(log: Logger): Unit = log.info("Cleaning up!")
 
-    def apply(): Behavior[Command] = {
-      Behaviors
-        .receive[Command] { (context, message) =>
-          message match {
-            case SpawnJob(jobName) =>
-              context.log.info("Spawning job {}!", jobName)
-              context.spawn(Job(jobName), name = jobName)
-              Behaviors.same
-            case GracefulShutdown =>
-              context.log.info("Initiating graceful shutdown...")
-              // perform graceful stop, executing cleanup before final system termination
-              // behavior executing cleanup is passed as a parameter to Actor.stopped
-              Behaviors.stopped { () =>
-                cleanup(context.system.log)
-              }
-          }
-        }
-        .receiveSignal {
-          case (context, PostStop) =>
-            context.log.info("Master Control Program stopped")
-            Behaviors.same
-        }
-    }
+    sealed trait Command
+
+    final case class Tasks(names: List[String]) extends Command
+
+    final case object Stop extends Command
+
+    final case object Clean extends Command
   }
   //#master-actor
+
+  //#manager-actor
+  object Manager {
+    def apply(): Behavior[Command] = {
+      Behaviors.receive[Command] { (context, message) =>
+        message match {
+          case SpawnJob(jobName) =>
+            context.log.info("Spawning job {}!", jobName)
+            context.spawn(Job(jobName), name = jobName)
+            Behaviors.same
+          case GracefulShutdown(replyTo: ActorRef[MasterControlProgram.Command]) =>
+            context.log.info("Initiating graceful shutdown...")
+            // perform graceful stop, executing cleanup before final system termination
+            // behavior executing cleanup is passed as a parameter to Actor.stopped
+            Behaviors.stopped { () =>
+              replyTo ! MasterControlProgram.Clean
+            }
+        }
+      }
+    }
+
+    sealed trait Command
+
+    final case class SpawnJob(name: String) extends Command
+
+    final case class GracefulShutdown(replyTo: ActorRef[MasterControlProgram.Command]) extends Command
+  }
+  //#manager-actor
 
   //#worker-actor
 
@@ -144,8 +180,7 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
 
       val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B6700")
 
-      system ! SpawnJob("a")
-      system ! SpawnJob("b")
+      system ! Tasks(List("a", "b"))
 
       // sleep here to allow time for the new actors to be started
       Thread.sleep(100)
@@ -158,19 +193,17 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
     }
 
     "gracefully stop workers and master" in {
-      //#graceful-shutdown
-
       import MasterControlProgram._
 
-      val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B7700")
+      implicit val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B7700")
 
-      system ! SpawnJob("a")
-      system ! SpawnJob("b")
+      system ! Tasks(List("a", "b"))
 
       Thread.sleep(100)
 
       // gracefully stop the system
-      system ! GracefulShutdown
+
+      system ! Stop
 
       Thread.sleep(100)
 
