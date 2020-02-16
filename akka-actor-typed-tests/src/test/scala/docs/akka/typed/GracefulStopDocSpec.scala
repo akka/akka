@@ -66,6 +66,7 @@ object GracefulStopDocSpec {
   //#master-actor
 
   //#manager-actor
+
   object Manager {
     def apply(): Behavior[Command] = {
       Behaviors.receive[Command] { (context, message) =>
@@ -195,6 +196,7 @@ class GracefulStopDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike
     }
 
     "gracefully stop workers and master" in {
+      //#graceful-shutdown
       import MasterControlProgram._
 
       val system: ActorSystem[Command] = ActorSystem(MasterControlProgram(), "B7700")
