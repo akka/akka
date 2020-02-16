@@ -30,9 +30,6 @@ import akka.persistence.typed.javadsl.EventSourcedBehavior;
 import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Test;
-import jdocs.persistence.testkit.YourPersistentBehavior.Cmd;
-import jdocs.persistence.testkit.YourPersistentBehavior.Evt;
-import jdocs.persistence.testkit.YourPersistentBehavior.State;
 
 public class TestKitExamples {
 
@@ -134,27 +131,27 @@ class SampleTest {
   }
 }
 
+final class Cmd {
+
+  public final String data;
+
+  public Cmd(String data) {
+    this.data = data;
+  }
+}
+
+final class Evt {
+
+  public final String data;
+
+  public Evt(String data) {
+    this.data = data;
+  }
+}
+
+final class State {}
+
 class YourPersistentBehavior extends EventSourcedBehavior<Cmd, Evt, State> {
-
-  public static final class Cmd {
-
-    public final String data;
-
-    public Cmd(String data) {
-      this.data = data;
-    }
-  }
-
-  public static final class Evt {
-
-    public final String data;
-
-    public Evt(String data) {
-      this.data = data;
-    }
-  }
-
-  public static final class State {}
 
   public YourPersistentBehavior(PersistenceId persistenceId) {
     super(persistenceId);
