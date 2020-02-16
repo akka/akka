@@ -30,6 +30,26 @@ trait CommonTestKitTests extends ScalaDslUtils {
       testKit.expectNothingPersisted(pid)
     }
 
+    "work with tagged events" in {
+      val expectedId = randomPid()
+      val pid = randomPid()
+      var act =
+        system.spawn(eventSourcedBehavior(pid, Some(testActor.toTyped[Any])).withTagger(_ => Set("tag")), randomPid())
+      expectMsg(Recovered)
+      act ! Cmd(expectedId)
+      testKit.expectNextPersisted(pid, Evt(expectedId))
+      act ! Passivate
+      expectMsg(Stopped)
+
+      act =
+        system.spawn(eventSourcedBehavior(pid, Some(testActor.toTyped[Any])).withTagger(_ => Set("tag")), randomPid())
+      val expectedId2 = randomPid()
+      act ! Cmd(expectedId2)
+      expectMsg(Recovered)
+      testKit.expectNextPersisted(pid, Evt(expectedId2))
+      testKit.expectNothingPersisted(pid)
+    }
+
     "expect next valid message" in {
 
       val pid = randomPid()

@@ -96,6 +96,10 @@ class A(pid: String, notifyOnStateChange: Option[ActorRef]) extends PersistentAc
   override def persistenceId = pid
 }
 
-case class Cmd(data: String)
+trait TestCommand
+case class Cmd(data: String) extends TestCommand
+case object Passivate extends TestCommand
 case class Evt(data: String)
 case class EmptyState()
+case object Recovered
+case object Stopped

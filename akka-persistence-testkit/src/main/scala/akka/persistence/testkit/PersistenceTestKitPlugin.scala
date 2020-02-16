@@ -6,7 +6,7 @@ package akka.persistence.testkit
 
 import akka.annotation.InternalApi
 import akka.persistence._
-import akka.persistence.journal.AsyncWriteJournal
+import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.persistence.snapshot.SnapshotStore
 import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -26,7 +26,14 @@ class PersistenceTestKitPlugin extends AsyncWriteJournal {
   private final val storage = InMemStorageExtension(context.system)
 
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] =
-    Future.fromTry(Try(messages.map(aw => storage.tryAdd(aw.payload))))
+    Future.fromTry(Try(messages.map(aw => {
+      val data = aw.payload.map(pl =>
+        pl.payload match {
+          case Tagged(p, _) => pl.withPayload(p)
+          case _            => pl
+        })
+      storage.tryAdd(data)
+    })))
 
   override def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
     Future.fromTry(Try(storage.tryDelete(persistenceId, toSequenceNr)))
