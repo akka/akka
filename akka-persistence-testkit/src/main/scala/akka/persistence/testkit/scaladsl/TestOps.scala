@@ -228,18 +228,21 @@ private[testkit] trait ExpectOps[U] {
     val nextInd = nextIndex(persistenceId)
     val bt = BoxedType(cla)
     val res =
-      awaitAssert({
-        val actual = storage.findMany(persistenceId, nextInd, n)
-        actual match {
-          case Some(reprs) =>
-            val ls = reprs.map(reprToAny)
-            val filtered = ls.filter(e => !bt.isInstance(e))
-            assert(ls.size == n, s"Could read only ${ls.size} events instead of expected $n")
-            assert(filtered.isEmpty, s"Persisted events $filtered do not correspond to expected type")
-          case None => assert(false, "No events were persisted")
-        }
-        actual.get.map(reprToAny)
-      }, max = max.dilated, interval = pollInterval)
+      awaitAssert(
+        {
+          val actual = storage.findMany(persistenceId, nextInd, n)
+          actual match {
+            case Some(reprs) =>
+              val ls = reprs.map(reprToAny)
+              val filtered = ls.filter(e => !bt.isInstance(e))
+              assert(ls.size == n, s"Could read only ${ls.size} events instead of expected $n")
+              assert(filtered.isEmpty, s"Persisted events $filtered do not correspond to expected type")
+            case None => assert(false, "No events were persisted")
+          }
+          actual.get.map(reprToAny)
+        },
+        max = max.dilated,
+        interval = pollInterval)
 
     setIndex(persistenceId, nextInd + n)
     res.asInstanceOf[immutable.Seq[A]]
