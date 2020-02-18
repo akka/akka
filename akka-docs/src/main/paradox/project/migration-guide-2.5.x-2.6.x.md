@@ -7,7 +7,7 @@ An overview of the changes in Akka 2.6 is presented in the [What's new in Akka 2
 and the [release announcement](https://akka.io/blog/news/2019/11/06/akka-2.6.0-released).
 
 Akka 2.6.x is binary backwards compatible with 2.5.x with the ordinary exceptions listed in the
-@ref:[Binary Compatibility Rules](../common/circuitbreaker.md).
+@ref:[Binary Compatibility Rules](../common/binary-compatibility-rules.md).
 
 This means that updating an application from Akka 2.5.x to 2.6.x should be a smooth process, and
 that libraries built for Akka 2.5.x can also be used with Akka 2.6.x. For example Akka HTTP 10.1.10
