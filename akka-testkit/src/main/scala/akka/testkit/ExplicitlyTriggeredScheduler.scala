@@ -13,7 +13,7 @@ import scala.annotation.tailrec
 import akka.util.ccompat.JavaConverters._
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.{Duration, FiniteDuration}
+import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.Try
 import akka.actor.Cancellable
 import akka.actor.Scheduler
