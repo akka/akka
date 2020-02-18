@@ -62,7 +62,9 @@ class ExplicitlyTriggeredSchedulerSpec extends AkkaSpec {
 
   trait TestScope {
     val counter = new AtomicInteger()
-    def runnable: Runnable = () => counter.incrementAndGet()
+    def runnable: Runnable = new Runnable() {
+      override def run(): Unit = counter.incrementAndGet()
+    }
     val scheduler = new ExplicitlyTriggeredScheduler(config = null, log = log, tf = null)
   }
 
