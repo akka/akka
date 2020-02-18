@@ -28,6 +28,7 @@ import akka.persistence.typed.javadsl.CommandHandler;
 import akka.persistence.typed.javadsl.EventHandler;
 import akka.persistence.typed.javadsl.EventSourcedBehavior;
 import com.typesafe.config.ConfigFactory;
+import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
 
@@ -36,7 +37,7 @@ public class TestKitExamples {
   // #set-event-storage-policy
   class SampleEventStoragePolicy implements ProcessingPolicy<JournalOperation> {
 
-    // you can use internal state, it need not to be thread safe
+    // you can use internal state, it does not need to be thread safe
     int count = 1;
 
     @Override
@@ -117,6 +118,11 @@ class SampleTest {
 
   PersistenceTestKit persistenceTestKit = PersistenceTestKit.create(testKit.system());
 
+  @Before
+  void beforeAll() {
+    persistenceTestKit.clearAll();
+  }
+
   @Test
   void test() {
     ActorRef<Cmd> ref =
@@ -127,7 +133,6 @@ class SampleTest {
     Evt expectedEventPersisted = new Evt(cmd.data);
 
     persistenceTestKit.expectNextPersisted("your-persistence-id", expectedEventPersisted);
-    persistenceTestKit.clearAll();
   }
 }
 

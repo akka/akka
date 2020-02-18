@@ -16,8 +16,6 @@ import java.util.{ function => jf }
 import akka.annotation.ApiMayChange
 import akka.japi.Pair
 
-import scala.collection.immutable
-
 /**
  * Class for testing persisted snapshots in persistent actors.
  */
@@ -200,7 +198,7 @@ class SnapshotTestKit(system: ActorSystem) {
    * Persist `snapshots` with metadata into storage in order.
    */
   def persistForRecovery(persistenceId: String, snapshots: JList[Pair[SnapshotMeta, Any]]): Unit =
-    scalaTestkit.persistForRecovery(persistenceId, snapshots.asScala.to[immutable.Seq].map(_.toScala))
+    scalaTestkit.persistForRecovery(persistenceId, snapshots.asScala.toVector.map(_.toScala))
 
   /**
    * Retrieve all snapshots and their metadata saved in storage by persistence id.

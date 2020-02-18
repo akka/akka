@@ -9,12 +9,13 @@ import akka.persistence.testkit._
 import akka.persistence.testkit.scaladsl.PersistenceTestKit
 import akka.persistence.typed.scaladsl.{ Effect, EventSourcedBehavior }
 import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
 import org.scalatest.wordspec.AnyWordSpecLike
 
 class TestKitExamples {
 
   //#testkit-typed-usecase
-  class TypedSampleSpec extends AnyWordSpecLike {
+  class TypedSampleSpec extends AnyWordSpecLike with BeforeAndAfterAll {
 
     val system: ActorSystem[Cmd] = ActorSystem(
       EventSourcedBehavior[Cmd, Evt, State](
@@ -26,6 +27,9 @@ class TestKitExamples {
       PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication()))
     val persistenceTestKit = PersistenceTestKit(system)
 
+    override def beforeAll(): Unit =
+      persistenceTestKit.clearAll()
+
     "Persistent actor" should {
 
       "persist all events" in {
@@ -36,9 +40,7 @@ class TestKitExamples {
         persistentActor ! cmd
 
         val expectedPersistedEvent = Evt(cmd.data)
-
         persistenceTestKit.expectNextPersisted("your-persistence-id", expectedPersistedEvent)
-
       }
 
     }

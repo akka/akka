@@ -9,7 +9,6 @@ import akka.persistence.testkit.scaladsl.{ PersistenceTestKit => ScalaTestKit }
 import akka.util.JavaDurationConverters._
 import akka.util.ccompat.JavaConverters._
 import java.time.Duration
-import scala.collection.immutable
 import java.util.{ List => JList }
 import java.util.{ function => jf }
 
@@ -350,7 +349,7 @@ class PersistenceTestKit(system: ActorSystem) {
    * Persist `events` into storage in order.
    */
   def persistForRecovery(persistenceId: String, events: JList[Any]): Unit =
-    scalaTestkit.persistForRecovery(persistenceId, events.asScala.to[immutable.Seq])
+    scalaTestkit.persistForRecovery(persistenceId, events.asScala.toVector)
 
   /**
    * Retrieve all events saved in storage by persistence id.
