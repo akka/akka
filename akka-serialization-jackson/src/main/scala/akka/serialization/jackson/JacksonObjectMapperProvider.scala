@@ -229,7 +229,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
       objectMapperFactory: JacksonObjectMapperFactory,
       config: Config,
       dynamicAccess: DynamicAccess,
-      log: Option[LoggingAdapter]): ObjectMapper = {
+      log: Option[LoggingAdapter]): ScalaObjectMapper = {
 
     val configuredJsonFactory = createJsonFactory(bindingName, objectMapperFactory, config, jsonFactory)
     val mapper = objectMapperFactory.newObjectMapper(bindingName, configuredJsonFactory)
@@ -238,6 +238,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
     configureObjectMapperModules(bindingName, mapper, objectMapperFactory, config, dynamicAccess, log)
 
     mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY)
+    new ScalaObjectMapper(mapper)
   }
 
   private def isModuleEnabled(fqcn: String, dynamicAccess: DynamicAccess): Boolean =
@@ -262,7 +263,7 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
  * Registry of shared `ObjectMapper` instances, each with it's unique `bindingName`.
  */
 final class JacksonObjectMapperProvider(system: ExtendedActorSystem) extends Extension {
-  private val objectMappers = new ConcurrentHashMap[String, ObjectMapper]
+  private val objectMappers = new ConcurrentHashMap[String, ScalaObjectMapper]
 
   /**
    * Scala API: Returns an existing Jackson `ObjectMapper` that was created previously with this method, or
@@ -279,7 +280,7 @@ final class JacksonObjectMapperProvider(system: ExtendedActorSystem) extends Ext
    * @param jsonFactory optional `JsonFactory` such as `CBORFactory`, for plain JSON `None` (defaults)
    *                    can be used
    */
-  def getOrCreate(bindingName: String, jsonFactory: Option[JsonFactory]): ObjectMapper = {
+  def getOrCreate(bindingName: String, jsonFactory: Option[JsonFactory]): ScalaObjectMapper = {
     objectMappers.computeIfAbsent(bindingName, _ => create(bindingName, jsonFactory))
   }
 
@@ -311,7 +312,7 @@ final class JacksonObjectMapperProvider(system: ExtendedActorSystem) extends Ext
    *                    can be used
    * @see [[JacksonObjectMapperProvider#getOrCreate]]
    */
-  def create(bindingName: String, jsonFactory: Option[JsonFactory]): ObjectMapper = {
+  def create(bindingName: String, jsonFactory: Option[JsonFactory]): ScalaObjectMapper = {
     val log = Logging.getLogger(system, JacksonObjectMapperProvider.getClass)
     val dynamicAccess = system.dynamicAccess
 
@@ -335,7 +336,7 @@ final class JacksonObjectMapperProvider(system: ExtendedActorSystem) extends Ext
    *                    can be used
    * @see [[JacksonObjectMapperProvider#getOrCreate]]
    */
-  def create(bindingName: String, jsonFactory: Optional[JsonFactory]): ObjectMapper =
+  def create(bindingName: String, jsonFactory: Optional[JsonFactory]): ScalaObjectMapper =
     create(bindingName, jsonFactory.asScala)
 
 }

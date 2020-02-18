@@ -570,6 +570,8 @@ abstract class JacksonSerializerSpec(serializerName: String)
     with Matchers
     with BeforeAndAfterAll {
 
+  val objectMapper = JacksonObjectMapperProvider(system).getOrCreate(serializerName, None)
+
   def serialization(sys: ActorSystem = system): Serialization = SerializationExtension(sys)
 
   override def afterAll(): Unit = {
@@ -864,6 +866,13 @@ abstract class JacksonSerializerSpec(serializerName: String)
           }
         }
       }
+    }
+
+    "serialize message with collection containing objects" in {
+      val vector = Vector(SimpleCommand("a"), SimpleCommand("2"))
+      val jsonString = objectMapper.writeValueAsString(vector)
+      objectMapper.readValue[Vector[SimpleCommand]](jsonString) shouldBe vector
+      objectMapper.readValue(jsonString, classOf[Vector[SimpleCommand]]) shouldBe Vector(Map("name" -> "a"), Map("name" -> "2"))
     }
 
   }
