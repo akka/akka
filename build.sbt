@@ -419,6 +419,7 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     remoteTests % "test->test",
     jackson % "test->test")
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
+  .settings(Protobuf.settings)
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 

@@ -14,3 +14,9 @@ message ReceptionistEntry {
   required string actorRef = 1;
   required uint64 systemUid = 2;
 }
+
+message PubSubMessagePublished {
+  required bytes message = 1;
+  required int32 serializerId = 2;
+  optional string messageManifest = 3;
+}
