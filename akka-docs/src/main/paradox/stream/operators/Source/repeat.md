@@ -10,8 +10,7 @@ Stream a single object repeatedly.
 
 ## Description
 
-This source emits a single element repeatedly. It never completes, so the stream will in most cases
-be limited by other means.
+This source emits a single element repeatedly. It never completes, if you want the stream to be finite you will need to limit it by combining with another operator
 
 See also:
 
@@ -20,6 +19,8 @@ See also:
 * @ref:[`cycle`](cycle.md) Stream iterator in cycled manner.
 
 ## Example
+
+This example prints the first 4 elements emitted by `Source.repeat`.
 
 Scala
 :  @@snip [snip](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/SourceSpec.scala) { #repeat }

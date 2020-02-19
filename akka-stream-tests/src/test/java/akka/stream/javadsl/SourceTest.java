@@ -630,11 +630,14 @@ public class SourceTest extends StreamTest {
   public void mustRepeatForDocs() throws Exception {
     // #repeat
     Source<Integer, NotUsed> source = Source.repeat(42);
-    CompletionStage<List<Integer>> f = source.take(17).runWith(Sink.seq(), system);
+    CompletionStage<Done> f = source.take(4).runWith(Sink.foreach(System.out::println), system);
+    // 42
+    // 42
+    // 42
+    // 42
     // #repeat
-    final List<Integer> result = f.toCompletableFuture().get(3, TimeUnit.SECONDS);
-    assertEquals(result.size(), 17);
-    for (Integer i : result) assertEquals(i, (Integer) 42);
+    final Done result = f.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(Done.done(), result);
   }
 
   @Test
