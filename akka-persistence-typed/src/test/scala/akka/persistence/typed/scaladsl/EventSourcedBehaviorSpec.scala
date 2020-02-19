@@ -7,6 +7,7 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
@@ -21,6 +22,7 @@ import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.ActorContext
@@ -96,6 +98,7 @@ object EventSourcedBehaviorSpec {
   final case object IncrementTwiceThenLogThenStop extends Command
   final case class IncrementWithPersistAll(nr: Int) extends Command
   final case object IncrementLater extends Command
+  final case object IncrementLaterAsync extends Command
   final case object IncrementAfterReceiveTimeout extends Command
   final case object IncrementTwiceAndThenLog extends Command
   final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command
@@ -214,6 +217,19 @@ object EventSourcedBehaviorSpec {
             ctx.watchWith(delay, DelayFinished)
             Effect.none
 
+          case IncrementLaterAsync =>
+            import FutureEffect._
+            implicit val ec: ExecutionContext = ctx.system.dispatchers.lookup(DispatcherSelector.default())
+            val f = Future {
+              Thread.sleep(100)
+              10
+            }
+            ctx.effectOnComplete(f) {
+              case Success(n) =>
+                Effect.persist(Incremented(n))
+              case Failure(_) =>
+                Effect.none
+            }
           case DelayFinished =>
             Effect.persist(Incremented(10))
 
@@ -417,6 +433,20 @@ class EventSourcedBehaviorSpec
       c ! GetValue(probe.ref)
       probe.expectMessage(State(0, Vector.empty))
       loggingProbe.expectMessage(firstLogging)
+    }
+
+    "apply effects on future completion when using effectOnComplete" in {
+      val probe = TestProbe[State]
+      val behavior = Behaviors
+        .supervise[Command](counter(nextPid))
+        .onFailure(SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.1))
+      val c = spawn(behavior)
+      c ! IncrementLaterAsync
+      c ! GetValue(probe.ref)
+      probe.expectMessage(State(0, Vector.empty))
+      Thread.sleep(200)
+      c ! GetValue(probe.ref)
+      probe.expectMessage(State(10, Vector(0)))
     }
 
     "work when wrapped in other behavior" in {

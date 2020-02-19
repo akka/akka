@@ -100,6 +100,7 @@ private[akka] object Running {
       with WithSeqNrAccessible {
 
     def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = msg match {
+      case ApplyEffect(effect)              => applyEffects(msg, state, effect.asInstanceOf[EffectImpl[E, S]])
       case IncomingCommand(c: C @unchecked) => onCommand(state, c)
       case JournalResponse(r)               => onDeleteEventsJournalResponse(r, state.state)
       case SnapshotterResponse(r)           => onDeleteSnapshotResponse(r, state.state)
@@ -233,6 +234,7 @@ private[akka] object Running {
 
     override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
       msg match {
+        case ApplyEffect(_)                    => Behaviors.unhandled
         case JournalResponse(r)                => onJournalResponse(r)
         case in: IncomingCommand[C @unchecked] => onCommand(in)
         case SnapshotterResponse(r)            => onDeleteSnapshotResponse(r, visibleState.state)

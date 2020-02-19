@@ -87,6 +87,7 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
+      case ApplyEffect(_)          => Behaviors.unhandled
       case JournalResponse(r)      => onJournalResponse(r)
       case SnapshotterResponse(r)  => onSnapshotterResponse(r)
       case RecoveryTickEvent(snap) => onRecoveryTick(snap)

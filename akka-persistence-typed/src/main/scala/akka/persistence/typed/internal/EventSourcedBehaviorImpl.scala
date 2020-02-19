@@ -230,4 +230,5 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
   final case class SnapshotterResponse(msg: akka.persistence.SnapshotProtocol.Response) extends InternalProtocol
   final case class RecoveryTickEvent(snapshot: Boolean) extends InternalProtocol
   final case class IncomingCommand[C](c: C) extends InternalProtocol
+  final case class ApplyEffect[E, S](effect: Effect[E, S]) extends InternalProtocol
 }
