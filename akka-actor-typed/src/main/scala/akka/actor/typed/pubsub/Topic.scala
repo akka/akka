@@ -40,11 +40,6 @@ object Topic {
   final case class Publish[T](message: T) extends Command[T]
 
   /**
-   * Send the message to one randomly choosen subscriber.
-   */
-  final case class Send[T](message: T, preferLocal: Boolean) extends Command[T]
-
-  /**
    * Subscribe to this topic. Should only be used for local subscribers.
    */
   final case class Subscribe[T](subscriber: ActorRef[T]) extends Command[T]

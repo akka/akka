@@ -17,7 +17,6 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 
 import scala.reflect.ClassTag
-import scala.util.Random
 
 /**
  * INTERNAL API
@@ -29,7 +28,6 @@ private[akka] object TopicImpl {
 
   final case class TopicInstancesUpdated[T](topics: Set[ActorRef[TopicImpl.Command[T]]]) extends Command[T]
   final case class MessagePublished[T](message: T) extends Command[T]
-  final case class MessageSent[T](message: T) extends Command[T]
   final case class SubscriberDied[T](subscriber: ActorRef[T]) extends Command[T]
 }
 
@@ -81,31 +79,6 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
       localSubscribers.foreach(_ ! msg)
       this
 
-    case Topic.Send(message, preferLocal) =>
-      if ((preferLocal || topics.isEmpty) && localSubscribers.nonEmpty) {
-        sendToRandomLocalSubscriber(msg, message)
-      } else if (topics.isEmpty) {
-        context.log.trace("Sending message of type [{}] but no subscribers, dropping", msg.getClass)
-        context.system.deadLetters ! Dropped(message, "No topic subscribers known", context.self.toClassic)
-      } else {
-        val idx = Random.nextInt(topics.size)
-        val topicRecipient = topics.toIndexedSeq(idx)
-        context.log.traceN("Sending message of type [{}] to topic [{}]", msg.getClass, topicRecipient)
-        topicRecipient ! MessageSent(message)
-      }
-      this
-
-    case MessageSent(message) =>
-      if (localSubscribers.isEmpty) {
-        context.log.debug(
-          "Got a Send of type [{}] from other topic to local subscriber, but no subscribers exist, dropping",
-          msg.getClass)
-        context.system.deadLetters ! Dropped(message, "No local subscribers known", context.self.toClassic)
-      } else {
-        sendToRandomLocalSubscriber(msg, message)
-      }
-      this
-
     case Topic.Subscribe(subscriber) =>
       context.watchWith(subscriber, SubscriberDied(subscriber))
       localSubscribers = localSubscribers + subscriber
@@ -147,12 +120,5 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
       context.log.debug("Topic list updated [{}]", newTopics)
       topics = newTopics
       this
-  }
-
-  private def sendToRandomLocalSubscriber(msg: Command[T], message: T) = {
-    val idx = Random.nextInt(localSubscribers.size)
-    val localRecipient = localSubscribers.toIndexedSeq(idx)
-    context.log.traceN("Sending message of type [{}] to local subscriber [{}]", msg.getClass, localRecipient)
-    localRecipient ! message
   }
 }
