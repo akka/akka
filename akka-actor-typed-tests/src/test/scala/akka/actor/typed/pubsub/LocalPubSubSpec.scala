@@ -9,6 +9,12 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
+import scala.util.Try
+import scala.concurrent.duration._
+
 class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "A pub-sub topic running locally" must {
@@ -73,6 +79,55 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       } finally {
         testKit.stop(fruitTopic1)
         testKit.stop(fruitTopic2)
+      }
+    }
+
+    "send to a single actor across several instances of the same topic" in {
+      val animalTopic1 =
+        LoggingTestKit.debug("Topic list updated").expect {
+          testKit.spawn(Topic[String]("animal"))
+        }
+      val animalTopic2 =
+        LoggingTestKit.debug("Topic list updated").expect {
+          testKit.spawn(Topic[String]("animal"))
+        }
+
+      try {
+        val probe1 = testKit.createTestProbe[String]
+        val probe2 = testKit.createTestProbe[String]
+        val probe3 = testKit.createTestProbe[String]
+
+        LoggingTestKit
+          .debug("Topic list updated")
+          // both topic instances should have seen the updated list
+          // once both topics registers (subscribers on both)
+          .withOccurrences(4)
+          .expect {
+            animalTopic1 ! Topic.Subscribe(probe1.ref)
+            animalTopic2 ! Topic.Subscribe(probe2.ref)
+            animalTopic2 ! Topic.Subscribe(probe3.ref)
+          }
+
+        animalTopic1 ! Topic.Send("dog", preferLocal = false)
+        implicit val ec = testKit.system.executionContext
+        val turnIntoOption: Try[String] => Try[Option[String]] = {
+          case Success(string) => Success(Some(string))
+          case Failure(_)      => Success(None: Option[String])
+        }
+        val allThreeResults = Future
+          .sequence(Seq(Future {
+            probe1.expectMessage(500.millis, "dog")
+          }, Future {
+            probe2.expectMessage(500.millis, "dog")
+          }, Future {
+            probe3.expectMessage(500.millis, "dog")
+          }).map(_.transform(turnIntoOption)))
+          .futureValue
+          .flatten
+        allThreeResults should ===(Seq("dog")) // only one should receive
+      } finally {
+        testKit.stop(animalTopic1)
+        testKit.stop(animalTopic2)
       }
     }
 
