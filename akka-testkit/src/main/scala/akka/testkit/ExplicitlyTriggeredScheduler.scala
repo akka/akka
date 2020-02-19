@@ -4,16 +4,17 @@
 
 package akka.testkit
 
+import java.util.UUID
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
 
 import scala.annotation.tailrec
 import akka.util.ccompat.JavaConverters._
+
 import scala.concurrent.ExecutionContext
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.Try
-
 import akka.actor.Cancellable
 import akka.actor.Scheduler
 import akka.event.LoggingAdapter
@@ -33,7 +34,7 @@ import com.typesafe.config.Config
 class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, @unused tf: ThreadFactory)
     extends Scheduler {
 
-  private case class Item(interval: Option[FiniteDuration], runnable: Runnable)
+  private case class Item(id: UUID, interval: Option[FiniteDuration], runnable: Runnable)
 
   private val currentTime = new AtomicLong()
   private val scheduled = new ConcurrentHashMap[Item, Long]()
@@ -100,7 +101,7 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
       interval: Option[FiniteDuration],
       runnable: Runnable): Cancellable = {
     val firstTime = currentTime.get + initialDelay.toMillis
-    val item = Item(interval, runnable)
+    val item = Item(UUID.randomUUID(), interval, runnable)
     log.debug("Scheduled item for {}: {}", firstTime, item)
     scheduled.put(item, firstTime)
 
