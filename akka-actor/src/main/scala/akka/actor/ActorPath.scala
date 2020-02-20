@@ -368,16 +368,26 @@ final class ChildActorPath private[akka] (val parent: ActorPath, val name: Strin
   }
 
   override def toStringWithAddress(addr: Address): String = {
-    val diff = addressStringLengthDiff(addr)
-    val length = toStringLength + diff
-    buildToString(new JStringBuilder(length), length, diff, _.toStringWithAddress(addr)).toString
+    if (IgnoreActorRef.isIgnoreRefPath(this)) {
+      // we never change address for IgnoreActorRef
+      this.toString
+    } else {
+      val diff = addressStringLengthDiff(addr)
+      val length = toStringLength + diff
+      buildToString(new JStringBuilder(length), length, diff, _.toStringWithAddress(addr)).toString
+    }
   }
 
   override def toSerializationFormatWithAddress(addr: Address): String = {
-    val diff = addressStringLengthDiff(addr)
-    val length = toStringLength + diff
-    val sb = buildToString(new JStringBuilder(length + 12), length, diff, _.toStringWithAddress(addr))
-    appendUidFragment(sb).toString
+    if (IgnoreActorRef.isIgnoreRefPath(this)) {
+      // we never change address for IgnoreActorRef
+      this.toString
+    } else {
+      val diff = addressStringLengthDiff(addr)
+      val length = toStringLength + diff
+      val sb = buildToString(new JStringBuilder(length + 12), length, diff, _.toStringWithAddress(addr))
+      appendUidFragment(sb).toString
+    }
   }
 
   private def addressStringLengthDiff(address: Address): Int = {

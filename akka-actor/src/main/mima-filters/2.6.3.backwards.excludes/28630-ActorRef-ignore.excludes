@@ -1,0 +1,2 @@
+# Typed ActorRef that silently ignores all messages #25306 - PR #28630
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.ActorRefProvider.ignoreRef")

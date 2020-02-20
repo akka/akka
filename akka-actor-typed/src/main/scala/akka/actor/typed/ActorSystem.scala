@@ -10,7 +10,7 @@ import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
-import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
+import akka.actor.typed.internal.adapter.{ ActorRefAdapter, ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
 import akka.actor.typed.receptionist.Receptionist
 import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
@@ -140,6 +140,9 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    * every message sent to it.
    */
   def deadLetters[U]: ActorRef[U]
+
+  private val cachedIgnoreRef: ActorRef[Nothing] = ActorRefAdapter(provider.ignoreRef)
+  def ignoreRef[U]: ActorRef[U] = cachedIgnoreRef.unsafeUpcast[U]
 
   /**
    * Create a string representation of the actor hierarchy within this system

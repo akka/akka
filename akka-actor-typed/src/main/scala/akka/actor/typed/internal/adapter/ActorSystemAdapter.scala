@@ -76,6 +76,7 @@ import org.slf4j.{ Logger, LoggerFactory }
 
   // Members declared in akka.actor.typed.ActorSystem
   override def deadLetters[U]: ActorRef[U] = ActorRefAdapter(system.deadLetters)
+
   override def dispatchers: Dispatchers = new Dispatchers {
     override def lookup(selector: DispatcherSelector): ExecutionContextExecutor =
       selector match {
@@ -116,6 +117,7 @@ import org.slf4j.{ Logger, LoggerFactory }
   }
 
   override def address: Address = system.provider.getDefaultAddress
+
 }
 
 private[akka] object ActorSystemAdapter {
