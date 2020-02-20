@@ -52,15 +52,13 @@ object Topic {
   /**
    * Scala API: Create a topic actor behavior for the given topic name and message type.
    */
-  def apply[T <: AnyRef](topicName: String)(implicit classTag: ClassTag[T]): Behavior[Command[T]] =
+  def apply[T](topicName: String)(implicit classTag: ClassTag[T]): Behavior[Command[T]] =
     Behaviors.setup[TopicImpl.Command[T]](context => new TopicImpl[T](topicName, context)).narrow
 
   /**
    * Java API: Create a topic actor behavior for the given topic name and message class
    */
-  def create[T <: AnyRef](messageClass: Class[T], topicName: String): Behavior[Command[T]] = {
-    implicit val classTag: ClassTag[T] = ClassTag(messageClass)
-    apply[T](topicName)
-  }
+  def create[T](messageClass: Class[T], topicName: String): Behavior[Command[T]] =
+    apply[T](topicName)(ClassTag(messageClass))
 
 }
