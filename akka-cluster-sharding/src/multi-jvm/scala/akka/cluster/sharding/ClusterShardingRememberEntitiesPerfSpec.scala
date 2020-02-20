@@ -4,23 +4,15 @@
 
 package akka.cluster.sharding
 
-import java.io.File
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
-import scala.concurrent.duration._
-
 import akka.actor._
-import akka.cluster.Cluster
 import akka.cluster.MemberStatus
-import akka.cluster.MultiNodeClusterSpec
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
 import akka.util.ccompat._
 import com.typesafe.config.ConfigFactory
-import org.apache.commons.io.FileUtils
+
+import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 object ClusterShardingRememberEntitiesPerfSpec {
@@ -48,32 +40,23 @@ object ClusterShardingRememberEntitiesPerfSpec {
 
 }
 
-object ClusterShardingRememberEntitiesPerfSpecConfig extends MultiNodeConfig {
+object ClusterShardingRememberEntitiesPerfSpecConfig
+    extends MultiNodeClusterShardingConfig(additionalConfig = ConfigFactory.parseString(s"""
+    akka.testconductor.barrier-timeout = 3 minutes
+    akka.remote.artery.advanced.outbound-message-queue-size = 10000
+    akka.remote.artery.advanced.maximum-frame-size = 512 KiB
+    # comment next line to enable durable lmdb storage
+    akka.cluster.sharding.distributed-data.durable.keys = []
+    """)) {
+
   val first = role("first")
   val second = role("second")
   val third = role("third")
 
-  commonConfig(ConfigFactory.parseString(s"""
-    akka.loglevel = INFO
-    akka.actor.provider = "cluster"
-    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
-    akka.cluster.testkit.auto-down-unreachable-after = 0s
-    akka.remote.log-remote-lifecycle-events = off
-    akka.testconductor.barrier-timeout = 3 minutes
-    akka.remote.artery.advanced.outbound-message-queue-size = 10000
-    akka.remote.artery.advanced.maximum-frame-size = 512 KiB
-    akka.cluster.sharding.state-store-mode = "ddata"
-    akka.cluster.sharding.distributed-data.durable.lmdb {
-      dir = target/ShardingRememberEntitiesPerfSpec/sharding-ddata
-    }
-    # comment next line to enable durable lmdb storage
-    akka.cluster.sharding.distributed-data.durable.keys = []
-    """).withFallback(MultiNodeClusterSpec.clusterConfig))
-
   nodeConfig(third)(ConfigFactory.parseString(s"""
     akka.cluster.sharding.distributed-data.durable.lmdb {
       # use same directory when starting new node on third (not used at same time)
-      dir = target/ShardingRememberEntitiesSpec/sharding-third
+      dir = "$targetDir/sharding-third"
     }
     """))
 }
@@ -83,41 +66,17 @@ class ClusterShardingRememberEntitiesPerfSpecMultiJvmNode2 extends ClusterShardi
 class ClusterShardingRememberEntitiesPerfSpecMultiJvmNode3 extends ClusterShardingRememberEntitiesPerfSpec
 
 abstract class ClusterShardingRememberEntitiesPerfSpec
-    extends MultiNodeSpec(ClusterShardingRememberEntitiesPerfSpecConfig)
-    with STMultiNodeSpec
+    extends MultiNodeClusterShardingSpec(ClusterShardingRememberEntitiesPerfSpecConfig)
     with ImplicitSender {
   import ClusterShardingRememberEntitiesPerfSpec._
   import ClusterShardingRememberEntitiesPerfSpecConfig._
 
-  override def initialParticipants = roles.size
-
-  val storageLocations = List(
-    new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
-
-  override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
-    enterBarrier("startup")
-  }
-
-  override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
-  }
-
-  def join(from: RoleName, to: RoleName): Unit = {
-    runOn(from) {
-      Cluster(system).join(node(to).address)
-    }
-    enterBarrier(from.name + "-joined")
-  }
-
-  val cluster = Cluster(system)
-
   def startSharding(): Unit = {
     (1 to 3).foreach { n =>
-      ClusterSharding(system).start(
+      startSharding(
+        system,
         typeName = s"Entity$n",
         entityProps = ClusterShardingRememberEntitiesPerfSpec.props(),
-        settings = ClusterShardingSettings(system).withRememberEntities(true),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
     }

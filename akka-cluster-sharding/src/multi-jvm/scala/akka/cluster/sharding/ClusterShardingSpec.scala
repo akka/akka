@@ -4,33 +4,22 @@
 
 package akka.cluster.sharding
 
+import akka.actor._
+import akka.cluster.Cluster
 import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
 import akka.cluster.sharding.ShardCoordinator.Internal.{ HandOff, ShardStopped }
-import akka.cluster.sharding.ShardRegion.Passivate
-import akka.cluster.sharding.ShardRegion.GetCurrentRegions
-import akka.cluster.sharding.ShardRegion.CurrentRegions
-import language.postfixOps
-import scala.concurrent.duration._
-
-import com.typesafe.config.ConfigFactory
-import akka.actor._
-import akka.cluster.{ Cluster, MultiNodeClusterSpec }
-import akka.persistence.PersistentActor
-import akka.persistence.Persistence
-import akka.persistence.journal.leveldb.SharedLeveldbJournal
-import akka.persistence.journal.leveldb.SharedLeveldbStore
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
-import akka.remote.testkit.STMultiNodeSpec
-import akka.testkit._
-import akka.testkit.TestEvent.Mute
-import java.io.File
-
-import org.apache.commons.io.FileUtils
-import akka.cluster.singleton.ClusterSingletonManager
-import akka.cluster.singleton.ClusterSingletonManagerSettings
+import akka.cluster.sharding.ShardRegion.{ CurrentRegions, GetCurrentRegions, Passivate }
+import akka.cluster.singleton.{ ClusterSingletonManager, ClusterSingletonManagerSettings }
 import akka.pattern.BackoffOpts
+import akka.persistence.{ Persistence, PersistentActor }
+import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
+import akka.remote.testconductor.RoleName
+import akka.testkit.TestEvent.Mute
+import akka.testkit._
+import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.duration._
+import scala.language.postfixOps
 
 object ClusterShardingSpec {
   //#counter-actor
@@ -118,8 +107,8 @@ object ClusterShardingSpec {
 
 }
 
-abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryStrategy: String = "all")
-    extends MultiNodeConfig {
+abstract class ClusterShardingSpecConfig(mode: String, val entityRecoveryStrategy: String = "all")
+    extends MultiNodeClusterShardingConfig(mode) {
 
   val controller = role("controller")
   val first = role("first")
@@ -129,30 +118,22 @@ abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryStr
   val fifth = role("fifth")
   val sixth = role("sixth")
 
-  commonConfig(
-    ConfigFactory
-      .parseString(s"""
-    akka.loglevel = INFO
-    akka.actor.provider = "cluster"
-    akka.remote.log-remote-lifecycle-events = off
-    akka.cluster.downing-provider-class = akka.cluster.testkit.AutoDowning
-    akka.cluster.testkit.auto-down-unreachable-after = 0s
+  /** This is the only test that creates the shared store regardless of mode,
+   * because it uses a PersistentActor. So unlike all other uses of
+   * `MultiNodeClusterShardingConfig`, we use `MultiNodeConfig.commonConfig` here,
+   * and call `MultiNodeClusterShardingConfig.persistenceConfig` which does not check
+   * mode, then leverage the common config and fallbacks after these specific test configs:
+   */
+  commonConfig(ConfigFactory.parseString(s"""
     akka.cluster.roles = ["backend"]
     akka.cluster.distributed-data.gossip-interval = 1s
-    akka.persistence.journal.plugin = "akka.persistence.journal.leveldb-shared"
-    akka.persistence.journal.leveldb-shared.store {
-      native = off
-      dir = "target/ClusterShardingSpec/journal"
-    }
-    akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
-    akka.persistence.snapshot-store.local.dir = "target/ClusterShardingSpec/snapshots"
+    akka.persistence.journal.leveldb-shared.timeout = 10s #the original default, base test uses 5s
     akka.cluster.sharding {
       retry-interval = 1 s
       handoff-timeout = 10 s
       shard-start-timeout = 5s
       entity-restart-backoff = 1s
       rebalance-interval = 2 s
-      state-store-mode = "$mode"
       entity-recovery-strategy = "$entityRecoveryStrategy"
       entity-recovery-constant-rate-strategy {
         frequency = 1 ms
@@ -161,10 +142,6 @@ abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryStr
       least-shard-allocation-strategy {
         rebalance-threshold = 1
         max-simultaneous-rebalance = 1
-      }
-      distributed-data.durable.lmdb {
-        dir = target/ClusterShardingSpec/sharding-ddata
-        map-size = 10 MiB
       }
     }
     akka.testconductor.barrier-timeout = 70s
@@ -179,12 +156,11 @@ abstract class ClusterShardingSpecConfig(val mode: String, val entityRecoveryStr
       "${ClusterShardingSpec.Stop.getClass.getName}" = java-test
       "${classOf[ClusterShardingSpec.CounterChanged].getName}" = java-test
       "${classOf[ShardRegion.Passivate].getName}" = java-test
-      
+
     }
 
-    """)
-      .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
-      .withFallback(MultiNodeClusterSpec.clusterConfig))
+    """).withFallback(MultiNodeClusterShardingConfig.persistenceConfig(targetDir)).withFallback(common))
+
   nodeConfig(sixth) {
     ConfigFactory.parseString("""akka.cluster.roles = ["frontend"]""")
   }
@@ -226,11 +202,13 @@ object ClusterShardingDocCode {
 
 }
 
-object PersistentClusterShardingSpecConfig extends ClusterShardingSpecConfig("persistence")
-object DDataClusterShardingSpecConfig extends ClusterShardingSpecConfig("ddata")
+object PersistentClusterShardingSpecConfig
+    extends ClusterShardingSpecConfig(ClusterShardingSettings.StateStoreModePersistence)
+object DDataClusterShardingSpecConfig extends ClusterShardingSpecConfig(ClusterShardingSettings.StateStoreModeDData)
 object PersistentClusterShardingWithEntityRecoverySpecConfig
-    extends ClusterShardingSpecConfig("persistence", "constant")
-object DDataClusterShardingWithEntityRecoverySpecConfig extends ClusterShardingSpecConfig("ddata", "constant")
+    extends ClusterShardingSpecConfig(ClusterShardingSettings.StateStoreModePersistence, "constant")
+object DDataClusterShardingWithEntityRecoverySpecConfig
+    extends ClusterShardingSpecConfig(ClusterShardingSettings.StateStoreModeDData, "constant")
 
 class PersistentClusterShardingSpec extends ClusterShardingSpec(PersistentClusterShardingSpecConfig)
 class DDataClusterShardingSpec extends ClusterShardingSpec(DDataClusterShardingSpecConfig)
@@ -271,32 +249,14 @@ class DDataClusterShardingWithEntityRecoveryMultiJvmNode5 extends DDataClusterSh
 class DDataClusterShardingWithEntityRecoveryMultiJvmNode6 extends DDataClusterShardingWithEntityRecoverySpec
 class DDataClusterShardingWithEntityRecoveryMultiJvmNode7 extends DDataClusterShardingWithEntityRecoverySpec
 
-abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
-    extends MultiNodeSpec(config)
-    with MultiNodeClusterSpec
-    with STMultiNodeSpec
+abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
+    extends MultiNodeClusterShardingSpec(multiNodeConfig)
     with ImplicitSender {
   import ClusterShardingSpec._
-  import config._
-
-  val storageLocations = List(
-    new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
-
-  override protected def atStartup(): Unit = {
-    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
-    enterBarrier("startup")
-  }
-
-  override protected def afterTermination(): Unit = {
-    storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
-  }
+  import multiNodeConfig._
 
   def join(from: RoleName, to: RoleName): Unit = {
-    runOn(from) {
-      Cluster(system).join(node(to).address)
-      createCoordinator()
-    }
-    enterBarrier(from.name + "-joined")
+    join(from, to, createCoordinator())
   }
 
   lazy val replicator = system.actorOf(
@@ -380,8 +340,6 @@ abstract class ClusterShardingSpec(config: ClusterShardingSpecConfig)
   lazy val persistentRegion = createRegion("RememberCounter", rememberEntities = true)
   lazy val rebalancingPersistentRegion = createRegion("RebalancingRememberCounter", rememberEntities = true)
   lazy val autoMigrateRegion = createRegion("AutoMigrateRememberRegionTest", rememberEntities = true)
-
-  def isDdataMode: Boolean = mode == ClusterShardingSettings.StateStoreModeDData
 
   s"Cluster sharding ($mode)" must {
 
