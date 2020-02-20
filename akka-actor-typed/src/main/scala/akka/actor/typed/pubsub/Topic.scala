@@ -32,22 +32,44 @@ object Topic {
    * Not for user extension
    */
   @DoNotInherit
-  sealed trait Command[T] extends TopicImpl.Command[T]
+  trait Command[T] extends TopicImpl.Command[T]
 
   /**
-   * Publish the message to all currently known subscribers.
+   * Scala API: Publish the message to all currently known subscribers.
    */
-  final case class Publish[T](message: T) extends Command[T]
+  object Publish {
+    def apply[T](message: T): Command[T] =
+      TopicImpl.Publish(message)
+  }
 
   /**
-   * Subscribe to this topic. Should only be used for local subscribers.
+   * Java API: Publish the message to all currently known subscribers.
    */
-  final case class Subscribe[T](subscriber: ActorRef[T]) extends Command[T]
+  def publish[T](message: T): Command[T] = Publish(message)
 
   /**
-   * Unsubscribe a previously subscribed actor from this topic.
+   * Scala API: Subscribe to this topic. Should only be used for local subscribers.
    */
-  final case class Unsubscribe[T](subscriber: ActorRef[T]) extends Command[T]
+  object Subscribe {
+    def apply[T](subscriber: ActorRef[T]): Command[T] = TopicImpl.Subscribe(subscriber)
+  }
+
+  /**
+   * Java API: Subscribe to this topic. Should only be used for local subscribers.
+   */
+  def subscribe[T](subscriber: ActorRef[T]): Command[T] = Subscribe(subscriber)
+
+  /**
+   * Scala API: Unsubscribe a previously subscribed actor from this topic.
+   */
+  object Unsubscribe {
+    def apply[T](subscriber: ActorRef[T]): Command[T] = TopicImpl.Unsubscribe(subscriber)
+  }
+
+  /**
+   * Java API: Unsubscribe a previously subscribed actor from this topic.
+   */
+  def unsubscribe[T](subscriber: ActorRef[T]): Command[T] = Unsubscribe(subscriber)
 
   /**
    * Scala API: Create a topic actor behavior for the given topic name and message type.

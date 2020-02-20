@@ -33,13 +33,13 @@ public class PubSubExample {
 
             ActorRef<Message> subscriberActor = null;
             // #subscribe
-            topic.tell(new Topic.Subscribe<>(subscriberActor));
+            topic.tell(Topic.subscribe(subscriberActor));
 
-            topic.tell(new Topic.Unsubscribe<>(subscriberActor));
+            topic.tell(Topic.unsubscribe(subscriberActor));
             // #subscribe
 
             // #publish
-            topic.tell(new Topic.Publish<>(new Message("Hello Subscribers!")));
+            topic.tell(Topic.publish(new Message("Hello Subscribers!")));
             // #publish
 
             return null;

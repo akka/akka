@@ -26,6 +26,11 @@ private[akka] object TopicImpl {
 
   trait Command[T]
 
+  // actual public messages but internal to ease bincomp evolution
+  final case class Publish[T](message: T) extends Topic.Command[T]
+  final case class Subscribe[T](subscriber: ActorRef[T]) extends Topic.Command[T]
+  final case class Unsubscribe[T](subscriber: ActorRef[T]) extends Topic.Command[T]
+
   final case class TopicInstancesUpdated[T](topics: Set[ActorRef[TopicImpl.Command[T]]]) extends Command[T]
   final case class MessagePublished[T](message: T) extends Command[T]
   final case class SubscriberDied[T](subscriber: ActorRef[T]) extends Command[T]
@@ -63,7 +68,7 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
 
   override def onMessage(msg: TopicImpl.Command[T]): Behavior[TopicImpl.Command[T]] = msg match {
 
-    case Topic.Publish(message) =>
+    case Publish(message) =>
       if (topics.isEmpty) {
         context.log.trace("Publishing message of type [{}] but no subscribers, dropping", msg.getClass)
         context.system.deadLetters ! Dropped(message, "No topic subscribers known", context.self.toClassic)
@@ -79,7 +84,7 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
       localSubscribers.foreach(_ ! msg)
       this
 
-    case Topic.Subscribe(subscriber) =>
+    case Subscribe(subscriber) =>
       context.watchWith(subscriber, SubscriberDied(subscriber))
       localSubscribers = localSubscribers + subscriber
       if (localSubscribers.size == 1) {
@@ -93,7 +98,7 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
       }
       this
 
-    case Topic.Unsubscribe(subscriber) =>
+    case Unsubscribe(subscriber) =>
       context.unwatch(subscriber)
       localSubscribers = localSubscribers.filterNot(_ == subscriber)
       if (localSubscribers.isEmpty) {
