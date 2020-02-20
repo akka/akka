@@ -353,7 +353,7 @@ private[stream] object ConnectionSourceStage {
         else
           connection ! ConfirmedClose
       }
-      // Otherwise, this is a outbound connection with half-close enabled for which upstream finished
+      // Otherwise, this is an outbound connection with half-close enabled for which upstream finished
       // before the connection was even established.
       // In that case we half-close the connection as soon as it's connected
     }
