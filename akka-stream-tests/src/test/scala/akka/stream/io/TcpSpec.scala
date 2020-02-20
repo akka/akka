@@ -469,14 +469,36 @@ class TcpSpec extends StreamSpec("""
       server.close()
     }
 
+    "properly half-close by default" in assertAllStagesStopped {
+      val writeButDontRead: Flow[ByteString, ByteString, NotUsed] =
+        Flow.fromSinkAndSource(Sink.cancelled, Source.single(ByteString("Early response")))
+
+      val binding =
+        Tcp()
+          .bind("127.0.0.1", 0, halfClose = true)
+          .toMat(Sink.foreach { conn =>
+            conn.flow.join(writeButDontRead).run()
+          })(Keep.left)
+          .run()
+          .futureValue
+
+      val result = Source.empty
+        .via(Tcp().outgoingConnection(binding.localAddress))
+        .toMat(Sink.fold(ByteString.empty)(_ ++ _))(Keep.right)
+        .run()
+
+      result.futureValue should ===(ByteString("Early response"))
+
+      binding.unbind()
+    }
+
     "properly full-close if requested" in assertAllStagesStopped {
-      val serverAddress = temporaryServerAddress()
       val writeButIgnoreRead: Flow[ByteString, ByteString, NotUsed] =
         Flow.fromSinkAndSourceMat(Sink.ignore, Source.single(ByteString("Early response")))(Keep.right)
 
       val binding =
         Tcp()
-          .bind(serverAddress.getHostString, serverAddress.getPort, halfClose = false)
+          .bind("127.0.0.1", 0, halfClose = false)
           .toMat(Sink.foreach { conn =>
             conn.flow.join(writeButIgnoreRead).run()
           })(Keep.left)
@@ -485,7 +507,7 @@ class TcpSpec extends StreamSpec("""
 
       val (promise, result) = Source
         .maybe[ByteString]
-        .via(Tcp().outgoingConnection(serverAddress.getHostString, serverAddress.getPort))
+        .via(Tcp().outgoingConnection(binding.localAddress))
         .toMat(Sink.fold(ByteString.empty)(_ ++ _))(Keep.both)
         .run()
 
