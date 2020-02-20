@@ -7,6 +7,8 @@ package akka.io
 import java.net.{ ConnectException, InetSocketAddress }
 import java.nio.channels.{ SelectionKey, SocketChannel }
 
+import akka.actor.Status.Failure
+
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.concurrent.duration._
 import akka.actor.{ ActorRef, ReceiveTimeout }
@@ -83,6 +85,11 @@ private[io] class TcpOutgoingConnection(
       }
     case ReceiveTimeout =>
       connectionTimeout()
+    case Failure(ex) =>
+      // async-dns responds with a Failure on DNS server lookup failure
+      reportConnectFailure {
+        throw new RuntimeException(ex)
+      }
   }
 
   def register(address: InetSocketAddress, registration: ChannelRegistration): Unit = {
