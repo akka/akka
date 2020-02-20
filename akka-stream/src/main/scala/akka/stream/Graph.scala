@@ -85,7 +85,7 @@ object Graph {
 
   /**
    * Scala API, see https://github.com/akka/akka/issues/28501 for discussion why this can't be an instance method on class Graph.
-   * @param self the graph whose material value will be mapped
+   * @param self the graph whose materialized value will be mapped
    */
   final implicit class GraphMapMatVal[S <: Shape, M](self: Graph[S, M]) {
 
