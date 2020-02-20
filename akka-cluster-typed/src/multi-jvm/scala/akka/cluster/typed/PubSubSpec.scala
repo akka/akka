@@ -46,8 +46,10 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
 
   import PubSubSpecConfig._
 
-  val subscriberProbe = TestProbe[Message]()
   var topic: ActorRef[Topic.Command[Message]] = null
+  val topicProbe = TestProbe[Message]()
+  var otherTopic: ActorRef[Topic.Command[Message]] = null
+  val otherTopicProbe = TestProbe[Message]()
 
   "A cluster" must {
     "be able to form" in {
@@ -68,8 +70,12 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
 
     "start a topic on each node" in {
       topic = system.actorOf(PropsAdapter(Topic[Message]("animals"))).toTyped[Topic.Command[Message]]
-      topic ! Topic.Subscribe(subscriberProbe.ref)
-      enterBarrier("topic started")
+      topic ! Topic.Subscribe(topicProbe.ref)
+      runOn(second, third) {
+        otherTopic = system.actorOf(PropsAdapter(Topic[Message]("other"))).toTyped[Topic.Command[Message]]
+        otherTopic ! Topic.Subscribe(otherTopicProbe.ref)
+      }
+      enterBarrier("topics started")
     }
 
     "publish to all nodes" in {
@@ -78,8 +84,33 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
       runOn(first) {
         topic ! Topic.Publish(Message("monkey"))
       }
-      subscriberProbe.expectMessage(Message("monkey"))
+      enterBarrier("first published")
+      topicProbe.expectMessage(Message("monkey"))
+      runOn(second, third) {
+        // check that messages are not leaking between topics
+        otherTopicProbe.expectNoMessage(100.millis)
+      }
       enterBarrier("publish seen")
+    }
+
+    "not publish to unsubscribed" in {
+      runOn(first) {
+        topic ! Topic.Unsubscribe(topicProbe.ref)
+      }
+      // unsubscribe does not need to be gossiped before it is effective
+      enterBarrier("unsubscribed")
+      Thread.sleep(200) // but it needs to reach the topic
+
+      runOn(third) {
+        topic ! Topic.Publish(Message("donkey"))
+      }
+      enterBarrier("second published")
+      runOn(second, third) {
+        topicProbe.expectMessage(Message("donkey"))
+      }
+      runOn(first) {
+        topicProbe.expectNoMessage(100.millis)
+      }
     }
 
   }
