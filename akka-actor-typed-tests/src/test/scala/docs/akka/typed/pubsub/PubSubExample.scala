@@ -1,16 +1,18 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package docs.akka.typed.pubsub
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 
 object PubSubExample {
 
   case class Message(text: String)
 
-  def example: Unit = {
+  def example: Behavior[Any] = {
     // #start-topic
     import akka.actor.typed.pubsub.Topic
 

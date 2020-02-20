@@ -1,6 +1,7 @@
 /*
- * Copyright (C) 2009-2020 Lightbend Inc. <http://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
+
 package jdocs.akka.typed.pubsub;
 
 import akka.actor.typed.ActorRef;
@@ -12,35 +13,35 @@ import akka.actor.typed.pubsub.Topic;
 
 // #start-topic
 
-
 public class PubSubExample {
 
   static class Message {
     public final String text;
+
     public Message(String text) {
       this.text = text;
     }
   }
 
   private Behavior<?> behavior =
-    // #start-topic
-    Behaviors.setup(context -> {
-      ActorRef<Topic.Command<Message>> topic =
-          context.spawn(Topic.create(Message.class, "my-topic"), "MyTopic");
       // #start-topic
+      Behaviors.setup(
+          context -> {
+            ActorRef<Topic.Command<Message>> topic =
+                context.spawn(Topic.create(Message.class, "my-topic"), "MyTopic");
+            // #start-topic
 
-      ActorRef<Message> subscriberActor = null;
-      // #subscribe
-      topic.tell(new Topic.Subscribe(subscriberActor));
+            ActorRef<Message> subscriberActor = null;
+            // #subscribe
+            topic.tell(new Topic.Subscribe<>(subscriberActor));
 
-      topic.tell(new Topic.Unsubscribe(subscriberActor));
-      // #subscribe
+            topic.tell(new Topic.Unsubscribe<>(subscriberActor));
+            // #subscribe
 
-      // #publish
-      topic.tell(new Topic.Publish(new Message("Hello Subscribers!")));
-      // #publish
+            // #publish
+            topic.tell(new Topic.Publish<>(new Message("Hello Subscribers!")));
+            // #publish
 
-      return null;
-    });
-
+            return null;
+          });
 }
