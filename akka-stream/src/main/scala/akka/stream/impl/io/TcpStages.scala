@@ -302,7 +302,7 @@ private[stream] object ConnectionSourceStage {
       }
     }
 
-    // Used for both inbound and outboud connections
+    // Used for both inbound and outbound connections
     private def connected(evt: (ActorRef, Any)): Unit = {
       val msg = evt._2
       msg match {
