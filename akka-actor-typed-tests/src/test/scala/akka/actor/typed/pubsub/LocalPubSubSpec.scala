@@ -8,6 +8,7 @@ import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import org.scalatest.wordspec.AnyWordSpecLike
+import scala.concurrent.duration._
 
 class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -73,6 +74,55 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
       } finally {
         testKit.stop(fruitTopic1)
         testKit.stop(fruitTopic2)
+      }
+    }
+
+    "doesn't publish across topics unsubscribe" in {
+      val fruitTopic =
+        LoggingTestKit.debug("Topic list updated").expect {
+          testKit.spawn(Topic[String]("fruit"))
+        }
+      val veggieTopic =
+        LoggingTestKit.debug("Topic list updated").expect {
+          testKit.spawn(Topic[String]("veggies"))
+        }
+
+      try {
+        val probe1 = testKit.createTestProbe[String]
+
+        LoggingTestKit.debug("Topic list updated").expect {
+          fruitTopic ! Topic.Subscribe(probe1.ref)
+        }
+
+        veggieTopic ! Topic.Publish("carrot")
+        probe1.expectNoMessage(200.millis)
+
+      } finally {
+        testKit.stop(fruitTopic)
+      }
+    }
+
+    "doesn't publish after unsubscribe" in {
+      val fruitTopic =
+        LoggingTestKit.debug("Topic list updated").expect {
+          testKit.spawn(Topic[String]("fruit"))
+        }
+
+      try {
+        val probe1 = testKit.createTestProbe[String]
+
+        LoggingTestKit.debug("Topic list updated").expect {
+          fruitTopic ! Topic.Subscribe(probe1.ref)
+        }
+        LoggingTestKit.debug("Topic list updated").expect {
+          fruitTopic ! Topic.Unsubscribe(probe1.ref)
+        }
+
+        fruitTopic ! Topic.Publish("banana")
+        probe1.expectNoMessage(200.millis)
+
+      } finally {
+        testKit.stop(fruitTopic)
       }
     }
 
