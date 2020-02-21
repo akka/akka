@@ -450,7 +450,7 @@ class EventSourcedBehaviorSpec
       c ! Increment
       c ! GetValue(probe.ref)
       probe.expectMessage(State(4, Vector(0, 1, 2, 3)))
-      Thread.sleep(1000)
+      Thread.sleep(1500)
       c ! GetValue(probe.ref)
       probe.expectMessage(State(8, Vector(0, 1, 2, 3, 4, 5, 6, 7)))
       c ! Increment
