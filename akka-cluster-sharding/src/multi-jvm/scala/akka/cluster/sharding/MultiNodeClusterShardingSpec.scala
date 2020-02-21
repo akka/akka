@@ -15,7 +15,7 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.{ TestActors, TestProbe }
-import akka.util.ccompat.{ ccompatUsedUntil213, _ }
+import akka.util.ccompat._
 import org.apache.commons.io.FileUtils
 
 import scala.concurrent.duration._
@@ -110,18 +110,25 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
    *
    * @param from the node the `Cluster.join` is `runOn`
    * @param to the node to join to
-   * @param assert if disabled - false, the joining member's post-join status assertions
-   *               are not run. This allows tests that were not doing assertions or
-   *               doing them after `onJoinedRunOnFrom` to have more flexibility.
-   *               Defaults to true, and running member status checks.
-   * @param onJoinedRunOnFrom allows you to execute a function after join validation
-   *                          is successful, e.g. starting sharding
+   * @param onJoinedRunOnFrom optionally execute a function after join validation
+   *                          is successful, e.g. start sharding or create coordinator
+   * @param assertEnabled if disabled - false, the joining member's `MemberStatus.Up`
+   *                      and similar assertions are not run. This allows tests that were
+   *                      not doing assertions (e.g. ClusterShardingMinMembersSpec) or
+   *                      doing them after `onJoinedRunOnFrom` more flexibility.
+   *                      Defaults to true, running member status checks.
    */
-  protected def join(from: RoleName, to: RoleName, onJoinedRunOnFrom: => Unit = Unit, assert: Boolean = true): Unit = {
+  protected def join(
+      from: RoleName,
+      to: RoleName,
+      onJoinedRunOnFrom: => Unit = (),
+      assertEnabled: Boolean = true,
+      max: FiniteDuration = 20.seconds): Unit = {
+
     runOn(from) {
       cluster.join(node(to).address)
-      if (assert) {
-        within(20.seconds) {
+      if (assertEnabled) {
+        within(max) {
           awaitAssert {
             // let's pick one or two vs have 3
             // this was here originally and used in one or two tests
