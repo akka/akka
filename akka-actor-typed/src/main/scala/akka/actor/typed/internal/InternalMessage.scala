@@ -5,6 +5,7 @@
 package akka.actor.typed.internal
 
 import akka.actor.WrappedMessage
+import akka.actor.typed.Signal
 import akka.annotation.InternalApi
 
 /**
@@ -28,3 +29,10 @@ import akka.annotation.InternalApi
     with WrappedMessage {
   def adapt(): T = adapter(message)
 }
+
+/**
+ * INTERNAL API: Wrapped exception to pass a failure to adapt a message into the behavior stack and
+ * let supervision apply also to such failures.
+ */
+@InternalApi
+private[akka] final case class MessageAdaptionFailure(ex: Throwable) extends Signal

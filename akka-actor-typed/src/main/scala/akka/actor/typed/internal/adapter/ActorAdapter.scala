@@ -8,21 +8,20 @@ package adapter
 
 import java.lang.reflect.InvocationTargetException
 
-import akka.actor.{ ActorInitializationException, ActorRefWithCell }
-import akka.{ actor => classic }
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
-import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
-import akka.annotation.InternalApi
-
-import scala.annotation.tailrec
-import scala.util.Failure
-import scala.util.Success
-import scala.util.Try
-import scala.util.control.Exception.Catcher
-import scala.annotation.switch
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
+import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
+import akka.actor.ActorInitializationException
+import akka.actor.ActorRefWithCell
+import akka.annotation.InternalApi
 import akka.util.OptionVal
+import akka.{ actor => classic }
+
+import scala.annotation.switch
+import scala.annotation.tailrec
+import scala.util.control.Exception.Catcher
+import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
@@ -181,15 +180,16 @@ import akka.util.OptionVal
   }
 
   private def withSafelyAdapted[U, V](adapt: () => U)(body: U => V): Unit = {
-    Try(adapt()) match {
-      case Success(null) =>
+    try {
+      val a = adapt()
+      if (a != null) body(a)
+      else
         ctx.log.warn(
           "Adapter function returned null which is not valid as an actor message, ignoring. This can happen for example when using pipeToSelf and returning null from the adapt function. Null value is ignored and not passed on to actor.")
-      case Success(a) =>
-        body(a)
-      case Failure(ex) =>
-        ctx.log.error(s"Exception thrown out of adapter. Stopping myself. ${ex.getMessage}", ex)
-        context.stop(self)
+    } catch {
+      case NonFatal(ex) =>
+        // pass it on through the signal handler chain giving supervision a chance to deal with it
+        handleSignal(MessageAdaptionFailure(ex))
     }
   }
 

@@ -126,10 +126,18 @@ private[akka] object BehaviorTags {
         BehaviorImpl.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
       extends ExtensibleBehavior[T] {
 
-    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
-      onSignal.applyOrElse(
-        (ctx.asScala, msg),
-        BehaviorImpl.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = {
+      msg match {
+        case MessageAdaptionFailure(ex) =>
+          // we want to hide this from the user handler but trigger supervision
+          throw ex
+        case _ =>
+          onSignal.applyOrElse(
+            (ctx.asScala, msg),
+            BehaviorImpl.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+      }
+
+    }
 
     override def receive(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
 
@@ -149,10 +157,17 @@ private[akka] object BehaviorTags {
 
     override def receive(ctx: AC[T], msg: T) = onMessage(msg)
 
-    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] =
-      onSignal.applyOrElse(
-        (ctx.asScala, msg),
-        BehaviorImpl.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+    override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = {
+      msg match {
+        case MessageAdaptionFailure(ex) =>
+          // we want to hide this from the user handler but trigger supervision
+          throw ex
+        case _ =>
+          onSignal.applyOrElse(
+            (ctx.asScala, msg),
+            BehaviorImpl.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
+      }
+    }
 
     override def toString = s"ReceiveMessage(${LineNumbers(onMessage)})"
   }
