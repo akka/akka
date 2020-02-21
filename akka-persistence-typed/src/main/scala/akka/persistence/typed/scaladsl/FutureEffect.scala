@@ -28,7 +28,7 @@ object FutureEffect {
      * @tparam S the state type of the actor
      * @return the [[Effect]] to apply to the actor
      */
-    def effectOnComplete[T, E, S](f: Future[T])(g: Try[T] => Effect[E, S])(
+    def effectOnComplete[T, E, S](f: Future[T])(g: Try[T] => S => Effect[E, S])(
         implicit ec: ExecutionContext): ReplyEffect[E, S] = {
       f.onComplete { t =>
         ctx.self.asInstanceOf[ActorRef[Any]] ! ApplyEffect(g(t))

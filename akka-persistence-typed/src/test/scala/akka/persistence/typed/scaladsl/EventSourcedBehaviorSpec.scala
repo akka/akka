@@ -98,7 +98,7 @@ object EventSourcedBehaviorSpec {
   final case object IncrementTwiceThenLogThenStop extends Command
   final case class IncrementWithPersistAll(nr: Int) extends Command
   final case object IncrementLater extends Command
-  final case object IncrementLaterAsync extends Command
+  final case object RepeatIncrementsDuringOneSecond extends Command
   final case object IncrementAfterReceiveTimeout extends Command
   final case object IncrementTwiceAndThenLog extends Command
   final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command
@@ -217,18 +217,18 @@ object EventSourcedBehaviorSpec {
             ctx.watchWith(delay, DelayFinished)
             Effect.none
 
-          case IncrementLaterAsync =>
+          case RepeatIncrementsDuringOneSecond =>
             import FutureEffect._
             implicit val ec: ExecutionContext = ctx.system.dispatchers.lookup(DispatcherSelector.default())
             val f = Future {
-              Thread.sleep(100)
-              10
+              Thread.sleep(1000)
+              state.history.size
             }
             ctx.effectOnComplete(f) {
-              case Success(n) =>
-                Effect.persist(Incremented(n))
+              case Success(size) =>
+                state => Effect.persist((0 until (state.history.size - size)).map(_ => Incremented(1)))
               case Failure(_) =>
-                Effect.none
+                _ => Effect.none
             }
           case DelayFinished =>
             Effect.persist(Incremented(10))
@@ -441,12 +441,22 @@ class EventSourcedBehaviorSpec
         .supervise[Command](counter(nextPid))
         .onFailure(SupervisorStrategy.restartWithBackoff(1.second, 10.seconds, 0.1))
       val c = spawn(behavior)
-      c ! IncrementLaterAsync
+      c ! RepeatIncrementsDuringOneSecond
       c ! GetValue(probe.ref)
       probe.expectMessage(State(0, Vector.empty))
-      Thread.sleep(200)
+      c ! Increment
+      c ! Increment
+      c ! Increment
+      c ! Increment
       c ! GetValue(probe.ref)
-      probe.expectMessage(State(10, Vector(0)))
+      probe.expectMessage(State(4, Vector(0, 1, 2, 3)))
+      Thread.sleep(1000)
+      c ! GetValue(probe.ref)
+      probe.expectMessage(State(8, Vector(0, 1, 2, 3, 4, 5, 6, 7)))
+      c ! Increment
+      c ! Increment
+      c ! GetValue(probe.ref)
+      probe.expectMessage(State(10, Vector(0, 1, 2, 3, 4, 5, 6, 7, 8, 9)))
     }
 
     "work when wrapped in other behavior" in {
