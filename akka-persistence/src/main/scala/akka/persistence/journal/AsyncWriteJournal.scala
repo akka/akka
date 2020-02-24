@@ -122,7 +122,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
             }
 
           case Failure(e) =>
-            resequencer ! Desequenced(WriteMessagesFailed(e), cctr, persistentActor, self)
+            resequencer ! Desequenced(WriteMessagesFailed(e, atomicWriteCount), cctr, persistentActor, self)
             var n = cctr + 1
             messages.foreach {
               case a: AtomicWrite =>

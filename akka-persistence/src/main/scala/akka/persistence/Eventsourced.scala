@@ -873,9 +873,10 @@ private[persistence] trait Eventsourced
         writeInProgress = false
         flushJournalBatch()
 
-      case WriteMessagesFailed(_) =>
-        writeInProgress = false
-        () // it will be stopped by the first WriteMessageFailure message
+      case WriteMessagesFailed(_, writeCount) =>
+        // if writeCount > 0 then WriteMessageFailure will follow that will stop the actor
+        if (writeCount == 0) writeInProgress = false
+        ()
 
       case _: RecoveryTick =>
       // we may have one of these in the mailbox before the scheduled timeout
