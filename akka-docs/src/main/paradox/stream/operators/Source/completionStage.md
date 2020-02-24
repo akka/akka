@@ -4,7 +4,7 @@ Send the single value of the `CompletionStage` when it completes and there is de
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
+@@@div { .group-java }
 
 ## Signature
 
@@ -18,7 +18,16 @@ Send the single value of the `CompletionStage` when it completes and there is de
 If the `CompletionStage` completes with `null` stage is completed without emitting a value.
 If the `CompletionStage` fails the stream is failed with that exception.
 
+@@@div { .group-scala }
+
 For the corresponding operator for the Scala standard library `Future` see @ref:[future](future.md).
+
+@@@
+
+## Example
+
+Java
+:  @@snip [SourceFromCompletionStage.java](/akka-docs/src/test/java/jdocs/stream/operators/source/FromCompletionStage.java) { #sourceFromCompletionStage }
 
 ## Reactive Streams semantics
 
@@ -30,9 +39,9 @@ For the corresponding operator for the Scala standard library `Future` see @ref:
 
 @@@
 
-## Example
 
-Java
-:  @@snip [SourceFromCompletionStage.java](/akka-docs/src/test/java/jdocs/stream/operators/source/FromCompletionStage.java) { #sourceFromCompletionStage }
+@@@div { .group-scala }
 
 For the corresponding operator for the Scala standard library `Future` see @ref:[future](future.md).
+
+@@@
