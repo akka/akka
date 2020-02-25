@@ -6,29 +6,24 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.Future
-import scala.reflect.ClassTag
-import scala.concurrent.Promise
-import scala.runtime.AbstractFunction1
-import scala.util.Success
-import scala.util.Failure
-
 import akka.Done
-import akka.annotation.InternalApi
 import akka.actor._
-import akka.cluster.Cluster
+import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent._
-import akka.cluster.Member
-import akka.cluster.MemberStatus
-import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.Shard.ShardStats
+import akka.cluster.{ Cluster, ClusterSettings, Member, MemberStatus }
 import akka.event.Logging
 import akka.pattern.{ ask, pipe }
 import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.{ Future, Promise }
+import scala.reflect.ClassTag
+import scala.runtime.AbstractFunction1
+import scala.util.{ Failure, Success }
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -367,8 +362,13 @@ object ShardRegion {
    *
    * If gathering the shard information times out the set of shards will be empty.
    */
-  @SerialVersionUID(1L) final case class CurrentShardRegionState(val shards: Set[ShardState], val failed: Set[ShardId])
+  @SerialVersionUID(1L) final case class CurrentShardRegionState(shards: Set[ShardState], failed: Set[ShardId])
       extends ClusterShardingSerializable {
+
+    // For binary compatibility
+    def this(shards: Set[ShardState]) = this(shards, Set.empty[ShardId])
+    private[sharding] def copy(shards: Set[ShardState] = shards): CurrentShardRegionState =
+      CurrentShardRegionState(shards, failed)
 
     /**
      * Java API:
@@ -387,8 +387,8 @@ object ShardRegion {
     }
   }
 
-  // for backwards compat vs bin compat
-  object CurrentShardRegionState {
+  // For binary compatibility
+  object CurrentShardRegionState extends AbstractFunction1[Set[ShardState], CurrentShardRegionState] {
     def apply(shards: Set[ShardState]): CurrentShardRegionState =
       apply(shards, Set.empty[ShardId])
   }
@@ -507,9 +507,9 @@ private[akka] class ShardRegion(
     extends Actor
     with Timers {
 
-  import ShardingQueries.ShardsQueryResult
   import ShardCoordinator.Internal._
   import ShardRegion._
+  import ShardingQueries.ShardsQueryResult
   import settings._
   import settings.tuningParameters._
 
