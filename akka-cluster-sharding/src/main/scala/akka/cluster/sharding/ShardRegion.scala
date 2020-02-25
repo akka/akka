@@ -355,7 +355,7 @@ object ShardRegion {
    * The state contains information about what shards are running in this region
    * and what entities are running on each of those shards.
    */
-  @SerialVersionUID(1L) case object GetShardRegionState extends ShardRegionQuery
+  @SerialVersionUID(1L) case object GetShardRegionState extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
    * Java API:
@@ -367,7 +367,8 @@ object ShardRegion {
    *
    * If gathering the shard information times out the set of shards will be empty.
    */
-  @SerialVersionUID(1L) final case class CurrentShardRegionState(shards: Set[ShardState]) {
+  @SerialVersionUID(1L) final case class CurrentShardRegionState(val shards: Set[ShardState], val failed: Set[ShardId])
+      extends ClusterShardingSerializable {
 
     /**
      * Java API:
@@ -378,6 +379,18 @@ object ShardRegion {
       import akka.util.ccompat.JavaConverters._
       shards.asJava
     }
+
+    /** Java API */
+    def getFailed(): java.util.Set[ShardId] = {
+      import akka.util.ccompat.JavaConverters._
+      failed.asJava
+    }
+  }
+
+  // for backwards compat vs bin compat
+  object CurrentShardRegionState {
+    def apply(shards: Set[ShardState]): CurrentShardRegionState =
+      apply(shards, Set.empty[ShardId])
   }
 
   @SerialVersionUID(1L) final case class ShardState(shardId: ShardId, entityIds: Set[EntityId]) {
@@ -816,11 +829,9 @@ private[akka] class ShardRegion(
   def replyToRegionStateQuery(ref: ActorRef): Unit = {
     queryShards[Shard.CurrentShardState](shards, Shard.GetCurrentShardState)
       .map { qr =>
-        // Productionize CurrentShardRegionState #27406
-        val state =
-          qr.responses.map(state => ShardRegion.ShardState(state.shardId, state.entityIds)) ++
-          qr.failed.map(sid => ShardRegion.ShardState(sid, Set.empty))
-        CurrentShardRegionState(state.toSet)
+        CurrentShardRegionState(
+          qr.responses.map(state => ShardRegion.ShardState(state.shardId, state.entityIds)).toSet,
+          qr.failed)
       }
       .pipeTo(ref)
   }
