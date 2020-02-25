@@ -247,11 +247,11 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
       suffix.futureValue should ===(4 until 10)
     }
 
-    "downstream cancellation is propagated via the materialized flow" in assertAllStagesStopped {
+    "propagate downstream cancellation via the materialized flow" in assertAllStagesStopped {
       val publisher = TestPublisher.manualProbe[Int]()
       val subscriber = TestSubscriber.manualProbe[Int]()
 
-      val ((srcWatchTermF, notUsedF), suffixF) = src10()
+      val ((srcWatchTermF, innerMatVal), sinkMatVal) = src10()
         .watchTermination()(Keep.right)
         .flatMapPrefixMat(2) { prefix =>
           prefix should ===(0 until 2)
@@ -261,23 +261,23 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         .toMat(Sink.seq)(Keep.both)
         .run()
 
-      notUsedF.value should be(empty)
-      suffixF.value should be(empty)
-      srcWatchTermF.value should be(empty)
-
       val subUpstream = publisher.expectSubscription()
       val subDownstream = subscriber.expectSubscription()
 
-      notUsedF.futureValue should ===(NotUsed)
+      // inner stream was materialized
+      innerMatVal.futureValue should ===(NotUsed)
 
       subUpstream.expectRequest() should be >= (1L)
       subDownstream.request(1)
       subscriber.expectNext(2)
       subUpstream.sendNext(22)
-      subUpstream.expectCancellation()
-      subDownstream.cancel()
+      subUpstream.expectCancellation() // because take(1)
+      // this should not automatically pass the cancellation upstream of nested flow
+      srcWatchTermF.isCompleted should ===(false)
+      sinkMatVal.futureValue should ===(Seq(22))
 
-      suffixF.futureValue should ===(Seq(22))
+      // the nested flow then decides to cancel, which moves upstream
+      subDownstream.cancel()
       srcWatchTermF.futureValue should ===(Done)
     }
 
