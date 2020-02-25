@@ -1,6 +1,6 @@
 # Compression.gzip
 
-Creates a flow that gzip-compresses a stream of ByteStrings. Use the overload with the `level:Int` parameter to control the compression level.  
+Creates a flow that gzip-compresses a stream of ByteStrings.  
 
 @ref[Compression operators](../index.md#compression-operators)
 
@@ -14,6 +14,8 @@ Creates a flow that gzip-compresses a stream of ByteStrings. Note that the compr
 will SYNC_FLUSH after every @apidoc[akka.util.ByteString] so that it is guaranteed that every @apidoc[akka.util.ByteString]
 coming out of the flow can be fully decompressed without waiting for additional data. This may
 come at a compression performance cost for very small chunks.
+
+Use the overload with the `level:Int` parameter to control the compression level.
 
 ## Reactive Streams semantics
 

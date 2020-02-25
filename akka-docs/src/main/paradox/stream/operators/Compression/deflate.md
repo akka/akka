@@ -1,6 +1,6 @@
 # Compression.deflate
 
-Creates a flow that deflate-compresses a stream of ByteStrings. Use the overload with the `level: Int, nowrap: Boolean` parameters to control the compression level and compatinilty with GZip.  
+Creates a flow that deflate-compresses a stream of ByteStrings. 
 
 @ref[Compression operators](../index.md#compression-operators)
 
@@ -14,6 +14,8 @@ Creates a flow that deflate-compresses a stream of ByteStrings. Note that the co
 will SYNC_FLUSH after every @apidoc[akka.util.ByteString] so that it is guaranteed that every @apidoc[akka.util.ByteString]
 coming out of the flow can be fully decompressed without waiting for additional data. This may
 come at a compression performance cost for very small chunks.
+
+Use the overload parameters to control the compression level and compatibility with GZip.  
 
 ## Reactive Streams semantics
 

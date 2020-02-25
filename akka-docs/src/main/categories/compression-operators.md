@@ -1,1 +1,1 @@
-Flow operators to de/compress.
+Flow operators to (de)compress.
