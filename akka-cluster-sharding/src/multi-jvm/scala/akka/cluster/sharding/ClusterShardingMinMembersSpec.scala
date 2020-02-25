@@ -4,23 +4,22 @@
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
-
 import akka.actor._
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardRegion.{ ClusterShardingStats, GetClusterShardingStats }
 import akka.testkit._
 import akka.util.ccompat._
-import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 abstract class ClusterShardingMinMembersSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig = ConfigFactory.parseString(s"""
+      additionalConfig = s"""
         akka.cluster.sharding.rebalance-interval = 120s #disable rebalance
         akka.cluster.min-nr-of-members = 3
-        """)) {
+        """) {
 
   val first = role("first")
   val second = role("second")
@@ -71,9 +70,9 @@ abstract class ClusterShardingMinMembersSpec(multiNodeConfig: ClusterShardingMin
       startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second, third))
 
       // the only test not asserting join status before starting to shard
-      join(first, first, onJoinedRunOnFrom = startSharding(), assertEnabled = false)
-      join(second, first, onJoinedRunOnFrom = startSharding(), assertEnabled = false)
-      join(third, first, assertEnabled = false)
+      join(first, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
+      join(second, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
+      join(third, first, assertNodeUp = false)
       // wait with starting sharding on third
       within(remaining) {
         awaitAssert {

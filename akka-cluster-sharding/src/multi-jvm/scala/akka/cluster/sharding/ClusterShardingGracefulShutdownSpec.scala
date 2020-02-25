@@ -4,17 +4,17 @@
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
 import akka.actor._
 import akka.cluster.sharding.ShardRegion.GracefulShutdown
 import akka.remote.testconductor.RoleName
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.duration._
 
 abstract class ClusterShardingGracefulShutdownSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig = ConfigFactory.parseString("akka.persistence.journal.leveldb-shared.store.native = off")) {
+      additionalConfig = "akka.persistence.journal.leveldb-shared.store.native = off") {
   val first = role("first")
   val second = role("second")
 }
@@ -42,6 +42,8 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
   import MultiNodeClusterShardingSpec.ShardedEntity
   import multiNodeConfig._
 
+  private val typeName = "Entity"
+
   def join(from: RoleName, to: RoleName, typeName: String): Unit = {
     super.join(from, to)
     runOn(from) {
@@ -61,15 +63,15 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
         new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 2, maxSimultaneousRebalance = 1),
       handOffStopMessage = ShardedEntity.Stop)
 
-  lazy val region = ClusterSharding(system).shardRegion("Entity")
+  lazy val region = ClusterSharding(system).shardRegion(typeName)
 
   s"Cluster sharding ($mode)" must {
 
     "start some shards in both regions" in within(30.seconds) {
       startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second))
 
-      join(first, first, typeName = "Entity")
-      join(second, first, typeName = "Entity")
+      join(first, first, typeName)
+      join(second, first, typeName)
 
       awaitAssert {
         val p = TestProbe()

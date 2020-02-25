@@ -28,19 +28,18 @@ object ClusterShardingGetStateSpec {
   val shardTypeName = "Ping"
 }
 
-object ClusterShardingGetStateSpecConfig
-    extends MultiNodeClusterShardingConfig(additionalConfig = ConfigFactory.parseString(s"""
-        akka.cluster.sharding {
-          coordinator-failure-backoff = 3s
-          shard-failure-backoff = 3s
-        }
-        # using Java serialization for these messages because test is sending them
-        # to other nodes, which isn't normal usage.
-        akka.actor.serialization-bindings {
-          "${ShardRegion.GetShardRegionState.getClass.getName}" = java-test
-          "${classOf[ShardRegion.CurrentShardRegionState].getName}" = java-test
-        }
-        """)) {
+object ClusterShardingGetStateSpecConfig extends MultiNodeClusterShardingConfig(additionalConfig = s"""
+    akka.cluster.sharding {
+      coordinator-failure-backoff = 3s
+      shard-failure-backoff = 3s
+    }
+    # using Java serialization for these messages because test is sending them
+    # to other nodes, which isn't normal usage.
+    akka.actor.serialization-bindings {
+      "${ShardRegion.GetShardRegionState.getClass.getName}" = java-test
+      "${classOf[ShardRegion.CurrentShardRegionState].getName}" = java-test
+    }
+    """) {
 
   val controller = role("controller")
   val first = role("first")

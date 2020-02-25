@@ -85,7 +85,7 @@ object MultiNodeClusterShardingConfig {
 abstract class MultiNodeClusterShardingConfig(
     val mode: String = ClusterShardingSettings.StateStoreModeDData,
     val rememberEntities: Boolean = false,
-    additionalConfig: Config = ConfigFactory.empty,
+    additionalConfig: String = "",
     loglevel: String = "INFO")
     extends MultiNodeConfig {
 
@@ -115,6 +115,6 @@ abstract class MultiNodeClusterShardingConfig(
       .withFallback(SharedLeveldbJournal.configToEnableJavaSerializationForTest)
       .withFallback(MultiNodeClusterSpec.clusterConfig)
 
-  commonConfig(additionalConfig.withFallback(persistenceConfig).withFallback(common))
+  commonConfig(ConfigFactory.parseString(additionalConfig).withFallback(persistenceConfig).withFallback(common))
 
 }

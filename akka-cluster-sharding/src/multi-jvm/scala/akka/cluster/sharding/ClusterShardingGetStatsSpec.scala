@@ -27,12 +27,11 @@ object ClusterShardingGetStatsSpec {
 }
 
 object ClusterShardingGetStatsSpecConfig
-    extends MultiNodeClusterShardingConfig(
-      additionalConfig = ConfigFactory.parseString("""
+    extends MultiNodeClusterShardingConfig(additionalConfig = """
         akka.log-dead-letters-during-shutdown = off
         akka.cluster.sharding.updating-state-timeout = 2s
         akka.cluster.sharding.waiting-for-state-timeout = 2s
-        """)) {
+        """) {
 
   val controller = role("controller")
   val first = role("first")

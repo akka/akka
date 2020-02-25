@@ -11,7 +11,6 @@ import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.util.ccompat._
-import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
 
@@ -44,7 +43,7 @@ object ClusterShardingFailureSpec {
 abstract class ClusterShardingFailureSpecConfig(override val mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig = ConfigFactory.parseString(s"""
+      additionalConfig = s"""
         akka.cluster.roles = ["backend"]
         akka.cluster.sharding {
           coordinator-failure-backoff = 3s
@@ -56,7 +55,7 @@ abstract class ClusterShardingFailureSpecConfig(override val mode: String)
         akka.actor.serialization-bindings {
           "${classOf[ShardRegion.Passivate].getName}" = java-test
         }
-        """)) {
+        """) {
 
   val controller = role("controller")
   val first = role("first")

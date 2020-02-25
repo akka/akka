@@ -10,7 +10,6 @@ import akka.pattern.ask
 import akka.remote.testconductor.RoleName
 import akka.testkit._
 import akka.util.Timeout
-import com.typesafe.config.ConfigFactory
 
 import scala.collection.immutable
 import scala.concurrent.Future
@@ -64,10 +63,10 @@ object ClusterShardingCustomShardAllocationSpec {
 abstract class ClusterShardingCustomShardAllocationSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig = ConfigFactory.parseString(s"""
+      additionalConfig = s"""
       akka.cluster.sharding.rebalance-interval = 1 s
       akka.persistence.journal.leveldb-shared.store.native = off
-      """)) {
+      """) {
 
   val first = role("first")
   val second = role("second")

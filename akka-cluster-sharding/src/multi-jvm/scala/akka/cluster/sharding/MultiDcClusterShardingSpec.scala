@@ -46,14 +46,14 @@ object MultiDcClusterShardingSpec {
 object MultiDcClusterShardingSpecConfig
     extends MultiNodeClusterShardingConfig(
       loglevel = "DEBUG", //issue #23741
-      additionalConfig = ConfigFactory.parseString(s"""
+      additionalConfig = s"""
     akka.cluster {
       debug.verbose-heartbeat-logging = on
       debug.verbose-gossip-logging = on
       sharding.retry-interval = 200ms
     }
     akka.remote.log-remote-lifecycle-events = on
-    """)) {
+    """) {
 
   val first = role("first")
   val second = role("second")

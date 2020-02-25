@@ -40,14 +40,13 @@ object ClusterShardingRememberEntitiesPerfSpec {
 
 }
 
-object ClusterShardingRememberEntitiesPerfSpecConfig
-    extends MultiNodeClusterShardingConfig(additionalConfig = ConfigFactory.parseString(s"""
+object ClusterShardingRememberEntitiesPerfSpecConfig extends MultiNodeClusterShardingConfig(additionalConfig = s"""
     akka.testconductor.barrier-timeout = 3 minutes
     akka.remote.artery.advanced.outbound-message-queue-size = 10000
     akka.remote.artery.advanced.maximum-frame-size = 512 KiB
     # comment next line to enable durable lmdb storage
     akka.cluster.sharding.distributed-data.durable.keys = []
-    """)) {
+    """) {
 
   val first = role("first")
   val second = role("second")

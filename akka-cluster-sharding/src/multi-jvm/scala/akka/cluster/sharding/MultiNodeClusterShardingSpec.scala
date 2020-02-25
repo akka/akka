@@ -7,7 +7,7 @@ package akka.cluster.sharding
 import java.io.File
 
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, ActorSystem, Identify, PoisonPill, Props }
-import akka.cluster.{ MemberStatus, MultiNodeClusterSpec }
+import akka.cluster.MultiNodeClusterSpec
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.persistence.Persistence
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
@@ -112,7 +112,7 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
    * @param to the node to join to
    * @param onJoinedRunOnFrom optionally execute a function after join validation
    *                          is successful, e.g. start sharding or create coordinator
-   * @param assertEnabled if disabled - false, the joining member's `MemberStatus.Up`
+   * @param assertNodeUp if disabled - false, the joining member's `MemberStatus.Up`
    *                      and similar assertions are not run. This allows tests that were
    *                      not doing assertions (e.g. ClusterShardingMinMembersSpec) or
    *                      doing them after `onJoinedRunOnFrom` more flexibility.
@@ -122,20 +122,15 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
       from: RoleName,
       to: RoleName,
       onJoinedRunOnFrom: => Unit = (),
-      assertEnabled: Boolean = true,
+      assertNodeUp: Boolean = true,
       max: FiniteDuration = 20.seconds): Unit = {
 
     runOn(from) {
       cluster.join(node(to).address)
-      if (assertEnabled) {
+      if (assertNodeUp) {
         within(max) {
           awaitAssert {
-            // let's pick one or two vs have 3
-            // this was here originally and used in one or two tests
             cluster.state.isMemberUp(node(from).address)
-            // these two were in a few tests
-            cluster.state.members.unsorted.map(_.uniqueAddress) should contain(cluster.selfUniqueAddress)
-            cluster.state.members.unsorted.map(_.status) shouldEqual Set(MemberStatus.Up)
           }
         }
       }

@@ -4,20 +4,18 @@
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
-
 import akka.actor._
 import akka.remote.testconductor.RoleName
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
+
+import scala.concurrent.duration._
 
 /**
  * one-to-one mapping between shards and entities is not efficient but some use that anyway
  */
 object ClusterShardingSingleShardPerEntitySpecConfig
-    extends MultiNodeClusterShardingConfig(
-      additionalConfig = ConfigFactory.parseString("akka.cluster.sharding.updating-state-timeout = 1s")) {
+    extends MultiNodeClusterShardingConfig(additionalConfig = "akka.cluster.sharding.updating-state-timeout = 1s") {
 
   val first = role("first")
   val second = role("second")

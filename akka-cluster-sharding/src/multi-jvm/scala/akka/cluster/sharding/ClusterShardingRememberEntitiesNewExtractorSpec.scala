@@ -49,7 +49,7 @@ object ClusterShardingRememberEntitiesNewExtractorSpec {
 abstract class ClusterShardingRememberEntitiesNewExtractorSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      additionalConfig = ConfigFactory.parseString("akka.persistence.journal.leveldb-shared.store.native = off")) {
+      additionalConfig = "akka.persistence.journal.leveldb-shared.store.native = off") {
   val first = role("first")
   val second = role("second")
   val third = role("third")

@@ -4,26 +4,24 @@
 
 package akka.cluster.sharding
 
-import scala.concurrent.duration._
-
 import akka.actor.{ Actor, ActorLogging, Address, Props }
 import akka.cluster.Cluster
 import akka.cluster.sharding.ExternalShardAllocationSpec.GiveMeYourHome.{ Get, Home }
 import akka.cluster.sharding.external.{ ExternalShardAllocation, ExternalShardAllocationStrategy }
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.{ ImplicitSender, TestProbe }
-import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
 
+import scala.concurrent.duration._
+
 object ExternalShardAllocationSpecConfig
-    extends MultiNodeClusterShardingConfig(
-      additionalConfig = ConfigFactory.parseString("""
+    extends MultiNodeClusterShardingConfig(additionalConfig = """
       akka.cluster.sharding {
         retry-interval = 2000ms
         waiting-for-state-timeout = 2000ms
         rebalance-interval = 1s
       }
-     """)) {
+     """) {
 
   val first = role("first")
   val second = role("second")

@@ -31,11 +31,11 @@ abstract class ClusterShardingRememberEntitiesSpecConfig(mode: String, rememberE
     extends MultiNodeClusterShardingConfig(
       mode,
       rememberEntities,
-      additionalConfig = ConfigFactory.parseString(s"""
+      additionalConfig = s"""
       akka.testconductor.barrier-timeout = 60 s
       akka.test.single-expect-default = 60 s
       akka.persistence.journal.leveldb-shared.store.native = off
-      """)) {
+      """) {
 
   val first = role("first")
   val second = role("second")
