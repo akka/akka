@@ -23,6 +23,13 @@ For the corresponding operator for the Java standard library `CompletionStage` s
 
 @@@ 
 
+## Example
+
+Suppose we are accessing a remote service that streams user data over HTTP/2 or a WebSocket. We can model that 
+as a @apidoc[Source[User,NotUsed]] but that source will only be available once the connection has been established.
+
+Scala
+: @@snip [FutureSource.scala](/akka-docs/src/test/scala/docs/stream/operators/source/FutureSource.scala) { #sourceFutureSource }
 
 ## Reactive Streams semantics
 
@@ -34,3 +41,8 @@ For the corresponding operator for the Java standard library `CompletionStage` s
 
 @@@
 
+@@@div { .group-java }
+
+For the corresponding operator for the Java standard library `CompletionStage` see @ref:[completionStageSource](completionStageSource.md).
+
+@@@ 
