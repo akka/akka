@@ -325,12 +325,12 @@ Operators meant for inter-operating between Akka Streams and Actors:
 
 ## Compression operators
 
-Flow operators to de/compress.
+Flow operators to (de)compress.
 
 | |Operator|Description|
 |--|--|--|
-|Compression|<a name="deflate"></a>@ref[deflate](Compression/deflate.md)|Creates a flow that deflate-compresses a stream of ByteStrings. Use the overload with the `level: Int, nowrap: Boolean` parameters to control the compression level and compatinilty with GZip.  |
-|Compression|<a name="gzip"></a>@ref[gzip](Compression/gzip.md)|Creates a flow that gzip-compresses a stream of ByteStrings. Use the overload with the `level:Int` parameter to control the compression level.  |
+|Compression|<a name="deflate"></a>@ref[deflate](Compression/deflate.md)|Creates a flow that deflate-compresses a stream of ByteStrings. |
+|Compression|<a name="gzip"></a>@ref[gzip](Compression/gzip.md)|Creates a flow that gzip-compresses a stream of ByteStrings.  |
 
 ## Error handling
 
