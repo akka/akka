@@ -136,7 +136,7 @@ abstract class ClusterShardingQueriesSpec
       enterBarrier("sharded actors started")
     }
 
-    "only return empty stats from shards that timed out versus all if one or more times out" in {
+    "return shard stats of cluster sharding regions if one or more shards timeout, versus all as empty" in {
       runOn(busy, second, third) {
         val probe = TestProbe()
         val region = ClusterSharding(system).shardRegion(shardTypeName)
@@ -146,14 +146,14 @@ abstract class ClusterShardingQueriesSpec
         val timeouts = numberOfShards / regions.size
 
         // 3 regions, 2 shards per region, all 2 shards/region were unresponsive
-        // within shard-region-query-timeout = 0ms on all but first
+        // within shard-region-query-timeout, which only on first is 0ms
         regions.values.map(_.stats.size).sum shouldEqual 4
         regions.values.map(_.failed.size).sum shouldEqual timeouts
       }
       enterBarrier("received failed stats from timed out shards vs empty")
     }
 
-    "only return empty state from shards that timed out versus all if one or more times out" in {
+    "return shard state of sharding regions if one or more shards timeout, versus all as empty" in {
       runOn(busy) {
         val probe = TestProbe()
         val region = ClusterSharding(system).shardRegion(shardTypeName)

@@ -362,13 +362,9 @@ object ShardRegion {
    *
    * If gathering the shard information times out the set of shards will be empty.
    */
-  @SerialVersionUID(1L) final case class CurrentShardRegionState(shards: Set[ShardState], failed: Set[ShardId])
-      extends ClusterShardingSerializable {
-
-    // For binary compatibility
-    def this(shards: Set[ShardState]) = this(shards, Set.empty[ShardId])
-    private[sharding] def copy(shards: Set[ShardState] = shards): CurrentShardRegionState =
-      CurrentShardRegionState(shards, failed)
+  @SerialVersionUID(1L) final class CurrentShardRegionState(val shards: Set[ShardState], val failed: Set[ShardId])
+      extends ClusterShardingSerializable
+      with Product {
 
     /**
      * Java API:
@@ -385,12 +381,32 @@ object ShardRegion {
       import akka.util.ccompat.JavaConverters._
       failed.asJava
     }
-  }
 
+    // For binary compatibility
+    def this(shards: Set[ShardState]) = this(shards, Set.empty[ShardId])
+    private[sharding] def copy(shards: Set[ShardState] = shards): CurrentShardRegionState =
+      new CurrentShardRegionState(shards, this.failed)
+
+    // For binary compatibility: class conversion from case class
+    override def equals(other: Any): Boolean = other match {
+      case o: CurrentShardRegionState => o.shards == shards && o.failed == failed
+      case _                          => false
+    }
+    override def hashCode: Int = shards.## + failed.##
+    override def toString: String = s"CurrentShardRegionState[shards=$shards, failed=$failed]"
+    override def productArity: Int = 2
+    override def productElement(n: Int) =
+      if (n == 0) shards else if (n == 1) failed else throw new NoSuchElementException
+    override def canEqual(o: Any): Boolean = o.isInstanceOf[CurrentShardRegionState]
+  }
   // For binary compatibility
   object CurrentShardRegionState extends AbstractFunction1[Set[ShardState], CurrentShardRegionState] {
     def apply(shards: Set[ShardState]): CurrentShardRegionState =
       apply(shards, Set.empty[ShardId])
+    def apply(shards: Set[ShardState], failed: Set[ShardId]): CurrentShardRegionState =
+      new CurrentShardRegionState(shards, failed)
+    def unapply(state: CurrentShardRegionState): Option[Set[ShardState]] =
+      Option(state.shards)
   }
 
   @SerialVersionUID(1L) final case class ShardState(shardId: ShardId, entityIds: Set[EntityId]) {
