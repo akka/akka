@@ -31,7 +31,7 @@ private[akka] object ClusterActorSetImpl {
 
     def apply(entityContext: EntityContext[Command], factory: EntityId => Behavior[_]): Behavior[Command] =
       Behaviors.setup { context =>
-        def startChild() {
+        def startChild(): Unit = {
           context.watch(context.spawn(factory(entityContext.entityId), "entity"))
         }
 
