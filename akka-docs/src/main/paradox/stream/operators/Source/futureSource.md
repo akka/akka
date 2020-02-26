@@ -17,11 +17,7 @@ Streams the elements of the given future source once it successfully completes.
 Streams the elements of the given future source once it successfully completes. 
 If the future fails the stream is failed.
 
-@@@div { .group-java }
-
 For the corresponding operator for the Java standard library `CompletionStage` see @ref:[completionStageSource](completionStageSource.md).
-
-@@@ 
 
 ## Example
 
@@ -40,9 +36,3 @@ Scala
 **completes** after the *future* source completes
 
 @@@
-
-@@@div { .group-java }
-
-For the corresponding operator for the Java standard library `CompletionStage` see @ref:[completionStageSource](completionStageSource.md).
-
-@@@ 

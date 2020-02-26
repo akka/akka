@@ -18,11 +18,7 @@ Send the single value of the `CompletionStage` when it completes and there is de
 If the `CompletionStage` completes with `null` stage is completed without emitting a value.
 If the `CompletionStage` fails the stream is failed with that exception.
 
-@@@div { .group-scala }
-
 For the corresponding operator for the Scala standard library `Future` see @ref:[future](future.md).
-
-@@@
 
 ## Example
 
@@ -36,12 +32,5 @@ Java
 **emits** the future completes
 
 **completes** after the future has completed
-
-@@@
-
-
-@@@div { .group-scala }
-
-For the corresponding operator for the Scala standard library `Future` see @ref:[future](future.md).
 
 @@@

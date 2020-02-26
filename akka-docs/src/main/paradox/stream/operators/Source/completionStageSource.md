@@ -17,11 +17,7 @@ Streams the elements of an asynchronous source once its given *completion* opera
 Streams the elements of an asynchronous source once its given *completion* operator completes.
 If the *completion* fails the stream is failed with that exception.
 
-@@@ div { .group-scala }
-
 For the corresponding operator for the Scala standard library `Future` see @ref:[futureSource](futureSource.md).
-
-@@@
 
 ## Example
 
@@ -38,11 +34,5 @@ Java
 **emits** the next value from the asynchronous source, once its *completion operator* has completed
 
 **completes** after the asynchronous source completes
-
-@@@
-
-@@@ div { .group-scala }
-
-For the corresponding operator for the Scala standard library `Future` see @ref:[futureSource](futureSource.md).
 
 @@@
