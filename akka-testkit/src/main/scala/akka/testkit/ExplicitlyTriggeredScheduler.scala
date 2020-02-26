@@ -4,7 +4,6 @@
 
 package akka.testkit
 
-import java.util.UUID
 import java.util.concurrent.ThreadFactory
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicLong
@@ -34,7 +33,7 @@ import com.typesafe.config.Config
 class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, @unused tf: ThreadFactory)
     extends Scheduler {
 
-  private case class Item(id: UUID, interval: Option[FiniteDuration], runnable: Runnable)
+  private class Item(val interval: Option[FiniteDuration], val runnable: Runnable)
 
   private val currentTime = new AtomicLong()
   private val scheduled = new ConcurrentHashMap[Item, Long]()
@@ -101,7 +100,7 @@ class ExplicitlyTriggeredScheduler(@unused config: Config, log: LoggingAdapter, 
       interval: Option[FiniteDuration],
       runnable: Runnable): Cancellable = {
     val firstTime = currentTime.get + initialDelay.toMillis
-    val item = Item(UUID.randomUUID(), interval, runnable)
+    val item = new Item(interval, runnable)
     log.debug("Scheduled item for {}: {}", firstTime, item)
     scheduled.put(item, firstTime)
 
