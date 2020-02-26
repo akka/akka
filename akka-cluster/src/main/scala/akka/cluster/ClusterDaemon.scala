@@ -5,7 +5,7 @@
 package akka.cluster
 
 import akka.actor._
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.actor.SupervisorStrategy.Stop
 import akka.cluster.MemberStatus._
 import akka.cluster.ClusterEvent._
@@ -13,7 +13,7 @@ import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.Done
 import akka.pattern.ask
 import akka.remote.QuarantinedEvent
-import akka.util.Timeout
+import akka.util.{ unused, Timeout }
 import com.typesafe.config.Config
 
 import scala.collection.immutable
@@ -1738,7 +1738,11 @@ private[cluster] final class JoinSeedNodeProcess(
           seedNodes.filterNot(_ == selfAddress).mkString(", "))
       // no InitJoinAck received, try again
       self ! JoinSeedNode
+      onReceiveTimeout(seedNodes, attempt)
   }
+
+  @InternalStableApi
+  private[akka] def onReceiveTimeout(@unused seedNodes: immutable.IndexedSeq[Address], @unused attempt: Int): Unit = {}
 
   def done: Actor.Receive = {
     case InitJoinAck(_, _) => // already received one, skip rest
