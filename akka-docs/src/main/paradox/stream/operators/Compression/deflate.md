@@ -15,7 +15,7 @@ will SYNC_FLUSH after every @apidoc[akka.util.ByteString] so that it is guarante
 coming out of the flow can be fully decompressed without waiting for additional data. This may
 come at a compression performance cost for very small chunks.
 
-Use the overload parameters to control the compression level and compatibility with GZip.  
+Use the overload method with parameters to control the compression level and compatibility with GZip.  
 
 ## Reactive Streams semantics
 

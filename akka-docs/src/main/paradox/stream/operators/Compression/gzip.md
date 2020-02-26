@@ -15,7 +15,7 @@ will SYNC_FLUSH after every @apidoc[akka.util.ByteString] so that it is guarante
 coming out of the flow can be fully decompressed without waiting for additional data. This may
 come at a compression performance cost for very small chunks.
 
-Use the overload with the `level:Int` parameter to control the compression level.
+Use the overload method to control the compression level.
 
 ## Reactive Streams semantics
 
