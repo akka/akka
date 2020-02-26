@@ -1,7 +1,4 @@
 # #28604 changes in the akka.testkit.ExplicitlyTriggeredScheduler internal implementation
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.testkit.ExplicitlyTriggeredScheduler#Item.apply")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.testkit.ExplicitlyTriggeredScheduler#Item.copy")
-ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.testkit.ExplicitlyTriggeredScheduler#Item.this")
-ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.testkit.ExplicitlyTriggeredScheduler#Item.unapply")
-ProblemFilters.exclude[DirectMissingMethodProblem]("akka.testkit.ExplicitlyTriggeredScheduler#Item.time")
-ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.testkit.ExplicitlyTriggeredScheduler#Item.copy$default$1")
+ProblemFilters.exclude[MissingClassProblem]("akka.testkit.ExplicitlyTriggeredScheduler$Item$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.testkit.ExplicitlyTriggeredScheduler$Item")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.testkit.ExplicitlyTriggeredScheduler#Item.*")
