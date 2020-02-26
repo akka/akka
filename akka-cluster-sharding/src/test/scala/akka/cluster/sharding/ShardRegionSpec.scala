@@ -135,6 +135,7 @@ class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) {
         probe
           .receiveWhile(messages = expect) {
             case e: ShardRegion.CurrentShardRegionState =>
+              e.failed.isEmpty shouldEqual true
               e.shards.map(_.shardId)
           }
           .flatten

@@ -61,12 +61,6 @@ object ClusterShardingGetStateSpecConfig extends MultiNodeConfig {
       dir = target/ClusterShardingGetStateSpec/sharding-ddata
       map-size = 10 MiB
     }
-    # using Java serialization for these messages because test is sending them
-    # to other nodes, which isn't normal usage.
-    akka.actor.serialization-bindings {
-      "${ShardRegion.GetShardRegionState.getClass.getName}" = java-test
-      "${classOf[ShardRegion.CurrentShardRegionState].getName}" = java-test
-    }
     """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first, second)(ConfigFactory.parseString("""akka.cluster.roles=["shard"]"""))
