@@ -8,6 +8,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.internal.ClusterActorSetImpl
@@ -23,19 +24,23 @@ object ClusterActorSetSettings {
   }
 
   def apply(config: Config): ClusterActorSetSettings = {
-    val numberOfShards = config.getInt("number-of-shards")
     val keepAliveInterval = config.getDuration("keep-alive-interval").asScala
 
-    new ClusterActorSetSettings(keepAliveInterval, numberOfShards)
+    new ClusterActorSetSettings(keepAliveInterval)
   }
 
 }
 
-class ClusterActorSetSettings private[akka] (val keepAliveInterval: FiniteDuration, val numberOfShards: Int) {
+class ClusterActorSetSettings private[akka] (val keepAliveInterval: FiniteDuration) {
+
+  /**
+   * The interval each parent of the sharded set is pinged from each node in the cluster.
+   *
+   * Note: How the sharded set is kept alive may change in the future meaning this setting may go away.
+   */
+  @ApiMayChange
   def withKeepAliveInterval(keepAliveInterval: FiniteDuration): ClusterActorSetSettings =
-    new ClusterActorSetSettings(keepAliveInterval, numberOfShards)
-  def withNumberOfShards(numberOfShards: Int): ClusterActorSetSettings =
-    new ClusterActorSetSettings(keepAliveInterval, numberOfShards)
+    new ClusterActorSetSettings(keepAliveInterval)
 }
 
 object ClusterActorSet extends ExtensionId[ClusterActorSet] {
@@ -60,8 +65,19 @@ trait ClusterActorSet extends Extension {
 
   /**
    * Start a specific number of actors and should always be alive. Each get a unique id among the actors in the set.
+   * Use default settings from config.
+   */
+  def init(numberOfEntities: Int, behaviorFactory: EntityId => Behavior[_]): Unit
+
+  /**
+   * Start a specific number of actors and should always be alive. Each get a unique id among the actors in the set.
    */
   def init(settings: ClusterActorSetSettings, numberOfEntities: Int, behaviorFactory: EntityId => Behavior[_]): Unit
+
+  /**
+   * Start a set of predefined actors that should always be alive. Use default settings from config.
+   */
+  def init(identities: Set[EntityId], behaviorFactory: EntityId => Behavior[_]): Unit
 
   /**
    * Start a set of predefined actors that should always be alive

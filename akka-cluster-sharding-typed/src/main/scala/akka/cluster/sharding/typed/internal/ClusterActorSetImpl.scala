@@ -13,6 +13,8 @@ import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardRegion.EntityId
+import akka.cluster.sharding.typed.ClusterShardingSettings
+import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.internal.ClusterActorSetImpl.EntityParent
 import akka.cluster.sharding.typed.internal.ClusterActorSetImpl.KeepAlivePinger
@@ -23,11 +25,16 @@ import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityContext
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 
+import scala.concurrent.duration.Duration
+
+/**
+ * INTERNAL API
+ */
 @InternalApi
 private[akka] object ClusterActorSetImpl {
   object EntityParent {
     sealed trait Command
-    object Ping extends Command
+    case object Ping extends Command
 
     def apply(entityContext: EntityContext[Command], factory: EntityId => Behavior[_]): Behavior[Command] =
       Behaviors.setup { context =>
@@ -83,6 +90,9 @@ private[akka] class ClusterActorSetImpl(system: ActorSystem[_]) extends ClusterA
 
   private val typeKeyCounter = new AtomicInteger(0)
 
+  def init(numberOfEntities: Int, behaviorFactory: EntityId => Behavior[_]): Unit =
+    init(ClusterActorSetSettings(system), numberOfEntities, behaviorFactory)
+
   override def init(
       settings: ClusterActorSetSettings,
       numberOfEntities: Int,
@@ -91,6 +101,9 @@ private[akka] class ClusterActorSetImpl(system: ActorSystem[_]) extends ClusterA
     init(settings, identities, behaviorFactory)
   }
 
+  def init(identities: Set[EntityId], behaviorFactory: EntityId => Behavior[_]): Unit =
+    init(ClusterActorSetSettings(system), identities, behaviorFactory)
+
   override def init(
       settings: ClusterActorSetSettings,
       identities: Set[EntityId],
@@ -98,10 +111,35 @@ private[akka] class ClusterActorSetImpl(system: ActorSystem[_]) extends ClusterA
     val setId = typeKeyCounter.incrementAndGet()
     val entityTypeKey = EntityTypeKey[EntityParent.Command](s"cluster-actor-set-$setId")
 
-    val entity = Entity(entityTypeKey)(ctx => EntityParent(ctx, behaviorFactory))
+    // Since we know up front exactly what entity ids will exist and the number will be low 1:1 is fine as it will
+    // balance the set as good as possible across the cluster
+    val numberOfShards = identities.size
+
+    val shardingSettings = {
+      val settingsFromConfig =
+        ClusterShardingSettings.fromConfig(
+          // defaults in akka.cluster.sharding but allow overrides specifically for actor-set
+          system.settings.config.getConfig("akka.cluster.actor-set.sharding"))
+
+      new ClusterShardingSettings(
+        numberOfShards,
+        settingsFromConfig.role,
+        settingsFromConfig.dataCenter,
+        false, // remember entities disabled
+        "",
+        "",
+        Duration.Zero, // passivation disabled
+        settingsFromConfig.shardRegionQueryTimeout,
+        StateStoreModeDData,
+        settingsFromConfig.tuningParameters,
+        settingsFromConfig.coordinatorSingletonSettings)
+    }
+
+    val entity =
+      Entity(entityTypeKey)(ctx => EntityParent(ctx, behaviorFactory)).withSettings(shardingSettings)
 
     val shardingRef = ClusterSharding(system).init(entity)
 
-    system.systemActorOf(KeepAlivePinger(settings, identities, shardingRef), s"ClusterActorSetPinger-$setId")
+    system.systemActorOf(KeepAlivePinger(settings, identities, shardingRef), s"clusterActorSetPinger-$setId")
   }
 }

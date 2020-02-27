@@ -23,9 +23,11 @@ import akka.serialization.SerializerWithStringManifest
   private val payloadSupport = new WrappedPayloadSupport(system)
 
   private val ShardingEnvelopeManifest = "a"
+  private val KeepAlivePingManifest = "b"
 
   override def manifest(o: AnyRef): String = o match {
-    case _: ShardingEnvelope[_] => ShardingEnvelopeManifest
+    case _: ShardingEnvelope[_]                => ShardingEnvelopeManifest
+    case ClusterActorSetImpl.EntityParent.Ping => KeepAlivePingManifest
     case _ =>
       throw new IllegalArgumentException(s"Can't serialize object of type ${o.getClass} in [${getClass.getName}]")
   }
@@ -36,7 +38,7 @@ import akka.serialization.SerializerWithStringManifest
       builder.setEntityId(env.entityId)
       builder.setMessage(payloadSupport.payloadBuilder(env.message))
       builder.build().toByteArray()
-
+    case ClusterActorSetImpl.EntityParent.Ping => Array.emptyByteArray
     case _ =>
       throw new IllegalArgumentException(s"Cannot serialize object of type [${o.getClass.getName}]")
   }
@@ -47,6 +49,7 @@ import akka.serialization.SerializerWithStringManifest
       val entityId = env.getEntityId
       val wrappedMsg = payloadSupport.deserializePayload(env.getMessage)
       ShardingEnvelope(entityId, wrappedMsg)
+    case KeepAlivePingManifest => ClusterActorSetImpl.EntityParent.Ping
     case _ =>
       throw new NotSerializableException(
         s"Unimplemented deserialization of message with manifest [$manifest] in [${getClass.getName}]")
