@@ -33,6 +33,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     "Fan-out operators",
     "Watching status operators",
     "Actor interop operators",
+    "Compression operators",
     "Error handling")
 
   def categoryId(name: String): String = name.toLowerCase.replace(' ', '-')
@@ -98,7 +99,12 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "actorSubscriber",
       "foldAsync",
       "newOnCompleteStage",
+    ),
+    "Compression" -> Seq(
+      "inflate",
+      "gunzip",
     )
+
   )
 
   val ignore =
@@ -151,6 +157,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
         "akka-stream/src/main/scala/akka/stream/javadsl/RestartSink.scala",
         "akka-stream/src/main/scala/akka/stream/scaladsl/RetryFlow.scala",
         "akka-stream/src/main/scala/akka/stream/javadsl/RetryFlow.scala",
+        "akka-stream/src/main/scala/akka/stream/scaladsl/Compression.scala",
+        "akka-stream/src/main/scala/akka/stream/javadsl/Compression.scala",
         // akka-stream-typed
         "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorSource.scala",
         "akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSource.scala",

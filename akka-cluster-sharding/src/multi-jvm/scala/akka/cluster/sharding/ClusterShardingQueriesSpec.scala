@@ -38,12 +38,16 @@ object ClusterShardingQueriesSpecConfig
         """) {
 
   val controller = role("controller")
-  val first = role("first")
+  val busy = role("busy")
   val second = role("second")
   val third = role("third")
+ 
+  val shardRoles = ConfigFactory.parseString("""akka.cluster.roles=["shard"]""")
 
-  nodeConfig(first, second, third)(ConfigFactory.parseString("""akka.cluster.roles=["shard"]"""))
-
+  nodeConfig(busy)(
+    ConfigFactory.parseString("akka.cluster.sharding.shard-region-query-timeout = 0ms").withFallback(shardRoles))
+  nodeConfig(second, third)(shardRoles)
+ 
 }
 
 class ClusterShardingQueriesSpecMultiJvmNode1 extends ClusterShardingQueriesSpec
@@ -64,7 +68,7 @@ abstract class ClusterShardingQueriesSpec
   "Querying cluster sharding" must {
 
     "join cluster, initialize sharding" in {
-      awaitClusterUp(controller, first, second, third)
+      awaitClusterUp(controller, busy, second, third)
 
       runOn(controller) {
         startProxy(
@@ -74,8 +78,8 @@ abstract class ClusterShardingQueriesSpec
           extractEntityId = extractEntityId,
           extractShardId = extractShardId)
       }
-
-      runOn(first, second, third) {
+ 
+      runOn(busy, second, third) {
         startSharding(
           system,
           typeName = shardTypeName,
@@ -103,8 +107,8 @@ abstract class ClusterShardingQueriesSpec
       enterBarrier("sharded actors started")
     }
 
-    "get ShardIds of shards that timed out per region" in {
-      runOn(roles: _*) {
+    "return shard stats of cluster sharding regions if one or more shards timeout, versus all as empty" in {
+      runOn(busy, second, third) {
         val probe = TestProbe()
         val region = ClusterSharding(system).shardRegion(shardTypeName)
         region.tell(ShardRegion.GetClusterShardingStats(10.seconds), probe.ref)
@@ -113,13 +117,32 @@ abstract class ClusterShardingQueriesSpec
         val timeouts = numberOfShards / regions.size
 
         // 3 regions, 2 shards per region, all 2 shards/region were unresponsive
-        // within shard-region-query-timeout = 0ms
-        regions.values.forall { s =>
-          s.stats.isEmpty && s.failed.size == timeouts
-        } shouldBe true
+        // within shard-region-query-timeout, which only on first is 0ms
+        regions.values.map(_.stats.size).sum shouldEqual 4
+        regions.values.map(_.failed.size).sum shouldEqual timeouts
+      }
+      enterBarrier("received failed stats from timed out shards vs empty")
+    }
 
-        regions.values.map(_.failed.size).sum shouldEqual numberOfShards
-        enterBarrier("received stats")
+    "return shard state of sharding regions if one or more shards timeout, versus all as empty" in {
+      runOn(busy) {
+        val probe = TestProbe()
+        val region = ClusterSharding(system).shardRegion(shardTypeName)
+        region.tell(ShardRegion.GetShardRegionState, probe.ref)
+        val state = probe.expectMsgType[ShardRegion.CurrentShardRegionState]
+        state.shards.isEmpty shouldEqual true
+        state.failed.size shouldEqual 2
+      }
+      enterBarrier("query-timeout-on-busy-node")
+
+      runOn(second, third) {
+        val probe = TestProbe()
+        val region = ClusterSharding(system).shardRegion(shardTypeName)
+
+        region.tell(ShardRegion.GetShardRegionState, probe.ref)
+        val state = probe.expectMsgType[ShardRegion.CurrentShardRegionState]
+        state.shards.size shouldEqual 2
+        state.failed.isEmpty shouldEqual true
       }
       enterBarrier("done")
     }

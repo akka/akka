@@ -33,12 +33,6 @@ object ClusterShardingGetStateSpecConfig extends MultiNodeClusterShardingConfig(
       coordinator-failure-backoff = 3s
       shard-failure-backoff = 3s
     }
-    # using Java serialization for these messages because test is sending them
-    # to other nodes, which isn't normal usage.
-    akka.actor.serialization-bindings {
-      "${ShardRegion.GetShardRegionState.getClass.getName}" = java-test
-      "${classOf[ShardRegion.CurrentShardRegionState].getName}" = java-test
-    }
     """) {
 
   val controller = role("controller")
