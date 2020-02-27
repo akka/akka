@@ -7,6 +7,7 @@ package akka.stream.scaladsl
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
 
+import scala.collection.immutable
 import scala.util.control.NoStackTrace
 
 case class Message(data: String, offset: Long)
@@ -88,6 +89,41 @@ class SourceWithContextSpec extends StreamSpec {
         .runWith(TestSink.probe[(String, Long)])
         .request(3)
         .expectNext(("a-1", 1L), ("a-2", 1L), ("a-3", 1L))
+        .expectComplete()
+    }
+
+    sealed trait TransformPosition
+    case object Only extends TransformPosition
+    case object First extends TransformPosition
+    case object Within extends TransformPosition
+    case object Last extends TransformPosition
+    final case class OffsetContext(offset: Long, position: TransformPosition = Only)
+
+    "use context mapping on contexts via mapConcat" in {
+
+
+      Source(Vector(Message("a", 1L)))
+        .asSourceWithContext(msg => OffsetContext(msg.offset))
+        .map(_.data)
+        .mapConcat[String, OffsetContext](
+          f = { str =>
+            List(1, 2, 3).map(i => s"$str-$i")
+          },
+          contextMapping = (elements, context) => {
+            val count = elements.size - 1
+            val contexts: immutable.Iterable[OffsetContext] = elements.zipWithIndex.map {
+              case (_, i) => i match {
+                case 0 => OffsetContext(context.offset, First)
+                case `count` => OffsetContext(context.offset, Last)
+                case _ => OffsetContext(context.offset, Within)
+              }
+            }
+            contexts
+          }
+        )
+        .runWith(TestSink.probe[(String, OffsetContext)])
+        .request(3)
+        .expectNext(("a-1", OffsetContext(1L, First)), ("a-2", OffsetContext(1L, Within)), ("a-3", OffsetContext(1L, Last)))
         .expectComplete()
     }
 
