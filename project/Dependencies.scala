@@ -110,8 +110,8 @@ object Dependencies {
       val mockito = "org.mockito" % "mockito-core" % "3.2.4" % "test" // MIT
       // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
       val scalatest = Def.setting { "org.scalatest" %% "scalatest" % scalaTestVersion.value % "test" } // ApacheV2
-      val scalatestJUnit = "org.scalatestplus" %% "junit-4-12" % "3.1.0.0" % "test" // ApacheV2
-      val scalatestTestNG = "org.scalatestplus" %% "testng-6-7" % "3.1.0.0" % "test" // ApacheV2
+      val scalatestJUnit = "org.scalatestplus" %% "junit-4-12" % "3.1.1.0" % "test" // ApacheV2
+      val scalatestTestNG = "org.scalatestplus" %% "testng-6-7" % "3.1.1.0" % "test" // ApacheV2
       val scalatestScalaCheck = "org.scalatestplus" %% "scalacheck-1-14" % "3.1.0.1" % "test" // ApacheV2
       val scalatestMockito = "org.scalatestplus" %% "mockito-1-10" % "3.1.0.0" % "test" // ApacheV2
       val scalacheck = Def.setting { "org.scalacheck" %% "scalacheck" % scalaCheckVersion.value % "test" } // New BSD
