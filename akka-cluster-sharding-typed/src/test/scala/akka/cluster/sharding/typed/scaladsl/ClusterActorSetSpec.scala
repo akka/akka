@@ -74,7 +74,11 @@ class ClusterActorSetSpec
     "start N actors with unique ids" in {
       val probe = createTestProbe[Any]()
       val settings = ClusterActorSetSettings(system).withKeepAliveInterval(1.second) // ping/start fast
-      ClusterActorSet(system).init(settings, numberOfEntities = 5, entityId => MyActor(entityId, probe.ref))
+      ClusterActorSet(system).init(
+        settings,
+        numberOfEntities = 5,
+        entityId => MyActor(entityId, probe.ref),
+        MyActor.Stop)
 
       val started = probe.receiveMessages(5)
       started.toSet.size should ===(5)
@@ -85,7 +89,7 @@ class ClusterActorSetSpec
 
       val settings = ClusterActorSetSettings(system).withKeepAliveInterval(1.second) // ping/start fast
       val identities = Set("a", "b", "c")
-      ClusterActorSet(system).init(settings, identities, entityId => MyActor(entityId, probe.ref))
+      ClusterActorSet(system).init(settings, identities, entityId => MyActor(entityId, probe.ref), MyActor.Stop)
 
       val started = (1 to 3).map(_ => probe.expectMessageType[MyActor.Started]).toSet
       started.map(_.entityId) should ===(identities)
@@ -95,7 +99,7 @@ class ClusterActorSetSpec
       val probe = createTestProbe[Any]()
 
       val settings = ClusterActorSetSettings(system).withKeepAliveInterval(1.second) // ping/start fast
-      ClusterActorSet(system).init(settings, 2, entityId => MyActor(entityId, probe.ref))
+      ClusterActorSet(system).init(settings, 2, entityId => MyActor(entityId, probe.ref), MyActor.Stop)
 
       val started = (1 to 2).map(_ => probe.expectMessageType[MyActor.Started]).toSet
       started.foreach(_.selfRef ! MyActor.Stop)

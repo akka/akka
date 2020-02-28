@@ -6,6 +6,7 @@ package akka.cluster.sharding.typed.internal
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.actor.DeadLetterSuppression
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -34,21 +35,38 @@ import scala.concurrent.duration.Duration
 private[akka] object ClusterActorSetImpl {
   object EntityParent {
     sealed trait Command
-    case object Ping extends Command
+    case object Ping extends Command with DeadLetterSuppression
+    case object Stop extends Command
 
-    def apply(entityContext: EntityContext[Command], factory: EntityId => Behavior[_]): Behavior[Command] =
+    def apply[T](
+        entityContext: EntityContext[Command],
+        factory: EntityId => Behavior[T],
+        childStopMessage: T): Behavior[Command] =
       Behaviors.setup { context =>
+        var child: Option[ActorRef[T]] = None
+
         def startChild(): Unit = {
-          context.watch(context.spawn(factory(entityContext.entityId), "entity"))
+          val startedChild = context.spawn(factory(entityContext.entityId), "entity")
+          context.watch(startedChild)
+          child = Some(startedChild)
         }
 
         context.log.debug(s"Starting ClusterActorSet actor ${entityContext.entityId}")
         startChild()
 
-        // FIXME need to think about graceful shutdown here, is it fine that we are just killed on rebalance?
         Behaviors
           .receiveMessage[Command] {
-            case _ => Behaviors.same
+            case Stop =>
+              child match {
+                case Some(ref) =>
+                  ref ! childStopMessage
+                  waitingForChildToStop()
+                case None =>
+                  Behaviors.stopped
+              }
+
+            case Ping =>
+              Behaviors.same
           }
           .receiveSignal {
             case (_, Terminated(_)) =>
@@ -59,6 +77,17 @@ private[akka] object ClusterActorSetImpl {
               Behaviors.same
           }
       }
+
+    private def waitingForChildToStop(): Behavior[Command] = Behaviors.setup { context =>
+      // FIXME timeout and force termination if child doesn't stop?
+      Behaviors.receiveSignal {
+        case (_, Terminated(_)) =>
+          // if the child stopped manually, but we are not being re-located to another node,
+          // we can fast-restart it instead of waiting for a ping
+          context.log.debug(s"ClusterActorSet actor stopped")
+          Behaviors.stopped
+      }
+    }
   }
 
   object KeepAlivePinger {
@@ -90,24 +119,26 @@ private[akka] class ClusterActorSetImpl(system: ActorSystem[_]) extends ClusterA
 
   private val typeKeyCounter = new AtomicInteger(0)
 
-  def init(numberOfEntities: Int, behaviorFactory: EntityId => Behavior[_]): Unit =
-    init(ClusterActorSetSettings(system), numberOfEntities, behaviorFactory)
+  override def init[T](numberOfEntities: Int, behaviorFactory: EntityId => Behavior[T], stopMessage: T): Unit =
+    init(ClusterActorSetSettings(system), numberOfEntities, behaviorFactory, stopMessage)
 
-  override def init(
+  override def init[T](
       settings: ClusterActorSetSettings,
       numberOfEntities: Int,
-      behaviorFactory: EntityId => Behavior[_]): Unit = {
+      behaviorFactory: EntityId => Behavior[T],
+      stopMessage: T): Unit = {
     val identities = (0 to numberOfEntities).map(_.toString).toSet
-    init(settings, identities, behaviorFactory)
+    init(settings, identities, behaviorFactory, stopMessage)
   }
 
-  def init(identities: Set[EntityId], behaviorFactory: EntityId => Behavior[_]): Unit =
-    init(ClusterActorSetSettings(system), identities, behaviorFactory)
+  override def init[T](identities: Set[EntityId], behaviorFactory: EntityId => Behavior[T], stopMessage: T): Unit =
+    init(ClusterActorSetSettings(system), identities, behaviorFactory, stopMessage)
 
-  override def init(
+  override def init[T](
       settings: ClusterActorSetSettings,
       identities: Set[EntityId],
-      behaviorFactory: EntityId => Behavior[_]): Unit = {
+      behaviorFactory: EntityId => Behavior[T],
+      stopMessage: T): Unit = {
     val setId = typeKeyCounter.incrementAndGet()
     val entityTypeKey = EntityTypeKey[EntityParent.Command](s"cluster-actor-set-$setId")
 
@@ -136,7 +167,9 @@ private[akka] class ClusterActorSetImpl(system: ActorSystem[_]) extends ClusterA
     }
 
     val entity =
-      Entity(entityTypeKey)(ctx => EntityParent(ctx, behaviorFactory)).withSettings(shardingSettings)
+      Entity(entityTypeKey)(ctx => EntityParent(ctx, behaviorFactory, stopMessage))
+        .withSettings(shardingSettings)
+        .withStopMessage(EntityParent.Stop)
 
     val shardingRef = ClusterSharding(system).init(entity)
 

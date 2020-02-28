@@ -51,7 +51,7 @@ object ClusterActorSet extends ExtensionId[ClusterActorSet] {
  * This extension provides sharding functionality of a pre set number of actors in a cluster.
  *
  * The typical use case is when you have a task that can be divided in a number of workers, each doing a
- * sharded part of the work, for example consuming a subset the read side events from Akka Persistence through
+ * sharded part of the work, for example consuming the read side events from Akka Persistence through
  * tagged events where each tag decides which consumer that should consume the event.
  *
  * The sharded entities are running on top of Akka Cluster Sharding and are kept alive through periodic pinging.
@@ -67,20 +67,28 @@ trait ClusterActorSet extends Extension {
    * Start a specific number of actors and should always be alive. Each get a unique id among the actors in the set.
    * Use default settings from config.
    */
-  def init(numberOfEntities: Int, behaviorFactory: EntityId => Behavior[_]): Unit
+  def init[T](numberOfEntities: Int, behaviorFactory: EntityId => Behavior[T], stopMessage: T): Unit
 
   /**
    * Start a specific number of actors and should always be alive. Each get a unique id among the actors in the set.
    */
-  def init(settings: ClusterActorSetSettings, numberOfEntities: Int, behaviorFactory: EntityId => Behavior[_]): Unit
+  def init[T](
+      settings: ClusterActorSetSettings,
+      numberOfEntities: Int,
+      behaviorFactory: EntityId => Behavior[T],
+      stopMessage: T): Unit
 
   /**
    * Start a set of predefined actors that should always be alive. Use default settings from config.
    */
-  def init(identities: Set[EntityId], behaviorFactory: EntityId => Behavior[_]): Unit
+  def init[T](identities: Set[EntityId], behaviorFactory: EntityId => Behavior[T], stopMessage: T): Unit
 
   /**
    * Start a set of predefined actors that should always be alive
    */
-  def init(settings: ClusterActorSetSettings, identities: Set[EntityId], behaviorFactory: EntityId => Behavior[_]): Unit
+  def init[T](
+      settings: ClusterActorSetSettings,
+      identities: Set[EntityId],
+      behaviorFactory: EntityId => Behavior[T],
+      stopMessage: T): Unit
 }

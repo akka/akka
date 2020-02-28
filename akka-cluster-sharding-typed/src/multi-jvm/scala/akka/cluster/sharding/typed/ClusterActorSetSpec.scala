@@ -31,11 +31,18 @@ object ClusterActorSetSpec extends MultiNodeConfig {
   case class SetActorEvent(who: String, event: Any) extends CborSerializable
 
   object SetActor {
-    def apply(id: String): Behavior[Any] = Behaviors.setup { ctx =>
+    trait Command
+    case object Stop extends Command
+
+    def apply(id: String): Behavior[Command] = Behaviors.setup { ctx =>
       val snitchRouter = ctx.spawn(Routers.group(SnitchServiceKey), "router")
       snitchRouter ! SetActorEvent(id, "Started")
 
-      Behaviors.empty
+      Behaviors.receiveMessage {
+        case Stop =>
+          snitchRouter ! SetActorEvent(id, "Stopped")
+          Behaviors.stopped
+      }
     }
   }
 
@@ -83,7 +90,7 @@ abstract class ClusterActorSetSpec
     }
 
     "init actor set" in {
-      ClusterActorSet(typedSystem).init(6, id => SetActor(id))
+      ClusterActorSet(typedSystem).init(6, id => SetActor(id), SetActor.Stop)
       enterBarrier("actor-set-initialized")
       runOn(first) {
         val startedIds = (1 to 6).map { _ =>
@@ -95,6 +102,8 @@ abstract class ClusterActorSetSpec
       }
       enterBarrier("actor-set-started")
     }
+
+    // FIXME test removing one cluster node and verify all are alive (how do we do that?)
 
   }
 }
