@@ -208,6 +208,7 @@ object ByteString {
 
     override def take(n: Int): ByteString =
       if (n <= 0) ByteString.empty
+      else if (n >= length) this
       else toByteString1.take(n)
 
     override def dropRight(n: Int): ByteString =
