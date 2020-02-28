@@ -909,8 +909,15 @@ sealed abstract class ByteString
    */
   def decodeString(charset: Charset): String
 
+  /**
+   * Returns a ByteString which is the Base64 representation of this ByteString
+   */
   def decodeBase64: ByteString
 
+  /*
+   * Returns a ByteString which is the binary representation of this ByteString
+   * if this ByteString is Base64-encoded.
+   */
   def encodeBase64: ByteString
 
   /**
