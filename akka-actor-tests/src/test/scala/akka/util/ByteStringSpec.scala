@@ -789,11 +789,10 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       }
 
       "created from and decoding to Base64" in {
-        check {
-          a: ByteString =>
-            val encoded = a.encodeBase64
-            encoded == ByteString(java.util.Base64.getEncoder.encode(a.toArray)) && 
-            encoded.decodeBase64 == a
+        check { a: ByteString =>
+          val encoded = a.encodeBase64
+          encoded == ByteString(java.util.Base64.getEncoder.encode(a.toArray)) &&
+          encoded.decodeBase64 == a
         }
       }
 
