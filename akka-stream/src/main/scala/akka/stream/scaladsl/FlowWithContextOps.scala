@@ -169,13 +169,15 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
 
   def mapConcat[Out2, Ctx2](
     f: Out => immutable.Iterable[Out2],
-    contextMapping: (immutable.Iterable[Out2], Ctx) => immutable.Iterable[Ctx2]
-  ): Repr[Out2, Ctx2] =
-    via(flow.mapConcat {
-      case (e, ctx) =>
-        val out: immutable.Iterable[Out2] = f(e)
-        out.zip(contextMapping(out, ctx))
-    })
+    strategy: ContextMapStrategy.Strategy[Out @uncheckedVariance, Ctx @uncheckedVariance, Ctx2]
+  ): Repr[Out2, Ctx2] = {
+    via(flow.via(new StatefulMapConcatWithContext(() => f, strategy)))
+  }
+//    via(flow.mapConcat {
+//      case (e, ctx) =>
+//        val out: immutable.Iterable[Out2] = f(e)
+//        out.zip(contextMapping(out, ctx))
+//    })
 
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).

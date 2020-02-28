@@ -2232,6 +2232,109 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
+@InternalApi private[akka] final class StatefulMapConcatWithContext[In, InCtx, Out, OutCtx](
+  val f: () => In => immutable.Iterable[Out],
+  val strategy: ContextMapStrategy.Strategy[In, InCtx, OutCtx]
+)
+  extends GraphStage[FlowShape[(In, InCtx), (Out, OutCtx)]] {
+  val in = Inlet[(In, InCtx)]("StatefulMapConcat.in")
+  val out = Outlet[(Out, OutCtx)]("StatefulMapConcat.out")
+  override val shape = FlowShape(in, out)
+
+  override def initialAttributes: Attributes = DefaultAttributes.statefulMapConcat
+
+  def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
+    lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
+    var index: Int = 0
+    var currentIn: (In, InCtx) = _
+    var currentInElement: In = _
+    var currentInContext: InCtx = _
+    var currentOutIterator: Iterator[Out] = _
+    var plainFun = f()
+
+    def hasNext = if (currentOutIterator != null) currentOutIterator.hasNext else false
+
+    setHandlers(in, out, this)
+
+    def pushPull(): Unit =
+      if (hasNext) {
+        val e: Out = currentOutIterator.next()
+        val outCtx: OutCtx = strategy match {
+          case ContextMapStrategy.All(_, only) if !hasNext && index == 0 =>
+            only(currentInElement, currentInContext)
+          case ContextMapStrategy.All(iterate, _) =>
+            iterate(currentInElement, currentInContext, index, hasNext)
+//          case ContextMapStrategy.Iterate(iterate) =>
+//            iterate(currentInElement, currentInContext, index, true)
+//          case ContextMapStrategy.Last(last) if !hasNext =>
+//            last(currentInElement, currentInContext, index)
+//          case ContextMapStrategy.Same => ctx
+          case ContextMapStrategy.Same(f) => f(currentInElement, currentInContext)
+        }
+        index += 1
+        push(out, (e, outCtx))
+        if (!hasNext && isClosed(in)) completeStage()
+      }
+//      else if (!hasNext && index == 0) {
+//        strategy match {
+//          case ContextMapStrategy.All(_, _, none) if index == 0 =>
+//            val noneOutAndContext = none(currentInElement, currentInContext)
+//            push(out, noneOutAndContext)
+//          case _ => ()
+//        }
+//      }
+      else if (!isClosed(in))
+        pull(in)
+      else completeStage()
+
+    def onFinish(): Unit = if (!hasNext) completeStage()
+
+    override def onPush(): Unit =
+      try {
+        index = 0
+        currentIn = grab(in)
+        val (inElement, inContext) = currentIn
+        currentInElement = inElement
+        currentInContext = inContext
+        currentOutIterator = plainFun(currentInElement).iterator
+        pushPull()
+      } catch handleException
+
+    override def onUpstreamFinish(): Unit = onFinish()
+
+    override def onPull(): Unit =
+      try pushPull()
+      catch handleException
+
+    private def handleException: Catcher[Unit] = {
+      case NonFatal(ex) =>
+        decider(ex) match {
+          case Supervision.Stop => failStage(ex)
+          case Supervision.Resume =>
+            if (isClosed(in)) completeStage()
+            else if (!hasBeenPulled(in)) pull(in)
+          case Supervision.Restart =>
+            if (isClosed(in)) completeStage()
+            else {
+              restartState()
+              if (!hasBeenPulled(in)) pull(in)
+            }
+        }
+    }
+
+    private def restartState(): Unit = {
+      plainFun = f()
+      currentOutIterator = null
+    }
+  }
+
+  override def toString = "StatefulMapConcat"
+
+}
+
+/**
+ * INTERNAL API
+ */
 @InternalApi private[akka] final class LazyFlow[I, O, M](flowFactory: I => Future[Flow[I, O, M]])
     extends GraphStageWithMaterializedValue[FlowShape[I, O], Future[M]] {
 

@@ -4,10 +4,10 @@
 
 package akka.stream.scaladsl
 
+import akka.stream.ContextMapStrategy
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
 
-import scala.collection.immutable
 import scala.util.control.NoStackTrace
 
 case class Message(data: String, offset: Long)
@@ -94,32 +94,44 @@ class SourceWithContextSpec extends StreamSpec {
 
     sealed trait TransformPosition
     case object Only extends TransformPosition
+    //case object None extends TransformPosition
     case object First extends TransformPosition
     case object Within extends TransformPosition
     case object Last extends TransformPosition
     final case class OffsetContext(offset: Long, position: TransformPosition = Only)
 
-    "use context mapping on contexts via mapConcat" in {
+    "use All strategy on contexts via mapConcat" in {
 
+//      val contextMapping: (immutable.Iterable[String], OffsetContext) => immutable.Iterable[OffsetContext] = (elements: immutable.Iterable[String], context: OffsetContext) => {
+//        val count = elements.size - 1
+//        val contexts: immutable.Iterable[OffsetContext] = elements.zipWithIndex.map {
+//          case (_, i) => i match {
+//            case 0 => OffsetContext(context.offset, First)
+//            case `count` => OffsetContext(context.offset, Last)
+//            case _ => OffsetContext(context.offset, Within)
+//          }
+//        }
+//        contexts
+//      }
+
+      val contextMapping = ContextMapStrategy.All(
+        iterate = (_: String, inCtx: OffsetContext, index: Int, hasNext: Boolean) => {
+          if (index == 0 && hasNext) OffsetContext(inCtx.offset, First)
+          else if (index == 0 && !hasNext) OffsetContext(inCtx.offset, Only)
+          else if (!hasNext) OffsetContext(inCtx.offset, Last)
+          else OffsetContext(inCtx.offset, Within)
+        },
+        only = (_: String, inCtx: OffsetContext) => OffsetContext(inCtx.offset, Only)
+      )
 
       Source(Vector(Message("a", 1L)))
         .asSourceWithContext(msg => OffsetContext(msg.offset))
         .map(_.data)
-        .mapConcat[String, OffsetContext](
+        .mapConcat(
           f = { str =>
             List(1, 2, 3).map(i => s"$str-$i")
           },
-          contextMapping = (elements, context) => {
-            val count = elements.size - 1
-            val contexts: immutable.Iterable[OffsetContext] = elements.zipWithIndex.map {
-              case (_, i) => i match {
-                case 0 => OffsetContext(context.offset, First)
-                case `count` => OffsetContext(context.offset, Last)
-                case _ => OffsetContext(context.offset, Within)
-              }
-            }
-            contexts
-          }
+          contextMapping
         )
         .runWith(TestSink.probe[(String, OffsetContext)])
         .request(3)
