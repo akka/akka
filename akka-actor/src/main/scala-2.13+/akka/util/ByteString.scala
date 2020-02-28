@@ -8,6 +8,7 @@ import java.io.{ ObjectInputStream, ObjectOutputStream }
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable => JIterable }
 import java.nio.charset.{ Charset, StandardCharsets }
+import java.util.Base64
 
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.mutable.{ Builder, WrappedArray }
