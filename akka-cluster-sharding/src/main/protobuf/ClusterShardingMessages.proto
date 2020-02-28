@@ -102,3 +102,18 @@ message StartEntityAck {
     required string entityId = 1;
     required string shardId = 2;
 }
+
+message CurrentShardState {
+    required string shardId = 1;
+    repeated string entityIds = 2;
+}
+
+message ShardState {
+    required string shardId = 1;
+    repeated string entityIds = 2;
+}
+
+message CurrentShardRegionState {
+  repeated ShardState shards = 1;
+  repeated string failed = 2;
+}

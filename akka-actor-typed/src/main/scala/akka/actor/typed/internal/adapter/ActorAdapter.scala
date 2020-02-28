@@ -14,13 +14,13 @@ import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
 import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
 import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.Exception.Catcher
 import scala.annotation.switch
-
 import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
 import akka.util.OptionVal
 
@@ -182,6 +182,9 @@ import akka.util.OptionVal
 
   private def withSafelyAdapted[U, V](adapt: () => U)(body: U => V): Unit = {
     Try(adapt()) match {
+      case Success(null) =>
+        ctx.log.warn(
+          "Adapter function returned null which is not valid as an actor message, ignoring. This can happen for example when using pipeToSelf and returning null from the adapt function. Null value is ignored and not passed on to actor.")
       case Success(a) =>
         body(a)
       case Failure(ex) =>

@@ -4,42 +4,24 @@
 
 package akka.cluster.sharding
 
-import akka.actor.Actor
-import akka.actor.ActorLogging
-import akka.actor.Address
-import akka.actor.PoisonPill
-import akka.actor.Props
+import akka.actor.{ Actor, ActorLogging, Address, Props }
 import akka.cluster.Cluster
-import akka.cluster.MultiNodeClusterSpec
-import akka.cluster.sharding.ExternalShardAllocationSpec.GiveMeYourHome.Get
-import akka.cluster.sharding.ExternalShardAllocationSpec.GiveMeYourHome.Home
-import akka.cluster.sharding.external.ExternalShardAllocation
-import akka.cluster.sharding.external.ExternalShardAllocationStrategy
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.testkit.MultiNodeSpec
+import akka.cluster.sharding.ExternalShardAllocationSpec.GiveMeYourHome.{ Get, Home }
+import akka.cluster.sharding.external.{ ExternalShardAllocation, ExternalShardAllocationStrategy }
 import akka.serialization.jackson.CborSerializable
-import akka.testkit.ImplicitSender
-import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
+import akka.testkit.{ ImplicitSender, TestProbe }
 import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 
-object ExternalShardAllocationSpecConfig extends MultiNodeConfig {
-
-  commonConfig(ConfigFactory.parseString("""
-      akka.loglevel = INFO
-      akka.actor.provider = "cluster"
+object ExternalShardAllocationSpecConfig
+    extends MultiNodeClusterShardingConfig(additionalConfig = """
       akka.cluster.sharding {
-        distributed-data.durable.lmdb {
-          dir = target/ExternalShardAllocationSpec/sharding-ddata
-          map-size = 10 MiB
-        }
         retry-interval = 2000ms
         waiting-for-state-timeout = 2000ms
         rebalance-interval = 1s
       }
-     """).withFallback(MultiNodeClusterSpec.clusterConfig))
+     """) {
 
   val first = role("first")
   val second = role("second")
@@ -82,14 +64,13 @@ object ExternalShardAllocationSpec {
 }
 
 abstract class ExternalShardAllocationSpec
-    extends MultiNodeSpec(ExternalShardAllocationSpecConfig)
-    with MultiNodeClusterSpec
+    extends MultiNodeClusterShardingSpec(ExternalShardAllocationSpecConfig)
     with ImplicitSender
     with ScalaFutures {
 
-  import ExternalShardAllocationSpecConfig._
-  import ExternalShardAllocationSpec._
   import ExternalShardAllocationSpec.GiveMeYourHome._
+  import ExternalShardAllocationSpec._
+  import ExternalShardAllocationSpecConfig._
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.second)
 
@@ -102,16 +83,13 @@ abstract class ExternalShardAllocationSpec
       enterBarrier("cluster-started")
     }
 
-    lazy val shardRegion = {
-      ClusterSharding(system).start(
-        typeName = typeName,
-        entityProps = Props[GiveMeYourHome],
-        settings = ClusterShardingSettings(system),
-        extractEntityId = extractEntityId,
-        extractShardId = extractShardId,
-        new ExternalShardAllocationStrategy(system, typeName),
-        PoisonPill)
-    }
+    lazy val shardRegion = startSharding(
+      system,
+      typeName = typeName,
+      entityProps = Props[GiveMeYourHome],
+      extractEntityId = extractEntityId,
+      extractShardId = extractShardId,
+      allocationStrategy = new ExternalShardAllocationStrategy(system, typeName))
 
     "start cluster sharding" in {
       shardRegion

@@ -323,6 +323,15 @@ Operators meant for inter-operating between Akka Streams and Actors:
 |ActorSink|<a name="actorrefwithbackpressure"></a>@ref[actorRefWithBackpressure](ActorSink/actorRefWithBackpressure.md)|Sends the elements of the stream to the given @java[`ActorRef<T>`]@scala[`ActorRef[T]`] with backpressure, to be able to signal demand when the actor is ready to receive more elements.|
 |ActorFlow|<a name="ask"></a>@ref[ask](ActorFlow/ask.md)|Use the `AskPattern` to send each element as an `ask` to the target actor, and expect a reply back that will be sent further downstream.|
 
+## Compression operators
+
+Flow operators to (de)compress.
+
+| |Operator|Description|
+|--|--|--|
+|Compression|<a name="deflate"></a>@ref[deflate](Compression/deflate.md)|Creates a flow that deflate-compresses a stream of ByteStrings. |
+|Compression|<a name="gzip"></a>@ref[gzip](Compression/gzip.md)|Creates a flow that gzip-compresses a stream of ByteStrings.  |
+
 ## Error handling
 
 For more background see the @ref[Error Handling in Streams](../stream-error.md) section.
@@ -516,6 +525,8 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [withBackoff](RestartSink/withBackoff.md)
 * [withBackoff](RetryFlow/withBackoff.md)
 * [withBackoffAndContext](RetryFlow/withBackoffAndContext.md)
+* [gzip](Compression/gzip.md)
+* [deflate](Compression/deflate.md)
 * [actorRef](ActorSource/actorRef.md)
 * [actorRefWithBackpressure](ActorSource/actorRefWithBackpressure.md)
 * [ask](ActorFlow/ask.md)
