@@ -368,13 +368,25 @@ object ByteString {
 
     override def decodeBase64: ByteString =
       if (isEmpty) this
-      else if (startIndex == 0 && length == bytes.length) ByteString1C(Base64.getDecoder.decode(bytes))
-      else ByteString1C(Base64.getDecoder.decode(ByteBuffer.wrap(bytes, startIndex, length)).array())
+      else if (isCompact) ByteString1C(Base64.getDecoder.decode(bytes))
+      else {
+        val dst = Base64.getDecoder.decode(ByteBuffer.wrap(bytes, startIndex, length))
+        if (dst.hasArray) {
+          if (dst.array.length == dst.remaining) ByteString1C(dst.array)
+          else ByteString1(dst.array, dst.arrayOffset + dst.position, dst.remaining)
+        } else CompactByteString(dst)
+      }
 
     override def encodeBase64: ByteString =
       if (isEmpty) this
-      else if (startIndex == 0 && length == bytes.length) ByteString1C(Base64.getEncoder.encode(bytes))
-      else ByteString1C(Base64.getEncoder.encode(ByteBuffer.wrap(bytes, startIndex, length)).array())
+      else if (isCompact) ByteString1C(Base64.getEncoder.encode(bytes))
+      else {
+        val dst = Base64.getEncoder.encode(ByteBuffer.wrap(bytes, startIndex, length))
+        if (dst.hasArray) {
+          if (dst.array.length == dst.remaining) ByteString1C(dst.array)
+          else ByteString1(dst.array, dst.arrayOffset + dst.position, dst.remaining)
+        } else CompactByteString(dst)
+      }
 
     def ++(that: ByteString): ByteString = {
       if (that.isEmpty) this
