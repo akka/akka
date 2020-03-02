@@ -32,7 +32,7 @@ See also:
 ## Examples
 
 This shows that a Source is not restarted if it completes, only if it fails. Tick is only printed
-three times as the `take(3)` means the inner source.
+three times as the `take(3)` means the inner source completes successfully after emitting the first 3 elements.
 
 Scala
 :  @@snip [Restart.scala](/akka-docs/src/test/scala/docs/stream/operators/source/Restart.scala) { #restart-failure-inner-complete }
