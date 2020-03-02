@@ -35,12 +35,14 @@ import java.util.Arrays;
 // #zip
 
 // #log
+import akka.event.LogMarker;
 import akka.stream.Attributes;
 
 // #log
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -58,6 +60,20 @@ class SourceOrFlow {
                 Attributes.logLevelInfo(), // onFinish
                 Attributes.logLevelError())) // onFailure
     // #log
+    ;
+  }
+
+  void logWithMarkerExample() {
+    Flow.of(String.class)
+        // #logWithMarker
+        .logWithMarker(
+            "myStream", (e) -> LogMarker.create("myMarker", Collections.singletonMap("element", e)))
+        .addAttributes(
+            Attributes.createLogLevels(
+                Attributes.logLevelOff(), // onElement
+                Attributes.logLevelInfo(), // onFinish
+                Attributes.logLevelError())) // onFailure
+    // #logWithMarker
     ;
   }
 
