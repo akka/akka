@@ -36,38 +36,38 @@ class LimitUncompleted[T](parallelism: Int) extends GraphStage[FlowShape[Future[
 
       val callback = getAsyncCallback[Try[T]] { result =>
         inFlight -= 1
-        handleResult(result, () => ())
-        pullIfNecessary()
+        result.failed.foreach(handleFailure)
+        checkStatus()
       }
 
       override def onPush(): Unit = {
         val ele = grab(in)
 
-        if (ele.isCompleted)
-          handleResult(ele.value.get, () => push(out, ele))
-        else {
-          inFlight += 1
-          ele.onComplete(callback.invoke)(ExecutionContexts.sameThreadExecutionContext)
-          push(out, ele)
+        ele.value match {
+          case Some(Success(_))  => push(out, ele)
+          case Some(Failure(ex)) => handleFailure(ex)
+          case None =>
+            inFlight += 1
+            ele.onComplete(callback.invoke)(ExecutionContexts.sameThreadExecutionContext)
+            push(out, ele)
         }
 
-        pullIfNecessary()
+        checkStatus()
       }
-      override def onPull(): Unit = pullIfNecessary()
+      override def onPull(): Unit = checkStatus()
+      override def onUpstreamFinish(): Unit =
+        if (inFlight == 0L) completeStage()
+      // else we need to wait for all to complete so that a failing element could still fail the stage
 
-      private def handleResult(result: Try[T], whenSuccess: () => Unit): Unit =
-        // result handling only needed to be able to fail fast when futures fail
-        result match {
-          case Success(_) => whenSuccess()
-          case Failure(ex) =>
-            decider(ex) match {
-              case Supervision.Stop => failStage(ex)
-              case _                => // skip further handling
-            }
+      private def handleFailure(ex: Throwable): Unit =
+        decider(ex) match {
+          case Supervision.Stop => failStage(ex)
+          case _                => // skip further handling
         }
 
-      private def pullIfNecessary(): Unit =
-        if (inFlight < parallelism && !hasBeenPulled(in) && isAvailable(out)) tryPull(in)
+      private def checkStatus(): Unit =
+        if (inFlight == 0 && isClosed(in)) completeStage()
+        else if (inFlight < parallelism && !hasBeenPulled(in) && isAvailable(out)) tryPull(in)
     }
 }
 
