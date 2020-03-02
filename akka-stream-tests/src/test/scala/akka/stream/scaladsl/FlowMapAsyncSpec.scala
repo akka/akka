@@ -295,6 +295,27 @@ class FlowMapAsyncSpec extends StreamSpec {
         3.seconds) should ===("happy!")
     }
 
+    "complete without requiring further demand" in assertAllStagesStopped {
+      import system.dispatcher
+      Source
+        .single(1)
+        .mapAsync(1)(v => Future { Thread.sleep(20); v })
+        .runWith(TestSink.probe[Int])
+        .request(1)
+        .expectNext(1)
+        .expectComplete()
+    }
+
+    "complete without requiring further demand with already completed future" in assertAllStagesStopped {
+      Source
+        .single(1)
+        .mapAsync(1)(v => Future.successful(v))
+        .runWith(TestSink.probe[Int])
+        .request(1)
+        .expectNext(1)
+        .expectComplete()
+    }
+
     "finish after future failure" in assertAllStagesStopped {
       import system.dispatcher
       Await.result(

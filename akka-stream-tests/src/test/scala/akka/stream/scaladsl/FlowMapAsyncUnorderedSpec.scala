@@ -52,6 +52,27 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       c.expectComplete()
     }
 
+    "complete without requiring further demand" in assertAllStagesStopped {
+      import system.dispatcher
+      Source
+        .single(1)
+        .mapAsyncUnordered(1)(v => Future { Thread.sleep(20); v })
+        .runWith(TestSink.probe[Int])
+        .request(1)
+        .expectNext(1)
+        .expectComplete()
+    }
+
+    "complete without requiring further demand with already completed future" in assertAllStagesStopped {
+      Source
+        .single(1)
+        .mapAsyncUnordered(1)(v => Future.successful(v))
+        .runWith(TestSink.probe[Int])
+        .request(1)
+        .expectNext(1)
+        .expectComplete()
+    }
+
     "not run more futures than requested elements" in {
       val probe = TestProbe()
       val c = TestSubscriber.manualProbe[Int]()

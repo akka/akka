@@ -1384,6 +1384,7 @@ private[stream] object Collect {
             if (isAvailable(out)) {
               if (!hasBeenPulled(in)) tryPull(in)
               push(out, elem)
+              if (isClosed(in) && todo == 0) completeStage()
             } else buffer.enqueue(elem)
           case Success(null) =>
             if (isClosed(in) && todo == 0) completeStage()
