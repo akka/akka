@@ -49,7 +49,7 @@ Scala
 Java
 :  @@snip [Restart.java](/akka-docs/src/test/java/jdocs/stream/operators/source/Restart.java) { #restart-failure-inner-failure }
 
-Finally to be able to stop the restarting a kill switch can be used. The kill switch is inserted right after the restart
+Finally, to be able to stop the restarting, a kill switch can be used. The kill switch is inserted right after the restart
 source. The inner source is the same as above so emits 3 elements and then fails. A killswitch is used to be able to stop the source
 being restarted: 
 
