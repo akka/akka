@@ -78,7 +78,9 @@ class FlowMapAsyncSpec extends StreamSpec {
         .to(Sink.fromSubscriber(c))
         .run()
       val sub = c.expectSubscription()
-      probe.expectNoMessage(500.millis)
+      // This wait here was a curious detail of the previous version : we wouldn't start executing the first thunk
+      // after the stage was pulled first but afterwards we would pull eagerly
+      // probe.expectNoMessage(500.millis)
       sub.request(1)
       probe.receiveN(9).toSet should be((1 to 9).toSet)
       probe.expectNoMessage(500.millis)

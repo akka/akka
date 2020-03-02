@@ -991,8 +991,13 @@ trait FlowOps[+Out, +Mat] {
    * @see [[#mapAsyncUnordered]]
    */
   def mapAsync[T](parallelism: Int)(f: Out => Future[T]): Repr[T] =
-    if (parallelism == 1) mapAsyncUnordered[T](parallelism = 1)(f) // optimization for parallelism 1
-    else via(MapAsync(parallelism, f))
+    if (parallelism == 1)
+      map(f).via(new WaitForCompletion)
+    else
+      map(f)
+        .via(new LimitUncompleted(parallelism))
+        .buffer(parallelism, OverflowStrategy.backpressure) // FIXME: there should be two settings for the two usages of parallelism
+        .via(new WaitForCompletion)
 
   /**
    * Transform this stream by applying the given function to each of the elements
