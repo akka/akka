@@ -1344,6 +1344,7 @@ private[stream] object Collect {
 
       private def pullIfNeeded(): Unit = {
         if (buffer.used < parallelism && !hasBeenPulled(in)) tryPull(in)
+        if (isClosed(in) && buffer.isEmpty) completeStage()
       }
 
       setHandlers(in, out, this)
@@ -1419,9 +1420,10 @@ private[stream] object Collect {
 
       override def onPull(): Unit = {
         if (!buffer.isEmpty) push(out, buffer.dequeue())
-        else if (isClosed(in) && todo == 0) completeStage()
 
-        if (todo < parallelism && !hasBeenPulled(in)) tryPull(in)
+        val leftTodo = todo
+        if (isClosed(in) && leftTodo == 0) completeStage()
+        else if (leftTodo < parallelism && !hasBeenPulled(in)) tryPull(in)
       }
 
       setHandlers(in, out, this)
