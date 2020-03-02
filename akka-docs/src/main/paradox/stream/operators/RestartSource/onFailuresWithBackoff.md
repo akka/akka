@@ -15,7 +15,7 @@ Wrap the given @apidoc[Source] with a @apidoc[Source] that will restart it when 
 ## Description
 
 Wraps the given @apidoc[Source] with a @apidoc[Source] that will restart it when it fails using an exponential backoff.
-The backoff resets back to `minbackOff` if there hasn't been a failure within `minBackoff`.
+The backoff resets back to `minBackoff` if there hasn't been a failure within `minBackoff`.
  
 This @apidoc[Source] will never emit a failure, since the failure of the wrapped @apidoc[Source] is always handled by
 restarting. The wrapped @apidoc[Source] can be completed by completing this @apidoc[Source].
