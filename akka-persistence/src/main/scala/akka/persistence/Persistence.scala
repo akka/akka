@@ -167,7 +167,7 @@ object Persistence extends ExtensionId[Persistence] with ExtensionIdProvider {
   /** INTERNAL API. */
   private[persistence] case class PluginHolder(actorFactory: () => ActorRef, adapters: EventAdapters, config: Config)
       extends Extension {
-    // lazy creation of actor so that it's not started when only lookup up adapters
+    // lazy creation of actor so that it's not started when only looking up adapters
     lazy val actor: ActorRef = actorFactory()
   }
 
