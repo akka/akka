@@ -55,7 +55,8 @@ abstract class ClusterShardingFailureSpecConfig(override val mode: String)
         akka.actor.serialization-bindings {
           "${classOf[ShardRegion.Passivate].getName}" = java-test
         }
-        """) {
+        """,
+      rememberEntities = true) {
 
   val controller = role("controller")
   val first = role("first")
