@@ -40,7 +40,7 @@ Scala
 Java
 :  @@snip [Restart.java](/akka-docs/src/test/java/jdocs/stream/operators/source/Restart.java) { #restart-failure-inner-complete }
 
-If the inner source instead fails, it will be restarted with a backoff. The source emits 1, 2, 3, and then throws an exception.
+If the inner source instead fails, it will be restarted with an increasing backoff. The source emits 1, 2, 3, and then throws an exception.
 The first time the exception is thrown the source is restarted after 1s, then 2s etc, until the `maxBackoff` of 10s.
 
 Scala
