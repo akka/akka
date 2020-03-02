@@ -1343,8 +1343,9 @@ private[stream] object Collect {
         }
 
       private def pullIfNeeded(): Unit = {
-        if (buffer.used < parallelism && !hasBeenPulled(in)) tryPull(in)
         if (isClosed(in) && buffer.isEmpty) completeStage()
+        else if (buffer.used < parallelism && !hasBeenPulled(in)) tryPull(in)
+        // else already pulled and waiting for next element
       }
 
       setHandlers(in, out, this)
