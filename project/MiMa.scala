@@ -19,6 +19,7 @@ object MiMa extends AutoPlugin {
   override def trigger = allRequirements
 
   override val projectSettings = Seq(
+    mimaReportSignatureProblems := true,
     mimaPreviousArtifacts := akkaPreviousArtifacts(name.value, organization.value, scalaBinaryVersion.value))
 
   def akkaPreviousArtifacts(
