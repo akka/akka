@@ -8,7 +8,7 @@ import java.io.File
 
 import akka.actor._
 import akka.persistence.journal.{ EventAdapter, EventSeq }
-import akka.testkit.{ EventFilter, TestProbe }
+import akka.testkit.TestProbe
 import akka.util.unused
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.apache.commons.io.FileUtils
@@ -233,11 +233,9 @@ abstract class EndToEndEventAdapterSpec(journalName: String, journalConfig: Conf
           s"""$journalPath.event-adapter-bindings."${classOf[EndToEndEventAdapterSpec].getCanonicalName}$$A"""")
 
       withActorSystem("MissingAdapterSystem", journalConfig.withFallback(missingAdapterConfig)) { implicit system2 =>
-        EventFilter[ActorInitializationException](occurrences = 1, pattern = ".*undefined event-adapter.*").intercept {
-          intercept[IllegalArgumentException] {
-            Persistence(system2).adaptersFor(s"akka.persistence.journal.$journalName").get(classOf[String])
-          }.getMessage should include("was bound to undefined event-adapter: a (bindings: [a, b], known adapters: b)")
-        }
+        intercept[IllegalArgumentException] {
+          Persistence(system2).adaptersFor(s"akka.persistence.journal.$journalName").get(classOf[String])
+        }.getMessage should include("was bound to undefined event-adapter: a (bindings: [a, b], known adapters: b)")
       }
     }
   }
