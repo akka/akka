@@ -181,6 +181,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
 
+        // Expecting two log entries: one from the actor system at info level and one at warning level from the logging testkit
         EventFilter
           .info(pattern = ".*not delivered", occurrences = 1)
           .intercept {
