@@ -181,7 +181,6 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
 
-        a.tell("boom", ActorRef.noSender)
         EventFilter
           .info(pattern = ".*not delivered", occurrences = 1)
           .intercept {
