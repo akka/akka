@@ -30,7 +30,10 @@ object AskSpec {
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
+class AskSpec extends ScalaTestWithActorTestKit("""
+    akka.loglevel=DEBUG
+    akka.actor.debug.event-stream = on
+    """) with AnyWordSpecLike with LogCapturing {
 
   import AskSpec._
 
@@ -74,7 +77,9 @@ class AskSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCap
 
     "fail the future if the actor doesn't reply in time" in {
       val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      LoggingTestKit.debug(s"subscribing ${unhandledProbe.ref} to channel class akka.actor.UnhandledMessage").expect {
+        system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      }
 
       val actor = spawn(Behaviors.empty[Foo])
       implicit val timeout: Timeout = 10.millis
@@ -96,7 +101,9 @@ class AskSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCap
       }
 
       val deadLetterProbe = createTestProbe[DeadLetter]()
-      system.eventStream ! EventStream.Subscribe(deadLetterProbe.ref)
+      LoggingTestKit.debug(s"subscribing ${deadLetterProbe.ref} to channel class akka.actor.DeadLetter").expect {
+        system.eventStream ! EventStream.Subscribe(deadLetterProbe.ref)
+      }
 
       val answer: Future[String] = noSuchActor.ask(Foo("bar", _))
       val result = answer.failed.futureValue
