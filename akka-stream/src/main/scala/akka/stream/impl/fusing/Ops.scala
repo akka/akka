@@ -1315,10 +1315,8 @@ private[stream] object Collect {
 
       @tailrec
       private def pushNextIfPossible(): Unit =
-        if (buffer.isEmpty) {
-          if (isClosed(in)) completeStage()
-          else pullIfNeeded()
-        } else if (buffer.peek().elem eq NotYetThere) pullIfNeeded() // ahead of line blocking to keep order
+        if (buffer.isEmpty) pullIfNeeded()
+        else if (buffer.peek().elem eq NotYetThere) pullIfNeeded() // ahead of line blocking to keep order
         else if (isAvailable(out)) {
           val holder = buffer.dequeue()
           holder.elem match {
@@ -1380,20 +1378,21 @@ private[stream] object Collect {
       override def preStart(): Unit = buffer = BufferImpl(parallelism, inheritedAttributes)
 
       def futureCompleted(result: Try[Out]): Unit = {
+        def isCompleted = isClosed(in) && todo == 0
         inFlight -= 1
         result match {
           case Success(elem) if elem != null =>
             if (isAvailable(out)) {
               if (!hasBeenPulled(in)) tryPull(in)
               push(out, elem)
-              if (isClosed(in) && todo == 0) completeStage()
+              if (isCompleted) completeStage()
             } else buffer.enqueue(elem)
           case Success(null) =>
-            if (isClosed(in) && todo == 0) completeStage()
+            if (isCompleted) completeStage()
             else if (!hasBeenPulled(in)) tryPull(in)
           case Failure(ex) =>
             if (decider(ex) == Supervision.Stop) failStage(ex)
-            else if (isClosed(in) && todo == 0) completeStage()
+            else if (isCompleted) completeStage()
             else if (!hasBeenPulled(in)) tryPull(in)
         }
       }
