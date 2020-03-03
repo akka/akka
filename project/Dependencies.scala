@@ -106,13 +106,18 @@ object Dependencies {
       val commonsCodec = "commons-codec" % "commons-codec" % "1.14" % "test" // ApacheV2
       val junit = "junit" % "junit" % junitVersion % "test" // Common Public License 1.0
       val logback = Compile.logback % "test" // EPL 1.0
-      // changing the scalatest dependency must be reflected in akka-docs/rst/dev/multi-jvm-testing.rst
+
       val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "test" // ApacheV2
+      val scalacheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test" // New BSD
+
+      // The 'scalaTestPlus' projects are independently versioned,
+      // but the version of each module starts with the scalatest
+      // version it was intended to work with
       val scalatestJUnit = "org.scalatestplus" %% "junit-4-12" % (scalaTestVersion + ".0") % "test" // ApacheV2
       val scalatestTestNG = "org.scalatestplus" %% "testng-6-7" % (scalaTestVersion + ".0") % "test" // ApacheV2
       val scalatestScalaCheck = "org.scalatestplus" %% "scalacheck-1-14" % (scalaTestVersion + ".0") % "test" // ApacheV2
       val scalatestMockito = "org.scalatestplus" %% "mockito-3-2" % (scalaTestVersion + ".0") % "test" // ApacheV2
-      val scalacheck = "org.scalacheck" %% "scalacheck" % scalaCheckVersion % "test" // New BSD
+
       val pojosr = "com.googlecode.pojosr" % "de.kalpatec.pojosr.framework" % "0.2.1" % "test" // ApacheV2
       val tinybundles = "org.ops4j.pax.tinybundles" % "tinybundles" % "3.0.0" % "test" // ApacheV2
       val log4j = "log4j" % "log4j" % "1.2.17" % "test" // ApacheV2
