@@ -21,6 +21,7 @@ import akka.annotation.InternalApi
 import akka.util.Timeout
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
 
 object ActorTestKit {
 
@@ -134,6 +135,9 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
 
   implicit def testKitSettings: TestKitSettings =
     settings.getOrElse(TestKitSettings(system))
+
+  // avoid slf4j noise by touching it first from single thread #28673
+  LoggerFactory.getLogger(getClass).debug("Starting ActorTestKit")
 
   /**
    * INTERNAL API
