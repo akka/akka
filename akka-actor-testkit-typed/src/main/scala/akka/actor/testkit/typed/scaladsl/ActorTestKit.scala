@@ -133,11 +133,11 @@ object ActorTestKit {
  */
 final class ActorTestKit private[akka] (val name: String, val config: Config, settings: Option[TestKitSettings]) {
 
+  // avoid slf4j noise by touching it first from single thread #28673
+  LoggerFactory.getLogger(name).debug("Starting ActorTestKit")
+
   implicit def testKitSettings: TestKitSettings =
     settings.getOrElse(TestKitSettings(system))
-
-  // avoid slf4j noise by touching it first from single thread #28673
-  LoggerFactory.getLogger(getClass).debug("Starting ActorTestKit")
 
   /**
    * INTERNAL API
