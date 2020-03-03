@@ -6,6 +6,7 @@ package akka.stream.impl.io
 
 import java.io.{ IOException, InputStream }
 import java.util.concurrent.{ BlockingQueue, LinkedBlockingDeque, TimeUnit }
+import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.annotation.InternalApi
 import akka.stream.Attributes.InputBuffer
@@ -118,14 +119,14 @@ private[stream] object InputStreamSinkStage {
     extends InputStream {
 
   var isInitialized = false
-  var isActive = true
+  val isActive = new AtomicBoolean(true)
   var isStageAlive = true
   def subscriberClosedException = new IOException("Reactive stream is terminated, no reads are possible")
   var detachedChunk: Option[ByteString] = None
 
   @scala.throws(classOf[IOException])
   private[this] def executeIfNotClosed[T](f: () => T): T =
-    if (isActive) {
+    if (isActive.get()) {
       waitIfNotInitialized()
       f()
     } else throw subscriberClosedException
@@ -187,11 +188,10 @@ private[stream] object InputStreamSinkStage {
 
   @scala.throws(classOf[IOException])
   override def close(): Unit = {
-    executeIfNotClosed(() => {
+    if (isActive.getAndSet(false)) {
       // at this point Subscriber may be already terminated
       if (isStageAlive) sendToStage(Close)
-      isActive = false
-    })
+    }
   }
 
   @tailrec
