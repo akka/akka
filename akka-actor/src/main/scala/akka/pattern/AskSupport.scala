@@ -570,7 +570,9 @@ private[akka] final class PromiseActorRef private (
   }
 
   override def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit = state match {
-    case Stopped | _: StoppedWithPath => provider.deadLetters ! message
+    case Stopped | _: StoppedWithPath =>
+      provider.deadLetters ! message
+      onComplete(message, alreadyCompleted = true)
     case _ =>
       if (message == null) throw InvalidMessageException("Message is null")
       val promiseResult = message match {
@@ -578,10 +580,10 @@ private[akka] final class PromiseActorRef private (
         case Status.Failure(f) => Failure(f)
         case other             => Success(other)
       }
-      if (!result.tryComplete(promiseResult))
+      val alreadyCompleted = !result.tryComplete(promiseResult)
+      if (alreadyCompleted)
         provider.deadLetters ! message
-      else
-        onComplete(promiseResult)
+      onComplete(message, alreadyCompleted)
   }
 
   override def sendSystemMessage(message: SystemMessage): Unit = message match {
@@ -645,7 +647,7 @@ private[akka] final class PromiseActorRef private (
   }
 
   @InternalStableApi
-  private[akka] def onComplete(@unused promiseResult: Try[Any]): Unit = {}
+  private[akka] def onComplete(@unused message: Any, @unused alreadyCompleted: Boolean): Unit = {}
 
   @InternalStableApi
   private[akka] def onTimeout(@unused timeout: Timeout): Unit = {}
