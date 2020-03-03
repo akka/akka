@@ -22,7 +22,11 @@ class ExternalShardAllocationStrategySpec extends AkkaSpec("""
 
   "ExternalShardAllocationClient" must {
     "default to no locations if sharding never started" in {
-      ExternalShardAllocation(system).clientFor("not found").shardLocations().futureValue.locations shouldEqual Map.empty
+      ExternalShardAllocation(system)
+        .clientFor("not found")
+        .shardLocations()
+        .futureValue
+        .locations shouldEqual Map.empty
     }
   }
 
