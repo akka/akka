@@ -567,9 +567,9 @@ object ByteString {
 
     def decodeString(charset: Charset): String = compact.decodeString(charset)
 
-    override def decodeBase64: ByteString = compact.decodeBase64()
+    override def decodeBase64: ByteString = compact.decodeBase64
 
-    override def encodeBase64: ByteString = compact.encodeBase64()
+    override def encodeBase64: ByteString = compact.encodeBase64
 
     private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit = {
       os.writeInt(bytestrings.length)
