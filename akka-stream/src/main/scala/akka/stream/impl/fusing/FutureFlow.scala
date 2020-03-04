@@ -23,6 +23,9 @@ import scala.util.{Failure, Success, Try}
     val pr = Promise[M]
     val logic = new GraphStageLogic(shape) {
 
+      //seems like we must set handlers BEFORE preStart
+      setHandlers(in, out, initializing)
+
       override def preStart(): Unit = {
         super.preStart()
         future.value match {
@@ -33,7 +36,6 @@ import scala.util.{Failure, Success, Try}
             future.onComplete(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
             //in case both ports are closed before future completion
             setKeepGoing(true)
-            setHandlers(in, out, initializing)
         }
       }
 
@@ -47,6 +49,7 @@ import scala.util.{Failure, Success, Try}
       object initializing extends InHandler with OutHandler {
         override def onPush(): Unit = {
           //just leave it in the port
+          println("initialized: pushed")
         }
 
         var upstreamFailure = OptionVal.none[Throwable]
@@ -64,7 +67,7 @@ import scala.util.{Failure, Success, Try}
         def onFuture(futureRes : Try[Flow[In, Out, M]]) = futureRes match {
           case Failure(exception) =>
             setKeepGoing(false)
-            failStage(new NeverMaterializedException(exception))
+            failStage(exception)
           case Success(flow) =>
             //materialize flow, connect to inlets, feed with potential events and set handlers
             val initialized = new Initialized(flow)
@@ -131,6 +134,9 @@ import scala.util.{Failure, Success, Try}
               case OptionVal.Some(cause) =>
                 subSink.cancel(cause)
               case OptionVal.None =>
+                if(hasBeenPulled(in)) {
+                  subSink.pull()
+                }
             }
           case Failure(ex) =>
             failStage(ex)
@@ -142,7 +148,7 @@ import scala.util.{Failure, Success, Try}
 
         override def onDownstreamFinish(cause: Throwable): Unit = {
           subSink.cancel(cause)
-          super.onDownstreamFinish(cause)
+          //super.onDownstreamFinish(cause)
         }
 
         override def onPush(): Unit = {
@@ -151,12 +157,12 @@ import scala.util.{Failure, Success, Try}
 
         override def onUpstreamFinish(): Unit = {
           subSource.complete()
-          super.onUpstreamFinish()
+          //super.onUpstreamFinish()
         }
 
         override def onUpstreamFailure(ex: Throwable): Unit = {
           subSource.fail(ex)
-          super.onUpstreamFailure(ex)
+          //super.onUpstreamFailure(ex)
         }
       }
     }
