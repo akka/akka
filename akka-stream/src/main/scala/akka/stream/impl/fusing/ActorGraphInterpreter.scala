@@ -794,10 +794,12 @@ import scala.util.control.NonFatal
         newShells.map(shell => shell.toSnapshot.asInstanceOf[UninitializedInterpreter]))
   }
 
-  override def postStop(): Unit = {
-    val ex = AbruptTerminationException(self)
-    activeInterpreters.foreach(_.tryAbort(ex))
-    activeInterpreters = Set.empty[GraphInterpreterShell]
-    newShells.foreach(s => if (tryInit(s)) s.tryAbort(ex))
-  }
+  override def postStop(): Unit =
+    // avoid creating exception in happy case since it uses self.toString which is somewhat slow
+    if (activeInterpreters.nonEmpty || newShells.nonEmpty) {
+      val ex = AbruptTerminationException(self)
+      activeInterpreters.foreach(_.tryAbort(ex))
+      activeInterpreters = Set.empty[GraphInterpreterShell]
+      newShells.foreach(s => if (tryInit(s)) s.tryAbort(ex))
+    }
 }
