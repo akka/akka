@@ -28,9 +28,8 @@ Akka Cluster. The data is accessed with an actor providing a key-value store lik
 <!--- #cluster-pubsub --->
 ### Distributed Publish Subscribe
 
-Publish-subscribe messaging between actors in the cluster, and point-to-point messaging
-using the logical path of the actors, i.e. the sender does not have to know on which
-node the destination actor is running.
+Publish-subscribe messaging between actors in the cluster based on a topic, 
+i.e. the sender does not have to know on which node the destination actor is running.
 
 <!--- #cluster-pubsub --->
 

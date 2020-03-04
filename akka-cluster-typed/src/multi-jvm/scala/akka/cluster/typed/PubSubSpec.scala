@@ -6,9 +6,9 @@ package akka.cluster.typed
 
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
+import akka.actor.typed.internal.pubsub.TopicImpl
 import akka.actor.typed.pubsub.Topic
 import akka.actor.typed.scaladsl.adapter._
-import akka.cluster.MemberStatus
 import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
@@ -16,15 +16,13 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
-
 object PubSubSpecConfig extends MultiNodeConfig {
   val first: RoleName = role("first")
   val second = role("second")
   val third = role("third")
 
   commonConfig(ConfigFactory.parseString("""
-        akka.loglevel = DEBUG
+        akka.loglevel = INFO
       """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
   nodeConfig(first)(ConfigFactory.parseString("""
@@ -53,23 +51,11 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
 
   "A cluster" must {
     "be able to form" in {
-      runOn(first) {
-        cluster.manager ! Join(cluster.selfMember.address)
-      }
-      runOn(second, third) {
-        cluster.manager ! Join(first)
-      }
-      enterBarrier("form-cluster-join-attempt")
-      runOn(first, second, third) {
-        within(20.seconds) {
-          awaitAssert(clusterView.members.filter(_.status == MemberStatus.Up) should have size 3)
-        }
-      }
-      enterBarrier("cluster started")
+      formCluster(first, second, third)
     }
 
     "start a topic on each node" in {
-      topic = system.actorOf(PropsAdapter(Topic[Message]("animals"))).toTyped[Topic.Command[Message]]
+      topic = spawn(Topic[Message]("animals"), "AnimalsTopic")
       topic ! Topic.Subscribe(topicProbe.ref)
       runOn(second, third) {
         otherTopic = system.actorOf(PropsAdapter(Topic[Message]("other"))).toTyped[Topic.Command[Message]]
@@ -78,9 +64,16 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
       enterBarrier("topics started")
     }
 
+    "see nodes with subscribers registered" in {
+      val statsProbe = TestProbe[TopicImpl.TopicStats]()
+      statsProbe.awaitAssert({
+        topic ! TopicImpl.GetTopicStats[Message](statsProbe.ref)
+        statsProbe.receiveMessage().topicInstanceCount should ===(3)
+      })
+      enterBarrier("topic instances with subscribers seen")
+    }
+
     "publish to all nodes" in {
-      // FIXME deterministic all nodes seen the subscribers
-      Thread.sleep(1000)
       runOn(first) {
         topic ! Topic.Publish(Message("monkey"))
       }
@@ -88,7 +81,7 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
       topicProbe.expectMessage(Message("monkey"))
       runOn(second, third) {
         // check that messages are not leaking between topics
-        otherTopicProbe.expectNoMessage(100.millis)
+        otherTopicProbe.expectNoMessage()
       }
       enterBarrier("publish seen")
     }
@@ -96,8 +89,13 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
     "not publish to unsubscribed" in {
       runOn(first) {
         topic ! Topic.Unsubscribe(topicProbe.ref)
+        // unsubscribe does not need to be gossiped before it is effective
+        val statsProbe = TestProbe[TopicImpl.TopicStats]()
+        statsProbe.awaitAssert({
+          topic ! TopicImpl.GetTopicStats[Message](statsProbe.ref)
+          statsProbe.receiveMessage().topicInstanceCount should ===(2)
+        })
       }
-      // unsubscribe does not need to be gossiped before it is effective
       enterBarrier("unsubscribed")
       Thread.sleep(200) // but it needs to reach the topic
 
@@ -109,7 +107,7 @@ abstract class PubSubSpec extends MultiNodeSpec(PubSubSpecConfig) with MultiNode
         topicProbe.expectMessage(Message("donkey"))
       }
       runOn(first) {
-        topicProbe.expectNoMessage(100.millis)
+        topicProbe.expectNoMessage()
       }
     }
 

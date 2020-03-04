@@ -42,6 +42,6 @@ public class PubSubExample {
             topic.tell(Topic.publish(new Message("Hello Subscribers!")));
             // #publish
 
-            return null;
+            return Behaviors.empty();
           });
 }

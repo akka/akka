@@ -17,8 +17,7 @@ when used in a clustered application:
 
 Distributed publish subscribe is achieved by representing each pub sub topic with an actor, `akka.actor.typed.pubsub.Topic`. 
 
-The topic actor needs to run on each node where subscribers will live or that wants to publish messages to the topic, but
-there is no requirements
+The topic actor needs to run on each node where subscribers will live or that wants to publish messages to the topic.
  
 The identity of the topic is a tuple of the type of messages that can be published and a string topic name but it is recommended
 to not define multiple topics with different types and the same topic name.

@@ -20,7 +20,7 @@ Unit testing of `EventSourcedBehavior` can be done with the @ref:[ActorTestKit](
 in the same way as other behaviors.
 
 @ref:[Synchronous behavior testing](testing-sync.md) for `EventSourcedBehavior` is not supported yet, but
-tracked in @github[issue #26338](#23712).
+tracked in @github[issue #23712](#23712).
 
 You need to configure a journal, and the in-memory journal is sufficient for unit testing. To enable the
 in-memory journal you need to pass the following configuration to the @scala[`ScalaTestWithActorTestKit`]@java[`TestKitJunitResource`].

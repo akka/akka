@@ -21,9 +21,9 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         }
 
       try {
-        val probe1 = testKit.createTestProbe[String]
-        val probe2 = testKit.createTestProbe[String]
-        val probe3 = testKit.createTestProbe[String]
+        val probe1 = testKit.createTestProbe[String]()
+        val probe2 = testKit.createTestProbe[String]()
+        val probe3 = testKit.createTestProbe[String]()
 
         LoggingTestKit.debug("Topic list updated").expect {
           fruitTopic ! Topic.Subscribe(probe1.ref)
@@ -52,9 +52,9 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         }
 
       try {
-        val probe1 = testKit.createTestProbe[String]
-        val probe2 = testKit.createTestProbe[String]
-        val probe3 = testKit.createTestProbe[String]
+        val probe1 = testKit.createTestProbe[String]()
+        val probe2 = testKit.createTestProbe[String]()
+        val probe3 = testKit.createTestProbe[String]()
 
         LoggingTestKit
           .debug("Topic list updated")
@@ -88,7 +88,7 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         }
 
       try {
-        val probe1 = testKit.createTestProbe[String]
+        val probe1 = testKit.createTestProbe[String]()
 
         LoggingTestKit.debug("Topic list updated").expect {
           fruitTopic ! Topic.Subscribe(probe1.ref)
@@ -109,7 +109,7 @@ class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
         }
 
       try {
-        val probe1 = testKit.createTestProbe[String]
+        val probe1 = testKit.createTestProbe[String]()
 
         LoggingTestKit.debug("Topic list updated").expect {
           fruitTopic ! Topic.Subscribe(probe1.ref)

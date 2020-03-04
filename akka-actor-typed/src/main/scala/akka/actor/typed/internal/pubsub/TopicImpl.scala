@@ -31,9 +31,12 @@ private[akka] object TopicImpl {
   final case class Subscribe[T](subscriber: ActorRef[T]) extends Topic.Command[T]
   final case class Unsubscribe[T](subscriber: ActorRef[T]) extends Topic.Command[T]
 
+  // internal messages
+  final case class GetTopicStats[T](replyTo: ActorRef[TopicStats]) extends Topic.Command[T]
+  final case class TopicStats(localSubscriberCount: Int, topicInstanceCount: Int)
   final case class TopicInstancesUpdated[T](topics: Set[ActorRef[TopicImpl.Command[T]]]) extends Command[T]
   final case class MessagePublished[T](message: T) extends Command[T]
-  final case class SubscriberDied[T](subscriber: ActorRef[T]) extends Command[T]
+  final case class SubscriberTerminated[T](subscriber: ActorRef[T]) extends Command[T]
 }
 
 /**
@@ -55,12 +58,15 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
   import TopicImpl._
 
   private val topicServiceKey = ServiceKey[TopicImpl.Command[T]](topicName)
-  context.log.debugN("Starting up pub-sub topic [{}] for messages of type [{}]", topicName, classTag.runtimeClass)
+  context.log.debugN(
+    "Starting up pub-sub topic [{}] for messages of type [{}]",
+    topicName,
+    classTag.runtimeClass.getName)
 
-  private var topics = Set.empty[ActorRef[TopicImpl.Command[T]]]
+  private var topicInstances = Set.empty[ActorRef[TopicImpl.Command[T]]]
   private var localSubscribers = Set.empty[ActorRef[T]]
 
-  private def receptionist = context.system.receptionist
+  private val receptionist = context.system.receptionist
   private val receptionistAdapter = context.messageAdapter[Receptionist.Listing] {
     case topicServiceKey.Listing(topics) => TopicInstancesUpdated(topics)
   }
@@ -69,13 +75,13 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
   override def onMessage(msg: TopicImpl.Command[T]): Behavior[TopicImpl.Command[T]] = msg match {
 
     case Publish(message) =>
-      if (topics.isEmpty) {
+      if (topicInstances.isEmpty) {
         context.log.trace("Publishing message of type [{}] but no subscribers, dropping", msg.getClass)
         context.system.deadLetters ! Dropped(message, "No topic subscribers known", context.self.toClassic)
       } else {
         context.log.trace("Publishing message of type [{}]", msg.getClass)
         val pub = MessagePublished(message)
-        topics.foreach(_ ! pub)
+        topicInstances.foreach(_ ! pub)
       }
       this
 
@@ -85,16 +91,20 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
       this
 
     case Subscribe(subscriber) =>
-      context.watchWith(subscriber, SubscriberDied(subscriber))
-      localSubscribers = localSubscribers + subscriber
-      if (localSubscribers.size == 1) {
-        context.log.debug(
-          "Local subscriber [{}] added, went from no subscribers to one, subscribing to receptionist",
-          subscriber)
-        // we went from no subscribers to one, register to the receptionist
-        receptionist ! Receptionist.Register(topicServiceKey, context.self)
+      if (!localSubscribers.contains(subscriber)) {
+        context.watchWith(subscriber, SubscriberTerminated(subscriber))
+        localSubscribers = localSubscribers + subscriber
+        if (localSubscribers.size == 1) {
+          context.log.debug(
+            "Local subscriber [{}] added, went from no subscribers to one, subscribing to receptionist",
+            subscriber)
+          // we went from no subscribers to one, register to the receptionist
+          receptionist ! Receptionist.Register(topicServiceKey, context.self)
+        } else {
+          context.log.debug("Local subscriber [{}] added", subscriber)
+        }
       } else {
-        context.log.debug("Local subscriber [{}] added", subscriber)
+        context.log.debug("Local subscriber [{}] already subscribed, ignoring Subscribe command")
       }
       this
 
@@ -110,11 +120,11 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
       }
       this
 
-    case SubscriberDied(subscriber) =>
-      localSubscribers = localSubscribers.filterNot(_ == subscriber)
+    case SubscriberTerminated(subscriber) =>
+      localSubscribers -= subscriber
       if (localSubscribers.isEmpty) {
         context.log.debug("Last local subscriber [{}] terminated, deregistering from receptionist", subscriber)
-        // that was the lost subscriber, deregister from the receptionist
+        // that was the last subscriber, deregister from the receptionist
         receptionist ! Receptionist.Deregister(topicServiceKey, context.self)
       } else {
         context.log.debug("Local subscriber [{}] terminated, removing from subscriber list", subscriber)
@@ -123,7 +133,11 @@ private[akka] final class TopicImpl[T](topicName: String, context: ActorContext[
 
     case TopicInstancesUpdated(newTopics) =>
       context.log.debug("Topic list updated [{}]", newTopics)
-      topics = newTopics
+      topicInstances = newTopics
+      this
+
+    case GetTopicStats(replyTo) =>
+      replyTo ! TopicStats(localSubscribers.size, topicInstances.size)
       this
   }
 }
