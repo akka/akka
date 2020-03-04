@@ -28,13 +28,13 @@ object ClusterActorSetSpec extends MultiNodeConfig {
 
   val SnitchServiceKey = ServiceKey[AnyRef]("snitch")
 
-  case class SetActorEvent(who: String, event: Any) extends CborSerializable
+  case class SetActorEvent(id: Int, event: Any) extends CborSerializable
 
   object SetActor {
     trait Command
     case object Stop extends Command
 
-    def apply(id: String): Behavior[Command] = Behaviors.setup { ctx =>
+    def apply(id: Int): Behavior[Command] = Behaviors.setup { ctx =>
       val snitchRouter = ctx.spawn(Routers.group(SnitchServiceKey), "router")
       snitchRouter ! SetActorEvent(id, "Started")
 
@@ -90,15 +90,15 @@ abstract class ClusterActorSetSpec
     }
 
     "init actor set" in {
-      ClusterActorSet(typedSystem).init(6, id => SetActor(id), SetActor.Stop)
+      ClusterActorSet(typedSystem).init("the-fearless", 4, id => SetActor(id))
       enterBarrier("actor-set-initialized")
       runOn(first) {
-        val startedIds = (1 to 6).map { _ =>
+        val startedIds = (0 to 3).map { _ =>
           val event = probe.expectMessageType[SetActorEvent](5.seconds)
           event.event should ===("Started")
-          event.who
+          event.id
         }.toSet
-        startedIds.size should ===(6)
+        startedIds.size should ===(4)
       }
       enterBarrier("actor-set-started")
     }

@@ -4,147 +4,103 @@
 
 package akka.cluster.sharding.typed.internal
 
-import java.util.concurrent.atomic.AtomicInteger
-
-import akka.actor.DeadLetterSuppression
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardRegion.EntityId
+import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
 import akka.cluster.sharding.typed.ShardingEnvelope
-import akka.cluster.sharding.typed.internal.ClusterActorSetImpl.EntityParent
-import akka.cluster.sharding.typed.internal.ClusterActorSetImpl.KeepAlivePinger
+import akka.cluster.sharding.typed.ShardingMessageExtractor
 import akka.cluster.sharding.typed.scaladsl.ClusterActorSet
 import akka.cluster.sharding.typed.scaladsl.ClusterActorSetSettings
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
-import akka.cluster.sharding.typed.scaladsl.EntityContext
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
 
 import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
 
 /**
  * INTERNAL API
  */
 @InternalApi
 private[akka] object ClusterActorSetImpl {
-  object EntityParent {
-    sealed trait Command
-    case object Ping extends Command with DeadLetterSuppression
-    case object Stop extends Command
-
-    def apply[T](
-        entityContext: EntityContext[Command],
-        factory: EntityId => Behavior[T],
-        childStopMessage: T): Behavior[Command] =
-      Behaviors.setup { context =>
-        var child: Option[ActorRef[T]] = None
-
-        def startChild(): Unit = {
-          val startedChild = context.spawn(factory(entityContext.entityId), "entity")
-          context.watch(startedChild)
-          child = Some(startedChild)
-        }
-
-        context.log.debug(s"Starting ClusterActorSet actor ${entityContext.entityId}")
-        startChild()
-
-        Behaviors
-          .receiveMessage[Command] {
-            case Stop =>
-              child match {
-                case Some(ref) =>
-                  ref ! childStopMessage
-                  waitingForChildToStop()
-                case None =>
-                  Behaviors.stopped
-              }
-
-            case Ping =>
-              Behaviors.same
-          }
-          .receiveSignal {
-            case (_, Terminated(_)) =>
-              // if the child stopped manually, but we are not being re-located to another node,
-              // we can fast-restart it instead of waiting for a ping
-              context.log.debug(s"ClusterActorSet actor ${entityContext.entityId} stopped, starting again")
-              startChild()
-              Behaviors.same
-          }
-      }
-
-    private def waitingForChildToStop(): Behavior[Command] = Behaviors.setup { context =>
-      // FIXME timeout and force termination if child doesn't stop?
-      Behaviors.receiveSignal {
-        case (_, Terminated(_)) =>
-          // if the child stopped manually, but we are not being re-located to another node,
-          // we can fast-restart it instead of waiting for a ping
-          context.log.debug(s"ClusterActorSet actor stopped")
-          Behaviors.stopped
-      }
-    }
-  }
 
   object KeepAlivePinger {
     sealed trait Event
     case object Tick extends Event
 
-    def apply(
+    def apply[T](
         settings: ClusterActorSetSettings,
         identities: Set[EntityId],
-        shardingRef: ActorRef[ShardingEnvelope[EntityParent.Command]]): Behavior[Event] =
+        shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Event] =
       Behaviors.setup { context =>
         Behaviors.withTimers { timers =>
+          def triggerStartAll(): Unit = {
+            identities.foreach(id => shardingRef.toClassic ! StartEntity(id))
+          }
+
           context.log.debug(
             s"Starting ClusterActorSet KeepAlivePinger with ping interval ${settings.keepAliveInterval}")
-          // FIXME should we delay initial tick with random fraction of keepAliveInterval to avoid thundering herd?
           timers.startTimerWithFixedDelay(Tick, settings.keepAliveInterval)
+          triggerStartAll()
+
           Behaviors.receiveMessage {
             case Tick =>
-              identities.foreach(id => shardingRef ! ShardingEnvelope(id, EntityParent.Ping))
+              context.log.debug("Periodic ping sent")
+              triggerStartAll()
               Behaviors.same
           }
         }
       }
+  }
+
+  def idAndNameToEntityId(id: Int, name: String): EntityId = s"$name-$id"
+
+  def idFromEntityId(entityId: EntityId, name: String): Int =
+    stringIdFromEntityId(entityId, name).toInt
+
+  def stringIdFromEntityId(entityId: EntityId, name: String): String =
+    entityId.drop(name.length + 1)
+
+  final class MessageExtractor[T](name: String) extends ShardingMessageExtractor[ShardingEnvelope[T], T] {
+    def entityId(message: ShardingEnvelope[T]): String = message match {
+      case ShardingEnvelope(id, _) => id
+    }
+
+    def shardId(entityId: String): String = stringIdFromEntityId(entityId, name)
+
+    def unwrapMessage(message: ShardingEnvelope[T]): T = message.message
   }
 
 }
 @InternalApi
 private[akka] class ClusterActorSetImpl(system: ActorSystem[_]) extends ClusterActorSet {
 
-  private val typeKeyCounter = new AtomicInteger(0)
+  import ClusterActorSetImpl._
 
-  override def init[T](numberOfEntities: Int, behaviorFactory: EntityId => Behavior[T], stopMessage: T): Unit =
-    init(ClusterActorSetSettings(system), numberOfEntities, behaviorFactory, stopMessage)
-
-  override def init[T](
-      settings: ClusterActorSetSettings,
-      numberOfEntities: Int,
-      behaviorFactory: EntityId => Behavior[T],
-      stopMessage: T): Unit = {
-    val identities = (0 to numberOfEntities).map(_.toString).toSet
-    init(settings, identities, behaviorFactory, stopMessage)
+  def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
+      implicit classTag: ClassTag[T]): Unit = {
+    init(name, numberOfInstances, behaviorFactory, ClusterActorSetSettings(system), None)
   }
 
-  override def init[T](identities: Set[EntityId], behaviorFactory: EntityId => Behavior[T], stopMessage: T): Unit =
-    init(ClusterActorSetSettings(system), identities, behaviorFactory, stopMessage)
-
-  override def init[T](
+  def init[T](
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: Int => Behavior[T],
       settings: ClusterActorSetSettings,
-      identities: Set[EntityId],
-      behaviorFactory: EntityId => Behavior[T],
-      stopMessage: T): Unit = {
-    val setId = typeKeyCounter.incrementAndGet()
-    val entityTypeKey = EntityTypeKey[EntityParent.Command](s"cluster-actor-set-$setId")
+      stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit = {
 
-    // Since we know up front exactly what entity ids will exist and the number will be low 1:1 is fine as it will
-    // balance the set as good as possible across the cluster
-    val numberOfShards = identities.size
+    val entityTypeKey = EntityTypeKey[T](s"cluster-actor-set-$name")
+
+    // One shard per actor identified by the numeric id encoded in the entity id
+    val numberOfShards = numberOfInstances
+    val entityIds = (0 to numberOfInstances).map(idAndNameToEntityId(_, name))
 
     val shardingSettings = {
       val settingsFromConfig =
@@ -166,13 +122,17 @@ private[akka] class ClusterActorSetImpl(system: ActorSystem[_]) extends ClusterA
         settingsFromConfig.coordinatorSingletonSettings)
     }
 
-    val entity =
-      Entity(entityTypeKey)(ctx => EntityParent(ctx, behaviorFactory, stopMessage))
-        .withSettings(shardingSettings)
-        .withStopMessage(EntityParent.Stop)
+    val entity = Entity(entityTypeKey)(ctx => behaviorFactory(idFromEntityId(ctx.entityId, name)))
+      .withSettings(shardingSettings)
+      .withMessageExtractor(new MessageExtractor(name))
 
-    val shardingRef = ClusterSharding(system).init(entity)
+    val entityWithStop = stopMessage match {
+      case Some(stop) => entity.withStopMessage(stop)
+      case None       => entity
+    }
 
-    system.systemActorOf(KeepAlivePinger(settings, identities, shardingRef), s"clusterActorSetPinger-$setId")
+    val shardingRef = ClusterSharding(system).init(entityWithStop)
+
+    system.systemActorOf(KeepAlivePinger(settings, entityIds.toSet, shardingRef), s"clusterActorSetPinger-$name")
   }
 }

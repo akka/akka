@@ -10,12 +10,12 @@ import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
-import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.internal.ClusterActorSetImpl
-
-import scala.concurrent.duration.FiniteDuration
 import akka.util.JavaDurationConverters._
 import com.typesafe.config.Config
+
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
 
 object ClusterActorSetSettings {
 
@@ -48,7 +48,7 @@ object ClusterActorSet extends ExtensionId[ClusterActorSet] {
 }
 
 /**
- * This extension provides sharding functionality of a pre set number of actors in a cluster.
+ * This extension runs a pre set number of actors in a cluster.
  *
  * The typical use case is when you have a task that can be divided in a number of workers, each doing a
  * sharded part of the work, for example consuming the read side events from Akka Persistence through
@@ -64,31 +64,21 @@ object ClusterActorSet extends ExtensionId[ClusterActorSet] {
 trait ClusterActorSet extends Extension {
 
   /**
-   * Start a specific number of actors and should always be alive. Each get a unique id among the actors in the set.
-   * Use default settings from config.
+   * Start a specific number of actors and should always be alive.
+   * The name is combined with an integer to get a unique id among the actors in the set.
    */
-  def init[T](numberOfEntities: Int, behaviorFactory: EntityId => Behavior[T], stopMessage: T): Unit
+  def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
+      implicit classTag: ClassTag[T]): Unit
 
   /**
-   * Start a specific number of actors and should always be alive. Each get a unique id among the actors in the set.
+   * Start a specific number of actors and should always be alive.
+   * The name is combined with an integer to get a unique id among the actors in the set.
    */
   def init[T](
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: Int => Behavior[T],
       settings: ClusterActorSetSettings,
-      numberOfEntities: Int,
-      behaviorFactory: EntityId => Behavior[T],
-      stopMessage: T): Unit
+      stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit
 
-  /**
-   * Start a set of predefined actors that should always be alive. Use default settings from config.
-   */
-  def init[T](identities: Set[EntityId], behaviorFactory: EntityId => Behavior[T], stopMessage: T): Unit
-
-  /**
-   * Start a set of predefined actors that should always be alive
-   */
-  def init[T](
-      settings: ClusterActorSetSettings,
-      identities: Set[EntityId],
-      behaviorFactory: EntityId => Behavior[T],
-      stopMessage: T): Unit
 }
