@@ -14,9 +14,7 @@ import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.typed.internal.protobuf.ClusterMessages
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist.Entry
-import akka.serialization.SerializationExtension
-import akka.serialization.Serializers
-import akka.protobufv3.internal.ByteString
+import akka.remote.serialization.WrappedPayloadSupport
 
 /**
  * INTERNAL API
@@ -28,7 +26,7 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
 
   // Serializers are initialized early on. `toTyped` might then try to initialize the classic ActorSystemAdapter extension.
   private lazy val resolver = ActorRefResolver(system.toTyped)
-  private lazy val serialization = SerializationExtension(system)
+  private val payloadSupport = new WrappedPayloadSupport(system)
 
   private val ReceptionistEntryManifest = "a"
   private val PubSubPublishManifest = "b"
@@ -56,16 +54,9 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
   }
 
   private def pubSubPublishToBinary(m: TopicImpl.MessagePublished[_]): Array[Byte] = {
-    val userMessage = m.message.asInstanceOf[AnyRef]
-    val serializer = serialization.serializerFor(userMessage.getClass)
-    val payload = serializer.toBinary(userMessage)
-    val manifest = Serializers.manifestFor(serializer, userMessage)
-
     ClusterMessages.PubSubMessagePublished
       .newBuilder()
-      .setSerializerId(serializer.identifier)
-      .setMessageManifest(manifest)
-      .setMessage(ByteString.copyFrom(payload))
+      .setMessage(payloadSupport.payloadBuilder(m.message))
       .build()
       .toByteArray
   }
@@ -80,8 +71,7 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
 
   private def pubSubMessageFromBinary(bytes: Array[Byte]): TopicImpl.MessagePublished[_] = {
     val parsed = ClusterMessages.PubSubMessagePublished.parseFrom(bytes)
-    val userMessage =
-      serialization.deserialize(parsed.getMessage.toByteArray, parsed.getSerializerId, parsed.getMessageManifest).get
+    val userMessage = payloadSupport.deserializePayload(parsed.getMessage)
     TopicImpl.MessagePublished(userMessage)
   }
 

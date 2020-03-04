@@ -47,7 +47,8 @@ Java
 ## Pub Sub Scalability
 
 Each topic is represented by one @ref[Receptionist](actor-discovery.md) service key meaning that the number of topics 
-will scale to thousands or tens of thousands but for higher numbers of topics will require custom solutions.
+will scale to thousands or tens of thousands but for higher numbers of topics will require custom solutions. It also means
+that a very high turnaround of unique topics will not work well and for such use cases a custom solution is advised.
 
 The topic actor acts as a proxy and delegates to the local subscribers handling deduplication so that a published message
 is only sent once to a node regardless of how many subscribers there are to the topic on that node.

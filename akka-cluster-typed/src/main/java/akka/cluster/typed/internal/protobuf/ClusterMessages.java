@@ -736,43 +736,19 @@ public final class ClusterMessages {
       akka.protobufv3.internal.MessageOrBuilder {
 
     /**
-     * <code>required bytes message = 1;</code>
+     * <code>required .Payload message = 1;</code>
      * @return Whether the message field is set.
      */
     boolean hasMessage();
     /**
-     * <code>required bytes message = 1;</code>
+     * <code>required .Payload message = 1;</code>
      * @return The message.
      */
-    akka.protobufv3.internal.ByteString getMessage();
-
+    akka.remote.ContainerFormats.Payload getMessage();
     /**
-     * <code>required int32 serializerId = 2;</code>
-     * @return Whether the serializerId field is set.
+     * <code>required .Payload message = 1;</code>
      */
-    boolean hasSerializerId();
-    /**
-     * <code>required int32 serializerId = 2;</code>
-     * @return The serializerId.
-     */
-    int getSerializerId();
-
-    /**
-     * <code>optional string messageManifest = 3;</code>
-     * @return Whether the messageManifest field is set.
-     */
-    boolean hasMessageManifest();
-    /**
-     * <code>optional string messageManifest = 3;</code>
-     * @return The messageManifest.
-     */
-    java.lang.String getMessageManifest();
-    /**
-     * <code>optional string messageManifest = 3;</code>
-     * @return The bytes for messageManifest.
-     */
-    akka.protobufv3.internal.ByteString
-        getMessageManifestBytes();
+    akka.remote.ContainerFormats.PayloadOrBuilder getMessageOrBuilder();
   }
   /**
    * Protobuf type {@code akka.cluster.typed.PubSubMessagePublished}
@@ -787,8 +763,6 @@ public final class ClusterMessages {
       super(builder);
     }
     private PubSubMessagePublished() {
-      message_ = akka.protobufv3.internal.ByteString.EMPTY;
-      messageManifest_ = "";
     }
 
     @java.lang.Override
@@ -823,19 +797,16 @@ public final class ClusterMessages {
               done = true;
               break;
             case 10: {
+              akka.remote.ContainerFormats.Payload.Builder subBuilder = null;
+              if (((bitField0_ & 0x00000001) != 0)) {
+                subBuilder = message_.toBuilder();
+              }
+              message_ = input.readMessage(akka.remote.ContainerFormats.Payload.PARSER, extensionRegistry);
+              if (subBuilder != null) {
+                subBuilder.mergeFrom(message_);
+                message_ = subBuilder.buildPartial();
+              }
               bitField0_ |= 0x00000001;
-              message_ = input.readBytes();
-              break;
-            }
-            case 16: {
-              bitField0_ |= 0x00000002;
-              serializerId_ = input.readInt32();
-              break;
-            }
-            case 26: {
-              akka.protobufv3.internal.ByteString bs = input.readBytes();
-              bitField0_ |= 0x00000004;
-              messageManifest_ = bs;
               break;
             }
             default: {
@@ -872,82 +843,26 @@ public final class ClusterMessages {
 
     private int bitField0_;
     public static final int MESSAGE_FIELD_NUMBER = 1;
-    private akka.protobufv3.internal.ByteString message_;
+    private akka.remote.ContainerFormats.Payload message_;
     /**
-     * <code>required bytes message = 1;</code>
+     * <code>required .Payload message = 1;</code>
      * @return Whether the message field is set.
      */
     public boolean hasMessage() {
       return ((bitField0_ & 0x00000001) != 0);
     }
     /**
-     * <code>required bytes message = 1;</code>
+     * <code>required .Payload message = 1;</code>
      * @return The message.
      */
-    public akka.protobufv3.internal.ByteString getMessage() {
-      return message_;
-    }
-
-    public static final int SERIALIZERID_FIELD_NUMBER = 2;
-    private int serializerId_;
-    /**
-     * <code>required int32 serializerId = 2;</code>
-     * @return Whether the serializerId field is set.
-     */
-    public boolean hasSerializerId() {
-      return ((bitField0_ & 0x00000002) != 0);
+    public akka.remote.ContainerFormats.Payload getMessage() {
+      return message_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : message_;
     }
     /**
-     * <code>required int32 serializerId = 2;</code>
-     * @return The serializerId.
+     * <code>required .Payload message = 1;</code>
      */
-    public int getSerializerId() {
-      return serializerId_;
-    }
-
-    public static final int MESSAGEMANIFEST_FIELD_NUMBER = 3;
-    private volatile java.lang.Object messageManifest_;
-    /**
-     * <code>optional string messageManifest = 3;</code>
-     * @return Whether the messageManifest field is set.
-     */
-    public boolean hasMessageManifest() {
-      return ((bitField0_ & 0x00000004) != 0);
-    }
-    /**
-     * <code>optional string messageManifest = 3;</code>
-     * @return The messageManifest.
-     */
-    public java.lang.String getMessageManifest() {
-      java.lang.Object ref = messageManifest_;
-      if (ref instanceof java.lang.String) {
-        return (java.lang.String) ref;
-      } else {
-        akka.protobufv3.internal.ByteString bs = 
-            (akka.protobufv3.internal.ByteString) ref;
-        java.lang.String s = bs.toStringUtf8();
-        if (bs.isValidUtf8()) {
-          messageManifest_ = s;
-        }
-        return s;
-      }
-    }
-    /**
-     * <code>optional string messageManifest = 3;</code>
-     * @return The bytes for messageManifest.
-     */
-    public akka.protobufv3.internal.ByteString
-        getMessageManifestBytes() {
-      java.lang.Object ref = messageManifest_;
-      if (ref instanceof java.lang.String) {
-        akka.protobufv3.internal.ByteString b = 
-            akka.protobufv3.internal.ByteString.copyFromUtf8(
-                (java.lang.String) ref);
-        messageManifest_ = b;
-        return b;
-      } else {
-        return (akka.protobufv3.internal.ByteString) ref;
-      }
+    public akka.remote.ContainerFormats.PayloadOrBuilder getMessageOrBuilder() {
+      return message_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : message_;
     }
 
     private byte memoizedIsInitialized = -1;
@@ -961,7 +876,7 @@ public final class ClusterMessages {
         memoizedIsInitialized = 0;
         return false;
       }
-      if (!hasSerializerId()) {
+      if (!getMessage().isInitialized()) {
         memoizedIsInitialized = 0;
         return false;
       }
@@ -973,13 +888,7 @@ public final class ClusterMessages {
     public void writeTo(akka.protobufv3.internal.CodedOutputStream output)
                         throws java.io.IOException {
       if (((bitField0_ & 0x00000001) != 0)) {
-        output.writeBytes(1, message_);
-      }
-      if (((bitField0_ & 0x00000002) != 0)) {
-        output.writeInt32(2, serializerId_);
-      }
-      if (((bitField0_ & 0x00000004) != 0)) {
-        akka.protobufv3.internal.GeneratedMessageV3.writeString(output, 3, messageManifest_);
+        output.writeMessage(1, getMessage());
       }
       unknownFields.writeTo(output);
     }
@@ -992,14 +901,7 @@ public final class ClusterMessages {
       size = 0;
       if (((bitField0_ & 0x00000001) != 0)) {
         size += akka.protobufv3.internal.CodedOutputStream
-          .computeBytesSize(1, message_);
-      }
-      if (((bitField0_ & 0x00000002) != 0)) {
-        size += akka.protobufv3.internal.CodedOutputStream
-          .computeInt32Size(2, serializerId_);
-      }
-      if (((bitField0_ & 0x00000004) != 0)) {
-        size += akka.protobufv3.internal.GeneratedMessageV3.computeStringSize(3, messageManifest_);
+          .computeMessageSize(1, getMessage());
       }
       size += unknownFields.getSerializedSize();
       memoizedSize = size;
@@ -1021,16 +923,6 @@ public final class ClusterMessages {
         if (!getMessage()
             .equals(other.getMessage())) return false;
       }
-      if (hasSerializerId() != other.hasSerializerId()) return false;
-      if (hasSerializerId()) {
-        if (getSerializerId()
-            != other.getSerializerId()) return false;
-      }
-      if (hasMessageManifest() != other.hasMessageManifest()) return false;
-      if (hasMessageManifest()) {
-        if (!getMessageManifest()
-            .equals(other.getMessageManifest())) return false;
-      }
       if (!unknownFields.equals(other.unknownFields)) return false;
       return true;
     }
@@ -1045,14 +937,6 @@ public final class ClusterMessages {
       if (hasMessage()) {
         hash = (37 * hash) + MESSAGE_FIELD_NUMBER;
         hash = (53 * hash) + getMessage().hashCode();
-      }
-      if (hasSerializerId()) {
-        hash = (37 * hash) + SERIALIZERID_FIELD_NUMBER;
-        hash = (53 * hash) + getSerializerId();
-      }
-      if (hasMessageManifest()) {
-        hash = (37 * hash) + MESSAGEMANIFEST_FIELD_NUMBER;
-        hash = (53 * hash) + getMessageManifest().hashCode();
       }
       hash = (29 * hash) + unknownFields.hashCode();
       memoizedHashCode = hash;
@@ -1182,17 +1066,18 @@ public final class ClusterMessages {
       private void maybeForceBuilderInitialization() {
         if (akka.protobufv3.internal.GeneratedMessageV3
                 .alwaysUseFieldBuilders) {
+          getMessageFieldBuilder();
         }
       }
       @java.lang.Override
       public Builder clear() {
         super.clear();
-        message_ = akka.protobufv3.internal.ByteString.EMPTY;
+        if (messageBuilder_ == null) {
+          message_ = null;
+        } else {
+          messageBuilder_.clear();
+        }
         bitField0_ = (bitField0_ & ~0x00000001);
-        serializerId_ = 0;
-        bitField0_ = (bitField0_ & ~0x00000002);
-        messageManifest_ = "";
-        bitField0_ = (bitField0_ & ~0x00000004);
         return this;
       }
 
@@ -1222,17 +1107,13 @@ public final class ClusterMessages {
         int from_bitField0_ = bitField0_;
         int to_bitField0_ = 0;
         if (((from_bitField0_ & 0x00000001) != 0)) {
+          if (messageBuilder_ == null) {
+            result.message_ = message_;
+          } else {
+            result.message_ = messageBuilder_.build();
+          }
           to_bitField0_ |= 0x00000001;
         }
-        result.message_ = message_;
-        if (((from_bitField0_ & 0x00000002) != 0)) {
-          result.serializerId_ = serializerId_;
-          to_bitField0_ |= 0x00000002;
-        }
-        if (((from_bitField0_ & 0x00000004) != 0)) {
-          to_bitField0_ |= 0x00000004;
-        }
-        result.messageManifest_ = messageManifest_;
         result.bitField0_ = to_bitField0_;
         onBuilt();
         return result;
@@ -1283,15 +1164,7 @@ public final class ClusterMessages {
       public Builder mergeFrom(akka.cluster.typed.internal.protobuf.ClusterMessages.PubSubMessagePublished other) {
         if (other == akka.cluster.typed.internal.protobuf.ClusterMessages.PubSubMessagePublished.getDefaultInstance()) return this;
         if (other.hasMessage()) {
-          setMessage(other.getMessage());
-        }
-        if (other.hasSerializerId()) {
-          setSerializerId(other.getSerializerId());
-        }
-        if (other.hasMessageManifest()) {
-          bitField0_ |= 0x00000004;
-          messageManifest_ = other.messageManifest_;
-          onChanged();
+          mergeMessage(other.getMessage());
         }
         this.mergeUnknownFields(other.unknownFields);
         onChanged();
@@ -1303,7 +1176,7 @@ public final class ClusterMessages {
         if (!hasMessage()) {
           return false;
         }
-        if (!hasSerializerId()) {
+        if (!getMessage().isInitialized()) {
           return false;
         }
         return true;
@@ -1329,165 +1202,124 @@ public final class ClusterMessages {
       }
       private int bitField0_;
 
-      private akka.protobufv3.internal.ByteString message_ = akka.protobufv3.internal.ByteString.EMPTY;
+      private akka.remote.ContainerFormats.Payload message_;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
+          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> messageBuilder_;
       /**
-       * <code>required bytes message = 1;</code>
+       * <code>required .Payload message = 1;</code>
        * @return Whether the message field is set.
        */
       public boolean hasMessage() {
         return ((bitField0_ & 0x00000001) != 0);
       }
       /**
-       * <code>required bytes message = 1;</code>
+       * <code>required .Payload message = 1;</code>
        * @return The message.
        */
-      public akka.protobufv3.internal.ByteString getMessage() {
-        return message_;
+      public akka.remote.ContainerFormats.Payload getMessage() {
+        if (messageBuilder_ == null) {
+          return message_ == null ? akka.remote.ContainerFormats.Payload.getDefaultInstance() : message_;
+        } else {
+          return messageBuilder_.getMessage();
+        }
       }
       /**
-       * <code>required bytes message = 1;</code>
-       * @param value The message to set.
-       * @return This builder for chaining.
+       * <code>required .Payload message = 1;</code>
        */
-      public Builder setMessage(akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000001;
-        message_ = value;
-        onChanged();
+      public Builder setMessage(akka.remote.ContainerFormats.Payload value) {
+        if (messageBuilder_ == null) {
+          if (value == null) {
+            throw new NullPointerException();
+          }
+          message_ = value;
+          onChanged();
+        } else {
+          messageBuilder_.setMessage(value);
+        }
+        bitField0_ |= 0x00000001;
         return this;
       }
       /**
-       * <code>required bytes message = 1;</code>
-       * @return This builder for chaining.
+       * <code>required .Payload message = 1;</code>
+       */
+      public Builder setMessage(
+          akka.remote.ContainerFormats.Payload.Builder builderForValue) {
+        if (messageBuilder_ == null) {
+          message_ = builderForValue.build();
+          onChanged();
+        } else {
+          messageBuilder_.setMessage(builderForValue.build());
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .Payload message = 1;</code>
+       */
+      public Builder mergeMessage(akka.remote.ContainerFormats.Payload value) {
+        if (messageBuilder_ == null) {
+          if (((bitField0_ & 0x00000001) != 0) &&
+              message_ != null &&
+              message_ != akka.remote.ContainerFormats.Payload.getDefaultInstance()) {
+            message_ =
+              akka.remote.ContainerFormats.Payload.newBuilder(message_).mergeFrom(value).buildPartial();
+          } else {
+            message_ = value;
+          }
+          onChanged();
+        } else {
+          messageBuilder_.mergeFrom(value);
+        }
+        bitField0_ |= 0x00000001;
+        return this;
+      }
+      /**
+       * <code>required .Payload message = 1;</code>
        */
       public Builder clearMessage() {
+        if (messageBuilder_ == null) {
+          message_ = null;
+          onChanged();
+        } else {
+          messageBuilder_.clear();
+        }
         bitField0_ = (bitField0_ & ~0x00000001);
-        message_ = getDefaultInstance().getMessage();
-        onChanged();
-        return this;
-      }
-
-      private int serializerId_ ;
-      /**
-       * <code>required int32 serializerId = 2;</code>
-       * @return Whether the serializerId field is set.
-       */
-      public boolean hasSerializerId() {
-        return ((bitField0_ & 0x00000002) != 0);
-      }
-      /**
-       * <code>required int32 serializerId = 2;</code>
-       * @return The serializerId.
-       */
-      public int getSerializerId() {
-        return serializerId_;
-      }
-      /**
-       * <code>required int32 serializerId = 2;</code>
-       * @param value The serializerId to set.
-       * @return This builder for chaining.
-       */
-      public Builder setSerializerId(int value) {
-        bitField0_ |= 0x00000002;
-        serializerId_ = value;
-        onChanged();
         return this;
       }
       /**
-       * <code>required int32 serializerId = 2;</code>
-       * @return This builder for chaining.
+       * <code>required .Payload message = 1;</code>
        */
-      public Builder clearSerializerId() {
-        bitField0_ = (bitField0_ & ~0x00000002);
-        serializerId_ = 0;
+      public akka.remote.ContainerFormats.Payload.Builder getMessageBuilder() {
+        bitField0_ |= 0x00000001;
         onChanged();
-        return this;
-      }
-
-      private java.lang.Object messageManifest_ = "";
-      /**
-       * <code>optional string messageManifest = 3;</code>
-       * @return Whether the messageManifest field is set.
-       */
-      public boolean hasMessageManifest() {
-        return ((bitField0_ & 0x00000004) != 0);
+        return getMessageFieldBuilder().getBuilder();
       }
       /**
-       * <code>optional string messageManifest = 3;</code>
-       * @return The messageManifest.
+       * <code>required .Payload message = 1;</code>
        */
-      public java.lang.String getMessageManifest() {
-        java.lang.Object ref = messageManifest_;
-        if (!(ref instanceof java.lang.String)) {
-          akka.protobufv3.internal.ByteString bs =
-              (akka.protobufv3.internal.ByteString) ref;
-          java.lang.String s = bs.toStringUtf8();
-          if (bs.isValidUtf8()) {
-            messageManifest_ = s;
-          }
-          return s;
+      public akka.remote.ContainerFormats.PayloadOrBuilder getMessageOrBuilder() {
+        if (messageBuilder_ != null) {
+          return messageBuilder_.getMessageOrBuilder();
         } else {
-          return (java.lang.String) ref;
+          return message_ == null ?
+              akka.remote.ContainerFormats.Payload.getDefaultInstance() : message_;
         }
       }
       /**
-       * <code>optional string messageManifest = 3;</code>
-       * @return The bytes for messageManifest.
+       * <code>required .Payload message = 1;</code>
        */
-      public akka.protobufv3.internal.ByteString
-          getMessageManifestBytes() {
-        java.lang.Object ref = messageManifest_;
-        if (ref instanceof String) {
-          akka.protobufv3.internal.ByteString b = 
-              akka.protobufv3.internal.ByteString.copyFromUtf8(
-                  (java.lang.String) ref);
-          messageManifest_ = b;
-          return b;
-        } else {
-          return (akka.protobufv3.internal.ByteString) ref;
+      private akka.protobufv3.internal.SingleFieldBuilderV3<
+          akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder> 
+          getMessageFieldBuilder() {
+        if (messageBuilder_ == null) {
+          messageBuilder_ = new akka.protobufv3.internal.SingleFieldBuilderV3<
+              akka.remote.ContainerFormats.Payload, akka.remote.ContainerFormats.Payload.Builder, akka.remote.ContainerFormats.PayloadOrBuilder>(
+                  getMessage(),
+                  getParentForChildren(),
+                  isClean());
+          message_ = null;
         }
-      }
-      /**
-       * <code>optional string messageManifest = 3;</code>
-       * @param value The messageManifest to set.
-       * @return This builder for chaining.
-       */
-      public Builder setMessageManifest(
-          java.lang.String value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
-        messageManifest_ = value;
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string messageManifest = 3;</code>
-       * @return This builder for chaining.
-       */
-      public Builder clearMessageManifest() {
-        bitField0_ = (bitField0_ & ~0x00000004);
-        messageManifest_ = getDefaultInstance().getMessageManifest();
-        onChanged();
-        return this;
-      }
-      /**
-       * <code>optional string messageManifest = 3;</code>
-       * @param value The bytes for messageManifest to set.
-       * @return This builder for chaining.
-       */
-      public Builder setMessageManifestBytes(
-          akka.protobufv3.internal.ByteString value) {
-        if (value == null) {
-    throw new NullPointerException();
-  }
-  bitField0_ |= 0x00000004;
-        messageManifest_ = value;
-        onChanged();
-        return this;
+        return messageBuilder_;
       }
       @java.lang.Override
       public final Builder setUnknownFields(
@@ -1562,15 +1394,16 @@ public final class ClusterMessages {
   static {
     java.lang.String[] descriptorData = {
       "\n\025ClusterMessages.proto\022\022akka.cluster.ty" +
-      "ped\"8\n\021ReceptionistEntry\022\020\n\010actorRef\030\001 \002" +
-      "(\t\022\021\n\tsystemUid\030\002 \002(\004\"X\n\026PubSubMessagePu" +
-      "blished\022\017\n\007message\030\001 \002(\014\022\024\n\014serializerId" +
-      "\030\002 \002(\005\022\027\n\017messageManifest\030\003 \001(\tB(\n$akka." +
-      "cluster.typed.internal.protobufH\001"
+      "ped\032\026ContainerFormats.proto\"8\n\021Reception" +
+      "istEntry\022\020\n\010actorRef\030\001 \002(\t\022\021\n\tsystemUid\030" +
+      "\002 \002(\004\"3\n\026PubSubMessagePublished\022\031\n\007messa" +
+      "ge\030\001 \002(\0132\010.PayloadB(\n$akka.cluster.typed" +
+      ".internal.protobufH\001"
     };
     descriptor = akka.protobufv3.internal.Descriptors.FileDescriptor
       .internalBuildGeneratedFileFrom(descriptorData,
         new akka.protobufv3.internal.Descriptors.FileDescriptor[] {
+          akka.remote.ContainerFormats.getDescriptor(),
         });
     internal_static_akka_cluster_typed_ReceptionistEntry_descriptor =
       getDescriptor().getMessageTypes().get(0);
@@ -1583,7 +1416,8 @@ public final class ClusterMessages {
     internal_static_akka_cluster_typed_PubSubMessagePublished_fieldAccessorTable = new
       akka.protobufv3.internal.GeneratedMessageV3.FieldAccessorTable(
         internal_static_akka_cluster_typed_PubSubMessagePublished_descriptor,
-        new java.lang.String[] { "Message", "SerializerId", "MessageManifest", });
+        new java.lang.String[] { "Message", });
+    akka.remote.ContainerFormats.getDescriptor();
   }
 
   // @@protoc_insertion_point(outer_class_scope)

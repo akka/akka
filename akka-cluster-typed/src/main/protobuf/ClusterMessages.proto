@@ -8,6 +8,7 @@ package akka.cluster.typed;
 
 option java_package = "akka.cluster.typed.internal.protobuf";
 option optimize_for = SPEED;
+import "ContainerFormats.proto";
 
 
 message ReceptionistEntry {
@@ -16,7 +17,5 @@ message ReceptionistEntry {
 }
 
 message PubSubMessagePublished {
-  required bytes message = 1;
-  required int32 serializerId = 2;
-  optional string messageManifest = 3;
+  required Payload message = 1;
 }
