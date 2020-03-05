@@ -7,7 +7,7 @@ package akka.stream.javadsl
 import java.util.concurrent.CompletionStage
 
 import akka.actor.ClassicActorSystemProvider
-import akka.event.LoggingAdapter
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.Pair
 import akka.japi.Util
 import akka.japi.function
@@ -219,6 +219,48 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    */
   def log(name: String): SourceWithContext[Out, Ctx, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Source.logWithMarker]].
+   *
+   * @see [[akka.stream.javadsl.Source.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: function.Function[Out, LogMarker],
+      extract: function.Function[Out, Any],
+      log: MarkerLoggingAdapter): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.logWithMarker(name, e => marker.apply(e), e => extract.apply(e))(log))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].,
+   *
+   * @see [[akka.stream.javadsl.Flow.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: function.Function[Out, LogMarker],
+      extract: function.Function[Out, Any]): SourceWithContext[Out, Ctx, Mat] =
+    this.logWithMarker(name, marker, extract, null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].
+   *
+   * @see [[akka.stream.javadsl.Flow.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: function.Function[Out, LogMarker],
+      log: MarkerLoggingAdapter): SourceWithContext[Out, Ctx, Mat] =
+    this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], log)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].
+   *
+   * @see [[akka.stream.javadsl.Flow.logWithMarker]]
+   */
+  def logWithMarker(name: String, marker: function.Function[Out, LogMarker]): SourceWithContext[Out, Ctx, Mat] =
+    this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
 
   /**
    * Connect this [[akka.stream.javadsl.SourceWithContext]] to a [[akka.stream.javadsl.Sink]],

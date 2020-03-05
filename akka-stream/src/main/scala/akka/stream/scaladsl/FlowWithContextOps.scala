@@ -11,7 +11,7 @@ import akka.NotUsed
 import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.util.ConstantFun
-import akka.event.LoggingAdapter
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
@@ -182,6 +182,18 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
       implicit log: LoggingAdapter = null): Repr[Out, Ctx] = {
     val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
     via(flow.log(name, extractWithContext)(log))
+  }
+
+  /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.logWithMarker]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.logWithMarker]]
+   */
+  def logWithMarker(name: String, marker: Out => LogMarker, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+      implicit log: MarkerLoggingAdapter = null): Repr[Out, Ctx] = {
+    val markerWithContext: ((Out, Ctx)) => LogMarker = { case (e, _) => marker(e) }
+    val extractWithContext: ((Out, Ctx)) => Any = { case (e, _)      => extract(e) }
+    via(flow.logWithMarker(name, markerWithContext, extractWithContext)(log))
   }
 
   private[akka] def flow[T, C]: Flow[(T, C), (T, C), NotUsed] = Flow[(T, C)]
