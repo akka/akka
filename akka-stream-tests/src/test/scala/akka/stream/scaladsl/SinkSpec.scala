@@ -13,7 +13,7 @@ import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.{Await, Future}
+import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
 class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
