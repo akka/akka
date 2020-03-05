@@ -1,6 +1,6 @@
 # asSubscriber
 
-Integration with Reactive Streams, materializes into a `org.reactivestreams.Subscriber`.
+Integration with Reactive Streams, materializes into a @javadoc[Subscriber](java.util.concurrent.Flow.Subscriber).
 
 @ref[Source operators](../index.md#source-operators)
 
@@ -14,7 +14,7 @@ Integration with Reactive Streams, materializes into a `org.reactivestreams.Subs
 
 @@@ div { .group-java }
 
-@@snip[JavaFlowSupport.java](/akka-stream/src/main/java-jdk-9/akka/stream/javadsl/JavaFlowSupport.java) { #asSubscriber }
+@@snip[JavaFlowSupport.java](/akka-docs/src/test/java-jdk9-only/jdocs/stream/operators/source/AsSubscriber.java) { #api }
 
 @@@
 
@@ -28,10 +28,12 @@ This @javadoc[Subscriber](java.util.concurrent.Flow.Subscriber) can be attached 
 [Reactive Streams](https://www.reactive-streams.org/) @javadoc[Publisher](java.util.concurrent.Flow.Publisher)
 to populate it.
 
+If the API you want to consume elements from provides a @javadoc[Publisher](java.util.concurrent.Flow.Publisher) instead of accepting a @javadoc[Subscriber](java.util.concurrent.Flow.Subscriber), see @ref[fromPublisher](fromPublisher.md).
+
 @@@ note
 
 For JDK 8 users: since @javadoc[java.util.concurrent.Flow](java.util.concurrent.Flow) was introduced in JDK version 9,
-if you are still on version 8 you may use the [org.reactivestreams](https://github.com/reactive-streams/reactive-streams-jvm#reactive-streams) library with `Source.asSubscriber` and `Flow.asSubscriber`.
+if you are still on version 8 you may use the [org.reactivestreams](https://github.com/reactive-streams/reactive-streams-jvm#reactive-streams) library with @apidoc[Source.asSubscriber](Source$) { scala="#asSubscriber[T]:akka.stream.scaladsl.Source[T,org.reactivestreams.Subscriber[T]]" java="#asSubscriber()" }.
 
 @@@
 
