@@ -13,10 +13,9 @@ import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.Future
+import scala.concurrent.{Await, Future}
 import scala.concurrent.duration._
 
-@silent("deprecated") // attributes.getFirst
 class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._
@@ -154,7 +153,9 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
 
       s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("name"), Name("headSink"))
-      s.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
+      @silent("deprecated")
+      val res = s.traversalBuilder.attributes.getFirst[Attributes.AsyncBoundary.type]
+      res shouldEqual (Some(AsyncBoundary))
     }
 
     "given one attribute of a class should correctly get it as first attribute with default value" in {
@@ -175,7 +176,9 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async
 
-      s.traversalBuilder.attributes.getFirst[Name](Name("default")) shouldEqual Name("default")
+      @silent("deprecated")
+      val res = s.traversalBuilder.attributes.getFirst[Name](Name("default"))
+      res shouldEqual Name("default")
     }
 
     "given no attributes of a class when getting last attribute with default value should get default value" in {
@@ -188,7 +191,9 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "given multiple attributes of a class when getting first attribute with default value should get first attribute" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async.named("name").named("another_name")
-      s.traversalBuilder.attributes.getFirst[Name](Name("default")) shouldEqual Name("name")
+      @silent("deprecated")
+      val res = s.traversalBuilder.attributes.getFirst[Name](Name("default"))
+      res shouldEqual Name("name")
     }
 
     "given multiple attributes of a class when getting last attribute with default value should get last attribute" in {
@@ -223,6 +228,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val source = Source(1 to 10)
       val result = source.runWith(Sink.reduce[Int]((a, b) => a + b))
       result.map(println)(system.dispatcher)
+      // will print
       // 55
       //#reduce-operator-example
       assert(result.futureValue == (1 to 10).sum)
@@ -236,6 +242,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val result = source.runWith(Sink.seq[Int])
       val seq = result.futureValue
       seq.foreach(println)
+      // will print
       // 1
       // 2
       // 3
@@ -249,12 +256,14 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       // #foreach
       val printlnSink: Sink[Any, Future[Done]] = Sink.foreach(println)
       val f = Source(1 to 4).runWith(printlnSink)
+      val done = Await.result(f, 100.millis)
+      // will print
       // 1
       // 2
       // 3
       // 4
       // #foreach
-      f.futureValue shouldBe Done
+      done shouldBe Done
     }
   }
 

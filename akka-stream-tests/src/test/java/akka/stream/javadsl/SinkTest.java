@@ -153,16 +153,19 @@ public class SinkTest extends StreamTest {
     Sink<Integer, NotUsed> javaSink = scalaSink.asJava();
   }
 
+  @Test
   public void sinkForeachMustBeDocumented()
       throws InterruptedException, ExecutionException, TimeoutException {
     // #foreach
     Sink<Integer, CompletionStage<Done>> printlnSink = Sink.foreach(System.out::println);
     CompletionStage<Done> cs = Source.from(Arrays.asList(1, 2, 3, 4)).runWith(printlnSink, system);
+    Done done = cs.toCompletableFuture().get(100, TimeUnit.MILLISECONDS);
+    // will print
     // 1
     // 2
     // 3
     // 4
     // #foreach
-    assertEquals(Done.done(), cs.toCompletableFuture().get(1, TimeUnit.SECONDS));
+    assertEquals(Done.done(), done);
   }
 }
