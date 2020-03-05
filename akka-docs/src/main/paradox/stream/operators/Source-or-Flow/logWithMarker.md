@@ -1,16 +1,17 @@
-# log
+# logWithMarker
 
 Log elements flowing through the stream as well as completion and erroring.
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #log }
 
-@@@
+Scala
+:   @@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #logWithMarker }
+
+Java
+:   @@snip [FlowLogWithMarkerTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/FlowLogWithMarkerTest.java) { #signature }
 
 ## Description
 
@@ -18,15 +19,15 @@ Log elements flowing through the stream as well as completion and erroring. By d
 completion signals are logged on debug level, and errors are logged on Error level.
 This can be changed by calling @scala[`Attributes.logLevels(...)`] @java[`Attributes.createLogLevels(...)`] on the given Flow.
 
-See also @ref:[logWithMarker](logWithMarker.md).
+See also @ref:[log](log.md).
 
 ## Example
 
 Scala
-:   @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/Log.scala) { #log }
+:   @@snip [SourceOrFlow.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/LogWithMarker.scala) { #logWithMarker }
 
 Java
-:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #log }
+:   @@snip [SourceOrFlow.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceOrFlow.java) { #logWithMarker }
 
 ## Reactive Streams semantics 
 

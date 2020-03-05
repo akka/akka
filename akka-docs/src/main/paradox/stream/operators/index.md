@@ -164,6 +164,7 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="limit"></a>@ref[limit](Source-or-Flow/limit.md)|Limit number of element from upstream to given `max` number.|
 |Source/Flow|<a name="limitweighted"></a>@ref[limitWeighted](Source-or-Flow/limitWeighted.md)|Limit the total weight of incoming elements|
 |Source/Flow|<a name="log"></a>@ref[log](Source-or-Flow/log.md)|Log elements flowing through the stream as well as completion and erroring.|
+|Source/Flow|<a name="logwithmarker"></a>@ref[logWithMarker](Source-or-Flow/logWithMarker.md)|Log elements flowing through the stream as well as completion and erroring.|
 |Source/Flow|<a name="map"></a>@ref[map](Source-or-Flow/map.md)|Transform each element in the stream by calling a mapping function with it and passing the returned value downstream.|
 |Source/Flow|<a name="mapconcat"></a>@ref[mapConcat](Source-or-Flow/mapConcat.md)|Transform each element into zero or more elements that are individually passed downstream.|
 |Source/Flow|<a name="maperror"></a>@ref[mapError](Source-or-Flow/mapError.md)|While similar to `recover` this operators can be used to transform an error signal to a different one *without* logging it as an error in the process.|
@@ -467,6 +468,7 @@ For more background see the @ref[Error Handling in Streams](../stream-error.md) 
 * [monitor](Source-or-Flow/monitor.md)
 * [initialDelay](Source-or-Flow/initialDelay.md)
 * [log](Source-or-Flow/log.md)
+* [logWithMarker](Source-or-Flow/logWithMarker.md)
 * [asFlowWithContext](Flow/asFlowWithContext.md)
 * [fromSinkAndSource](Flow/fromSinkAndSource.md)
 * [fromSinkAndSourceCoupled](Flow/fromSinkAndSourceCoupled.md)
