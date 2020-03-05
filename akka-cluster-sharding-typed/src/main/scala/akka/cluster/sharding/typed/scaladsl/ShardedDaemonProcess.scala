@@ -8,43 +8,16 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
-import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
-import akka.cluster.sharding.typed.internal.ClusterActorSetImpl
-import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
+import akka.annotation.InternalApi
+import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
+import akka.cluster.sharding.typed.internal.ShardedDaemonProcessImpl
+import akka.cluster.sharding.typed.javadsl
 
-import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
-object ClusterActorSetSettings {
-
-  def apply(system: ActorSystem[_]): ClusterActorSetSettings = {
-    apply(system.settings.config.getConfig("akka.cluster.actor-set"))
-  }
-
-  def apply(config: Config): ClusterActorSetSettings = {
-    val keepAliveInterval = config.getDuration("keep-alive-interval").asScala
-
-    new ClusterActorSetSettings(keepAliveInterval)
-  }
-
-}
-
-class ClusterActorSetSettings private[akka] (val keepAliveInterval: FiniteDuration) {
-
-  /**
-   * The interval each parent of the sharded set is pinged from each node in the cluster.
-   *
-   * Note: How the sharded set is kept alive may change in the future meaning this setting may go away.
-   */
-  @ApiMayChange
-  def withKeepAliveInterval(keepAliveInterval: FiniteDuration): ClusterActorSetSettings =
-    new ClusterActorSetSettings(keepAliveInterval)
-}
-
-object ClusterActorSet extends ExtensionId[ClusterActorSet] {
-  override def createExtension(system: ActorSystem[_]): ClusterActorSet = new ClusterActorSetImpl(system)
+object ShardedDaemonProcess extends ExtensionId[ShardedDaemonProcess] {
+  override def createExtension(system: ActorSystem[_]): ShardedDaemonProcess = new ShardedDaemonProcessImpl(system)
 }
 
 /**
@@ -61,7 +34,7 @@ object ClusterActorSet extends ExtensionId[ClusterActorSet] {
  * Not for user extension.
  */
 @DoNotInherit
-trait ClusterActorSet extends Extension {
+trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemonProcess =>
 
   /**
    * Start a specific number of actors and should always be alive.
@@ -78,7 +51,12 @@ trait ClusterActorSet extends Extension {
       name: String,
       numberOfInstances: Int,
       behaviorFactory: Int => Behavior[T],
-      settings: ClusterActorSetSettings,
+      settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def asJava: javadsl.ShardedDaemonProcess = javadslSelf
 
 }

@@ -17,7 +17,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 
 import scala.concurrent.duration._
 
-object ClusterActorSetSpec {
+object ShardedDaemonProcessSpec {
   // single node cluster config
   def config = ConfigFactory.parseString("""
       akka.actor.provider = cluster
@@ -54,12 +54,12 @@ object ClusterActorSetSpec {
 
 }
 
-class ClusterActorSetSpec
-    extends ScalaTestWithActorTestKit(ClusterActorSetSpec.config)
+class ShardedDaemonProcessSpec
+    extends ScalaTestWithActorTestKit(ShardedDaemonProcessSpec.config)
     with AnyWordSpecLike
     with LogCapturing {
 
-  import ClusterActorSetSpec._
+  import ShardedDaemonProcessSpec._
 
   "The ClusterActorSet" must {
 
@@ -73,7 +73,7 @@ class ClusterActorSetSpec
 
     "start N actors with unique ids" in {
       val probe = createTestProbe[Any]()
-      ClusterActorSet(system).init("a", 5, id => MyActor(id, probe.ref))
+      ShardedDaemonProcess(system).init("a", 5, id => MyActor(id, probe.ref))
 
       val started = probe.receiveMessages(5)
       started.toSet.size should ===(5)
@@ -81,7 +81,7 @@ class ClusterActorSetSpec
 
     "start actors with specific ids" in {
       val probe = createTestProbe[Any]()
-      ClusterActorSet(system).init("b", 3, id => MyActor(id, probe.ref))
+      ShardedDaemonProcess(system).init("b", 3, id => MyActor(id, probe.ref))
 
       val started = (1 to 3).map(_ => probe.expectMessageType[MyActor.Started]).toSet
       started.map(_.id) should ===((0 to 2).toSet)
@@ -89,7 +89,7 @@ class ClusterActorSetSpec
 
     "restart actors if they stop" in {
       val probe = createTestProbe[Any]()
-      ClusterActorSet(system).init("c", 2, id => MyActor(id, probe.ref))
+      ShardedDaemonProcess(system).init("c", 2, id => MyActor(id, probe.ref))
 
       val started = (1 to 2).map(_ => probe.expectMessageType[MyActor.Started]).toSet
       started.foreach(_.selfRef ! MyActor.Stop)

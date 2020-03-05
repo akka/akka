@@ -11,7 +11,7 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Routers
 import akka.cluster.MultiNodeClusterSpec
-import akka.cluster.sharding.typed.scaladsl.ClusterActorSet
+import akka.cluster.sharding.typed.scaladsl.ShardedDaemonProcess
 import akka.cluster.typed.MultiNodeTypedClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
@@ -21,7 +21,7 @@ import org.scalatest.concurrent.ScalaFutures
 
 import scala.concurrent.duration._
 
-object ClusterActorSetSpec extends MultiNodeConfig {
+object ShardedDaemonProcessSpec extends MultiNodeConfig {
   val first = role("first")
   val second = role("second")
   val third = role("third")
@@ -60,16 +60,16 @@ object ClusterActorSetSpec extends MultiNodeConfig {
 
 }
 
-class ClusterActorSetMultiJvmNode1 extends ClusterActorSetSpec
-class ClusterActorSetMultiJvmNode2 extends ClusterActorSetSpec
-class ClusterActorSetMultiJvmNode3 extends ClusterActorSetSpec
+class ShardedDaemonProcessMultiJvmNode1 extends ShardedDaemonProcessSpec
+class ShardedDaemonProcessMultiJvmNode2 extends ShardedDaemonProcessSpec
+class ShardedDaemonProcessMultiJvmNode3 extends ShardedDaemonProcessSpec
 
-abstract class ClusterActorSetSpec
-    extends MultiNodeSpec(ClusterActorSetSpec)
+abstract class ShardedDaemonProcessSpec
+    extends MultiNodeSpec(ShardedDaemonProcessSpec)
     with MultiNodeTypedClusterSpec
     with ScalaFutures {
 
-  import ClusterActorSetSpec._
+  import ShardedDaemonProcessSpec._
 
   val probe: TestProbe[AnyRef] = TestProbe[AnyRef]()
 
@@ -90,7 +90,7 @@ abstract class ClusterActorSetSpec
     }
 
     "init actor set" in {
-      ClusterActorSet(typedSystem).init("the-fearless", 4, id => SetActor(id))
+      ShardedDaemonProcess(typedSystem).init("the-fearless", 4, id => SetActor(id))
       enterBarrier("actor-set-initialized")
       runOn(first) {
         val startedIds = (0 to 3).map { _ =>

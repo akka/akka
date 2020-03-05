@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.typed.internal
 
+import java.util.Optional
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -16,11 +18,14 @@ import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
-import akka.cluster.sharding.typed.scaladsl.ClusterActorSet
-import akka.cluster.sharding.typed.scaladsl.ClusterActorSetSettings
+import akka.cluster.sharding.typed.scaladsl
+import akka.cluster.sharding.typed.javadsl
+import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.japi.function
+import scala.compat.java8.OptionConverters._
 
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
@@ -29,14 +34,14 @@ import scala.reflect.ClassTag
  * INTERNAL API
  */
 @InternalApi
-private[akka] object ClusterActorSetImpl {
+private[akka] object ShardedDaemonProcessImpl {
 
   object KeepAlivePinger {
     sealed trait Event
     case object Tick extends Event
 
     def apply[T](
-        settings: ClusterActorSetSettings,
+        settings: ShardedDaemonProcessSettings,
         identities: Set[EntityId],
         shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Event] =
       Behaviors.setup { context =>
@@ -80,20 +85,22 @@ private[akka] object ClusterActorSetImpl {
 
 }
 @InternalApi
-private[akka] class ClusterActorSetImpl(system: ActorSystem[_]) extends ClusterActorSet {
+private[akka] class ShardedDaemonProcessImpl(system: ActorSystem[_])
+    extends javadsl.ShardedDaemonProcess
+    with scaladsl.ShardedDaemonProcess {
 
-  import ClusterActorSetImpl._
+  import ShardedDaemonProcessImpl._
 
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
       implicit classTag: ClassTag[T]): Unit = {
-    init(name, numberOfInstances, behaviorFactory, ClusterActorSetSettings(system), None)
+    init(name, numberOfInstances, behaviorFactory, ShardedDaemonProcessSettings(system), None)(classTag)
   }
 
   def init[T](
       name: String,
       numberOfInstances: Int,
       behaviorFactory: Int => Behavior[T],
-      settings: ClusterActorSetSettings,
+      settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit = {
 
     val entityTypeKey = EntityTypeKey[T](s"cluster-actor-set-$name")
@@ -135,4 +142,20 @@ private[akka] class ClusterActorSetImpl(system: ActorSystem[_]) extends ClusterA
 
     system.systemActorOf(KeepAlivePinger(settings, entityIds.toSet, shardingRef), s"clusterActorSetPinger-$name")
   }
+
+  def init[T](
+      messageClass: Class[T],
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: function.Function[Integer, Behavior[T]]): Unit =
+    init(name, numberOfInstances, n => behaviorFactory(n))(ClassTag(messageClass))
+
+  def init[T](
+      messageClass: Class[T],
+      name: String,
+      numberOfInstances: Int,
+      behaviorFactory: function.Function[Integer, Behavior[T]],
+      settings: ShardedDaemonProcessSettings,
+      stopMessage: Optional[T]): Unit =
+    init(name, numberOfInstances, n => behaviorFactory(n), settings, stopMessage.asScala)(ClassTag(messageClass))
 }
