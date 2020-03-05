@@ -245,10 +245,10 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
    */
   def logWithMarker(
       name: String,
-      marker: function.Function[Out, LogMarker],
+      marker: function.Function2[Out, CtxOut, LogMarker],
       extract: function.Function[Out, Any],
       log: MarkerLoggingAdapter): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
-    viaScala(_.logWithMarker(name, e => marker.apply(e), e => extract.apply(e))(log))
+    viaScala(_.logWithMarker(name, (e, c) => marker.apply(e, c), e => extract.apply(e))(log))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].
@@ -257,7 +257,7 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
    */
   def logWithMarker(
       name: String,
-      marker: function.Function[Out, LogMarker],
+      marker: function.Function2[Out, CtxOut, LogMarker],
       extract: function.Function[Out, Any]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     this.logWithMarker(name, marker, extract, null)
 
@@ -268,7 +268,7 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
    */
   def logWithMarker(
       name: String,
-      marker: function.Function[Out, LogMarker],
+      marker: function.Function2[Out, CtxOut, LogMarker],
       log: MarkerLoggingAdapter): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], log)
 
@@ -279,7 +279,7 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
    */
   def logWithMarker(
       name: String,
-      marker: function.Function[Out, LogMarker]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+      marker: function.Function2[Out, CtxOut, LogMarker]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
 
   def asScala: scaladsl.FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =

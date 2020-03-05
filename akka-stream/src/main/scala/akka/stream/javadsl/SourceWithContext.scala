@@ -227,10 +227,10 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    */
   def logWithMarker(
       name: String,
-      marker: function.Function[Out, LogMarker],
+      marker: function.Function2[Out, Ctx, LogMarker],
       extract: function.Function[Out, Any],
       log: MarkerLoggingAdapter): SourceWithContext[Out, Ctx, Mat] =
-    viaScala(_.logWithMarker(name, e => marker.apply(e), e => extract.apply(e))(log))
+    viaScala(_.logWithMarker(name, (e, c) => marker.apply(e, c), e => extract.apply(e))(log))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].,
@@ -239,7 +239,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    */
   def logWithMarker(
       name: String,
-      marker: function.Function[Out, LogMarker],
+      marker: function.Function2[Out, Ctx, LogMarker],
       extract: function.Function[Out, Any]): SourceWithContext[Out, Ctx, Mat] =
     this.logWithMarker(name, marker, extract, null)
 
@@ -250,7 +250,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    */
   def logWithMarker(
       name: String,
-      marker: function.Function[Out, LogMarker],
+      marker: function.Function2[Out, Ctx, LogMarker],
       log: MarkerLoggingAdapter): SourceWithContext[Out, Ctx, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], log)
 
@@ -259,7 +259,7 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    *
    * @see [[akka.stream.javadsl.Flow.logWithMarker]]
    */
-  def logWithMarker(name: String, marker: function.Function[Out, LogMarker]): SourceWithContext[Out, Ctx, Mat] =
+  def logWithMarker(name: String, marker: function.Function2[Out, Ctx, LogMarker]): SourceWithContext[Out, Ctx, Mat] =
     this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
 
   /**

@@ -189,11 +189,13 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.logWithMarker]]
    */
-  def logWithMarker(name: String, marker: Out => LogMarker, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+  def logWithMarker(
+      name: String,
+      marker: (Out, Ctx) => LogMarker,
+      extract: Out => Any = ConstantFun.scalaIdentityFunction)(
       implicit log: MarkerLoggingAdapter = null): Repr[Out, Ctx] = {
-    val markerWithContext: ((Out, Ctx)) => LogMarker = { case (e, _) => marker(e) }
-    val extractWithContext: ((Out, Ctx)) => Any = { case (e, _)      => extract(e) }
-    via(flow.logWithMarker(name, markerWithContext, extractWithContext)(log))
+    val extractWithContext: ((Out, Ctx)) => Any = { case (e, _) => extract(e) }
+    via(flow.logWithMarker(name, marker.tupled, extractWithContext)(log))
   }
 
   private[akka] def flow[T, C]: Flow[(T, C), (T, C), NotUsed] = Flow[(T, C)]
