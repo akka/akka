@@ -4,6 +4,7 @@
 
 package akka.stream.scaladsl
 
+import akka.Done
 import akka.stream._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
@@ -15,7 +16,7 @@ import org.scalatest.concurrent.ScalaFutures
 import scala.concurrent.Future
 import scala.concurrent.duration._
 
-@silent("deprecated")
+@silent("deprecated") // attributes.getFirst
 class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._
@@ -187,7 +188,6 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "given multiple attributes of a class when getting first attribute with default value should get first attribute" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async.named("name").named("another_name")
-
       s.traversalBuilder.attributes.getFirst[Name](Name("default")) shouldEqual Name("name")
     }
 
@@ -206,6 +206,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   "The ignore sink" should {
 
     "fail its materialized value on abrupt materializer termination" in {
+      @silent("deprecated")
       val mat = ActorMaterializer()
 
       val matVal = Source.maybe[Int].runWith(Sink.ignore)(mat)
@@ -240,6 +241,20 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       // 3
       // #seq-operator-example
       assert(seq == Vector(1, 2, 3))
+    }
+  }
+
+  "The foreach sink" must {
+    "illustrate println" in {
+      // #foreach
+      val printlnSink: Sink[Any, Future[Done]] = Sink.foreach(println)
+      val f = Source(1 to 4).runWith(printlnSink)
+      // 1
+      // 2
+      // 3
+      // 4
+      // #foreach
+      f.futureValue shouldBe Done
     }
   }
 
