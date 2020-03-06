@@ -1,3 +1,2 @@
-# Fix for 2.13 performance regression #28419
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeBase64")
 ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.encodeBase64")
