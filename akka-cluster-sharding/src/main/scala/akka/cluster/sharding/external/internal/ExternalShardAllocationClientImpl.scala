@@ -91,4 +91,22 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
   }
 
   override def getShardLocations(): CompletionStage[ShardLocations] = shardLocations().toJava
+
+  override def updateShardLocations(locations: Map[ShardId, Address]): Future[Done] = {
+    log.debug("updateShardLocations {} for {}", locations, Key)
+    (replicator ? Update(Key, LWWMap.empty[ShardId, String], WriteLocal, None) { existing =>
+      locations.foldLeft(existing) {
+        case (acc, next) => acc.put(self, next._1, next._2.toString)
+      }
+    }).flatMap {
+      case UpdateSuccess(_, _) => Future.successful(Done)
+      case UpdateTimeout =>
+        Future.failed(new ClientTimeoutException(s"Unable to update shard location after ${timeout.duration.pretty}"))
+    }
+  }
+
+  override def setShardLocations(locations: java.util.Map[ShardId, Address]): CompletionStage[Done] = {
+    import scala.collection.JavaConverters._
+    updateShardLocations(locations.asScala.toMap).toJava
+  }
 }
