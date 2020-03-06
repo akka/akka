@@ -19,9 +19,9 @@ addSbtPlugin("com.eed3si9n" % "sbt-unidoc" % "0.4.3")
 addSbtPlugin("com.thoughtworks.sbt-api-mappings" % "sbt-api-mappings" % "3.0.0")
 addSbtPlugin("pl.project13.scala" % "sbt-jmh" % "0.3.7")
 addSbtPlugin("io.spray" % "sbt-boilerplate" % "0.6.1")
-addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.32")
+addSbtPlugin("com.lightbend.akka" % "sbt-paradox-akka" % "0.31")
 addSbtPlugin("com.lightbend" % "sbt-whitesource" % "0.1.18")
-addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.5.0") // for maintenance of copyright file header
+addSbtPlugin("de.heikoseeberger" % "sbt-header" % "5.4.0") // for maintenance of copyright file header
 addSbtPlugin("com.hpe.sbt" % "sbt-pull-request-validator" % "1.0.0")
-addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.24")
+addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.23")
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "4.0.0")
