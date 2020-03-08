@@ -67,6 +67,7 @@ import scala.util.{Failure, Success, Try}
         def onFuture(futureRes : Try[Flow[In, Out, M]]) = futureRes match {
           case Failure(exception) =>
             setKeepGoing(false)
+            pr.failure(new NeverMaterializedException(exception))
             failStage(exception)
           case Success(flow) =>
             //materialize flow, connect to inlets, feed with potential events and set handlers
