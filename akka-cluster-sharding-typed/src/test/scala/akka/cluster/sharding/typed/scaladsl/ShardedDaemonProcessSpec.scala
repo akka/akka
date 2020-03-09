@@ -29,7 +29,7 @@ object ShardedDaemonProcessSpec {
       akka.cluster.jmx.multi-mbeans-in-same-jvm = on
       
       # ping often/start fast for test
-      akka.cluster.actor-set.keep-alive-interval = 1s
+      akka.cluster.sharded-daemon-process.keep-alive-interval = 1s
 
       akka.coordinated-shutdown.terminate-actor-system = off
       akka.coordinated-shutdown.run-by-actor-system-terminate = off
@@ -61,7 +61,7 @@ class ShardedDaemonProcessSpec
 
   import ShardedDaemonProcessSpec._
 
-  "The ClusterActorSet" must {
+  "The ShardedDaemonSet" must {
 
     "have a single node cluster running first" in {
       val probe = createTestProbe()
@@ -94,8 +94,8 @@ class ShardedDaemonProcessSpec
       val started = (1 to 2).map(_ => probe.expectMessageType[MyActor.Started]).toSet
       started.foreach(_.selfRef ! MyActor.Stop)
 
-      // periodic ping makes it restart
-      (1 to 2).map(_ => probe.expectMessageType[MyActor.Started])
+      // periodic ping every 1s makes it restart
+      (1 to 2).map(_ => probe.expectMessageType[MyActor.Started](3.seconds))
     }
 
   }

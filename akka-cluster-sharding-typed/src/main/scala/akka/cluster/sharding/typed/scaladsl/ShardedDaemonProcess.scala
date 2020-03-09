@@ -27,9 +27,10 @@ object ShardedDaemonProcess extends ExtensionId[ShardedDaemonProcess] {
  * sharded part of the work, for example consuming the read side events from Akka Persistence through
  * tagged events where each tag decides which consumer that should consume the event.
  *
- * The sharded entities are running on top of Akka Cluster Sharding and are kept alive through periodic pinging.
- * When the cluster topology changes, depending on the shard allocation strategy used, the entities are redistributed
- * across the nodes of the cluster (and started by the next periodic ping).
+ * Each named set needs to be started on all the nodes of the cluster on start up.
+ *
+ * The processes are spread out across the cluster, when the cluster topology changes the processes may be stopped
+ * and started anew on a new node to rebalance them.
  *
  * Not for user extension.
  */
@@ -37,15 +38,17 @@ object ShardedDaemonProcess extends ExtensionId[ShardedDaemonProcess] {
 trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemonProcess =>
 
   /**
-   * Start a specific number of actors and should always be alive.
-   * The name is combined with an integer to get a unique id among the actors in the set.
+   * Start a specific number of actors that is then kept alive in the cluster.
+   * @param behaviorFactory Given a unique id of `0` to `numberOfInstance` create the behavior for that actor.
    */
   def init[T](name: String, numberOfInstances: Int, behaviorFactory: Int => Behavior[T])(
       implicit classTag: ClassTag[T]): Unit
 
   /**
-   * Start a specific number of actors and should always be alive.
-   * The name is combined with an integer to get a unique id among the actors in the set.
+   * Start a specific number of actors, each with a unique numeric id in the set, that is then kept alive in the cluster.
+   * @param behaviorFactory Given a unique id of `0` to `numberOfInstance` create the behavior for that actor.
+   * @param stopMessage if defined sent to the actors when they need to stop because of a rebalance across the nodes of the cluster
+   *                    or cluster shutdown.
    */
   def init[T](
       name: String,

@@ -51,14 +51,14 @@ private[akka] object ShardedDaemonProcessImpl {
           }
 
           context.log.debug(
-            s"Starting ClusterActorSet KeepAlivePinger with ping interval ${settings.keepAliveInterval}")
+            s"Starting Sharded Daemon Set KeepAlivePinger with ping interval ${settings.keepAliveInterval}")
           timers.startTimerWithFixedDelay(Tick, settings.keepAliveInterval)
           triggerStartAll()
 
           Behaviors.receiveMessage {
             case Tick =>
-              context.log.debug("Periodic ping sent")
               triggerStartAll()
+              context.log.debug("Periodic ping sent to [{}] processes", identities.size)
               Behaviors.same
           }
         }
@@ -84,8 +84,12 @@ private[akka] object ShardedDaemonProcessImpl {
   }
 
 }
+
+/**
+ * INTERNAL API
+ */
 @InternalApi
-private[akka] class ShardedDaemonProcessImpl(system: ActorSystem[_])
+private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
     extends javadsl.ShardedDaemonProcess
     with scaladsl.ShardedDaemonProcess {
 
@@ -103,7 +107,7 @@ private[akka] class ShardedDaemonProcessImpl(system: ActorSystem[_])
       settings: ShardedDaemonProcessSettings,
       stopMessage: Option[T])(implicit classTag: ClassTag[T]): Unit = {
 
-    val entityTypeKey = EntityTypeKey[T](s"cluster-actor-set-$name")
+    val entityTypeKey = EntityTypeKey[T](s"sharded-daemon-process-$name")
 
     // One shard per actor identified by the numeric id encoded in the entity id
     val numberOfShards = numberOfInstances
@@ -113,7 +117,7 @@ private[akka] class ShardedDaemonProcessImpl(system: ActorSystem[_])
       val settingsFromConfig =
         ClusterShardingSettings.fromConfig(
           // defaults in akka.cluster.sharding but allow overrides specifically for actor-set
-          system.settings.config.getConfig("akka.cluster.actor-set.sharding"))
+          system.settings.config.getConfig("akka.cluster.sharded-daemon-process.sharding"))
 
       new ClusterShardingSettings(
         numberOfShards,
@@ -140,7 +144,9 @@ private[akka] class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
     val shardingRef = ClusterSharding(system).init(entityWithStop)
 
-    system.systemActorOf(KeepAlivePinger(settings, entityIds.toSet, shardingRef), s"clusterActorSetPinger-$name")
+    system.systemActorOf(
+      KeepAlivePinger(settings, entityIds.toSet, shardingRef),
+      s"shardedDaemonProcessKeepAlive-$name")
   }
 
   def init[T](

@@ -16,7 +16,7 @@ object ShardedDaemonProcessSettings {
 
   /** Scala API: Create default settings for system */
   def apply(system: ActorSystem[_]): ShardedDaemonProcessSettings = {
-    fromConfig(system.settings.config.getConfig("akka.cluster.actor-set"))
+    fromConfig(system.settings.config.getConfig("akka.cluster.sharded-daemon-process"))
   }
 
   /** Java API: Create default settings for system */
