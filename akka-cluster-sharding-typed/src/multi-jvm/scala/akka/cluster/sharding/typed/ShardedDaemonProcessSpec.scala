@@ -28,7 +28,7 @@ object ShardedDaemonProcessSpec extends MultiNodeConfig {
 
   val SnitchServiceKey = ServiceKey[AnyRef]("snitch")
 
-  case class SetActorEvent(id: Int, event: Any) extends CborSerializable
+  case class ProcessActorEvent(id: Int, event: Any) extends CborSerializable
 
   object ProcessActor {
     trait Command
@@ -36,11 +36,11 @@ object ShardedDaemonProcessSpec extends MultiNodeConfig {
 
     def apply(id: Int): Behavior[Command] = Behaviors.setup { ctx =>
       val snitchRouter = ctx.spawn(Routers.group(SnitchServiceKey), "router")
-      snitchRouter ! SetActorEvent(id, "Started")
+      snitchRouter ! ProcessActorEvent(id, "Started")
 
       Behaviors.receiveMessage {
         case Stop =>
-          snitchRouter ! SetActorEvent(id, "Stopped")
+          snitchRouter ! ProcessActorEvent(id, "Stopped")
           Behaviors.stopped
       }
     }
@@ -94,7 +94,7 @@ abstract class ShardedDaemonProcessSpec
       enterBarrier("actor-set-initialized")
       runOn(first) {
         val startedIds = (0 to 3).map { _ =>
-          val event = probe.expectMessageType[SetActorEvent](5.seconds)
+          val event = probe.expectMessageType[ProcessActorEvent](5.seconds)
           event.event should ===("Started")
           event.id
         }.toSet
