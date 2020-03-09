@@ -45,4 +45,5 @@ either with a single `ServiceKey` which all daemon process actors register theme
 
 ## Scalability  
 
-This cluster tool is intended for small numbers of consumers in relatively small clusters and will not scale well to a large set or clusters with a large number of nodes. 
+This cluster tool is intended for small numbers of consumers and will not scale well to a large set. In large clusters 
+it is recommended to limit the nodes the sharded daemon process will run on using a role.

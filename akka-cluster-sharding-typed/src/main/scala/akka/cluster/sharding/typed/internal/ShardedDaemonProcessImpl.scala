@@ -10,10 +10,9 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.adapter._
+import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardRegion.EntityId
-import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
 import akka.cluster.sharding.typed.ShardingEnvelope
@@ -24,9 +23,12 @@ import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.cluster.sharding.typed.scaladsl.StartEntity
+import akka.cluster.typed.Cluster
 import akka.japi.function
-import scala.compat.java8.OptionConverters._
+import akka.util.PrettyDuration
 
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
@@ -42,16 +44,19 @@ private[akka] object ShardedDaemonProcessImpl {
 
     def apply[T](
         settings: ShardedDaemonProcessSettings,
+        name: String,
         identities: Set[EntityId],
         shardingRef: ActorRef[ShardingEnvelope[T]]): Behavior[Event] =
       Behaviors.setup { context =>
         Behaviors.withTimers { timers =>
           def triggerStartAll(): Unit = {
-            identities.foreach(id => shardingRef.toClassic ! StartEntity(id))
+            identities.foreach(id => shardingRef ! StartEntity(id))
           }
 
-          context.log.debug(
-            s"Starting Sharded Daemon Set KeepAlivePinger with ping interval ${settings.keepAliveInterval}")
+          context.log.debugN(
+            s"Starting Sharded Daemon Process KeepAlivePinger for [{}], with ping interval [{}]",
+            name,
+            PrettyDuration.format(settings.keepAliveInterval))
           timers.startTimerWithFixedDelay(Tick, settings.keepAliveInterval)
           triggerStartAll()
 
@@ -65,20 +70,12 @@ private[akka] object ShardedDaemonProcessImpl {
       }
   }
 
-  def idAndNameToEntityId(id: Int, name: String): EntityId = s"$name-$id"
-
-  def idFromEntityId(entityId: EntityId, name: String): Int =
-    stringIdFromEntityId(entityId, name).toInt
-
-  def stringIdFromEntityId(entityId: EntityId, name: String): String =
-    entityId.drop(name.length + 1)
-
-  final class MessageExtractor[T](name: String) extends ShardingMessageExtractor[ShardingEnvelope[T], T] {
+  final class MessageExtractor[T] extends ShardingMessageExtractor[ShardingEnvelope[T], T] {
     def entityId(message: ShardingEnvelope[T]): String = message match {
       case ShardingEnvelope(id, _) => id
     }
 
-    def shardId(entityId: String): String = stringIdFromEntityId(entityId, name)
+    def shardId(entityId: String): String = entityId
 
     def unwrapMessage(message: ShardingEnvelope[T]): T = message.message
   }
@@ -111,31 +108,35 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
     // One shard per actor identified by the numeric id encoded in the entity id
     val numberOfShards = numberOfInstances
-    val entityIds = (0 to numberOfInstances).map(idAndNameToEntityId(_, name))
+    val entityIds = (0 to numberOfInstances).map(_.toString)
 
     val shardingSettings = {
-      val settingsFromConfig =
-        ClusterShardingSettings.fromConfig(
-          // defaults in akka.cluster.sharding but allow overrides specifically for actor-set
-          system.settings.config.getConfig("akka.cluster.sharded-daemon-process.sharding"))
+      val shardingBaseSettings =
+        settings.shardingSettings match {
+          case None =>
+            // defaults in akka.cluster.sharding but allow overrides specifically for actor-set
+            ClusterShardingSettings.fromConfig(
+              system.settings.config.getConfig("akka.cluster.sharded-daemon-process.sharding"))
+          case Some(shardingSettings) => shardingSettings
+        }
 
       new ClusterShardingSettings(
         numberOfShards,
-        settingsFromConfig.role,
-        settingsFromConfig.dataCenter,
+        shardingBaseSettings.role,
+        shardingBaseSettings.dataCenter,
         false, // remember entities disabled
         "",
         "",
         Duration.Zero, // passivation disabled
-        settingsFromConfig.shardRegionQueryTimeout,
+        shardingBaseSettings.shardRegionQueryTimeout,
         StateStoreModeDData,
-        settingsFromConfig.tuningParameters,
-        settingsFromConfig.coordinatorSingletonSettings)
+        shardingBaseSettings.tuningParameters,
+        shardingBaseSettings.coordinatorSingletonSettings)
     }
 
-    val entity = Entity(entityTypeKey)(ctx => behaviorFactory(idFromEntityId(ctx.entityId, name)))
+    val entity = Entity(entityTypeKey)(ctx => behaviorFactory(ctx.entityId.toInt))
       .withSettings(shardingSettings)
-      .withMessageExtractor(new MessageExtractor(name))
+      .withMessageExtractor(new MessageExtractor)
 
     val entityWithStop = stopMessage match {
       case Some(stop) => entity.withStopMessage(stop)
@@ -144,9 +145,12 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
     val shardingRef = ClusterSharding(system).init(entityWithStop)
 
-    system.systemActorOf(
-      KeepAlivePinger(settings, entityIds.toSet, shardingRef),
-      s"shardedDaemonProcessKeepAlive-$name")
+    val nodeRoles = Cluster(system).selfMember.roles
+    if (shardingSettings.role.forall(nodeRoles)) {
+      system.systemActorOf(
+        KeepAlivePinger(settings, name, entityIds.toSet, shardingRef),
+        s"ShardedDaemonProcessKeepAlive-$name")
+    }
   }
 
   def init[T](

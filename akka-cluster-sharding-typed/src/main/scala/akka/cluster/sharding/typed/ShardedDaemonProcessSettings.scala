@@ -4,6 +4,8 @@
 
 package akka.cluster.sharding.typed
 
+import java.time.Duration
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
@@ -29,7 +31,7 @@ object ShardedDaemonProcessSettings {
   def fromConfig(config: Config): ShardedDaemonProcessSettings = {
     val keepAliveInterval = config.getDuration("keep-alive-interval").asScala
 
-    new ShardedDaemonProcessSettings(keepAliveInterval)
+    new ShardedDaemonProcessSettings(keepAliveInterval, None)
   }
 
 }
@@ -37,14 +39,33 @@ object ShardedDaemonProcessSettings {
 /**
  * Not for user constructions, use factory methods to instanciate.
  */
-final class ShardedDaemonProcessSettings @InternalApi private[akka] (val keepAliveInterval: FiniteDuration) {
+final class ShardedDaemonProcessSettings @InternalApi private[akka] (
+    val keepAliveInterval: FiniteDuration,
+    val shardingSettings: Option[ClusterShardingSettings]) {
 
   /**
-   * The interval each parent of the sharded set is pinged from each node in the cluster.
+   * Scala API: The interval each parent of the sharded set is pinged from each node in the cluster.
    *
    * Note: How the sharded set is kept alive may change in the future meaning this setting may go away.
    */
   @ApiMayChange
   def withKeepAliveInterval(keepAliveInterval: FiniteDuration): ShardedDaemonProcessSettings =
-    new ShardedDaemonProcessSettings(keepAliveInterval)
+    new ShardedDaemonProcessSettings(keepAliveInterval, shardingSettings)
+
+  /**
+   * Java API: The interval each parent of the sharded set is pinged from each node in the cluster.
+   *
+   * Note: How the sharded set is kept alive may change in the future meaning this setting may go away.
+   */
+  @ApiMayChange
+  def withKeepAliveInterval(keepAliveInterval: Duration): ShardedDaemonProcessSettings =
+    new ShardedDaemonProcessSettings(keepAliveInterval.asScala, shardingSettings)
+
+  /**
+   * Specify sharding settings that should be used for the sharded daemon process instead of loading from config.
+   * Some settings can not be changed (remember-entitites and related settings, passivation, number-of-shards),
+   * changing those settings will be ignored.
+   */
+  def withShardingSettings(shardingSettings: ClusterShardingSettings): ShardedDaemonProcessSettings =
+    new ShardedDaemonProcessSettings(keepAliveInterval, Some(shardingSettings))
 }

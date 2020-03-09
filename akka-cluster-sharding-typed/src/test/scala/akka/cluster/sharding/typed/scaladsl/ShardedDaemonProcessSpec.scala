@@ -10,6 +10,8 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.cluster.MemberStatus
+import akka.cluster.sharding.typed.ClusterShardingSettings
+import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import com.typesafe.config.ConfigFactory
@@ -79,17 +81,9 @@ class ShardedDaemonProcessSpec
       started.toSet.size should ===(5)
     }
 
-    "start actors with specific ids" in {
-      val probe = createTestProbe[Any]()
-      ShardedDaemonProcess(system).init("b", 3, id => MyActor(id, probe.ref))
-
-      val started = (1 to 3).map(_ => probe.expectMessageType[MyActor.Started]).toSet
-      started.map(_.id) should ===((0 to 2).toSet)
-    }
-
     "restart actors if they stop" in {
       val probe = createTestProbe[Any]()
-      ShardedDaemonProcess(system).init("c", 2, id => MyActor(id, probe.ref))
+      ShardedDaemonProcess(system).init("stop", 2, id => MyActor(id, probe.ref))
 
       val started = (1 to 2).map(_ => probe.expectMessageType[MyActor.Started]).toSet
       started.foreach(_.selfRef ! MyActor.Stop)
@@ -98,11 +92,22 @@ class ShardedDaemonProcessSpec
       (1 to 2).map(_ => probe.expectMessageType[MyActor.Started](3.seconds))
     }
 
+    "not run if the role does not match node role" in {
+      val probe = createTestProbe[Any]()
+      val settings =
+        ShardedDaemonProcessSettings(system).withShardingSettings(ClusterShardingSettings(system).withRole("workers"))
+      ShardedDaemonProcess(system).init("roles", 3, id => MyActor(id, probe.ref), settings, None)
+
+      probe.expectNoMessage()
+    }
+
   }
 
   object TagProcessor {
-    def apply(tag: String): Behavior[Nothing] = Behaviors.setup { ctx =>
+    sealed trait Command
+    def apply(tag: String): Behavior[Command] = Behaviors.setup { ctx =>
       // start the processing ...
+      ctx.log.debug("Starting processor for tag {}", tag)
       Behaviors.empty
     }
   }

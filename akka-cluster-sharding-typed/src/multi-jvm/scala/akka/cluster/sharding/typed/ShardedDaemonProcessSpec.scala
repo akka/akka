@@ -30,7 +30,7 @@ object ShardedDaemonProcessSpec extends MultiNodeConfig {
 
   case class SetActorEvent(id: Int, event: Any) extends CborSerializable
 
-  object SetActor {
+  object ProcessActor {
     trait Command
     case object Stop extends Command
 
@@ -54,7 +54,7 @@ object ShardedDaemonProcessSpec extends MultiNodeConfig {
             retry-interval = 0.2s
           }
           # quick ping to make test swift
-          keep-alive-interval = 1s 
+          keep-alive-interval = 1s
         }
       """).withFallback(MultiNodeClusterSpec.clusterConfig))
 
@@ -90,7 +90,7 @@ abstract class ShardedDaemonProcessSpec
     }
 
     "init actor set" in {
-      ShardedDaemonProcess(typedSystem).init("the-fearless", 4, id => SetActor(id))
+      ShardedDaemonProcess(typedSystem).init("the-fearless", 4, id => ProcessActor(id))
       enterBarrier("actor-set-initialized")
       runOn(first) {
         val startedIds = (0 to 3).map { _ =>

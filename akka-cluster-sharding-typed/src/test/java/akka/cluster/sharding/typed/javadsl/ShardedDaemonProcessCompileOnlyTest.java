@@ -34,25 +34,26 @@ public class ShardedDaemonProcessCompileOnlyTest {
             ShardedDaemonProcessSettings.create(system),
             Optional.of(Stop.INSTANCE));
 
-    //#tag-processing
+    // #tag-processing
     List<String> tags = Arrays.asList("tag-1", "tag-2", "tag-3");
     ShardedDaemonProcess.get(system)
         .init(
             TagProcessor.Command.class,
             "TagProcessors",
             tags.size(),
-            id -> TagProcessor.create(tags.get(id))
-        );
-    //#tag-processing
+            id -> TagProcessor.create(tags.get(id)));
+    // #tag-processing
   }
 
   static class TagProcessor {
     interface Command {}
+
     static Behavior<Command> create(String tag) {
-      return Behaviors.setup(context -> {
-        // ... start the tag processing ...
-        return Behaviors.empty();
-      });
+      return Behaviors.setup(
+          context -> {
+            // ... start the tag processing ...
+            return Behaviors.empty();
+          });
     }
   }
 }
