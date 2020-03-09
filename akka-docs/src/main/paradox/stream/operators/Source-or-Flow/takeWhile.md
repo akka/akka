@@ -15,7 +15,7 @@ Pass elements downstream as long as a predicate function returns true and then c
 ## Description
 
 Pass elements downstream as long as a predicate function returns true and then complete. 
-The element for which the predicate returns false is not omitted. 
+The element for which the predicate returns false is not emitted. 
 
 ## Example
 
@@ -36,4 +36,3 @@ Java
 **completes** when predicate returned false or upstream completes
 
 @@@
-
