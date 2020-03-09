@@ -383,7 +383,7 @@ object ByteString {
         val dst = Base64.getDecoder.decode(ByteBuffer.wrap(bytes, startIndex, length))
         if (dst.hasArray) {
           if (dst.array.length == dst.remaining) ByteString1C(dst.array)
-          else ByteString1(dst.array, dst.arrayOffset + dst.position, dst.remaining)
+          else ByteString1(dst.array, dst.arrayOffset + dst.position(), dst.remaining)
         } else CompactByteString(dst)
       }
 
@@ -394,7 +394,7 @@ object ByteString {
         val dst = Base64.getEncoder.encode(ByteBuffer.wrap(bytes, startIndex, length))
         if (dst.hasArray) {
           if (dst.array.length == dst.remaining) ByteString1C(dst.array)
-          else ByteString1(dst.array, dst.arrayOffset + dst.position, dst.remaining)
+          else ByteString1(dst.array, dst.arrayOffset + dst.position(), dst.remaining)
         } else CompactByteString(dst)
       }
 
