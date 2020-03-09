@@ -178,7 +178,7 @@ depending on being backpressured by downstream or not.
 |Source/Flow|<a name="sliding"></a>@ref[sliding](Source-or-Flow/sliding.md)|Provide a sliding window over the incoming stream and pass the windows as groups of elements downstream.|
 |Source/Flow|<a name="statefulmapconcat"></a>@ref[statefulMapConcat](Source-or-Flow/statefulMapConcat.md)|Transform each element into zero or more elements that are individually passed downstream.|
 |Source/Flow|<a name="take"></a>@ref[take](Source-or-Flow/take.md)|Pass `n` incoming elements downstream and then complete|
-|Source/Flow|<a name="takewhile"></a>@ref[takeWhile](Source-or-Flow/takeWhile.md)|Pass elements downstream as long as a predicate function return true for the element include the element when the predicate first return false and then complete.|
+|Source/Flow|<a name="takewhile"></a>@ref[takeWhile](Source-or-Flow/takeWhile.md)|Pass elements downstream as long as a predicate function returns true and then complete. |
 |Source/Flow|<a name="throttle"></a>@ref[throttle](Source-or-Flow/throttle.md)|Limit the throughput to a specific number of elements per time unit, or a specific total cost per time unit, where a function has to be provided to calculate the individual cost of each element.|
 |Source/Flow|<a name="watch"></a>@ref[watch](Source-or-Flow/watch.md)|Watch a specific `ActorRef` and signal a failure downstream once the actor terminates.|
 
