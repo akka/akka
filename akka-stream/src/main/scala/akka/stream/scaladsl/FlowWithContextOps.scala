@@ -12,6 +12,7 @@ import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.util.ConstantFun
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.stream.impl.fusing.StatefulMapConcatWithContext
 
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
@@ -169,7 +170,7 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
 
   def mapConcat[Out2, Ctx2](
     f: Out => immutable.Iterable[Out2],
-    strategy: ContextMapStrategy.Strategy[Out @uncheckedVariance, Ctx @uncheckedVariance, Ctx2]
+    strategy: ContextMapStrategy.Strategy[Out @uncheckedVariance, Ctx @uncheckedVariance, Out2 @uncheckedVariance, Ctx2]
   ): Repr[Out2, Ctx2] = {
     via(flow.via(new StatefulMapConcatWithContext(() => f, strategy)))
   }

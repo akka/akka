@@ -2234,7 +2234,7 @@ private[stream] object Collect {
  */
 @InternalApi private[akka] final class StatefulMapConcatWithContext[In, InCtx, Out, OutCtx](
   val f: () => In => immutable.Iterable[Out],
-  val strategy: ContextMapStrategy.Strategy[In, InCtx, OutCtx]
+  val strategy: ContextMapStrategy.Strategy[In, InCtx, Out, OutCtx]
 )
   extends GraphStage[FlowShape[(In, InCtx), (Out, OutCtx)]] {
   val in = Inlet[(In, InCtx)]("StatefulMapConcat.in")
@@ -2256,13 +2256,14 @@ private[stream] object Collect {
 
     setHandlers(in, out, this)
 
-    def pushPull(): Unit =
+    def pushPull(): Unit = {
+      println("pushPull()")
       if (hasNext) {
         val e: Out = currentOutIterator.next()
         val outCtx: OutCtx = strategy match {
-          case ContextMapStrategy.All(_, only) if !hasNext && index == 0 =>
+          case ContextMapStrategy.All(_, only, _) if !hasNext && index == 0 =>
             only(currentInElement, currentInContext)
-          case ContextMapStrategy.All(iterate, _) =>
+          case ContextMapStrategy.All(iterate, _, _) =>
             iterate(currentInElement, currentInContext, index, hasNext)
 //          case ContextMapStrategy.Iterate(iterate) =>
 //            iterate(currentInElement, currentInContext, index, true)
@@ -2274,23 +2275,25 @@ private[stream] object Collect {
         index += 1
         push(out, (e, outCtx))
         if (!hasNext && isClosed(in)) completeStage()
+      } else if (!hasNext && index == 0 && !isClosed(in) && currentInElement != null) {
+        strategy match {
+          case ContextMapStrategy.All(_, _, none) if index == 0 =>
+            val (noneOut, noneOutContext): (Out, OutCtx) = none(currentInElement, currentInContext)
+            println("push(out) none")
+            push(out, (noneOut, noneOutContext))
+          case _ => ()
+        }
       }
-//      else if (!hasNext && index == 0) {
-//        strategy match {
-//          case ContextMapStrategy.All(_, _, none) if index == 0 =>
-//            val noneOutAndContext = none(currentInElement, currentInContext)
-//            push(out, noneOutAndContext)
-//          case _ => ()
-//        }
-//      }
       else if (!isClosed(in))
         pull(in)
       else completeStage()
+    }
 
     def onFinish(): Unit = if (!hasNext) completeStage()
 
     override def onPush(): Unit =
       try {
+        println(s"onPush()")
         index = 0
         currentIn = grab(in)
         val (inElement, inContext) = currentIn
@@ -2302,9 +2305,11 @@ private[stream] object Collect {
 
     override def onUpstreamFinish(): Unit = onFinish()
 
-    override def onPull(): Unit =
+    override def onPull(): Unit = {
+      println(s"onPull()")
       try pushPull()
       catch handleException
+    }
 
     private def handleException: Catcher[Unit] = {
       case NonFatal(ex) =>
