@@ -100,4 +100,18 @@ class ShardedDaemonProcessSpec
 
   }
 
+  object TagProcessor {
+    def apply(tag: String): Behavior[Nothing] = Behaviors.setup { ctx =>
+      // start the processing ...
+      Behaviors.empty
+    }
+  }
+
+  def docExample(): Unit = {
+    // #tag-processing
+    val tags = "tag-1" :: "tag-2" :: "tag-3" :: Nil
+    ShardedDaemonProcess(system).init("TagProcessors", tags.size, id => TagProcessor(tags(id)))
+    // #tag-processing
+  }
+
 }
