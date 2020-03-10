@@ -481,7 +481,7 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
  *
  * INTERNAL API
  */
-@InternalApi private[akka] class IgnoreActorRef(override val provider: ActorRefProvider) extends MinimalActorRef {
+@InternalApi private[akka] final class IgnoreActorRef(override val provider: ActorRefProvider) extends MinimalActorRef {
 
   override val path: ActorPath = IgnoreActorRef.path
 
