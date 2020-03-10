@@ -89,10 +89,7 @@ class ActorRefIgnoreSpec extends ScalaTestWithActorTestKit() with AnyWordSpecLik
           .failed
           .futureValue(PatienceTimeout(1.second))
 
-      eventually {
-        failedAsk shouldBe a[TimeoutException]
-      }
-
+      failedAsk shouldBe a[TimeoutException]
     }
 
     // similar to above, but using actor-to-actor interaction
