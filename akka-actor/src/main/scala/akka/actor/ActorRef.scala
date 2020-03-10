@@ -499,11 +499,13 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
   val path: ActorPath =
     RootActorPath(Address("akka", IgnoreActorRef.fakeSystemName)) / "ignore"
 
+  private val pathString = path.toString
+
   /**
    * Check if the passed `otherPath` is the same as IgnoreActorRef.path
    */
   def isIgnoreRefPath(otherPath: String): Boolean =
-    path.toString == otherPath
+    pathString == otherPath
 
   /**
    * Check if the passed `otherPath` is the same as IgnoreActorRef.path
