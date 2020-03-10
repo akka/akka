@@ -8,6 +8,7 @@ import java.util.Optional
 
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.japi.function
@@ -31,7 +32,7 @@ object ShardedDaemonProcess {
  *
  * Not for user extension.
  */
-@DoNotInherit
+@DoNotInherit @ApiMayChange
 abstract class ShardedDaemonProcess {
 
   /**

@@ -14,6 +14,7 @@ import com.typesafe.config.Config
 
 import scala.concurrent.duration.FiniteDuration
 
+@ApiMayChange
 object ShardedDaemonProcessSettings {
 
   /** Scala API: Create default settings for system */
@@ -39,6 +40,7 @@ object ShardedDaemonProcessSettings {
 /**
  * Not for user constructions, use factory methods to instanciate.
  */
+@ApiMayChange
 final class ShardedDaemonProcessSettings @InternalApi private[akka] (
     val keepAliveInterval: FiniteDuration,
     val shardingSettings: Option[ClusterShardingSettings]) {
@@ -48,7 +50,6 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
    *
    * Note: How the sharded set is kept alive may change in the future meaning this setting may go away.
    */
-  @ApiMayChange
   def withKeepAliveInterval(keepAliveInterval: FiniteDuration): ShardedDaemonProcessSettings =
     new ShardedDaemonProcessSettings(keepAliveInterval, shardingSettings)
 
@@ -57,7 +58,6 @@ final class ShardedDaemonProcessSettings @InternalApi private[akka] (
    *
    * Note: How the sharded set is kept alive may change in the future meaning this setting may go away.
    */
-  @ApiMayChange
   def withKeepAliveInterval(keepAliveInterval: Duration): ShardedDaemonProcessSettings =
     new ShardedDaemonProcessSettings(keepAliveInterval.asScala, shardingSettings)
 

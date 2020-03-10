@@ -8,6 +8,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
+import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
@@ -34,7 +35,7 @@ object ShardedDaemonProcess extends ExtensionId[ShardedDaemonProcess] {
  *
  * Not for user extension.
  */
-@DoNotInherit
+@DoNotInherit @ApiMayChange
 trait ShardedDaemonProcess extends Extension { javadslSelf: javadsl.ShardedDaemonProcess =>
 
   /**
