@@ -2257,7 +2257,6 @@ private[stream] object Collect {
     setHandlers(in, out, this)
 
     def pushPull(): Unit = {
-      println("pushPull()")
       if (hasNext) {
         val outElm: Out = currentOutIterator.next()
         val outCtx: Ctx = strategy.iterateFn(currentInElement, currentInContext, outElm, index, hasNext)
@@ -2268,7 +2267,6 @@ private[stream] object Collect {
         strategy match {
           case ContextMapStrategy.Iterate(_, Some(f)) if index == 0 =>
             val (noneOut, noneOutContext): (Out, Ctx) = f(currentInElement, currentInContext)
-            println("push(out) none")
             push(out, (noneOut, noneOutContext))
           case _ => ()
         }
@@ -2282,7 +2280,6 @@ private[stream] object Collect {
 
     override def onPush(): Unit =
       try {
-        println(s"onPush()")
         index = 0
         currentIn = grab(in)
         val (inElement, inContext) = currentIn
@@ -2294,11 +2291,9 @@ private[stream] object Collect {
 
     override def onUpstreamFinish(): Unit = onFinish()
 
-    override def onPull(): Unit = {
-      println(s"onPull()")
+    override def onPull(): Unit =
       try pushPull()
       catch handleException
-    }
 
     private def handleException: Catcher[Unit] = {
       case NonFatal(ex) =>

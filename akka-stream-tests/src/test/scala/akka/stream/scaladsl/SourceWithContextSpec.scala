@@ -94,13 +94,13 @@ class SourceWithContextSpec extends StreamSpec {
 
     sealed trait TransformPosition
     case object Only extends TransformPosition
-    //case object None extends TransformPosition
+    case object None extends TransformPosition
     case object First extends TransformPosition
     case object Within extends TransformPosition
     case object Last extends TransformPosition
     final case class OffsetContext(offset: Long, position: TransformPosition = Only)
 
-    "use Iterate strategy on contexts via mapConcat" in {
+    "use iterate strategy on contexts via mapConcat" in {
       val contextMapping = ContextMapStrategy.iterate(
         fn = (_: String, inCtx: OffsetContext, _: String, index: Int, hasNext: Boolean) => {
           if (index == 0 && hasNext) OffsetContext(inCtx.offset, First)
@@ -124,59 +124,25 @@ class SourceWithContextSpec extends StreamSpec {
         .expectNext(("a-1", OffsetContext(1L, First)), ("a-2", OffsetContext(1L, Within)), ("a-3", OffsetContext(1L, Last)))
         .expectComplete()
     }
-//
-//    "use All only strategy on contexts via mapConcat" in {
-//      val contextMapping = ContextMapStrategy.All(
-//        iterate = (_: String, inCtx: OffsetContext, index: Int, hasNext: Boolean) => {
-//          if (index == 0 && hasNext) OffsetContext(inCtx.offset, First)
-//          else if (index == 0 && !hasNext) OffsetContext(inCtx.offset, Only)
-//          else if (!hasNext) OffsetContext(inCtx.offset, Last)
-//          else OffsetContext(inCtx.offset, Within)
-//        },
-//        only = (_: String, inCtx: OffsetContext) => OffsetContext(inCtx.offset, Only),
-//        none = (_: String, inCtx: OffsetContext) => ("nothing",  OffsetContext(inCtx.offset, None))
-//      )
-//
-//      Source(Message("a", 1L) :: Nil)
-//        .asSourceWithContext(msg => OffsetContext(msg.offset))
-//        .map(_.data)
-//        .mapConcat(
-//          f = str => s"$str-1" :: Nil,
-//          contextMapping
-//        )
-//        .runWith(TestSink.probe[(String, OffsetContext)])
-//        .request(1)
-//        .expectNext(("a-1", OffsetContext(1L, Only)))
-//        .expectComplete()
-//    }
-//
-//    "use All none strategy on contexts via mapConcat" in {
-//      val contextMapping = ContextMapStrategy.All(
-//        iterate = (_: String, inCtx: OffsetContext, index: Int, hasNext: Boolean) => {
-//          if (index == 0 && hasNext) OffsetContext(inCtx.offset, First)
-//          else if (index == 0 && !hasNext) OffsetContext(inCtx.offset, Only)
-//          else if (!hasNext) OffsetContext(inCtx.offset, Last)
-//          else OffsetContext(inCtx.offset, Within)
-//        },
-//        only = (_: String, inCtx: OffsetContext) => OffsetContext(inCtx.offset, Only),
-//        none = (in: String, inCtx: OffsetContext) => {
-//          println(s"in: $in")
-//          ("nothing",  OffsetContext(inCtx.offset, None))
-//        }
-//      )
-//
-//      Source(Message("a", 1L) :: Nil)
-//        .asSourceWithContext(msg => OffsetContext(msg.offset))
-//        .map(_.data)
-//        .mapConcat(
-//          f = _ => Nil,
-//          contextMapping
-//        )
-//        .runWith(TestSink.probe[(String, OffsetContext)])
-//        .request(1)
-//        .expectNext(("nothing", OffsetContext(1L, None)))
-//        .expectComplete()
-//    }
+
+    "use iterateOrEmpty strategy on contexts via mapConcat" in {
+      val contextMapping = ContextMapStrategy.iterateOrEmpty(
+        fn = (_: String, inCtx: OffsetContext, _: String, _: Int, _: Boolean) => inCtx,
+        emptyFn = (_: String, inCtx: OffsetContext) => ("empty",  OffsetContext(inCtx.offset, None))
+      )
+
+      Source(Message("a", 1L) :: Nil)
+        .asSourceWithContext(msg => OffsetContext(msg.offset))
+        .map(_.data)
+        .mapConcat(
+          f = _ => Nil,
+          contextMapping
+        )
+        .runWith(TestSink.probe[(String, OffsetContext)])
+        .request(1)
+        .expectNext(("empty", OffsetContext(1L, None)))
+        .expectComplete()
+    }
 
     "pass through a sequence of contexts per element via grouped" in {
       Source(Vector(Message("a", 1L)))
