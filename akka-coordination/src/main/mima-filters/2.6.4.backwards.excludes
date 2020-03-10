@@ -1,0 +1,2 @@
+# Wasn't meant for user extension
+ProblemFilters.exclude[FinalClassProblem]("akka.coordination.lease.scaladsl.LeaseProvider")
