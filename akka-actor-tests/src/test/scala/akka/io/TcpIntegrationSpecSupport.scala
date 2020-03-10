@@ -23,7 +23,7 @@ trait TcpIntegrationSpecSupport { _: AkkaSpec =>
         // terminate clientSystem after server system
         system.whenTerminated.onComplete { _ =>
           res.terminate()
-        }(ExecutionContexts.sameThreadExecutionContext)
+        }(ExecutionContexts.parasitic)
         res
       } else system
     val bindHandler = TestProbe()

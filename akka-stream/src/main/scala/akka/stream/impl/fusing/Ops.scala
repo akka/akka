@@ -469,8 +469,6 @@ private[stream] object Collect {
       private var current: Out = zero
       private var elementHandled: Boolean = false
 
-      private def ec = ExecutionContexts.sameThreadExecutionContext
-
       private lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
 
       private val ZeroHandler: OutHandler with InHandler = new OutHandler with InHandler {
@@ -544,7 +542,7 @@ private[stream] object Collect {
 
           eventualCurrent.value match {
             case Some(result) => futureCB(result)
-            case _            => eventualCurrent.onComplete(futureCB)(ec)
+            case _            => eventualCurrent.onComplete(futureCB)(ExecutionContexts.parasitic)
           }
         } catch {
           case NonFatal(ex) =>
@@ -652,8 +650,6 @@ private[stream] object Collect {
         aggregator = zero
       }
 
-      private def ec = ExecutionContexts.sameThreadExecutionContext
-
       private val futureCB = getAsyncCallback[Try[Out]] {
         case Success(update) if update != null =>
           aggregator = update
@@ -711,7 +707,7 @@ private[stream] object Collect {
       private def handleAggregatingValue(): Unit = {
         aggregating.value match {
           case Some(result) => futureCB(result) // already completed
-          case _            => aggregating.onComplete(futureCB)(ec)
+          case _            => aggregating.onComplete(futureCB)(ExecutionContexts.parasitic)
         }
       }
 
@@ -1291,7 +1287,7 @@ private[stream] object Collect {
           buffer.enqueue(holder)
 
           future.value match {
-            case None    => future.onComplete(holder)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            case None    => future.onComplete(holder)(akka.dispatch.ExecutionContexts.parasitic)
             case Some(v) =>
               // #20217 the future is already here, optimization: avoid scheduling it on the dispatcher and
               // run the logic directly on this thread
@@ -1405,7 +1401,7 @@ private[stream] object Collect {
           val future = f(grab(in))
           inFlight += 1
           future.value match {
-            case None    => future.onComplete(invokeFutureCB)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            case None    => future.onComplete(invokeFutureCB)(akka.dispatch.ExecutionContexts.parasitic)
             case Some(v) => futureCompleted(v)
           }
         } catch {
@@ -2285,7 +2281,7 @@ private[stream] object Collect {
               onFlowFutureComplete(element)(completed)
             case None =>
               val cb = getAsyncCallback[Try[Flow[I, O, M]]](onFlowFutureComplete(element))
-              futureFlow.onComplete(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
+              futureFlow.onComplete(cb.invoke)(ExecutionContexts.parasitic)
           }
         } catch {
           case NonFatal(e) =>

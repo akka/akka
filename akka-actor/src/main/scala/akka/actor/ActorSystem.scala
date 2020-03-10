@@ -965,14 +965,6 @@ private[akka] class ActorSystemImpl(
 
   val dispatcher: ExecutionContextExecutor = dispatchers.defaultGlobalDispatcher
 
-  val internalCallingThreadExecutionContext: ExecutionContext =
-    dynamicAccess
-      .getObjectFor[ExecutionContext]("scala.concurrent.Future$InternalCallbackExecutor$")
-      .getOrElse(
-        dynamicAccess
-          .getObjectFor[ExecutionContext]("scala.concurrent.ExecutionContext$parasitic$")
-          .getOrElse(ExecutionContexts.sameThreadExecutionContext))
-
   private[this] final val terminationCallbacks = new TerminationCallbacks(provider.terminationFuture)(dispatcher)
 
   override def whenTerminated: Future[Terminated] = terminationCallbacks.terminationFuture

@@ -86,7 +86,7 @@ import scala.concurrent.{ Future, Promise }
                 thisStage.tell(Unbind, thisStage)
               }
               unbindPromise.future
-            }, unbindPromise.future.map(_ => Done)(ExecutionContexts.sameThreadExecutionContext)))
+            }, unbindPromise.future.map(_ => Done)(ExecutionContexts.parasitic)))
           case f: CommandFailed =>
             val ex = new BindFailedException {
               // cannot modify the actual exception class for compatibility reasons
@@ -533,10 +533,7 @@ private[stream] object ConnectionSourceStage {
       remoteAddress,
       eagerMaterializer)
 
-    (
-      logic,
-      localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))(
-        ExecutionContexts.sameThreadExecutionContext))
+    (logic, localAddressPromise.future.map(OutgoingConnection(remoteAddress, _))(ExecutionContexts.parasitic))
   }
 
   override def toString = s"TCP-to($remoteAddress)"

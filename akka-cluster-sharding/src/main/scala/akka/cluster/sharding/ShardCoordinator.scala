@@ -138,7 +138,7 @@ object ShardCoordinator {
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
         rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
       import akka.util.ccompat.JavaConverters._
-      implicit val ec = ExecutionContexts.sameThreadExecutionContext
+      implicit val ec = ExecutionContexts.parasitic
       rebalance(currentShardAllocations.asJava, rebalanceInProgress.asJava).map(_.asScala.toSet)
     }
 
