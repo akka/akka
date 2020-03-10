@@ -27,11 +27,12 @@ import org.jboss.netty.channel.{
 import akka.pattern.{ ask, AskTimeoutException }
 import akka.event.{ Logging, LoggingAdapter }
 import java.net.{ ConnectException, InetSocketAddress }
-import java.util.concurrent.RejectedExecutionException
 
 import akka.remote.transport.ThrottlerTransportAdapter.{ Blackhole, SetThrottle, TokenBucket, Unthrottled }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ccompat._
+
+import scala.util.control.NonFatal
 
 @ccompatUsedUntil213
 object Player {
@@ -307,7 +308,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
       try {
         channel.close()
       } catch {
-        case ex: RejectedExecutionException =>
+        case NonFatal(ex) =>
           // silence this one to not make tests look like they failed, it's not really critical
           log.debug(s"Failed closing channel with ${ex.getClass.getName} ${ex.getMessage}")
       }
