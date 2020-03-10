@@ -1348,8 +1348,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
                   Behaviors.same
               }
               .receiveSignal {
-                case (_, signal) =>
-                  probe.ref ! signal.toString
+                case (_, PreRestart) =>
+                  probe.ref ! "PreRestart"
                   Behaviors.same
               }
           })

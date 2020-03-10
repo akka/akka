@@ -61,7 +61,8 @@ private[akka] object BehaviorTags {
   def failed[T](cause: Throwable): Behavior[T] = new FailedBehavior(cause).asInstanceOf[Behavior[T]]
 
   val unhandledSignal: PartialFunction[(TypedActorContext[Nothing], Signal), Behavior[Nothing]] = {
-    case (_, _) => UnhandledBehavior
+    case (_, MessageAdaptionFailure(ex)) => throw ex
+    case (_, _)                          => UnhandledBehavior
   }
 
   private object EmptyBehavior extends Behavior[Any](BehaviorTags.EmptyBehavior) {
@@ -127,16 +128,9 @@ private[akka] object BehaviorTags {
       extends ExtensibleBehavior[T] {
 
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = {
-      msg match {
-        case MessageAdaptionFailure(ex) =>
-          // we want to hide this from the user handler but trigger supervision
-          throw ex
-        case _ =>
-          onSignal.applyOrElse(
-            (ctx.asScala, msg),
-            BehaviorImpl.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
-      }
-
+      onSignal.applyOrElse(
+        (ctx.asScala, msg),
+        BehaviorImpl.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
     }
 
     override def receive(ctx: AC[T], msg: T) = onMessage(ctx.asScala, msg)
@@ -158,15 +152,9 @@ private[akka] object BehaviorTags {
     override def receive(ctx: AC[T], msg: T) = onMessage(msg)
 
     override def receiveSignal(ctx: AC[T], msg: Signal): Behavior[T] = {
-      msg match {
-        case MessageAdaptionFailure(ex) =>
-          // we want to hide this from the user handler but trigger supervision
-          throw ex
-        case _ =>
-          onSignal.applyOrElse(
-            (ctx.asScala, msg),
-            BehaviorImpl.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
-      }
+      onSignal.applyOrElse(
+        (ctx.asScala, msg),
+        BehaviorImpl.unhandledSignal.asInstanceOf[PartialFunction[(SAC[T], Signal), Behavior[T]]])
     }
 
     override def toString = s"ReceiveMessage(${LineNumbers(onMessage)})"
