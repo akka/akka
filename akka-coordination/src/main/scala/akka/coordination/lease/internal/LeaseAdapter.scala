@@ -39,14 +39,17 @@ final private[akka] class LeaseAdapter(delegate: ScalaLease)(implicit val ec: Ex
  * INTERNAL API
  */
 @InternalApi
-final private[akka] class LeaseAdapterToScala(val delete: JavaLease)(implicit val ec: ExecutionContext)
-    extends ScalaLease(delete.getSettings()) {
+final private[akka] class LeaseAdapterToScala(val delegate: JavaLease)(implicit val ec: ExecutionContext)
+    extends ScalaLease(delegate.getSettings()) {
 
-  override def acquire(): Future[Boolean] = delete.acquire().toScala.map(Boolean.unbox)
+  override def acquire(): Future[Boolean] =
+    delegate.acquire().toScala.map(Boolean.unbox).acquire().toScala.map(Boolean.unbox)
 
   override def acquire(leaseLostCallback: Option[Throwable] => Unit): Future[Boolean] =
-    delete.acquire(o => leaseLostCallback(o.asScala)).toScala.map(Boolean.unbox)
+    delegate.acquire(o => leaseLostCallback(o.asScala)).toScala.map(Boolean.unbox)
 
-  override def release(): Future[Boolean] = delete.release().toScala.map(Boolean.unbox)
-  override def checkLease(): Boolean = delete.checkLease()
+  override def release(): Future[Boolean] =
+    delegate.release().toScala.map(Boolean.unbox).release().toScala.map(Boolean.unbox)
+  override def checkLease(): Boolean =
+    delegate.checkLease().checkLease()
 }

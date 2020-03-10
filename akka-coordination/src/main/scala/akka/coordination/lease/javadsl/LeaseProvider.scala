@@ -38,7 +38,7 @@ class LeaseProvider(system: ExtendedActorSystem) extends Extension {
     val scalaLease = delegate.getLease(leaseName, configPath, ownerName)
     // unwrap if this is a java implementation
     scalaLease match {
-      case adapter: LeaseAdapterToScala => adapter.delete
+      case adapter: LeaseAdapterToScala => adapter.delegate
       case _                            => new LeaseAdapter(scalaLease)(system.dispatchers.internalDispatcher)
     }
   }
