@@ -134,19 +134,19 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
         shardingBaseSettings.coordinatorSingletonSettings)
     }
 
-    val entity = Entity(entityTypeKey)(ctx => behaviorFactory(ctx.entityId.toInt))
-      .withSettings(shardingSettings)
-      .withMessageExtractor(new MessageExtractor)
-
-    val entityWithStop = stopMessage match {
-      case Some(stop) => entity.withStopMessage(stop)
-      case None       => entity
-    }
-
-    val shardingRef = ClusterSharding(system).init(entityWithStop)
-
     val nodeRoles = Cluster(system).selfMember.roles
     if (shardingSettings.role.forall(nodeRoles)) {
+      val entity = Entity(entityTypeKey)(ctx => behaviorFactory(ctx.entityId.toInt))
+        .withSettings(shardingSettings)
+        .withMessageExtractor(new MessageExtractor)
+
+      val entityWithStop = stopMessage match {
+        case Some(stop) => entity.withStopMessage(stop)
+        case None       => entity
+      }
+
+      val shardingRef = ClusterSharding(system).init(entityWithStop)
+
       system.systemActorOf(
         KeepAlivePinger(settings, name, entityIds.toSet, shardingRef),
         s"ShardedDaemonProcessKeepAlive-$name")
