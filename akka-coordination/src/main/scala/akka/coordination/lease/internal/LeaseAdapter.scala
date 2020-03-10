@@ -43,13 +43,14 @@ final private[akka] class LeaseAdapterToScala(val delegate: JavaLease)(implicit 
     extends ScalaLease(delegate.getSettings()) {
 
   override def acquire(): Future[Boolean] =
-    delegate.acquire().toScala.map(Boolean.unbox).acquire().toScala.map(Boolean.unbox)
+    delegate.acquire().toScala.map(Boolean.unbox)
 
   override def acquire(leaseLostCallback: Option[Throwable] => Unit): Future[Boolean] =
     delegate.acquire(o => leaseLostCallback(o.asScala)).toScala.map(Boolean.unbox)
 
   override def release(): Future[Boolean] =
-    delegate.release().toScala.map(Boolean.unbox).release().toScala.map(Boolean.unbox)
+    delegate.release().toScala.map(Boolean.unbox)
+
   override def checkLease(): Boolean =
-    delegate.checkLease().checkLease()
+    delegate.checkLease()
 }
