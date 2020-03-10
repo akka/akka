@@ -73,7 +73,9 @@ import org.slf4j.LoggerFactory
   def isTerminated: Boolean = whenTerminated.isCompleted
 
   val deadLettersInbox = new DebugRef[Any](path.parent / "deadLetters", true)
-  override def deadLetters[U]: akka.actor.typed.ActorRef[U] = deadLettersInbox
+  override def deadLetters[U]: ActorRef[U] = deadLettersInbox
+
+  override def ignoreRef[U]: ActorRef[U] = deadLettersInbox
 
   val controlledExecutor = new ControlledExecutor
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = controlledExecutor

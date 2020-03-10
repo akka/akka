@@ -6,12 +6,12 @@ package akka.actor.typed
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
-import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
+import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
 import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
-import akka.actor.typed.internal.adapter.{ ActorRefAdapter, ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
 import akka.actor.typed.receptionist.Receptionist
+import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
 import akka.{ Done, actor => classic }
@@ -141,14 +141,10 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    */
   def deadLetters[U]: ActorRef[U]
 
-  // this needs to be a lazy val because some impl of ActorSystem
-  // (eg: ActorSystemStub) does not have a provider
-  private lazy val cachedIgnoreRef: ActorRef[Nothing] = ActorRefAdapter(provider.ignoreRef)
-
   /**
    * An ActorRef that ignores any incoming messages.
    */
-  def ignoreRef[U]: ActorRef[U] = cachedIgnoreRef.unsafeUpcast[U]
+  def ignoreRef[U]: ActorRef[U]
 
   /**
    * Create a string representation of the actor hierarchy within this system

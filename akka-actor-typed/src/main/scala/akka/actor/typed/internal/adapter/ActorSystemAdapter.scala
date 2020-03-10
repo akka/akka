@@ -77,6 +77,9 @@ import org.slf4j.{ Logger, LoggerFactory }
   // Members declared in akka.actor.typed.ActorSystem
   override def deadLetters[U]: ActorRef[U] = ActorRefAdapter(system.deadLetters)
 
+  private val cachedIgnoreRef: ActorRef[Nothing] = ActorRefAdapter(provider.ignoreRef)
+  override def ignoreRef[U]: ActorRef[U] = cachedIgnoreRef.unsafeUpcast[U]
+
   override def dispatchers: Dispatchers = new Dispatchers {
     override def lookup(selector: DispatcherSelector): ExecutionContextExecutor =
       selector match {
