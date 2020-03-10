@@ -4,7 +4,7 @@
 
 package akka.actor.typed
 
-import akka.actor.{ ActorRefWithCell, ExtendedActorSystem, IgnoreActorRef }
+import akka.actor.{ ActorRefWithCell, ExtendedActorSystem }
 import akka.annotation.{ DoNotInherit, InternalApi }
 
 object ActorRefResolver extends ExtensionId[ActorRefResolver] {
@@ -73,11 +73,13 @@ abstract class ActorRefResolver extends Extension {
     }
   }
 
-  override def resolveActorRef[T](serializedActorRef: String): ActorRef[T] =
-    if (IgnoreActorRef.isIgnoreRefPath(serializedActorRef))
+  override def resolveActorRef[T](serializedActorRef: String): ActorRef[T] = {
+    val ref = classicSystem.provider.resolveActorRef(serializedActorRef)
+    if (ref eq classicSystem.provider.ignoreRef)
       classicSystem.toTyped.ignoreRef
     else
-      classicSystem.provider.resolveActorRef(serializedActorRef)
+      ref
+  }
 }
 
 object ActorRefResolverSetup {
