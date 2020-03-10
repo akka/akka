@@ -53,7 +53,7 @@ private[akka] object ShardedDaemonProcessImpl {
             identities.foreach(id => shardingRef ! StartEntity(id))
           }
 
-          context.log.debugN(
+          context.log.debug2(
             s"Starting Sharded Daemon Process KeepAlivePinger for [{}], with ping interval [{}]",
             name,
             PrettyDuration.format(settings.keepAliveInterval))
