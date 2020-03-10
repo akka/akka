@@ -40,7 +40,7 @@ For cases where there is a need to emit elements based on the state when the str
 element signalling the end of the stream before the `statefulMapConcat` operator.
 
 In this sample we collect all elements starting with the letter `b` and emit those once we have reached the end of the stream using
-as special end element. Here the end element is a special string to keep sample concise, in a real application it can make sense to rather use types.
+a special end element. The end element is a special string to keep the sample concise, in a real application it may make sense to use types instead.
 
 Scala
 :  @@snip [StatefulMapConcat.scala](/akka-docs/src/test/scala/docs/stream/operators/flow/StatefulMapConcat.scala) { #bs-last }
@@ -65,4 +65,3 @@ For even more fine grained capabilities than can be achieved with `statefulMapCo
 **completes** when upstream completes and all remaining elements has been emitted
 
 @@@
-
