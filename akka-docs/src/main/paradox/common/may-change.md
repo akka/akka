@@ -29,5 +29,6 @@ that the module or API wasn't useful.
 These are the current complete modules marked as **may change**:
 
 * @ref:[Multi Node Testing](../multi-node-testing.md)
+* @ref:[Sharded Daemon Process](../typed/cluster-sharded-daemon-process.md)
 
 
