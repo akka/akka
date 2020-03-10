@@ -164,21 +164,13 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    * @see [[akka.stream.scaladsl.FlowOps.mapConcat]]
    */
   def mapConcat[Out2](f: Out => immutable.Iterable[Out2]): Repr[Out2, Ctx] =
-    via(flow.mapConcat {
-      case (e, ctx) => f(e).map(_ -> ctx)
-    })
+    mapConcat(f, ContextMapStrategy.same[Out, Ctx, Out2]())
 
-  def mapConcat[Out2, Ctx2](
+  def mapConcat[Out2](
     f: Out => immutable.Iterable[Out2],
-    strategy: ContextMapStrategy.Strategy[Out @uncheckedVariance, Ctx @uncheckedVariance, Out2 @uncheckedVariance, Ctx2]
-  ): Repr[Out2, Ctx2] = {
-    via(flow.via(new StatefulMapConcatWithContext(() => f, strategy)))
-  }
-//    via(flow.mapConcat {
-//      case (e, ctx) =>
-//        val out: immutable.Iterable[Out2] = f(e)
-//        out.zip(contextMapping(out, ctx))
-//    })
+    strategy: ContextMapStrategy.Iterate[Out @uncheckedVariance, Ctx @uncheckedVariance, Out2]
+  ): Repr[Out2, Ctx] =
+    via(flow.via(new StatefulMapConcatWithContext[Out, Ctx, Out2](() => f, strategy)))
 
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).

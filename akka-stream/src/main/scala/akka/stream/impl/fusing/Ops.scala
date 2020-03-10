@@ -2232,13 +2232,13 @@ private[stream] object Collect {
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final class StatefulMapConcatWithContext[In, InCtx, Out, OutCtx](
+@InternalApi private[akka] final class StatefulMapConcatWithContext[In, Ctx, Out](
   val f: () => In => immutable.Iterable[Out],
-  val strategy: ContextMapStrategy.Strategy[In, InCtx, Out, OutCtx]
+  val strategy: ContextMapStrategy.Iterate[In, Ctx, Out]
 )
-  extends GraphStage[FlowShape[(In, InCtx), (Out, OutCtx)]] {
-  val in = Inlet[(In, InCtx)]("StatefulMapConcat.in")
-  val out = Outlet[(Out, OutCtx)]("StatefulMapConcat.out")
+  extends GraphStage[FlowShape[(In, Ctx), (Out, Ctx)]] {
+  val in = Inlet[(In, Ctx)]("StatefulMapConcat.in")
+  val out = Outlet[(Out, Ctx)]("StatefulMapConcat.out")
   override val shape = FlowShape(in, out)
 
   override def initialAttributes: Attributes = DefaultAttributes.statefulMapConcat
@@ -2246,9 +2246,9 @@ private[stream] object Collect {
   def createLogic(inheritedAttributes: Attributes) = new GraphStageLogic(shape) with InHandler with OutHandler {
     lazy val decider = inheritedAttributes.mandatoryAttribute[SupervisionStrategy].decider
     var index: Int = 0
-    var currentIn: (In, InCtx) = _
+    var currentIn: (In, Ctx) = _
     var currentInElement: In = _
-    var currentInContext: InCtx = _
+    var currentInContext: Ctx = _
     var currentOutIterator: Iterator[Out] = _
     var plainFun = f()
 
@@ -2259,26 +2259,15 @@ private[stream] object Collect {
     def pushPull(): Unit = {
       println("pushPull()")
       if (hasNext) {
-        val e: Out = currentOutIterator.next()
-        val outCtx: OutCtx = strategy match {
-          case ContextMapStrategy.All(_, only, _) if !hasNext && index == 0 =>
-            only(currentInElement, currentInContext)
-          case ContextMapStrategy.All(iterate, _, _) =>
-            iterate(currentInElement, currentInContext, index, hasNext)
-//          case ContextMapStrategy.Iterate(iterate) =>
-//            iterate(currentInElement, currentInContext, index, true)
-//          case ContextMapStrategy.Last(last) if !hasNext =>
-//            last(currentInElement, currentInContext, index)
-//          case ContextMapStrategy.Same => ctx
-          case ContextMapStrategy.Same(f) => f(currentInElement, currentInContext)
-        }
+        val outElm: Out = currentOutIterator.next()
+        val outCtx: Ctx = strategy.iterateFn(currentInElement, currentInContext, outElm, index, hasNext)
         index += 1
-        push(out, (e, outCtx))
+        push(out, (outElm, outCtx))
         if (!hasNext && isClosed(in)) completeStage()
       } else if (!hasNext && index == 0 && !isClosed(in) && currentInElement != null) {
         strategy match {
-          case ContextMapStrategy.All(_, _, none) if index == 0 =>
-            val (noneOut, noneOutContext): (Out, OutCtx) = none(currentInElement, currentInContext)
+          case ContextMapStrategy.Iterate(_, Some(f)) if index == 0 =>
+            val (noneOut, noneOutContext): (Out, Ctx) = f(currentInElement, currentInContext)
             println("push(out) none")
             push(out, (noneOut, noneOutContext))
           case _ => ()
