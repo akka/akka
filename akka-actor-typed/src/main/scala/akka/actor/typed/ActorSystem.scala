@@ -141,7 +141,13 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    */
   def deadLetters[U]: ActorRef[U]
 
-  private val cachedIgnoreRef: ActorRef[Nothing] = ActorRefAdapter(provider.ignoreRef)
+  // this needs to be a lazy val because some impl of ActorSystem
+  // (eg: ActorSystemStub) does not have a provider
+  private lazy val cachedIgnoreRef: ActorRef[Nothing] = ActorRefAdapter(provider.ignoreRef)
+
+  /**
+   * An ActorRef that ignores any incoming messages.
+   */
   def ignoreRef[U]: ActorRef[U] = cachedIgnoreRef.unsafeUpcast[U]
 
   /**
