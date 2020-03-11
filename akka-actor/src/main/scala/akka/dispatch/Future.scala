@@ -4,21 +4,22 @@
 
 package akka.dispatch
 
-import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
-import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
+import scala.runtime.{AbstractPartialFunction, BoxedUnit}
+import akka.japi.{Procedure, Function => JFunc, Option => JOption}
 
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
-import java.lang.{ Iterable => JIterable }
-import java.util.{ LinkedList => JLinkedList }
-import java.util.concurrent.{ Callable, Executor, ExecutorService }
+import scala.concurrent.{ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise}
+import java.lang.{Iterable => JIterable}
+import java.util.{LinkedList => JLinkedList}
+import java.util.concurrent.{Callable, Executor, ExecutorService}
 
-import scala.util.{ Failure, Success, Try }
+import scala.util.{Failure, Success, Try}
 import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 
 import akka.compat
 import akka.util.unused
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import com.github.ghik.silencer.silent
 
 /**
@@ -86,7 +87,7 @@ object ExecutionContexts {
    *
    * INTERNAL API
    */
-  @InternalApi
+  @InternalStableApi
   private[akka] val parasitic: ExecutionContext = sameThreadExecutionContext
 
   /**
