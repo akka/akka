@@ -18,7 +18,6 @@ import java.util.concurrent.CompletableFuture
 
 import akka.compat
 import akka.util.unused
-import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import com.github.ghik.silencer.silent
 
