@@ -21,7 +21,7 @@ object FromPublisher {
         def fetchRows(): Publisher[Row] = ???
     }
 
-    val databaseClient: DatabaseClient = ???;
+    val databaseClient: DatabaseClient = ???
 
     // #example
     val names: Source[String, NotUsed] =
