@@ -5,7 +5,6 @@
 package jdocs.stream.operators.source;
 
 //#imports
-import java.util.concurrent.Flow.Subscriber;
 import java.util.concurrent.Flow.Publisher;
 
 import akka.NotUsed;
@@ -16,17 +15,17 @@ import akka.stream.javadsl.JavaFlowSupport;
 
 import org.apache.commons.lang.NotImplementedException;
 
-public interface AsSubscriber {
+public interface FromPublisher {
     // We are 'faking' the JavaFlowSupport API here so we can include the signature as a snippet in the API,
     // because we're not publishing those (jdk9+) classes in our API docs yet.
     static class JavaFlowSupport {
         public static final class Source {
             public
             // #api
-            static <T> akka.stream.javadsl.Source<T, Subscriber<T>> asSubscriber()
+            static <T> akka.stream.javadsl.Source<T, NotUsed> fromPublisher(Publisher<T> publisher)
             // #api
             {
-                return akka.stream.javadsl.JavaFlowSupport.Source.<T>asSubscriber();
+                return akka.stream.javadsl.JavaFlowSupport.Source.<T>fromPublisher(publisher);
             }
         }
     }
@@ -47,22 +46,12 @@ public interface AsSubscriber {
 
     // #example
     class Example {
-        Source<Row, NotUsed> rowSource =
-                JavaFlowSupport.Source.<Row>asSubscriber()
-                        .mapMaterializedValue(
-                                subscriber -> {
-                                    // For each materialization, fetch the rows from the database:
-                                    Publisher<Row> rows = databaseClient.fetchRows();
-                                    rows.subscribe(subscriber);
-
-                                    return NotUsed.getInstance();
-                                });
-
         public Source<String, NotUsed> names() {
-            // rowSource can be re-used, since it will start a new
-            // query for each materialization, fully supporting backpressure
-            // for each materialized stream:
-            return rowSource.map(row -> row.getField("name"));
+            // A new subscriber will subscribe to the supplied publisher for each
+            // materialization, so depending on whether the database client supports
+            // this the Source can be materialized more than once.
+            return JavaFlowSupport.Source.<Row>fromPublisher(databaseClient.fetchRows())
+                .map(row -> row.getField("name"));
         }
     }
     // #example
