@@ -25,9 +25,9 @@ object FromPublisher {
 
     // #example
     val names: Source[String, NotUsed] =
-      // rowSource can be re-used, since it will start a new
-      // query for each materialization, fully supporting backpressure
-      // for each materialized stream:
+      // A new subscriber will subscribe to the supplied publisher for each
+      // materialization, so depending on whether the database client supports
+      // this the Source can be materialized more than once.
       JavaFlowSupport.Source.fromPublisher(databaseClient.fetchRows())
         .map(row => row.name);
     //#example
