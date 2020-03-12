@@ -37,17 +37,16 @@ object SourceOperators {
     import akka.stream.scaladsl._
     import scala.util.Failure
 
-    val bufferSize = 100
     val source: Source[Any, ActorRef] = Source.actorRef(
-      {
+      completionMatcher = {
         case Done =>
           // complete stream immediately if we send it Done
           CompletionStrategy.immediately
       },
       // never fail the stream because of a message
-      PartialFunction.empty,
-      bufferSize,
-      OverflowStrategy.dropHead)
+      failureMatcher = PartialFunction.empty,
+      bufferSize = 100,
+      overflowStrategy = OverflowStrategy.dropHead)
     val actorRef: ActorRef = source.to(Sink.foreach(println)).run()
 
     actorRef ! "hello"
