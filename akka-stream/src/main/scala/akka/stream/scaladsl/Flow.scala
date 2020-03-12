@@ -682,10 +682,10 @@ object Flow {
       case Seq() =>
         val f: Flow[I, O, Future[M]] = Flow[I].asInstanceOf[Flow[I, O, NotUsed]].mapMaterializedValue(_ => Future.failed[M](new NeverMaterializedException()))
         f
-    }(Keep.right).mapMaterializedValue(_.flatten.transform(scala.Predef.identity, {
+    }(Keep.right).mapMaterializedValue(_.flatten)/*.mapMaterializedValue(_.flatten.transform(scala.Predef.identity, {
       case nme : NeverMaterializedException if nme.getCause ne null => nme.getCause
       case other => other
-    })(akka.dispatch.ExecutionContexts.sameThreadExecutionContext))
+    })(akka.dispatch.ExecutionContexts.sameThreadExecutionContext))*/
 
 }
 
