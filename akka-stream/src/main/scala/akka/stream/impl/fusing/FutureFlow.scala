@@ -6,15 +6,16 @@ package akka.stream.impl.fusing
 
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.stream.{Attributes, FlowShape, Inlet, NeverMaterializedException, Outlet}
-import akka.stream.scaladsl.{Flow, Keep, Source}
-import akka.stream.stage.{GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler}
+import akka.stream.{ Attributes, FlowShape, Inlet, NeverMaterializedException, Outlet }
+import akka.stream.scaladsl.{ Flow, Keep, Source }
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.util.OptionVal
 
-import scala.concurrent.{Future, Promise}
-import scala.util.{Failure, Success, Try}
+import scala.concurrent.{ Future, Promise }
+import scala.util.{ Failure, Success, Try }
 
-@InternalApi private[akka] final class FutureFlow[In, Out, M](future : Future[Flow[In, Out, M]]) extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {
+@InternalApi private[akka] final class FutureFlow[In, Out, M](future: Future[Flow[In, Out, M]])
+    extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {
   val in = Inlet[In](s"${this}.in")
   val out = Outlet[Out](s"${this}.out")
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
@@ -40,7 +41,7 @@ import scala.util.{Failure, Success, Try}
       }
 
       override def postStop(): Unit = {
-        if(!pr.isCompleted) {
+        if (!pr.isCompleted) {
           pr.failure(new NeverMaterializedException())
         }
         super.postStop()
@@ -64,7 +65,7 @@ import scala.util.{Failure, Success, Try}
           downstreamCause = OptionVal.Some(cause)
         }
 
-        def onFuture(futureRes : Try[Flow[In, Out, M]]) = futureRes match {
+        def onFuture(futureRes: Try[Flow[In, Out, M]]) = futureRes match {
           case Failure(exception) =>
             setKeepGoing(false)
             pr.failure(new NeverMaterializedException(exception))
@@ -76,7 +77,7 @@ import scala.util.{Failure, Success, Try}
             setKeepGoing(false)
         }
       }
-      class Initialized(fl : Flow[In, Out, M]) extends InHandler with OutHandler{
+      class Initialized(fl: Flow[In, Out, M]) extends InHandler with OutHandler {
         val subSource = new SubSourceOutlet[In](s"${FutureFlow.this}.subIn")
         val subSink = new SubSinkInlet[Out](s"${FutureFlow.this}.subOut")
 
@@ -110,32 +111,28 @@ import scala.util.{Failure, Success, Try}
             }
           }
         }
-        pr.complete{
+        pr.complete {
           Try {
-            Source
-              .fromGraph(subSource.source)
-              .viaMat(fl)(Keep.right)
-              .to(subSink.sink)
-              .run()(subFusingMaterializer)
+            Source.fromGraph(subSource.source).viaMat(fl)(Keep.right).to(subSink.sink).run()(subFusingMaterializer)
           }
         }
         pr.future.value.get match {
           case Success(_) =>
-            if(isAvailable(in)) {
+            if (isAvailable(in)) {
               subSource.push(grab(in))
             }
             initializing.upstreamFailure match {
               case OptionVal.Some(ex) =>
                 subSource.fail(ex)
               case OptionVal.None =>
-                if(isClosed(in))
+                if (isClosed(in))
                   subSource.complete()
             }
             initializing.downstreamCause match {
               case OptionVal.Some(cause) =>
                 subSink.cancel(cause)
               case OptionVal.None =>
-                if(hasBeenPulled(in)) {
+                if (hasBeenPulled(in)) {
                   subSink.pull()
                 }
             }
