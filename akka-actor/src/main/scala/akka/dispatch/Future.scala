@@ -18,6 +18,7 @@ import java.util.concurrent.CompletableFuture
 
 import akka.compat
 import akka.util.unused
+import akka.annotation.InternalStableApi
 import com.github.ghik.silencer.silent
 
 /**
@@ -73,6 +74,20 @@ object ExecutionContexts {
    * @return a reference to the global ExecutionContext
    */
   def global(): ExecutionContextExecutor = ExecutionContext.global
+
+  /**
+   * WARNING: Not A General Purpose ExecutionContext!
+   *
+   * This is an execution context which runs everything on the calling thread.
+   * It is very useful for actions which are known to be non-blocking and
+   * non-throwing in order to save a round-trip to the thread pool.
+   *
+   * Alias for [[sameThreadExecutionContext]], which is deprecated in 2.6, providing cross version non-deprecated access.
+   *
+   * INTERNAL API
+   */
+  @InternalStableApi
+  private[akka] val parasitic: ExecutionContext = sameThreadExecutionContext
 
   /**
    * WARNING: Not A General Purpose ExecutionContext!
