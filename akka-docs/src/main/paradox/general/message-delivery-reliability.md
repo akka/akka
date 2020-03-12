@@ -281,8 +281,7 @@ The third becomes necessary by virtue of the acknowledgements not being guarante
 to arrive either. 
 
 An ACK-RETRY protocol with business-level acknowledgements and de-duplication using identifiers is
-supported by the @ref:[At-Least-Once Delivery](../persistence.md#at-least-once-delivery) of the Classic Akka Persistence module. 
-Corresponding functionality for typed has not yet been implemented (see [issue #20984](https://github.com/akka/akka/issues/20984)).
+supported by the @ref:[Reliable Delivery](../typed/reliable-delivery.md) feature. 
 
 Another way of implementing the third part would be to make processing the messages
 idempotent on the level of the business logic.

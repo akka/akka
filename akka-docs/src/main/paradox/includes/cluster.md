@@ -41,6 +41,13 @@ so that one Cluster can span multiple data centers and still be tolerant to netw
 
 <!--- #cluster-multidc --->
 
+<!--- #reliable-delivery --->
+### Reliable Delivery
+
+Reliable delivery and flow control of messages between actors in the Cluster.
+
+<!--- #reliable-delivery --->
+
 <!--- #sharding-persistence-mode-deprecated --->
 @@@ warning
 

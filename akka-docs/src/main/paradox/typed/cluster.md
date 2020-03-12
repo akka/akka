@@ -444,6 +444,9 @@ See @ref:[Distributed Data](distributed-data.md).
 @@include[cluster.md](../includes/cluster.md) { #cluster-multidc }
 See @ref:[Cluster Multi-DC](cluster-dc.md).
 
+@@include[cluster.md](../includes/cluster.md) { #reliable-delivery }
+See @ref:[Reliable Delivery](reliable-delivery.md)
+
 ## Example project
 
 @java[@extref[Cluster example project](samples:akka-samples-cluster-java)]
