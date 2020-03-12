@@ -18,6 +18,7 @@ project.description: Akka Cluster concepts, node membership service, CRDT Distri
 * [sharded-daemon-process](cluster-sharded-daemon-process.md)
 * [cluster-dc](cluster-dc.md)
 * [distributed-pub-sub](distributed-pub-sub.md)
+* [reliable-delivery](reliable-delivery.md)
 * [serialization](../serialization.md)
 * [serialization-jackson](../serialization-jackson.md)
 * [multi-jvm-testing](../multi-jvm-testing.md)
