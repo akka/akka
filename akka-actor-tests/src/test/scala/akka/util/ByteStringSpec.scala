@@ -788,6 +788,20 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         }
       }
 
+      "taking its own length" in {
+        check { b: ByteString =>
+          b.take(b.length) eq b
+        }
+      }
+
+      "created from and decoding to Base64" in {
+        check { a: ByteString =>
+          val encoded = a.encodeBase64
+          encoded == ByteString(java.util.Base64.getEncoder.encode(a.toArray)) &&
+          encoded.decodeBase64 == a
+        }
+      }
+
       "compacting" in {
         check { a: ByteString =>
           val wasCompact = a.isCompact

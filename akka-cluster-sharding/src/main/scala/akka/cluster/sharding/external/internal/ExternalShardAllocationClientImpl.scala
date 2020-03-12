@@ -17,6 +17,7 @@ import akka.cluster.ddata.LWWMap
 import akka.cluster.ddata.Replicator.Get
 import akka.cluster.ddata.Replicator.GetFailure
 import akka.cluster.ddata.Replicator.GetSuccess
+import akka.cluster.ddata.Replicator.NotFound
 import akka.cluster.ddata.Replicator.ReadMajority
 import akka.cluster.ddata.Replicator.Update
 import akka.cluster.ddata.Replicator.UpdateSuccess
@@ -79,6 +80,8 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
         case success @ GetSuccess(`Key`, _) =>
           Future.successful(
             success.get(Key).entries.transform((_, asStr) => ShardLocation(AddressFromURIString(asStr))))
+        case NotFound(_, _) =>
+          Future.successful(Map.empty[ShardId, ShardLocation])
         case GetFailure(_, _) =>
           Future.failed((new ClientTimeoutException(s"Unable to get shard locations after ${timeout.duration.pretty}")))
       }

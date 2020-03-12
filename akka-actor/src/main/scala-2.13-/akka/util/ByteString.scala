@@ -7,6 +7,7 @@ package akka.util
 import java.io.{ ObjectInputStream, ObjectOutputStream }
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable => JIterable }
+import java.util.Base64
 
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.IndexedSeqOptimized
@@ -193,6 +194,12 @@ object ByteString {
     override def decodeString(charset: Charset): String =
       if (isEmpty) "" else new String(bytes, charset)
 
+    override def decodeBase64: ByteString =
+      if (isEmpty) this else ByteString1C(Base64.getDecoder.decode(bytes))
+
+    override def encodeBase64: ByteString =
+      if (isEmpty) this else ByteString1C(Base64.getEncoder.encode(bytes))
+
     override def ++(that: ByteString): ByteString = {
       if (that.isEmpty) this
       else if (this.isEmpty) that
@@ -201,6 +208,7 @@ object ByteString {
 
     override def take(n: Int): ByteString =
       if (n <= 0) ByteString.empty
+      else if (n >= length) this
       else toByteString1.take(n)
 
     override def dropRight(n: Int): ByteString =
@@ -351,10 +359,34 @@ object ByteString {
     def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = List(asByteBuffer)
 
     override def decodeString(charset: String): String =
-      new String(if (length == bytes.length) bytes else toArray, charset)
+      if (isEmpty) ""
+      else new String(bytes, startIndex, length, charset)
 
     override def decodeString(charset: Charset): String = // avoids Charset.forName lookup in String internals
-      new String(if (length == bytes.length) bytes else toArray, charset)
+      if (isEmpty) ""
+      else new String(bytes, startIndex, length, charset)
+
+    override def decodeBase64: ByteString =
+      if (isEmpty) this
+      else if (isCompact) ByteString1C(Base64.getDecoder.decode(bytes))
+      else {
+        val dst = Base64.getDecoder.decode(ByteBuffer.wrap(bytes, startIndex, length))
+        if (dst.hasArray) {
+          if (dst.array.length == dst.remaining) ByteString1C(dst.array)
+          else ByteString1(dst.array, dst.arrayOffset + dst.position(), dst.remaining)
+        } else CompactByteString(dst)
+      }
+
+    override def encodeBase64: ByteString =
+      if (isEmpty) this
+      else if (isCompact) ByteString1C(Base64.getEncoder.encode(bytes))
+      else {
+        val dst = Base64.getEncoder.encode(ByteBuffer.wrap(bytes, startIndex, length))
+        if (dst.hasArray) {
+          if (dst.array.length == dst.remaining) ByteString1C(dst.array)
+          else ByteString1(dst.array, dst.arrayOffset + dst.position(), dst.remaining)
+        } else CompactByteString(dst)
+      }
 
     def ++(that: ByteString): ByteString = {
       if (that.isEmpty) this
@@ -516,6 +548,10 @@ object ByteString {
     def decodeString(charset: String): String = compact.decodeString(charset)
 
     def decodeString(charset: Charset): String = compact.decodeString(charset)
+
+    override def decodeBase64: ByteString = compact.decodeBase64
+
+    override def encodeBase64: ByteString = compact.encodeBase64
 
     private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit = {
       os.writeInt(bytestrings.length)
@@ -834,6 +870,17 @@ sealed abstract class ByteString extends IndexedSeq[Byte] with IndexedSeqOptimiz
    * Avoids Charset.forName lookup in String internals, thus is preferable to `decodeString(charset: String)`.
    */
   def decodeString(charset: Charset): String
+
+  /*
+   * Returns a ByteString which is the binary representation of this ByteString
+   * if this ByteString is Base64-encoded.
+   */
+  def decodeBase64: ByteString
+
+  /**
+   * Returns a ByteString which is the Base64 representation of this ByteString
+   */
+  def encodeBase64: ByteString
 
   /**
    * map method that will automatically cast Int back into Byte.
@@ -1237,8 +1284,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
    * operations on the stream are forwarded to the builder.
    */
   def asOutputStream: java.io.OutputStream = new java.io.OutputStream {
-    def write(b: Int): Unit = builder += b.toByte
-
+    override def write(b: Int): Unit = builder += b.toByte
     override def write(b: Array[Byte], off: Int, len: Int): Unit = { builder.putBytes(b, off, len) }
   }
 

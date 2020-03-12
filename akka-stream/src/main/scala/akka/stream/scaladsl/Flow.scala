@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.event.LoggingAdapter
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
 import akka.Done
 import akka.stream.impl.{
@@ -610,10 +610,10 @@ object Flow {
   @deprecated("Use 'Flow.lazyFutureFlow' instead", "2.6.0")
   def lazyInitAsync[I, O, M](flowFactory: () => Future[Flow[I, O, M]]): Flow[I, O, Future[Option[M]]] =
     /*Flow.fromGraph(new LazyFlow[I, O, M](_ => flowFactory())).mapMaterializedValue { v =>
-      implicit val ec = akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+      implicit val ec = akka.dispatch.ExecutionContexts.parasitic
       v.map[Option[M]](Some.apply _).recover { case _: NeverMaterializedException => None }
     }*/ Flow.lazyFutureFlow(flowFactory).mapMaterializedValue{
-      implicit val ec = akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+      implicit val ec = akka.dispatch.ExecutionContexts.parasitic
       _.map(Some.apply).recover{ case _: NeverMaterializedException => None }
     }
 
@@ -2547,6 +2547,29 @@ trait FlowOps[+Out, +Mat] {
   def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
       implicit log: LoggingAdapter = null): Repr[Out] =
     via(Log(name, extract.asInstanceOf[Any => Any], Option(log)))
+
+  /**
+   * Logs elements flowing through the stream as well as completion and erroring.
+   *
+   * By default element and completion signals are logged on debug level, and errors are logged on Error level.
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] attribute on the given Flow:
+   *
+   * Uses implicit [[MarkerLoggingAdapter]] if available, otherwise uses an internally created one,
+   * which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the mapping function returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def logWithMarker(name: String, marker: Out => LogMarker, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+      implicit log: MarkerLoggingAdapter = null): Repr[Out] =
+    via(LogWithMarker(name, marker, extract.asInstanceOf[Any => Any], Option(log)))
 
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.

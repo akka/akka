@@ -211,8 +211,7 @@ import org.slf4j.LoggerFactory
 
   // Scala API impl
   def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit = {
-    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))(
-      ExecutionContexts.sameThreadExecutionContext)
+    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))(ExecutionContexts.parasitic)
   }
 
   // Java API impl

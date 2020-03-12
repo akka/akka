@@ -82,11 +82,19 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
       val context = new {
         def self = probe.ref
       }
+
       // #request-response-send
       cookieFabric ! CookieFabric.Request("give me cookies", context.self)
       // #request-response-send
 
       probe.receiveMessage()
+
+      Behaviors.setup[Nothing] { context =>
+        // #ignore-reply
+        cookieFabric ! CookieFabric.Request("don't send cookies back", context.system.ignoreRef)
+        // #ignore-reply
+        Behaviors.empty
+      }
     }
 
     "contain a sample for adapted response" in {

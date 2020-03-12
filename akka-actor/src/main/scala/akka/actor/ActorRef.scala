@@ -7,10 +7,10 @@ package akka.actor
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.annotation.InternalApi
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
-
 import akka.annotation.DoNotInherit
 import akka.dispatch._
 import akka.dispatch.sysmsg._
@@ -474,6 +474,53 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 
   @throws(classOf[java.io.ObjectStreamException])
   protected def writeReplace(): AnyRef = SerializedActorRef(this)
+}
+
+/**
+ * An ActorRef that ignores any incoming messages.
+ *
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class IgnoreActorRef(override val provider: ActorRefProvider) extends MinimalActorRef {
+
+  override val path: ActorPath = IgnoreActorRef.path
+
+  @throws(classOf[java.io.ObjectStreamException])
+  override protected def writeReplace(): AnyRef = SerializedIgnore
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object IgnoreActorRef {
+
+  private val fakeSystemName = "local"
+
+  val path: ActorPath =
+    RootActorPath(Address("akka", IgnoreActorRef.fakeSystemName)) / "ignore"
+
+  private val pathString = path.toString
+
+  /**
+   * Check if the passed `otherPath` is the same as IgnoreActorRef.path
+   */
+  def isIgnoreRefPath(otherPath: String): Boolean =
+    pathString == otherPath
+
+  /**
+   * Check if the passed `otherPath` is the same as IgnoreActorRef.path
+   */
+  def isIgnoreRefPath(otherPath: ActorPath): Boolean =
+    path == otherPath
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi @SerialVersionUID(1L) private[akka] object SerializedIgnore extends Serializable {
+  @throws(classOf[java.io.ObjectStreamException])
+  private def readResolve(): AnyRef = IgnoreActorRef
 }
 
 /**

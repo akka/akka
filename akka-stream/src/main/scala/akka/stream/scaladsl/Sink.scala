@@ -194,8 +194,7 @@ object Sink {
       .fromGraph(new HeadOptionStage[T])
       .withAttributes(DefaultAttributes.headSink)
       .mapMaterializedValue(e =>
-        e.map(_.getOrElse(throw new NoSuchElementException("head of empty stream")))(
-          ExecutionContexts.sameThreadExecutionContext))
+        e.map(_.getOrElse(throw new NoSuchElementException("head of empty stream")))(ExecutionContexts.parasitic))
 
   /**
    * A `Sink` that materializes into a `Future` of the optional first value received.
@@ -217,7 +216,7 @@ object Sink {
   def last[T]: Sink[T, Future[T]] = {
     Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastSink).mapMaterializedValue { e =>
       e.map(_.headOption.getOrElse(throw new NoSuchElementException("last of empty stream")))(
-        ExecutionContexts.sameThreadExecutionContext)
+        ExecutionContexts.parasitic)
     }
   }
 
@@ -230,7 +229,7 @@ object Sink {
    */
   def lastOption[T]: Sink[T, Future[Option[T]]] = {
     Sink.fromGraph(new TakeLastStage[T](1)).withAttributes(DefaultAttributes.lastOptionSink).mapMaterializedValue { e =>
-      e.map(_.headOption)(ExecutionContexts.sameThreadExecutionContext)
+      e.map(_.headOption)(ExecutionContexts.parasitic)
     }
   }
 
@@ -607,8 +606,7 @@ object Sink {
   def lazyInit[T, M](sinkFactory: T => Future[Sink[T, M]], fallback: () => M): Sink[T, Future[M]] =
     Sink
       .fromGraph(new LazySink[T, M](sinkFactory))
-      .mapMaterializedValue(
-        _.recover { case _: NeverMaterializedException => fallback() }(ExecutionContexts.sameThreadExecutionContext))
+      .mapMaterializedValue(_.recover { case _: NeverMaterializedException => fallback() }(ExecutionContexts.parasitic))
 
   /**
    * Creates a real `Sink` upon receiving the first element. Internal `Sink` will not be created if there are no elements,
@@ -622,7 +620,7 @@ object Sink {
   @deprecated("Use 'Sink.lazyFutureSink' instead", "2.6.0")
   def lazyInitAsync[T, M](sinkFactory: () => Future[Sink[T, M]]): Sink[T, Future[Option[M]]] =
     Sink.fromGraph(new LazySink[T, M](_ => sinkFactory())).mapMaterializedValue { m =>
-      implicit val ec = ExecutionContexts.sameThreadExecutionContext
+      implicit val ec = ExecutionContexts.parasitic
       m.map(Option.apply _).recover { case _: NeverMaterializedException => None }
     }
 

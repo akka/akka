@@ -1,6 +1,6 @@
 # takeWhile
 
-Pass elements downstream as long as a predicate function return true for the element include the element when the predicate first return false and then complete.
+Pass elements downstream as long as a predicate function returns true and then complete. 
 
 @ref[Simple operators](../index.md#simple-operators)
 
@@ -14,8 +14,8 @@ Pass elements downstream as long as a predicate function return true for the ele
 
 ## Description
 
-Pass elements downstream as long as a predicate function return true for the element include the element
-when the predicate first return false and then complete.
+Pass elements downstream as long as a predicate function returns true and then complete. 
+The element for which the predicate returns false is not emitted. 
 
 ## Example
 
@@ -36,4 +36,3 @@ Java
 **completes** when predicate returned false or upstream completes
 
 @@@
-
