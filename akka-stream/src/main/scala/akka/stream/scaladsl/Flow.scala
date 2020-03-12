@@ -676,7 +676,7 @@ object Flow {
   def lazyFutureFlow[I, O, M](create: () => Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
     /*Flow.fromGraph(new LazyFlow(_ => create()))*/ Flow[I].flatMapPrefixMat(1){
       case Seq(a) =>
-        implicit val ec = akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+        implicit val ec = akka.dispatch.ExecutionContexts.parasitic
         val f: Flow[I, O, Future[M]] = futureFlow(create().map(Flow[I].prepend(Source single a).viaMat(_)(Keep.right)))
         f
       case Seq() =>

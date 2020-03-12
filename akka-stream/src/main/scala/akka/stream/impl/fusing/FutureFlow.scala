@@ -33,7 +33,7 @@ import scala.util.{Failure, Success, Try}
             initializing.onFuture(tr)
           case None =>
             val cb = getAsyncCallback(initializing.onFuture)
-            future.onComplete(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
+            future.onComplete(cb.invoke)(ExecutionContexts.parasitic)
             //in case both ports are closed before future completion
             setKeepGoing(true)
         }
