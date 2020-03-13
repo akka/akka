@@ -45,8 +45,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
     "akka-stream-tests-tck",
     "akka-testkit")
 
-  lazy val scalaFixSettings = Seq(Compile / scalacOptions += "-Yrangepos")
-
   lazy val silencerSettings = {
     val silencerVersion = "1.6.0"
     Seq(
@@ -57,7 +55,6 @@ object AkkaDisciplinePlugin extends AutoPlugin with ScalafixSupport {
 
   lazy val disciplineSettings =
     if (enabled) {
-      scalaFixSettings ++
       silencerSettings ++ Seq(
         Compile / scalacOptions ++= (
             if (!nonFatalWarningsFor(name.value)) Seq("-Xfatal-warnings")
