@@ -131,9 +131,10 @@ object ConsumerController {
    * In the future we may also make the custom `send` in `ProducerController` public to make it possible to
    * wrap it or send it in other ways when building higher level abstractions that are using the `ProducerController`.
    * That is used by `ShardingProducerController`.
+   *
+   * @param producerController INTERNAL API: construction of SequencedMessage is internal
    */
   final case class SequencedMessage[A](producerId: String, seqNr: SeqNr, message: A, first: Boolean, ack: Boolean)(
-      /** INTERNAL API */
       @InternalApi private[akka] val producerController: ActorRef[ProducerControllerImpl.InternalCommand])
       extends Command[A]
       with DeliverySerializable
