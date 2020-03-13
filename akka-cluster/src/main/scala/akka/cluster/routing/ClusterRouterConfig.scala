@@ -56,7 +56,8 @@ object ClusterRouterGroupSettings {
       routeesPaths = immutableSeq(config.getStringList("routees.paths")),
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
       useRoles = config.getStringList("cluster.use-roles").asScala.toSet ++ ClusterRouterSettingsBase.useRoleOption(
-          config.getString("cluster.use-role")))
+          config.getString("cluster.use-role"))
+    )
 }
 
 /**
@@ -157,7 +158,8 @@ object ClusterRouterPoolSettings {
       maxInstancesPerNode = config.getInt("cluster.max-nr-of-instances-per-node"),
       allowLocalRoutees = config.getBoolean("cluster.allow-local-routees"),
       useRoles = config.getStringList("cluster.use-roles").asScala.toSet ++ ClusterRouterSettingsBase.useRoleOption(
-          config.getString("cluster.use-role")))
+          config.getString("cluster.use-role"))
+    )
 }
 
 /**

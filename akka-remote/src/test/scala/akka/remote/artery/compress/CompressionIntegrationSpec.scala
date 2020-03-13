@@ -309,14 +309,17 @@ class CompressionIntegrationSpec
         receiveN(messagesToExchange) // the replies
 
         var currentTable: CompressionTable[ActorRef] = null
-        receivedActorRefCompressionTableProbe.awaitAssert({
-          // discard duplicates with awaitAssert until we receive next version
-          val receivedActorRefCompressionTable =
-            receivedActorRefCompressionTableProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](10.seconds)
+        receivedActorRefCompressionTableProbe.awaitAssert(
+          {
+            // discard duplicates with awaitAssert until we receive next version
+            val receivedActorRefCompressionTable =
+              receivedActorRefCompressionTableProbe.expectMsgType[Events.ReceivedActorRefCompressionTable](10.seconds)
 
-          currentTable = receivedActorRefCompressionTable.table
-          seenTableVersions = currentTable.version :: seenTableVersions
-        }, max = 10.seconds)
+            currentTable = receivedActorRefCompressionTable.table
+            seenTableVersions = currentTable.version :: seenTableVersions
+          },
+          max = 10.seconds
+        )
 
         // debugging: info("Seen versions: " + seenTableVersions)
         lastTable = currentTable

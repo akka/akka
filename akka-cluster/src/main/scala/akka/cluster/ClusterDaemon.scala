@@ -518,7 +518,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       "Joining of seed-nodes [{}] was unsuccessful after configured " +
       "shutdown-after-unsuccessful-join-seed-nodes [{}]. Running CoordinatedShutdown.",
       seedNodes.mkString(", "),
-      ShutdownAfterUnsuccessfulJoinSeedNodes)
+      ShutdownAfterUnsuccessfulJoinSeedNodes
+    )
     joinSeedNodesDeadline = None
     CoordinatedShutdown(context.system).run(CoordinatedShutdown.ClusterJoinUnsuccessfulReason)
   }
@@ -641,7 +642,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
               s"Self version [{}], Joining version [$joiningNodeVersion].",
               sender().path.address,
               messages.mkString(", "),
-              context.system.settings.ConfigVersion)
+              context.system.settings.ConfigVersion
+            )
             if (configCheckUnsupportedByJoiningNode)
               ConfigCheckUnsupportedByJoiningNode
             else
@@ -668,12 +670,14 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           Some(
             context.actorOf(
               Props(classOf[FirstSeedNodeProcess], newSeedNodes, joinConfigCompatChecker).withDispatcher(UseDispatcher),
-              name = "firstSeedNodeProcess-" + seedNodeProcessCounter))
+              name = "firstSeedNodeProcess-" + seedNodeProcessCounter
+            ))
         } else {
           Some(
             context.actorOf(
               Props(classOf[JoinSeedNodeProcess], newSeedNodes, joinConfigCompatChecker).withDispatcher(UseDispatcher),
-              name = "joinSeedNodeProcess-" + seedNodeProcessCounter))
+              name = "joinSeedNodeProcess-" + seedNodeProcessCounter
+            ))
         }
       }
     }
@@ -763,7 +767,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           logInfo(
             "New incarnation of existing member [{}] is trying to join. " +
             "Existing will be removed from the cluster and then new member will be allowed to join.",
-            m)
+            m
+          )
           if (m.status != Down) {
             // we can confirm it as terminated/unreachable immediately
             val newReachability = latestGossip.overview.reachability.terminated(selfUniqueAddress, m.uniqueAddress)
@@ -790,7 +795,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
               ClusterLogMarker.memberChanged(joiningNode, MemberStatus.Joining),
               "Node [{}] is JOINING itself (with roles [{}]) and forming new cluster",
               joiningNode.address,
-              roles.mkString(", "))
+              roles.mkString(", ")
+            )
             if (localMembers.isEmpty)
               leaderActions() // important for deterministic oldest when bootstrapping
           } else {
@@ -957,7 +963,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         "Marking node as TERMINATED [{}], due to quarantine. Node roles [{}]. " +
         "It must still be marked as down before it's removed.",
         node.address,
-        selfRoles.mkString(","))
+        selfRoles.mkString(",")
+      )
       publishMembershipState()
     }
   }
@@ -1077,7 +1084,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
           """Couldn't establish a causal relationship between "remote" gossip and "local" gossip - Remote[{}] - Local[{}] - merged them into [{}]""",
           remoteGossip,
           localGossip,
-          winningGossip)
+          winningGossip
+        )
       }
 
       if (statsEnabled) {
@@ -1191,7 +1199,8 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
                 case m if m.dataCenter == selfDc =>
                   s"${m.address} ${m.status} seen=${latestGossip.seenByNode(m.uniqueAddress)}"
               }
-              .mkString(", "))
+              .mkString(", ")
+          )
       }
     } else if (isCurrentlyLeader) {
       logInfo("is no longer leader")
@@ -1621,7 +1630,8 @@ private[cluster] final case class GossipStats(
       this.mergeCount + that.mergeCount,
       this.sameCount + that.sameCount,
       this.newerCount + that.newerCount,
-      this.olderCount + that.olderCount)
+      this.olderCount + that.olderCount
+    )
   }
 
   def :-(that: GossipStats): GossipStats = {
@@ -1630,7 +1640,8 @@ private[cluster] final case class GossipStats(
       this.mergeCount - that.mergeCount,
       this.sameCount - that.sameCount,
       this.newerCount - that.newerCount,
-      this.olderCount - that.olderCount)
+      this.olderCount - that.olderCount
+    )
   }
 
 }

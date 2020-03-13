@@ -41,7 +41,8 @@ class NullEmptyStateSpec
       eventHandler = (state, event) => {
         probe.tell("eventHandler:" + state + ":" + event)
         if (state == null) event else state + event
-      }).receiveSignal {
+      }
+    ).receiveSignal {
       case (state, RecoveryCompleted) =>
         probe.tell("onRecoveryCompleted:" + state)
     }

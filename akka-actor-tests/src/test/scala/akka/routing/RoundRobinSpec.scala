@@ -26,15 +26,18 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val helloLatch = new TestLatch(5)
       val stopLatch = new TestLatch(5)
 
-      val actor = system.actorOf(RoundRobinPool(5).props(routeeProps = Props(new Actor {
-        def receive = {
-          case "hello" => helloLatch.countDown()
-        }
+      val actor = system.actorOf(
+        RoundRobinPool(5).props(routeeProps = Props(new Actor {
+          def receive = {
+            case "hello" => helloLatch.countDown()
+          }
 
-        override def postStop(): Unit = {
-          stopLatch.countDown()
-        }
-      })), "round-robin-shutdown")
+          override def postStop(): Unit = {
+            stopLatch.countDown()
+          }
+        })),
+        "round-robin-shutdown"
+      )
 
       actor ! "hello"
       actor ! "hello"
@@ -55,13 +58,16 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val counter = new AtomicInteger
       var replies: Map[Int, Int] = Map.empty.withDefaultValue(0)
 
-      val actor = system.actorOf(RoundRobinPool(connectionCount).props(routeeProps = Props(new Actor {
-        lazy val id = counter.getAndIncrement()
-        def receive = {
-          case "hit" => sender() ! id
-          case "end" => doneLatch.countDown()
-        }
-      })), "round-robin")
+      val actor = system.actorOf(
+        RoundRobinPool(connectionCount).props(routeeProps = Props(new Actor {
+          lazy val id = counter.getAndIncrement()
+          def receive = {
+            case "hit" => sender() ! id
+            case "end" => doneLatch.countDown()
+          }
+        })),
+        "round-robin"
+      )
 
       for (_ <- 1 to iterationCount; _ <- 1 to connectionCount) {
         val id = Await.result((actor ? "hit").mapTo[Int], timeout.duration)
@@ -80,15 +86,18 @@ class RoundRobinSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {
       val helloLatch = new TestLatch(5)
       val stopLatch = new TestLatch(5)
 
-      val actor = system.actorOf(RoundRobinPool(5).props(routeeProps = Props(new Actor {
-        def receive = {
-          case "hello" => helloLatch.countDown()
-        }
+      val actor = system.actorOf(
+        RoundRobinPool(5).props(routeeProps = Props(new Actor {
+          def receive = {
+            case "hello" => helloLatch.countDown()
+          }
 
-        override def postStop(): Unit = {
-          stopLatch.countDown()
-        }
-      })), "round-robin-broadcast")
+          override def postStop(): Unit = {
+            stopLatch.countDown()
+          }
+        })),
+        "round-robin-broadcast"
+      )
 
       actor ! akka.routing.Broadcast("hello")
       Await.ready(helloLatch, 5 seconds)

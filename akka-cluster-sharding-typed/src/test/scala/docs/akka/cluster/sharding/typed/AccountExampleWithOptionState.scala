@@ -132,7 +132,8 @@ object AccountExampleWithOptionState {
           state match {
             case None          => Some(onFirstEvent(event))
             case Some(account) => Some(account.applyEvent(event))
-          })
+          }
+      )
     }
 
     def onFirstCommand(cmd: Command[_]): ReplyEffect = {

@@ -167,7 +167,8 @@ private[remote] class InboundTestStage(inboundContext: InboundContext, state: Sh
                     "dropping inbound message [{}] from [{}] with UID [{}] because of blackhole",
                     Logging.messageClassName(env.message),
                     association.remoteAddress,
-                    env.originUid)
+                    env.originUid
+                  )
                   pull(in) // drop message
                 } else
                   push(out, env)

@@ -117,7 +117,8 @@ object WorkPullingDocExample {
             producerId = "workManager",
             workerServiceKey = ImageConverter.serviceKey,
             durableQueueBehavior = Some(durableQueue)),
-          "producerController")
+          "producerController"
+        )
         //#durable-queue
         //#producer
         producerController ! WorkPullingProducerController.Start(requestNextAdapter)

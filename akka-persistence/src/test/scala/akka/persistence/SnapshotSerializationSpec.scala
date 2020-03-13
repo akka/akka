@@ -79,7 +79,8 @@ class SnapshotSerializationSpec
         "akka.persistence.SnapshotSerializationSpec$SerializationMarker" = my-snapshot
       }
     }
-  """)))
+  """)
+      ))
     with ImplicitSender {
 
   import SnapshotSerializationSpec._

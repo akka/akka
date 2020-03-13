@@ -125,14 +125,18 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
           false
       })
 
-      eventFilter.expect(spawn(Behaviors.setup[String] { context =>
-        context.log.info("Started")
+      eventFilter.expect(
+        spawn(
+          Behaviors.setup[String] { context =>
+            context.log.info("Started")
 
-        Behaviors.receive { (context, message) =>
-          context.log.info("got message {}", message)
-          Behaviors.same
-        }
-      }, "the-actor-with-class"))
+            Behaviors.receive { (context, message) =>
+              context.log.info("got message {}", message)
+              Behaviors.same
+            }
+          },
+          "the-actor-with-class"
+        ))
 
     }
 
@@ -331,7 +335,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
         (message: Protocol) =>
           if (message.transactionId == 1)
             Map("txId" -> message.transactionId.toString, "first" -> "true")
-          else Map("txId" -> message.transactionId.toString)) {
+          else Map("txId" -> message.transactionId.toString)
+      ) {
         Behaviors.setup { context =>
           context.log.info("Starting")
           Behaviors.receiveMessage { _ =>
@@ -486,7 +491,8 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
             Map(
               ActorMdc.AkkaAddressKey -> system.classicSystem.asInstanceOf[ExtendedActorSystem].provider.addressString,
               ActorMdc.AkkaSourceKey -> actorPath.get.toString,
-              ActorMdc.SourceActorSystemKey -> system.name)
+              ActorMdc.SourceActorSystemKey -> system.name
+            )
           )
           true
         } catch {

@@ -128,7 +128,8 @@ class FlowSplitAfterSpec extends StreamSpec("""
           .mapAsync(1)(_.runWith(Sink.head)) // Please note that this line *also* implicitly asserts nonempty substreams
           .grouped(10)
           .runWith(Sink.head),
-        3.second) should ===(1 to 10)
+        3.second
+      ) should ===(1 to 10)
     }
 
     "support cancelling substreams" in assertAllStagesStopped {

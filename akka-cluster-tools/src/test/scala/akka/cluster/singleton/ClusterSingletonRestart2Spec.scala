@@ -65,8 +65,10 @@ class ClusterSingletonRestart2Spec
         ClusterSingletonManager.props(
           singletonProps = ClusterSingletonRestart2Spec.singletonActorProps,
           terminationMessage = PoisonPill,
-          settings = ClusterSingletonManagerSettings(from).withRole("singleton")),
-        name = "echo")
+          settings = ClusterSingletonManagerSettings(from).withRole("singleton")
+        ),
+        name = "echo"
+      )
 
     within(45.seconds) {
       awaitAssert {

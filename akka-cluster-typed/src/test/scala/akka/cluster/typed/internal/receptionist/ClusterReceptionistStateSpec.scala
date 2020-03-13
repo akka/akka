@@ -29,7 +29,8 @@ class ClusterReceptionistStateSpec extends ScalaTestWithActorTestKit with AnyWor
       registry = ShardedServiceRegistry(distributedKeyCount).addNode(self),
       servicesPerActor = Map.empty,
       tombstones = Map.empty,
-      subscriptions = TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV])
+      subscriptions = TypedMultiMap.empty[AbstractServiceKey, SubscriptionsKV]
+    )
 
   "The internal ClusterReceptionist State" must {
 

@@ -75,7 +75,8 @@ class TypedForkJoinActorBenchmark {
            mailbox-type = "$mailbox"
          }
        }
-      """))
+      """)
+    )
   }
 
   @Benchmark

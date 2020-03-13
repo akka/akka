@@ -173,7 +173,8 @@ class FlowFoldAsyncSpec extends StreamSpec {
         Future.failed(Utils.TE("failure3")),
         Future.failed(Utils.TE("failure4")),
         Future.failed(Utils.TE("failure5")),
-        Future.successful("happy!"))
+        Future.successful("happy!")
+      )
 
       Source(futures)
         .foldAsync("") { (_, s) =>

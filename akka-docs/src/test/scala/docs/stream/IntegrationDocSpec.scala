@@ -299,7 +299,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
         "drewhk@somewhere.com",
         "ktosopl@somewhere.com",
         "mmartynas@somewhere.com",
-        "akkateam@somewhere.com"))
+        "akkateam@somewhere.com"
+      ))
   }
 
   "careful managed blocking with mapAsync" in {
@@ -337,7 +338,8 @@ class IntegrationDocSpec extends AkkaSpec(IntegrationDocSpec.config) {
         "drewhk".hashCode.toString,
         "ktosopl".hashCode.toString,
         "mmartynas".hashCode.toString,
-        "akkateam".hashCode.toString))
+        "akkateam".hashCode.toString
+      ))
   }
 
   "careful managed blocking with map" in {

@@ -50,16 +50,19 @@ import scala.util.control.NonFatal
         val subSink = new SubSinkInlet[T]("LazySource")
         subSink.pull()
 
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = {
-            subSink.pull()
-          }
+        setHandler(
+          out,
+          new OutHandler {
+            override def onPull(): Unit = {
+              subSink.pull()
+            }
 
-          override def onDownstreamFinish(cause: Throwable): Unit = {
-            subSink.cancel(cause)
-            completeStage()
+            override def onDownstreamFinish(cause: Throwable): Unit = {
+              subSink.cancel(cause)
+              completeStage()
+            }
           }
-        })
+        )
 
         subSink.setHandler(new InHandler {
           override def onPush(): Unit = {

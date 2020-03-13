@@ -239,7 +239,9 @@ private class ConsumerControllerImpl[A](
               "Received SequencedMessage seqNr [{}], but expected [{}], {}.",
               seqNr,
               expectedSeqNr,
-              if (resendLost) "requesting resend from expected seqNr" else "delivering to consumer anyway")
+              if (resendLost) "requesting resend from expected seqNr"
+              else "delivering to consumer anyway"
+            )
             if (resendLost) {
               seqMsg.producerController ! Resend(fromSeqNr = expectedSeqNr)
               resending(s)
@@ -297,8 +299,10 @@ private class ConsumerControllerImpl[A](
           receivedSeqNr = seqNr,
           confirmedSeqNr = 0L,
           requestedSeqNr = newRequestedSeqNr,
-          registering = s.updatedRegistering(seqMsg)),
-        seqMsg)
+          registering = s.updatedRegistering(seqMsg)
+        ),
+        seqMsg
+      )
     } else if (s.receivedSeqNr == 0) {
       // needed for sharding
       context.log.debug(
@@ -314,7 +318,8 @@ private class ConsumerControllerImpl[A](
         "producer [{}] when expecting [{}].",
         seqNr,
         seqMsg.producerController,
-        s.producerController)
+        s.producerController
+      )
       Behaviors.same
     }
 
@@ -374,7 +379,8 @@ private class ConsumerControllerImpl[A](
               context.log.debug("Retry sending Resend [{}].", s.receivedSeqNr + 1)
               s.producerController ! Resend(fromSeqNr = s.receivedSeqNr + 1)
               Behaviors.same
-            })
+            }
+          )
 
         case Confirmed =>
           receiveUnexpectedConfirmed()

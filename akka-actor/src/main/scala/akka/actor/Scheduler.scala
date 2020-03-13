@@ -90,7 +90,9 @@ trait Scheduler {
                 case e: IllegalStateException if e.getCause != null && e.getCause.isInstanceOf[SchedulerException] =>
               }
             }
-          }))
+          }
+        )
+      )
 
       @tailrec private def swap(c: Cancellable): Unit = {
         get match {
@@ -370,7 +372,8 @@ trait Scheduler {
           if (receiver.isTerminated)
             throw SchedulerException("timer active for terminated actor")
         }
-      })
+      }
+    )
 
   /**
    * Deprecated API: See [[Scheduler#scheduleWithFixedDelay]] or [[Scheduler#scheduleAtFixedRate]].

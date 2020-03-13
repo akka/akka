@@ -66,7 +66,8 @@ object SerializationSetupSpec {
       }
     }
     """)),
-    None)
+    None
+  )
   val actorSystemSettings = ActorSystemSetup(bootstrapSettings, serializationSettings)
 
   val noJavaSerializationSystem = ActorSystem(
@@ -79,7 +80,8 @@ object SerializationSetupSpec {
         warn-about-java-serializer-usage = on
       }
     }
-    """.stripMargin))
+    """.stripMargin)
+  )
   val noJavaSerializer = new DisabledJavaSerializer(noJavaSerializationSystem.asInstanceOf[ExtendedActorSystem])
 
 }
@@ -135,7 +137,8 @@ class SerializationSetupSpec
       SerializerDetails(
         "java-manual",
         new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]),
-        List(classOf[ProgrammaticJavaDummy])))
+        List(classOf[ProgrammaticJavaDummy]))
+    )
   }
   val addedJavaSerializationProgramaticallyButDisabledSettings = BootstrapSetup(
     None,
@@ -149,7 +152,8 @@ class SerializationSetupSpec
       }
     }
     """)),
-    None)
+    None
+  )
 
   val addedJavaSerializationViaSettingsSystem =
     ActorSystem(

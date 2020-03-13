@@ -79,7 +79,8 @@ class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
       entityProps = Props[EchoActor],
       settings = ClusterShardingSettings(system).withRememberEntities(rememberEntities),
       extractEntityId = extractEntityId,
-      extractShardId = extractShardId)
+      extractShardId = extractShardId
+    )
   }
 
   def region = ClusterSharding(system).shardRegion(typeName)

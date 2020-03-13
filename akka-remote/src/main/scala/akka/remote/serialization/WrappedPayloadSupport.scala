@@ -38,7 +38,8 @@ private[akka] class WrappedPayloadSupport(system: ExtendedActorSystem) {
           "Couldn't serialize [{}] because Java serialization is disabled. Fallback to " +
           "ThrowableNotSerializableException. {}",
           notSerializableException.originalClassName,
-          notSerializableException.originalMessage)
+          notSerializableException.originalMessage
+        )
         val serializer2 = serialization.findSerializerFor(notSerializableException)
         builder
           .setEnclosedMessage(ByteString.copyFrom(serializer2.toBinary(notSerializableException)))

@@ -126,7 +126,8 @@ class ExtensionSpec extends AnyWordSpec with Matchers {
           "failing",
           ConfigFactory.parseString("""
             akka.library-extensions += "akka.actor.FailingTestExtension"
-          """).withFallback(ConfigFactory.load()).resolve())
+          """).withFallback(ConfigFactory.load()).resolve()
+        )
       }
 
     }
@@ -137,7 +138,8 @@ class ExtensionSpec extends AnyWordSpec with Matchers {
           "failing",
           ConfigFactory.parseString("""
             akka.library-extensions += "akka.actor.MissingExtension"
-          """).withFallback(ConfigFactory.load()))
+          """).withFallback(ConfigFactory.load())
+        )
       }
     }
 

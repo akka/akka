@@ -100,7 +100,8 @@ object BasicPersistentBehaviorCompileOnly {
         persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
+        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+      )
   }
   //#structure
 
@@ -113,11 +114,11 @@ object BasicPersistentBehaviorCompileOnly {
         persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-        .receiveSignal {
-          case (state, RecoveryCompleted) =>
-            throw new NotImplementedError("TODO: add some end-of-recovery side-effect here")
-        }
+        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+      ).receiveSignal {
+        case (state, RecoveryCompleted) =>
+          throw new NotImplementedError("TODO: add some end-of-recovery side-effect here")
+      }
     //#recovery
   }
 
@@ -128,8 +129,8 @@ object BasicPersistentBehaviorCompileOnly {
         persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-        .withTagger(_ => Set("tag1", "tag2"))
+        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+      ).withTagger(_ => Set("tag1", "tag2"))
     //#tagging
   }
 
@@ -152,8 +153,8 @@ object BasicPersistentBehaviorCompileOnly {
         persistenceId = PersistenceId("ShoppingCart", entityId),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-        .withTagger(event => tagEvent(entityId, event))
+        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+      ).withTagger(event => tagEvent(entityId, event))
     }
     //#tagging-query
   }
@@ -166,11 +167,11 @@ object BasicPersistentBehaviorCompileOnly {
           persistenceId = PersistenceId.ofUniqueId("abc"),
           emptyState = State(),
           commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-          eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-          .snapshotWhen((state, _, _) => {
-            context.log.info2("Snapshot actor {} => state: {}", context.self.path.name, state)
-            true
-          })
+          eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+        ).snapshotWhen((state, _, _) => {
+          context.log.info2("Snapshot actor {} => state: {}", context.self.path.name, state)
+          true
+        })
       }
     //#wrapPersistentBehavior
   }
@@ -182,9 +183,9 @@ object BasicPersistentBehaviorCompileOnly {
         persistenceId = PersistenceId.ofUniqueId("abc"),
         emptyState = State(),
         commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-        .onPersistFailure(
-          SupervisorStrategy.restartWithBackoff(minBackoff = 10.seconds, maxBackoff = 60.seconds, randomFactor = 0.1))
+        eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+      ).onPersistFailure(
+        SupervisorStrategy.restartWithBackoff(minBackoff = 10.seconds, maxBackoff = 60.seconds, randomFactor = 0.1))
     //#supervision
   }
 
@@ -204,7 +205,8 @@ object BasicPersistentBehaviorCompileOnly {
           },
           eventHandler = {
             case (state, _) => state
-          })
+          }
+        )
       }
     // #actor-context
   }
@@ -217,8 +219,8 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1000, keepNSnapshots = 2))
+    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+  ).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 1000, keepNSnapshots = 2))
   //#snapshottingEveryN
 
   //#snapshottingPredicate
@@ -226,11 +228,11 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-    .snapshotWhen {
-      case (state, BookingCompleted(_), sequenceNumber) => true
-      case (state, event, sequenceNumber)               => false
-    }
+    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+  ).snapshotWhen {
+    case (state, BookingCompleted(_), sequenceNumber) => true
+    case (state, event, sequenceNumber)               => false
+  }
   //#snapshottingPredicate
 
   //#snapshotSelection
@@ -240,8 +242,8 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-    .withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none)
+    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+  ).withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none)
   //#snapshotSelection
 
   //#retentionCriteria
@@ -252,7 +254,8 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-    eventHandler = (state, evt) => state) // do something based on a particular state
+    eventHandler = (state, evt) => state
+  ) // do something based on a particular state
     .snapshotWhen {
       case (state, BookingCompleted(_), sequenceNumber) => true
       case (state, event, sequenceNumber)               => false
@@ -266,8 +269,8 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 2).withDeleteEventsOnSnapshot)
+    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+  ).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 2).withDeleteEventsOnSnapshot)
     .receiveSignal { // optionally respond to signals
       case (state, _: SnapshotFailed)        => // react to failure
       case (state, _: DeleteSnapshotsFailed) => // react to failure
@@ -281,8 +284,8 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-    .withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 2))
+    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+  ).withRetention(RetentionCriteria.snapshotEvery(numberOfEvents = 100, keepNSnapshots = 2))
     .receiveSignal { // optionally respond to signals
       case (state, _: SnapshotFailed)        => // react to failure
       case (state, _: DeleteSnapshotsFailed) => // react to failure
@@ -303,8 +306,8 @@ object BasicPersistentBehaviorCompileOnly {
     persistenceId = PersistenceId.ofUniqueId("abc"),
     emptyState = State(),
     commandHandler = (state, cmd) => throw new NotImplementedError("TODO: process the command & return an Effect"),
-    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state"))
-    .eventAdapter(new WrapperEventAdapter[Event])
+    eventHandler = (state, evt) => throw new NotImplementedError("TODO: process the event return the next state")
+  ).eventAdapter(new WrapperEventAdapter[Event])
   //#install-event-adapter
 
 }

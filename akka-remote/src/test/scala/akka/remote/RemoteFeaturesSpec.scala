@@ -143,7 +143,8 @@ class RemoteFeaturesDisabledSpec extends RemoteFeaturesSpec(RemoteFeaturesSpec.d
         /$actorName.remote = "akka://${system.name}@localhost:$port"
         "/parent*/*".remote = "akka://${system.name}@localhost:$port"
       }
-    """))
+    """)
+      )
 
       val masterRef = masterSystem.actorOf(Props[RemoteDeploymentSpec.Echo1], actorName)
       masterRef.path shouldEqual RootActorPath(AddressFromURIString(s"akka://${masterSystem.name}")) / "user" / actorName

@@ -234,7 +234,8 @@ final case class ConsistentHashingRoutingLogic(
             "Message [{}] must be handled by hashMapping, or implement [{}] or be wrapped in [{}]",
             message.getClass.getName,
             classOf[ConsistentHashable].getName,
-            classOf[ConsistentHashableEnvelope].getName)
+            classOf[ConsistentHashableEnvelope].getName
+          )
           NoRoutee
       }
     }

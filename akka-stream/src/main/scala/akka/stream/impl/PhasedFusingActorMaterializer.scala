@@ -96,7 +96,8 @@ import com.github.ghik.silencer.silent
           islandName: String): PhaseIsland[Any] =
         new TlsModulePhase(materializer, islandName).asInstanceOf[PhaseIsland[Any]]
     },
-    GraphStageTag -> DefaultPhase)
+    GraphStageTag -> DefaultPhase
+  )
 
   def apply(
       context: ActorContext,
@@ -207,7 +208,8 @@ private final case class SavedIslandData(
         length = currentGlobalOffset - currentSegmentGlobalOffset,
         globalBaseOffset = currentSegmentGlobalOffset,
         relativeBaseOffset = currentSegmentGlobalOffset - currentIslandGlobalOffset - currentIslandSkippedSlots,
-        currentPhase)
+        currentPhase
+      )
 
       // Segment tracking is by demand, we only allocate this list if it is used.
       // If there are no islands, then there is no need to track segments

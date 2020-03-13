@@ -41,11 +41,13 @@ private[remote] final class CompressionTable[T](
         "Compression table should start allocating from 0, yet lowest allocated id was " + _dictionary.values
           .iterator()
           .asScala
-          .min)
+          .min
+      )
       require(
         _dictionary.values.iterator().asScala.map(_.intValue()).sum + _dictionary.size == expectedGaplessSum,
         "Given compression map does not seem to be gap-less and starting from zero, " +
-        "which makes compressing it into an Array difficult, bailing out! Map was: " + _dictionary)
+        "which makes compressing it into an Array difficult, bailing out! Map was: " + _dictionary
+      )
 
       val tups = new Array[(Object, Int)](_dictionary.size).asInstanceOf[Array[(T, Int)]]
       val ts = new Array[Object](_dictionary.size).asInstanceOf[Array[T]]

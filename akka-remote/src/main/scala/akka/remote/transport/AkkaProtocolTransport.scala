@@ -166,7 +166,8 @@ private[transport] class AkkaProtocolManager(
             stateActorSettings,
             AkkaPduProtobufCodec,
             failureDetector)),
-        actorNameFor(handle.remoteAddress))
+        actorNameFor(handle.remoteAddress)
+      )
 
     case AssociateUnderlying(remoteAddress, statusPromise) =>
       createOutboundStateActor(remoteAddress, statusPromise, None)
@@ -199,8 +200,10 @@ private[transport] class AkkaProtocolManager(
           stateActorSettings,
           AkkaPduProtobufCodec,
           failureDetector,
-          refuseUid)),
-      actorNameFor(remoteAddress))
+          refuseUid
+        )),
+      actorNameFor(remoteAddress)
+    )
   }
 
   private def createTransportFailureDetector(): FailureDetector =

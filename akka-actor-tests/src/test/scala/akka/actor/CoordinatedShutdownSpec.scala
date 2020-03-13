@@ -120,7 +120,8 @@ class CoordinatedShutdownSpec
           PhaseClusterExitingDone,
           PhaseClusterShutdown,
           PhaseBeforeActorSystemTerminate,
-          PhaseActorSystemTerminate))
+          PhaseActorSystemTerminate
+        ))
     }
 
     "run ordered phases" in {
@@ -500,7 +501,8 @@ class CoordinatedShutdownSpec
         Map(
           "a" -> Phase(dependsOn = Set.empty, timeout = 10.seconds, recover = true, enabled = true),
           "b" -> Phase(dependsOn = Set("a"), timeout = 15.seconds, recover = true, enabled = true),
-          "c" -> Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false, enabled = true)))
+          "c" -> Phase(dependsOn = Set("a", "b"), timeout = 10.seconds, recover = false, enabled = true)
+        ))
     }
 
     "default exit code to 0" in {

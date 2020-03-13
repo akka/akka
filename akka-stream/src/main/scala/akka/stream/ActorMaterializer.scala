@@ -849,11 +849,14 @@ object StreamSubscriptionTimeoutSettings {
    */
   def apply(config: Config): StreamSubscriptionTimeoutSettings = {
     val c = config.getConfig("subscription-timeout")
-    StreamSubscriptionTimeoutSettings(mode = toRootLowerCase(c.getString("mode")) match {
-      case "no" | "off" | "false" | "noop" => NoopTermination
-      case "warn"                          => WarnTermination
-      case "cancel"                        => CancelTermination
-    }, timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis)
+    StreamSubscriptionTimeoutSettings(
+      mode = toRootLowerCase(c.getString("mode")) match {
+        case "no" | "off" | "false" | "noop" => NoopTermination
+        case "warn"                          => WarnTermination
+        case "cancel"                        => CancelTermination
+      },
+      timeout = c.getDuration("timeout", TimeUnit.MILLISECONDS).millis
+    )
   }
 }
 

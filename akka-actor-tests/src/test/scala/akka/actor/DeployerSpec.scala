@@ -69,7 +69,8 @@ object DeployerSpec {
         }
       }
       """,
-    ConfigParseOptions.defaults)
+    ConfigParseOptions.defaults
+  )
 
   class RecipeActor extends Actor {
     def receive = { case _ => }
@@ -143,7 +144,8 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
               }
             }
             """,
-            ConfigParseOptions.defaults)
+            ConfigParseOptions.defaults
+          )
           .withFallback(AkkaSpec.testConf)
 
         shutdown(ActorSystem("invalid-number-of-instances", invalidDeployerConf))
@@ -162,7 +164,8 @@ class DeployerSpec extends AkkaSpec(DeployerSpec.deployerConf) {
               }
             }
             """,
-            ConfigParseOptions.defaults)
+            ConfigParseOptions.defaults
+          )
           .withFallback(AkkaSpec.testConf)
 
         shutdown(ActorSystem("invalid-path", invalidDeployerConf))

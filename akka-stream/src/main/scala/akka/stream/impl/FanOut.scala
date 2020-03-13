@@ -334,5 +334,6 @@ import org.reactivestreams.Subscription
             s"Unable to unzip elements of type ${t.getClass.getName}, " +
             s"can only handle Tuple2 and akka.japi.Pair!")
       }
-    })
+    }
+  )
 }

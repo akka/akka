@@ -101,7 +101,8 @@ object EventSourcedBehaviorStashSpec {
             case Deactivated =>
               if (!state.active) throw new IllegalStateException
               state.copy(active = false)
-          })
+          }
+      )
       .onPersistFailure(SupervisorStrategy
         .restartWithBackoff(1.second, maxBackoff = 2.seconds, 0.0)
         .withLoggingEnabled(enabled = false))
@@ -530,7 +531,8 @@ class EventSourcedBehaviorStashSpec
             case (_, "start-stashing") => true
             case (_, "unstash")        => false
             case (_, _)                => throw new IllegalArgumentException()
-          })
+          }
+        )
       }
 
       val c = spawn(behavior)
@@ -566,7 +568,8 @@ class EventSourcedBehaviorStashSpec
         "EventSourcedBehaviorStashSpec-stash-overflow-fail",
         ConfigFactory
           .parseString("akka.persistence.typed.stash-overflow-strategy=fail")
-          .withFallback(EventSourcedBehaviorStashSpec.conf))
+          .withFallback(EventSourcedBehaviorStashSpec.conf)
+      )
       try {
         val probe = failStashTestKit.createTestProbe[AnyRef]()
         val behavior =
@@ -580,7 +583,8 @@ class EventSourcedBehaviorStashSpec
               case (_, _) =>
                 Effect.stash()
             },
-            (state, _) => state)
+            (state, _) => state
+          )
 
         val c = failStashTestKit.spawn(behavior)
 

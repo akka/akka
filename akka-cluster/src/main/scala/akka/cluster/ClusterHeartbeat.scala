@@ -128,7 +128,8 @@ private[cluster] class ClusterHeartbeatSender extends Actor {
   var state: ClusterHeartbeatSenderState = ClusterHeartbeatSenderState(
     ring = HeartbeatNodeRing(selfUniqueAddress, Set(selfUniqueAddress), Set.empty, MonitoredByNrOfMembers),
     oldReceiversNowUnreachable = Set.empty[UniqueAddress],
-    failureDetector)
+    failureDetector
+  )
 
   // start periodic heartbeat to other nodes in cluster
   val heartbeatTask =
@@ -235,7 +236,8 @@ private[cluster] class ClusterHeartbeatSender extends Actor {
         "to mark members as unreachable. The reason can be thread starvation, e.g. by running blocking tasks on the " +
         "default dispatcher, CPU overload, or GC.",
         TimeUnit.NANOSECONDS.toMillis(now - tickTimestamp),
-        HeartbeatInterval.toMillis)
+        HeartbeatInterval.toMillis
+      )
     tickTimestamp = now
 
   }

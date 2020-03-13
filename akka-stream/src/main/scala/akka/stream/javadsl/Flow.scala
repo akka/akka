@@ -2816,14 +2816,18 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
       matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out Pair T, M2] =
     this.viaMat(
       Flow.fromGraph(
-        GraphDSL.create(that, new function.Function2[GraphDSL.Builder[M], SourceShape[T], FlowShape[Out, Out Pair T]] {
-          def apply(b: GraphDSL.Builder[M], s: SourceShape[T]): FlowShape[Out, Out Pair T] = {
-            val zip: FanInShape2[Out, T, Out Pair T] = b.add(Zip.create[Out, T])
-            b.from(s).toInlet(zip.in1)
-            FlowShape(zip.in0, zip.out)
+        GraphDSL.create(
+          that,
+          new function.Function2[GraphDSL.Builder[M], SourceShape[T], FlowShape[Out, Out Pair T]] {
+            def apply(b: GraphDSL.Builder[M], s: SourceShape[T]): FlowShape[Out, Out Pair T] = {
+              val zip: FanInShape2[Out, T, Out Pair T] = b.add(Zip.create[Out, T])
+              b.from(s).toInlet(zip.in1)
+              FlowShape(zip.in0, zip.out)
+            }
           }
-        })),
-      matF)
+        )),
+      matF
+    )
 
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
@@ -2888,14 +2892,18 @@ final class Flow[In, Out, Mat](delegate: scaladsl.Flow[In, Out, Mat]) extends Gr
       matF: function.Function2[Mat, M, M2]): javadsl.Flow[In, Out Pair T, M2] =
     this.viaMat(
       Flow.fromGraph(
-        GraphDSL.create(that, new function.Function2[GraphDSL.Builder[M], SourceShape[T], FlowShape[Out, Out Pair T]] {
-          def apply(b: GraphDSL.Builder[M], s: SourceShape[T]): FlowShape[Out, Out Pair T] = {
-            val zip: FanInShape2[Out, T, Out Pair T] = b.add(ZipLatest.create[Out, T])
-            b.from(s).toInlet(zip.in1)
-            FlowShape(zip.in0, zip.out)
+        GraphDSL.create(
+          that,
+          new function.Function2[GraphDSL.Builder[M], SourceShape[T], FlowShape[Out, Out Pair T]] {
+            def apply(b: GraphDSL.Builder[M], s: SourceShape[T]): FlowShape[Out, Out Pair T] = {
+              val zip: FanInShape2[Out, T, Out Pair T] = b.add(ZipLatest.create[Out, T])
+              b.from(s).toInlet(zip.in1)
+              FlowShape(zip.in0, zip.out)
+            }
           }
-        })),
-      matF)
+        )),
+      matF
+    )
 
   /**
    * Put together the elements of current [[Flow]] and the given [[Source]]

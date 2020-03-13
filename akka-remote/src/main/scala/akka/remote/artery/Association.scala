@@ -400,7 +400,8 @@ private[remote] class Association(
         Logging.messageClassName(message),
         sender.getOrElse(deadletters),
         recipient.getOrElse(recipient),
-        remoteAddress)
+        remoteAddress
+      )
   }
 
   private def selectQueue(recipient: OptionVal[RemoteActorRef]): Int = {
@@ -486,7 +487,8 @@ private[remote] class Association(
                     "messages to this UID will be delivered to dead letters. Reason: {}",
                     remoteAddress,
                     u,
-                    reason)
+                    reason
+                  )
                   transport.system.eventStream
                     .publish(GracefulShutdownQuarantinedEvent(UniqueAddress(remoteAddress, u), reason))
                 } else {
@@ -497,7 +499,8 @@ private[remote] class Association(
                     "Remote ActorSystem must be restarted to recover from this situation. Reason: {}",
                     remoteAddress,
                     u,
-                    reason)
+                    reason
+                  )
                   transport.system.eventStream.publish(QuarantinedEvent(UniqueAddress(remoteAddress, u)))
                 }
                 flightRecorder.transportQuarantined(remoteAddress, u)
@@ -520,14 +523,16 @@ private[remote] class Association(
               remoteAddress,
               u,
               peer.uid,
-              reason)
+              reason
+            )
             send(ClearSystemMessageDelivery(current.incarnation - 1), OptionVal.None, OptionVal.None)
           case None =>
             log.info(
               RemoteLogMarker.quarantine(remoteAddress, Some(u)),
               "Quarantine of [{}] ignored because handshake not completed, quarantine request was for old incarnation. {}",
               remoteAddress,
-              reason)
+              reason
+            )
         }
       case None =>
         log.warning(
@@ -972,7 +977,8 @@ private[remote] class Association(
             streamName,
             remoteAddress,
             advancedSettings.OutboundMaxRestarts,
-            advancedSettings.OutboundRestartTimeout.toSeconds)
+            advancedSettings.OutboundRestartTimeout.toSeconds
+          )
           cancelAllTimers()
           transport.system.terminate()
         }

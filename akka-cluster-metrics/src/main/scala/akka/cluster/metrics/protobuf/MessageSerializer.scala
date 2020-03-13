@@ -269,7 +269,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
       NodeMetrics(
         addressMapping(nodeMetrics.getAddressIndex),
         nodeMetrics.getTimestamp,
-        nodeMetrics.getMetricsList.asScala.iterator.map(metricFromProto).to(immutable.Set))
+        nodeMetrics.getMetricsList.asScala.iterator.map(metricFromProto).to(immutable.Set)
+      )
 
     val nodeMetrics: Set[NodeMetrics] =
       mgossip.getNodeMetricsList.asScala.iterator.map(nodeMetricsFromProto).to(immutable.Set)
@@ -295,7 +296,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends SerializerWithS
       routerDispatcher =
         if (alb.hasRouterDispatcher) alb.getRouterDispatcher
         else Dispatchers.DefaultDispatcherId,
-      usePoolDispatcher = alb.getUsePoolDispatcher)
+      usePoolDispatcher = alb.getUsePoolDispatcher
+    )
   }
 
   def mixMetricSelectorFromBinary(bytes: Array[Byte]): MixMetricsSelector = {

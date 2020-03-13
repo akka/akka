@@ -190,7 +190,8 @@ import akka.util.Timeout
                     PropsAdapter(ShardCommandActor.behavior(stopMessage.getOrElse(PoisonPill))),
                     URLEncoder.encode(typeKey.name, ByteString.UTF_8) + "ShardCommandDelegator")
               }
-            })
+            }
+          )
 
         def poisonPillInterceptor(behv: Behavior[M]): Behavior[M] = {
           stopMessage match {
@@ -210,14 +211,16 @@ import akka.util.Timeout
           extractEntityId,
           extractShardId,
           allocationStrategy.getOrElse(defaultShardAllocationStrategy(settings)),
-          stopMessage.getOrElse(PoisonPill))
+          stopMessage.getOrElse(PoisonPill)
+        )
       } else {
         log.info(
           "Starting Shard Region Proxy [{}] (no actors will be hosted on this node) " +
           "for role [{}] and dataCenter [{}] ...",
           typeKey.name,
           settings.role,
-          settings.dataCenter)
+          settings.dataCenter
+        )
 
         classicSharding.startProxy(
           typeKey.name,

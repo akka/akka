@@ -23,16 +23,19 @@ class GraphStageLoggingDocSpec extends AkkaSpec("akka.loglevel = DEBUG") {
 
     override def createLogic(inheritedAttributes: Attributes) =
       new GraphStageLogic(shape) with StageLogging {
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = {
-            val c = nextChar() // ASCII lower case letters
+        setHandler(
+          out,
+          new OutHandler {
+            override def onPull(): Unit = {
+              val c = nextChar() // ASCII lower case letters
 
-            // `log` is obtained from materializer automatically (via StageLogging)
-            log.debug("Randomly generated: [{}]", c)
+              // `log` is obtained from materializer automatically (via StageLogging)
+              log.debug("Randomly generated: [{}]", c)
 
-            push(out, c.toString)
+              push(out, c.toString)
+            }
           }
-        })
+        )
       }
 
     def nextChar(): Char =

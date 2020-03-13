@@ -87,7 +87,8 @@ object EventSourcedBehaviorRetentionSpec extends Matchers {
           case Incremented(delta) =>
             probe.foreach(_ ! ((state, evt)))
             State(state.value + delta, state.history :+ state.value)
-        }).receiveSignal {
+        }
+    ).receiveSignal {
       case (_, RecoveryCompleted) => ()
       case (_, sc: SnapshotCompleted) =>
         snapshotSignalProbe.foreach(_ ! WrappedSignal(sc))

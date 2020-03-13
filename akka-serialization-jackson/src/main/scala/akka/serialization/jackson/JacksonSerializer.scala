@@ -254,7 +254,8 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
           obj.getClass.getName,
           durationMicros,
           result.length,
-          bytes.length)
+          bytes.length
+        )
     }
   }
 
@@ -340,7 +341,8 @@ import com.fasterxml.jackson.dataformat.cbor.CBORFactory
           clazz.getName,
           durationMicros,
           bytes.length,
-          decompressBytes.length)
+          decompressBytes.length
+        )
     }
   }
 

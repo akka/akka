@@ -185,9 +185,11 @@ class DnsExt private[akka] (val system: ExtendedActorSystem, resolverName: Strin
               provider.cache,
               settings.Dispatcher,
               provider).withDeploy(Deploy.local).withDispatcher(settings.Dispatcher),
-            name = managerName)
+            name = managerName
+          )
         }
-      })
+      }
+    )
   }
 
   /**

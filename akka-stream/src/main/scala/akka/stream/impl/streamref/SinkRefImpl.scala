@@ -112,14 +112,16 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
             observeAndValidateSender(
               ref,
               "Illegal initialPartnerRef! This may be a bug, please report your " +
-              "usage and complete stack trace on the issue tracker: https://github.com/akka/akka")
+              "usage and complete stack trace on the issue tracker: https://github.com/akka/akka"
+            )
             tryPull()
           case OptionVal.None =>
             log.debug(
               "[{}] Created SinkRef with initial partner, local worker: {}, subscription timeout: {}",
               stageActorName,
               self.ref,
-              PrettyDuration.format(subscriptionTimeout.timeout))
+              PrettyDuration.format(subscriptionTimeout.timeout)
+            )
             // only schedule timeout timer if partnerRef has not been resolved yet (i.e. if this instance of the Actor
             // has not been provided with a valid initialPartnerRef)
             scheduleOnce(SubscriptionTimeoutTimerKey, subscriptionTimeout.timeout)
@@ -134,7 +136,8 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
             stageActorName,
             ref,
             partnerRef,
-            finishedWithAwaitingPartnerTermination)
+            finishedWithAwaitingPartnerTermination
+          )
           if (ref == getPartnerRef)
             finishedWithAwaitingPartnerTermination match {
               case OptionVal.Some(Failure(ex)) =>
@@ -158,7 +161,8 @@ private[stream] final class SinkRefStageImpl[In] private[akka] (val initialPartn
               "[{}] Received cumulative demand [{}], consumable demand: [{}]",
               stageActorName,
               StreamRefsProtocol.CumulativeDemand(d),
-              remoteCumulativeDemandReceived - remoteCumulativeDemandConsumed)
+              remoteCumulativeDemandReceived - remoteCumulativeDemandConsumed
+            )
           }
 
           tryPull()

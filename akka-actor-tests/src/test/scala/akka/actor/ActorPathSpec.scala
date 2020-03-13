@@ -106,14 +106,16 @@ class ActorPathSpec extends AnyWordSpec with Matchers {
       Seq(
         Address("akka", "sys", Some("localhost"), Some(0)),
         Address("akka", "sys", Some("is_valid.org"), Some(0)),
-        Address("akka", "sys", Some("fu.is_valid.org"), Some(0))).foreach(_.checkHostCharacters())
+        Address("akka", "sys", Some("fu.is_valid.org"), Some(0))
+      ).foreach(_.checkHostCharacters())
     }
 
     "fail fast if the check is called when invalid chars are in host names" in {
       Seq(
         Address("akka", "sys", Some("localhost"), Some(0)),
         Address("akka", "sys", Some("is_valid.org"), Some(0)),
-        Address("akka", "sys", Some("fu.is_valid.org"), Some(0))).foreach(_.checkHostCharacters())
+        Address("akka", "sys", Some("fu.is_valid.org"), Some(0))
+      ).foreach(_.checkHostCharacters())
 
       intercept[IllegalArgumentException](Address("akka", "sys", Some("in_valid"), Some(0)).checkHostCharacters())
       intercept[IllegalArgumentException](Address("akka", "sys", Some("invalid._org"), Some(0)).checkHostCharacters())

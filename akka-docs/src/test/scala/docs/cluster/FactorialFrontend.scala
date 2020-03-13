@@ -80,8 +80,10 @@ abstract class FactorialFrontend2 extends Actor {
         totalInstances = 100,
         routeesPaths = List("/user/factorialBackend"),
         allowLocalRoutees = true,
-        useRoles = Set("backend"))).props(),
-    name = "factorialBackendRouter2")
+        useRoles = Set("backend"))
+    ).props(),
+    name = "factorialBackendRouter2"
+  )
 
   //#router-lookup-in-code
 }
@@ -101,7 +103,9 @@ abstract class FactorialFrontend3 extends Actor {
         totalInstances = 100,
         maxInstancesPerNode = 3,
         allowLocalRoutees = false,
-        useRoles = Set("backend"))).props(Props[FactorialBackend]),
-    name = "factorialBackendRouter3")
+        useRoles = Set("backend"))
+    ).props(Props[FactorialBackend]),
+    name = "factorialBackendRouter3"
+  )
   //#router-deploy-in-code
 }

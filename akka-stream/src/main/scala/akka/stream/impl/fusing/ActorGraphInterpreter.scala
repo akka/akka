@@ -791,7 +791,8 @@ import scala.util.control.NonFatal
       sender() ! StreamSnapshotImpl(
         self.path,
         activeInterpreters.map(shell => shell.toSnapshot.asInstanceOf[RunningInterpreter]).toSeq,
-        newShells.map(shell => shell.toSnapshot.asInstanceOf[UninitializedInterpreter]))
+        newShells.map(shell => shell.toSnapshot.asInstanceOf[UninitializedInterpreter])
+      )
   }
 
   override def postStop(): Unit =

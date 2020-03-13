@@ -218,7 +218,8 @@ private[remote] class ArteryAeronUdpTransport(_system: ExtendedActorSystem, _pro
               "'client-liveness-timeout' or 'driver-timeout'. {}",
               Logging.simpleName(cause),
               if (settings.Advanced.Aeron.EmbeddedMediaDriver) "embedded" else "external",
-              cause)
+              cause
+            )
             taskRunner.stop()
             aeronErrorLogTask.cancel()
             if (settings.Advanced.Aeron.LogAeronCounters) aeronCounterTask.cancel()

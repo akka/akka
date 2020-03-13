@@ -283,7 +283,8 @@ class MessageSerializerPersistenceSpec extends AkkaSpec(customSerializers) {
         val unconfirmed = Vector(
           UnconfirmedDelivery(deliveryId = 1, destination = testActor.path, "a"),
           UnconfirmedDelivery(deliveryId = 2, destination = testActor.path, "b"),
-          UnconfirmedDelivery(deliveryId = 3, destination = testActor.path, 42))
+          UnconfirmedDelivery(deliveryId = 3, destination = testActor.path, 42)
+        )
         val snap = AtLeastOnceDeliverySnapshot(17, unconfirmed)
         val serializer = serialization.findSerializerFor(snap)
 

@@ -34,7 +34,8 @@ class MessageContainerSerializerSpec extends AkkaSpec {
             SelectParent,
             SelectChildPattern("*"),
             SelectChildName("c")),
-          wildcardFanOut = true))
+          wildcardFanOut = true
+        ))
     }
 
     "serialize and deserialize DaemonMsgCreate with tagged actor" in {

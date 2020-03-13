@@ -69,7 +69,8 @@ object EventSourcedBehaviorReplySpec {
         evt match {
           case Incremented(delta) =>
             State(state.value + delta, state.history :+ state.value)
-        })
+        }
+    )
   }
 }
 

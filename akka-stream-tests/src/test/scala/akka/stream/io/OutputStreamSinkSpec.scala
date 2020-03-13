@@ -54,7 +54,8 @@ class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with Scala
               override def write(bytes: Array[Byte]): Unit = p.ref ! ByteString(bytes).utf8String
               override def flush(): Unit = p.ref ! "flush"
             },
-          autoFlush = true))
+          autoFlush = true
+        ))
       p.expectMsg(data(0).utf8String)
       p.expectMsg("flush")
       p.expectMsg(data(1).utf8String)

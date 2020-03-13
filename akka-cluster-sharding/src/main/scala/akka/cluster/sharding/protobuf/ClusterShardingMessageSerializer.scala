@@ -182,7 +182,8 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
     },
     CurrentShardRegionStateManifest -> { bytes =>
       currentShardRegionStateFromBinary(bytes)
-    })
+    }
+  )
 
   override def manifest(obj: AnyRef): String = obj match {
     case _: EntityState   => EntityStateManifest

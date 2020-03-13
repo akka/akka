@@ -46,7 +46,8 @@ object UnfoldResource {
             None
         },
         // close
-        query => query.close())
+        query => query.close()
+      )
 
     // process each element
     queryResultSource.runForeach(println)

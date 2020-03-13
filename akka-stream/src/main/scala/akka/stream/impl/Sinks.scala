@@ -637,7 +637,8 @@ import scala.util.control.NonFatal
               // scheduling it lets the interpreter first start the substream
               getAsyncCallback[Throwable](failStage).invoke(ex)
             }
-          })
+          }
+        )
 
         subOutlet.setHandler(new OutHandler {
           override def onPull(): Unit = {

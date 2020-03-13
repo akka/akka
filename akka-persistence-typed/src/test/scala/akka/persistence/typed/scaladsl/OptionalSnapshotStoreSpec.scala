@@ -34,7 +34,8 @@ object OptionalSnapshotStoreSpec {
       },
       eventHandler = {
         case (_, _) => State()
-      }).snapshotWhen { case _ => true }
+      }
+    ).snapshotWhen { case _ => true }
 
   def persistentBehaviorWithSnapshotPlugin(probe: TestProbe[State]) =
     persistentBehavior(probe).withSnapshotPluginId("akka.persistence.snapshot-store.local")

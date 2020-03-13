@@ -86,7 +86,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         Address("akka", "sys", Some("localhost"), Some(0)),
         Address("akka", "sys", Some("is_valid.org"), Some(0)),
         Address("akka", "sys", Some("fu.is_valid.org"), Some(0)),
-        Address("akka", "sys", Some("fu_.is_valid.org"), Some(0)))
+        Address("akka", "sys", Some("fu_.is_valid.org"), Some(0))
+      )
 
       addresses.foreach(cluster.join)
       cluster.joinSeedNodes(addresses)
@@ -152,7 +153,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         akka.actor.provider = "cluster"
         akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
-        """))
+        """)
+      )
       try {
         val ref = sys2.actorOf(Props.empty)
         Cluster(sys2).join(ref.path.address) // address doesn't contain full address information
@@ -186,7 +188,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         akka.actor.provider = "cluster"
         akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
-        """))
+        """)
+      )
       try {
         val probe = TestProbe()(sys2)
         Cluster(sys2).subscribe(probe.ref, classOf[MemberEvent])
@@ -217,7 +220,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         akka.coordinated-shutdown.terminate-actor-system = on
-        """))
+        """)
+      )
       try {
         val probe = TestProbe()(sys2)
         Cluster(sys2).subscribe(probe.ref, classOf[MemberEvent])
@@ -255,7 +259,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         akka.cluster.min-nr-of-members = 2
-        """))
+        """)
+      )
       try {
         val probe = TestProbe()(sys2)
         Cluster(sys2).subscribe(probe.ref, classOf[MemberEvent])
@@ -286,7 +291,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
         akka.coordinated-shutdown.terminate-actor-system = on
-        """))
+        """)
+      )
       try {
         val probe = TestProbe()(sys2)
         Cluster(sys2).subscribe(probe.ref, classOf[MemberEvent])
@@ -321,7 +327,8 @@ class ClusterSpec extends AkkaSpec(ClusterSpec.config) with ImplicitSender {
         akka.remote.artery.canonical.port = 0
         akka.coordinated-shutdown.terminate-actor-system = on
         akka.cluster.run-coordinated-shutdown-when-down = on
-        """))
+        """)
+      )
       try {
         val probe = TestProbe()(sys3)
         Cluster(sys3).subscribe(probe.ref, classOf[MemberEvent])

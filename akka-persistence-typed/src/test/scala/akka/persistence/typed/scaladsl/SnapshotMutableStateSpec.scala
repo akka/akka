@@ -59,7 +59,8 @@ object SnapshotMutableStateSpec {
             state.value += 1
             probe ! s"incremented-${state.value}"
             state
-        }).receiveSignal {
+        }
+    ).receiveSignal {
       case (_, SnapshotCompleted(meta)) =>
         probe ! s"snapshot-success-${meta.sequenceNr}"
       case (_, SnapshotFailed(meta, _)) =>

@@ -55,7 +55,8 @@ object RecoveryPermitterSpec {
       },
       eventHandler = { (state, event) =>
         eventProbe.ref ! event; state
-      }).receiveSignal {
+      }
+    ).receiveSignal {
       case (_, RecoveryCompleted) =>
         eventProbe.ref ! Recovered
         if (throwOnRecovery) throw new TE

@@ -151,7 +151,8 @@ object ClusterShardingSettings {
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
-      s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
+      s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'"
+    )
 
     def withBufferSize(value: Int): TuningParameters = copy(bufferSize = value)
     def withCoordinatorFailureBackoff(value: FiniteDuration): TuningParameters = copy(coordinatorFailureBackoff = value)
@@ -273,7 +274,8 @@ final class ClusterShardingSettings(
   require(
     stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
     s"Unknown 'state-store-mode' [$stateStoreMode], " +
-    s"valid values are '${StateStoreModeDData.name}' or '${StateStoreModePersistence.name}'")
+    s"valid values are '${StateStoreModeDData.name}' or '${StateStoreModePersistence.name}'"
+  )
 
   /**
    * INTERNAL API

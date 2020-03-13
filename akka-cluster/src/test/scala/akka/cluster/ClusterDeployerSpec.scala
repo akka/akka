@@ -38,7 +38,8 @@ object ClusterDeployerSpec {
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
       """,
-    ConfigParseOptions.defaults)
+    ConfigParseOptions.defaults
+  )
 
   class RecipeActor extends Actor {
     def receive = { case _ => }
@@ -64,7 +65,8 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
             ClusterRouterPoolSettings(totalInstances = 20, maxInstancesPerNode = 3, allowLocalRoutees = false)),
           ClusterScope,
           Deploy.NoDispatcherGiven,
-          Deploy.NoMailboxGiven)))
+          Deploy.NoMailboxGiven
+        )))
     }
 
     "be able to parse 'akka.actor.deployment._' with specified cluster group" in {
@@ -84,7 +86,8 @@ class ClusterDeployerSpec extends AkkaSpec(ClusterDeployerSpec.deployerConf) {
               allowLocalRoutees = false)),
           ClusterScope,
           "mydispatcher",
-          "mymailbox")))
+          "mymailbox"
+        )))
     }
 
   }

@@ -246,7 +246,8 @@ private[akka] class RemoteActorRefProvider(
         case ArterySettings.AeronUpd => new ArteryAeronUdpTransport(system, this)
         case ArterySettings.Tcp      => new ArteryTcpTransport(system, this, tlsEnabled = false)
         case ArterySettings.TlsTcp   => new ArteryTcpTransport(system, this, tlsEnabled = true)
-      } else new Remoting(system, this))
+      } else new Remoting(system, this)
+    )
     _internals = internals
     remotingTerminator ! internals
 

@@ -175,7 +175,8 @@ object TestActorRef {
         "\nMake sure Actor is NOT defined inside a class/trait," +
         "\nif so put it outside the class/trait, f.e. in a companion object," +
         "\nOR try to change: 'actorOf(Props[MyActor]' to 'actorOf(Props(new MyActor)'.",
-        exception)
+        exception
+      )
   }
 
   def apply[T <: Actor](name: String)(implicit t: ClassTag[T], system: ActorSystem): TestActorRef[T] =
@@ -211,7 +212,8 @@ object TestActorRef {
           .get
       }),
       supervisor,
-      name)
+      name
+    )
 
   /**
    * Java API: create a TestActorRef in the given system for the given props,

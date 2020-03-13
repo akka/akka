@@ -41,7 +41,8 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
         shards = Map("a" -> region1, "b" -> region2, "c" -> region2),
         regions = Map(region1 -> Vector("a"), region2 -> Vector("b", "c"), region3 -> Vector.empty[String]),
         regionProxies = Set(regionProxy1, regionProxy2),
-        unallocatedShards = Set("d"))
+        unallocatedShards = Set("d")
+      )
       checkSerialization(state)
     }
 
@@ -111,7 +112,8 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
       checkSerialization(
         ShardRegion.ClusterShardingStats(Map(
           Address("akka", "sys", "a", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")),
-          Address("akka", "sys", "b", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b")))))
+          Address("akka", "sys", "b", 2552) -> ShardRegion.ShardRegionStats(Map[ShardId, Int]("a" -> 23), Set("b"))
+        )))
     }
   }
 }

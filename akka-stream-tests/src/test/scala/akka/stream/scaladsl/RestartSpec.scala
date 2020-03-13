@@ -547,7 +547,8 @@ class RestartSpec extends StreamSpec(Map("akka.test.single-expect-default" -> "1
               .watchTermination()((_, term) =>
                 term.foreach(_ => {
                   flowInSource.sendNext("out complete")
-                })))
+                }))
+          )
         })(Keep.left)
         .toMat(TestSink.probe[String])(Keep.both)
         .run()

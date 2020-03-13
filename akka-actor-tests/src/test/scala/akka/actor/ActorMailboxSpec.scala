@@ -366,7 +366,8 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
           .withDispatcher("requiring-bounded-dispatcher")
           .withMailbox("akka.actor.mailbox.bounded-deque-based"),
         "bounded-deque-requirements-configured-props",
-        BoundedDeqMailboxTypes)
+        BoundedDeqMailboxTypes
+      )
     }
 
     "fail with a unbounded deque-based message queue if configured and required with Props" in {
@@ -375,7 +376,8 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
           Props[StashQueueReportingActor]
             .withDispatcher("requiring-bounded-dispatcher")
             .withMailbox("akka.actor.mailbox.unbounded-deque-based"),
-          "bounded-deque-require-unbounded-configured-props"))
+          "bounded-deque-require-unbounded-configured-props"
+        ))
     }
 
     "fail with a bounded deque-based message queue if not configured with Props" in {
@@ -389,7 +391,8 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
       checkMailboxQueue(
         Props[StashQueueReportingActor].withDispatcher("requiring-bounded-dispatcher"),
         "bounded-deque-requirements-configured-props-disp",
-        BoundedDeqMailboxTypes)
+        BoundedDeqMailboxTypes
+      )
     }
 
     "fail with a unbounded deque-based message queue if configured and required with Props (dispatcher)" in {
@@ -410,7 +413,8 @@ class ActorMailboxSpec(conf: Config) extends AkkaSpec(conf) with DefaultTimeout 
       checkMailboxQueue(
         Props[StashQueueReportingActor].withMailbox("akka.actor.mailbox.bounded-deque-based"),
         "bounded-deque-requirements-configured-props-mail",
-        BoundedDeqMailboxTypes)
+        BoundedDeqMailboxTypes
+      )
     }
 
     "fail with a unbounded deque-based message queue if configured and required with Props (mailbox)" in {

@@ -205,7 +205,8 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
           level = evt.getLevel,
           message = MessageFormatter.arrayFormat(evt.getMessage, evt.getArgumentArray).getMessage,
           cause = Option(evt.getThrowable),
-          marker = Option(evt.getMarker))
+          marker = Option(evt.getMarker)
+        )
       }
       .toList
   }

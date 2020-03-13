@@ -477,7 +477,8 @@ object ShardRegion {
           stopMessage.getClass.getName,
           shard,
           handoffTimeout.toCoarsest,
-          remaining.size)
+          remaining.size
+        )
 
         remaining.foreach { ref =>
           context.stop(ref)
@@ -926,7 +927,8 @@ private[akka] class ShardRegion(
           typeName,
           actorSelections.mkString(", "),
           shardBuffers.totalSize,
-          coordinatorMessage)
+          coordinatorMessage
+        )
       } else {
         // Members start off as "Removed"
         val partOfCluster = cluster.selfMember.status != MemberStatus.Removed
@@ -1115,7 +1117,8 @@ private[akka] class ShardRegion(
                     replicator,
                     majorityMinCap)
                   .withDispatcher(context.props.dispatcher),
-                name))
+                name
+              ))
             shardsByRef = shardsByRef.updated(shard, id)
             shards = shards.updated(id, shard)
             startingShards += id

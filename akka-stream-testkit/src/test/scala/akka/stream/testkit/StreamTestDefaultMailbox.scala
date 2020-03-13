@@ -39,7 +39,8 @@ private[akka] final case class StreamTestDefaultMailbox()
           s"$r with actor class [${actorClass.getName}] must not run on default dispatcher in tests. " +
           "Did you forget to define `props.withDispatcher` when creating the actor? " +
           "Or did you forget to configure the `akka.stream.materializer` setting accordingly or force the " +
-          """dispatcher using `ActorMaterializerSettings(sys).withDispatcher("akka.test.stream-dispatcher")` in the test?""")
+          """dispatcher using `ActorMaterializerSettings(sys).withDispatcher("akka.test.stream-dispatcher")` in the test?"""
+        )
       case _ =>
     }
     new UnboundedMailbox.MessageQueue

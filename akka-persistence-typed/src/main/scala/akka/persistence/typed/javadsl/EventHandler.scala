@@ -201,7 +201,8 @@ final class EventHandlerBuilderByState[S <: State, State, Event](
           if (state == null) statePredicate.test(state.asInstanceOf[S])
           else statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
         eventPredicate = eventPredicate,
-        handler) :: cases
+        handler
+      ) :: cases
   }
 
   /**

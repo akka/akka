@@ -77,16 +77,20 @@ import scala.concurrent.{ Future, Promise }
             stageActor.watch(listener)
             if (isAvailable(out)) listener ! ResumeAccepting(1)
             val thisStage = self
-            bindingPromise.success(ServerBinding(localAddress)(() => {
-              // To allow unbind() to be invoked multiple times with minimal chance of dead letters, we check if
-              // it's already unbound before sending the message.
-              if (!unbindPromise.isCompleted) {
-                // Beware, sender must be explicit since stageActor.ref will be invalid to access after the stage
-                // stopped.
-                thisStage.tell(Unbind, thisStage)
-              }
-              unbindPromise.future
-            }, unbindPromise.future.map(_ => Done)(ExecutionContexts.parasitic)))
+            bindingPromise.success(
+              ServerBinding(localAddress)(
+                () => {
+                  // To allow unbind() to be invoked multiple times with minimal chance of dead letters, we check if
+                  // it's already unbound before sending the message.
+                  if (!unbindPromise.isCompleted) {
+                    // Beware, sender must be explicit since stageActor.ref will be invalid to access after the stage
+                    // stopped.
+                    thisStage.tell(Unbind, thisStage)
+                  }
+                  unbindPromise.future
+                },
+                unbindPromise.future.map(_ => Done)(ExecutionContexts.parasitic)
+              ))
           case f: CommandFailed =>
             val ex = new BindFailedException {
               // cannot modify the actual exception class for compatibility reasons
@@ -141,7 +145,8 @@ import scala.concurrent.{ Future, Promise }
             }
             tryUnbind()
           }
-        })
+        }
+      )
 
       private def connectionFor(connected: Connected, connection: ActorRef): StreamTcp.IncomingConnection = {
         connectionFlowsAwaitingInitialization.incrementAndGet()
@@ -431,7 +436,8 @@ private[stream] object ConnectionSourceStage {
             connection ! Abort
           } else fail(ex)
         }
-      })
+      }
+    )
 
     /** Fail stage and report to localAddressPromise if still possible */
     private def fail(ex: Throwable): Unit = {
@@ -557,7 +563,8 @@ private[stream] object ConnectionSourceStage {
               s"TCP idle-timeout encountered$connectionToString, no bytes passed in the last $idleTimeout",
               idleTimeout)
         },
-        Flow[ByteString])
+        Flow[ByteString]
+      )
     val fromNetTimeout: BidiFlow[ByteString, ByteString, ByteString, ByteString, NotUsed] =
       toNetTimeout.reversed // now the bottom flow transforms the exception, the top one doesn't (since that one is "fromNet")
 

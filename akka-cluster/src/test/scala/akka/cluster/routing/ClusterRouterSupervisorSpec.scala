@@ -40,9 +40,10 @@ class ClusterRouterSupervisorSpec extends AkkaSpec("""
               testActor ! "supervised"
               SupervisorStrategy.Stop
           }),
-          ClusterRouterPoolSettings(totalInstances = 1, maxInstancesPerNode = 1, allowLocalRoutees = true))
-          .props(Props(classOf[KillableActor])),
-        name = "therouter")
+          ClusterRouterPoolSettings(totalInstances = 1, maxInstancesPerNode = 1, allowLocalRoutees = true)
+        ).props(Props(classOf[KillableActor])),
+        name = "therouter"
+      )
 
       router ! "go away"
       expectMsg("supervised")

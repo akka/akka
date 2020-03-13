@@ -102,13 +102,19 @@ class UntrustedSpec extends ArteryMultiNodeSpec(UntrustedSpec.config) with Impli
     "discard harmful messages to /remote" in {
       val logProbe = TestProbe()
       // but instead install our own listener
-      system.eventStream.subscribe(system.actorOf(Props(new Actor {
-        import Logging._
-        def receive = {
-          case d @ Debug(_, _, msg: String) if msg contains "dropping" => logProbe.ref ! d
-          case _                                                       =>
-        }
-      }).withDeploy(Deploy.local), "debugSniffer"), classOf[Logging.Debug])
+      system.eventStream.subscribe(
+        system.actorOf(
+          Props(new Actor {
+            import Logging._
+            def receive = {
+              case d @ Debug(_, _, msg: String) if msg contains "dropping" => logProbe.ref ! d
+              case _                                                       =>
+            }
+          }).withDeploy(Deploy.local),
+          "debugSniffer"
+        ),
+        classOf[Logging.Debug]
+      )
 
       remoteDaemon ! "hello"
       logProbe.expectMsgType[Logging.Debug]

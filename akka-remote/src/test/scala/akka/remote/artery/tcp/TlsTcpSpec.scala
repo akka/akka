@@ -201,7 +201,8 @@ class TlsTcpWithHostnameVerificationSpec
         // The subjectAltName is 'localhost', so connecting to '127.0.0.1' should not
         // work when using hostname verification:
         extraConfig = Some("""akka.remote.artery.canonical.hostname = "127.0.0.1""""),
-        name = Some("systemB"))
+        name = Some("systemB")
+      )
 
       val addressB = address(systemB)
       val rootB = RootActorPath(addressB)
@@ -234,7 +235,8 @@ class TlsTcpWithHostnameVerificationSpec
           // Though we will still bind to 127.0.0.1 (make sure it's not ipv6)
           akka.remote.artery.bind.hostname = "127.0.0.1"
         """),
-        name = Some("systemB"))
+        name = Some("systemB")
+      )
 
       val addressB = address(systemB)
       val rootB = RootActorPath(addressB)

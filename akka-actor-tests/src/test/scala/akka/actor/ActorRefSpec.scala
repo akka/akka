@@ -455,14 +455,17 @@ class ActorRefSpec extends AkkaSpec("""
     }
 
     "be able to check for existence of children" in {
-      val parent = system.actorOf(Props(new Actor {
+      val parent = system.actorOf(
+        Props(new Actor {
 
-        val child = context.actorOf(Props(new Actor {
-          def receive = { case _ => }
-        }), "child")
+          val child = context.actorOf(Props(new Actor {
+            def receive = { case _ => }
+          }), "child")
 
-        def receive = { case name: String => sender() ! context.child(name).isDefined }
-      }), "parent")
+          def receive = { case name: String => sender() ! context.child(name).isDefined }
+        }),
+        "parent"
+      )
 
       assert(Await.result((parent ? "child"), timeout.duration) === true)
       assert(Await.result((parent ? "whatnot"), timeout.duration) === false)

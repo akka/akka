@@ -324,7 +324,8 @@ import scala.concurrent.{ Future, Promise }
 
               super.onDownstreamFinish(cause)
             }
-          })
+          }
+        )
 
         def onPush(): Unit =
           push(out, sinkIn.grab())

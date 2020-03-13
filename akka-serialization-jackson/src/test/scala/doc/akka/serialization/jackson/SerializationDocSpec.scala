@@ -184,7 +184,8 @@ class SerializationDocSpec
         "${classOf[doc.akka.serialization.jackson.MySerializable].getName}" = jackson-json
       }
     }
-    """)))
+    """)
+      ))
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {

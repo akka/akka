@@ -668,14 +668,18 @@ class FlowGroupBySpec extends StreamSpec("""
 
       val threeProcessed = Promise[Done]()
       val blockSubStream1 = TestLatch()
-      List(Elem(1, 1, () => {
-        // timeout just to not wait forever if something is wrong, not really relevant for test
-        Await.result(blockSubStream1, 10.seconds)
-        1
-      }), Elem(2, 1, () => 2), Elem(3, 2, () => {
-        threeProcessed.success(Done)
-        3
-      })).foreach(queue.offer)
+      List(
+        Elem(1, 1, () => {
+          // timeout just to not wait forever if something is wrong, not really relevant for test
+          Await.result(blockSubStream1, 10.seconds)
+          1
+        }),
+        Elem(2, 1, () => 2),
+        Elem(3, 2, () => {
+          threeProcessed.success(Done)
+          3
+        })
+      ).foreach(queue.offer)
       // two and three are processed as fast as possible, not blocked by substream 1 being clogged
       threeProcessed.future.futureValue should ===(Done)
       // let 1 pass so stream can complete

@@ -109,7 +109,8 @@ class EventSourcedBehaviorFailureSpec
           throw TestException("wrong event")
         probe.tell(event)
         state + event
-      }).receiveSignal(additionalSignalHandler.orElse {
+      }
+    ).receiveSignal(additionalSignalHandler.orElse {
       case (_, RecoveryCompleted) =>
         probe.tell("starting")
       case (_, PostStop) =>
@@ -182,7 +183,8 @@ class EventSourcedBehaviorFailureSpec
                 case (_, RecoveryCompleted) =>
                   probe.ref.tell("starting")
                   throw TestException("recovery call back failure")
-              }))
+              }
+            ))
             // since recovery fails restart supervision is not supposed to be used
             .onFailure(SupervisorStrategy.restart))
         probe.expectMessage("starting")

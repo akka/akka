@@ -341,7 +341,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
     RoundRobinPoolManifest -> deserializeRoundRobinPool,
     ScatterGatherPoolManifest -> deserializeScatterGatherPool,
     TailChoppingPoolManifest -> deserializeTailChoppingPool,
-    RemoteRouterConfigManifest -> deserializeRemoteRouterConfig)
+    RemoteRouterConfigManifest -> deserializeRemoteRouterConfig
+  )
 
   override def manifest(o: AnyRef): String =
     o match {
@@ -443,7 +444,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       a.getSystem,
       // technically the presence of hostname and port are guaranteed, see our serializeAddressData
       if (a.hasHostname) Some(a.getHostname) else None,
-      if (a.hasPort) Some(a.getPort) else None)
+      if (a.hasPort) Some(a.getPort) else None
+    )
   }
   private def addressFromProto(a: ArteryControlFormats.Address): Address = {
     Address(
@@ -451,7 +453,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       a.getSystem,
       // technically the presence of hostname and port are guaranteed, see our serializeAddressData
       if (a.hasHostname) Some(a.getHostname) else None,
-      if (a.hasPort) Some(a.getPort) else None)
+      if (a.hasPort) Some(a.getPort) else None
+    )
   }
 
   private def deserializeUniqueAddress(bytes: Array[Byte]): UniqueAddress = {
@@ -501,7 +504,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       FromConfig(
         resizer =
           if (fc.hasResizer) Some(payloadSupport.deserializePayload(fc.getResizer).asInstanceOf[Resizer]) else None,
-        routerDispatcher = if (fc.hasRouterDispatcher) fc.getRouterDispatcher else Dispatchers.DefaultDispatcherId)
+        routerDispatcher = if (fc.hasRouterDispatcher) fc.getRouterDispatcher else Dispatchers.DefaultDispatcherId
+      )
     }
 
   private def deserializeBalancingPool(bytes: Array[Byte]): BalancingPool = {
@@ -519,7 +523,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
         if (bp.hasResizer) Some(payloadSupport.deserializePayload(bp.getResizer).asInstanceOf[Resizer])
         else None,
       routerDispatcher = if (bp.hasRouterDispatcher) bp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
-      usePoolDispatcher = bp.getUsePoolDispatcher)
+      usePoolDispatcher = bp.getUsePoolDispatcher
+    )
   }
 
   private def deserializeRandomPool(bytes: Array[Byte]): RandomPool = {
@@ -530,7 +535,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
         if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
         else None,
       routerDispatcher = if (rp.hasRouterDispatcher) rp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
-      usePoolDispatcher = rp.getUsePoolDispatcher)
+      usePoolDispatcher = rp.getUsePoolDispatcher
+    )
   }
 
   private def deserializeRoundRobinPool(bytes: Array[Byte]): RoundRobinPool = {
@@ -541,7 +547,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
         if (rp.hasResizer) Some(payloadSupport.deserializePayload(rp.getResizer).asInstanceOf[Resizer])
         else None,
       routerDispatcher = if (rp.hasRouterDispatcher) rp.getRouterDispatcher else Dispatchers.DefaultDispatcherId,
-      usePoolDispatcher = rp.getUsePoolDispatcher)
+      usePoolDispatcher = rp.getUsePoolDispatcher
+    )
   }
 
   private def deserializeScatterGatherPool(bytes: Array[Byte]): ScatterGatherFirstCompletedPool = {
@@ -555,7 +562,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       within = deserializeFiniteDuration(sgp.getWithin),
       routerDispatcher =
         if (sgp.getGeneric.hasRouterDispatcher) sgp.getGeneric.getRouterDispatcher
-        else Dispatchers.DefaultDispatcherId)
+        else Dispatchers.DefaultDispatcherId
+    )
   }
 
   private def deserializeTailChoppingPool(bytes: Array[Byte]): TailChoppingPool = {
@@ -571,7 +579,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
         else Dispatchers.DefaultDispatcherId,
       usePoolDispatcher = tcp.getGeneric.getUsePoolDispatcher,
       within = deserializeFiniteDuration(tcp.getWithin),
-      interval = deserializeFiniteDuration(tcp.getInterval))
+      interval = deserializeFiniteDuration(tcp.getInterval)
+    )
   }
 
   private def deserializeRemoteRouterConfig(bytes: Array[Byte]): RemoteRouterConfig = {
@@ -590,7 +599,8 @@ class MiscMessageSerializer(val system: ExtendedActorSystem) extends SerializerW
       rampupRate = dr.getRampupRate,
       backoffThreshold = dr.getBackoffThreshold,
       backoffRate = dr.getBackoffRate,
-      messagesPerResize = dr.getMessagesPerResize)
+      messagesPerResize = dr.getMessagesPerResize
+    )
   }
 
   private def deserializeTimeUnit(unit: WireFormats.TimeUnit): TimeUnit = unit match {

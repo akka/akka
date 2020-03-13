@@ -438,19 +438,25 @@ object Source {
       failureMatcher: akka.japi.function.Function[Any, java.util.Optional[Throwable]],
       bufferSize: Int,
       overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorRef(new JavaPartialFunction[Any, CompletionStrategy] {
-      override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
-        val result = completionMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }, new JavaPartialFunction[Any, Throwable] {
-      override def apply(x: Any, isCheck: Boolean): Throwable = {
-        val result = failureMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }, bufferSize, overflowStrategy))
+    new Source(
+      scaladsl.Source.actorRef(
+        new JavaPartialFunction[Any, CompletionStrategy] {
+          override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
+            val result = completionMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        },
+        new JavaPartialFunction[Any, Throwable] {
+          override def apply(x: Any, isCheck: Boolean): Throwable = {
+            val result = failureMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        },
+        bufferSize,
+        overflowStrategy
+      ))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
@@ -498,11 +504,16 @@ object Source {
   @Deprecated
   @deprecated("Use variant accepting completion and failure matchers", "2.6.0")
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorRef({
-      case akka.actor.Status.Success(s: CompletionStrategy) => s
-      case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
-      case akka.actor.Status.Success                        => CompletionStrategy.Draining
-    }, { case akka.actor.Status.Failure(cause)              => cause }, bufferSize, overflowStrategy))
+    new Source(
+      scaladsl.Source.actorRef(
+        {
+          case akka.actor.Status.Success(s: CompletionStrategy) => s
+          case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
+          case akka.actor.Status.Success                        => CompletionStrategy.Draining
+        }, { case akka.actor.Status.Failure(cause)              => cause },
+        bufferSize,
+        overflowStrategy
+      ))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
@@ -522,19 +533,24 @@ object Source {
       ackMessage: Any,
       completionMatcher: akka.japi.function.Function[Any, java.util.Optional[CompletionStrategy]],
       failureMatcher: akka.japi.function.Function[Any, java.util.Optional[Throwable]]): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorRefWithBackpressure(ackMessage, new JavaPartialFunction[Any, CompletionStrategy] {
-      override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
-        val result = completionMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }, new JavaPartialFunction[Any, Throwable] {
-      override def apply(x: Any, isCheck: Boolean): Throwable = {
-        val result = failureMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }))
+    new Source(
+      scaladsl.Source.actorRefWithBackpressure(
+        ackMessage,
+        new JavaPartialFunction[Any, CompletionStrategy] {
+          override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
+            val result = completionMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        },
+        new JavaPartialFunction[Any, Throwable] {
+          override def apply(x: Any, isCheck: Boolean): Throwable = {
+            val result = failureMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        }
+      ))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
@@ -558,19 +574,24 @@ object Source {
       ackMessage: Any,
       completionMatcher: akka.japi.function.Function[Any, java.util.Optional[CompletionStrategy]],
       failureMatcher: akka.japi.function.Function[Any, java.util.Optional[Throwable]]): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorRefWithBackpressure(ackMessage, new JavaPartialFunction[Any, CompletionStrategy] {
-      override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
-        val result = completionMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }, new JavaPartialFunction[Any, Throwable] {
-      override def apply(x: Any, isCheck: Boolean): Throwable = {
-        val result = failureMatcher(x)
-        if (!result.isPresent) throw JavaPartialFunction.noMatch()
-        else result.get()
-      }
-    }))
+    new Source(
+      scaladsl.Source.actorRefWithBackpressure(
+        ackMessage,
+        new JavaPartialFunction[Any, CompletionStrategy] {
+          override def apply(x: Any, isCheck: Boolean): CompletionStrategy = {
+            val result = completionMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        },
+        new JavaPartialFunction[Any, Throwable] {
+          override def apply(x: Any, isCheck: Boolean): Throwable = {
+            val result = failureMatcher(x)
+            if (!result.isPresent) throw JavaPartialFunction.noMatch()
+            else result.get()
+          }
+        }
+      ))
 
   /**
    * Creates a `Source` that is materialized as an [[akka.actor.ActorRef]].
@@ -594,11 +615,14 @@ object Source {
   @Deprecated
   @deprecated("Use actorRefWithBackpressure accepting completion and failure matchers", "2.6.0")
   def actorRefWithAck[T](ackMessage: Any): Source[T, ActorRef] =
-    new Source(scaladsl.Source.actorRefWithBackpressure(ackMessage, {
-      case akka.actor.Status.Success(s: CompletionStrategy) => s
-      case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
-      case akka.actor.Status.Success                        => CompletionStrategy.Draining
-    }, { case akka.actor.Status.Failure(cause)              => cause }))
+    new Source(
+      scaladsl.Source.actorRefWithBackpressure(
+        ackMessage, {
+          case akka.actor.Status.Success(s: CompletionStrategy) => s
+          case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
+          case akka.actor.Status.Success                        => CompletionStrategy.Draining
+        }, { case akka.actor.Status.Failure(cause)              => cause }
+      ))
 
   /**
    * A graph with the shape of a source logically is a source, this method makes

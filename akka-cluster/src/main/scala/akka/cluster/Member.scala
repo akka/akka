@@ -279,7 +279,8 @@ object MemberStatus {
       Leaving -> Set(Exiting, Down, Removed),
       Down -> Set(Removed),
       Exiting -> Set(Removed, Down),
-      Removed -> Set.empty[MemberStatus])
+      Removed -> Set.empty[MemberStatus]
+    )
 }
 
 object UniqueAddress extends AbstractFunction2[Address, Int, UniqueAddress] {

@@ -42,7 +42,8 @@ object AllowJavaSerializationOffSpec {
       }
     }
     """)),
-    None)
+    None
+  )
   val actorSystemSettings = ActorSystemSetup(bootstrapSettings, serializationSettings)
 
   val noJavaSerializationSystem = ActorSystem(
@@ -55,7 +56,8 @@ object AllowJavaSerializationOffSpec {
         warn-about-java-serializer-usage = on
       }
     }
-    """.stripMargin))
+    """.stripMargin)
+  )
   val noJavaSerializer = new DisabledJavaSerializer(noJavaSerializationSystem.asInstanceOf[ExtendedActorSystem])
 
 }
@@ -75,7 +77,8 @@ class AllowJavaSerializationOffSpec
       SerializerDetails(
         "java-manual",
         new JavaSerializer(system.asInstanceOf[ExtendedActorSystem]),
-        List(classOf[ProgrammaticJavaDummy])))
+        List(classOf[ProgrammaticJavaDummy]))
+    )
   }
   val addedJavaSerializationProgramaticallyButDisabledSettings = BootstrapSetup(
     None,
@@ -89,7 +92,8 @@ class AllowJavaSerializationOffSpec
       }
     }  
     """)),
-    None)
+    None
+  )
 
   val dontAllowJavaSystem =
     ActorSystem(

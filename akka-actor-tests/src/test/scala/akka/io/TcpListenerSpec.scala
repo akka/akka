@@ -181,7 +181,8 @@ class TcpListenerSpec extends AkkaSpec("""
           this,
           bindCommander.ref,
           Bind(handler.ref, endpoint, 100, Nil, pullMode)).withDeploy(Deploy.local),
-        name = "test-listener-" + counter.next())
+        name = "test-listener-" + counter.next()
+      )
       parent.watch(listener)
       def receive: Receive = {
         case msg => parent.ref.forward(msg)

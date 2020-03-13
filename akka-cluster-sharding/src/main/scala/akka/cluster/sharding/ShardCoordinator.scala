@@ -773,7 +773,8 @@ abstract class ShardCoordinator(
       "GetShardHome [{}] request from [{}] deferred, because rebalance is in progress for this shard. " +
       "It will be handled when rebalance is done.",
       shard,
-      from)
+      from
+    )
     rebalanceInProgress = rebalanceInProgress.updated(shard, rebalanceInProgress(shard) + from)
   }
 
@@ -1007,7 +1008,8 @@ class PersistentShardCoordinator(
               "ShardRegionTerminated, but region {} was not registered. This inconsistency is due to that " +
               " some stored ActorRef in Akka v2.3.0 and v2.3.1 did not contain full address information. It will be " +
               "removed by later watch.",
-              region)
+              region
+            )
           }
         case ShardRegionProxyTerminated(proxy) =>
           if (state.regionProxies.contains(proxy))
@@ -1139,7 +1141,8 @@ class DDataShardCoordinator(
       case GetFailure(CoordinatorStateKey, _) =>
         log.error(
           "The ShardCoordinator was unable to get an initial state within 'waiting-for-state-timeout': {} millis (retrying). Has ClusterSharding been started on all nodes?",
-          readMajority.timeout.toMillis)
+          readMajority.timeout.toMillis
+        )
         // repeat until GetSuccess
         getCoordinatorState()
 
@@ -1228,7 +1231,8 @@ class DDataShardCoordinator(
         "Perhaps the ShardRegion has not started on all active nodes yet? event={}",
         writeMajority.timeout.toMillis,
         if (terminating) "terminating" else "retrying",
-        evt)
+        evt
+      )
       if (terminating) {
         context.stop(self)
       } else {
@@ -1249,7 +1253,8 @@ class DDataShardCoordinator(
         "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis ({}), event={}",
         writeMajority.timeout.toMillis,
         if (terminating) "terminating" else "retrying",
-        evt)
+        evt
+      )
       if (terminating) {
         context.stop(self)
       } else {
@@ -1265,7 +1270,8 @@ class DDataShardCoordinator(
         error,
         evt,
         if (terminating) "Coordinator will be terminated due to Terminate message received"
-        else "Coordinator will be restarted")
+        else "Coordinator will be restarted"
+      )
       if (terminating) {
         context.stop(self)
       } else {
@@ -1297,7 +1303,8 @@ class DDataShardCoordinator(
       "GetShardHome [{}] request from [{}] stashed, because waiting for initial state or update of state. " +
       "It will be handled afterwards.",
       request.shard,
-      sender)
+      sender
+    )
     getShardHomeRequests += (sender -> request)
   }
 

@@ -51,7 +51,10 @@ class MessageSerializerSpec extends AkkaSpec("""
               Metric("bar2", Float.MaxValue, None),
               Metric("bar3", Int.MaxValue, None),
               Metric("bar4", Long.MaxValue, None),
-              Metric("bar5", BigInt(Long.MaxValue), None)))))
+              Metric("bar5", BigInt(Long.MaxValue), None)
+            )
+          )
+        ))
 
       checkSerialization(MetricsGossipEnvelope(a1.address, metricsGossip, true))
 
@@ -68,7 +71,8 @@ class MessageSerializerSpec extends AkkaSpec("""
           MixMetricsSelector(Vector(CpuMetricsSelector, HeapMetricsSelector, SystemLoadAverageMetricsSelector)),
         nrOfInstances = 7,
         routerDispatcher = "my-dispatcher",
-        usePoolDispatcher = true)
+        usePoolDispatcher = true
+      )
       checkSerialization(complicatedPool)
     }
   }

@@ -176,7 +176,8 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
                 case e: TE  => throw e
               }
             } else Future.successful(None),
-          _ => Future.successful(Done))
+          _ => Future.successful(Done)
+        )
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
         .runWith(Sink.seq)
 
@@ -194,7 +195,8 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
                 case e: TE  => Future.failed(e)
               }
             } else Future.successful(None),
-          _ => Future.successful(Done))
+          _ => Future.successful(Done)
+        )
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.resumingDecider))
         .runWith(Sink.seq)
 
@@ -218,7 +220,8 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
               throw TE("read-error")
             } else if (reader.hasNext) Future.successful(Some(reader.next))
             else Future.successful(None),
-          _ => Future.successful(Done))
+          _ => Future.successful(Done)
+        )
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .runWith(Sink.seq)
 
@@ -243,7 +246,8 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
               Future.failed(TE("read-error"))
             } else if (reader.hasNext) Future.successful(Some(reader.next))
             else Future.successful(None),
-          _ => Future.successful(Done))
+          _ => Future.successful(Done)
+        )
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .runWith(Sink.seq)
 
@@ -288,7 +292,8 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             if (startCounter.incrementAndGet() < 2) Future.successful(List(1, 2, 3).iterator)
             else throw TE("start-error"),
           _ => throw TE("read-error"),
-          _ => Future.successful(Done))
+          _ => Future.successful(Done)
+        )
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .runWith(Sink.fromSubscriber(out))
 
@@ -305,7 +310,8 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             if (startCounter.incrementAndGet() < 2) Future.successful(List(1, 2, 3).iterator)
             else Future.failed(TE("start-error")),
           _ => throw TE("read-error"),
-          _ => Future.successful(Done))
+          _ => Future.successful(Done)
+        )
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
         .runWith(Sink.fromSubscriber(out))
 
@@ -342,7 +348,8 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             Future.successful {
               closeLatch.countDown()
               Done
-            })
+            }
+        )
         .runWith(Sink.asPublisher(false))(mat)
       val c = TestSubscriber.manualProbe[String]()
       p.subscribe(c)
@@ -360,7 +367,8 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           // delay it a bit to give cancellation time to come upstream
           () => akka.pattern.after(100.millis, system.scheduler)(Future.successful(())),
           _ => Future.successful(Some("whatever")),
-          _ => closePromise.success(Done).future)
+          _ => closePromise.success(Done).future
+        )
         .runWith(Sink.cancelled)
 
       closePromise.future.futureValue should ===(Done)

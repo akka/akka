@@ -228,7 +228,10 @@ private[remote] object AkkaPduProtobufCodec extends AkkaPduCodec {
             if (msgPdu.hasSender)
               OptionVal(provider.resolveActorRefWithLocalAddress(msgPdu.getSender.getPath, localAddress))
             else OptionVal.None,
-          seqOption = if (msgPdu.hasSeq) Some(SeqNo(msgPdu.getSeq)) else None))
+          seqOption =
+            if (msgPdu.hasSeq) Some(SeqNo(msgPdu.getSeq))
+            else None
+        ))
     } else None
 
     (ackOption, messageOption)

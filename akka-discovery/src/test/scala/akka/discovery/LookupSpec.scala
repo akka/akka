@@ -27,14 +27,16 @@ class LookupSpec extends AnyWordSpec with Matchers with OptionValues {
       portnameAndProtocol + char10 + "$" + char10,
       portnameAndProtocol + char10 + "-",
       portnameAndProtocol + char10 + "." + char64,
-      portnameAndProtocol + char64 + "." + char10)
+      portnameAndProtocol + char64 + "." + char10
+    )
 
     val validDomainNames = Seq(
       portnameAndProtocol + char10 + "." + char10,
       portnameAndProtocol + char10 + "-" + char10,
       portnameAndProtocol + char10 + "." + char63,
       portnameAndProtocol + char63 + "." + char10,
-      portnameAndProtocol + char63 + "." + char63 + "." + char63)
+      portnameAndProtocol + char63 + "." + char63 + "." + char63
+    )
 
     (invalidDomainNames, validDomainNames)
   }
@@ -47,7 +49,8 @@ class LookupSpec extends AnyWordSpec with Matchers with OptionValues {
     "_serviceName.local",
     "_serviceName,local",
     "-serviceName.local",
-    "serviceName.local-")
+    "serviceName.local-"
+  )
 
   "Lookup.parseSrv" should {
 

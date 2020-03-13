@@ -74,7 +74,8 @@ private[akka] class ThrowableSupport(system: ExtendedActorSystem) {
           "Couldn't deserialize [{}] because Java serialization is disabled. Fallback to " +
           "ThrowableNotSerializableException. {}",
           notSerializableException.originalClassName,
-          notSerializableException.originalMessage)
+          notSerializableException.originalMessage
+        )
         notSerializableException
       } else {
 

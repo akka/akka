@@ -198,7 +198,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
       TestEvent.Mute(
         EventFilter[EndpointException](),
         EventFilter.error(start = "AssociationError"),
-        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")
+      ))
   }
 
   private def byteStringOfSize(size: Int) = ByteString.fromArray(Array.fill(size)(42: Byte))
@@ -622,7 +623,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
           associationEventListenerFuture = Future.successful(new Transport.AssociationEventListener {
             override def notify(ev: Transport.AssociationEvent): Unit =
               remoteTransportProbe.ref ! ev
-          }))
+          })
+        )
 
         // Hijack associations through the test transport
         awaitCond(registry.transportsReady(rawLocalAddress, rawRemoteAddress))
@@ -704,7 +706,8 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
           associationEventListenerFuture = Future.successful(new Transport.AssociationEventListener {
             override def notify(ev: Transport.AssociationEvent): Unit =
               remoteTransportProbe.ref ! ev
-          }))
+          })
+        )
 
         // Hijack associations through the test transport
         awaitCond(registry.transportsReady(rawLocalAddress, rawRemoteAddress))

@@ -361,7 +361,8 @@ class PinnedDispatcherConfigurator(config: Config, prerequisites: DispatcherPrer
           "PinnedDispatcherConfigurator",
           this.getClass,
           "PinnedDispatcher [%s] not configured to use ThreadPoolExecutor, falling back to default config.".format(
-            config.getString("id"))))
+            config.getString("id"))
+        ))
       ThreadPoolConfig()
   }
 

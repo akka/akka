@@ -84,7 +84,8 @@ class ActorBenchmark {
             mailbox-type = "$mailbox"
          }
        }
-      """))
+      """)
+    )
   }
 
   @TearDown(Level.Trial)

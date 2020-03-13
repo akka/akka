@@ -281,7 +281,8 @@ private class EventSourcedProducerQueue[A](
         state.copy(
           highestConfirmedSeqNr = math.max(state.highestConfirmedSeqNr, seqNr),
           confirmedSeqNr = state.confirmedSeqNr.updated(confirmationQualifier, (seqNr, timestampMillis)),
-          unconfirmed = newUnconfirmed)
+          unconfirmed = newUnconfirmed
+        )
       case Cleanup(confirmationQualifiers) =>
         state.copy(confirmedSeqNr = state.confirmedSeqNr -- confirmationQualifiers)
     }

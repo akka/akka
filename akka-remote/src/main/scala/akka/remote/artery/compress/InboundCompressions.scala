@@ -237,7 +237,8 @@ private[remote] object InboundCompression {
         activeTable = DecompressionTable.empty[T],
         nextTable = DecompressionTable.empty[T].copy(version = 1),
         advertisementInProgress = None,
-        keepOldTables = KeepOldTablesNumber)
+        keepOldTables = KeepOldTablesNumber
+      )
   }
 
   /**
@@ -294,7 +295,8 @@ private[remote] object InboundCompression {
         activeTable = nextTable,
         nextTable = DecompressionTable.empty[T].copy(version = incrementTableVersion(nextTable.version)),
         advertisementInProgress = None,
-        keepOldTables = keepOldTables)
+        keepOldTables = keepOldTables
+      )
     }
   }
 
@@ -363,7 +365,8 @@ private[remote] abstract class InboundCompression[T >: Null](
             "Received first value from originUid [{}] compressed using the advertised compression table, " +
             "flipping to it (version: {})",
             originUid,
-            current.nextTable.version)
+            current.nextTable.version
+          )
           confirmAdvertisement(incomingTableVersion, gaveUp = false)
           decompressInternal(incomingTableVersion, idx, attemptCounter + 1) // recurse
 
@@ -377,7 +380,8 @@ private[remote] abstract class InboundCompression[T >: Null](
             originUid,
             activeVersion,
             current.nextTable.version,
-            incomingTableVersion)
+            incomingTableVersion
+          )
           OptionVal.None
       }
     }
@@ -398,7 +402,8 @@ private[remote] abstract class InboundCompression[T >: Null](
           if (gaveUp) "Gave up" else "Confirmed",
           tableVersion,
           originUid,
-          inProgress.version)
+          inProgress.version
+        )
       case None =>
       // already confirmed
     }

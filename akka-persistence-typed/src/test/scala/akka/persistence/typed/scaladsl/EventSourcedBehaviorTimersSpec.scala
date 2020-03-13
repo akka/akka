@@ -46,7 +46,8 @@ object EventSourcedBehaviorTimersSpec {
                 timers.startSingleTimer("key", "scheduled", Duration.Zero)
                 Effect.persist(command).thenRun(_ => probe ! command)
             },
-          eventHandler = (state, evt) => state + evt)
+          eventHandler = (state, evt) => state + evt
+        )
       }
     }
 
@@ -66,7 +67,8 @@ object EventSourcedBehaviorTimersSpec {
               case _ =>
                 Effect.persist(command).thenRun(_ => probe ! command)
             },
-          eventHandler = (state, evt) => state + evt)
+          eventHandler = (state, evt) => state + evt
+        )
       }
     }
 

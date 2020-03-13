@@ -115,7 +115,8 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
             ConfigFactory.parseString("""
                 akka.remote.artery.enabled = false
                 akka.remote.classic.netty.tcp.port = 2553
-              """.stripMargin).withFallback(config))
+              """.stripMargin).withFallback(config)
+          )
 
         try {
           val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
@@ -159,7 +160,8 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
             ConfigFactory.parseString("""
                  akka.remote.artery.enabled = off
                  akka.remote.classic.netty.tcp.port = 0
-              """.stripMargin).withFallback(config))
+              """.stripMargin).withFallback(config)
+          )
         val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
 
         try {

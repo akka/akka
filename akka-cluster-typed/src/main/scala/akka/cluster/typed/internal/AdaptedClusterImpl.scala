@@ -154,13 +154,15 @@ private[akka] final class AdapterClusterImpl(system: ActorSystem[_]) extends Clu
       // resume supervision: has state that shouldn't be lost in case of failure
       Behaviors.supervise(subscriptionsBehavior(classicCluster)).onFailure(SupervisorStrategy.resume),
       "clusterStateSubscriptions",
-      Props.empty)
+      Props.empty
+    )
 
   override lazy val manager: ActorRef[ClusterCommand] =
     system.internalSystemActorOf(
       // restart supervision: no state lost in case of failure
       Behaviors.supervise(managerBehavior(classicCluster)).onFailure(SupervisorStrategy.restart),
       "clusterCommandManager",
-      Props.empty)
+      Props.empty
+    )
 
 }

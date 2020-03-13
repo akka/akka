@@ -298,7 +298,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
             totalInstances = 2,
             maxInstancesPerNode = 5,
             allowLocalRoutees = true,
-            useRoles = Set("Richard, Duke of Gloucester"))))
+            useRoles = Set("Richard, Duke of Gloucester"))
+        ))
     }
 
     "be serializable with many roles" in {
@@ -309,7 +310,8 @@ class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = clust
             totalInstances = 2,
             maxInstancesPerNode = 5,
             allowLocalRoutees = true,
-            useRoles = Set("Richard, Duke of Gloucester", "Hongzhi Emperor", "Red Rackham"))))
+            useRoles = Set("Richard, Duke of Gloucester", "Hongzhi Emperor", "Red Rackham"))
+        ))
     }
   }
 

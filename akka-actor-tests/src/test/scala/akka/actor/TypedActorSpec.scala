@@ -499,7 +499,8 @@ class TypedActorSpec
           classOf[Foo].getDeclaredMethod(
             "testMethodCallSerialization",
             Array[Class[_]](classOf[Foo], classOf[String], classOf[Int], classOf[WithStringSerializedClass]): _*),
-          Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef], WithStringSerializedClass()))
+          Array[AnyRef](someFoo, null, 1.asInstanceOf[AnyRef], WithStringSerializedClass())
+        )
         val baos = new ByteArrayOutputStream(8192 * 4)
         val out = new ObjectOutputStream(baos)
 

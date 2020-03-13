@@ -543,7 +543,8 @@ class TcpSpec extends StreamSpec("""
         "TcpSpec-unexpected-system2",
         ConfigFactory.parseString("""
           akka.loglevel = DEBUG # issue #21660
-        """).withFallback(system.settings.config))
+        """).withFallback(system.settings.config)
+      )
 
       try {
         implicit val materializer = SystemMaterializer(system2).materializer
@@ -593,7 +594,8 @@ class TcpSpec extends StreamSpec("""
         "TcpSpec-resolution-failure",
         ConfigFactory.parseString("""
           akka.io.dns.inet-address.provider-object = akka.stream.io.FailingDnsResolver
-          """).withFallback(system.settings.config))
+          """).withFallback(system.settings.config)
+      )
       try {
         val unknownHostName = "abcdefghijklmnopkuh"
 
@@ -895,7 +897,8 @@ class TcpSpec extends StreamSpec("""
           Flow[ByteString].mapConcat(_.utf8String.toList).takeWhile(_ != '\n').map(c => ByteString(c)),
           address.getHostName,
           address.getPort,
-          () => createSSLEngine(TLSRole.server))
+          () => createSSLEngine(TLSRole.server)
+        )
         .futureValue
       system.log.info(s"Server bound to ${address.getHostString}:${address.getPort}")
 
@@ -981,7 +984,8 @@ class TcpSpec extends StreamSpec("""
           address.getHostName,
           address.getPort,
           sslContext,
-          firstSession)
+          firstSession
+        )
         .futureValue
       system.log.info(s"Server bound to ${address.getHostString}:${address.getPort}")
 

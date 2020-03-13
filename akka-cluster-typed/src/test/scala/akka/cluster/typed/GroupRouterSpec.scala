@@ -81,25 +81,33 @@ class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) 
           // ensure all nodes are joined and all actors are discovered.
           ctx.system.receptionist ! Receptionist.Subscribe(
             pingPongKey,
-            ctx.spawn(Behaviors.receiveMessage[Receptionist.Listing] {
-              case pingPongKey.Listing(update)
-                  if update.size == settings.node1WorkerCount + settings.node2WorkerCount =>
-                (0 until settings.messageCount).foreach(_ => router ! Ping)
-                Behaviors.empty
-              case _ =>
-                Behaviors.same
-            }, "waiting-actor-discovery"))
+            ctx.spawn(
+              Behaviors.receiveMessage[Receptionist.Listing] {
+                case pingPongKey.Listing(update)
+                    if update.size == settings.node1WorkerCount + settings.node2WorkerCount =>
+                  (0 until settings.messageCount).foreach(_ => router ! Ping)
+                  Behaviors.empty
+                case _ =>
+                  Behaviors.same
+              },
+              "waiting-actor-discovery"
+            )
+          )
           workerStatsBehavior(List.empty)
         },
-        system.name)
+        system.name
+      )
 
-    val system2 = createSystem(Behaviors.setup[Command] { ctx =>
-      (0 until settings.node2WorkerCount).foreach { i =>
-        val worker = ctx.spawn(pingPong(ctx.self), s"ping-pong-$i")
-        ctx.system.receptionist ! Receptionist.Register(pingPongKey, worker)
-      }
-      workerStatsBehavior(List.empty)
-    }, system.name)
+    val system2 = createSystem(
+      Behaviors.setup[Command] { ctx =>
+        (0 until settings.node2WorkerCount).foreach { i =>
+          val worker = ctx.spawn(pingPong(ctx.self), s"ping-pong-$i")
+          ctx.system.receptionist ! Receptionist.Register(pingPongKey, worker)
+        }
+        workerStatsBehavior(List.empty)
+      },
+      system.name
+    )
     val node1 = Cluster(system1)
     node1.manager ! Join(node1.selfMember.address)
     val node2 = Cluster(system2)
@@ -135,7 +143,8 @@ class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) 
         Routers.group(pingPongKey).withRandomRouting(),
         Routers.group(pingPongKey).withRoundRobinRouting(),
         Routers.group(pingPongKey).withRoundRobinRouting(false),
-        Routers.group(pingPongKey).withRandomRouting(false))
+        Routers.group(pingPongKey).withRandomRouting(false)
+      )
 
       groupRouters.foreach { groupRouter =>
         checkGroupRouterBehavior(groupRouter, settings) {

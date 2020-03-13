@@ -216,7 +216,8 @@ object MultiNodeSpec {
       "akka.remote.artery.canonical.hostname" -> selfName,
       "akka.remote.classic.netty.tcp.hostname" -> selfName,
       "akka.remote.classic.netty.tcp.port" -> selfPort,
-      "akka.remote.artery.canonical.port" -> selfPort))
+      "akka.remote.artery.canonical.port" -> selfPort
+    ))
 
   private[testkit] val baseConfig: Config =
     ConfigFactory.parseString("""
@@ -316,10 +317,13 @@ abstract class MultiNodeSpec(
     if (selfIndex == 0) {
       testConductor.removeNode(myself)
       within(testConductor.Settings.BarrierTimeout.duration) {
-        awaitCond({
-          // Await.result(testConductor.getNodes, remaining).filterNot(_ == myself).isEmpty
-          testConductor.getNodes.await.forall(_ == myself)
-        }, message = s"Nodes not shutdown: ${testConductor.getNodes.await}")
+        awaitCond(
+          {
+            // Await.result(testConductor.getNodes, remaining).filterNot(_ == myself).isEmpty
+            testConductor.getNodes.await.forall(_ == myself)
+          },
+          message = s"Nodes not shutdown: ${testConductor.getNodes.await}"
+        )
       }
     }
     shutdown(system, duration = shutdownTimeout)

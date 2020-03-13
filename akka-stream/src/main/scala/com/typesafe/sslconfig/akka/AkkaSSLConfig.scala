@@ -165,7 +165,8 @@ final class AkkaSSLConfig(system: ExtendedActorSystem, val config: SSLConfigSett
         case e: CertPathValidatorException =>
           log.warning(
             "You are using ssl-config.default=true and have a weak certificate in your default trust store! (You can modify akka.ssl-config.disabledKeyAlgorithms to remove this message.)",
-            e)
+            e
+          )
       }
     }
   }

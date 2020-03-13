@@ -235,7 +235,8 @@ object ActorModelSpec {
             Option(dispatcher).getOrElse(this).getClass,
             "actual: " + stats + ", required: InterceptorStats(susp=" + suspensions +
             ",res=" + resumes + ",reg=" + registers + ",unreg=" + unregisters +
-            ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts))
+            ",recv=" + msgsReceived + ",proc=" + msgsProcessed + ",restart=" + restarts
+          ))
         throw e
     }
   }

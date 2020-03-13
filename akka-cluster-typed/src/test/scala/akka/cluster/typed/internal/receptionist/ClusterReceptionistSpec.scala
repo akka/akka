@@ -161,10 +161,13 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
           clusterNode1.manager ! Leave(clusterNode2.selfMember.address)
         }
 
-        regProbe1.awaitAssert({
-          // we will also potentially get an update that the service was unreachable before the expected one
-          regProbe1.expectMessage(10.seconds, Listing(PingKey, Set(service1)))
-        }, 10.seconds)
+        regProbe1.awaitAssert(
+          {
+            // we will also potentially get an update that the service was unreachable before the expected one
+            regProbe1.expectMessage(10.seconds, Listing(PingKey, Set(service1)))
+          },
+          10.seconds
+        )
 
         // register another after removal
         val service1b = testKit1.spawn(pingPongBehavior)
@@ -216,10 +219,13 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
         clusterNode2.manager ! Down(clusterNode1.selfMember.address)
         // service1 removed
-        regProbe2.awaitAssert({
-          // we will also potentially get an update that the service was unreachable before the expected one
-          regProbe2.expectMessage(10.seconds, Listing(PingKey, Set(service2)))
-        }, 10.seconds)
+        regProbe2.awaitAssert(
+          {
+            // we will also potentially get an update that the service was unreachable before the expected one
+            regProbe2.expectMessage(10.seconds, Listing(PingKey, Set(service2)))
+          },
+          10.seconds
+        )
       } finally {
         testKit1.shutdownTestKit()
         testKit2.shutdownTestKit()
@@ -274,11 +280,14 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
         system2.terminate()
         Await.ready(system2.whenTerminated, 10.seconds)
         clusterNode1.manager ! Down(clusterNode2.selfMember.address)
-        regProbe1.awaitAssert({
+        regProbe1.awaitAssert(
+          {
 
-          // we will also potentially get an update that the service was unreachable before the expected one
-          regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
-        }, 10.seconds)
+            // we will also potentially get an update that the service was unreachable before the expected one
+            regProbe1.expectMessage(10.seconds, Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+          },
+          10.seconds
+        )
       } finally {
         testKit1.shutdownTestKit()
         testKit2.shutdownTestKit()
@@ -327,7 +336,8 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
             akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
             # retry joining when existing member removed
             akka.cluster.retry-unsuccessful-join-after = 1s
-          """).withFallback(config))
+          """).withFallback(config)
+        )
 
         try {
           val system3 = testKit3.system
@@ -355,7 +365,8 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
                   m.status == MemberStatus.Up &&
                   !clusterNode1.state.unreachable(m)) should ===(true)
             },
-            10.seconds)
+            10.seconds
+          )
 
           // we should get either empty message and then updated with the new incarnation actor
           // or just updated with the new service directly
@@ -394,7 +405,8 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
             # it can be stressed more by using all
             write-consistency = all
           }
-          """).withFallback(ClusterReceptionistSpec.config))
+          """).withFallback(ClusterReceptionistSpec.config)
+      )
       val system1 = testKit1.system
       val testKit2 = ActorTestKit(system1.name, system1.settings.config)
       val system2 = testKit2.system
@@ -436,7 +448,8 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
           ConfigFactory.parseString(s"""
             akka.remote.classic.netty.tcp.port = ${clusterNode2.selfMember.address.port.get}
             akka.remote.artery.canonical.port = ${clusterNode2.selfMember.address.port.get}
-          """).withFallback(config))
+          """).withFallback(config)
+        )
 
         try {
           val system3 = testKit3.system

@@ -200,8 +200,10 @@ object StreamConverters {
                     next
                   }
                 },
-                0),
-              false)
+                0
+              ),
+              false
+            )
             .onClose(new Runnable { def run = queue.cancel() }))
       .withAttributes(DefaultAttributes.asJavaStream)
   }

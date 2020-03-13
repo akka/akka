@@ -546,7 +546,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
             "Association to [{}] with unknown UID is irrecoverably failed. " +
             "Address cannot be quarantined without knowing the UID, gating instead for {} ms.",
             remoteAddress,
-            settings.RetryGateClosedFor.toMillis)
+            settings.RetryGateClosedFor.toMillis
+          )
           endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         }
         Stop
@@ -563,7 +564,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
             remoteAddress,
             settings.RetryGateClosedFor.toMillis,
             reason.getMessage,
-            causedBy)
+            causedBy
+          )
           endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         }
         disassiciationInfo.foreach {
@@ -579,7 +581,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
             "Remote system with address [{}] has shut down. " +
             "Address is now gated for {} ms, all messages to this address will be delivered to dead letters.",
             remoteAddress,
-            settings.RetryGateClosedFor.toMillis)
+            settings.RetryGateClosedFor.toMillis
+          )
           endpoints.markAsFailed(sender(), Deadline.now + settings.RetryGateClosedFor)
         }
         Stop
@@ -658,7 +661,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
             "Association to [{}] with unknown UID is reported as quarantined, but " +
             "address cannot be quarantined without knowing the UID, gating instead for {} ms.",
             address,
-            settings.RetryGateClosedFor.toMillis)
+            settings.RetryGateClosedFor.toMillis
+          )
           endpoints.markAsFailed(endpoint, Deadline.now + settings.RetryGateClosedFor)
         case (Some(Pass(endpoint, uidOption)), Some(quarantineUid)) =>
           uidOption match {
@@ -732,7 +736,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
             transportMapping(recipientRef.localAddressToUse),
             settings,
             handleOption = None,
-            writing = true))
+            writing = true)
+        )
       }
 
       endpoints.writableEndpointWithPolicyFor(recipientAddress) match {
@@ -977,7 +982,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
                 AkkaPduProtobufCodec,
                 receiveBuffers))
             .withDeploy(Deploy.local),
-          "reliableEndpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
+          "reliableEndpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()
+        ))
     else
       context.watch(
         context.actorOf(
@@ -994,7 +1000,8 @@ private[remote] class EndpointManager(conf: Config, log: LoggingAdapter)
                 receiveBuffers,
                 reliableDeliverySupervisor = None))
             .withDeploy(Deploy.local),
-          "endpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()))
+          "endpointWriter-" + AddressUrlEncoder(remoteAddress) + "-" + endpointId.next()
+        ))
   }
 
   private var normalShutdown = false

@@ -45,7 +45,8 @@ object PersistentActorCompileOnlyTest {
       },
       eventHandler = {
         case (state, Evt(data)) => state.copy(data :: state.events)
-      })
+      }
+    )
   }
 
   object RecoveryComplete {
@@ -98,7 +99,8 @@ object PersistentActorCompileOnlyTest {
                     dataByCorrelationId = state.dataByCorrelationId + (correlationId -> data))
                 case SideEffectAcknowledged(correlationId) =>
                   state.copy(dataByCorrelationId = state.dataByCorrelationId - correlationId)
-              }).receiveSignal {
+              }
+          ).receiveSignal {
             case (state, RecoveryCompleted) =>
               state.dataByCorrelationId.foreach {
                 case (correlationId, data) => performSideEffect(ctx.self, correlationId, data)
@@ -142,7 +144,8 @@ object PersistentActorCompileOnlyTest {
       },
       eventHandler = {
         case (_, MoodChanged(to)) => to
-      })
+      }
+    )
 
     Behaviors.withTimers((timers: TimerScheduler[Command]) => {
       timers.startTimerWithFixedDelay(MoodSwing, 10.seconds)
@@ -175,7 +178,8 @@ object PersistentActorCompileOnlyTest {
           case TaskRegistered(task) => State(task :: state.tasksInFlight)
           case TaskRemoved(task) =>
             State(state.tasksInFlight.filter(_ != task))
-        }).snapshotWhen { (state, e, seqNr) =>
+        }
+    ).snapshotWhen { (state, e, seqNr) =>
       state.tasksInFlight.isEmpty
     }
   }
@@ -214,7 +218,8 @@ object PersistentActorCompileOnlyTest {
               case TaskRegistered(task) => State(task :: state.tasksInFlight)
               case TaskRemoved(task) =>
                 State(state.tasksInFlight.filter(_ != task))
-            }))
+            }
+        ))
 
   }
 
@@ -321,7 +326,8 @@ object PersistentActorCompileOnlyTest {
       eventHandler = {
         case (_: First, _) => new Second
         case (state, _)    => state
-      })
+      }
+    )
 
   }
 

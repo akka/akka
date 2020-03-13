@@ -235,7 +235,8 @@ object ProducerControllerImpl {
       unconfirmed = unconfirmed,
       firstSeqNr = loadedState.highestConfirmedSeqNr + 1,
       producer,
-      send)
+      send
+    )
   }
 
   private def waitingForInitialization[A: ClassTag](
@@ -419,7 +420,8 @@ private class ProducerControllerImpl[A: ClassTag](
           "Expanded requestedSeqNr from [{}] to [{}], because current [{}] and all were probably lost",
           newRequestedSeqNr,
           newRequestedSeqNr2,
-          stateAfterAck.currentSeqNr)
+          stateAfterAck.currentSeqNr
+        )
 
       if (newRequestedSeqNr2 > s.requestedSeqNr) {
         if (!s.requested && (newRequestedSeqNr2 - s.currentSeqNr) > 0)

@@ -172,7 +172,8 @@ private[remote] class OutboundHandshake(
             log.info(
               "Association to [{}] has been idle for [{}] seconds, sending HandshakeReq to validate liveness",
               outboundContext.remoteAddress,
-              lastUsedDuration.toSeconds)
+              lastUsedDuration.toSeconds
+            )
             push(out, createHandshakeReqEnvelope())
           }
         }
@@ -253,7 +254,8 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
                   onMessage(env)
               }
             }
-          })
+          }
+        )
       else
         setHandler(in, new InHandler {
           override def onPush(): Unit = {
@@ -281,7 +283,8 @@ private[remote] class InboundHandshake(inboundContext: InboundContext, inControl
             "The name of the ActorSystem must also match.",
             from,
             to,
-            inboundContext.localAddress.address)
+            inboundContext.localAddress.address
+          )
 
           pull(in)
         }

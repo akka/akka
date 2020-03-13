@@ -120,7 +120,8 @@ final case class BalancingPool(
         // use the user defined 'pool-dispatcher' config as fallback, if any
         if (systemConfig.hasPath(deployDispatcherConfigPath))
           systemConfig.getConfig(deployDispatcherConfigPath)
-        else ConfigFactory.empty)
+        else ConfigFactory.empty
+      )
 
       dispatchers.registerConfigurator(
         dispatcherId,

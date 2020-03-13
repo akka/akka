@@ -81,7 +81,8 @@ class ClusterSingletonLeavingSpeedSpec
         singletonProps = TheSingleton.props(probe),
         terminationMessage = PoisonPill,
         settings = ClusterSingletonManagerSettings(from)),
-      name = "echo")
+      name = "echo"
+    )
 
     Cluster(from).join(Cluster(to).selfAddress)
     within(15.seconds) {

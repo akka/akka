@@ -102,7 +102,8 @@ final class Deploy(
       routerConfig.withFallback(other.routerConfig),
       scope.withFallback(other.scope),
       if (dispatcher == Deploy.NoDispatcherGiven) other.dispatcher else dispatcher,
-      if (mailbox == Deploy.NoMailboxGiven) other.mailbox else mailbox)
+      if (mailbox == Deploy.NoMailboxGiven) other.mailbox else mailbox
+    )
   }
 
   def withTags(tags: Set[String]): Deploy =

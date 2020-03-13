@@ -71,7 +71,8 @@ object HoldOps {
           override def onPull(): Unit = {
             if (!waitingFirstValue) push(out, currentValue)
           }
-        })
+        }
+      )
 
       override def preStart(): Unit = {
         pull(in)

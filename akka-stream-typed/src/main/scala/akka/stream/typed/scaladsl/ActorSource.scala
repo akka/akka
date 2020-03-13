@@ -57,7 +57,8 @@ object ActorSource {
         completionMatcher.asInstanceOf[PartialFunction[Any, Unit]].andThen(_ => CompletionStrategy.Draining),
         failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]],
         bufferSize,
-        overflowStrategy)
+        overflowStrategy
+      )
       .mapMaterializedValue(actorRefAdapter)
 
   /**
@@ -84,7 +85,8 @@ object ActorSource {
         Some(ackTo.toClassic),
         ackMessage,
         completionMatcher.asInstanceOf[PartialFunction[Any, CompletionStrategy]],
-        failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]])
+        failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]]
+      )
       .mapMaterializedValue(actorRefAdapter)
 
   /**
@@ -112,6 +114,7 @@ object ActorSource {
         Some(ackTo.toClassic),
         ackMessage,
         completionMatcher.asInstanceOf[PartialFunction[Any, CompletionStrategy]],
-        failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]])
+        failureMatcher.asInstanceOf[PartialFunction[Any, Throwable]]
+      )
       .mapMaterializedValue(actorRefAdapter)
 }

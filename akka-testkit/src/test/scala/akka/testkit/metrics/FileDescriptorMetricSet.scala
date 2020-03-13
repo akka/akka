@@ -18,11 +18,15 @@ private[akka] class FileDescriptorMetricSet(os: OperatingSystemMXBean = Manageme
     extends MetricSet {
 
   override def getMetrics: util.Map[String, Metric] = {
-    Map[String, Metric](name("file-descriptors", "open") -> new Gauge[Long] {
-      override def getValue: Long = invoke("getOpenFileDescriptorCount")
-    }, name("file-descriptors", "max") -> new Gauge[Long] {
-      override def getValue: Long = invoke("getMaxFileDescriptorCount")
-    }, name("file-descriptors", "ratio") -> new FileDescriptorRatioGauge(os)).asJava
+    Map[String, Metric](
+      name("file-descriptors", "open") -> new Gauge[Long] {
+        override def getValue: Long = invoke("getOpenFileDescriptorCount")
+      },
+      name("file-descriptors", "max") -> new Gauge[Long] {
+        override def getValue: Long = invoke("getMaxFileDescriptorCount")
+      },
+      name("file-descriptors", "ratio") -> new FileDescriptorRatioGauge(os)
+    ).asJava
   }
 
   private def invoke(name: String): Long = {

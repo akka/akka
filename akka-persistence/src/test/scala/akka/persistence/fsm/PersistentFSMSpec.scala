@@ -368,7 +368,8 @@ abstract class PersistentFSMSpec(config: Config) extends PersistenceSpec(config)
         ConfigFactory.parseString("""
             akka.persistence.fsm.enable-snapshot-after = on
             akka.persistence.fsm.snapshot-after = 3
-          """).withFallback(PersistenceSpec.config("leveldb", "PersistentFSMSpec2")))
+          """).withFallback(PersistenceSpec.config("leveldb", "PersistentFSMSpec2"))
+      )
 
       try {
         val probe = TestProbe()

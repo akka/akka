@@ -262,7 +262,8 @@ import akka.util.unused
           traversalSoFar = MaterializeAtomic(module, new Array[Int](module.shape.outlets.size)),
           inSlots = module.shape.inlets.size,
           inToOffset = module.shape.inlets.map(in => in -> in.id).toMap,
-          Attributes.none)
+          Attributes.none
+        )
         b
       } else {
         AtomicTraversalBuilder(
@@ -660,7 +661,8 @@ import akka.util.unused
       if (inPortOpt.isDefined) 1 else 0,
       traversalSoFar = MaterializeAtomic(module, wiring),
       pendingBuilder = OptionVal.None,
-      attributes)
+      attributes
+    )
   }
 
   def addMatCompose(t: Traversal, matCompose: AnyFunction2): Traversal = {
@@ -697,7 +699,8 @@ import akka.util.unused
           inSlots = completed.inSlots,
           completed.traversal.concat(addMatCompose(PushNotUsed, combine)),
           pendingBuilder = OptionVal.None,
-          Attributes.none)
+          Attributes.none
+        )
 
       case composite =>
         val inOpt = OptionVal(shape.inlets.headOption.orNull)
@@ -715,7 +718,8 @@ import akka.util.unused
           addMatCompose(PushNotUsed, combine),
           pendingBuilder = OptionVal.Some(composite),
           Attributes.none,
-          beforeBuilder = EmptyTraversal)
+          beforeBuilder = EmptyTraversal
+        )
 
     }
   }
@@ -807,7 +811,8 @@ import akka.util.unused
                 .concat(composite.assign(out, inOffset - composite.offsetOfModule(out)).traversal)
                 .concat(traversalSoFar)),
             pendingBuilder = OptionVal.None,
-            beforeBuilder = EmptyTraversal)
+            beforeBuilder = EmptyTraversal
+          )
         case OptionVal.None =>
           copy(
             inPort = OptionVal.None,
@@ -846,7 +851,8 @@ import akka.util.unused
             traversalSoFar = applyIslandAndAttributes(
               beforeBuilder.concat(composite.assign(out, relativeSlot).traversal.concat(traversalSoFar))),
             pendingBuilder = OptionVal.None,
-            beforeBuilder = EmptyTraversal)
+            beforeBuilder = EmptyTraversal
+          )
         case OptionVal.None =>
           copy(outPort = OptionVal.None, traversalSoFar = rewireLastOutTo(traversalSoFar, relativeSlot))
       }
@@ -1239,7 +1245,8 @@ import akka.util.unused
         // TODO Optimize Map access
         pendingBuilders = pendingBuilders.updated(builderKey, result),
         // pendingBuilders = pendingBuilders - builderKey,
-        unwiredOuts = unwiredOuts - 1)
+        unwiredOuts = unwiredOuts - 1
+      )
     } else {
       // Update structures with result
       copy(
@@ -1295,7 +1302,8 @@ import akka.util.unused
         reverseBuildSteps = newBuildSteps,
         inSlots = inSlots + submodule.inSlots,
         pendingBuilders = pendingBuilders.updated(builderKey, submodule),
-        inOffsets = newInOffsets)
+        inOffsets = newInOffsets
+      )
     } else {
       // Added module have unwired outputs.
 
@@ -1329,7 +1337,8 @@ import akka.util.unused
         inBaseOffsetForOut = newBaseOffsetsForOut,
         outOwners = newOutOwners,
         pendingBuilders = pendingBuilders.updated(builderKey, submodule),
-        unwiredOuts = unwiredOuts + submodule.unwiredOuts)
+        unwiredOuts = unwiredOuts + submodule.unwiredOuts
+      )
     }
 
     added.completeIfPossible

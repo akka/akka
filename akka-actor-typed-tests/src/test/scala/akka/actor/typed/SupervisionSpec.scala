@@ -1370,7 +1370,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     SupervisorStrategy.restart,
     SupervisorStrategy.resume,
     SupervisorStrategy.restartWithBackoff(1.millis, 100.millis, 2d),
-    SupervisorStrategy.restart.withLimit(1, 100.millis))
+    SupervisorStrategy.restart.withLimit(1, 100.millis)
+  )
 
   allStrategies.foreach { strategy =>
     s"Supervision with the strategy $strategy" should {

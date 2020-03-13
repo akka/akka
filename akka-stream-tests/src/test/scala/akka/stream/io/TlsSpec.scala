@@ -391,7 +391,8 @@ class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing 
         SessionRenegotiationBySender,
         SessionRenegotiationByReceiver,
         SessionRenegotiationFirstOne,
-        SessionRenegotiationFirstTwo)
+        SessionRenegotiationFirstTwo
+      )
 
     for {
       commPattern <- communicationPatterns

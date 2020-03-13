@@ -213,7 +213,10 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
       val t = timeout / 5 - 50.milliseconds.dilated
       import system.dispatcher
       Future.sequence {
-        Seq(Future { testProbes(nodeC).expectNoMessage(t) }, Future { testProbes(nodeD).expectNoMessage(t) })
+        Seq(
+          Future { testProbes(nodeC).expectNoMessage(t) },
+          Future { testProbes(nodeD).expectNoMessage(t) }
+        )
       }.futureValue
       testProbes(nodeC).expectMsgType[Write]
       testProbes(nodeC).lastSender ! WriteAck

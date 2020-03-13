@@ -83,11 +83,13 @@ final class LeaseProvider(system: ExtendedActorSystem) extends Extension {
                 "optionally ActorSystem parameter.",
                 settings.leaseName,
                 configPath,
-                settings.leaseConfig.getString("lease-class"))
+                settings.leaseConfig.getString("lease-class")
+              )
               throw e
           }
         }
-      })
+      }
+    )
   }
 
   /**

@@ -48,7 +48,8 @@ class DistributedData(system: ExtendedActorSystem) extends Extension {
           "Replicator points to dead letters. Make sure the cluster node has the proper role. " +
           "Node has roles [{}], Distributed Data is configured for roles [{}].",
           Cluster(system).selfRoles.mkString(","),
-          settings.roles.mkString(","): Any)
+          settings.roles.mkString(","): Any
+        )
       system.deadLetters
     } else {
       system.systemActorOf(Replicator.props(settings), ReplicatorSettings.name(system, None))

@@ -530,7 +530,8 @@ final class CoordinatedShutdown private[akka] (
   def addCancellableTask(phase: String, taskName: String)(task: () => Future[Done]): Cancellable = {
     require(
       knownPhases(phase),
-      s"Unknown phase [$phase], known phases [$knownPhases]. All phases (along with their optional dependencies) must be defined in configuration")
+      s"Unknown phase [$phase], known phases [$knownPhases]. All phases (along with their optional dependencies) must be defined in configuration"
+    )
     require(
       taskName.nonEmpty,
       "Set a task name when adding tasks to the Coordinated Shutdown. " +
@@ -572,7 +573,8 @@ final class CoordinatedShutdown private[akka] (
     require(
       knownPhases(phase),
       s"Unknown phase [$phase], known phases [$knownPhases]. " +
-      "All phases (along with their optional dependencies) must be defined in configuration")
+      "All phases (along with their optional dependencies) must be defined in configuration"
+    )
     require(
       taskName.nonEmpty,
       "Set a task name when adding tasks to the Coordinated Shutdown. " +

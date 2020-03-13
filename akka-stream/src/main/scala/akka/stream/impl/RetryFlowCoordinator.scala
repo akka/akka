@@ -68,7 +68,8 @@ import scala.concurrent.duration._
           if (elementInProgress.isEmpty) {
             completeStage()
           }
-      })
+      }
+    )
 
     setHandler(
       internalOut,
@@ -90,7 +91,8 @@ import scala.concurrent.duration._
             setKeepGoing(true)
           }
         }
-      })
+      }
+    )
 
     setHandler(
       internalIn,
@@ -110,7 +112,8 @@ import scala.concurrent.duration._
               }
           }
         }
-      })
+      }
+    )
 
     setHandler(externalOut, new OutHandler {
       override def onPull(): Unit =

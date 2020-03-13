@@ -260,7 +260,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     InternalClusterAction.Join(
       uniqueAddressFromProto(m.getNode),
       if (roles.exists(_.startsWith(ClusterSettings.DcRolePrefix))) roles
-      else roles + (ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter))
+      else roles + (ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter)
+    )
   }
 
   private def deserializeWelcome(bytes: Array[Byte]): InternalClusterAction.Welcome = {
@@ -334,13 +335,16 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
 
   private def uniqueAddressFromProto(uniqueAddress: cm.UniqueAddress): UniqueAddress = {
 
-    UniqueAddress(addressFromProto(uniqueAddress.getAddress), if (uniqueAddress.hasUid2) {
-      // new remote node join the two parts of the long uid back
-      (uniqueAddress.getUid2.toLong << 32) | (uniqueAddress.getUid & 0XFFFFFFFFL)
-    } else {
-      // old remote node
-      uniqueAddress.getUid.toLong
-    })
+    UniqueAddress(
+      addressFromProto(uniqueAddress.getAddress),
+      if (uniqueAddress.hasUid2) {
+        // new remote node join the two parts of the long uid back
+        (uniqueAddress.getUid2.toLong << 32) | (uniqueAddress.getUid & 0XFFFFFFFFL)
+      } else {
+        // old remote node
+        uniqueAddress.getUid.toLong
+      }
+    )
   }
 
   private val memberStatusToInt = scala.collection.immutable.HashMap[MemberStatus, Int](
@@ -350,14 +354,16 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
     MemberStatus.Exiting -> cm.MemberStatus.Exiting_VALUE,
     MemberStatus.Down -> cm.MemberStatus.Down_VALUE,
     MemberStatus.Removed -> cm.MemberStatus.Removed_VALUE,
-    MemberStatus.WeaklyUp -> cm.MemberStatus.WeaklyUp_VALUE)
+    MemberStatus.WeaklyUp -> cm.MemberStatus.WeaklyUp_VALUE
+  )
 
   private val memberStatusFromInt = memberStatusToInt.map { case (a, b) => (b, a) }
 
   private val reachabilityStatusToInt = scala.collection.immutable.HashMap[Reachability.ReachabilityStatus, Int](
     Reachability.Reachable -> cm.ReachabilityStatus.Reachable_VALUE,
     Reachability.Unreachable -> cm.ReachabilityStatus.Unreachable_VALUE,
-    Reachability.Terminated -> cm.ReachabilityStatus.Terminated_VALUE)
+    Reachability.Terminated -> cm.ReachabilityStatus.Terminated_VALUE
+  )
 
   private val reachabilityStatusFromInt = reachabilityStatusToInt.map { case (a, b) => (b, a) }
 
@@ -573,7 +579,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
       uniqueAddressFromProto(envelope.getFrom),
       uniqueAddressFromProto(envelope.getTo),
       Deadline.now + GossipTimeToLive,
-      () => gossipFromProto(cm.Gossip.parseFrom(decompress(serializedGossip.toByteArray))))
+      () => gossipFromProto(cm.Gossip.parseFrom(decompress(serializedGossip.toByteArray)))
+    )
   }
 
   private def gossipStatusFromProto(status: cm.GossipStatus): GossipStatus =
@@ -601,7 +608,8 @@ final class ClusterMessageSerializer(val system: ExtendedActorSystem)
         crps.getUseRolesList.asScala.toSet + crps.getUseRole
       } else {
         crps.getUseRolesList.asScala.toSet
-      })
+      }
+    )
   }
 
 }

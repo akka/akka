@@ -116,7 +116,9 @@ class LightArrayRevolverScheduler(config: Config, log: LoggingAdapter, threadFac
               }
             }
           },
-          roundUp(initialDelay)))
+          roundUp(initialDelay)
+        )
+      )
 
       @tailrec private def swap(c: Cancellable): Unit = {
         get match {

@@ -136,7 +136,8 @@ class FSMTimingSpec extends AkkaSpec with ImplicitSender {
         EventFilter.warning(
           "unhandled event Unhandled(test) in state TestUnhandled",
           source = fsm.path.toString,
-          occurrences = 1)) {
+          occurrences = 1)
+      ) {
         fsm ! TestUnhandled
         within(3 second) {
           fsm ! Tick

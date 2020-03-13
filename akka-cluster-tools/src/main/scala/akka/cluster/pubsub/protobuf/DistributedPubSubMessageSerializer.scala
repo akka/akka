@@ -45,7 +45,8 @@ private[akka] class DistributedPubSubMessageSerializer(val system: ExtendedActor
     SendManifest -> sendFromBinary,
     SendToAllManifest -> sendToAllFromBinary,
     PublishManifest -> publishFromBinary,
-    SendToOneSubscriberManifest -> sendToOneSubscriberFromBinary)
+    SendToOneSubscriberManifest -> sendToOneSubscriberFromBinary
+  )
 
   override def manifest(obj: AnyRef): String = obj match {
     case _: Status              => StatusManifest

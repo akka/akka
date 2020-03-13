@@ -69,7 +69,8 @@ class ClusterMetricsExtensionSpec
         (0.700, 0.266, 0.106),
         (0.700, 0.309, 0.123),
         (0.700, 0.343, 0.137),
-        (0.700, 0.372, 0.148))
+        (0.700, 0.372, 0.148)
+      )
 
       expected.size should ===(sampleCount)
 

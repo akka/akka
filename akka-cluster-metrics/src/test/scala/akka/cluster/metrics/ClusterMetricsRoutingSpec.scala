@@ -34,7 +34,9 @@ class MetricsSelectorSpec extends AnyWordSpec with Matchers {
       Metric.create(CpuCombined, 0.2, decayFactor),
       Metric.create(CpuStolen, 0.1, decayFactor),
       Metric.create(SystemLoadAverage, 0.5, None),
-      Metric.create(Processors, 8, None)).flatten)
+      Metric.create(Processors, 8, None)
+    ).flatten
+  )
 
   val nodeMetricsB = NodeMetrics(
     b1,
@@ -46,7 +48,9 @@ class MetricsSelectorSpec extends AnyWordSpec with Matchers {
       Metric.create(CpuCombined, 0.4, decayFactor),
       Metric.create(CpuStolen, 0.2, decayFactor),
       Metric.create(SystemLoadAverage, 1.0, None),
-      Metric.create(Processors, 16, None)).flatten)
+      Metric.create(Processors, 16, None)
+    ).flatten
+  )
 
   val nodeMetricsC = NodeMetrics(
     c1,
@@ -58,7 +62,9 @@ class MetricsSelectorSpec extends AnyWordSpec with Matchers {
       Metric.create(CpuCombined, 0.6, decayFactor),
       Metric.create(CpuStolen, 0.3, decayFactor),
       Metric.create(SystemLoadAverage, 16.0, None),
-      Metric.create(Processors, 16, None)).flatten)
+      Metric.create(Processors, 16, None)
+    ).flatten
+  )
 
   val nodeMetricsD = NodeMetrics(
     d1,
@@ -67,7 +73,9 @@ class MetricsSelectorSpec extends AnyWordSpec with Matchers {
       Metric.create(HeapMemoryUsed, 511, decayFactor),
       Metric.create(HeapMemoryCommitted, 512, decayFactor),
       Metric.create(HeapMemoryMax, 512, None),
-      Metric.create(Processors, 2, decayFactor)).flatten)
+      Metric.create(Processors, 2, decayFactor)
+    ).flatten
+  )
 
   val nodeMetrics = Set(nodeMetricsA, nodeMetricsB, nodeMetricsC, nodeMetricsD)
 

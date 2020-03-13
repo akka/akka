@@ -180,7 +180,8 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
           stageActorName,
           self.ref,
           state,
-          PrettyDuration.format(subscriptionTimeout.timeout))
+          PrettyDuration.format(subscriptionTimeout.timeout)
+        )
 
         // This timer will be cancelled if we receive the handshake from the remote SinkRef
         // either created in this method and provided as self.ref as initialPartnerRef
@@ -520,7 +521,8 @@ private[stream] final class SourceRefStageImpl[Out](val initialPartnerRef: Optio
             partner,
             sender,
             s"[$stageActorName] Received message from UNEXPECTED sender [$sender]! " +
-            s"This actor is NOT our trusted remote partner, which is [$partner]. Tearing down.")
+            s"This actor is NOT our trusted remote partner, which is [$partner]. Tearing down."
+          )
       }
 
       /** @throws InvalidSequenceNumberException when sequence number is invalid */

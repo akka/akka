@@ -205,7 +205,8 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
             }
 
             deserializedParameters
-        })
+        }
+      )
     }
   }
 
@@ -723,7 +724,8 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
           .orElse(props.interfaces.collectFirst { case any => any.getClassLoader })
           .orNull, //If we have no loader, we arbitrarily take the loader of the first interface
         props.interfaces.toArray,
-        new TypedActorInvocationHandler(this, actorVar, props.timeout.getOrElse(DefaultReturnTimeout)))
+        new TypedActorInvocationHandler(this, actorVar, props.timeout.getOrElse(DefaultReturnTimeout))
+      )
       .asInstanceOf[R]
 
     if (proxyVar eq null) {

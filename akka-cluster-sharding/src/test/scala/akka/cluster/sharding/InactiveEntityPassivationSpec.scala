@@ -71,7 +71,8 @@ abstract class AbstractInactiveEntityPassivationSpec(c: Config) extends AkkaSpec
       extractEntityId,
       extractShardId,
       ClusterSharding(system).defaultShardAllocationStrategy(settings),
-      Passivate)
+      Passivate
+    )
   }
 
   def timeUntilPassivate(region: ActorRef, probe: TestProbe): FiniteDuration = {

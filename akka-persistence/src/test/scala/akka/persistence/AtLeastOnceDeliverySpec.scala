@@ -387,7 +387,8 @@ abstract class AtLeastOnceDeliverySpec(config: Config) extends PersistenceSpec(c
       val destinations = Map(
         "A" -> system.actorOf(unreliableProps(2, dstA), "unreliable-a").path,
         "B" -> system.actorOf(unreliableProps(5, dstB), "unreliable-b").path,
-        "C" -> system.actorOf(unreliableProps(3, dstC), "unreliable-c").path)
+        "C" -> system.actorOf(unreliableProps(3, dstC), "unreliable-c").path
+      )
       val snd = system.actorOf(senderProps(probe.ref, name, 1000.millis, 5, 1000, destinations, async = true), name)
       val N = 100
       for (n <- 1 to N) {

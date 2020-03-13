@@ -191,11 +191,15 @@ class TestActorRefSpec extends AkkaSpec("disp1.type=Dispatcher") with BeforeAndA
         counter = 2
 
         val boss = TestActorRef(Props(new TActor {
-          val ref = TestActorRef(Props(new TActor {
-            def receiveT = { case _ => }
-            override def preRestart(reason: Throwable, msg: Option[Any]): Unit = { counter -= 1 }
-            override def postRestart(reason: Throwable): Unit = { counter -= 1 }
-          }), self, "child")
+          val ref = TestActorRef(
+            Props(new TActor {
+              def receiveT = { case _ => }
+              override def preRestart(reason: Throwable, msg: Option[Any]): Unit = { counter -= 1 }
+              override def postRestart(reason: Throwable): Unit = { counter -= 1 }
+            }),
+            self,
+            "child"
+          )
 
           override def supervisorStrategy =
             OneForOneStrategy(maxNrOfRetries = 5, withinTimeRange = 1 second)(List(classOf[ActorKilledException]))

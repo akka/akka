@@ -329,7 +329,8 @@ private abstract class RestartWithBackoffLogic[S <: Shape](
           finishing = true
           sourceOut.fail(ex)
         }
-      })
+      }
+    )
 
     sourceOut
   }

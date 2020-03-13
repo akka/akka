@@ -230,7 +230,8 @@ import akka.serialization.SerializerWithStringManifest
       state.getConfirmedList.asScala
         .map(confirmed => confirmed.getQualifier -> (confirmed.getSeqNr -> confirmed.getTimestamp))
         .toMap,
-      state.getUnconfirmedList.asScala.toVector.map(durableQueueMessageSentFromProto))
+      state.getUnconfirmedList.asScala.toVector.map(durableQueueMessageSentFromProto)
+    )
   }
 
   private def durableQueueCleanupFromBinary(bytes: Array[Byte]): AnyRef = {

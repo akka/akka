@@ -422,7 +422,8 @@ class SupervisorSpec
       filterEvents(
         EventFilter[RuntimeException]("Expected", occurrences = 1),
         EventFilter[PreRestartException]("Don't wanna!", occurrences = 1),
-        EventFilter[PostRestartException]("Don't wanna!", occurrences = 1)) {
+        EventFilter[PostRestartException]("Don't wanna!", occurrences = 1)
+      ) {
         intercept[RuntimeException] {
           Await.result(dyingActor.?(DieReply)(DilatedTimeout), DilatedTimeout)
         }
@@ -442,13 +443,17 @@ class SupervisorSpec
           case e: IllegalStateException if e.getMessage == "OHNOES" => throw e
           case _                                                    => SupervisorStrategy.Restart
         })
-        val child = context.watch(context.actorOf(Props(new Actor {
-          override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
-          def receive = {
-            case l: TestLatch => { Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES") }
-            case "test"       => sender() ! "child green"
-          }
-        }), "child"))
+        val child = context.watch(
+          context.actorOf(
+            Props(new Actor {
+              override def postRestart(reason: Throwable): Unit = testActor ! "child restarted"
+              def receive = {
+                case l: TestLatch => { Await.ready(l, 5 seconds); throw new IllegalStateException("OHNOES") }
+                case "test"       => sender() ! "child green"
+              }
+            }),
+            "child"
+          ))
 
         override def postRestart(reason: Throwable): Unit = testActor ! "parent restarted"
 

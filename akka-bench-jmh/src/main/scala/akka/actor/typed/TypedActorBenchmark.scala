@@ -84,7 +84,8 @@ class TypedActorBenchmark {
             mailbox-type = "$mailbox"
          }
        }
-      """))
+      """)
+    )
   }
 
   @TearDown(Level.Trial)

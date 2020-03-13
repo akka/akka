@@ -206,7 +206,8 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         Future.failed(Utils.TE("failure3")),
         Future.failed(Utils.TE("failure4")),
         Future.failed(Utils.TE("failure5")),
-        Future.successful("happy!"))
+        Future.successful("happy!")
+      )
 
       Await.result(
         Source(futures)
@@ -228,7 +229,8 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
           .withAttributes(supervisionStrategy(resumingDecider))
           .grouped(10)
           .runWith(Sink.head),
-        1.second) should be(Seq(1, 2))
+        1.second
+      ) should be(Seq(1, 2))
     }
 
     "resume when mapAsyncUnordered throws" in {

@@ -105,7 +105,8 @@ private[remote] class DefaultMessageDispatcher(
                 LogMarker.Security,
                 "operating in UntrustedMode, dropping inbound actor selection to [{}], " +
                 "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
-                sel.elements.mkString("/", "/", ""))
+                sel.elements.mkString("/", "/", "")
+              )
             else
               // run the receive logic for ActorSelectionMessage here to make sure it is not stuck on busy user actor
               ActorSelection.deliverSelection(l, sender, sel)
@@ -129,7 +130,8 @@ private[remote] class DefaultMessageDispatcher(
             payloadClass,
             r,
             recipientAddress,
-            provider.transport.addresses.mkString(", "))
+            provider.transport.addresses.mkString(", ")
+          )
 
       case r =>
         log.error(
@@ -137,7 +139,8 @@ private[remote] class DefaultMessageDispatcher(
           payloadClass,
           r,
           recipientAddress,
-          provider.transport.addresses.mkString(", "))
+          provider.transport.addresses.mkString(", ")
+        )
 
     }
   }
@@ -275,7 +278,8 @@ private[remote] class ReliableDeliverySupervisor(
         remoteAddress,
         settings.RetryGateClosedFor.toMillis,
         e.getMessage,
-        causedBy)
+        causedBy
+      )
       uidConfirmed = false // Need confirmation of UID again
       if ((resendBuffer.nacked.nonEmpty || resendBuffer.nonAcked.nonEmpty) && bailoutAt.isEmpty)
         bailoutAt = Some(Deadline.now + settings.InitialSysMsgDeliveryTimeout)
@@ -527,9 +531,11 @@ private[remote] class ReliableDeliverySupervisor(
             settings = settings,
             AkkaPduProtobufCodec,
             receiveBuffers = receiveBuffers,
-            reliableDeliverySupervisor = Some(self)))
+            reliableDeliverySupervisor = Some(self)
+          ))
           .withDeploy(Deploy.local),
-        "endpointWriter"))
+        "endpointWriter"
+      ))
   }
 }
 
@@ -825,7 +831,8 @@ private[remote] class EndpointWriter(
             "[{}] buffered messages in EndpointWriter for [{}]. " +
             "You should probably implement flow control to avoid flooding the remote connection.",
             size,
-            remoteAddress)
+            remoteAddress
+          )
           largeBufferLogTimestamp = now
         }
       }
@@ -1016,7 +1023,8 @@ private[remote] class EndpointWriter(
                 reliableDeliverySupervisor,
                 receiveBuffers))
             .withDeploy(Deploy.local),
-          "endpointReader-" + AddressUrlEncoder(remoteAddress) + "-" + readerId.next()))
+          "endpointReader-" + AddressUrlEncoder(remoteAddress) + "-" + readerId.next()
+        ))
     handle.readHandlerPromise.success(ActorHandleEventListener(newReader))
     Some(newReader)
   }
@@ -1147,7 +1155,8 @@ private[remote] class EndpointReader(
         new OversizedPayloadException(
           s"Discarding oversized payload received: " +
           s"max allowed size [${transport.maximumPayloadBytes}] bytes, actual size [${oversized.size}] bytes."),
-        "Transient error while reading from association (association remains live)")
+        "Transient error while reading from association (association remains live)"
+      )
 
     case StopReading(writer, replyTo) =>
       saveState()
@@ -1163,7 +1172,8 @@ private[remote] class EndpointReader(
       "Transient association error (association remains live). {}",
       sm.getSerializerId,
       if (sm.hasMessageManifest) sm.getMessageManifest.toStringUtf8 else "",
-      error.getMessage)
+      error.getMessage
+    )
   }
 
   def notReading: Receive = {
@@ -1182,14 +1192,16 @@ private[remote] class EndpointReader(
           "If this happens often you may consider using akka.remote.use-passive-connections=off " +
           "or use Artery TCP.",
           msgOption.map(_.recipient).getOrElse("unknown"),
-          remoteAddress)
+          remoteAddress
+        )
 
     case InboundPayload(oversized) =>
       log.error(
         new OversizedPayloadException(
           s"Discarding oversized payload received in read-only association: " +
           s"max allowed size [${transport.maximumPayloadBytes}] bytes, actual size [${oversized.size}] bytes."),
-        "Transient error while reading from association (association remains live)")
+        "Transient error while reading from association (association remains live)"
+      )
 
     case _ =>
   }
@@ -1209,7 +1221,8 @@ private[remote] class EndpointReader(
         InvalidAssociationException(
           "The remote system has quarantined this system. No further associations " +
           "to the remote system are possible until this system is restarted."),
-        Some(AssociationHandle.Quarantined))
+        Some(AssociationHandle.Quarantined)
+      )
   }
 
   private def deliverAndAck(): Unit = {

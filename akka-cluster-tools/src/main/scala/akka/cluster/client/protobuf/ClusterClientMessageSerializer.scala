@@ -44,7 +44,8 @@ private[akka] class ClusterClientMessageSerializer(val system: ExtendedActorSyst
     },
     ReceptionistShutdownManifest -> { _ =>
       ReceptionistShutdown
-    })
+    }
+  )
 
   override def manifest(obj: AnyRef): String = obj match {
     case _: Contacts          => ContactsManifest

@@ -204,7 +204,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     DeltaPropagationManifest -> deltaPropagationFromBinary,
     WriteNackManifest -> (_ => WriteNack),
     DeltaNackManifest -> (_ => DeltaNack),
-    DurableDataEnvelopeManifest -> durableDataEnvelopeFromBinary)
+    DurableDataEnvelopeManifest -> durableDataEnvelopeFromBinary
+  )
 
   override def manifest(obj: AnyRef): String = obj match {
     case _: DataEnvelope        => DataEnvelopeManifest
@@ -281,7 +282,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       status.getChunk,
       status.getTotChunks,
       toSystemUid,
-      fromSystemUid)
+      fromSystemUid
+    )
   }
 
   private def gossipToProto(gossip: Gossip): dm.Gossip = {
@@ -303,7 +305,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
       gossip.getEntriesList.asScala.iterator.map(e => e.getKey -> dataEnvelopeFromProto(e.getEnvelope)).toMap,
       sendBack = gossip.getSendBack,
       toSystemUid,
-      fromSystemUid)
+      fromSystemUid
+    )
   }
 
   private def deltaPropagationToProto(deltaPropagation: DeltaPropagation): dm.DeltaPropagation = {
@@ -334,7 +337,8 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
         val fromSeqNr = e.getFromSeqNr
         val toSeqNr = if (e.hasToSeqNr) e.getToSeqNr else fromSeqNr
         e.getKey -> Delta(dataEnvelopeFromProto(e.getEnvelope), fromSeqNr, toSeqNr)
-      }.toMap)
+      }.toMap
+    )
   }
 
   private def getToProto(get: Get[_]): dm.Get = {

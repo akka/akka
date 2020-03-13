@@ -121,7 +121,8 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
       answer.name shouldEqual name
       answer.records.collect { case r: SRVRecord => r }.toSet shouldEqual Set(
         SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 10, 65534, 5060, "a-single.foo.test"),
-        SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 65533, 40, 65535, "a-double.foo.test"))
+        SRVRecord("_service._tcp.foo.test", Ttl.fromPositive(86400.seconds), 65533, 40, 65535, "a-double.foo.test")
+      )
     }
 
     "resolve same address twice" in {

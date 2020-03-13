@@ -47,7 +47,10 @@ class DurableProducerControllerSpec
           confirmedSeqNr = Map(NoQualifier -> (2L -> TestTimestamp)),
           unconfirmed = Vector(
             DurableProducerQueue.MessageSent(3, TestConsumer.Job("msg-3"), false, NoQualifier, TestTimestamp),
-            DurableProducerQueue.MessageSent(4, TestConsumer.Job("msg-4"), false, NoQualifier, TestTimestamp))))
+            DurableProducerQueue.MessageSent(4, TestConsumer.Job("msg-4"), false, NoQualifier, TestTimestamp)
+          )
+        )
+      )
 
       val producerController =
         spawn(ProducerController[TestConsumer.Job](producerId, Some(durable)), s"producerController-${idCount}")

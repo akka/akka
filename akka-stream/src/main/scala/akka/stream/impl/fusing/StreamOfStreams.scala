@@ -62,14 +62,17 @@ import scala.util.control.NonFatal
       }
     }
 
-    setHandler(in, new InHandler {
-      override def onPush(): Unit = {
-        val source = grab(in)
-        addSource(source)
-        if (activeSources < breadth) tryPull(in)
+    setHandler(
+      in,
+      new InHandler {
+        override def onPush(): Unit = {
+          val source = grab(in)
+          addSource(source)
+          if (activeSources < breadth) tryPull(in)
+        }
+        override def onUpstreamFinish(): Unit = if (activeSources == 0) completeStage()
       }
-      override def onUpstreamFinish(): Unit = if (activeSources == 0) completeStage()
-    })
+    )
 
     setHandler(out, new OutHandler {
       override def onPull(): Unit = {
@@ -508,7 +511,8 @@ import scala.util.control.NonFatal
           // If the substream is already cancelled or it has not been handed out, we can go away
           if ((substreamSource eq null) || substreamWaitingToBePushed || substreamCancelled) cancelStage(cause)
         }
-      })
+      }
+    )
 
     val initInHandler = new InHandler {
       override def onPush(): Unit = {

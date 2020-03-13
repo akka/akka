@@ -423,7 +423,8 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       },
       extractShardId = msg => messageExtractor.shardId(msg),
       allocationStrategy = allocationStrategy,
-      handOffStopMessage = handOffStopMessage)
+      handOffStopMessage = handOffStopMessage
+    )
   }
 
   /**
@@ -600,10 +601,16 @@ class ClusterSharding(system: ExtendedActorSystem) extends Extension {
       dataCenter: Optional[String],
       messageExtractor: ShardRegion.MessageExtractor): ActorRef = {
 
-    startProxy(typeName, Option(role.orElse(null)), Option(dataCenter.orElse(null)), extractEntityId = {
-      case msg if messageExtractor.entityId(msg) ne null =>
-        (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
-    }, extractShardId = msg => messageExtractor.shardId(msg))
+    startProxy(
+      typeName,
+      Option(role.orElse(null)),
+      Option(dataCenter.orElse(null)),
+      extractEntityId = {
+        case msg if messageExtractor.entityId(msg) ne null =>
+          (messageExtractor.entityId(msg), messageExtractor.entityMessage(msg))
+      },
+      extractShardId = msg => messageExtractor.shardId(msg)
+    )
 
   }
 
@@ -773,7 +780,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
               ClusterSingletonManager
                 .props(singletonProps, terminationMessage = ShardCoordinator.Internal.Terminate, singletonSettings)
                 .withDispatcher(context.props.dispatcher),
-              name = cName)
+              name = cName
+            )
           }
 
           context.actorOf(
@@ -787,9 +795,11 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 extractShardId = extractShardId,
                 handOffStopMessage = handOffStopMessage,
                 replicator = rep,
-                majorityMinCap)
+                majorityMinCap
+              )
               .withDispatcher(context.props.dispatcher),
-            name = encName)
+            name = encName
+          )
         }
         sender() ! Started(shardRegion)
       } catch {
@@ -820,9 +830,11 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 extractEntityId = extractEntityId,
                 extractShardId = extractShardId,
                 replicator = context.system.deadLetters,
-                majorityMinCap)
+                majorityMinCap
+              )
               .withDispatcher(context.props.dispatcher),
-            name = actorName)
+            name = actorName
+          )
         }
         sender() ! Started(shardRegion)
       } catch {

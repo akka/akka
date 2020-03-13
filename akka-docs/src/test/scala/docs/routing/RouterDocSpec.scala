@@ -541,7 +541,8 @@ class RouterDocSpec extends AkkaSpec(RouterDocSpec.config) with ImplicitSender {
       // “head” router actor will run on "router-dispatcher" dispatcher
       // Worker routees will run on "pool-dispatcher" dispatcher
       RandomPool(5, routerDispatcher = "router-dispatcher").props(Props[Worker]),
-      name = "poolWithDispatcher")
+      name = "poolWithDispatcher"
+    )
     //#dispatchers
   }
 

@@ -117,13 +117,13 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
 
         diffUnreachableDataCenter(
           MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
-          MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(
-          otherDc.map(UnreachableDataCenter))
+          MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)
+        ) should ===(otherDc.map(UnreachableDataCenter))
 
         diffReachableDataCenter(
           MembershipState(g2, member.uniqueAddress, member.dataCenter, crossDcConnections = 5),
-          MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)) should ===(
-          otherDc.map(ReachableDataCenter))
+          MembershipState(g1, member.uniqueAddress, member.dataCenter, crossDcConnections = 5)
+        ) should ===(otherDc.map(ReachableDataCenter))
       }
     }
 
@@ -178,11 +178,12 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
       val g2 = Gossip(members, overview = GossipOverview(reachability = reachability2))
       diffUnreachableDataCenter(
         MembershipState(g1, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
-        MembershipState(g2, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(
-        Seq(UnreachableDataCenter(dc1MemberA.dataCenter)))
+        MembershipState(g2, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)
+      ) should ===(Seq(UnreachableDataCenter(dc1MemberA.dataCenter)))
       diffReachableDataCenter(
         MembershipState(g1, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
-        MembershipState(g2, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+        MembershipState(g2, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)
+      ) should ===(Seq())
 
       // - C --unreachable--> B
       // adding one more cross unreachable to same DC shouldn't publish anything new
@@ -191,10 +192,12 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
       val g3 = Gossip(members, overview = GossipOverview(reachability = reachability3))
       diffUnreachableDataCenter(
         MembershipState(g2, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
-        MembershipState(g3, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+        MembershipState(g3, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)
+      ) should ===(Seq())
       diffReachableDataCenter(
         MembershipState(g2, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
-        MembershipState(g3, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+        MembershipState(g3, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)
+      ) should ===(Seq())
 
       // - empty
       // reachable again => ReachableDataCenter
@@ -202,11 +205,12 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
       val g4 = Gossip(members, overview = GossipOverview(reachability = reachability4))
       diffUnreachableDataCenter(
         MembershipState(g3, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
-        MembershipState(g4, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+        MembershipState(g4, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)
+      ) should ===(Seq())
       diffReachableDataCenter(
         MembershipState(g3, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
-        MembershipState(g4, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(
-        Seq(ReachableDataCenter(dc1MemberA.dataCenter)))
+        MembershipState(g4, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)
+      ) should ===(Seq(ReachableDataCenter(dc1MemberA.dataCenter)))
 
       // - B --unreachable--> C
       // unreachable opposite direction shouldn't publish anything new
@@ -214,10 +218,12 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
       val g5 = Gossip(members, overview = GossipOverview(reachability = reachability5))
       diffUnreachableDataCenter(
         MembershipState(g4, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
-        MembershipState(g5, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+        MembershipState(g5, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)
+      ) should ===(Seq())
       diffReachableDataCenter(
         MembershipState(g4, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5),
-        MembershipState(g5, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)) should ===(Seq())
+        MembershipState(g5, dc2MemberC.uniqueAddress, dc2MemberC.dataCenter, crossDcConnections = 5)
+      ) should ===(Seq())
 
     }
 
@@ -312,13 +318,15 @@ class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
           RoleLeaderChanged("BB", Some(bUp.address)),
           RoleLeaderChanged("DD", Some(dLeaving.address)),
           RoleLeaderChanged("DE", Some(dLeaving.address)),
-          RoleLeaderChanged("EE", Some(eUp.address))))
+          RoleLeaderChanged("EE", Some(eUp.address))
+        ))
       diffRolesLeader(state(g1), state(g2)) should ===(
         Set(
           RoleLeaderChanged(ClusterSettings.DcRolePrefix + ClusterSettings.DefaultDataCenter, Some(bUp.address)),
           RoleLeaderChanged("AA", None),
           RoleLeaderChanged("AB", Some(bUp.address)),
-          RoleLeaderChanged("DE", Some(eJoining.address))))
+          RoleLeaderChanged("DE", Some(eJoining.address))
+        ))
     }
 
     "not be produced for role leader changes in other data centers" in {

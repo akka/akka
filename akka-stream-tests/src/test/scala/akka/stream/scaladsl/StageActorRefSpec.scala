@@ -239,7 +239,8 @@ object StageActorRefSpec {
               p.tryFailure(ex)
               failStage(ex)
             }
-          })
+          }
+        )
       }
 
       logic -> p.future

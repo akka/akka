@@ -45,7 +45,8 @@ object UnfoldResourceAsync {
             case true  => query.nextEntry().map(dbEntry => Some(dbEntry))
           },
         // close
-        query => query.close().map(_ => Done))
+        query => query.close().map(_ => Done)
+      )
 
     // process each element
     queryResultSource.runForeach(println)

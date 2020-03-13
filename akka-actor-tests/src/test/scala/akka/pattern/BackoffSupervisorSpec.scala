@@ -238,7 +238,8 @@ class BackoffSupervisorSpec extends AkkaSpec with ImplicitSender with Eventually
           (2, 5.seconds, 7.days, 0d, 20.seconds),
           (29, 5.minutes, 10.minutes, 0d, 10.minutes),
           (29, 10000.days, 10000.days, 0d, 10000.days),
-          (Int.MaxValue, 10000.days, 10000.days, 0d, 10000.days))
+          (Int.MaxValue, 10000.days, 10000.days, 0d, 10000.days)
+        )
       forAll(delayTable) {
         (
             restartCount: Int,

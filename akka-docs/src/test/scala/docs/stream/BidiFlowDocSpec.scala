@@ -84,22 +84,25 @@ object BidiFlowDocSpec {
             else pull(in)
           }
         })
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            val bytes = grab(in)
-            stash = stash ++ bytes
-            run()
-          }
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              val bytes = grab(in)
+              stash = stash ++ bytes
+              run()
+            }
 
-          override def onUpstreamFinish(): Unit = {
-            // either we are done
-            if (stash.isEmpty) completeStage()
-            // or we still have bytes to emit
-            // wait with completion and let run() complete when the
-            // rest of the stash has been sent downstream
-            else if (isAvailable(out)) run()
+            override def onUpstreamFinish(): Unit = {
+              // either we are done
+              if (stash.isEmpty) completeStage()
+              // or we still have bytes to emit
+              // wait with completion and let run() complete when the
+              // rest of the stash has been sent downstream
+              else if (isAvailable(out)) run()
+            }
           }
-        })
+        )
 
         private def run(): Unit = {
           if (needed == -1) {

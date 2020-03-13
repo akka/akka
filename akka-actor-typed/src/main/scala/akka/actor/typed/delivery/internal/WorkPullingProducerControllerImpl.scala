@@ -293,7 +293,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
           totalSeqNr,
           wasStashed,
           consumersWithDemand.map(_._1).mkString(", "),
-          s.requested)
+          s.requested
+        )
       if (!s.requested && !wasStashed && durableQueue.isEmpty)
         throw new IllegalStateException(s"Unexpected message [$msg], wasn't requested nor unstashed.")
 
@@ -414,7 +415,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
               currentSeqNr = s.currentSeqNr + 1,
               preselectedWorkers =
                 s.preselectedWorkers.updated(s.currentSeqNr, PreselectedWorker(outKey, out.confirmationQualifier)),
-              replyAfterStore = newReplyAfterStore))
+              replyAfterStore = newReplyAfterStore
+            ))
         case None =>
           checkStashFull(stashBuffer)
           // no demand from any workers, or all already preselected
@@ -438,7 +440,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
               currentSeqNr = s.currentSeqNr + 1,
               preselectedWorkers =
                 s.preselectedWorkers.updated(s.currentSeqNr, PreselectedWorker(outKey, out.confirmationQualifier)),
-              handOver = s.handOver.updated(s.currentSeqNr, HandOver(resend.oldConfirmationQualifier, resend.oldSeqNr))))
+              handOver = s.handOver.updated(s.currentSeqNr, HandOver(resend.oldConfirmationQualifier, resend.oldSeqNr))
+            ))
         case None =>
           checkStashFull(stashBuffer)
           // no demand from any workers, or all already preselected
@@ -566,7 +569,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
                 "Resending unconfirmed from deregistered worker with producerId [{}], from seqNr [{}] to [{}].",
                 key,
                 outState.unconfirmed.head.outSeqNr,
-                outState.unconfirmed.last.outSeqNr)
+                outState.unconfirmed.last.outSeqNr
+              )
             outState.unconfirmed.foreach {
               case Unconfirmed(totalSeqNr, _, msg, replyTo) =>
                 if (durableQueue.isEmpty)

@@ -75,7 +75,8 @@ object ClusterLogMarker {
       Map(
         LogMarker.Properties.RemoteAddress -> node.address,
         LogMarker.Properties.RemoteAddressUid -> node.longUid,
-        Properties.MemberStatus -> status))
+        Properties.MemberStatus -> status)
+    )
 
   /**
    * Marker "akkaClusterSingletonStarted" of log event when Cluster Singleton

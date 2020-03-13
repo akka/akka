@@ -149,7 +149,8 @@ class PhiAccrualFailureDetector(
                 getClass,
                 s"heartbeat interval is growing too large for address $address: $interval millis",
                 Logging.emptyMDC,
-                RemoteLogMarker.failureDetectorGrowing(address)))
+                RemoteLogMarker.failureDetectorGrowing(address)
+              ))
           oldState.history :+ interval
         } else oldState.history
     }

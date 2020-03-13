@@ -88,7 +88,8 @@ private object ActorRefSource {
                   "Dropping element because Status.Success received already, only draining already buffered elements: [{}] (pending: [{}] in stream [{}])",
                   m,
                   buf.used,
-                  name)
+                  name
+                )
               } else if (!buf.isFull) {
                 buf.enqueue(m)
                 tryPush()

@@ -48,7 +48,8 @@ object SnapshotRecoveryWithEmptyJournalSpec {
               case _ =>
                 Effect.persist(s"$cmd-${EventSourcedBehavior.lastSequenceNumber(context) + 1}")
             },
-          (state, event) => event :: state)
+          (state, event) => event :: state
+        )
       }
     }
   }

@@ -64,7 +64,8 @@ object ActorSource {
           }
         },
         bufferSize,
-        overflowStrategy)
+        overflowStrategy
+      )
       .asJava
   }
 
@@ -104,7 +105,8 @@ object ActorSource {
             if (!result.isPresent) throw JavaPartialFunction.noMatch()
             else result.get()
           }
-        })
+        }
+      )
       .asJava
 
   /**
@@ -147,6 +149,7 @@ object ActorSource {
             if (!result.isPresent) throw JavaPartialFunction.noMatch()
             else result.get()
           }
-        })
+        }
+      )
       .asJava
 }

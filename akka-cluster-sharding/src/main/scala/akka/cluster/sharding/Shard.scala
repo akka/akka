@@ -891,7 +891,8 @@ private[akka] class DDataShard(
           "Shard will be restarted after backoff.",
           maxUpdateAttempts,
           updatingStateTimeout.toMillis,
-          evt)
+          evt
+        )
         context.stop(self)
       } else {
         log.warning(
@@ -899,7 +900,8 @@ private[akka] class DDataShard(
           retryCount,
           maxUpdateAttempts,
           updatingStateTimeout.toMillis,
-          evt)
+          evt
+        )
         sendUpdate(evt, retryCount + 1)
       }
 

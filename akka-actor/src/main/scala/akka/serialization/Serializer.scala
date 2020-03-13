@@ -368,7 +368,8 @@ final case class DisabledJavaSerializer(system: ExtendedActorSystem) extends Ser
       LogMarker.Security,
       "Outgoing message attempted to use Java Serialization even though `akka.actor.allow-java-serialization = off` was set! " +
       "Message type was: [{}]",
-      o.getClass)
+      o.getClass
+    )
     throw IllegalSerialization
   }
 

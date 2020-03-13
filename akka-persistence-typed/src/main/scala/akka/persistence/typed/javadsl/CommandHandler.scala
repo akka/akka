@@ -203,7 +203,8 @@ final class CommandHandlerBuilderByState[Command, Event, S <: State, State] @Int
           if (state == null) statePredicate.test(state.asInstanceOf[S])
           else
             statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
-        handler.asInstanceOf[BiFunction[State, Command, Effect[Event, State]]]) :: cases
+        handler.asInstanceOf[BiFunction[State, Command, Effect[Event, State]]]
+      ) :: cases
   }
 
   /**

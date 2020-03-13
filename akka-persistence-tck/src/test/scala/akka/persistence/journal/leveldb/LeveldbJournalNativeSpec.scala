@@ -16,7 +16,8 @@ class LeveldbJournalNativeSpec
         akka.persistence.journal.leveldb.native = on
         akka.actor.allow-java-serialization = off
         akka.actor.warn-about-java-serializer-usage = on
-        """)))
+        """)
+      ))
     with PluginCleanup {
 
   override def supportsRejectingNonSerializableObjects = true

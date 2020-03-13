@@ -150,7 +150,8 @@ private[remote] class Encoder(
               "sending remote message [{}] to [{}] from [{}]",
               outboundEnvelope.message,
               outboundEnvelope.recipient.getOrElse(""),
-              outboundEnvelope.sender.getOrElse(""))
+              outboundEnvelope.sender.getOrElse("")
+            )
 
           push(out, envelope)
 
@@ -452,7 +453,8 @@ private[remote] class Decoder(
               "table [{}] built for previous incarnation of the destination system, or it was compressed with a table " +
               "that has already been discarded in the destination system.",
               originUid,
-              headerBuilder.inboundActorRefCompressionTableVersion)
+              headerBuilder.inboundActorRefCompressionTableVersion
+            )
             pull(in)
           } else if (classManifestOpt.isEmpty) {
             log.debug(
@@ -460,7 +462,8 @@ private[remote] class Decoder(
               "table [{}] built for previous incarnation of the destination system, or it was compressed with a table " +
               "that has already been discarded in the destination system.",
               originUid,
-              headerBuilder.inboundActorRefCompressionTableVersion)
+              headerBuilder.inboundActorRefCompressionTableVersion
+            )
             pull(in)
           } else {
             val classManifest = classManifestOpt.get
@@ -537,7 +540,8 @@ private[remote] class Decoder(
                     retryResolveRemoteDeployedRecipientAttempts,
                     recipientActorRefPath,
                     decoded),
-                  retryResolveRemoteDeployedRecipientInterval)
+                  retryResolveRemoteDeployedRecipientInterval
+                )
             } else {
               push(out, decoded)
             }

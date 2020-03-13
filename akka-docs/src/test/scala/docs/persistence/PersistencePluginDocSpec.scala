@@ -229,7 +229,8 @@ object PersistenceTCKDoc {
 
       val storageLocations = List(
         new File(system.settings.config.getString("akka.persistence.journal.leveldb.dir")),
-        new File(config.getString("akka.persistence.snapshot-store.local.dir")))
+        new File(config.getString("akka.persistence.snapshot-store.local.dir"))
+      )
 
       override def beforeAll(): Unit = {
         super.beforeAll()

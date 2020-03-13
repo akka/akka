@@ -53,7 +53,8 @@ akka.actor.warn-about-java-serializer-usage = off
         akka.loglevel = DEBUG
         akka.remote.artery.enabled = off
         akka.remote.classic.netty.tcp.port=2666
-                              """).withFallback(system.settings.config))
+                              """).withFallback(system.settings.config)
+  )
 
   override def beforeTermination(): Unit = {
     system.eventStream.publish(TestEvent.Mute(EventFilter.warning(pattern = "received dead letter.*Disassociate")))
@@ -92,15 +93,18 @@ akka.actor.warn-about-java-serializer-usage = off
   "receive Terminated when watched node is unknown host" in {
     val path = RootActorPath(Address(protocol, system.name, "unknownhost", 2552)) / "user" / "subject"
 
-    system.actorOf(Props(new Actor {
-      @silent
-      val watchee = RARP(context.system).provider.resolveActorRef(path)
-      context.watch(watchee)
+    system.actorOf(
+      Props(new Actor {
+        @silent
+        val watchee = RARP(context.system).provider.resolveActorRef(path)
+        context.watch(watchee)
 
-      def receive = {
-        case t: Terminated => testActor ! t.actor.path
-      }
-    }).withDeploy(Deploy.local), name = "observer2")
+        def receive = {
+          case t: Terminated => testActor ! t.actor.path
+        }
+      }).withDeploy(Deploy.local),
+      name = "observer2"
+    )
 
     expectMsg(60.seconds, path)
   }

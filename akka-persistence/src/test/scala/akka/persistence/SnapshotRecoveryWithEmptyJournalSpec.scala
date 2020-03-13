@@ -66,7 +66,8 @@ class SnapshotRecoveryWithEmptyJournalSpec
         "SnapshotRecoveryWithEmptyJournalSpec",
         extraConfig = Some(s"""
   akka.persistence.snapshot-store.local.dir = "${SnapshotRecoveryWithEmptyJournalSpec.survivingSnapshotPath}"
-  """)))
+  """)
+      ))
     with ImplicitSender {
 
   import SnapshotRecoveryWithEmptyJournalSpec._

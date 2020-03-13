@@ -653,7 +653,8 @@ private[akka] class ActorCell(
                a non-static inner class (in which case make it a static inner class or use Props(new ...) or Props( new Creator ... )
                or is missing an appropriate, reachable no-args constructor.
               """,
-              i.getCause)
+              i.getCause
+            )
           case x => throw ActorInitializationException(self, "exception during creation", x)
         }
     }

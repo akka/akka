@@ -125,7 +125,8 @@ object ClusterShardingPersistenceSpec {
               shard ! Passivate(ctx.self)
               Effect.unstashAll()
           },
-        eventHandler = (state, evt) => if (state.isEmpty) evt else state + "|" + evt).receiveSignal {
+        eventHandler = (state, evt) => if (state.isEmpty) evt else state + "|" + evt
+      ).receiveSignal {
         case (state, RecoveryCompleted) =>
           ctx.log.debug("onRecoveryCompleted: [{}]", state)
           lifecycleProbes.get(entityId) match {

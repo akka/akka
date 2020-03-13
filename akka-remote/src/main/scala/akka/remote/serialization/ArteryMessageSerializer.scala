@@ -205,7 +205,8 @@ private[akka] final class ArteryMessageSerializer(val system: ExtendedActorSyste
           if (protoEnv.hasMessageManifest) protoEnv.getMessageManifest.toStringUtf8 else "")
         .get,
       protoEnv.getSeqNo,
-      deserializeUniqueAddress(protoEnv.getAckReplyTo))
+      deserializeUniqueAddress(protoEnv.getAckReplyTo)
+    )
   }
 
   def serializeSystemMessageDeliveryAck(

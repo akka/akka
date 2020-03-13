@@ -46,7 +46,8 @@ private[akka] trait JournalInteractions[C, E, S] {
       sequenceNr = newState.seqNr,
       manifest = eventAdapterManifest,
       writerUuid = setup.writerIdentity.writerUuid,
-      sender = ActorRef.noSender)
+      sender = ActorRef.noSender
+    )
 
     onWriteInitiated(ctx, cmd, repr)
 
@@ -80,7 +81,8 @@ private[akka] trait JournalInteractions[C, E, S] {
             sequenceNr = newState.seqNr,
             manifest = eventAdapterManifest,
             writerUuid = setup.writerIdentity.writerUuid,
-            sender = ActorRef.noSender)
+            sender = ActorRef.noSender
+          )
       }
 
       onWritesInitiated(ctx, cmd, writes)

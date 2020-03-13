@@ -142,13 +142,17 @@ trait LoggingBus extends ActorEventBus {
       try {
         if (system.settings.DebugUnhandledMessage)
           subscribe(
-            system.systemActorOf(Props(new Actor {
-              def receive = {
-                case UnhandledMessage(msg, sender, rcp) =>
-                  publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
-              }
-            }), "UnhandledMessageForwarder"),
-            classOf[UnhandledMessage])
+            system.systemActorOf(
+              Props(new Actor {
+                def receive = {
+                  case UnhandledMessage(msg, sender, rcp) =>
+                    publish(Debug(rcp.path.toString, rcp.getClass, "unhandled message from " + sender + ": " + msg))
+                }
+              }),
+              "UnhandledMessageForwarder"
+            ),
+            classOf[UnhandledMessage]
+          )
       } catch {
         case _: InvalidActorNameException => // ignore if it is already running
       }

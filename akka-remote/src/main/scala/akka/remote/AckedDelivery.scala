@@ -215,7 +215,8 @@ final case class AckedReceiveBuffer[T <: HasSequenceNumber](
     this.copy(
       lastDelivered = mergedLastDelivered,
       cumulativeAck = max(this.cumulativeAck, that.cumulativeAck),
-      buf = this.buf.union(that.buf).filter { _.seq > mergedLastDelivered })
+      buf = this.buf.union(that.buf).filter { _.seq > mergedLastDelivered }
+    )
   }
 
   override def toString = buf.map { _.seq }.mkString("[", ", ", "]")

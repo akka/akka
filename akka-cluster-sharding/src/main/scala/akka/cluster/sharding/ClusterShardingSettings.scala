@@ -118,7 +118,8 @@ object ClusterShardingSettings {
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
-      s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
+      s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'"
+    )
 
     // included for binary compatibility
     def this(
@@ -304,7 +305,8 @@ final class ClusterShardingSettings(
   import ClusterShardingSettings.StateStoreModePersistence
   require(
     stateStoreMode == StateStoreModePersistence || stateStoreMode == StateStoreModeDData,
-    s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'")
+    s"Unknown 'state-store-mode' [$stateStoreMode], valid values are '$StateStoreModeDData' or '$StateStoreModePersistence'"
+  )
 
   /** If true, this node should run the shard region, otherwise just a shard proxy should started on this node. */
   @InternalApi

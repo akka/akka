@@ -85,7 +85,8 @@ object PerformanceSpec {
           },
           eventHandler = {
             case (state, _) => state
-          }).receiveSignal {
+          }
+        ).receiveSignal {
           case (_, RecoveryCompleted) =>
             if (parameters.every(1000)) print("r")
         }

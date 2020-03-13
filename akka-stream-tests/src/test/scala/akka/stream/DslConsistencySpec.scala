@@ -75,7 +75,8 @@ class DslConsistencySpec extends AnyWordSpec with Matchers {
     "alsoToGraph",
     "wireTapGraph",
     "orElseGraph",
-    "divertToGraph")
+    "divertToGraph"
+  )
 
   val allowMissing: Map[Class[_], Set[String]] = Map(
     jFlowClass -> graphHelpers,
@@ -88,7 +89,8 @@ class DslConsistencySpec extends AnyWordSpec with Matchers {
     sSinkClass -> Set("adapt"),
     sSubFlowClass -> Set(),
     sSubSourceClass -> Set(),
-    sRunnableGraphClass -> Set("builder"))
+    sRunnableGraphClass -> Set("builder")
+  )
 
   def materializing(m: Method): Boolean = m.getParameterTypes.contains(classOf[ActorMaterializer])
 

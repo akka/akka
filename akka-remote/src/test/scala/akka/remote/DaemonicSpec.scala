@@ -31,7 +31,8 @@ class DaemonicSpec extends AkkaSpec {
         akka.remote.artery.canonical.port = 0
         akka.log-dead-letters-during-shutdown = off
         #akka.remote.artery.advanced.aeron.idle-cpu = 5
-      """))
+      """)
+      )
 
       try {
         val unusedPort = 86 // very unlikely to ever be used, "system port" range reserved for Micro Focus Cobol
@@ -43,11 +44,14 @@ class DaemonicSpec extends AkkaSpec {
         selection ! "whatever"
 
         // get new non daemonic threads running
-        awaitAssert({
-          val newNonDaemons: Set[Thread] =
-            Thread.getAllStackTraces.keySet().asScala.filter(t => !origThreads(t) && !t.isDaemon).to(Set)
-          newNonDaemons should ===(Set.empty[Thread])
-        }, 4.seconds)
+        awaitAssert(
+          {
+            val newNonDaemons: Set[Thread] =
+              Thread.getAllStackTraces.keySet().asScala.filter(t => !origThreads(t) && !t.isDaemon).to(Set)
+            newNonDaemons should ===(Set.empty[Thread])
+          },
+          4.seconds
+        )
 
       } finally {
         shutdown(daemonicSystem)

@@ -35,7 +35,8 @@ class ReplicatedDataSerializerSpec
     akka.actor.provider=cluster
     akka.remote.classic.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
-    """)))
+    """)
+      ))
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
@@ -225,7 +226,8 @@ class ReplicatedDataSerializerSpec
         PNCounter().increment(address3, 5).increment(address1, 2))
       checkSameContent(
         PNCounter().increment(address1, 2).decrement(address1, 1).increment(address3, 5),
-        PNCounter().increment(address3, 5).increment(address1, 2).decrement(address1, 1))
+        PNCounter().increment(address3, 5).increment(address1, 2).decrement(address1, 1)
+      )
     }
 
     "serialize ORMap" in {

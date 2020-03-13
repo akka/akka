@@ -558,7 +558,8 @@ class ImmutableWithSignalJavaBehaviorSpec extends Messages with BecomeWithLifecy
       (_, sig) => {
         monitor ! ReceivedSignal(sig)
         SBehaviors.same
-      })
+      }
+    )
 }
 
 class ImmutableJavaBehaviorSpec extends Messages with Become with Stoppable {

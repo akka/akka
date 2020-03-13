@@ -46,7 +46,8 @@ object ClusterSingletonPersistenceSpec {
             Effect.none
           case StopPlz => Effect.stop()
         },
-      eventHandler = (state, evt) => if (state.isEmpty) evt else state + "|" + evt)
+      eventHandler = (state, evt) => if (state.isEmpty) evt else state + "|" + evt
+    )
 
 }
 

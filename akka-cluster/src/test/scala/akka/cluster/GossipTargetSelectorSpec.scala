@@ -103,7 +103,8 @@ class GossipTargetSelectorSpec extends AnyWordSpec with Matchers {
           overview = GossipOverview(reachability = Reachability.empty.unreachable(aDc1, bDc1))),
         aDc1,
         aDc1.dataCenter,
-        crossDcConnections = 5)
+        crossDcConnections = 5
+      )
       val gossipTo = alwaysLocalSelector.gossipTargets(state)
 
       // a1 cannot reach b1 so only option is c1
@@ -121,7 +122,8 @@ class GossipTargetSelectorSpec extends AnyWordSpec with Matchers {
           overview = GossipOverview(reachability = Reachability.empty.unreachable(aDc1, bDc1).unreachable(bDc1, cDc1))),
         aDc1,
         aDc1.dataCenter,
-        crossDcConnections = 5)
+        crossDcConnections = 5
+      )
       val gossipTo = alwaysLocalSelector.gossipTargets(state)
 
       // a1 marked b as unreachable so will not pick b
@@ -138,10 +140,12 @@ class GossipTargetSelectorSpec extends AnyWordSpec with Matchers {
       val state = MembershipState(
         Gossip(
           members = SortedSet(aDc1, bDc1, eDc2, fDc2, gDc3, hDc3),
-          overview = GossipOverview(reachability = Reachability.empty.unreachable(aDc1, eDc2).unreachable(aDc1, fDc2))),
+          overview = GossipOverview(reachability = Reachability.empty.unreachable(aDc1, eDc2).unreachable(aDc1, fDc2))
+        ),
         aDc1,
         aDc1.dataCenter,
-        crossDcConnections = 5)
+        crossDcConnections = 5
+      )
       val gossipTo = selector.gossipTargets(state)
       gossipTo should ===(Vector[UniqueAddress](gDc3, hDc3))
     }

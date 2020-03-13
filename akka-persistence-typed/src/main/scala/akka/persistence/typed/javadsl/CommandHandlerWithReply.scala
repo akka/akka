@@ -215,7 +215,8 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
           if (state == null) statePredicate.test(state.asInstanceOf[S])
           else
             statePredicate.test(state.asInstanceOf[S]) && stateClass.isAssignableFrom(state.getClass),
-        handler.asInstanceOf[BiFunction[State, Command, ReplyEffect[Event, State]]]) :: cases
+        handler.asInstanceOf[BiFunction[State, Command, ReplyEffect[Event, State]]]
+      ) :: cases
   }
 
   /**
@@ -243,9 +244,12 @@ final class CommandHandlerWithReplyBuilderByState[Command, Event, S <: State, St
    */
   def onCommand(predicate: Predicate[Command], handler: JFunction[Command, ReplyEffect[Event, State]])
       : CommandHandlerWithReplyBuilderByState[Command, Event, S, State] = {
-    addCase(cmd => predicate.test(cmd), new BiFunction[S, Command, ReplyEffect[Event, State]] {
-      override def apply(state: S, cmd: Command): ReplyEffect[Event, State] = handler(cmd)
-    })
+    addCase(
+      cmd => predicate.test(cmd),
+      new BiFunction[S, Command, ReplyEffect[Event, State]] {
+        override def apply(state: S, cmd: Command): ReplyEffect[Event, State] = handler(cmd)
+      }
+    )
     this
   }
 

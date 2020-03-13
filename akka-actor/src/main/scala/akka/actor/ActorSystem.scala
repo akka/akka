@@ -1006,7 +1006,8 @@ private[akka] class ActorSystemImpl(
       "akka-slf4j",
       "akka-stream",
       "akka-stream-testkit",
-      "akka-stream-typed")
+      "akka-stream-typed"
+    )
 
   @volatile private var _initialized = false
 
@@ -1103,7 +1104,8 @@ private[akka] class ActorSystemImpl(
         immutable.Seq(
           classOf[Config] -> settings.config,
           classOf[LoggingAdapter] -> log,
-          classOf[ThreadFactory] -> threadFactory.withName(threadFactory.name + "-scheduler")))
+          classOf[ThreadFactory] -> threadFactory.withName(threadFactory.name + "-scheduler"))
+      )
       .get
   //#create-scheduler
 

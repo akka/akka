@@ -17,7 +17,8 @@ class LoggingTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
       loggerName = getClass.getName,
       message = "this is an error",
       threadName = Thread.currentThread().getName,
-      timeStamp = System.currentTimeMillis())
+      timeStamp = System.currentTimeMillis()
+    )
   private def errorWithCause(cause: Throwable) =
     LoggingEvent(
       level = Level.ERROR,
@@ -27,14 +28,16 @@ class LoggingTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
       timeStamp = System.currentTimeMillis(),
       marker = None,
       throwable = Option(cause),
-      mdc = Map.empty)
+      mdc = Map.empty
+    )
   private def warningNoCause =
     LoggingEvent(
       level = Level.WARN,
       loggerName = getClass.getName,
       message = "this is a warning",
       threadName = Thread.currentThread().getName,
-      timeStamp = System.currentTimeMillis())
+      timeStamp = System.currentTimeMillis()
+    )
   private def warningWithCause(cause: Throwable) =
     LoggingEvent(
       level = Level.WARN,
@@ -44,7 +47,8 @@ class LoggingTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
       timeStamp = System.currentTimeMillis(),
       marker = None,
       throwable = Option(cause),
-      mdc = Map.empty)
+      mdc = Map.empty
+    )
   private def warningWithSource(source: String) =
     LoggingEvent(
       level = Level.WARN,
@@ -54,7 +58,8 @@ class LoggingTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike 
       timeStamp = System.currentTimeMillis(),
       marker = None,
       throwable = None,
-      mdc = Map("akkaSource" -> source))
+      mdc = Map("akkaSource" -> source)
+    )
 
   "The LoggingEventFilter.error" must {
     "filter errors without cause" in {

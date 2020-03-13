@@ -44,7 +44,8 @@ class ClusterSingletonRestartSpec
         singletonProps = TestActors.echoActorProps,
         terminationMessage = PoisonPill,
         settings = ClusterSingletonManagerSettings(from)),
-      name = "echo")
+      name = "echo"
+    )
 
     within(10.seconds) {
       awaitAssert {

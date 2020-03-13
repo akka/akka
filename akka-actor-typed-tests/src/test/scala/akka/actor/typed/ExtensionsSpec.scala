@@ -114,7 +114,8 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
         ConfigFactory.parseString(
           """
           akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
-        """))) { sys =>
+        """))
+    ) { sys =>
       sys.hasExtension(DummyExtension1) should ===(true)
       sys.extension(DummyExtension1) shouldBe a[DummyExtension1]
 
@@ -129,7 +130,8 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
           "ExtensionsSpec04",
           ConfigFactory.parseString("""
           akka.actor.typed.extensions = ["akka.actor.typed.FailingToLoadExtension$"]
-        """))
+        """)
+        )
       }
 
       intercept[RuntimeException] {
@@ -229,7 +231,8 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
           """
           akka.actor.typed.extensions = ["akka.actor.typed.DummyExtension1$", "akka.actor.typed.SlowExtension$"]
         """)),
-      Some(ActorSystemSetup(new DummyExtension1Setup(_ => new DummyExtension1ViaSetup)))) { sys =>
+      Some(ActorSystemSetup(new DummyExtension1Setup(_ => new DummyExtension1ViaSetup)))
+    ) { sys =>
       sys.hasExtension(DummyExtension1) should ===(true)
       sys.extension(DummyExtension1) shouldBe a[DummyExtension1ViaSetup]
       DummyExtension1(sys) shouldBe a[DummyExtension1ViaSetup]
@@ -247,7 +250,8 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
             """
           akka.actor.typed.extensions = ["akka.actor.typed.AccessSystemFromConstructorExtensionId$"]
         """)),
-        None) { sys =>
+        None
+      ) { sys =>
         AccessSystemFromConstructorExtensionId(sys) // would throw if it couldn't
       }
     }

@@ -361,7 +361,8 @@ class DeprecatedTlsSpec extends StreamSpec(DeprecatedTlsSpec.configOverrides) wi
         SessionRenegotiationBySender,
         SessionRenegotiationByReceiver,
         SessionRenegotiationFirstOne,
-        SessionRenegotiationFirstTwo)
+        SessionRenegotiationFirstTwo
+      )
 
     for {
       commPattern <- communicationPatterns

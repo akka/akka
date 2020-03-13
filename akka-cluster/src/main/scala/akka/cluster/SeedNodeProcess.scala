@@ -287,7 +287,8 @@ private[cluster] final class JoinSeedNodeProcess(
           ClusterLogMarker.joinFailed,
           "Couldn't join seed nodes after [{}] attempts, will try again. seed-nodes=[{}]",
           attempt,
-          seedNodes.filterNot(_ == selfAddress).mkString(", "))
+          seedNodes.filterNot(_ == selfAddress).mkString(", ")
+        )
       // no InitJoinAck received, try again
       self ! JoinSeedNode
       onReceiveTimeout(seedNodes, attempt)

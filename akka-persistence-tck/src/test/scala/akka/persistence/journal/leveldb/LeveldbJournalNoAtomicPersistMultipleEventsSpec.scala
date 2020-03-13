@@ -16,7 +16,8 @@ class LeveldbJournalNoAtomicPersistMultipleEventsSpec
         akka.persistence.journal.leveldb.native = off
         akka.actor.allow-java-serialization = off
         akka.actor.warn-about-java-serializer-usage = on
-        """)))
+        """)
+      ))
     with PluginCleanup {
 
   /**

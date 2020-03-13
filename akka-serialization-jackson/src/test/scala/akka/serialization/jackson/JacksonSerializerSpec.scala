@@ -565,7 +565,8 @@ abstract class JacksonSerializerSpec(serializerName: String)
       }
     }
     akka.serialization.jackson.whitelist-class-prefix = ["akka.serialization.jackson.ScalaTestMessages$$OldCommand"]
-    """)))
+    """)
+      ))
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
@@ -857,7 +858,8 @@ abstract class JacksonSerializerSpec(serializerName: String)
                 "$className" = $serializerName
                 "akka.serialization.jackson.ScalaTestMessages$$TestMessage" = $serializerName
               }
-              """).withFallback(system.settings.config))
+              """).withFallback(system.settings.config)
+            )
             try {
               SerializationExtension(sys).serialize(SimpleCommand("hi")).get
             } finally shutdown(sys)

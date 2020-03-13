@@ -95,7 +95,8 @@ class DistributedData(system: ActorSystem[_]) extends Extension {
           "Replicator points to dead letters. Make sure the cluster node has the proper role. " +
           "Node has roles [{}], Distributed Data is configured for roles [{}].",
           Cluster(classicSystem).selfRoles.mkString(","),
-          settings.roles.mkString(","))
+          settings.roles.mkString(",")
+        )
       system.deadLetters
     } else {
       val underlyingReplicator = dd.DistributedData(classicSystem).replicator

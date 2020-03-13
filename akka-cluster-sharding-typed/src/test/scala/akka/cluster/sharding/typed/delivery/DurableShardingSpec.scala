@@ -95,7 +95,8 @@ class DurableShardingSpec
             producerId,
             sharding,
             Some(EventSourcedProducerQueue[TestConsumer.Job](PersistenceId.ofUniqueId(producerId)))),
-          s"shardingController-$idCount")
+          s"shardingController-$idCount"
+        )
       val producerProbe = createTestProbe[ShardingProducerController.RequestNext[TestConsumer.Job]]()
       shardingProducerController ! ShardingProducerController.Start(producerProbe.ref)
 
@@ -134,7 +135,8 @@ class DurableShardingSpec
             producerId,
             sharding,
             Some(EventSourcedProducerQueue[TestConsumer.Job](PersistenceId.ofUniqueId(producerId)))),
-          s"shardingController2-$idCount")
+          s"shardingController2-$idCount"
+        )
       shardingProducerController2 ! ShardingProducerController.Start(producerProbe.ref)
 
       // delivery3 and delivery4 are still from old shardingProducerController, that were queued in ConsumerController
@@ -202,7 +204,8 @@ class DurableShardingSpec
             producerId,
             sharding,
             Some(EventSourcedProducerQueue[TestConsumer.Job](PersistenceId.ofUniqueId(producerId)))),
-          s"shardingController-$idCount")
+          s"shardingController-$idCount"
+        )
       val producerProbe = createTestProbe[ShardingProducerController.RequestNext[TestConsumer.Job]]()
       shardingProducerController ! ShardingProducerController.Start(producerProbe.ref)
 

@@ -106,7 +106,8 @@ class RemoteInstrumentsSerializationSpec extends AkkaSpec("akka.loglevel = DEBUG
     "skip deserializing remote instrument that fails" in {
       ensureDebugLog(
         "Skipping deserialization of RemoteInstrument 7 since it failed with boom",
-        "Skipping deserialization of RemoteInstrument 21 since it failed with boom") {
+        "Skipping deserialization of RemoteInstrument 21 since it failed with boom"
+      ) {
         val p = TestProbe()
         val instruments = Seq(
           testInstrument(7, "!", receiveThrowable = boom),

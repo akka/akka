@@ -147,7 +147,8 @@ class EventSourcedActorFailureSpec
         extraConfig = Some(
           """
   akka.persistence.journal.inmem.class = "akka.persistence.EventSourcedActorFailureSpec$FailingInmemJournal"
-  """)))
+  """)
+      ))
     with ImplicitSender {
 
   import EventSourcedActorFailureSpec._

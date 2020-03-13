@@ -99,7 +99,8 @@ class ReverseArrowSpec extends StreamSpec {
             ClosedShape
           })
           .run(),
-        1.second) should ===(Seq(1, 2, 3))
+        1.second
+      ) should ===(Seq(1, 2, 3))
     }
 
     "work from UniformFanOutShape" in {
@@ -113,7 +114,8 @@ class ReverseArrowSpec extends StreamSpec {
             ClosedShape
           })
           .run(),
-        1.second) should ===(Seq(1, 2, 3))
+        1.second
+      ) should ===(Seq(1, 2, 3))
     }
 
     "work towards Outlets" in {
@@ -175,7 +177,8 @@ class ReverseArrowSpec extends StreamSpec {
             ClosedShape
           })
           .run(),
-        1.second) should ===(Seq(1, 2, 3))
+        1.second
+      ) should ===(Seq(1, 2, 3))
     }
 
     "fail towards already full UniformFanInShape" in {
@@ -190,7 +193,8 @@ class ReverseArrowSpec extends StreamSpec {
             ClosedShape
           })
           .run(),
-        1.second) should ===(Seq(1, 2, 3))
+        1.second
+      ) should ===(Seq(1, 2, 3))
     }
 
     "work towards UniformFanOutShape" in {
@@ -204,7 +208,8 @@ class ReverseArrowSpec extends StreamSpec {
             ClosedShape
           })
           .run(),
-        1.second) should ===(Seq(1, 2, 3))
+        1.second
+      ) should ===(Seq(1, 2, 3))
     }
 
     "fail towards already full UniformFanOutShape" in {
@@ -221,7 +226,8 @@ class ReverseArrowSpec extends StreamSpec {
             ClosedShape
           })
           .run(),
-        1.second) should ===(Seq(1, 2, 3))
+        1.second
+      ) should ===(Seq(1, 2, 3))
     }
 
     "work across a Flow" in {

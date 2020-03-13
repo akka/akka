@@ -136,13 +136,15 @@ private[remote] class ArteryTcpTransport(
           connectTimeout = settings.Advanced.Tcp.ConnectionTimeout,
           idleTimeout = Duration.Inf,
           verifySession = session => optionToTry(sslProvider.verifyClientSession(host, session)),
-          closing = IgnoreComplete)
+          closing = IgnoreComplete
+        )
       } else {
         Tcp().outgoingConnection(
           remoteAddress,
           localAddress,
           halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
-          connectTimeout = settings.Advanced.Tcp.ConnectionTimeout)
+          connectTimeout = settings.Advanced.Tcp.ConnectionTimeout
+        )
       }
     }
 
@@ -156,7 +158,8 @@ private[remote] class ArteryTcpTransport(
               outboundContext.remoteAddress,
               outboundContext.associationState.uniqueRemoteAddress().map(_.uid)),
             "Outbound connection opened to [{}]",
-            outboundContext.remoteAddress)
+            outboundContext.remoteAddress
+          )
       }
 
       def logDisconnected(): Unit = {
@@ -166,7 +169,8 @@ private[remote] class ArteryTcpTransport(
               outboundContext.remoteAddress,
               outboundContext.associationState.uniqueRemoteAddress().map(_.uid)),
             "Outbound connection closed to [{}]",
-            outboundContext.remoteAddress)
+            outboundContext.remoteAddress
+          )
       }
 
       val flowFactory = () => {
@@ -253,7 +257,8 @@ private[remote] class ArteryTcpTransport(
           options = Nil,
           idleTimeout = Duration.Inf,
           verifySession = session => optionToTry(sslProvider.verifyServerSession(bindHost, session)),
-          closing = IgnoreComplete)
+          closing = IgnoreComplete
+        )
       } else {
         Tcp().bind(interface = bindHost, port = bindPort, halfClose = false)
       }
@@ -328,14 +333,18 @@ private[remote] class ArteryTcpTransport(
     // overhead.
     val inboundStream = Sink.fromGraph(GraphDSL.create() { implicit b =>
       import GraphDSL.Implicits._
-      val partition = b.add(Partition[EnvelopeBuffer](3, env => {
-        env.streamId match {
-          case OrdinaryStreamId => 1
-          case ControlStreamId  => 0
-          case LargeStreamId    => 2
-          case other            => throw new IllegalArgumentException(s"Unexpected streamId [$other]")
-        }
-      }))
+      val partition = b.add(
+        Partition[EnvelopeBuffer](
+          3,
+          env => {
+            env.streamId match {
+              case OrdinaryStreamId => 1
+              case ControlStreamId  => 0
+              case LargeStreamId    => 2
+              case other            => throw new IllegalArgumentException(s"Unexpected streamId [$other]")
+            }
+          }
+        ))
       partition.out(0) ~> controlStream
       partition.out(1) ~> ordinaryMessagesStream
       partition.out(2) ~> largeMessagesStream

@@ -308,7 +308,8 @@ private class ShardingProducerControllerImpl[A: ClassTag](
                   nextTo = None,
                   unconfirmed = newUnconfirmed,
                   usedNanoTime = System.nanoTime())),
-              replyAfterStore = newReplyAfterStore)
+              replyAfterStore = newReplyAfterStore
+            )
           case Some(out @ OutState(_, _, None, buffered, _, _, _)) =>
             // no demand, buffer
             if (s.bufferSize >= settings.bufferSize)
@@ -345,7 +346,8 @@ private class ShardingProducerControllerImpl[A: ClassTag](
                   1L,
                   Vector.empty,
                   System.nanoTime())),
-              replyAfterStore = newReplyAfterStore)
+              replyAfterStore = newReplyAfterStore
+            )
         }
 
       active(newState)

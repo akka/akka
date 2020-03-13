@@ -103,7 +103,8 @@ class DslFactoriesConsistencySpec extends AnyWordSpec with Matchers {
     TestCase("UnZip", scaladsl.Unzip.getClass, javadsl.Unzip.getClass),
     TestCase("Concat", scaladsl.Concat.getClass, javadsl.Concat.getClass),
     TestCase("FileIO", scaladsl.FileIO.getClass, javadsl.FileIO.getClass),
-    TestCase("StreamConverters", scaladsl.StreamConverters.getClass, javadsl.StreamConverters.getClass))
+    TestCase("StreamConverters", scaladsl.StreamConverters.getClass, javadsl.StreamConverters.getClass)
+  )
 
   "Java DSL" must provide {
     testCases.foreach {
@@ -159,7 +160,8 @@ class DslFactoriesConsistencySpec extends AnyWordSpec with Matchers {
       Ignore(_ == akka.stream.scaladsl.GraphDSL.getClass, _ == "runnable", _ == 24, _ => true),
       Ignore(_ == akka.stream.scaladsl.GraphDSL.getClass, _ == "create", _ == 24, _ => true),
       // all generated methods like scaladsl.Sink$.akka$stream$scaladsl$Sink$$newOnCompleteStage$1
-      Ignore(_ => true, _.contains("$"), _ => true, _ => true))
+      Ignore(_ => true, _.contains("$"), _ => true, _ => true)
+    )
 
     ignores.foldLeft(false) {
       case (acc, i) =>

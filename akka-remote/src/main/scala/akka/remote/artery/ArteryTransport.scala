@@ -474,7 +474,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
         s"Remoting started with transport [Artery ${settings.Transport}]; listening on address [{}] and bound to [{}] with UID [{}]",
         localAddress.address,
         bindAddress.address,
-        localAddress.uid)
+        localAddress.uid
+      )
     }
   }
 
@@ -570,7 +571,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
                       from,
                       table.originUid,
                       localAddress.uid,
-                      table)
+                      table
+                    )
                 case ack: ActorRefCompressionAdvertisementAck =>
                   inboundCompressionAccess match {
                     case OptionVal.Some(access) => access.confirmActorRefCompressionAdvertisementAck(ack)
@@ -579,7 +581,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
                         s"Received {} version: [{}] however no inbound compression access was present. " +
                         s"ACK will not take effect, however it will be redelivered and likely to apply then.",
                         Logging.simpleName(ack),
-                        ack.tableVersion)
+                        ack.tableVersion
+                      )
                   }
 
                 case ClassManifestCompressionAdvertisement(from, table) =>
@@ -601,7 +604,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
                       from,
                       table.originUid,
                       localAddress.uid,
-                      table)
+                      table
+                    )
                 case ack: ClassManifestCompressionAdvertisementAck =>
                   inboundCompressionAccess match {
                     case OptionVal.Some(access) => access.confirmClassManifestCompressionAdvertisementAck(ack)
@@ -610,7 +614,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
                         s"Received {} version: [{}] however no inbound compression access was present. " +
                         s"ACK will not take effect, however it will be redelivered and likely to apply then.",
                         Logging.simpleName(ack),
-                        ack.tableVersion)
+                        ack.tableVersion
+                      )
                   }
               }
 
@@ -659,7 +664,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
             streamName,
             settings.Advanced.InboundMaxRestarts,
             settings.Advanced.InboundRestartTimeout.toSeconds,
-            cause.getMessage)
+            cause.getMessage
+          )
           system.terminate()
         }
     }
@@ -679,7 +685,8 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
             FlushOnShutdown
               .props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, this, allAssociations)
               .withDispatcher(Dispatchers.InternalDispatcherId),
-            "remoteFlushOnShutdown")
+            "remoteFlushOnShutdown"
+          )
           flushingPromise.future
         }
       implicit val ec = system.dispatchers.internalDispatcher

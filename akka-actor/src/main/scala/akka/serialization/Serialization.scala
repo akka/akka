@@ -336,7 +336,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
                     LogMarker.Security,
                     "Multiple serializers found for [{}], choosing first of: [{}]",
                     clazz.getName,
-                    possibilitiesWithoutJavaSerializer.map { case (_, s) => s.getClass.getName }.mkString(", "))
+                    possibilitiesWithoutJavaSerializer.map { case (_, s) => s.getClass.getName }.mkString(", ")
+                  )
                 }
                 possibilitiesWithoutJavaSerializer.head._2
 
@@ -353,7 +354,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
                 "Using the Java serializer for class [{}] which is not recommended because of " +
                 "performance implications. Use another serializer or disable this warning using the setting " +
                 "'akka.actor.warn-about-java-serializer-usage'",
-                clazz.getName)
+                clazz.getName
+              )
             }
 
             if (!warnUnexpectedNonAkkaSerializer(clazz, ser))
@@ -460,7 +462,8 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
         "is not implemented by Akka. It's not recommended to replace serializers for messages " +
         "provided by Akka.",
         ser.getClass.getName,
-        clazz.getName)
+        clazz.getName
+      )
       true
     } else false
   }

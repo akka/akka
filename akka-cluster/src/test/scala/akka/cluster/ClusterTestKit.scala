@@ -119,7 +119,8 @@ trait ClusterTestKit extends TestKitBase {
       awaitCond(
         cluster.readView.status == Removed,
         message =
-          s"awaiting node [${cluster.readView.selfAddress}] to be 'Removed'. Current status: [${cluster.readView.status}]")
+          s"awaiting node [${cluster.readView.selfAddress}] to be 'Removed'. Current status: [${cluster.readView.status}]"
+      )
 
       shutdown(actorSystem)
       awaitCond(cluster.isTerminated)

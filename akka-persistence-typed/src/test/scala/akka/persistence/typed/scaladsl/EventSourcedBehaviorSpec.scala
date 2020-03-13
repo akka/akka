@@ -267,7 +267,8 @@ object EventSourcedBehaviorSpec {
           case Incremented(delta) =>
             probe ! ((state, evt))
             State(state.value + delta, state.history :+ state.value)
-        }).receiveSignal {
+        }
+    ).receiveSignal {
       case (_, RecoveryCompleted) => ()
       case (_, SnapshotCompleted(metadata)) =>
         snapshotProbe ! Success(metadata)
@@ -595,7 +596,8 @@ class EventSourcedBehaviorSpec
         ConfigFactory.parseString(s"""
           akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
           akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-          """))
+          """)
+      )
       try {
         LoggingTestKit
           .warn("No default snapshot store configured")
@@ -618,7 +620,8 @@ class EventSourcedBehaviorSpec
         ConfigFactory.parseString(s"""
           akka.persistence.journal.leveldb.dir = "target/typed-persistence-${UUID.randomUUID().toString}"
           akka.persistence.journal.plugin = "akka.persistence.journal.leveldb"
-          """))
+          """)
+      )
       try {
         LoggingTestKit
           .error[ActorInitializationException]

@@ -1306,7 +1306,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
               case Some(envelope) => key -> Delta(envelope.copy(data = d), fromSeqNr, toSeqNr)
               case None           => key -> Delta(DataEnvelope(d), fromSeqNr, toSeqNr)
             }
-        }.toMap)
+        }.toMap
+      )
     }
   }
   val deltaPropagationTask: Option[Cancellable] =
@@ -1404,7 +1405,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
         log.error(
           e,
           "Stopping distributed-data Replicator due to load or startup failure in durable store, caused by: {}",
-          if (e.getCause eq null) "" else e.getCause.getMessage)
+          if (e.getCause eq null) "" else e.getCause.getMessage
+        )
         context.stop(self)
         SupervisorStrategy.Stop
     }: SupervisorStrategy.Decider).orElse(SupervisorStrategy.defaultDecider))
@@ -1884,7 +1886,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
           log.debug(
             "Received DeltaPropagation from [{}], containing [{}].",
             fromNode.address,
-            deltas.collect { case (key, Delta(_, fromSeqNr, toSeqNr)) => s"$key $fromSeqNr-$toSeqNr" }.mkString(", "))
+            deltas.collect { case (key, Delta(_, fromSeqNr, toSeqNr)) => s"$key $fromSeqNr-$toSeqNr" }.mkString(", ")
+          )
 
         if (isNodeRemoved(fromNode, deltas.keys)) {
           // Late message from a removed node.

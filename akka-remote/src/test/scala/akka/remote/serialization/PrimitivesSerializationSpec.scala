@@ -146,7 +146,8 @@ class PrimitivesSerializationSpec extends AkkaSpec(PrimitivesSerializationSpec.t
       "concatenated content" -> (ByteString("hello") ++ ByteString("world")),
       "sliced content" -> ByteString("helloabc").take(5),
       "large concatenated" ->
-      (ByteString(Array.fill[Byte](1000)(1)) ++ ByteString(Array.fill[Byte](1000)(2)))).foreach {
+      (ByteString(Array.fill[Byte](1000)(1)) ++ ByteString(Array.fill[Byte](1000)(2)))
+    ).foreach {
       case (scenario, item) =>
         s"resolve serializer for [$scenario]" in {
           serializerFor(item).getClass should ===(classOf[ByteStringSerializer])

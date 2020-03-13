@@ -220,7 +220,8 @@ private[remote] final class RemoteInstruments(
         if (log.isDebugEnabled)
           log.debug(
             "Skipping serialized data in message for RemoteInstrument(s) {} that has no local match",
-            remoteInstrumentIdIteratorRaw(buffer, endPos).mkString("[", ", ", "]"))
+            remoteInstrumentIdIteratorRaw(buffer, endPos).mkString("[", ", ", "]")
+          )
       }
     } catch {
       case NonFatal(t) =>

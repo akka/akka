@@ -235,7 +235,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           classOf[MemberUp],
           classOf[MemberRemoved],
           classOf[ReachabilityEvent],
-          ClusterShuttingDown.getClass)
+          ClusterShuttingDown.getClass
+        )
 
         // also periodic cleanup in case removal from ORMultiMap is skipped due to concurrent update,
         // which is possible for OR CRDTs - done with an adapter to leverage the existing NodesRemoved message
@@ -286,7 +287,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                   .map {
                     case (key, entries) => key.asServiceKey.id -> entries.mkString("[", ", ", "]")
                   }
-                  .mkString(","))
+                  .mkString(",")
+              )
 
             // shard changes over the ddata keys they belong to
             val removalsPerDdataKey = state.registry.entriesPerDdataKey(removals)
@@ -436,7 +438,8 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
                 changedKeys
                   .map(key => key.asServiceKey.id -> newRegistry.entriesFor(key).mkString("[", ", ", "]"))
                   .mkString(", "),
-                state.tombstones.mkString(", "))
+                state.tombstones.mkString(", ")
+              )
             }
 
             changedKeys.foreach { changedKey =>

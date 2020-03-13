@@ -51,8 +51,10 @@ class ReliableDeliverySerializerSpec extends ScalaTestWithActorTestKit with AnyW
           "q4" -> (14L -> timestamp)),
         Vector(
           DurableProducerQueue.MessageSent(15L, "msg15", true, "q4", timestamp),
-          DurableProducerQueue.MessageSent(16L, "msg16", true, "q4", timestamp))),
-      "DurableProducerQueue.Cleanup" -> DurableProducerQueue.Cleanup(Set("q1", "q2", "q3"))).foreach {
+          DurableProducerQueue.MessageSent(16L, "msg16", true, "q4", timestamp))
+      ),
+      "DurableProducerQueue.Cleanup" -> DurableProducerQueue.Cleanup(Set("q1", "q2", "q3"))
+    ).foreach {
       case (scenario, item) =>
         s"resolve serializer for $scenario" in {
           val serializer = SerializationExtension(classicSystem)

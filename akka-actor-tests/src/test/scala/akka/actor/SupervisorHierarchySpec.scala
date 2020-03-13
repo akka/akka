@@ -532,7 +532,8 @@ object SupervisorHierarchySpec {
                 case 0 => 0
                 case 1 => random.nextInt(breadth / 2)
                 case 2 => 1000
-              })
+              }
+            )
             ref ! f
         }
         if (idleChildren.nonEmpty) self ! Work
@@ -819,14 +820,17 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
 
     "suspend children while failing" taggedAs LongRunningTest in {
       val latch = TestLatch()
-      val slowResumer = system.actorOf(Props(new Actor {
-        override def supervisorStrategy = OneForOneStrategy() {
-          case _ => Await.ready(latch, 4.seconds.dilated); SupervisorStrategy.Resume
-        }
-        def receive = {
-          case "spawn" => sender() ! context.actorOf(Props[Resumer])
-        }
-      }), "slowResumer")
+      val slowResumer = system.actorOf(
+        Props(new Actor {
+          override def supervisorStrategy = OneForOneStrategy() {
+            case _ => Await.ready(latch, 4.seconds.dilated); SupervisorStrategy.Resume
+          }
+          def receive = {
+            case "spawn" => sender() ! context.actorOf(Props[Resumer])
+          }
+        }),
+        "slowResumer"
+      )
       slowResumer ! "spawn"
       val boss = expectMsgType[ActorRef]
       boss ! "spawn"
@@ -855,7 +859,8 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
         EventFilter[ActorInitializationException](),
         EventFilter[IllegalArgumentException]("OH NO!"),
         EventFilter.error(start = "changing Recreate into Create"),
-        EventFilter.error(start = "changing Resume into Create")) {
+        EventFilter.error(start = "changing Resume into Create")
+      ) {
         val failResumer =
           system.actorOf(
             Props(new Actor {
@@ -864,31 +869,35 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
                   if (createAttempt.get % 2 == 0) SupervisorStrategy.Resume else SupervisorStrategy.Restart
               }
 
-              val child = context.actorOf(Props(new Actor {
-                val ca = createAttempt.incrementAndGet()
+              val child = context.actorOf(
+                Props(new Actor {
+                  val ca = createAttempt.incrementAndGet()
 
-                if (ca <= 6 && ca % 3 == 0)
-                  context.actorOf(Props(new Actor { override def receive = { case _ => } }), "workingChild")
+                  if (ca <= 6 && ca % 3 == 0)
+                    context.actorOf(Props(new Actor { override def receive = { case _ => } }), "workingChild")
 
-                if (ca < 6) {
-                  throw new IllegalArgumentException("OH NO!")
-                }
-                override def preStart() = {
-                  preStartCalled.incrementAndGet()
-                }
-                override def postRestart(reason: Throwable) = {
-                  postRestartCalled.incrementAndGet()
-                }
-                override def receive = {
-                  case m => sender() ! m
-                }
-              }), "failChild")
+                  if (ca < 6) {
+                    throw new IllegalArgumentException("OH NO!")
+                  }
+                  override def preStart() = {
+                    preStartCalled.incrementAndGet()
+                  }
+                  override def postRestart(reason: Throwable) = {
+                    postRestartCalled.incrementAndGet()
+                  }
+                  override def receive = {
+                    case m => sender() ! m
+                  }
+                }),
+                "failChild"
+              )
 
               override def receive = {
                 case m => child.forward(m)
               }
             }),
-            "failResumer")
+            "failResumer"
+          )
 
         failResumer ! "blahonga"
         expectMsg("blahonga")
@@ -908,7 +917,8 @@ class SupervisorHierarchySpec extends AkkaSpec(SupervisorHierarchySpec.config) w
           EventFilter.error(start = "changing Resume into Restart"),
           EventFilter.error(start = "changing Resume into Create"),
           EventFilter.error(start = "changing Recreate into Create"),
-          EventFilter.warning(start = "received dead ")))
+          EventFilter.warning(start = "received dead ")
+        ))
 
       val fsm = system.actorOf(Props(new StressTest(testActor, size = 500, breadth = 6)), "stressTest")
 

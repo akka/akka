@@ -55,7 +55,8 @@ class AffinityPoolIdleCPULevelBenchmark {
          |
          |   }
          | }
-      """.stripMargin))
+      """.stripMargin)
+    )
   }
 
   @TearDown(Level.Trial)

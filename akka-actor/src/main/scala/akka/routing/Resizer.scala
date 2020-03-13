@@ -86,7 +86,8 @@ case object DefaultResizer {
       rampupRate = resizerConfig.getDouble("rampup-rate"),
       backoffThreshold = resizerConfig.getDouble("backoff-threshold"),
       backoffRate = resizerConfig.getDouble("backoff-rate"),
-      messagesPerResize = resizerConfig.getInt("messages-per-resize"))
+      messagesPerResize = resizerConfig.getInt("messages-per-resize")
+    )
 
   def fromConfig(resizerConfig: Config): Option[DefaultResizer] =
     if (resizerConfig.getBoolean("resizer.enabled"))

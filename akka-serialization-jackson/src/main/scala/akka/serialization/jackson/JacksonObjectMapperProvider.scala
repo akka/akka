@@ -193,7 +193,8 @@ object JacksonObjectMapperProvider extends ExtensionId[JacksonObjectMapperProvid
                   e,
                   s"Could not load configured Jackson module [$fqcn], " +
                   "please verify classpath dependencies or amend the configuration " +
-                  "[akka.serialization.jackson-modules]. Continuing without this module."))
+                  "[akka.serialization.jackson-modules]. Continuing without this module."
+                ))
               None
           }
         } else

@@ -39,7 +39,8 @@ private[akka] object PrettyByteString {
         s"$prefix first + last $maxBytes:\n",
         formatBytes(bs.take(maxBytes)),
         s"\n$indent                    ... [${bs.size - maxBytes} bytes omitted] ...\n",
-        formatBytes(bs.takeRight(maxBytes)))
+        formatBytes(bs.takeRight(maxBytes))
+      )
   }
 
 }

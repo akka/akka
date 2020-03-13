@@ -58,7 +58,8 @@ final class SystemMaterializer(system: ExtendedActorSystem) extends Extension {
       // #28037 run on internal dispatcher to make sure default dispatcher starvation doesn't stop materializer creation
       .withDispatcher(Dispatchers.InternalDispatcherId)
       .withDeploy(Deploy.local),
-    "Materializers")
+    "Materializers"
+  )
 
   /**
    * INTERNAL API

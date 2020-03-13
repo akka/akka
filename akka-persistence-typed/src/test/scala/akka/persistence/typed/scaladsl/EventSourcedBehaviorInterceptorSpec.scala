@@ -37,7 +37,8 @@ object EventSourcedBehaviorInterceptorSpec {
             case _ =>
               Effect.persist(command).thenRun(newState => probe ! newState)
           },
-        eventHandler = (state, evt) => state + evt)
+        eventHandler = (state, evt) => state + evt
+      )
     }
 
 }

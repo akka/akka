@@ -98,15 +98,18 @@ class CoupledTerminationFlowSpec extends StreamSpec("""
 
     "cancel in:Sink => cancel out:Source" in {
       val probe = TestProbe()
-      val f = Flow.fromSinkAndSourceCoupledMat(Sink.cancelled, Source.fromPublisher(new Publisher[String] {
-        override def subscribe(subscriber: Subscriber[_ >: String]): Unit = {
-          subscriber.onSubscribe(new Subscription {
-            override def cancel(): Unit = probe.ref ! "cancelled"
+      val f = Flow.fromSinkAndSourceCoupledMat(
+        Sink.cancelled,
+        Source.fromPublisher(new Publisher[String] {
+          override def subscribe(subscriber: Subscriber[_ >: String]): Unit = {
+            subscriber.onSubscribe(new Subscription {
+              override def cancel(): Unit = probe.ref ! "cancelled"
 
-            override def request(l: Long): Unit = () // do nothing
-          })
-        }
-      }))(Keep.none) // completes right away, should complete the sink as well
+              override def request(l: Long): Unit = () // do nothing
+            })
+          }
+        })
+      )(Keep.none) // completes right away, should complete the sink as well
 
       f.runWith(Source.maybe, Sink.ignore) // these do nothing.
 

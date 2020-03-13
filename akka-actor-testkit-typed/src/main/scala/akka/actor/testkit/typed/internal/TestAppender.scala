@@ -85,7 +85,8 @@ import ch.qos.logback.core.AppenderBase
       timeStamp = event.getTimeStamp,
       marker = Option(event.getMarker),
       throwable = throwable,
-      mdc = event.getMDCPropertyMap.asScala.toMap)
+      mdc = event.getMDCPropertyMap.asScala.toMap
+    )
 
     filter(loggingEvent)
   }

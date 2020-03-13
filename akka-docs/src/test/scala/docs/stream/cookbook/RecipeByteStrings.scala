@@ -56,7 +56,8 @@ class RecipeByteStrings extends RecipeSpec {
                   if (isAvailable(out)) emitChunk()
                 }
               }
-            })
+            }
+          )
 
           private def emitChunk(): Unit = {
             if (buffer.isEmpty) {
@@ -94,19 +95,23 @@ class RecipeByteStrings extends RecipeSpec {
         override def createLogic(inheritedAttributes: Attributes): GraphStageLogic = new GraphStageLogic(shape) {
           private var count = 0
 
-          setHandlers(in, out, new InHandler with OutHandler {
+          setHandlers(
+            in,
+            out,
+            new InHandler with OutHandler {
 
-            override def onPull(): Unit = {
-              pull(in)
-            }
+              override def onPull(): Unit = {
+                pull(in)
+              }
 
-            override def onPush(): Unit = {
-              val chunk = grab(in)
-              count += chunk.size
-              if (count > maximumBytes) failStage(new IllegalStateException("Too much bytes"))
-              else push(out, chunk)
+              override def onPush(): Unit = {
+                val chunk = grab(in)
+                count += chunk.size
+                if (count > maximumBytes) failStage(new IllegalStateException("Too much bytes"))
+                else push(out, chunk)
+              }
             }
-          })
+          )
         }
       }
 

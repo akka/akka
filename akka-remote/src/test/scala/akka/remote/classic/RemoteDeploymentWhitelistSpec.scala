@@ -138,7 +138,8 @@ class RemoteDeploymentWhitelistSpec
       TestEvent.Mute(
         EventFilter[EndpointException](),
         EventFilter.error(start = "AssociationError"),
-        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")))
+        EventFilter.warning(pattern = "received dead letter.*(InboundPayload|Disassociate|HandleListener)")
+      ))
   }
 
   override def afterTermination(): Unit = {

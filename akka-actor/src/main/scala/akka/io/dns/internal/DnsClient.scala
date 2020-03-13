@@ -155,6 +155,7 @@ import scala.concurrent.duration._
           minBackoff = 10.millis,
           maxBackoff = 20.seconds,
           randomFactor = 0.1)),
-      "tcpDnsClientSupervisor")
+      "tcpDnsClientSupervisor"
+    )
   }
 }

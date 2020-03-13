@@ -465,7 +465,8 @@ class AttributesSpec
               .fromGraph(new AttributesFlow(Attributes.name("original-name")))
               .withAttributes(Attributes.name("replaced")) // this actually replaces now
             ,
-            javadsl.Keep.right[NotUsed, Attributes])
+            javadsl.Keep.right[NotUsed, Attributes]
+          )
           .withAttributes(Attributes.name("source-flow"))
           .toMat(javadsl.Sink.ignore(), javadsl.Keep.left[Attributes, CompletionStage[Done]])
           .withAttributes(Attributes.name("whole-graph"))
@@ -487,7 +488,8 @@ class AttributesSpec
               .fromGraph(new AttributesSink(Attributes.name("original-name")))
               .withAttributes(Attributes.name("replaced")) // this actually replaces now
             ,
-            javadsl.Keep.right[NotUsed, Attributes])
+            javadsl.Keep.right[NotUsed, Attributes]
+          )
           .withAttributes(Attributes.name("whole-graph"))
           .run(materializer)
 

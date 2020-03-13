@@ -382,7 +382,8 @@ import akka.util.PrettyDuration.PrettyPrintableDuration
                   n,
                   fromRemoteAddressStr,
                   expectedSeqNo - 1,
-                  maxNackReached)
+                  maxNackReached
+                )
               }
               inboundContext.sendControl(ackReplyTo.address, Nack(expectedSeqNo - 1, localAddress))
               pull(in)

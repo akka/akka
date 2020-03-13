@@ -40,7 +40,8 @@ class LoadPluginSpec
   test-plugin {
     class = "akka.persistence.LoadPluginSpec$JournalWithStartupNotification"
   }
-  """)))
+  """)
+      ))
     with ImplicitSender {
   import LoadPluginSpec._
 

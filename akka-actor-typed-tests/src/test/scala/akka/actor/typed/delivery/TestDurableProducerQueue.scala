@@ -100,7 +100,8 @@ class TestDurableProducerQueue[A](
           state.copy(
             highestConfirmedSeqNr = newHighestConfirmed,
             confirmedSeqNr = state.confirmedSeqNr.updated(cmd.confirmationQualifier, (cmd.seqNr, TestTimestamp)),
-            unconfirmed = newUnconfirmed))
+            unconfirmed = newUnconfirmed
+          ))
     }
   }
 

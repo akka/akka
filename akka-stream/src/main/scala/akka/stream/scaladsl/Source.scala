@@ -665,11 +665,15 @@ object Source {
    */
   @deprecated("Use variant accepting completion and failure matchers instead", "2.6.0")
   def actorRef[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, ActorRef] =
-    actorRef({
-      case akka.actor.Status.Success(s: CompletionStrategy) => s
-      case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
-      case akka.actor.Status.Success                        => CompletionStrategy.Draining
-    }, { case akka.actor.Status.Failure(cause)              => cause }, bufferSize, overflowStrategy)
+    actorRef(
+      {
+        case akka.actor.Status.Success(s: CompletionStrategy) => s
+        case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
+        case akka.actor.Status.Success                        => CompletionStrategy.Draining
+      }, { case akka.actor.Status.Failure(cause)              => cause },
+      bufferSize,
+      overflowStrategy
+    )
 
   /**
    * INTERNAL API
@@ -724,11 +728,14 @@ object Source {
    */
   @deprecated("Use actorRefWithBackpressure accepting completion and failure matchers instead", "2.6.0")
   def actorRefWithAck[T](ackMessage: Any): Source[T, ActorRef] =
-    actorRefWithAck(None, ackMessage, {
-      case akka.actor.Status.Success(s: CompletionStrategy) => s
-      case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
-      case akka.actor.Status.Success                        => CompletionStrategy.Draining
-    }, { case akka.actor.Status.Failure(cause)              => cause })
+    actorRefWithAck(
+      None,
+      ackMessage, {
+        case akka.actor.Status.Success(s: CompletionStrategy) => s
+        case akka.actor.Status.Success(_)                     => CompletionStrategy.Draining
+        case akka.actor.Status.Success                        => CompletionStrategy.Draining
+      }, { case akka.actor.Status.Failure(cause)              => cause }
+    )
 
   /**
    * Combines several sources with fan-in strategy like [[Merge]] or [[Concat]] into a single [[Source]].

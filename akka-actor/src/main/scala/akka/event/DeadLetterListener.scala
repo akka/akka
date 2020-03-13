@@ -134,7 +134,8 @@ class DeadLetterListener extends Actor {
         "This logging can be turned off or adjusted with configuration settings 'akka.log-dead-letters' " +
         "and 'akka.log-dead-letters-during-shutdown'.",
         Logging.emptyMDC,
-        ActorLogMarker.deadLetter(messageStr)))
+        ActorLogMarker.deadLetter(messageStr)
+      ))
   }
 
   private def isReal(snd: ActorRef): Boolean = {

@@ -33,12 +33,15 @@ class LogSourceSpec extends AkkaSpec("""
 
   val reporter = system.actorOf(Props[Reporter], "reporter")
   val logProbe = TestProbe()
-  system.eventStream.subscribe(system.actorOf(Props(new Actor {
-    def receive = {
-      case i @ Info(_, _, msg: String) if msg contains "hello" => logProbe.ref ! i
-      case _                                                   =>
-    }
-  }).withDeploy(Deploy.local), "logSniffer"), classOf[Logging.Info])
+  system.eventStream.subscribe(
+    system.actorOf(Props(new Actor {
+      def receive = {
+        case i @ Info(_, _, msg: String) if msg contains "hello" => logProbe.ref ! i
+        case _                                                   =>
+      }
+    }).withDeploy(Deploy.local), "logSniffer"),
+    classOf[Logging.Info]
+  )
 
   "Log events" must {
 

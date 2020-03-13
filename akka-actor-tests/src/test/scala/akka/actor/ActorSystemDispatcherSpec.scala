@@ -96,7 +96,8 @@ class ActorSystemDispatchersSpec extends AkkaSpec(ConfigFactory.parseString("""
         "ActorSystemDispatchersSpec-override-internal-disp",
         ConfigFactory.parseString("""
              akka.actor.internal-dispatcher = akka.actor.default-dispatcher
-           """))
+           """)
+      )
       try {
         // that the user guardian runs on the overridden dispatcher instead of internal
         // isn't really a guarantee any internal actor has been made running on the right one
@@ -118,7 +119,8 @@ class ActorSystemDispatchersSpec extends AkkaSpec(ConfigFactory.parseString("""
           config = Some(ConfigFactory.parseString("""
             akka.actor.internal-dispatcher = akka.actor.default-dispatcher
           """)),
-          defaultExecutionContext = Some(ec))
+          defaultExecutionContext = Some(ec)
+        )
 
       try {
         val ref = system2.actorOf(Props(new Actor {

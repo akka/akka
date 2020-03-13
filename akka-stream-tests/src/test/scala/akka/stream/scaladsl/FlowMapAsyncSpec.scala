@@ -288,7 +288,8 @@ class FlowMapAsyncSpec extends StreamSpec {
         Future.failed(Utils.TE("failure3")),
         Future.failed(Utils.TE("failure4")),
         Future.failed(Utils.TE("failure5")),
-        Future.successful("happy!"))
+        Future.successful("happy!")
+      )
 
       Await.result(
         Source(futures).mapAsync(2)(identity).withAttributes(supervisionStrategy(resumingDecider)).runWith(Sink.head),
@@ -344,7 +345,8 @@ class FlowMapAsyncSpec extends StreamSpec {
           .withAttributes(supervisionStrategy(resumingDecider))
           .grouped(10)
           .runWith(Sink.head),
-        1.second) should be(Seq(1, 2))
+        1.second
+      ) should be(Seq(1, 2))
     }
 
     "resume when mapAsync throws" in {

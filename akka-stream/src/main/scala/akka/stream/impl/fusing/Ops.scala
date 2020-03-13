@@ -425,7 +425,8 @@ private[stream] object Collect {
                 completeStage()
               }
             })
-        })
+        }
+      )
 
       override def onPull(): Unit = pull(in)
 
@@ -2053,16 +2054,19 @@ private[stream] object Collect {
 
       def setInitialInHandler(): Unit = {
         // Initial input handler
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            aggregator = grab(in)
-            pull(in)
-            setHandler(in, self)
-          }
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              aggregator = grab(in)
+              pull(in)
+              setHandler(in, self)
+            }
 
-          override def onUpstreamFinish(): Unit =
-            failStage(new NoSuchElementException("reduce over empty stream"))
-        })
+            override def onUpstreamFinish(): Unit =
+              failStage(new NoSuchElementException("reduce over empty stream"))
+          }
+        )
       }
 
       @silent // compiler complaining about aggregator = _: T
@@ -2369,17 +2373,21 @@ private[stream] object Collect {
               subOutlet.fail(ex)
               maybeCompleteStage()
             }
-          })
+          }
+        )
 
-        setHandler(out, new OutHandler {
-          override def onPull(): Unit = {
-            subInlet.pull()
+        setHandler(
+          out,
+          new OutHandler {
+            override def onPull(): Unit = {
+              subInlet.pull()
+            }
+            override def onDownstreamFinish(cause: Throwable): Unit = {
+              subInlet.cancel(cause)
+              maybeCompleteStage()
+            }
           }
-          override def onDownstreamFinish(cause: Throwable): Unit = {
-            subInlet.cancel(cause)
-            maybeCompleteStage()
-          }
-        })
+        )
 
         subOutlet.setHandler(new OutHandler {
           override def onPull(): Unit = {

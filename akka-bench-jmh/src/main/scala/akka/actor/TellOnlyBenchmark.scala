@@ -47,7 +47,8 @@ class TellOnlyBenchmark {
           |   type = "akka.actor.TellOnlyBenchmark$$DroppingDispatcherConfigurator"
           |   mailbox-type = "akka.actor.TellOnlyBenchmark$$UnboundedDroppingMailbox"
           | }
-          | """.stripMargin))
+          | """.stripMargin)
+    )
   }
 
   @TearDown(Level.Trial)

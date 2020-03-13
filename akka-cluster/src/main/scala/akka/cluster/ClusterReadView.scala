@@ -52,8 +52,8 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
 
   // create actor that subscribes to the cluster eventBus to update current read view state
   private val eventBusListener: ActorRef = {
-    cluster.system
-      .systemActorOf(Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
+    cluster.system.systemActorOf(
+      Props(new Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
         override def preStart(): Unit = cluster.subscribe(self, classOf[ClusterDomainEvent])
 
         def receive: Receive = {
@@ -108,7 +108,9 @@ private[akka] class ClusterReadView(cluster: Cluster) extends Closeable {
             _state = s
             _cachedSelf = s.members.find(_.uniqueAddress == cluster.selfUniqueAddress).getOrElse(_cachedSelf)
         }
-      }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local), name = "clusterEventBusListener")
+      }).withDispatcher(cluster.settings.UseDispatcher).withDeploy(Deploy.local),
+      name = "clusterEventBusListener"
+    )
   }
 
   def state: CurrentClusterState = _state

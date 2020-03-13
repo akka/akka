@@ -98,7 +98,8 @@ import scala.util.control.NoStackTrace
           target,
           new SubscriptionTimeoutException(
             s"Publisher ($p) you are trying to subscribe to has been shut-down " +
-            s"because exceeding it's subscription-timeout.") with NoStackTrace)
+            s"because exceeding it's subscription-timeout.") with NoStackTrace
+        )
     }
   }
 
@@ -107,7 +108,8 @@ import scala.util.control.NoStackTrace
       "Timed out {} detected (after {} ms)! You should investigate if you either cancel or consume all {} instances",
       target,
       timeout.toMillis,
-      target.getClass.getCanonicalName)
+      target.getClass.getCanonicalName
+    )
   }
 
   /**

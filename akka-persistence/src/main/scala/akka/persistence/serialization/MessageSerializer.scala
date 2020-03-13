@@ -137,7 +137,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
         Some(Duration.fromNanos(persistentStateChange.getTimeoutNanos))
       else if (persistentStateChange.hasTimeout)
         Some(Duration(persistentStateChange.getTimeout).asInstanceOf[duration.FiniteDuration])
-      else None)
+      else None
+    )
   }
 
   def persistentFSMSnapshot(persistentFSMSnapshot: mf.PersistentFSMSnapshot): PersistentFSMSnapshot[Any] = {
@@ -146,7 +147,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       payload(persistentFSMSnapshot.getData),
       if (persistentFSMSnapshot.hasTimeoutNanos)
         Some(Duration.fromNanos(persistentFSMSnapshot.getTimeoutNanos))
-      else None)
+      else None
+    )
   }
 
   private def atomicWriteBuilder(a: AtomicWrite) = {
@@ -206,7 +208,8 @@ class MessageSerializer(val system: ExtendedActorSystem) extends BaseSerializer 
       if (persistentMessage.hasDeleted) persistentMessage.getDeleted else false,
       if (persistentMessage.hasSender) system.provider.resolveActorRef(persistentMessage.getSender)
       else Actor.noSender,
-      if (persistentMessage.hasWriterUuid) persistentMessage.getWriterUuid else Undefined)
+      if (persistentMessage.hasWriterUuid) persistentMessage.getWriterUuid else Undefined
+    )
 
     if (persistentMessage.hasTimestamp) repr.withTimestamp(persistentMessage.getTimestamp) else repr
   }

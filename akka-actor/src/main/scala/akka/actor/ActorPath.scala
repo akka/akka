@@ -264,7 +264,8 @@ final case class RootActorPath(address: Address, name: String = "/") extends Act
   require(
     name.length == 1 || name.indexOf('/', 1) == -1,
     ("/ may only exist at the beginning of the root actors name, " +
-    "it is a path separator and is not legal in ActorPath names: [%s]").format(name))
+    "it is a path separator and is not legal in ActorPath names: [%s]").format(name)
+  )
   require(name.indexOf('#') == -1, "# is a fragment separator and is not legal in ActorPath names: [%s]".format(name))
 
   override def parent: ActorPath = this

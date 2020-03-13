@@ -37,18 +37,21 @@ class RecipeDigest extends RecipeSpec {
             override def onPull(): Unit = pull(in)
           })
 
-          setHandler(in, new InHandler {
-            override def onPush(): Unit = {
-              val chunk = grab(in)
-              digest.update(chunk.toArray)
-              pull(in)
-            }
+          setHandler(
+            in,
+            new InHandler {
+              override def onPush(): Unit = {
+                val chunk = grab(in)
+                digest.update(chunk.toArray)
+                pull(in)
+              }
 
-            override def onUpstreamFinish(): Unit = {
-              emit(out, ByteString(digest.digest()))
-              completeStage()
+              override def onUpstreamFinish(): Unit = {
+                emit(out, ByteString(digest.digest()))
+                completeStage()
+              }
             }
-          })
+          )
         }
       }
 

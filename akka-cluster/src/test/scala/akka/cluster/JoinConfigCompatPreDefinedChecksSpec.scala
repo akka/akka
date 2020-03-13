@@ -31,7 +31,8 @@ class JoinConfigCompatPreDefinedChecksSpec extends AnyWordSpec with Matchers {
               | akka.cluster.retry-unsuccessful-join-after = 10s
               | akka.cluster.allow-weakly-up-members = on
               |}
-            """.stripMargin))
+            """.stripMargin)
+        )
 
       result shouldBe Valid
     }
@@ -83,7 +84,8 @@ class JoinConfigCompatPreDefinedChecksSpec extends AnyWordSpec with Matchers {
               | akka.cluster.allow-weakly-up-members = on
               |}
             """.stripMargin),
-          clusterConfig)
+          clusterConfig
+        )
 
       result shouldBe Valid
     }
@@ -118,7 +120,8 @@ class JoinConfigCompatPreDefinedChecksSpec extends AnyWordSpec with Matchers {
             | akka.cluster.allow-weakly-up-members = off
             |}
           """.stripMargin),
-        clusterConfig) match {
+        clusterConfig
+      ) match {
         case Valid =>
           fail()
         case Invalid(incompatibleKeys) =>
@@ -138,7 +141,8 @@ class JoinConfigCompatPreDefinedChecksSpec extends AnyWordSpec with Matchers {
             | akka.cluster.allow-weakly-up-members = off
             |}
           """.stripMargin),
-        clusterConfig) match {
+        clusterConfig
+      ) match {
         case Valid =>
           fail()
         case Invalid(incompatibleKeys) =>

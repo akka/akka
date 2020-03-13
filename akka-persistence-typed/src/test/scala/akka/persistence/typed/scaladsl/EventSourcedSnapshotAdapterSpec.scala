@@ -63,7 +63,8 @@ class EventSourcedSnapshotAdapterSpec
       },
       eventHandler = { (state, evt) =>
         state.copy(s = state.s + "|" + evt.e)
-      })
+      }
+    )
 
   "Snapshot adapter" must {
 

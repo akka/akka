@@ -25,7 +25,8 @@ class SerializationErrorSpec extends ArteryMultiNodeSpec(ArterySpecSupport.defau
          # this will cause deserialization error
          "akka.serialization.ByteArraySerializer" = -4
        }
-       """))
+       """)
+  )
   systemB.actorOf(TestActors.echoActorProps, "echo")
   val addressB = address(systemB)
   val rootB = RootActorPath(addressB)

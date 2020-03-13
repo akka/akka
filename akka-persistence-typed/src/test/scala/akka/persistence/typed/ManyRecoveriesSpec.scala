@@ -35,7 +35,8 @@ object ManyRecoveriesSpec {
       },
       eventHandler = {
         case (state, _) => latch.foreach(Await.ready(_, 10.seconds)); state
-      })
+      }
+    )
 
   def forwardBehavior(sender: TestProbe[String]): Behaviors.Receive[Int] =
     Behaviors.receiveMessagePartial[Int] {

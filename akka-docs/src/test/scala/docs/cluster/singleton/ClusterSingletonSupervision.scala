@@ -26,8 +26,10 @@ abstract class ClusterSingletonSupervision extends Actor {
       ClusterSingletonManager.props(
         singletonProps = Props(classOf[SupervisorActor], props, supervisorStrategy),
         terminationMessage = PoisonPill,
-        settings = ClusterSingletonManagerSettings(context.system)),
-      name = name)
+        settings = ClusterSingletonManagerSettings(context.system)
+      ),
+      name = name
+    )
     //#singleton-supervisor-actor-usage
   }
 }

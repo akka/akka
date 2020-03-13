@@ -154,7 +154,8 @@ class RemoteRouterSpec
         RoundRobinPool(2)
           .props(echoActorProps)
           .withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(s"akka://${sysName}@localhost:${port}")))),
-        "remote-blub2")
+        "remote-blub2"
+      )
       router.path.address.toString should ===(s"akka://${sysName}@localhost:${port}")
       val replies = collectRouteePaths(probe, router, 5)
       val children = replies.toSet
@@ -172,7 +173,8 @@ class RemoteRouterSpec
         RoundRobinPool(2)
           .props(echoActorProps)
           .withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(s"akka://${sysName}@localhost:${port}")))),
-        "local-blub")
+        "local-blub"
+      )
       router.path.address.toString should ===("akka://MasterRemoteRouterSpec")
       val replies = collectRouteePaths(probe, router, 5)
       val children = replies.toSet
@@ -190,7 +192,8 @@ class RemoteRouterSpec
         RoundRobinPool(2)
           .props(echoActorProps)
           .withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(s"akka://${sysName}@localhost:${port}")))),
-        "local-blub2")
+        "local-blub2"
+      )
       router.path.address.toString should ===(s"akka://${sysName}@localhost:${port}")
       val replies = collectRouteePaths(probe, router, 5)
       val children = replies.toSet
@@ -208,7 +211,8 @@ class RemoteRouterSpec
         RoundRobinPool(2)
           .props(echoActorProps)
           .withDeploy(Deploy(scope = RemoteScope(AddressFromURIString(s"akka://${sysName}@localhost:${port}")))),
-        "remote-override")
+        "remote-override"
+      )
       router.path.address.toString should ===(s"akka://${sysName}@localhost:${port}")
       val replies = collectRouteePaths(probe, router, 5)
       val children = replies.toSet

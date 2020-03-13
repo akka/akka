@@ -46,7 +46,8 @@ object SourceOperators {
       // never fail the stream because of a message
       failureMatcher = PartialFunction.empty,
       bufferSize = 100,
-      overflowStrategy = OverflowStrategy.dropHead)
+      overflowStrategy = OverflowStrategy.dropHead
+    )
     val actorRef: ActorRef = source.to(Sink.foreach(println)).run()
 
     actorRef ! "hello"

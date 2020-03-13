@@ -416,7 +416,8 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
               case None    => Success(())
               case Some(t) => Failure(t)
             },
-          closing)
+          closing
+        )
         .mapMaterializedValue(_.map(new OutgoingConnection(_))(parasitic).toJava))
   }
 
@@ -516,7 +517,8 @@ class Tcp(system: ExtendedActorSystem) extends akka.actor.Extension {
               case None    => Success(())
               case Some(t) => Failure(t)
             },
-          closing)
+          closing
+        )
         .map(new IncomingConnection(_))
         .mapMaterializedValue(_.map(new ServerBinding(_))(parasitic).toJava))
   }

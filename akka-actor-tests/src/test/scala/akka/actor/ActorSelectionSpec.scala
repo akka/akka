@@ -254,7 +254,8 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
                SelectString("akka://all-systems/Nobody") -> None,
                SelectPath(system / "hallo") -> None,
                SelectPath(looker.path.child("hallo")) -> None, // test Java API
-               SelectPath(looker.path.descendant(Seq("a", "b").asJava)) -> None) // test Java API
+               SelectPath(looker.path.descendant(Seq("a", "b").asJava)) -> None
+             ) // test Java API
              ) checkOne(looker, l, r)
       }
       for (looker <- all) check(looker)

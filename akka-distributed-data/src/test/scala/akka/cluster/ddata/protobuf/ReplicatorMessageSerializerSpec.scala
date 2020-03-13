@@ -37,7 +37,8 @@ class ReplicatorMessageSerializerSpec
     akka.actor.provider=cluster
     akka.remote.classic.netty.tcp.port=0
     akka.remote.artery.canonical.port = 0
-    """)))
+    """)
+      ))
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
@@ -117,7 +118,8 @@ class ReplicatorMessageSerializerSpec
           chunk = 3,
           totChunks = 10,
           None, // can be None when sending back to a node of version 2.5.21
-          Some(19)))
+          Some(19)
+        ))
       checkSerialization(
         Gossip(
           Map("A" -> DataEnvelope(data1), "B" -> DataEnvelope(GSet() + "b" + "c")),
@@ -129,7 +131,8 @@ class ReplicatorMessageSerializerSpec
           Map("A" -> DataEnvelope(data1), "B" -> DataEnvelope(GSet() + "b" + "c")),
           sendBack = true,
           None, // can be None when sending back to a node of version 2.5.21
-          Some(19)))
+          Some(19)
+        ))
       checkSerialization(
         DeltaPropagation(
           address1,
@@ -138,7 +141,9 @@ class ReplicatorMessageSerializerSpec
             "A" -> Delta(DataEnvelope(delta1), 1L, 1L),
             "B" -> Delta(DataEnvelope(delta2), 3L, 5L),
             "C" -> Delta(DataEnvelope(delta3), 1L, 1L),
-            "DC" -> Delta(DataEnvelope(delta4), 1L, 1L))))
+            "DC" -> Delta(DataEnvelope(delta4), 1L, 1L)
+          )
+        ))
 
       checkSerialization(new DurableDataEnvelope(data1))
       val pruning = Map(

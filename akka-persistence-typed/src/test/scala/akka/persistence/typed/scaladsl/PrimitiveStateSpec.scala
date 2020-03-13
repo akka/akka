@@ -38,7 +38,8 @@ class PrimitiveStateSpec
       eventHandler = (state, event) => {
         probe.tell("eventHandler:" + state + ":" + event)
         state + event
-      }).receiveSignal {
+      }
+    ).receiveSignal {
       case (n, RecoveryCompleted) =>
         probe.tell("onRecoveryCompleted:" + n)
     }

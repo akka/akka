@@ -67,7 +67,8 @@ private[remote] class MessageDispatcher(system: ExtendedActorSystem, provider: R
                   LogMarker.Security,
                   "operating in UntrustedMode, dropping inbound actor selection to [{}], " +
                   "allow it by adding the path to 'akka.remote.trusted-selection-paths' configuration",
-                  sel.elements.mkString("/", "/", ""))
+                  sel.elements.mkString("/", "/", "")
+                )
             } else
               // run the receive logic for ActorSelectionMessage here to make sure it is not stuck on busy user actor
               ActorSelection.deliverSelection(l, sender, sel)
@@ -78,7 +79,8 @@ private[remote] class MessageDispatcher(system: ExtendedActorSystem, provider: R
                 "operating in UntrustedMode, dropping inbound PossiblyHarmful message of type [{}] to [{}] from [{}]",
                 messageClassName(msg),
                 recipient,
-                senderOption.getOrElse(originAddress.getOrElse("")))
+                senderOption.getOrElse(originAddress.getOrElse(""))
+              )
           case msg: SystemMessage => l.sendSystemMessage(msg)
           case msg                => l.!(msg)(sender)
         }

@@ -63,7 +63,8 @@ class ActorMaterializerSpec extends StreamSpec with ImplicitSender {
           # undo stream testkit specific dispatcher and run "normally"
           akka.actor.default-mailbox.mailbox-type = "akka.dispatch.UnboundedMailbox"
           akka.stream.materializer.dispatcher = "akka.actor.default-dispatcher"
-          """))
+          """)
+      )
       try {
         import deadlockSystem.dispatcher
 

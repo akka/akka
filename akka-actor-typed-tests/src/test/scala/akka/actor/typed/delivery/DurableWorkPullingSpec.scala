@@ -73,7 +73,10 @@ class DurableWorkPullingSpec
           confirmedSeqNr = Map(NoQualifier -> (2L -> TestTimestamp)),
           unconfirmed = Vector(
             DurableProducerQueue.MessageSent(3, TestConsumer.Job("msg-3"), false, NoQualifier, TestTimestamp),
-            DurableProducerQueue.MessageSent(4, TestConsumer.Job("msg-4"), false, NoQualifier, TestTimestamp))))
+            DurableProducerQueue.MessageSent(4, TestConsumer.Job("msg-4"), false, NoQualifier, TestTimestamp)
+          )
+        )
+      )
 
       val workPullingController =
         spawn(
@@ -209,7 +212,10 @@ class DurableWorkPullingSpec
               MessageSent(2, TestConsumer.Job("msg-2"), ack = true, NoQualifier, TestTimestamp),
               MessageSent(3, TestConsumer.Job("msg-3"), ack = false, NoQualifier, TestTimestamp),
               MessageSent(4, TestConsumer.Job("msg-4"), ack = true, NoQualifier, TestTimestamp),
-              MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp))))
+              MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp)
+            )
+          )
+        )
       }
 
       // start another worker
@@ -230,7 +236,10 @@ class DurableWorkPullingSpec
               MessageSent(3, TestConsumer.Job("msg-3"), ack = false, NoQualifier, TestTimestamp),
               MessageSent(4, TestConsumer.Job("msg-4"), ack = true, NoQualifier, TestTimestamp),
               MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp),
-              MessageSent(6, TestConsumer.Job("msg-6"), ack = false, NoQualifier, TestTimestamp))))
+              MessageSent(6, TestConsumer.Job("msg-6"), ack = false, NoQualifier, TestTimestamp)
+            )
+          )
+        )
       }
       val seqMsg6 = workerController2Probe.expectMessageType[ConsumerController.SequencedMessage[TestConsumer.Job]]
       seqMsg6.message should ===(TestConsumer.Job("msg-6"))
@@ -247,7 +256,10 @@ class DurableWorkPullingSpec
               MessageSent(2, TestConsumer.Job("msg-2"), ack = true, NoQualifier, TestTimestamp),
               MessageSent(3, TestConsumer.Job("msg-3"), ack = false, NoQualifier, TestTimestamp),
               MessageSent(4, TestConsumer.Job("msg-4"), ack = true, NoQualifier, TestTimestamp),
-              MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp))))
+              MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp)
+            )
+          )
+        )
       }
 
       seqMsg1.producerController ! ProducerControllerImpl.Ack(3)
@@ -260,7 +272,10 @@ class DurableWorkPullingSpec
             Map.empty,
             Vector(
               MessageSent(4, TestConsumer.Job("msg-4"), ack = true, NoQualifier, TestTimestamp),
-              MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp))))
+              MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp)
+            )
+          )
+        )
       }
 
       workerController1Probe.stop()
@@ -325,7 +340,10 @@ class DurableWorkPullingSpec
               MessageSent(2, TestConsumer.Job("msg-2"), ack = false, NoQualifier, TestTimestamp),
               MessageSent(3, TestConsumer.Job("msg-3"), ack = false, NoQualifier, TestTimestamp),
               MessageSent(4, TestConsumer.Job("msg-4"), ack = false, NoQualifier, TestTimestamp),
-              MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp))))
+              MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp)
+            )
+          )
+        )
       }
 
       // start another worker
@@ -349,7 +367,10 @@ class DurableWorkPullingSpec
               MessageSent(2, TestConsumer.Job("msg-2"), ack = true, NoQualifier, TestTimestamp),
               MessageSent(3, TestConsumer.Job("msg-3"), ack = false, NoQualifier, TestTimestamp),
               MessageSent(4, TestConsumer.Job("msg-4"), ack = true, NoQualifier, TestTimestamp),
-              MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp))))
+              MessageSent(5, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp)
+            )
+          )
+        )
       }
 
       workerController1Probe.stop()
@@ -381,7 +402,8 @@ class DurableWorkPullingSpec
             Map.empty,
             Vector(
               // note that it has a different seqNr than before
-              MessageSent(10, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp))))
+              MessageSent(10, TestConsumer.Job("msg-5"), ack = false, NoQualifier, TestTimestamp)))
+        )
       }
 
       workerController1Probe.stop()

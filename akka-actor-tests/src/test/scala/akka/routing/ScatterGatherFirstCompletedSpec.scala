@@ -39,7 +39,8 @@ object ScatterGatherFirstCompletedSpec {
           shudownLatch.foreach(_.countDown())
         }
       }),
-      "Actor:" + id)
+      "Actor:" + id
+    )
 }
 
 class ScatterGatherFirstCompletedSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {

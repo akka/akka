@@ -108,13 +108,15 @@ class DaemonMsgCreateSerializerAllowJavaSerializationSpec
           config = ConfigFactory.parseString("a=1"),
           routerConfig = RoundRobinPool(nrOfInstances = 5, supervisorStrategy = supervisorStrategy),
           scope = RemoteScope(Address("akka", "Test", "host1", 1921)),
-          dispatcher = "mydispatcher")
+          dispatcher = "mydispatcher"
+        )
         val deploy2 = Deploy(
           path = "path2",
           config = ConfigFactory.parseString("a=2"),
           routerConfig = FromConfig,
           scope = RemoteScope(Address("akka", "Test", "host2", 1922)),
-          dispatcher = Deploy.NoDispatcherGiven)
+          dispatcher = Deploy.NoDispatcherGiven
+        )
         DaemonMsgCreate(
           props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
           deploy = deploy2,
@@ -158,13 +160,15 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
         config = ConfigFactory.parseString("a=1"),
         // a whole can of worms: routerConfig = RoundRobinPool(nrOfInstances = 5, supervisorStrategy = supervisorStrategy),
         scope = RemoteScope(Address("akka", "Test", "host1", 1921)),
-        dispatcher = "mydispatcher")
+        dispatcher = "mydispatcher"
+      )
       val deploy2 = Deploy(
         path = "path2",
         config = ConfigFactory.parseString("a=2"),
         routerConfig = FromConfig,
         scope = RemoteScope(Address("akka", "Test", "host2", 1922)),
-        dispatcher = Deploy.NoDispatcherGiven)
+        dispatcher = Deploy.NoDispatcherGiven
+      )
       DaemonMsgCreate(
         props = Props[MyActor].withDispatcher("my-disp").withDeploy(deploy1),
         deploy = deploy2,
@@ -180,7 +184,8 @@ class DaemonMsgCreateSerializerNoJavaSerializationSpec extends AkkaSpec("""
         props = Props(classOf[ActorWithDummyParameter], new DummyParameter("dummy"), system.deadLetters),
         deploy = Deploy(),
         path = "foo",
-        supervisor = supervisor)
+        supervisor = supervisor
+      )
     }
   }
 

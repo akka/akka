@@ -602,7 +602,8 @@ trait TestKitBase {
     assert(
       missing.isEmpty && unexpected.isEmpty,
       (if (missing.isEmpty) "" else missing.mkString(missingMessage + " [", ", ", "] ")) +
-      (if (unexpected.isEmpty) "" else unexpected.mkString(unexpectedMessage + " [", ", ", "]")))
+      (if (unexpected.isEmpty) "" else unexpected.mkString(unexpectedMessage + " [", ", ", "]"))
+    )
   }
 
   private def expectMsgAllOf_internal[T](max: FiniteDuration, obj: T*): immutable.Seq[T] = {

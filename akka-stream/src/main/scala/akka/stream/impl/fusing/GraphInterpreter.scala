@@ -699,7 +699,8 @@ import akka.stream.snapshot._
             // This should not be possible: connection alive and both push and pull enqueued but not received
             throw new IllegalStateException(s"Unexpected connection state for $connection: ${connection.portState}")
 
-        })
+        }
+      )
     }
 
     val stoppedStages: List[LogicSnapshot] = shutdownCounter.zipWithIndex.collect {

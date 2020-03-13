@@ -68,7 +68,8 @@ object InterpreterBenchmark {
           }
         }
         override def onDownstreamFinish(cause: Throwable): Unit = cancelStage(cause)
-      })
+      }
+    )
   }
 
   case class GraphDataSink[T](override val toString: String, var expected: Int)

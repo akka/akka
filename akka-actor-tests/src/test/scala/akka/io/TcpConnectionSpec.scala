@@ -1116,7 +1116,8 @@ class TcpConnectionSpec extends AkkaSpec("""
           MatchResult(
             checkFor(key, interest, duration.toMillis.toInt),
             "%s key was not selected for %s after %s".format(key.attachment(), interestsDesc(interest), duration),
-            "%s key was selected for %s after %s".format(key.attachment(), interestsDesc(interest), duration))
+            "%s key was selected for %s after %s".format(key.attachment(), interestsDesc(interest), duration)
+          )
       }
 
     val interestsNames =

@@ -87,17 +87,20 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
 
   // Using region 2 as it is not shutdown in either test
   def pingEntities(): Unit = {
-    awaitAssert({
-      val p1 = TestProbe()(sys2)
-      region2.tell(1, p1.ref)
-      p1.expectMsg(1.seconds, 1)
-      val p2 = TestProbe()(sys2)
-      region2.tell(2, p2.ref)
-      p2.expectMsg(1.seconds, 2)
-      val p3 = TestProbe()(sys2)
-      region2.tell(3, p3.ref)
-      p3.expectMsg(1.seconds, 3)
-    }, 10.seconds)
+    awaitAssert(
+      {
+        val p1 = TestProbe()(sys2)
+        region2.tell(1, p1.ref)
+        p1.expectMsg(1.seconds, 1)
+        val p2 = TestProbe()(sys2)
+        region2.tell(2, p2.ref)
+        p2.expectMsg(1.seconds, 2)
+        val p3 = TestProbe()(sys2)
+        region2.tell(3, p3.ref)
+        p3.expectMsg(1.seconds, 3)
+      },
+      10.seconds
+    )
   }
 
   "Sharding and CoordinatedShutdown" must {

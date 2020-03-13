@@ -27,13 +27,16 @@ class MaterializerStateSpec extends StreamSpec {
       try {
         Source.maybe[Int].map(_.toString).zipWithIndex.runWith(Sink.seq)
 
-        awaitAssert({
-          val snapshot = MaterializerState.streamSnapshots(mat).futureValue
+        awaitAssert(
+          {
+            val snapshot = MaterializerState.streamSnapshots(mat).futureValue
 
-          snapshot should have size (1)
-          snapshot.head.activeInterpreters should have size (1)
-          snapshot.head.activeInterpreters.head.logics should have size (4) // all 4 operators
-        }, remainingOrDefault)
+            snapshot should have size (1)
+            snapshot.head.activeInterpreters should have size (1)
+            snapshot.head.activeInterpreters.head.logics should have size (4) // all 4 operators
+          },
+          remainingOrDefault
+        )
       } finally {
         mat.shutdown()
       }
@@ -43,13 +46,16 @@ class MaterializerStateSpec extends StreamSpec {
       val promise = Promise[Int]()
       Source.future(promise.future).map(_.toString).zipWithIndex.runWith(Sink.seq)
 
-      awaitAssert({
-        val snapshot = MaterializerState.streamSnapshots(system).futureValue
+      awaitAssert(
+        {
+          val snapshot = MaterializerState.streamSnapshots(system).futureValue
 
-        snapshot should have size (1)
-        snapshot.head.activeInterpreters should have size (1)
-        snapshot.head.activeInterpreters.head.logics should have size (4) // all 4 operators
-      }, remainingOrDefault)
+          snapshot should have size (1)
+          snapshot.head.activeInterpreters should have size (1)
+          snapshot.head.activeInterpreters.head.logics should have size (4) // all 4 operators
+        },
+        remainingOrDefault
+      )
       promise.success(1)
     }
 
@@ -62,12 +68,15 @@ class MaterializerStateSpec extends StreamSpec {
           .concat(Source.maybe[String]) // make sure we leave it running
           .runWith(probe)
         out.requestNext("one")
-        awaitAssert({
-          val snapshot = MaterializerState.streamSnapshots(mat).futureValue
-          snapshot should have size (1)
-          snapshot.head.activeInterpreters should have size (1)
-          snapshot.head.activeInterpreters.head.stoppedLogics should have size (2) // Source.single and a detach
-        }, remainingOrDefault)
+        awaitAssert(
+          {
+            val snapshot = MaterializerState.streamSnapshots(mat).futureValue
+            snapshot should have size (1)
+            snapshot.head.activeInterpreters should have size (1)
+            snapshot.head.activeInterpreters.head.stoppedLogics should have size (2) // Source.single and a detach
+          },
+          remainingOrDefault
+        )
 
       } finally {
         mat.shutdown()

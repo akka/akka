@@ -159,7 +159,8 @@ final class Merge[T](val inputPorts: Int, val eagerComplete: Boolean) extends Gr
                 runningUpstreams -= 1
                 if (upstreamsClosed && !pending) completeStage()
               }
-          })
+          }
+        )
       }
 
       override def onPull(): Unit = {
@@ -277,7 +278,8 @@ final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolea
             i += 1
           }
         }
-      })
+      }
+    )
 
     var i = 0
     while (i < secondaryPorts) {
@@ -293,7 +295,8 @@ final class MergePreferred[T](val secondaryPorts: Int, val eagerComplete: Boolea
             }
           }
           override def onUpstreamFinish(): Unit = onComplete()
-        })
+        }
+      )
       i += 1
     }
 
@@ -370,7 +373,8 @@ final class MergePrioritized[T] private (val priorities: Seq[Int], val eagerComp
                   if (upstreamsClosed && !hasPending) completeStage()
                 }
               }
-            })
+            }
+          )
       }
 
       override def onPull(): Unit = {
@@ -507,7 +511,8 @@ final class Interleave[T](val inputPorts: Int, val segmentSize: Int, val eagerCl
                 } else completeStage()
               } else completeStage()
             }
-          })
+          }
+        )
       }
 
       def onPull(): Unit =
@@ -659,7 +664,8 @@ final class Broadcast[T](val outputPorts: Int, val eagerCancel: Boolean) extends
                   }
                 }
               }
-            })
+            }
+          )
           idx += 1
         }
       }
@@ -749,7 +755,8 @@ private[stream] final class WireTap[T] extends GraphStage[FanOutShape2[T, T, T]]
           // Allow any outstanding element to be garbage-collected
           pendingTap = None
         }
-      })
+      }
+    )
   }
   override def toString = "WireTap"
 }
@@ -884,7 +891,8 @@ final class Partition[T](val outputPorts: Int, val partitioner: T => Int, val ea
                       pull(in)
                   }
                 }
-            })
+            }
+          )
       }
     }
 
@@ -999,7 +1007,8 @@ final class Balance[T](val outputPorts: Int, val waitForAllDownstreams: Boolean,
                 }
               }
             }
-          })
+          }
+        )
       }
     }
 
@@ -1217,18 +1226,21 @@ class ZipWithN[A, O](zipper: immutable.Seq[A] => O)(n: Int) extends GraphStage[U
       }
 
       shape.inlets.foreach(in => {
-        setHandler(in, new InHandler {
-          override def onPush(): Unit = {
-            pending -= 1
-            if (pending == 0) pushAll()
-          }
+        setHandler(
+          in,
+          new InHandler {
+            override def onPush(): Unit = {
+              pending -= 1
+              if (pending == 0) pushAll()
+            }
 
-          override def onUpstreamFinish(): Unit = {
-            if (!isAvailable(in)) completeStage()
-            willShutDown = true
-          }
+            override def onUpstreamFinish(): Unit = {
+              if (!isAvailable(in)) completeStage()
+              willShutDown = true
+            }
 
-        })
+          }
+        )
       })
 
       def onPull(): Unit = {
@@ -1298,7 +1310,8 @@ final class Concat[T](val inputPorts: Int) extends GraphStage[UniformFanInShape[
                 else if (isAvailable(out)) pull(in(activeStream))
               }
             }
-          })
+          }
+        )
         idxx += 1
       }
     }

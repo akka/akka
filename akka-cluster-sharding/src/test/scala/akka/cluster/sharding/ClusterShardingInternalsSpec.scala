@@ -70,7 +70,8 @@ class ClusterShardingInternalsSpec extends AkkaSpec("""
         extractEntityId = extractEntityId,
         extractShardId = extractShardId,
         allocationStrategy = new LeastShardAllocationStrategy(3, 4),
-        handOffStopMessage = PoisonPill)
+        handOffStopMessage = PoisonPill
+      )
 
       probe.expectMsg(StartingProxy(typeName, settingsWithRole.role, None, extractEntityId, extractShardId))
     }

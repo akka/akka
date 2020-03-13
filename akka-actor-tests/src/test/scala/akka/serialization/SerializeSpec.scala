@@ -549,7 +549,8 @@ class SerializerDeadlockSpec extends AkkaSpec {
               }
             }
           }
-          """))
+          """)
+        )
         shutdown(sys)
       }.getMessage should include("SerializationExtension from its constructor")
     }

@@ -54,7 +54,8 @@ object AggregatorSpec {
                     }
                     .sortBy(_.price)
                     .toList),
-              timeout = 5.seconds))
+              timeout = 5.seconds
+            ))
 
           Behaviors.receiveMessage {
             case AggregatedQuotes(quotes) =>

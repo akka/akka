@@ -89,7 +89,8 @@ private[cluster] final case class Gossip(
     ifTrueThrow(
       inReachabilityVersionsButNotMember.nonEmpty,
       expected = "Nodes not part of cluster in reachability versions table",
-      actual = inReachabilityVersionsButNotMember.mkString(", "))
+      actual = inReachabilityVersionsButNotMember.mkString(", ")
+    )
 
     val seenButNotMember = overview.seen.diff(members.map(_.uniqueAddress))
     ifTrueThrow(
