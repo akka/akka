@@ -19,7 +19,7 @@ class SameThreadExecutionContextSpec extends AkkaSpec with Matchers {
     "return a Scala specific version" in {
       val ec = SameThreadExecutionContext()
       if (util.Properties.versionNumberString.startsWith("2.12")) {
-        ec.getClass.getName should ===("scala.concurrent.Future$InternalCallbackExecutor$")
+        ec.getClass.getName should startWith("akka.dispatch.internal.SameThreadExecutionContext")
       } else {
         // in 2.13 and higher parasitic is available
         ec.getClass.getName should ===("scala.concurrent.ExecutionContext$parasitic$")
