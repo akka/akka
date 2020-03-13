@@ -24,7 +24,7 @@ import scala.util.control.{ ControlThrowable, NonFatal }
 import java.util.Optional
 
 import akka.actor.setup.{ ActorSystemSetup, Setup }
-import akka.annotation.InternalApi
+import akka.annotation.{ DoNotInherit, InternalApi }
 
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
@@ -429,7 +429,8 @@ object ActorSystem {
  * extending [[akka.actor.ExtendedActorSystem]] instead, but beware that you
  * are completely on your own in that case!
  */
-abstract class ActorSystem extends ActorRefFactory {
+@DoNotInherit
+abstract class ActorSystem extends ActorRefFactory with ClassicActorSystemProvider {
   import ActorSystem._
 
   /**
@@ -862,6 +863,8 @@ private[akka] class ActorSystemImpl(
 
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
+
+  override private[akka] def classicSystem: ActorSystem = this
 
   // Used for ManifestInfo.checkSameVersion
   private def allModules: List[String] =

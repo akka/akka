@@ -43,6 +43,8 @@ import akka.event.LoggingFilterWithMarker
 
   import ActorRefAdapter.sendSystemMessage
 
+  override private[akka] def classicSystem: untyped.ActorSystem = untypedSystem
+
   // Members declared in akka.actor.typed.ActorRef
   override def tell(msg: T): Unit = {
     if (msg == null) throw InvalidMessageException("[null] is not an allowed message")

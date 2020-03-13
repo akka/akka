@@ -11,7 +11,7 @@ import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import akka.Done
 import akka.{ actor => untyped }
-import akka.actor.BootstrapSetup
+import akka.actor.{ BootstrapSetup, ClassicActorSystemProvider }
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
@@ -36,7 +36,7 @@ import com.typesafe.config.ConfigFactory
  */
 @DoNotInherit
 @ApiMayChange
-abstract class ActorSystem[-T] extends ActorRef[T] with Extensions { this: InternalRecipientRef[T] =>
+abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicActorSystemProvider { this: InternalRecipientRef[T] =>
 
   /**
    * The name of this actor system, used to distinguish multiple ones within
