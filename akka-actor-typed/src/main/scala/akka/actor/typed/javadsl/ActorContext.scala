@@ -13,6 +13,8 @@ import akka.actor.typed._
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
+import akka.actor.ClassicActorContextProvider
+
 import scala.concurrent.ExecutionContextExecutor
 
 /**
@@ -37,7 +39,7 @@ import scala.concurrent.ExecutionContextExecutor
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorContext[T] extends TypedActorContext[T] {
+trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvider {
   // this must be a pure interface, i.e. only abstract methods
 
   /**

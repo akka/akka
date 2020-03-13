@@ -4,11 +4,12 @@
 
 package akka.actor.typed.scaladsl
 
+import akka.actor.ClassicActorContextProvider
 import akka.actor.typed._
-import akka.annotation.{ ApiMayChange, DoNotInherit }
+import akka.annotation.{ApiMayChange, DoNotInherit}
 import akka.util.Timeout
 
-import scala.concurrent.{ ExecutionContextExecutor, Future }
+import scala.concurrent.{ExecutionContextExecutor, Future}
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
@@ -36,7 +37,7 @@ import akka.annotation.InternalApi
  */
 @DoNotInherit
 @ApiMayChange
-trait ActorContext[T] extends TypedActorContext[T] {
+trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvider {
 
   /**
    * Get the `javadsl` of this `ActorContext`.
