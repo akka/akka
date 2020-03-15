@@ -270,7 +270,7 @@ object Dependencies {
 
   val docs = l ++= Seq(Test.scalatest, Test.junit, Docs.sprayJson, Docs.gson, Provided.levelDB)
 
-  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Compile.jctools)
+  val benchJmh = l ++= Seq(logback, Provided.levelDB, Provided.levelDBNative, Compile.jctools)
 
   // akka stream
 
