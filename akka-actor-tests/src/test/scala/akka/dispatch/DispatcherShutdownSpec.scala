@@ -7,11 +7,12 @@ package akka.dispatch
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import java.lang.management.ManagementFactory
-import org.scalatest.{ Matchers, WordSpec }
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class DispatcherShutdownSpec extends WordSpec with Matchers {
+class DispatcherShutdownSpec extends AnyWordSpec with Matchers {
 
   "akka dispatcher" should {
 

@@ -9,7 +9,7 @@ import akka.testkit.TestProbe;
 
 import org.junit.ClassRule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class StashJavaAPI extends JUnitSuite {
 

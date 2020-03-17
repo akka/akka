@@ -7,13 +7,15 @@ package docs.testkit
 //#plain-spec
 import akka.actor.ActorSystem
 import akka.testkit.{ ImplicitSender, TestActors, TestKit }
-import org.scalatest.{ BeforeAndAfterAll, Matchers, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 //#implicit-sender
 class MySpec()
     extends TestKit(ActorSystem("MySpec"))
     with ImplicitSender
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
   //#implicit-sender

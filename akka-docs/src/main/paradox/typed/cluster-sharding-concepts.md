@@ -115,11 +115,10 @@ actor the order of the messages is preserved. As long as the buffer limit is not
 messages are delivered on a best effort basis, with at-most once delivery semantics,
 in the same way as ordinary message sending.
 
-#### AtLeastOnceDelivery
+### Reliable delivery
 
-Reliable end-to-end messaging, with at-least-once semantics can be added by using 
-`AtLeastOnceDelivery` with @ref:[Classic Persistence](../persistence.md#at-least-once-delivery),
-and see @github[#20984](#20984) AtLeastOnceDelivery, including redelivery with a backoff.
+Reliable end-to-end messaging, with at-least-once semantics can be added by using the
+@ref:[Reliable Delivery](reliable-delivery.md#sharding) feature.
 
 ### Overhead
 

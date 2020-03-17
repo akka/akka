@@ -4,11 +4,11 @@
 
 package akka.util
 
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
 import akka.util.ManifestInfo.Version
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ManifestInfoVersionSpec extends WordSpec with Matchers {
+class ManifestInfoVersionSpec extends AnyWordSpec with Matchers {
 
   "Version" should {
 

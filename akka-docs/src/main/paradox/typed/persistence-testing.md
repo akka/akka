@@ -20,7 +20,7 @@ Unit testing of `EventSourcedBehavior` can be done with the @ref:[ActorTestKit](
 in the same way as other behaviors.
 
 @ref:[Synchronous behavior testing](testing-sync.md) for `EventSourcedBehavior` is not supported yet, but
-tracked in @github[issue #26338](#23712).
+tracked in @github[issue #23712](#23712).
 
 You need to configure a journal, and the in-memory journal is sufficient for unit testing. To enable the
 in-memory journal you need to pass the following configuration to the @scala[`ScalaTestWithActorTestKit`]@java[`TestKitJunitResource`].
@@ -30,6 +30,8 @@ Scala
 
 Java
 :  @@snip [AccountExampleDocTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleDocTest.java) { #inmem-config } 
+
+The `test-serialization = on` configuration of the `InmemJournal` will verify that persisted events can be serialized and deserialized.
 
 Optionally you can also configure a snapshot store. To enable the file based snapshot store you need to pass the
 following configuration to the @scala[`ScalaTestWithActorTestKit`]@java[`TestKitJunitResource`].
@@ -52,6 +54,16 @@ Java
 :  @@snip [AccountExampleDocTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleDocTest.java) { #test }  
 
 Note that each test case is using a different `PersistenceId` to not interfere with each other.
+
+The @apidoc[akka.persistence.journal.inmem.InmemJournal$] publishes `Write` and `Delete` operations to the
+`eventStream`, which makes it possible to verify that the expected events have been emitted and stored by the
+`EventSourcedBehavior`. You can subscribe to to the `eventStream` with a `TestProbe` like this:
+
+Scala
+:  @@snip [AccountExampleDocSpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleDocSpec.scala) { #test-events }
+
+Java
+:  @@snip [AccountExampleDocTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleDocTest.java) { #test-events }
 
 ## Integration testing
 

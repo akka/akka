@@ -21,7 +21,7 @@ import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object RecoveryPermitterSpec {
 
@@ -72,7 +72,7 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.journal.inmem.test-serialization = on
       akka.loggers = ["akka.testkit.TestEventListener"]
-      """) with WordSpecLike with LogCapturing {
+      """) with AnyWordSpecLike with LogCapturing {
 
   import RecoveryPermitterSpec._
 

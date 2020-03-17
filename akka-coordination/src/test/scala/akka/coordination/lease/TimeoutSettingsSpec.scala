@@ -5,11 +5,12 @@
 package akka.coordination.lease
 
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.concurrent.duration._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class TimeoutSettingsSpec extends WordSpec with Matchers {
+class TimeoutSettingsSpec extends AnyWordSpec with Matchers {
   private def conf(overrides: String): TimeoutSettings = {
     val c = ConfigFactory.parseString(overrides).withFallback(ConfigFactory.load())
     TimeoutSettings(c)

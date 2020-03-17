@@ -1,6 +1,6 @@
 # Style guide
 
-This is a style guide with recommendations of idioms and pattern for writing Akka actors.
+This is a style guide with recommendations of idioms and patterns for writing Akka actors.
 Note that this guide does not cover the classic actor API.
 
 As with all style guides, treat this as a list of rules to be broken. There are certainly times
@@ -456,6 +456,29 @@ In `AbstractBehavior` you can return your own `akka.actor.typed.javadsl.Receive`
 of using `newReceiveBuilder`. Implement the `receiveMessage` and `receiveSignal` in the `Receive` subclass.
 
 @@@
+
+## Nesting setup
+
+When an actor behavior needs more than one of `setup`, `withTimers` and `withStash` the methods can be nested to access
+the needed dependencies:
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #nesting }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #nesting }
+
+The order of the nesting does not change the behavior as long as there is no additional logic in any other function than the innermost one. 
+It can be nice to default to put `setup` outermost as that is the least likely block that will be removed if the actor logic changes. 
+
+Note that adding `supervise` to the mix is different as it will restart the behavior it wraps, but not the behavior around itself:   
+
+Scala
+:  @@snip [StyleGuideDocExamples.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/StyleGuideDocExamples.scala) { #nesting-supervise }
+
+Java
+:  @@snip [StyleGuideDocExamples.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/StyleGuideDocExamples.java) { #nesting-supervise }
+
 
 ## Additional naming conventions
 

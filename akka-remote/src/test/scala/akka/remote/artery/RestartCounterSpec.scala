@@ -6,10 +6,10 @@ package akka.remote.artery
 
 import scala.concurrent.duration._
 
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class RestartCounterSpec extends WordSpec with Matchers {
+class RestartCounterSpec extends AnyWordSpec with Matchers {
 
   "RestartCounter" must {
 

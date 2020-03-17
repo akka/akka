@@ -16,6 +16,12 @@ Zips elements of current flow with its indices.
 
 Zips elements of current flow with its indices.
 
+See also:
+
+ * @ref:[zip](zip.md)
+ * @ref:[zipAll](zipAll.md)
+ * @ref:[zipWith](zipWith.md)  
+
 ## Example
 
 Scala

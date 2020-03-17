@@ -10,9 +10,15 @@ import java.util.UUID
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.persistence.typed.PersistenceId
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 //#test
+
+//#test-events
+import akka.persistence.journal.inmem.InmemJournal
+import akka.actor.typed.eventstream.EventStream
+
+//#test-events
 
 import docs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity
 
@@ -21,6 +27,7 @@ object AccountExampleDocSpec {
     //#inmem-config
     """ 
     akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
+    akka.persistence.journal.inmem.test-serialization = on
     """
   //#inmem-config
 
@@ -38,7 +45,7 @@ class AccountExampleDocSpec extends ScalaTestWithActorTestKit(s"""
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
       akka.persistence.snapshot-store.plugin = "akka.persistence.snapshot-store.local"
       akka.persistence.snapshot-store.local.dir = "target/snapshot-${UUID.randomUUID().toString}"
-    """) with WordSpecLike with LogCapturing {
+    """) with AnyWordSpecLike with LogCapturing {
 
   "Account" must {
 
@@ -76,6 +83,24 @@ class AccountExampleDocSpec extends ScalaTestWithActorTestKit(s"""
       ref ! AccountEntity.GetBalance(getProbe.ref)
       getProbe.expectMessage(AccountEntity.CurrentBalance(100))
     }
+
+    //#test
+    //#test-events
+    "store events" in {
+      val eventProbe = createTestProbe[InmemJournal.Operation]()
+      system.eventStream ! EventStream.Subscribe(eventProbe.ref)
+
+      val probe = createTestProbe[AccountEntity.OperationResult]()
+      val ref = spawn(AccountEntity("4", PersistenceId("Account", "4")))
+      ref ! AccountEntity.CreateAccount(probe.ref)
+      eventProbe.expectMessageType[InmemJournal.Write].event should ===(AccountEntity.AccountCreated)
+
+      ref ! AccountEntity.Deposit(100, probe.ref)
+      probe.expectMessage(AccountEntity.Confirmed)
+      eventProbe.expectMessageType[InmemJournal.Write].event should ===(AccountEntity.Deposited(100))
+    }
+    //#test-events
+    //#test
   }
 }
 //#test

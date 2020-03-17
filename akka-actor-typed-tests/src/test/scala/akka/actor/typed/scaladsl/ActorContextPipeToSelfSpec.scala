@@ -7,12 +7,14 @@ package akka.actor.typed.scaladsl
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
 import scala.util.{ Failure, Success }
-
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.Props
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.Promise
 
 object ActorContextPipeToSelfSpec {
   val config = ConfigFactory.parseString("""
@@ -25,12 +27,37 @@ object ActorContextPipeToSelfSpec {
 
 final class ActorContextPipeToSelfSpec
     extends ScalaTestWithActorTestKit(ActorContextPipeToSelfSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   "The Scala DSL ActorContext pipeToSelf" must {
     "handle success" in { responseFrom(Future.successful("hi")) should ===("ok: hi") }
     "handle failure" in { responseFrom(Future.failed(Fail)) should ===(s"ko: $Fail") }
+    "handle adapted null" in {
+      val probe = testKit.createTestProbe[String]()
+      val promise = Promise[String]()
+      testKit.spawn(Behaviors.setup[String] { ctx =>
+        ctx.pipeToSelf(promise.future) {
+          case Success(value) =>
+            probe.ref ! "adapting"
+            value // we're passing on null here
+          case Failure(ex) => throw ex
+        }
+
+        Behaviors.receiveMessage {
+          case msg =>
+            probe.ref ! msg
+            Behaviors.same
+
+        }
+      })
+
+      LoggingTestKit.warn("Adapter function returned null which is not valid as an actor message, ignoring").expect {
+        // (probably more likely to happen in Java)
+        promise.success(null.asInstanceOf[String])
+      }
+
+    }
   }
 
   object Fail extends NoStackTrace

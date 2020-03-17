@@ -211,8 +211,7 @@ import org.slf4j.LoggerFactory
 
   // Scala API impl
   def pipeToSelf[Value](future: Future[Value])(mapResult: Try[Value] => T): Unit = {
-    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))(
-      ExecutionContexts.sameThreadExecutionContext)
+    future.onComplete(value => self.unsafeUpcast ! AdaptMessage(value, mapResult))(ExecutionContexts.parasitic)
   }
 
   // Java API impl
@@ -220,9 +219,9 @@ import org.slf4j.LoggerFactory
       future: CompletionStage[Value],
       applyToResult: akka.japi.function.Function2[Value, Throwable, T]): Unit = {
     future.whenComplete { (value, ex) =>
-      if (value != null) self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
       if (ex != null)
         self.unsafeUpcast ! AdaptMessage(ex, applyToResult.apply(null.asInstanceOf[Value], _: Throwable))
+      else self.unsafeUpcast ! AdaptMessage(value, applyToResult.apply(_: Value, null))
     }
   }
 

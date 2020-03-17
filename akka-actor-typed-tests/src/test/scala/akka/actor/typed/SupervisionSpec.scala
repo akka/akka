@@ -12,7 +12,6 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
-
 import akka.actor.ActorInitializationException
 import akka.actor.Dropped
 import akka.actor.testkit.typed._
@@ -24,10 +23,13 @@ import akka.actor.typed.scaladsl.Behaviors._
 import akka.actor.typed.scaladsl.AbstractBehavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
-import org.scalatest.WordSpecLike
 import org.slf4j.event.Level
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
+
+import scala.concurrent.Future
+import scala.util.Failure
+import scala.util.Success
 
 object SupervisionSpec {
 
@@ -94,7 +96,7 @@ object SupervisionSpec {
   }
 }
 
-class StubbedSupervisionSpec extends WordSpec with Matchers with LogCapturing {
+class StubbedSupervisionSpec extends AnyWordSpec with Matchers with LogCapturing {
 
   import SupervisionSpec._
 
@@ -255,7 +257,7 @@ class StubbedSupervisionSpec extends WordSpec with Matchers with LogCapturing {
 
 class SupervisionSpec extends ScalaTestWithActorTestKit("""
     akka.log-dead-letters = off
-    """) with WordSpecLike with LogCapturing {
+    """) with AnyWordSpecLike with LogCapturing {
 
   import BehaviorInterceptor._
   import SupervisionSpec._
@@ -1321,6 +1323,44 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
           wrong ! "boom"
         }
       probe.expectTerminated(wrong)
+    }
+
+    "apply supervision to adapter function" in {
+      val probe = createTestProbe[String]()
+      val ref = testKit.spawn(
+        Behaviors
+          .supervise(Behaviors.setup[String] { context =>
+            probe.ref ! "Starting"
+            Behaviors
+              .receiveMessage[String] {
+                case "future-boom" =>
+                  implicit val ec = context.executionContext
+                  // throw an exception from the adapt function
+                  context.pipeToSelf(Future[String] {
+                    throw TestException("thrown in adapter")
+                  }) {
+                    case Success(msg)       => msg
+                    case Failure(exception) => throw exception
+                  }
+                  Behaviors.same
+                case other =>
+                  probe.ref ! other
+                  Behaviors.same
+              }
+              .receiveSignal {
+                case (_, PreRestart) =>
+                  probe.ref ! "PreRestart"
+                  Behaviors.same
+              }
+          })
+          .onFailure[TestException](SupervisorStrategy.restart))
+
+      probe.expectMessage("Starting")
+      ref ! "future-boom"
+      probe.expectMessage("PreRestart")
+      probe.expectMessage("Starting")
+      ref ! "message"
+      probe.expectMessage("message")
     }
 
   }

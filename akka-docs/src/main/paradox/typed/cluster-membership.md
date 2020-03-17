@@ -58,60 +58,74 @@ Note that the node might already have been shutdown when this event is published
 of at least one other node.
  * `ClusterEvent.ReachableMember` - A member is considered as reachable again, after having been unreachable.
 All nodes that previously detected it as unreachable has detected it as reachable again.
- 
+
 ## Membership Lifecycle
 
-A node begins in the `joining` state. Once all nodes have seen that the new
-node is joining (through gossip convergence) the `leader` will set the member
-state to `up`.
+A node is introduced to the cluster by invoking the `join` action which puts the node in the `joining` state.
+Once all nodes have seen that the new node is joining (through @ref[gossip convergence](cluster-concepts.md#gossip-convergence)) the
+@ref[`leader`](cluster-concepts.md#leader) will set the member state to `up`.
 
 If a node is leaving the cluster in a safe, expected manner, for example through @ref[coordinated shutdown](../coordinated-shutdown.md), 
-it switches to the `leaving` state. Once the leader sees the convergence on the node in the
+it invokes the `leave` action which switches it to the `leaving` state. Once the leader sees the convergence on the node in the
 `leaving` state, the leader will then move it to `exiting`.  Once all nodes
 have seen the exiting state (convergence) the `leader` will remove the node
 from the cluster, marking it as `removed`.
 
 If a node is `unreachable` then gossip convergence is not possible and therefore
-any `leader` actions are also not possible (for instance, allowing a node to
-become a part of the cluster). To be able to move forward the state of the
-`unreachable` nodes must be changed. It must become `reachable` again or marked
-as `down`. If the node is to join the cluster again the actor system must be
-restarted and go through the joining process again. If new incarnation of the unreachable
-node tries to rejoin the cluster old incarnation will be marked as `down` and new
-incarnation can rejoin the cluster without manual intervention. 
+most `leader` actions are impossible (for instance, allowing a node to
+become a part of the cluster). To be able to move forward, the node must become `reachable` again
+or the node must be explicitly "downed". This is required because the state of an unreachable node is unknown and the
+cluster cannot know if the node has crashed or is only temporarily unreachable because of network issues or GC pauses.
+See the section about [User Actions](#user-actions) below for ways a node can be downed.
+
+The actor system on a node that exited or was downed cannot join the cluster again. In particular, a node that was downed while being
+unreachable and then regains connectivity cannot rejoin the cluster. Instead, the process has to be restarted on the
+node, creating a new actor system that can go through the joining process again.
+
+A special case is a node that was restarted without going through the leaving or downing process e.g. because the machine
+hosting the node was unexpectedly restarted. When the new instance of the node tries to rejoin the cluster, the cluster
+might still track the old instance as unreachable. In this case, however, it is clear that the old node is gone because
+the new instance will have the same address (host and port) as its old instance. In this case, the previous instance
+will be automatically marked as `down` and the new instance can rejoin the cluster without manual intervention.
+
+## Leader
+
+The purpose of the `leader` is to confirm state changes when convergence is reached. The `leader` can be determined
+by each node unambiguously after gossip convergence. Any node might be
+required to take the role of the `leader` depending on the current cluster composition.
+
+Without convergence, different nodes might have different views about which node is the leader.
+Therefore, most leader actions are only allowed if there is convergence to ensure that all nodes agree about the current
+state of the cluster and state changes are originated from a single node. Most regular state changes like changing
+a node from `joining` to `up` are of that kind.
+
+Other situations require that an action is taken even if convergence cannot be reached currently. Notably, convergence
+cannot be reached if one or more nodes in the cluster are currently unreachable as determined by the
+@ref[failure detector](cluster-concepts.md#failure-detector). In such a case, the cluster might be partitioned (a split brain
+scenario) and each partition might have its own view about which nodes are reachable and which are not. In this case,
+a node on each side of the partition might view itself as the leader of the reachable nodes. Any action that the leader
+performs in such a case must be designed in a way that all concurrent leaders would come to the same conclusion (which
+might be impossible in general and only feasible under additional constraints). The most important case of that kind is a split
+brain scenario where nodes need to be downed, either manually or automatically, to bring the cluster back to convergence.
+
+See the [Lightbend Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
+for an implementation of that.
+
+Another transition that is possible without convergence is marking members as `WeaklyUp` as described in the next section.
 
 <a id="weakly-up"></a>
 ## WeaklyUp Members
 
-If a node is `unreachable` then gossip convergence is not possible and therefore any
-`leader` actions are also not possible. However, we still might want new nodes to join
-the cluster in this scenario.
+If a node is `unreachable` then gossip convergence is not
+possible and therefore most `leader` actions are impossible. By enabling
+`akka.cluster.allow-weakly-up-members` (which is enabled by default), joining nodes can be promoted to `WeaklyUp`
+even while convergence is not yet reached. Once gossip convergence can be established again, the leader will move
+`WeaklyUp` members to `Up`.
 
-`Joining` members will be promoted to `WeaklyUp` and become part of the cluster if
-convergence can't be reached. Once gossip convergence is reached, the leader will move `WeaklyUp`
-members to `Up`.
-
-This feature is enabled by default, but it can be disabled with configuration option:
-
-```
-akka.cluster.allow-weakly-up-members = off
-```
-
-You can subscribe to the `WeaklyUp` membership event to make use of the members that are
-in this state, but you should be aware of that members on the other side of a network partition
-have no knowledge about the existence of the new members. You should for example not count
-`WeaklyUp` members in quorum decisions.
-
-As mentioned before, if a node is `unreachable` then gossip convergence is not
-possible and therefore any `leader` actions are also not possible. By enabling
-`akka.cluster.allow-weakly-up-members` (enabled by default) it is possible to 
-let new joining nodes be promoted while convergence is not yet reached. These 
-`Joining` nodes will be promoted as `WeaklyUp`. Once gossip convergence is 
-reached, the leader will move `WeaklyUp` members to `Up`.
-
-Note that members on the other side of a network partition have no knowledge about 
-the existence of the new members. You should for example not count `WeaklyUp` 
-members in quorum decisions.
+You can subscribe to the `WeaklyUp` membership event to make use of the members
+that are in this state, but you should be aware of that members on the other
+side of a network partition have no knowledge about the existence of the
+new members. You should for example not count `WeaklyUp` members in quorum decisions.
 
 ## State Diagrams
 
@@ -133,7 +147,8 @@ startup if a node to join have been specified in the configuration
 The `leader` has the duty of confirming user actions to shift members in and out of the cluster:
 
  * joining ⭢ up
- * weakly up ⭢ up *(no convergence is required for this leader action to be performed)*
+ * joining ⭢ weakly up *(no convergence is needed for this leader action to be performed which works even if there are unreachable nodes)*
+ * weakly up ⭢ up *(after full convergence is reached again)*
  * leaving ⭢ exiting
  * exiting ⭢ removed
  * down ⭢ removed

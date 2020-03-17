@@ -11,16 +11,15 @@ Akka is part of the [Lightbend Platform](http://www.lightbend.com/platform).
 Play Web Framework, Lagom, sbt and many other open source projects. 
 It also provides the Lightbend Reactive Platform, which is powered by an open source core and commercial Enterprise Suite for building scalable Reactive systems on the JVM. Learn more at [lightbend.com](http://www.lightbend.com).
 
-## Mailing List
+## Akka Discuss Forums
 
-[Akka User Google Group](http://groups.google.com/group/akka-user)
+[Akka Discuss Forums](http://discuss.akka.io)
 
 ## Gitter
 
 Chat room about *using* Akka: [![gitter: akka/akka](https://img.shields.io/badge/gitter%3A-akka%2Fakka-blue.svg?style=flat-square)](https://gitter.im/akka/akka)
 
 A chat room is available for all questions related to developing and contributing to Akka: [![gitter: akka/dev](https://img.shields.io/badge/gitter%3A-akka%2Fdev-blue.svg?style=flat-square)](https://gitter.im/akka/dev)
-
 
 ## Source Code
 

@@ -295,6 +295,43 @@ class FlowMapAsyncSpec extends StreamSpec {
         3.seconds) should ===("happy!")
     }
 
+    "complete without requiring further demand (parallelism = 1)" in assertAllStagesStopped {
+      import system.dispatcher
+      Source
+        .single(1)
+        .mapAsync(1)(v => Future { Thread.sleep(20); v })
+        .runWith(TestSink.probe[Int])
+        .request(1)
+        .expectNext(1)
+        .expectComplete()
+    }
+
+    "complete without requiring further demand with already completed future (parallelism = 1)" in assertAllStagesStopped {
+      Source
+        .single(1)
+        .mapAsync(1)(v => Future.successful(v))
+        .runWith(TestSink.probe[Int])
+        .request(1)
+        .expectNext(1)
+        .expectComplete()
+    }
+
+    "complete without requiring further demand (parallelism = 2)" in assertAllStagesStopped {
+      import system.dispatcher
+      val probe =
+        Source(1 :: 2 :: Nil).mapAsync(2)(v => Future { Thread.sleep(20); v }).runWith(TestSink.probe[Int])
+
+      probe.request(2).expectNextN(2)
+      probe.expectComplete()
+    }
+
+    "complete without requiring further demand with already completed future (parallelism = 2)" in assertAllStagesStopped {
+      val probe = Source(1 :: 2 :: Nil).mapAsync(2)(v => Future.successful(v)).runWith(TestSink.probe[Int])
+
+      probe.request(2).expectNextN(2)
+      probe.expectComplete()
+    }
+
     "finish after future failure" in assertAllStagesStopped {
       import system.dispatcher
       Await.result(

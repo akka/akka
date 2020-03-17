@@ -133,12 +133,13 @@ It has very good performance (high throughput and low latency) but latency at hi
 might not be as good as the Aeron transport. It has less operational complexity than the
 Aeron transport and less risk of trouble in container environments.
 
-@@@ note
-
 Aeron requires 64bit JVM to work reliably and is only officially supported on Linux, Mac and Windows.
 It may work on other Unixes e.g. Solaris but insufficient testing has taken place for it to be
-officially supported. If you're on a Big Endian processor, such as Sparc, it is recommended to use
- TCP.
+officially supported. If you're on a Big Endian processor, such as Sparc, it is recommended to use TCP.
+
+@@@ note
+
+@ref:[Rolling update](additional/rolling-updates.md) is not supported when changing from one transport to another.
 
 @@@
 
@@ -332,6 +333,8 @@ valid certificate by compromising any node with certificates issued by the same 
 It's recommended that you enable hostname verification with
 `akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on`.
 When enabled it will verify that the destination hostname matches the hostname in the peer's certificate.
+
+In deployments where hostnames are dynamic and not known up front it can make sense to leave the hostname verification off.
 
 You have a few choices how to set up certificates and hostname verification:
 

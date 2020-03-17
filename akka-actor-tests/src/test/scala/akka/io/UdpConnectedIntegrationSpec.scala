@@ -6,15 +6,24 @@ package akka.io
 
 import java.net.InetSocketAddress
 
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-import akka.util.ByteString
 import akka.actor.ActorRef
 import akka.testkit.SocketUtil.temporaryServerAddresses
 import akka.testkit.WithLogCapturing
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
+import akka.testkit.TestProbe
+import akka.util.ByteString
+
 import scala.concurrent.duration._
 
 class UdpConnectedIntegrationSpec extends AkkaSpec("""
     akka.loglevel = DEBUG
+    akka.actor.debug.lifecycle = on
+    akka.actor.debug.autoreceive = on
+    akka.io.udp-connected.trace-logging = on
+    # issues with dns resolution of non existent host hanging with the
+    # Java native host resolution
+    akka.io.dns.resolver = async-dns
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     """) with ImplicitSender with WithLogCapturing {
 
@@ -40,6 +49,15 @@ class UdpConnectedIntegrationSpec extends AkkaSpec("""
   "The UDP connection oriented implementation" must {
 
     "report error if can not resolve" in {
+      val serverAddress = "doesnotexist.local"
+      val commander = TestProbe()
+      val handler = TestProbe()
+      val command = UdpConnected.Connect(handler.ref, InetSocketAddress.createUnresolved(serverAddress, 1234), None)
+      commander.send(IO(UdpConnected), command)
+      commander.expectMsg(10.seconds, UdpConnected.CommandFailed(command))
+    }
+
+    "report error if can not resolve (cached)" in {
       val serverAddress = "doesnotexist.local"
       val commander = TestProbe()
       val handler = TestProbe()

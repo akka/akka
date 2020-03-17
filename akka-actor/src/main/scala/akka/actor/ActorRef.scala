@@ -11,6 +11,7 @@ import akka.annotation.InternalApi
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
+import akka.annotation.DoNotInherit
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.AddressTerminatedTopic
@@ -476,10 +477,60 @@ private[akka] trait MinimalActorRef extends InternalActorRef with LocalRef {
 }
 
 /**
+ * An ActorRef that ignores any incoming messages.
+ *
+ * INTERNAL API
+ */
+@InternalApi private[akka] final class IgnoreActorRef(override val provider: ActorRefProvider) extends MinimalActorRef {
+
+  override val path: ActorPath = IgnoreActorRef.path
+
+  @throws(classOf[java.io.ObjectStreamException])
+  override protected def writeReplace(): AnyRef = SerializedIgnore
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi private[akka] object IgnoreActorRef {
+
+  private val fakeSystemName = "local"
+
+  val path: ActorPath =
+    RootActorPath(Address("akka", IgnoreActorRef.fakeSystemName)) / "ignore"
+
+  private val pathString = path.toString
+
+  /**
+   * Check if the passed `otherPath` is the same as IgnoreActorRef.path
+   */
+  def isIgnoreRefPath(otherPath: String): Boolean =
+    pathString == otherPath
+
+  /**
+   * Check if the passed `otherPath` is the same as IgnoreActorRef.path
+   */
+  def isIgnoreRefPath(otherPath: ActorPath): Boolean =
+    path == otherPath
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi @SerialVersionUID(1L) private[akka] object SerializedIgnore extends Serializable {
+  @throws(classOf[java.io.ObjectStreamException])
+  private def readResolve(): AnyRef = IgnoreActorRef
+}
+
+/**
  * Subscribe to this class to be notified about all [[DeadLetter]] (also the suppressed ones)
  * and [[Dropped]].
+ *
+ * Not for user extension
  */
-sealed trait AllDeadLetters extends WrappedMessage {
+@DoNotInherit
+trait AllDeadLetters extends WrappedMessage {
   def message: Any
   def sender: ActorRef
   def recipient: ActorRef

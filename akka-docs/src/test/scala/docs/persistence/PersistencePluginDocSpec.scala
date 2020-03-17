@@ -8,12 +8,11 @@ import scala.collection.immutable
 import akka.actor.ActorSystem
 import akka.testkit.TestKit
 import com.typesafe.config._
-import org.scalatest.WordSpec
-import scala.collection.immutable.Seq
+import org.scalatest.wordspec.AnyWordSpec
+
 import scala.concurrent.Future
 import scala.util.Try
 import scala.concurrent.duration._
-import scala.util.control.NonFatal
 
 //#plugin-imports
 import akka.persistence._
@@ -62,7 +61,7 @@ object PersistencePluginDocSpec {
     """
 }
 
-class PersistencePluginDocSpec extends WordSpec {
+class PersistencePluginDocSpec extends AnyWordSpec {
   new AnyRef {
     val providerConfig =
       """

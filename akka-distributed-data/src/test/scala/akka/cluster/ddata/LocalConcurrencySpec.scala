@@ -12,8 +12,8 @@ import akka.testkit.ImplicitSender
 import akka.testkit.TestKit
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.Matchers
-import org.scalatest.WordSpecLike
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object LocalConcurrencySpec {
 
@@ -39,7 +39,7 @@ object LocalConcurrencySpec {
 
 class LocalConcurrencySpec(_system: ActorSystem)
     extends TestKit(_system)
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
     with ImplicitSender {

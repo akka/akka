@@ -15,7 +15,7 @@ import com.github.ghik.silencer.silent
 
 import scala.concurrent.duration._
 import org.scalatest.BeforeAndAfterEach
-import org.scalatest.junit.JUnitSuiteLike
+import org.scalatestplus.junit.JUnitSuiteLike
 
 object ActorWithStashSpec {
 

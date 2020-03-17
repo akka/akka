@@ -17,7 +17,7 @@ import akka.Done
 import akka.actor.typed.{ DispatcherSelector, Terminated }
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import java.net.URLEncoder
@@ -74,9 +74,9 @@ object IntroSpec {
   //#hello-world-main
   object HelloWorldMain {
 
-    final case class Start(name: String)
+    final case class SayHello(name: String)
 
-    def apply(): Behavior[Start] =
+    def apply(): Behavior[SayHello] =
       Behaviors.setup { context =>
         val greeter = context.spawn(HelloWorld(), "greeter")
 
@@ -86,18 +86,31 @@ object IntroSpec {
           Behaviors.same
         }
       }
+
+    //#hello-world-main
+    def main(args: Array[String]): Unit = {
+      val system: ActorSystem[HelloWorldMain.SayHello] =
+        ActorSystem(HelloWorldMain(), "hello")
+
+      system ! HelloWorldMain.SayHello("World")
+      system ! HelloWorldMain.SayHello("Akka")
+    }
+    //#hello-world-main
   }
   //#hello-world-main
+
+  // This is run by ScalaFiddle
+  HelloWorldMain.main(Array.empty)
   //#fiddle_code
   //format: ON
 
   object CustomDispatchersExample {
     object HelloWorldMain {
 
-      final case class Start(name: String)
+      final case class SayHello(name: String)
 
       //#hello-world-main-with-dispatchers
-      def apply(): Behavior[Start] =
+      def apply(): Behavior[SayHello] =
         Behaviors.setup { context =>
           val dispatcherPath = "akka.actor.default-blocking-io-dispatcher"
 
@@ -223,23 +236,21 @@ object IntroSpec {
 
 }
 
-class IntroSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class IntroSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import IntroSpec._
 
   "Intro sample" must {
     "say hello" in {
-      //#fiddle_code
       //#hello-world
 
-      val system: ActorSystem[HelloWorldMain.Start] =
+      val system: ActorSystem[HelloWorldMain.SayHello] =
         ActorSystem(HelloWorldMain(), "hello")
 
-      system ! HelloWorldMain.Start("World")
-      system ! HelloWorldMain.Start("Akka")
+      system ! HelloWorldMain.SayHello("World")
+      system ! HelloWorldMain.SayHello("Akka")
 
       //#hello-world
-      //#fiddle_code
 
       Thread.sleep(500) // it will not fail if too short
       ActorTestKit.shutdown(system)

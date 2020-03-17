@@ -9,12 +9,12 @@ import java.util.concurrent.atomic.AtomicInteger
 import akka.testkit.EventFilter
 import akka.testkit.TestKit._
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ Matchers, WordSpec }
-import org.scalatest.junit.JUnitSuiteLike
 
 import scala.util.control.NoStackTrace
-
 import com.github.ghik.silencer.silent
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatestplus.junit.JUnitSuiteLike
 @silent
 class JavaExtensionSpec extends JavaExtension with JUnitSuiteLike
 
@@ -46,15 +46,16 @@ class DummyExtensionImpl extends Extension
 
 // Dont't place inside ActorSystemSpec object, since it will not be garbage collected and reference to system remains
 class FailingTestExtension(val system: ExtendedActorSystem) extends Extension {
-  // first time the actor is created
-  val ref = system.actorOf(Props.empty, "uniqueName")
-  // but the extension initialization fails
-  // second time it will throw exception when trying to create actor with same name,
-  // but we want to see the first exception every time
-  throw new FailingTestExtension.TestException
+  // create a named actor as a side effect of initializing this extension, relevant
+  // for the 'handle extensions that fail to initialize' test.
+  system.actorOf(Props.empty, "uniqueName")
+
+  // Always fail, but 'hide' this from IntelliJ to avoid compilation issues:
+  if (42.toString == "42")
+    throw new FailingTestExtension.TestException
 }
 
-class ExtensionSpec extends WordSpec with Matchers {
+class ExtensionSpec extends AnyWordSpec with Matchers {
 
   "The ActorSystem extensions support" should {
 
@@ -73,10 +74,13 @@ class ExtensionSpec extends WordSpec with Matchers {
     "handle extensions that fail to initialize" in {
       val system = ActorSystem("extensions")
 
+      // First attempt, an actor is created and after that
+      // an exception is thrown:
       intercept[FailingTestExtension.TestException] {
         FailingTestExtension(system)
       }
-      // same exception should be reported next time
+
+      // Second attempt, we expect to see the same (cached) exception:
       intercept[FailingTestExtension.TestException] {
         FailingTestExtension(system)
       }

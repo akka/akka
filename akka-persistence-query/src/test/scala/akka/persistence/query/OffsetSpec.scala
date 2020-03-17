@@ -6,11 +6,11 @@ package akka.persistence.query
 
 import java.util.UUID
 
-import org.scalatest.{ Matchers, WordSpecLike }
-
 import scala.util.Random
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class OffsetSpec extends WordSpecLike with Matchers {
+class OffsetSpec extends AnyWordSpecLike with Matchers {
 
   "TimeBasedUUID offset" must {
 

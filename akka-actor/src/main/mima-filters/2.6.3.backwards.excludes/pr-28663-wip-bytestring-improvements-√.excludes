@@ -1,0 +1,2 @@
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.decodeBase64")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.util.ByteString.encodeBase64")

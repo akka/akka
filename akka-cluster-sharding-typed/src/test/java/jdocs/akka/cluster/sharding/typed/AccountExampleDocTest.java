@@ -7,6 +7,7 @@ package jdocs.akka.cluster.sharding.typed;
 // #test
 import java.math.BigDecimal;
 import java.util.UUID;
+
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
@@ -20,7 +21,13 @@ import akka.persistence.typed.PersistenceId;
 
 // #test
 
-import org.scalatest.junit.JUnitSuite;
+// #test-events
+import akka.actor.typed.eventstream.EventStream;
+import akka.persistence.journal.inmem.InmemJournal;
+
+// #test-events
+
+import org.scalatestplus.junit.JUnitSuite;
 
 import static jdocs.akka.cluster.sharding.typed.AccountExampleWithEventHandlersInState.AccountEntity;
 
@@ -33,7 +40,9 @@ public class AccountExampleDocTest
 
   // #inmem-config
   private static final String inmemConfig =
-      "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n";
+      "akka.persistence.journal.plugin = \"akka.persistence.journal.inmem\" \n"
+          + "akka.persistence.journal.inmem.test-serialization = on \n";
+
   // #inmem-config
 
   // #snapshot-store-config
@@ -96,5 +105,33 @@ public class AccountExampleDocTest
         BigDecimal.valueOf(100),
         getProbe.expectMessageClass(AccountEntity.CurrentBalance.class).balance);
   }
+
+  // #test
+  // #test-events
+  @Test
+  public void storeEvents() {
+    TestProbe<InmemJournal.Operation> eventProbe = testKit.createTestProbe();
+    testKit
+        .system()
+        .eventStream()
+        .tell(new EventStream.Subscribe<>(InmemJournal.Operation.class, eventProbe.getRef()));
+
+    ActorRef<AccountEntity.Command> ref =
+        testKit.spawn(AccountEntity.create("4", PersistenceId.of("Account", "4")));
+    TestProbe<AccountEntity.OperationResult> probe =
+        testKit.createTestProbe(AccountEntity.OperationResult.class);
+    ref.tell(new AccountEntity.CreateAccount(probe.getRef()));
+    assertEquals(
+        AccountEntity.AccountCreated.INSTANCE,
+        eventProbe.expectMessageClass(InmemJournal.Write.class).event());
+
+    ref.tell(new AccountEntity.Deposit(BigDecimal.valueOf(100), probe.getRef()));
+    assertEquals(
+        BigDecimal.valueOf(100),
+        ((AccountEntity.Deposited) eventProbe.expectMessageClass(InmemJournal.Write.class).event())
+            .amount);
+  }
+  // #test
+  // #test-events
 }
 // #test

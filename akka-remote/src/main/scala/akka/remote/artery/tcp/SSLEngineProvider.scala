@@ -88,12 +88,9 @@ class ConfigSSLEngineProvider(protected val config: Config, protected val log: M
     if (HostnameVerification)
       log.debug("TLS/SSL hostname verification is enabled.")
     else
-      log.warning(
+      log.info(
         LogMarker.Security,
-        "TLS/SSL hostname verification is disabled. " +
-        "Please configure akka.remote.artery.ssl.config-ssl-engine.hostname-verification=on " +
-        "and ensure the X.509 certificate on the host is correct to remove this warning. " +
-        "See Akka reference documentation for more information.")
+        "TLS/SSL hostname verification is disabled. See Akka reference documentation for more information.")
 
     constructContext()
   }

@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2009-2019 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2009-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.util
@@ -8,13 +8,13 @@ import java.io.{ ObjectInputStream, ObjectOutputStream }
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable => JIterable }
 import java.nio.charset.{ Charset, StandardCharsets }
+import java.util.Base64
 
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.collection.{ immutable, mutable }
 import scala.collection.immutable.{ IndexedSeq, IndexedSeqOps, StrictOptimizedSeqOps, VectorBuilder }
 import scala.reflect.ClassTag
-
 import com.github.ghik.silencer.silent
 
 object ByteString {
@@ -197,6 +197,12 @@ object ByteString {
     override def decodeString(charset: Charset): String =
       if (isEmpty) "" else new String(bytes, charset)
 
+    override def decodeBase64: ByteString =
+      if (isEmpty) this else ByteString1C(Base64.getDecoder.decode(bytes))
+
+    override def encodeBase64: ByteString =
+      if (isEmpty) this else ByteString1C(Base64.getEncoder.encode(bytes))
+
     override def ++(that: ByteString): ByteString = {
       if (that.isEmpty) this
       else if (this.isEmpty) that
@@ -205,6 +211,7 @@ object ByteString {
 
     override def take(n: Int): ByteString =
       if (n <= 0) ByteString.empty
+      else if (n >= length) this
       else toByteString1.take(n)
 
     override def dropRight(n: Int): ByteString =
@@ -251,6 +258,14 @@ object ByteString {
     /** INTERNAL API: Specialized for internal use, appending ByteString1C to a ByteStringBuilder. */
     private[akka] def appendToBuilder(buffer: ByteStringBuilder) = {
       buffer.putByteArrayUnsafe(bytes)
+    }
+
+    override def copyToArray[B >: Byte](dest: Array[B], start: Int, len: Int): Int = {
+      val toCopy = math.min(math.min(len, bytes.length), dest.length - start)
+      if (toCopy > 0) {
+        Array.copy(bytes, 0, dest, start, toCopy)
+      }
+      toCopy
     }
 
   }
@@ -354,10 +369,34 @@ object ByteString {
     def asByteBuffers: scala.collection.immutable.Iterable[ByteBuffer] = List(asByteBuffer)
 
     override def decodeString(charset: String): String =
-      new String(if (length == bytes.length) bytes else toArray, charset)
+      if (isEmpty) ""
+      else new String(bytes, startIndex, length, charset)
 
     override def decodeString(charset: Charset): String = // avoids Charset.forName lookup in String internals
-      new String(if (length == bytes.length) bytes else toArray, charset)
+      if (isEmpty) ""
+      else new String(bytes, startIndex, length, charset)
+
+    override def decodeBase64: ByteString =
+      if (isEmpty) this
+      else if (isCompact) ByteString1C(Base64.getDecoder.decode(bytes))
+      else {
+        val dst = Base64.getDecoder.decode(ByteBuffer.wrap(bytes, startIndex, length))
+        if (dst.hasArray) {
+          if (dst.array.length == dst.remaining) ByteString1C(dst.array)
+          else ByteString1(dst.array, dst.arrayOffset + dst.position(), dst.remaining)
+        } else CompactByteString(dst)
+      }
+
+    override def encodeBase64: ByteString =
+      if (isEmpty) this
+      else if (isCompact) ByteString1C(Base64.getEncoder.encode(bytes))
+      else {
+        val dst = Base64.getEncoder.encode(ByteBuffer.wrap(bytes, startIndex, length))
+        if (dst.hasArray) {
+          if (dst.array.length == dst.remaining) ByteString1C(dst.array)
+          else ByteString1(dst.array, dst.arrayOffset + dst.position(), dst.remaining)
+        } else CompactByteString(dst)
+      }
 
     def ++(that: ByteString): ByteString = {
       if (that.isEmpty) this
@@ -384,6 +423,15 @@ object ByteString {
         }
         found
       }
+    }
+
+    override def copyToArray[B >: Byte](dest: Array[B], start: Int, len: Int): Int = {
+      // min of the bytes available to copy, bytes there is room for in dest and the requested number of bytes
+      val toCopy = math.min(math.min(len, length), dest.length - start)
+      if (toCopy > 0) {
+        Array.copy(bytes, startIndex, dest, start, toCopy)
+      }
+      toCopy
     }
 
     protected def writeReplace(): AnyRef = new SerializationProxy(this)
@@ -519,6 +567,10 @@ object ByteString {
 
     def decodeString(charset: Charset): String = compact.decodeString(charset)
 
+    override def decodeBase64: ByteString = compact.decodeBase64
+
+    override def encodeBase64: ByteString = compact.encodeBase64
+
     private[akka] def writeToOutputStream(os: ObjectOutputStream): Unit = {
       os.writeInt(bytestrings.length)
       bytestrings.foreach(_.writeToOutputStream(os))
@@ -625,6 +677,23 @@ object ByteString {
         }
 
         find(0, math.max(from, 0), 0)
+      }
+    }
+
+    override def copyToArray[B >: Byte](dest: Array[B], start: Int, len: Int): Int = {
+      if (bytestrings.size == 1) bytestrings.head.copyToArray(dest, start, len)
+      else {
+        // min of the bytes available to copy, bytes there is room for in dest and the requested number of bytes
+        val totalToCopy = math.min(math.min(len, length), dest.length - start)
+        if (totalToCopy > 0) {
+          val bsIterator = bytestrings.iterator
+          var copied = 0
+          while (copied < totalToCopy) {
+            val current = bsIterator.next()
+            copied += current.copyToArray(dest, start + copied, totalToCopy - copied)
+          }
+        }
+        totalToCopy
       }
     }
 
@@ -754,10 +823,21 @@ sealed abstract class ByteString
    */
   protected[ByteString] def toArray: Array[Byte] = toArray[Byte]
 
-  override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = iterator.toArray
+  final override def toArray[B >: Byte](implicit arg0: ClassTag[B]): Array[B] = {
+    // super uses byteiterator
+    val array = new Array[B](size)
+    copyToArray(array, 0, size)
+    array
+  }
 
+  final override def copyToArray[B >: Byte](xs: Array[B], start: Int): Int = {
+    // super uses byteiterator
+    copyToArray(xs, start, size.min(xs.size))
+  }
+
+  // optimized in all subclasses, avoiding usage of the iterator to save allocations/transformations
   override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Int =
-    iterator.copyToArray(xs, start, len)
+    throw new UnsupportedOperationException("Method copyToArray is not implemented in ByteString")
 
   override def foreach[@specialized U](f: Byte => U): Unit = iterator.foreach(f)
 
@@ -842,6 +922,17 @@ sealed abstract class ByteString
    * Avoids Charset.forName lookup in String internals, thus is preferable to `decodeString(charset: String)`.
    */
   def decodeString(charset: Charset): String
+
+  /*
+   * Returns a ByteString which is the binary representation of this ByteString
+   * if this ByteString is Base64-encoded.
+   */
+  def decodeBase64: ByteString
+
+  /**
+   * Returns a ByteString which is the Base64 representation of this ByteString
+   */
+  def encodeBase64: ByteString
 
   /**
    * map method that will automatically cast Int back into Byte.

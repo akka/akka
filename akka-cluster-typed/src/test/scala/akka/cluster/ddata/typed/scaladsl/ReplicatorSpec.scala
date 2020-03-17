@@ -6,9 +6,9 @@ package akka.cluster.ddata.typed.scaladsl
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class ReplicatorSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class ReplicatorSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
   "Replicator" must {
     "have the prefixed replicator name" in {
       ReplicatorSettings.name(system) should ===("typedDdataReplicator")

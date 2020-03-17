@@ -24,10 +24,10 @@ import akka.event.Logging.DefaultLogger
 import akka.event.slf4j.Slf4jLogger
 import akka.event.slf4j.Slf4jLoggingFilter
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
 import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import org.slf4j.helpers.BasicMarkerFactory
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class SomeClass
 
@@ -52,7 +52,7 @@ class BehaviorWhereTheLoggerIsUsed(context: ActorContext[String]) extends Abstra
 
 class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel = DEBUG # test verifies debug
-    """) with WordSpecLike with LogCapturing {
+    """) with AnyWordSpecLike with LogCapturing {
 
   val marker = new BasicMarkerFactory().getMarker("marker")
   val cause = TestException("böö")

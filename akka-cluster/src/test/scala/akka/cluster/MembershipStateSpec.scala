@@ -6,11 +6,12 @@ package akka.cluster
 
 import akka.actor.Address
 import akka.cluster.MemberStatus.Up
-import org.scalatest.{ Matchers, WordSpec }
 
 import scala.collection.immutable.SortedSet
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class MembershipStateSpec extends WordSpec with Matchers {
+class MembershipStateSpec extends AnyWordSpec with Matchers {
   // DC-a is in reverse age order
   val a1 = TestMember(Address("akka", "sys", "a4", 2552), Up, 1, "dc-a")
   val a2 = TestMember(Address("akka", "sys", "a3", 2552), Up, 2, "dc-a")

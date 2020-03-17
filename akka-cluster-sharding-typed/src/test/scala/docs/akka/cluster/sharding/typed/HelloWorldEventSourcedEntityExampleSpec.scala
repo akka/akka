@@ -12,7 +12,7 @@ import akka.cluster.typed.Cluster
 import akka.cluster.typed.Join
 import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object HelloWorldEventSourcedEntityExampleSpec {
   val config = ConfigFactory.parseString("""
@@ -29,7 +29,7 @@ object HelloWorldEventSourcedEntityExampleSpec {
 
 class HelloWorldEventSourcedEntityExampleSpec
     extends ScalaTestWithActorTestKit(HelloWorldEventSourcedEntityExampleSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
   import HelloWorldPersistentEntityExample.HelloWorld
   import HelloWorldPersistentEntityExample.HelloWorld._

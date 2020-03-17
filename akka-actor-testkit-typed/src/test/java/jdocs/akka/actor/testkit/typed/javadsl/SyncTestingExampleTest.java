@@ -8,7 +8,6 @@ package jdocs.akka.actor.testkit.typed.javadsl;
 import akka.actor.testkit.typed.CapturedLogEvent;
 import akka.actor.testkit.typed.Effect;
 import akka.actor.testkit.typed.javadsl.BehaviorTestKit;
-import akka.actor.testkit.typed.javadsl.Effects;
 import akka.actor.testkit.typed.javadsl.TestInbox;
 import akka.actor.typed.*;
 import akka.actor.typed.javadsl.*;
@@ -19,7 +18,7 @@ import org.slf4j.event.Level;
 // #imports
 import org.junit.Test;
 import static org.junit.Assert.assertEquals;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class SyncTestingExampleTest extends JUnitSuite {
 

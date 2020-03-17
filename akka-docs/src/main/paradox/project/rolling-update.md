@@ -73,3 +73,16 @@ versions 2.5.18, 2.5.19, 2.5.20 or 2.5.21.
 ### 2.6.0 Several changes in minor release
 
 See @ref:[migration guide](migration-guide-2.5.x-2.6.x.md) when updating from 2.5.x to 2.6.x.
+
+### 2.6.2 ClusterMessageSerializer manifests change
+
+Issue: [#23654](https://github.com/akka/akka/issues/13654)
+
+In preparation of switching away from class based manifests to more efficient letter codes the `ClusterMessageSerializer`
+has been prepared to accept those shorter forms but still emits the old long manifests.
+
+* 2.6.2 - shorter manifests accepted
+* 2.6.3 - shorter manifests emitted (not released yet)
+
+This means that a rolling upgrade will have to go through 2.6.2 and 2.6.3 when upgrading to 2.6.3 or higher or else
+cluster nodes will not be able to communicate during the rolling upgrade.

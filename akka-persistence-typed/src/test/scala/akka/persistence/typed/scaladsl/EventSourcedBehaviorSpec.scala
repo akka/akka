@@ -43,7 +43,7 @@ import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorSpec {
 
@@ -279,7 +279,7 @@ object EventSourcedBehaviorSpec {
 
 class EventSourcedBehaviorSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import EventSourcedBehaviorSpec._
@@ -461,7 +461,7 @@ class EventSourcedBehaviorSpec
       replyProbe.expectMessage(State(1, Vector(0)))
 
       val events = queries.currentEventsByTag("tag1").runWith(Sink.seq).futureValue
-      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Incremented(1)))
+      events shouldEqual List(EventEnvelope(Sequence(1), pid.id, 1, Incremented(1), 0L))
     }
 
     "handle scheduled message arriving before recovery completed " in {

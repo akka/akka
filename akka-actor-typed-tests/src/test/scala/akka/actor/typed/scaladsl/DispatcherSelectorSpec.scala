@@ -16,7 +16,7 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.SpawnProtocol
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object DispatcherSelectorSpec {
   val config = ConfigFactory.parseString("""
@@ -42,7 +42,7 @@ object DispatcherSelectorSpec {
 
 class DispatcherSelectorSpec
     extends ScalaTestWithActorTestKit(DispatcherSelectorSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
   import DispatcherSelectorSpec.PingPong
   import DispatcherSelectorSpec.PingPong._

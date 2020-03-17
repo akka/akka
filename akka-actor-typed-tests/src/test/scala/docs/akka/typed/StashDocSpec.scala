@@ -6,7 +6,7 @@ package docs.akka.typed
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object StashDocSpec {
   // #stashing
@@ -100,7 +100,7 @@ object StashDocSpec {
   // #stashing
 }
 
-class StashDocSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class StashDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
   import StashDocSpec.DB
   import StashDocSpec.DataAccess
   import scala.concurrent.Future

@@ -20,7 +20,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.serialization.jackson.CborSerializable
 import akka.util.Timeout
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object RemoteContextAskSpec {
   def config = ConfigFactory.parseString(s"""
@@ -55,7 +55,7 @@ object RemoteContextAskSpec {
 
 class RemoteContextAskSpec
     extends ScalaTestWithActorTestKit(RemoteContextAskSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import RemoteContextAskSpec._

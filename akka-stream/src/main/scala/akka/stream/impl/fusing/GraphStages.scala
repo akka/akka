@@ -303,7 +303,7 @@ import scala.concurrent.{ Future, Promise }
               onFutureSourceCompleted(it)
             case _ =>
               val cb = getAsyncCallback[Try[Graph[SourceShape[T], M]]](onFutureSourceCompleted).invoke _
-              futureSource.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext) // could be optimised FastFuture-like
+              futureSource.onComplete(cb)(ExecutionContexts.parasitic) // could be optimised FastFuture-like
           }
 
         // initial handler (until future completes)
@@ -387,7 +387,7 @@ import scala.concurrent.{ Future, Promise }
               onFutureCompleted(completed)
             case None =>
               val cb = getAsyncCallback[Try[T]](onFutureCompleted).invoke _
-              future.onComplete(cb)(ExecutionContexts.sameThreadExecutionContext)
+              future.onComplete(cb)(ExecutionContexts.parasitic)
           }
 
           def onFutureCompleted(result: Try[T]): Unit = {

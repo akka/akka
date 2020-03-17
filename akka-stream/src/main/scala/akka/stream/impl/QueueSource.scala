@@ -39,6 +39,7 @@ import scala.concurrent.{ Future, Promise }
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
     val completion = Promise[Done]
+    val name = inheritedAttributes.nameOrDefault(getClass.toString)
 
     val stageLogic = new GraphStageLogic(shape) with OutHandler with SourceQueueWithComplete[T] with StageLogging {
       override protected def logSource: Class[_] = classOf[QueueSource[_]]
@@ -69,32 +70,41 @@ import scala.concurrent.{ Future, Promise }
             case s: DropHead =>
               log.log(
                 s.logLevel,
-                "Dropping the head element because buffer is full and overflowStrategy is: [DropHead]")
+                "Dropping the head element because buffer is full and overflowStrategy is: [DropHead] in stream [{}]",
+                name)
               buffer.dropHead()
               enqueueAndSuccess(offer)
             case s: DropTail =>
               log.log(
                 s.logLevel,
-                "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail]")
+                "Dropping the tail element because buffer is full and overflowStrategy is: [DropTail] in stream [{}]",
+                name)
               buffer.dropTail()
               enqueueAndSuccess(offer)
             case s: DropBuffer =>
               log.log(
                 s.logLevel,
-                "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer]")
+                "Dropping all the buffered elements because buffer is full and overflowStrategy is: [DropBuffer] in stream [{}]",
+                name)
               buffer.clear()
               enqueueAndSuccess(offer)
             case s: DropNew =>
-              log.log(s.logLevel, "Dropping the new element because buffer is full and overflowStrategy is: [DropNew]")
+              log.log(
+                s.logLevel,
+                "Dropping the new element because buffer is full and overflowStrategy is: [DropNew] in stream [{}]",
+                name)
               offer.promise.success(QueueOfferResult.Dropped)
             case s: Fail =>
-              log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
+              log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail] in stream [{}]", name)
               val bufferOverflowException = BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
               offer.promise.success(QueueOfferResult.Failure(bufferOverflowException))
               completion.failure(bufferOverflowException)
               failStage(bufferOverflowException)
             case s: Backpressure =>
-              log.log(s.logLevel, "Backpressuring because buffer is full and overflowStrategy is: [Backpressure]")
+              log.log(
+                s.logLevel,
+                "Backpressuring because buffer is full and overflowStrategy is: [Backpressure] in stream [{}]",
+                name)
               if (pendingOffers.isFull)
                 offer.promise.failure(
                   new IllegalStateException(
@@ -120,21 +130,35 @@ import scala.concurrent.{ Future, Promise }
           else
             overflowStrategy match {
               case s @ (_: DropHead | _: DropBuffer) =>
-                log.log(s.logLevel, "Dropping element because buffer is full and overflowStrategy is: [{}]", s)
+                log.log(
+                  s.logLevel,
+                  "Dropping element because buffer is full and overflowStrategy is: [{}] in stream [{}]",
+                  s,
+                  name)
                 pendingOffers.dequeue().promise.success(QueueOfferResult.Dropped)
                 pendingOffers.enqueue(offer)
               case s @ (_: DropTail | _: DropNew) =>
-                log.log(s.logLevel, "Dropping element because buffer is full and overflowStrategy is: [{}]", s)
+                log.log(
+                  s.logLevel,
+                  "Dropping element because buffer is full and overflowStrategy is: [{}] in stream [{}]",
+                  s,
+                  name)
                 promise.success(QueueOfferResult.Dropped)
               case s: Fail =>
-                log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Fail]")
+                log.log(
+                  s.logLevel,
+                  "Failing because buffer is full and overflowStrategy is: [Fail] in stream [{}]",
+                  name)
                 val bufferOverflowException =
                   BufferOverflowException(s"Buffer overflow (max capacity was: $maxBuffer)!")
                 promise.success(QueueOfferResult.Failure(bufferOverflowException))
                 completion.failure(bufferOverflowException)
                 failStage(bufferOverflowException)
               case s: Backpressure =>
-                log.log(s.logLevel, "Failing because buffer is full and overflowStrategy is: [Backpressure]")
+                log.log(
+                  s.logLevel,
+                  "Failing because buffer is full and overflowStrategy is: [Backpressure] in stream [{}]",
+                  name)
                 promise.failure(
                   new IllegalStateException(
                     "You have to wait for previous offer to be resolved to send another request"))
@@ -189,7 +213,7 @@ import scala.concurrent.{ Future, Promise }
           .onComplete {
             case scala.util.Success(_) =>
             case scala.util.Failure(e) => p.tryFailure(e)
-          }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+          }(akka.dispatch.ExecutionContexts.parasitic)
         p.future
       }
       override def complete(): Unit = callback.invoke(Completion)

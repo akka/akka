@@ -10,7 +10,6 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
-
 import akka.Done
 import akka.NotUsed
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -21,9 +20,9 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.TimerScheduler
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "The interaction patterns docs" must {
 
@@ -83,11 +82,19 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with WordSpecLik
       val context = new {
         def self = probe.ref
       }
+
       // #request-response-send
       cookieFabric ! CookieFabric.Request("give me cookies", context.self)
       // #request-response-send
 
       probe.receiveMessage()
+
+      Behaviors.setup[Nothing] { context =>
+        // #ignore-reply
+        cookieFabric ! CookieFabric.Request("don't send cookies back", context.system.ignoreRef)
+        // #ignore-reply
+        Behaviors.empty
+      }
     }
 
     "contain a sample for adapted response" in {

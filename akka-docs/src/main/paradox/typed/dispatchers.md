@@ -8,7 +8,7 @@ For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers
 ## Dependency
 
 Dispatchers are part of core Akka, which means that they are part of the `akka-actor` dependency. This
-page describes how to use mailboxes with `akka-actor-typed`, which has dependency:
+page describes how to use dispatchers with `akka-actor-typed`, which has dependency:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
@@ -142,9 +142,13 @@ to sleep for an indeterminate time, waiting for an external event to occur.
 Examples are legacy RDBMS drivers or messaging APIs, and the underlying reason
 is typically that (network) I/O occurs under the covers.
 
+The [Managing Blocking in Akka video](https://akka.io/blog/news/2020/01/22/managing-blocking-video)
+explains why it is bad to block inside an actor, and how you can use custom dispatchers to manage
+blocking when you cannot avoid it.
+
 ### Problem: Blocking on default dispatcher
 
-Simply add blocking calls to your actor message processing like this is problematic:
+Simply adding blocking calls to your actor message processing like this is problematic:
 
 Scala
 :   @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingActor.scala) { #blocking-in-actor }
@@ -154,7 +158,7 @@ Java
 
 Without any further configuration the default dispatcher runs this actor along
 with all other actors. This is very efficient when all actor message processing is
-non-blocking. If all of the available threads are blocked, however, then all the actors on the same dispatcher will starve for threads and
+non-blocking. When all of the available threads are blocked, however, then all the actors on the same dispatcher will starve for threads and
 will not be able to process incoming messages.
 
 @@@ note
@@ -187,7 +191,7 @@ Java
 :   @@snip [BlockingDispatcherTest.java](/akka-docs/src/test/java/jdocs/actor/typed/BlockingDispatcherTest.java) { #blocking-main }
 
 
-Here the app is sending 100 messages to `BlockingActor` and `PrintActor` and large numbers
+Here the app is sending 100 messages to `BlockingActor`s and `PrintActor`s and large numbers
 of `akka.actor.default-dispatcher` threads are handling requests. When you run the above code,
 you will likely to see the entire application gets stuck somewhere like this:
 
@@ -197,7 +201,7 @@ you will likely to see the entire application gets stuck somewhere like this:
 ```
 
 `PrintActor` is considered non-blocking, however it is not able to proceed with handling the remaining messages,
-since all the threads are occupied and blocked by the other blocking actor - thus leading to thread starvation.
+since all the threads are occupied and blocked by the other blocking actors - thus leading to thread starvation.
 
 In the thread state diagrams below the colours have the following meaning:
 
@@ -209,8 +213,8 @@ The thread information was recorded using the YourKit profiler, however any good
 has this feature (including the free and bundled with the Oracle JDK [VisualVM](https://visualvm.github.io/), as well as [Java Mission Control](https://openjdk.java.net/projects/jmc/)).
 
 The orange portion of the thread shows that it is idle. Idle threads are fine -
-they're ready to accept new work. However, large amount of turquoise (blocked, or sleeping as in our example) threads
-is very bad and leads to thread starvation.
+they're ready to accept new work. However, a large number of turquoise (blocked, or sleeping as in our example) threads
+leads to thread starvation.
 
 @@@ note
 
@@ -223,7 +227,7 @@ and then you can apply the proposed solutions as explained below.
 
 ![dispatcher-behaviour-on-bad-code.png](../images/dispatcher-behaviour-on-bad-code.png)
 
-In the above example we put the code under load by sending hundreds of messages to the blocking actor
+In the above example we put the code under load by sending hundreds of messages to blocking actors
 which causes threads of the default dispatcher to be blocked.
 The fork join pool based dispatcher in Akka then attempts to compensate for this blocking by adding more threads to the pool
 (`default-akka.actor.default-dispatcher 18,19,20,...`).
@@ -246,7 +250,7 @@ that you have not configured an explicit dispatcher for).
 
 When facing this, you
 may be tempted to wrap the blocking call inside a `Future` and work
-with that instead, but this strategy is too simple: you are quite likely to
+with that instead, but this strategy is too simplistic: you are quite likely to
 find bottlenecks or run out of memory or threads when the application runs
 under increased load.
 
@@ -267,7 +271,7 @@ unless you @ref:[set up a separate dispatcher for the actor](../dispatchers.md#s
 
 ### Solution: Dedicated dispatcher for blocking operations
 
-One of the most efficient methods of isolating the blocking behavior such that it does not impact the rest of the system
+An efficient method of isolating the blocking behavior, such that it does not impact the rest of the system,
 is to prepare and use a dedicated dispatcher for all those blocking operations.
 This technique is often referred to as "bulk-heading" or simply "isolating blocking".
 
@@ -276,7 +280,6 @@ be configured as follows:
 
 <!--same config text for Scala & Java-->
 @@snip [BlockingDispatcherSample.scala](/akka-docs/src/test/scala/docs/actor/typed/BlockingDispatcherSample.scala) { #my-blocking-dispatcher-config }
-
 
 A `thread-pool-executor` based dispatcher allows us to limit the number of threads it will host,
 and this way we gain tight control over the maximum number of blocked threads the system may use.
@@ -296,7 +299,7 @@ The thread pool behavior is shown in the below diagram.
 
 ![dispatcher-behaviour-on-good-code.png](../images/dispatcher-behaviour-on-good-code.png)
 
-Messages sent to `SeparateDispatcherCompletionStageActor` and `PrintActor` are handled by the default dispatcher - the
+Messages sent to @scala[`SeparateDispatcherFutureActor`]@java[`SeparateDispatcherCompletionStageActor`] and `PrintActor` are handled by the default dispatcher - the
 green lines, which represent the actual execution.
 
 When blocking operations are run on the `my-blocking-dispatcher`,
@@ -350,14 +353,22 @@ it in `application.conf` and instantiate through an
 
 ## More dispatcher configuration examples
 
+### Fixed pool size
+
 Configuring a dispatcher with fixed thread pool size, e.g. for actors that perform blocking IO:
 
 @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) { #fixed-pool-size-dispatcher-config }
+
+### Cores
 
 Another example that uses the thread pool based on the number of cores (e.g. for CPU bound tasks)
 
 <!--same config text for Scala & Java-->
 @@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-thread-pool-dispatcher-config }
+
+### Pinned
+
+A separate thread is dedicated for each actor that is configured to use the pinned dispatcher.  
 
 Configuring a `PinnedDispatcher`:
 
@@ -372,3 +383,14 @@ Note that it's not guaranteed that the *same* thread is used over time, since th
 is used for `PinnedDispatcher` to keep resource usage down in case of idle actors. To use the same
 thread all the time you need to add `thread-pool-executor.allow-core-timeout=off` to the
 configuration of the `PinnedDispatcher`.
+
+### Thread shutdown timeout
+
+Both the `fork-join-executor` and `thread-pool-executor` may shutdown threads when they are not used.
+If it's desired to keep the threads alive longer there are some timeout settings that can be adjusted.
+
+<!--same config text for Scala & Java-->
+@@snip [DispatcherDocSpec.scala](/akka-docs/src/test/scala/docs/dispatcher/DispatcherDocSpec.scala) {#my-dispatcher-with-timeouts-config }
+ 
+When using the dispatcher as an `ExecutionContext` without assigning actors to it the `shutdown-timeout` should
+typically be increased, since the default of 1 second may cause too frequent shutdown of the entire thread pool.

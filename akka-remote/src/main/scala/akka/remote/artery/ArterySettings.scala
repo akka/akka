@@ -223,6 +223,12 @@ private[akka] final class ArterySettings private (config: Config) {
       val ConnectionTimeout: FiniteDuration = config
         .getMillisDuration("connection-timeout")
         .requiring(interval => interval > Duration.Zero, "connection-timeout must be more than zero")
+      val OutboundClientHostname: Option[String] = {
+        config.getString("outbound-client-hostname") match {
+          case ""       => None
+          case hostname => Some(hostname)
+        }
+      }
     }
 
   }

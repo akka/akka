@@ -695,8 +695,6 @@ private[akka] class ClusterShardingGuardian extends Actor {
   val sharding = ClusterSharding(context.system)
 
   val majorityMinCap = context.system.settings.config.getInt("akka.cluster.sharding.distributed-data.majority-min-cap")
-  private lazy val replicatorSettings =
-    ReplicatorSettings(context.system.settings.config.getConfig("akka.cluster.sharding.distributed-data"))
   private var replicatorByRole = Map.empty[Option[String], ActorRef]
 
   private def coordinatorSingletonManagerName(encName: String): String =
@@ -704,6 +702,18 @@ private[akka] class ClusterShardingGuardian extends Actor {
 
   private def coordinatorPath(encName: String): String =
     (self.path / coordinatorSingletonManagerName(encName) / "singleton" / "coordinator").toStringWithoutAddress
+
+  private def replicatorSettings(shardingSettings: ClusterShardingSettings) = {
+    val configuredSettings =
+      ReplicatorSettings(context.system.settings.config.getConfig("akka.cluster.sharding.distributed-data"))
+    // Use members within the data center and with the given role (if any)
+    val replicatorRoles = Set(ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter) ++ shardingSettings.role
+    val settingsWithRoles = configuredSettings.withRoles(replicatorRoles)
+    if (shardingSettings.rememberEntities)
+      settingsWithRoles
+    else
+      settingsWithRoles.withDurableKeys(Set.empty[String])
+  }
 
   private def replicator(settings: ClusterShardingSettings): ActorRef = {
     if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
@@ -715,9 +725,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
             case Some(r) => URLEncoder.encode(r, ByteString.UTF_8) + "Replicator"
             case None    => "replicator"
           }
-          // Use members within the data center and with the given role (if any)
-          val replicatorRoles = Set(ClusterSettings.DcRolePrefix + cluster.settings.SelfDataCenter) ++ settings.role
-          val ref = context.actorOf(Replicator.props(replicatorSettings.withRoles(replicatorRoles)), name)
+          val ref = context.actorOf(Replicator.props(replicatorSettings(settings)), name)
           replicatorByRole = replicatorByRole.updated(settings.role, ref)
           ref
       }

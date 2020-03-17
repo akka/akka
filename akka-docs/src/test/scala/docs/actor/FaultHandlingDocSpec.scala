@@ -7,12 +7,13 @@ package docs.actor
 import language.postfixOps
 import akka.actor.{ ActorRef, ActorSystem, Props, Terminated }
 import FaultHandlingDocSpec._
-import org.scalatest.{ WordSpec, WordSpecLike }
 
 //#testkit
 import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.{ BeforeAndAfterAll, Matchers }
-import akka.testkit.{ EventFilter, ImplicitSender, TestActors, TestKit }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+import akka.testkit.{ EventFilter, ImplicitSender, TestKit }
 
 //#testkit
 object FaultHandlingDocSpec {
@@ -104,7 +105,7 @@ object FaultHandlingDocSpec {
 class FaultHandlingDocSpec(_system: ActorSystem)
     extends TestKit(_system)
     with ImplicitSender
-    with WordSpecLike
+    with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll {
 

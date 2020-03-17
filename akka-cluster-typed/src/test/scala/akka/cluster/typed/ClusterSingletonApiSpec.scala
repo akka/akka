@@ -16,7 +16,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterSingletonApiSpec {
 
@@ -50,7 +50,7 @@ object ClusterSingletonApiSpec {
 
 class ClusterSingletonApiSpec
     extends ScalaTestWithActorTestKit(ClusterSingletonApiSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
   import ClusterSingletonApiSpec._
 

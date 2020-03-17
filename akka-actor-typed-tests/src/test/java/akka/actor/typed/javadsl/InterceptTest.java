@@ -12,7 +12,7 @@ import akka.testkit.AkkaSpec;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 public class InterceptTest extends JUnitSuite {
 

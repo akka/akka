@@ -4,9 +4,10 @@
 
 package akka.io.dns.internal
 
-import org.scalatest.{ Matchers, WordSpec }
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ResolvConfParserSpec extends WordSpec with Matchers {
+class ResolvConfParserSpec extends AnyWordSpec with Matchers {
 
   private def parse(str: String): ResolvConf = {
     ResolvConfParser.parseLines(str.linesIterator)

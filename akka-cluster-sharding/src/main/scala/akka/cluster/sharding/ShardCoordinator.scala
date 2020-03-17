@@ -105,6 +105,22 @@ object ShardCoordinator {
   }
 
   /**
+   * Shard allocation strategy where start is called by the shard coordinator before any calls to
+   * rebalance or allocate shard. This can be used if there is any expensive initialization to be done
+   * that you do not want to to in the constructor as it will happen on every node rather than just
+   * the node that hosts the ShardCoordinator
+   */
+  trait StartableAllocationStrategy extends ShardAllocationStrategy {
+
+    /**
+     * Called before any calls to allocate/rebalance.
+     * Do not block. If asynchronous actions are required they can be started here and
+     * delay the Futures returned by allocate/rebalance.
+     */
+    def start(): Unit
+  }
+
+  /**
    * Java API: Java implementations of custom shard allocation and rebalancing logic used by the [[ShardCoordinator]]
    * should extend this abstract class and implement the two methods.
    */
@@ -122,7 +138,7 @@ object ShardCoordinator {
         currentShardAllocations: Map[ActorRef, immutable.IndexedSeq[ShardId]],
         rebalanceInProgress: Set[ShardId]): Future[Set[ShardId]] = {
       import akka.util.ccompat.JavaConverters._
-      implicit val ec = ExecutionContexts.sameThreadExecutionContext
+      implicit val ec = ExecutionContexts.parasitic
       rebalance(currentShardAllocations.asJava, rebalanceInProgress.asJava).map(_.asScala.toSet)
     }
 
@@ -534,6 +550,14 @@ abstract class ShardCoordinator(
 
   protected def typeName: String
 
+  override def preStart(): Unit = {
+    allocationStrategy match {
+      case strategy: StartableAllocationStrategy =>
+        strategy.start()
+      case _ =>
+    }
+  }
+
   override def postStop(): Unit = {
     super.postStop()
     rebalanceTask.cancel()
@@ -600,7 +624,9 @@ abstract class ShardCoordinator(
                     AllocateShardResult(shard, Some(region), getShardHomeSender)
                   }
                   .recover {
-                    case _ => AllocateShardResult(shard, None, getShardHomeSender)
+                    case t =>
+                      log.error(t, "Shard [{}] allocation failed.", shard)
+                      AllocateShardResult(shard, None, getShardHomeSender)
                   }
                   .pipeTo(self)
             }

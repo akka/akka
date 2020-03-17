@@ -6,10 +6,10 @@ package akka.cluster.ddata
 
 import akka.actor.Address
 import akka.cluster.UniqueAddress
-import org.scalatest.Matchers
-import org.scalatest.WordSpec
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class PruningStateSpec extends WordSpec with Matchers {
+class PruningStateSpec extends AnyWordSpec with Matchers {
   import PruningState._
 
   val node1 = UniqueAddress(Address("akka", "Sys", "localhost", 2551), 1L)

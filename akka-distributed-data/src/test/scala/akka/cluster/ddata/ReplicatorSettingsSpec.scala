@@ -6,7 +6,8 @@ package akka.cluster.ddata
 
 import akka.testkit.AkkaSpec
 import com.typesafe.config.ConfigFactory
-import org.scalatest.{ BeforeAndAfterAll, WordSpecLike }
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object ReplicatorSettingsSpec {
 
@@ -17,7 +18,10 @@ object ReplicatorSettingsSpec {
     akka.remote.artery.canonical.hostname = 127.0.0.1""")
 }
 
-class ReplicatorSettingsSpec extends AkkaSpec(ReplicatorSettingsSpec.config) with WordSpecLike with BeforeAndAfterAll {
+class ReplicatorSettingsSpec
+    extends AkkaSpec(ReplicatorSettingsSpec.config)
+    with AnyWordSpecLike
+    with BeforeAndAfterAll {
 
   "DistributedData" must {
     "have the default replicator name" in {

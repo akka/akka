@@ -13,9 +13,9 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.internal.InternalProtocol.IncomingCommand
 import akka.persistence.typed.internal.InternalProtocol.RecoveryPermitGranted
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class StashStateSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class StashStateSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   "StashState" should {
 

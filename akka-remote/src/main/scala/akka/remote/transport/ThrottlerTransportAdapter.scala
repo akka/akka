@@ -22,6 +22,8 @@ import akka.util.{ ByteString, Timeout }
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicReference
 
+import akka.dispatch.ExecutionContexts
+
 import scala.annotation.tailrec
 import scala.collection.immutable.Queue
 import scala.concurrent.{ Future, Promise }
@@ -361,7 +363,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
       ref.result.future.transform({
         case Terminated(t) if t.path == target.path => SetThrottleAck
         case SetThrottleAck                         => { internalTarget.sendSystemMessage(Unwatch(target, ref)); SetThrottleAck }
-      }, t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ref.internalCallingThreadExecutionContext)
+      }, t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ExecutionContexts.parasitic)
     }
   }
 

@@ -18,6 +18,8 @@ Log elements flowing through the stream as well as completion and erroring. By d
 completion signals are logged on debug level, and errors are logged on Error level.
 This can be changed by calling @scala[`Attributes.logLevels(...)`] @java[`Attributes.createLogLevels(...)`] on the given Flow.
 
+See also @ref:[logWithMarker](logWithMarker.md).
+
 ## Example
 
 Scala

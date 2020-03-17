@@ -1,0 +1,2 @@
+# #28390 rewrite of AssociationState due to memory leak
+ProblemFilters.exclude[Problem]("akka.remote.artery.AssociationState*")

@@ -15,7 +15,6 @@ import scala.concurrent.{ ExecutionContext, TimeoutException }
 import scala.util.Success
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import org.scalatest.WordSpecLike
 import scala.concurrent.Future
 
 import akka.actor.DeadLetter
@@ -23,6 +22,7 @@ import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.eventstream.EventStream
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object AskSpec {
   sealed trait Msg
@@ -30,7 +30,10 @@ object AskSpec {
   final case class Stop(replyTo: ActorRef[Unit]) extends Msg
 }
 
-class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class AskSpec extends ScalaTestWithActorTestKit("""
+    akka.loglevel=DEBUG
+    akka.actor.debug.event-stream = on
+    """) with AnyWordSpecLike with LogCapturing {
 
   import AskSpec._
 
@@ -74,7 +77,9 @@ class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCaptur
 
     "fail the future if the actor doesn't reply in time" in {
       val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      LoggingTestKit.debug(s"subscribing ${unhandledProbe.ref} to channel class akka.actor.UnhandledMessage").expect {
+        system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      }
 
       val actor = spawn(Behaviors.empty[Foo])
       implicit val timeout: Timeout = 10.millis
@@ -96,7 +101,9 @@ class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCaptur
       }
 
       val deadLetterProbe = createTestProbe[DeadLetter]()
-      system.eventStream ! EventStream.Subscribe(deadLetterProbe.ref)
+      LoggingTestKit.debug(s"subscribing ${deadLetterProbe.ref} to channel class akka.actor.DeadLetter").expect {
+        system.eventStream ! EventStream.Subscribe(deadLetterProbe.ref)
+      }
 
       val answer: Future[String] = noSuchActor.ask(Foo("bar", _))
       val result = answer.failed.futureValue
@@ -174,7 +181,7 @@ class AskSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCaptur
       val Question(replyRef2) = probe.expectMessageType[Question]
 
       LoggingTestKit
-        .error("Exception thrown out of adapter. Stopping myself.")
+        .error("Unsupported number")
         .expect {
           replyRef2 ! 42L
         }(system)

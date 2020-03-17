@@ -16,7 +16,7 @@ import akka.persistence.typed.SnapshotFailed
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object SnapshotMutableStateSpec {
 
@@ -71,7 +71,7 @@ object SnapshotMutableStateSpec {
 
 class SnapshotMutableStateSpec
     extends ScalaTestWithActorTestKit(SnapshotMutableStateSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import SnapshotMutableStateSpec._

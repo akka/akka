@@ -300,7 +300,7 @@ object ByteIterator {
     final override def copyToArray[B >: Byte](xs: Array[B], start: Int, len: Int): Unit = {
       var pos = start
       var rest = len
-      while ((rest > 0) && !iterators.isEmpty) {
+      while ((rest > 0) && !iterators.isEmpty && pos < xs.length) {
         val n = 0 max ((xs.length - pos) min current.len min rest)
         current.copyToArray(xs, pos, n)
         pos += n

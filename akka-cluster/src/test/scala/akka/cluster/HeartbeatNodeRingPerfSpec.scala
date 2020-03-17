@@ -4,11 +4,11 @@
 
 package akka.cluster
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import akka.actor.Address
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class HeartbeatNodeRingPerfSpec extends WordSpec with Matchers {
+class HeartbeatNodeRingPerfSpec extends AnyWordSpec with Matchers {
 
   val nodesSize = sys.props.get("akka.cluster.HeartbeatNodeRingPerfSpec.nodesSize").getOrElse("250").toInt
   // increase for serious measurements

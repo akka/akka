@@ -8,7 +8,8 @@ import scala.collection.immutable
 import scala.concurrent.duration.{ Deadline, _ }
 
 import akka.actor.{ Actor, ActorRef, Address, CoordinatedShutdown, ReceiveTimeout }
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.util.unused
 
 /**
  * INTERNAL API.
@@ -289,7 +290,11 @@ private[cluster] final class JoinSeedNodeProcess(
           seedNodes.filterNot(_ == selfAddress).mkString(", "))
       // no InitJoinAck received, try again
       self ! JoinSeedNode
+      onReceiveTimeout(seedNodes, attempt)
   }
+
+  @InternalStableApi
+  private[akka] def onReceiveTimeout(@unused seedNodes: immutable.IndexedSeq[Address], @unused attempt: Int): Unit = {}
 
   def done: Actor.Receive = {
     case InitJoinAck(_, _) => // already received one, skip rest

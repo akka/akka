@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.event.LoggingAdapter
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
 import akka.Done
 import akka.stream.impl.{
@@ -605,7 +605,7 @@ object Flow {
   @deprecated("Use 'Flow.lazyFutureFlow' instead", "2.6.0")
   def lazyInitAsync[I, O, M](flowFactory: () => Future[Flow[I, O, M]]): Flow[I, O, Future[Option[M]]] =
     Flow.fromGraph(new LazyFlow[I, O, M](_ => flowFactory())).mapMaterializedValue { v =>
-      implicit val ec = akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+      implicit val ec = akka.dispatch.ExecutionContexts.parasitic
       v.map[Option[M]](Some.apply _).recover { case _: NeverMaterializedException => None }
     }
 
@@ -1930,6 +1930,30 @@ trait FlowOps[+Out, +Mat] {
     via(new PrefixAndTail[Out](n))
 
   /**
+   * Takes up to `n` elements from the stream (less than `n` only if the upstream completes before emitting `n` elements),
+   * then apply `f` on these elements in order to obtain a flow, this flow is then materialized and the rest of the input is processed by this flow (similar to via).
+   * This method returns a flow consuming the rest of the stream producing the materialized flow's output.
+   *
+   * '''Emits when''' the materialized flow emits.
+   *  Notice the first `n` elements are buffered internally before materializing the flow and connecting it to the rest of the upstream - producing elements at its own discretion (might 'swallow' or multiply elements).
+   *
+   * '''Backpressures when''' the materialized flow backpressures
+   *
+   * '''Completes when''' the materialized flow completes.
+   *  If upstream completes before producing `n` elements, `f` will be applied with the provided elements,
+   *  the resulting flow will be materialized and signalled for upstream completion, it can then complete or continue to emit elements at its own discretion.
+   *
+   * '''Cancels when''' the materialized flow cancels.
+   *  Notice that when downstream cancels prior to prefix completion, the cancellation cause is stashed until prefix completion (or upstream completion) and then handed to the materialized flow.
+   *
+   *  @param n the number of elements to accumulate before materializing the downstream flow.
+   *  @param f a function that produces the downstream flow based on the upstream's prefix.
+   **/
+  def flatMapPrefix[Out2, Mat2](n: Int)(f: immutable.Seq[Out] => Flow[Out, Out2, Mat2]): Repr[Out2] = {
+    via(new FlatMapPrefix(n, f))
+  }
+
+  /**
    * This operation demultiplexes the incoming stream into separate output
    * streams, one for each element key. The key is computed for each element
    * using the given function. When a new key is encountered for the first time
@@ -2503,6 +2527,29 @@ trait FlowOps[+Out, +Mat] {
   def log(name: String, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
       implicit log: LoggingAdapter = null): Repr[Out] =
     via(Log(name, extract.asInstanceOf[Any => Any], Option(log)))
+
+  /**
+   * Logs elements flowing through the stream as well as completion and erroring.
+   *
+   * By default element and completion signals are logged on debug level, and errors are logged on Error level.
+   * This can be adjusted according to your needs by providing a custom [[Attributes.LogLevels]] attribute on the given Flow:
+   *
+   * Uses implicit [[MarkerLoggingAdapter]] if available, otherwise uses an internally created one,
+   * which uses `akka.stream.Log` as it's source (use this class to configure slf4j loggers).
+   *
+   * Adheres to the [[ActorAttributes.SupervisionStrategy]] attribute.
+   *
+   * '''Emits when''' the mapping function returns an element
+   *
+   * '''Backpressures when''' downstream backpressures
+   *
+   * '''Completes when''' upstream completes
+   *
+   * '''Cancels when''' downstream cancels
+   */
+  def logWithMarker(name: String, marker: Out => LogMarker, extract: Out => Any = ConstantFun.scalaIdentityFunction)(
+      implicit log: MarkerLoggingAdapter = null): Repr[Out] =
+    via(LogWithMarker(name, marker, extract.asInstanceOf[Any => Any], Option(log)))
 
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
@@ -3122,6 +3169,15 @@ trait FlowOpsMat[+Out, +Mat] extends FlowOps[Out, Mat] {
    * where appropriate instead of manually writing functions that pass through one of the values.
    */
   def toMat[Mat2, Mat3](sink: Graph[SinkShape[Out], Mat2])(combine: (Mat, Mat2) => Mat3): ClosedMat[Mat3]
+
+  /**
+   * mat version of [[#flatMapPrefix]], this method gives access to a future materialized value of the downstream flow.
+   * see [[#flatMapPrefix]] for details.
+   */
+  def flatMapPrefixMat[Out2, Mat2, Mat3](n: Int)(f: immutable.Seq[Out] => Flow[Out, Out2, Mat2])(
+      matF: (Mat, Future[Mat2]) => Mat3): ReprMat[Out2, Mat3] = {
+    viaMat(new FlatMapPrefix(n, f))(matF)
+  }
 
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.

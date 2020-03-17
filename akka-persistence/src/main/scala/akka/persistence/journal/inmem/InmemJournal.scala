@@ -8,8 +8,9 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NonFatal
-
-import akka.persistence.journal.AsyncWriteJournal
+import akka.annotation.ApiMayChange
+import akka.annotation.InternalApi
+import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
 import akka.persistence.PersistentRepr
 import akka.persistence.AtomicWrite
 import akka.serialization.SerializationExtension
@@ -18,11 +19,27 @@ import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 
 /**
+ * The InmemJournal publishes writes and deletes to the `eventStream`, which tests may use to
+ * verify that expected events have been persisted or deleted.
+ *
+ * InmemJournal is only intended to be used for tests and therefore binary backwards compatibility
+ * of the published messages are not guaranteed.
+ */
+@ApiMayChange
+object InmemJournal {
+  sealed trait Operation
+
+  final case class Write(event: Any, persistenceId: String, sequenceNr: Long) extends Operation
+
+  final case class Delete(persistenceId: String, toSequenceNr: Long) extends Operation
+}
+
+/**
  * INTERNAL API.
  *
  * In-memory journal for testing purposes only.
  */
-private[persistence] class InmemJournal(cfg: Config) extends AsyncWriteJournal with InmemMessages {
+@InternalApi private[persistence] class InmemJournal(cfg: Config) extends AsyncWriteJournal with InmemMessages {
 
   def this() = this(ConfigFactory.empty())
 
@@ -34,11 +51,14 @@ private[persistence] class InmemJournal(cfg: Config) extends AsyncWriteJournal w
 
   private val serialization = SerializationExtension(context.system)
 
+  private val eventStream = context.system.eventStream
+
   override def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
     try {
       for (w <- messages; p <- w.payload) {
         verifySerialization(p.payload)
         add(p)
+        eventStream.publish(InmemJournal.Write(p.payload, p.persistenceId, p.sequenceNr))
       }
       Future.successful(Nil) // all good
     } catch {
@@ -67,6 +87,7 @@ private[persistence] class InmemJournal(cfg: Config) extends AsyncWriteJournal w
       delete(persistenceId, snr)
       snr += 1
     }
+    eventStream.publish(InmemJournal.Delete(persistenceId, toSeqNr))
     Future.successful(())
   }
 
@@ -84,19 +105,23 @@ private[persistence] class InmemJournal(cfg: Config) extends AsyncWriteJournal w
 /**
  * INTERNAL API.
  */
-private[persistence] trait InmemMessages {
+@InternalApi private[persistence] trait InmemMessages {
   // persistenceId -> persistent message
   var messages = Map.empty[String, Vector[PersistentRepr]]
   // persistenceId -> highest used sequence number
   private var highestSequenceNumbers = Map.empty[String, Long]
 
   def add(p: PersistentRepr): Unit = {
-    messages = messages + (messages.get(p.persistenceId) match {
-        case Some(ms) => p.persistenceId -> (ms :+ p)
-        case None     => p.persistenceId -> Vector(p)
+    val pr = p.payload match {
+      case Tagged(payload, _) => p.withPayload(payload)
+      case _                  => p
+    }
+    messages = messages + (messages.get(pr.persistenceId) match {
+        case Some(ms) => pr.persistenceId -> (ms :+ pr)
+        case None     => pr.persistenceId -> Vector(pr)
       })
     highestSequenceNumbers =
-      highestSequenceNumbers.updated(p.persistenceId, math.max(highestSequenceNr(p.persistenceId), p.sequenceNr))
+      highestSequenceNumbers.updated(pr.persistenceId, math.max(highestSequenceNr(pr.persistenceId), pr.sequenceNr))
   }
 
   def delete(pid: String, snr: Long): Unit = messages = messages.get(pid) match {

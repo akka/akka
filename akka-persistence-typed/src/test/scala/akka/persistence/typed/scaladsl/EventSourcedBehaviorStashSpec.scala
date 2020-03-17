@@ -28,7 +28,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorStashSpec {
   def conf: Config = ConfigFactory.parseString(s"""
@@ -165,7 +165,7 @@ object EventSourcedBehaviorStashSpec {
 
 class EventSourcedBehaviorStashSpec
     extends ScalaTestWithActorTestKit(EventSourcedBehaviorStashSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import EventSourcedBehaviorStashSpec._

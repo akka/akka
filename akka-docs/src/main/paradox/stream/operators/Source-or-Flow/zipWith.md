@@ -17,6 +17,12 @@ Combines elements from multiple sources through a `combine` function and passes 
 Combines elements from multiple sources through a `combine` function and passes the
 returned value downstream.
 
+See also:
+
+ * @ref:[zip](zip.md)
+ * @ref:[zipAll](zipAll.md)
+ * @ref:[zipWithIndex](zipWithIndex.md)
+
 ## Examples
 
 Scala
@@ -31,7 +37,7 @@ Java
 
 **emits** when all of the inputs have an element available
 
-**backpressures** when downstream backpressures
+**backpressures** both upstreams when downstream backpressures but also on an upstream that has emitted an element until the other upstream has emitted an element
 
 **completes** when any upstream completes
 

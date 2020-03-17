@@ -19,7 +19,7 @@ import com.typesafe.config.ConfigFactory;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.math.BigDecimal;
 import java.time.Duration;
@@ -179,7 +179,7 @@ public class AccountExampleTest extends JUnitSuite {
         .serializationTestKit()
         .verifySerialization(new CurrentBalance(BigDecimal.valueOf(100)), false);
 
-    testKit.serializationTestKit().verifySerialization(new AccountCreated(), false);
+    testKit.serializationTestKit().verifySerialization(AccountCreated.INSTANCE, false);
     testKit
         .serializationTestKit()
         .verifySerialization(new Deposited(BigDecimal.valueOf(100)), false);

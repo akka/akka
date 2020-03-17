@@ -21,7 +21,7 @@ public class SinkDocExamples {
 
   private static final ActorSystem system = ActorSystem.create("SourceFromExample");
 
-  static void reduceExample() throws InterruptedException, ExecutionException, TimeoutException {
+  static void reduceExample() {
 
     // #reduce-operator-example
     Source<Integer, NotUsed> ints = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
@@ -31,7 +31,18 @@ public class SinkDocExamples {
     // #reduce-operator-example
   }
 
-  static void takeLastExample() throws InterruptedException, ExecutionException, TimeoutException {
+  static void seqExample() {
+    // #seq-operator-example
+    Source<Integer, NotUsed> ints = Source.from(Arrays.asList(1, 2, 3));
+    CompletionStage<List<Integer>> result = ints.runWith(Sink.seq(), system);
+    result.thenAccept(list -> list.forEach(System.out::println));
+    // 1
+    // 2
+    // 3
+    // #seq-operator-example
+  }
+
+  static void takeLastExample() {
     // #takeLast-operator-example
     // pair of (Name, GPA)
     List<Pair> sortedStudents =
@@ -64,7 +75,7 @@ public class SinkDocExamples {
     // #takeLast-operator-example
   }
 
-  static void lastExample() throws InterruptedException, ExecutionException, TimeoutException {
+  static void lastExample() {
     // #last-operator-example
     Source<Integer, NotUsed> source = Source.from(Arrays.asList(1, 2, 3, 4, 5, 6, 7, 8, 9, 10));
     CompletionStage<Integer> result = source.runWith(Sink.last(), system);
@@ -73,8 +84,7 @@ public class SinkDocExamples {
     // #last-operator-example
   }
 
-  static void lastOptionExample()
-      throws InterruptedException, ExecutionException, TimeoutException {
+  static void lastOptionExample() {
     // #lastOption-operator-example
     Source<Integer, NotUsed> source = Source.empty();
     CompletionStage<Optional<Integer>> result = source.runWith(Sink.lastOption(), system);

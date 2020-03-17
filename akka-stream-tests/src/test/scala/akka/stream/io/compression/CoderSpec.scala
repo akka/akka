@@ -12,14 +12,15 @@ import akka.NotUsed
 import akka.stream.impl.io.compression.Compressor
 import akka.stream.scaladsl.{ Compression, Flow, Sink, Source }
 import akka.util.ByteString
-import org.scalatest.{ Inspectors, WordSpec }
+import org.scalatest.Inspectors
+import org.scalatest.wordspec.AnyWordSpec
 
 import scala.annotation.tailrec
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
-abstract class CoderSpec(codecName: String) extends WordSpec with CodecSpecSupport with Inspectors {
+abstract class CoderSpec(codecName: String) extends AnyWordSpec with CodecSpecSupport with Inspectors {
   import CompressionTestingTools._
 
   protected def newCompressor(): Compressor

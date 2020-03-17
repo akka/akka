@@ -16,7 +16,7 @@ import akka.actor.testkit.typed.javadsl.ActorTestKit;
 import akka.actor.testkit.typed.javadsl.TestProbe;
 import org.junit.AfterClass;
 import org.junit.Test;
-import org.scalatest.junit.JUnitSuite;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.time.Duration;
 import java.util.concurrent.CompletionStage;

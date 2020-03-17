@@ -8,9 +8,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 
 import scala.concurrent.duration._
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
-class TestProbeSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import TestProbeSpec._
 
@@ -183,7 +183,7 @@ object TestProbeSpec {
 
 class TestProbeTimeoutSpec
     extends ScalaTestWithActorTestKit(TestProbeSpec.timeoutConfig)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   import TestProbeSpec._

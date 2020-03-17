@@ -9,8 +9,8 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Future
 
 import akka.actor.testkit.typed.TestException
-import org.scalatest.WordSpecLike
 import org.slf4j.LoggerFactory
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class TestAppenderSpec
     extends ScalaTestWithActorTestKit(
@@ -18,7 +18,7 @@ class TestAppenderSpec
   # increase to avoid spurious failures in "find unexpected async events withOccurrences(0)"
   akka.actor.testkit.typed.expect-no-message-default = 1000 ms
   """)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   class AnotherLoggerClass

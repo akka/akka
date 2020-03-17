@@ -19,6 +19,11 @@ Invoke a given procedure asynchronously for each element received. Note that if 
 The sink materializes into a  @scala[`Future[Done]`] @java[`CompletionStage<Done>`] which completes when the
 stream completes, or fails if the stream fails.
 
+See also:
+
+* @ref[`foreach`](foreach.md) Invoke a given procedure for each element received.
+* @ref[`actorRef`](actorRef.md) Send the elements from the stream to an `ActorRef`.
+
 ## Example
 
 Scala

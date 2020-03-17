@@ -43,13 +43,12 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
     within: FiniteDuration)
     extends Routee {
 
-  override def send(message: Any, sender: ActorRef): Unit =
+  override def send(message: Any, sender: ActorRef): Unit = {
+    implicit val ec = ExecutionContexts.parasitic
     if (routees.isEmpty) {
-      implicit val ec = ExecutionContexts.sameThreadExecutionContext
       val reply = Future.failed(new TimeoutException("Timeout due to no routees"))
       reply.pipeTo(sender)
     } else {
-      implicit val ec = ExecutionContexts.sameThreadExecutionContext
       implicit val timeout = Timeout(within)
       val promise = Promise[Any]()
       routees.foreach {
@@ -62,6 +61,7 @@ private[akka] final case class ScatterGatherFirstCompletedRoutees(
 
       promise.future.pipeTo(sender)
     }
+  }
 }
 
 /**

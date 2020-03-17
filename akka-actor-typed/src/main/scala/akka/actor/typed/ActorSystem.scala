@@ -6,12 +6,12 @@ package akka.actor.typed
 
 import java.util.concurrent.{ CompletionStage, ThreadFactory }
 
-import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
 import akka.actor.typed.internal.adapter.{ ActorSystemAdapter, GuardianStartupBehavior, PropsAdapter }
+import akka.actor.typed.internal.{ EventStreamExtension, InternalRecipientRef }
 import akka.actor.typed.receptionist.Receptionist
+import akka.actor.{ Address, BootstrapSetup, ClassicActorSystemProvider }
 import akka.annotation.DoNotInherit
 import akka.util.Helpers.Requiring
 import akka.{ Done, actor => classic }
@@ -116,9 +116,12 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
   def terminate(): Unit
 
   /**
-   * Scala API: Returns a Future which will be completed after the ActorSystem has been terminated
-   * and termination hooks have been executed. The `ActorSystem` can be stopped with [[ActorSystem.terminate]]
+   * Scala API: Returns a Future which will be completed after the ActorSystem has been terminated.
+   * The `ActorSystem` can be stopped with [[ActorSystem.terminate]]
    * or by stopping the guardian actor.
+   *
+   * Be careful to not schedule any operations, such as `onComplete`, on the dispatchers (`ExecutionContext`)
+   * of this actor system as they will have been shut down before this future completes.
    */
   def whenTerminated: Future[Done]
 
@@ -126,6 +129,9 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    * Java API: Returns a CompletionStage which will be completed after the ActorSystem has been terminated
    * and termination hooks have been executed. The `ActorSystem` can be stopped with [[ActorSystem.terminate]]
    * or by stopping the guardian actor.
+   *
+   * Be careful to not schedule any operations, such as `thenRunAsync`, on the dispatchers (`Executor`) of this
+   * actor system as they will have been shut down before this CompletionStage completes.
    */
   def getWhenTerminated: CompletionStage[Done]
 
@@ -134,6 +140,11 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
    * every message sent to it.
    */
   def deadLetters[U]: ActorRef[U]
+
+  /**
+   * An ActorRef that ignores any incoming messages.
+   */
+  def ignoreRef[U]: ActorRef[U]
 
   /**
    * Create a string representation of the actor hierarchy within this system

@@ -27,6 +27,11 @@ side of an application, however it can help to migrate data from the write side 
 simple scenarios Persistence Query may be powerful enough to fulfill the query needs of your app, however we highly
 recommend (in the spirit of CQRS) of splitting up the write/read sides into separate datastores as the need arises.
 
+
+The [CQRS with Akka 2.6 video](https://akka.io/blog/news/2020/02/05/akka-cqrs-video) is a good starting point for
+learning how to use `eventsByTag` to implement CQRS with Akka. Also, watch the introduction to 
+[Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video).
+
 ## Design overview
 
 Akka persistence query is purposely designed to be a very loosely specified API.

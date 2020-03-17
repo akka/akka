@@ -18,14 +18,14 @@ import akka.dispatch.BoundedMessageQueueSemantics
 import akka.dispatch.BoundedNodeMessageQueue
 import akka.dispatch.MessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 class MailboxSelectorSpec extends ScalaTestWithActorTestKit("""
     specific-mailbox {
       mailbox-type = "akka.dispatch.NonBlockingBoundedMailbox"
       mailbox-capacity = 4 
     }
-  """) with WordSpecLike with LogCapturing {
+  """) with AnyWordSpecLike with LogCapturing {
 
   case class WhatsYourMailbox(replyTo: ActorRef[MessageQueue])
   private def behavior: Behavior[WhatsYourMailbox] =

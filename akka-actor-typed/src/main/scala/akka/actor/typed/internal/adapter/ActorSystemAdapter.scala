@@ -76,6 +76,10 @@ import org.slf4j.{ Logger, LoggerFactory }
 
   // Members declared in akka.actor.typed.ActorSystem
   override def deadLetters[U]: ActorRef[U] = ActorRefAdapter(system.deadLetters)
+
+  private val cachedIgnoreRef: ActorRef[Nothing] = ActorRefAdapter(provider.ignoreRef)
+  override def ignoreRef[U]: ActorRef[U] = cachedIgnoreRef.unsafeUpcast[U]
+
   override def dispatchers: Dispatchers = new Dispatchers {
     override def lookup(selector: DispatcherSelector): ExecutionContextExecutor =
       selector match {
@@ -97,11 +101,11 @@ import org.slf4j.{ Logger, LoggerFactory }
   override def uptime: Long = classicSystem.uptime
   override def printTree: String = system.printTree
 
-  import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+  import akka.dispatch.ExecutionContexts.parasitic
 
   override def terminate(): Unit = system.terminate()
   override lazy val whenTerminated: scala.concurrent.Future[akka.Done] =
-    system.whenTerminated.map(_ => Done)(sameThreadExecutionContext)
+    system.whenTerminated.map(_ => Done)(parasitic)
   override lazy val getWhenTerminated: CompletionStage[akka.Done] =
     FutureConverters.toJava(whenTerminated)
 
@@ -116,6 +120,7 @@ import org.slf4j.{ Logger, LoggerFactory }
   }
 
   override def address: Address = system.provider.getDefaultAddress
+
 }
 
 private[akka] object ActorSystemAdapter {

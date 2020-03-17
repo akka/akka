@@ -4,12 +4,12 @@
 
 package akka.cluster
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import akka.actor.Address
 import akka.remote.FailureDetector
 import akka.remote.DefaultFailureDetectorRegistry
 import java.util.concurrent.ThreadLocalRandom
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
 object ClusterHeartbeatSenderStateSpec {
   class FailureDetectorStub extends FailureDetector {
@@ -37,7 +37,7 @@ object ClusterHeartbeatSenderStateSpec {
   }
 }
 
-class ClusterHeartbeatSenderStateSpec extends WordSpec with Matchers {
+class ClusterHeartbeatSenderStateSpec extends AnyWordSpec with Matchers {
   import ClusterHeartbeatSenderStateSpec._
 
   val aa = UniqueAddress(Address("akka", "sys", "aa", 2552), 1L)

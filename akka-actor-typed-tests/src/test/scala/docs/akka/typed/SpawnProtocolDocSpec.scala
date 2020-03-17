@@ -7,12 +7,11 @@ package docs.akka.typed
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.duration._
-
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import docs.akka.typed.IntroSpec.HelloWorld
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 import com.github.ghik.silencer.silent
 
 //#imports1
@@ -48,7 +47,7 @@ object SpawnProtocolDocSpec {
   //#main
 }
 
-class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with WordSpecLike with LogCapturing {
+class SpawnProtocolDocSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import SpawnProtocolDocSpec._
 

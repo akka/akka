@@ -4,11 +4,11 @@
 
 package akka.cluster
 
-import org.scalatest.WordSpec
-import org.scalatest.Matchers
 import akka.actor.Address
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class HeartbeatNodeRingSpec extends WordSpec with Matchers {
+class HeartbeatNodeRingSpec extends AnyWordSpec with Matchers {
 
   val aa = UniqueAddress(Address("akka", "sys", "aa", 2552), 1L)
   val bb = UniqueAddress(Address("akka", "sys", "bb", 2552), 2L)

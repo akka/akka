@@ -19,12 +19,12 @@ import akka.actor.typed.scaladsl.adapter._
 import akka.persistence.typed.StashingWhenSnapshottingSpec.ControllableSnapshotStoreExt
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
-import org.scalatest.WordSpecLike
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.Success
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object StashingWhenSnapshottingSpec {
   object ControllableSnapshotStoreExt extends ExtensionId[ControllableSnapshotStoreExt] {
@@ -86,7 +86,7 @@ object StashingWhenSnapshottingSpec {
 
 class StashingWhenSnapshottingSpec
     extends ScalaTestWithActorTestKit(StashingWhenSnapshottingSpec.config)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
   "A persistent actor" should {
     "stash messages and automatically replay when snapshot is in progress" in {

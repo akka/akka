@@ -11,7 +11,7 @@ import akka.actor.typed.Behavior
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import com.typesafe.config.ConfigFactory
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object NullEmptyStateSpec {
 
@@ -23,7 +23,7 @@ object NullEmptyStateSpec {
 
 class NullEmptyStateSpec
     extends ScalaTestWithActorTestKit(NullEmptyStateSpec.conf)
-    with WordSpecLike
+    with AnyWordSpecLike
     with LogCapturing {
 
   implicit val testSettings = TestKitSettings(system)

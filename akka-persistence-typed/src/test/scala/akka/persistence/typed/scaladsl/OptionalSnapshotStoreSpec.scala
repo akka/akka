@@ -13,7 +13,7 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.scaladsl.EventSourcedBehavior.CommandHandler
 import akka.serialization.jackson.CborSerializable
-import org.scalatest.WordSpecLike
+import org.scalatest.wordspec.AnyWordSpecLike
 
 object OptionalSnapshotStoreSpec {
 
@@ -48,7 +48,7 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
 
     # snapshot store plugin is NOT defined, things should still work
     akka.persistence.snapshot-store.local.dir = "target/snapshots-${classOf[OptionalSnapshotStoreSpec].getName}/"
-    """) with WordSpecLike with LogCapturing {
+    """) with AnyWordSpecLike with LogCapturing {
 
   import OptionalSnapshotStoreSpec._
 

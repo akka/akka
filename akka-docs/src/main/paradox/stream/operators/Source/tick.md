@@ -28,6 +28,11 @@ example for achieving a periodical element that changes over time.
 
 @@@
 
+See also:
+
+* @ref:[`repeat`](repeat.md) Stream a single object repeatedly.
+* @ref:[`cycle`](cycle.md) Stream iterator in cycled manner.
+
 ## Examples
 
 This first example prints to standard out periodically:

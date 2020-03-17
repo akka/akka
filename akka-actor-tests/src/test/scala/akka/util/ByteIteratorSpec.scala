@@ -5,9 +5,10 @@
 package akka.util
 
 import akka.util.ByteIterator.ByteArrayIterator
-import org.scalatest._
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
 
-class ByteIteratorSpec extends WordSpec with Matchers {
+class ByteIteratorSpec extends AnyWordSpec with Matchers {
   "A ByteIterator" should {
 
     "correctly implement indexOf" in {

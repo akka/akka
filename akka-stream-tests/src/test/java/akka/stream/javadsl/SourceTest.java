@@ -22,6 +22,7 @@ import akka.stream.stage.*;
 import akka.testkit.AkkaSpec;
 import akka.stream.testkit.TestPublisher;
 import akka.testkit.javadsl.TestKit;
+import com.google.common.collect.Iterables;
 import org.junit.ClassRule;
 import org.junit.Test;
 import scala.concurrent.duration.FiniteDuration;
@@ -626,6 +627,20 @@ public class SourceTest extends StreamTest {
   }
 
   @Test
+  public void mustRepeatForDocs() throws Exception {
+    // #repeat
+    Source<Integer, NotUsed> source = Source.repeat(42);
+    CompletionStage<Done> f = source.take(4).runWith(Sink.foreach(System.out::println), system);
+    // 42
+    // 42
+    // 42
+    // 42
+    // #repeat
+    final Done result = f.toCompletableFuture().get(3, TimeUnit.SECONDS);
+    assertEquals(Done.done(), result);
+  }
+
+  @Test
   public void mustBeAbleToUseQueue() throws Exception {
     final Pair<SourceQueueWithComplete<String>, CompletionStage<List<String>>> x =
         Flow.of(String.class).runWith(Source.queue(2, OverflowStrategy.fail()), Sink.seq(), system);
@@ -1156,5 +1171,17 @@ public class SourceTest extends StreamTest {
     final akka.stream.scaladsl.Source<Integer, NotUsed> scalaSource =
         akka.stream.scaladsl.Source.empty();
     Source<Integer, NotUsed> javaSource = scalaSource.asJava();
+  }
+
+  @Test
+  public void mustProperlyIterate() throws Exception {
+    final Creator<Iterator<Boolean>> input = () -> Iterables.cycle(false, true).iterator();
+
+    final CompletableFuture<List<Boolean>> future =
+        Source.fromIterator(input).grouped(10).runWith(Sink.head(), system).toCompletableFuture();
+
+    assertArrayEquals(
+        new Boolean[] {false, true, false, true, false, true, false, true, false, true},
+        future.get(1, TimeUnit.SECONDS).toArray());
   }
 }

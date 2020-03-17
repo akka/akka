@@ -290,7 +290,8 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     exportJars := true, // in dependent projects, use assembled and shaded jar
     makePomConfiguration := makePomConfiguration.value
         .withConfigurations(Vector(Compile)), // prevent original dependency to be added to pom as runtime dep
-    packageBin in Compile := ReproducibleBuildsPlugin.postProcessJar((assembly in Compile).value), // package by running assembly
+    packageBin in Compile := ReproducibleBuildsPlugin
+        .postProcessJar((assembly in Compile).value), // package by running assembly
     // Prevent cyclic task dependencies, see https://github.com/sbt/sbt-assembly/issues/365
     fullClasspath in assembly := (managedClasspath in Runtime).value, // otherwise, there's a cyclic dependency between packageBin and assembly
     test in assembly := {}, // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
@@ -350,11 +351,7 @@ lazy val streamTestkit = akkaModule("akka-stream-testkit")
 
 lazy val streamTests = akkaModule("akka-stream-tests")
   .configs(akka.Jdk9.TestJdk9)
-  .dependsOn(
-    streamTestkit % "test->test",
-    remote % "test->test",
-    stream % "TestJdk9->CompileJdk9"
-  )
+  .dependsOn(streamTestkit % "test->test", remote % "test->test", stream % "TestJdk9->CompileJdk9")
   .settings(Dependencies.streamTests)
   .enablePlugins(NoPublish, Jdk9)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
@@ -398,7 +395,8 @@ lazy val persistenceTyped = akkaModule("akka-persistence-typed")
     actorTyped,
     persistence % "compile->compile;test->test",
     persistenceQuery % "test",
-    actorTypedTests % "test->test",
+    actorTestkitTyped % "test->test",
+    clusterTyped % "test->test",
     actorTestkitTyped % "test->test",
     jackson % "test->test")
   .settings(javacOptions += "-parameters") // for Jackson
@@ -412,13 +410,17 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
     cluster % "compile->compile;test->test;multi-jvm->multi-jvm",
     clusterTools,
     distributedData,
-    persistence % "test->test",
-    persistenceTyped % "test->test",
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     remoteTests % "test->test",
     jackson % "test->test")
+  .settings(Protobuf.settings)
+  // To be able to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .settings(AutomaticModuleName.settings("akka.cluster.typed"))
+  .settings(Protobuf.settings)
+  // To be able to import ContainerFormats.proto
+  .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
 
@@ -434,6 +436,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .settings(javacOptions += "-parameters") // for Jackson
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))
   // To be able to import ContainerFormats.proto
+  .settings(Protobuf.settings)
   .settings(Protobuf.importPath := Some(baseDirectory.value / ".." / "akka-remote" / "src" / "main" / "protobuf"))
   .configs(MultiJvm)
   .enablePlugins(MultiNodeScalaTest)
@@ -454,7 +457,10 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .settings(Dependencies.actorTestkitTyped)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
-  .dependsOn(actorTyped, actorTestkitTyped % "compile->compile;test->test")
+  .dependsOn(
+    actorTyped,
+    actorTestkitTyped % "compile->compile;test->test"
+  )
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)

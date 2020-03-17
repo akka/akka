@@ -5,7 +5,6 @@
 package jdocs.akka.coordination.lease;
 
 import akka.actor.ActorSystem;
-import akka.cluster.Cluster;
 import akka.coordination.lease.LeaseSettings;
 import akka.coordination.lease.javadsl.Lease;
 import akka.coordination.lease.javadsl.LeaseProvider;
@@ -14,13 +13,15 @@ import docs.akka.coordination.LeaseDocSpec;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.scalatestplus.junit.JUnitSuite;
 
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Consumer;
 
 @SuppressWarnings("unused")
-public class LeaseDocTest {
+public class LeaseDocTest extends JUnitSuite {
   // #lease-example
   static class SampleLease extends Lease {
 
@@ -37,22 +38,22 @@ public class LeaseDocTest {
 
     @Override
     public CompletionStage<Boolean> acquire() {
-      return null;
+      return CompletableFuture.completedFuture(true);
     }
 
     @Override
     public CompletionStage<Boolean> acquire(Consumer<Optional<Throwable>> leaseLostCallback) {
-      return null;
+      return CompletableFuture.completedFuture(true);
     }
 
     @Override
     public CompletionStage<Boolean> release() {
-      return null;
+      return CompletableFuture.completedFuture(true);
     }
 
     @Override
     public boolean checkLease() {
-      return false;
+      return true;
     }
   }
   // #lease-example
@@ -73,10 +74,10 @@ public class LeaseDocTest {
   private void doSomethingImportant(Optional<Throwable> leaseLostReason) {}
 
   @Test
-  public void beLoadable() {
+  public void javaLeaseBeLoadableFromJava() {
     // #lease-usage
     Lease lease =
-        LeaseProvider.get(system).getLease("<name of the lease>", "docs-lease", "<owner name>");
+        LeaseProvider.get(system).getLease("<name of the lease>", "jdocs-lease", "<owner name>");
     CompletionStage<Boolean> acquired = lease.acquire();
     boolean stillAcquired = lease.checkLease();
     CompletionStage<Boolean> released = lease.release();
@@ -87,8 +88,18 @@ public class LeaseDocTest {
     // #lost-callback
 
     // #cluster-owner
-    String owner = Cluster.get(system).selfAddress().hostPort();
+    // String owner = Cluster.get(system).selfAddress().hostPort();
     // #cluster-owner
 
+  }
+
+  @Test
+  public void scalaLeaseBeLoadableFromJava() {
+    Lease lease =
+        LeaseProvider.get(system).getLease("<name of the lease>", "docs-lease", "<owner name>");
+    CompletionStage<Boolean> acquired = lease.acquire();
+    boolean stillAcquired = lease.checkLease();
+    CompletionStage<Boolean> released = lease.release();
+    lease.acquire(this::doSomethingImportant);
   }
 }

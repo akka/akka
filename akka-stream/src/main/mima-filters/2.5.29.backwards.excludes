@@ -1,0 +1,5 @@
+# SystemMaterializer was backported from 2.6 to 2.5.29, but unfortunately a
+# binary incompatibility slipped in: it should return Materializer, not
+# ActorMaterializer for 2.5.x to be binary compatible with the feature in
+# 2.6.x.
+ProblemFilters.exclude[IncompatibleResultTypeProblem]("akka.stream.SystemMaterializer.materializer")

@@ -12,13 +12,14 @@ import com.typesafe.tools.mima.plugin.MimaPlugin.autoImport._
 
 object MiMa extends AutoPlugin {
 
-  private val latestPatchOf25 = 26
-  private val latestPatchOf26 = 1
+  private val latestPatchOf25 = 29
+  private val latestPatchOf26 = 3
 
   override def requires = MimaPlugin
   override def trigger = allRequirements
 
   override val projectSettings = Seq(
+    mimaReportSignatureProblems := true,
     mimaPreviousArtifacts := akkaPreviousArtifacts(name.value, organization.value, scalaBinaryVersion.value))
 
   def akkaPreviousArtifacts(
