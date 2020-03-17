@@ -97,14 +97,19 @@ object ScalaTestMessages {
 
   final case class OldCommandNotInBindings(name: String)
 
+  // #jackson-scala-enumeration
   object Planet extends Enumeration {
     type Planet = Value
     val Mercury, Venus, Earth, Mars, Krypton = Value
   }
+
+  // Uses default Jackson serialization format for Scala Enumerations
   final case class Alien(name:String, planet:Planet.Planet) extends TestMessage
 
+  // Serializes planet values as a JsonString
   class PlanetType extends TypeReference[Planet.type] {}
   final case class Superhero(name:String, @JsonScalaEnumeration(classOf[PlanetType]) planet:Planet.Planet) extends TestMessage
+  // #jackson-scala-enumeration
 
 }
 
