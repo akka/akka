@@ -104,11 +104,12 @@ object ScalaTestMessages {
   }
 
   // Uses default Jackson serialization format for Scala Enumerations
-  final case class Alien(name:String, planet:Planet.Planet) extends TestMessage
+  final case class Alien(name: String, planet: Planet.Planet) extends TestMessage
 
   // Serializes planet values as a JsonString
   class PlanetType extends TypeReference[Planet.type] {}
-  final case class Superhero(name:String, @JsonScalaEnumeration(classOf[PlanetType]) planet:Planet.Planet) extends TestMessage
+  final case class Superhero(name: String, @JsonScalaEnumeration(classOf[PlanetType]) planet: Planet.Planet)
+      extends TestMessage
   // #jackson-scala-enumeration
 
 }
