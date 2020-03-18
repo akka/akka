@@ -2,26 +2,30 @@
  * Copyright (C) 2018-2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
-package akka.stream.typed.scaladsl
+package docs.scaladsl
 
+import akka.NotUsed
 //#imports
-import akka.stream.scaladsl._
+import akka.stream.scaladsl.{ Flow, Sink, Source }
+import akka.stream.typed.scaladsl.ActorFlow
 import akka.actor.typed.ActorRef
 import akka.actor.typed.scaladsl.Behaviors
 
-import scala.concurrent.duration._
+//#imports
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.stream.testkit.TestSubscriber
 import org.scalatest.wordspec.AnyWordSpecLike
 
-//#imports
-import akka.stream.testkit.TestSubscriber
-
 import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 
 object ActorFlowSpec {
+  //#ask-actor
   final case class Asking(s: String, replyTo: ActorRef[Reply])
-  final case class Reply(s: String)
+  final case class Reply(msg: String)
+
+  //#ask-actor
 }
 
 class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
@@ -59,11 +63,17 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       //#ask-actor
 
       //#ask
-      val in: Future[immutable.Seq[Reply]] =
-        Source(1 to 50)
-          .map(_.toString)
-          .via(ActorFlow.ask(ref)((el, replyTo: ActorRef[Reply]) => Asking(el, replyTo)))
-          .runWith(Sink.seq)
+      implicit val timeout: akka.util.Timeout = 1.second
+
+      val askFlow: Flow[String, Reply, NotUsed] =
+        ActorFlow.ask(ref)(Asking.apply)
+
+      // explicit creation of the sent message
+      val askFlowExplicit: Flow[String, Reply, NotUsed] =
+        ActorFlow.ask(ref)(makeMessage = (el, replyTo: ActorRef[Reply]) => Asking(el, replyTo))
+
+      val in: Future[immutable.Seq[String]] =
+        Source(1 to 50).map(_.toString).via(askFlow).map(_.msg).runWith(Sink.seq)
       //#ask
 
       in.futureValue shouldEqual List.tabulate(51)(i => Reply(s"$i!!!")).drop(1)
