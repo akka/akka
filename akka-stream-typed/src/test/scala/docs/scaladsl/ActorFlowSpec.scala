@@ -75,6 +75,7 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       val in: Future[immutable.Seq[String]] =
         Source(1 to 50).map(_.toString).via(askFlow).map(_.msg).runWith(Sink.seq)
       //#ask
+      askFlowExplicit.map(identity)
 
       in.futureValue shouldEqual List.tabulate(51)(i => Reply(s"$i!!!")).drop(1)
     }
