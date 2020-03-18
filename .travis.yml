@@ -30,6 +30,10 @@ script: sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VE
 
 jobs:
   include:
+    - stage: test
+      name: compile with java 14
+      script: jabba install "openjdk@~1.14.0" && jabba use openjdk@~1.14.0 && sbt -jvm-opts .jvmopts-travis -Dakka.build.scalaVersion=$TRAVIS_SCALA_VERSION "test:compile"
+
     - stage: whitesource
       name: whitesource
       script: git branch -f "$TRAVIS_BRANCH" && git checkout "$TRAVIS_BRANCH" && sbt whitesourceCheckPolicies whitesourceUpdate
