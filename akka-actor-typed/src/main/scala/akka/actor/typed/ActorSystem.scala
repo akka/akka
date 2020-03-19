@@ -36,7 +36,8 @@ import com.typesafe.config.ConfigFactory
  */
 @DoNotInherit
 @ApiMayChange
-abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicActorSystemProvider { this: InternalRecipientRef[T] =>
+abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicActorSystemProvider {
+  this: InternalRecipientRef[T] =>
 
   /**
    * The name of this actor system, used to distinguish multiple ones within
