@@ -79,6 +79,7 @@ class ShardedDaemonProcessSpec
 
       val started = probe.receiveMessages(5)
       started.toSet.size should ===(5)
+      probe.expectNoMessage()
     }
 
     "restart actors if they stop" in {
