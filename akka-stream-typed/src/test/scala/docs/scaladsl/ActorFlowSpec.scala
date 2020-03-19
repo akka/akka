@@ -77,7 +77,7 @@ class ActorFlowSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike {
       //#ask
       askFlowExplicit.map(identity)
 
-      in.futureValue shouldEqual List.tabulate(51)(i => Reply(s"$i!!!")).drop(1)
+      in.futureValue shouldEqual List.tabulate(51)(i => s"$i!!!").drop(1)
     }
 
     "signal ask timeout failure" in {
