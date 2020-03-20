@@ -64,7 +64,7 @@ final class ManualTime(delegate: akka.testkit.ExplicitlyTriggeredScheduler) {
   @varargs
   def expectNoMessageFor(duration: Duration, on: TestProbe[_]*): Unit = {
     delegate.timePasses(duration.asScala)
-    on.foreach(_.expectNoMessage(Duration.ZERO))
+    on.foreach(_.expectNoMessage())
   }
 
 }

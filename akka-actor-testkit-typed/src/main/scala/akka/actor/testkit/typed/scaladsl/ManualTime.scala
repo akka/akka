@@ -9,7 +9,7 @@ import akka.actor.typed.internal.adapter.SchedulerAdapter
 import com.typesafe.config.{ Config, ConfigFactory }
 
 import scala.annotation.varargs
-import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Manual time allows you to do async tests while controlling the scheduler of the system.
@@ -63,7 +63,7 @@ final class ManualTime(delegate: akka.testkit.ExplicitlyTriggeredScheduler) {
   @varargs
   def expectNoMessageFor(duration: FiniteDuration, on: TestProbe[_]*): Unit = {
     delegate.timePasses(duration)
-    on.foreach(_.expectNoMessage(Duration.Zero))
+    on.foreach(_.expectNoMessage())
   }
 
 }
