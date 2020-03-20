@@ -4,6 +4,7 @@
 
 package akka.stream.scaladsl
 
+import akka.Done
 import akka.stream.testkit.Utils.TE
 import akka.testkit.DefaultTimeout
 import com.github.ghik.silencer.silent
@@ -352,6 +353,16 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
     "suitably override attribute handling methods" in {
       import Attributes._
       val s: Source[Int, NotUsed] = Source.single(42).async.addAttributes(none).named("")
+    }
+  }
+
+  "A Source.run" must {
+    "ignore elements it outputs and only signal the completion of the processing" in {
+      Source
+        .fromIterator(() => (1 to 5).toIterator)
+        .map(_ * 10)
+        .run()
+        .futureValue shouldBe Done
     }
   }
 
