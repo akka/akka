@@ -932,11 +932,11 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   /**
    * Connect this `Source` to the `Sink.ignore` and run it. Elements from the stream will be consumed and discarded.
    *
-   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * Note that the `ActorSystem` can be used as the `materializer` parameter to use the
    * [[akka.stream.SystemMaterializer]] for running the stream.
    */
-  def run()(implicit materializer: Materializer): Future[Done] =
-    delegate.run()
+  def run(materializer: Materializer): CompletionStage[Done] =
+    delegate.run()(materializer).toJava
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
