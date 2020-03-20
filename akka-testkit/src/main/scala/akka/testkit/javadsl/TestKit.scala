@@ -8,6 +8,7 @@ import java.util.function.{ Supplier, Function => JFunction }
 import java.util.{ List => JList }
 
 import akka.actor._
+import akka.annotation.InternalApi
 import akka.testkit.{ TestActor, TestDuration, TestProbe }
 import akka.util.JavaDurationConverters._
 
@@ -931,7 +932,8 @@ object TestKit {
  * This class is used internal to [[akka.testkit.javadsl.TestKit]] and
  * should not be extended by client code directly.
  */
-private abstract class CachingPartialFunction[A, B] extends scala.runtime.AbstractPartialFunction[A, B] {
+@InternalApi
+private[akka] abstract class CachingPartialFunction[A, B] extends scala.runtime.AbstractPartialFunction[A, B] {
   import akka.japi.JavaPartialFunction._
 
   @throws(classOf[Exception])

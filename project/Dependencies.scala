@@ -242,6 +242,8 @@ object Dependencies {
         Provided.levelDB,
         Provided.levelDBNative)
 
+  val persistenceTestKit = l ++= Seq(Test.scalatest.value)
+
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
   val jackson = l ++= Seq(

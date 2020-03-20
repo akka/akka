@@ -65,6 +65,120 @@ Scala
 Java
 :  @@snip [AccountExampleDocTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleDocTest.java) { #test-events }
 
+## Persistence TestKit
+
+**Note!** The testkit is a new feature, api may have changes breaking source compatibility in future versions.
+
+Persistence testkit allows to check events saved in a storage, emulate storage operations and exceptions.
+To use the testkit you need to add the following dependency in your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence-testkit_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+There are two testkit classes which have similar api:
+
+ * @apidoc[PersistenceTestKit] class is for events
+ * @apidoc[SnapshotTestKit] class is for snapshots
+ 
+The testkit classes have two corresponding plugins which emulate the behavior of the storages: 
+
+ * @apidoc[PersistenceTestKitPlugin] class emulates a events storage 
+ * @apidoc[PersistenceTestKitSnapshotPlugin] class emulates a snapshots storage
+
+**Note!** The corresponding plugins **must** be configured in the actor system which is used to initialize the particular testkit class:
+
+Scala
+:  @@snip [Configuration.scala](/akka-docs/src/test/scala/docs/persistence/testkit/Configuration.scala) { #testkit-typed-conf }
+
+Java
+:  @@snip [Configuration.java](/akka-docs/src/test/java/jdocs/persistence/testkit/Configuration.java) { #testkit-typed-conf }
+
+and
+
+Scala
+:  @@snip [Configuration.scala](/akka-docs/src/test/scala/docs/persistence/testkit/Configuration.scala) { #snapshot-typed-conf }
+
+Java
+:  @@snip [Configuration.java](/akka-docs/src/test/java/jdocs/persistence/testkit/Configuration.java) { #snapshot-typed-conf }
+
+A typical scenario is to create a persistent actor, send commands to it and check that it persists events as it is expected:
+
+Scala
+:  @@snip [TestKitExamples.scala](/akka-docs/src/test/scala/docs/persistence/testkit/TestKitExamples.scala) { #testkit-typed-usecase }
+
+Java
+:  @@snip [TestKitExamples.java](/akka-docs/src/test/java/jdocs/persistence/testkit/TestKitExamples.java) { #testkit-typed-usecase }
+
+You can safely use persistence testkit in combination with main akka testkit.
+
+The main methods of the api allow to (see @apidoc[PersistenceTestKit] and @apidoc[SnapshotTestKit] for more details):
+
+ * check if the given event/snapshot object is the next persisted in the storage.
+ * read a sequence of persisted events/snapshots.
+ * check that no events/snapshots have been persisted in the storage.
+ * throw the default exception from the storage on attempt to persist, read or delete the following event/snapshot.
+ * clear the events/snapshots persisted in the storage.
+ * reject the events, but not snapshots (rejections are not supported for snapshots in the original api).
+ * set your own [policy](#setting-your-own-policy-for-the-storage) which emulates the work of the storage. 
+Policy determines what to do when persistence needs to execute some operation on the storage (i.e. read, delete, etc.).
+ * get all the events/snapshots persisted in the storage
+ * put the events/snapshots in the storage to test recovery
+ 
+#### Setting your own policy for the storage
+
+You can implement and set your own policy for the storage to control its actions on particular operations, for example you can fail or reject events on your own conditions.
+Implement the @apidoc[ProcessingPolicy[EventStorage.JournalOperation]] @scala[trait]@java[interface] for event storage
+or @apidoc[ProcessingPolicy[SnapshotStorage.SnapshotOperation]] @scala[trait]@java[interface] for snapshot storage,
+and set it with `withPolicy()` method.
+
+`tryProcess()` method of the @apidoc[ProcessingPolicy] has two arguments: persistence id and the storage operation. 
+
+Event storage has the following operations:
+
+ * @apidoc[ReadEvents] Read the events from the storage.
+ * @apidoc[WriteEvents] Write the events to the storage.
+ * @apidoc[DeleteEvents] Delete the events from the storage.
+ * @apidoc[ReadSeqNum] Read the highest sequence number for particular persistence id.
+
+Snapshot storage has the following operations:
+
+ * @apidoc[ReadSnapshot] Read the snapshot from the storage.
+ * @apidoc[WriteSnapshot] Writhe the snapshot to the storage.
+ * @apidoc[DeleteSnapshotsByCriteria] Delete snapshots in the storage by criteria.
+ * @apidoc[DeleteSnapshotByMeta] Delete particular snapshot from the storage by its metadata.
+
+The `tryProcess()` method must return one of the processing results:
+ 
+ * @apidoc[ProcessingSuccess] Successful completion of the operation. All the events will be saved/read/deleted.
+ * @apidoc[StorageFailure] Emulates exception from the storage.
+ * @apidoc[Reject] Emulates rejection from the storage.
+
+**Note** that snapshot storage does not have rejections. If you return `Reject` in the `tryProcess()` of the snapshot storage policy, it will have the same effect as the `StorageFailure`.
+
+Here is an example of the policy for an event storage:
+
+Scala
+:  @@snip [TestKitExamples.scala](/akka-docs/src/test/scala/docs/persistence/testkit/TestKitExamples.scala) { #set-event-storage-policy }
+
+Java
+:  @@snip [TestKitExamples.java](/akka-docs/src/test/java/jdocs/persistence/testkit/TestKitExamples.java) { #set-event-storage-policy }
+
+Here is an example of the policy for a snapshot storage:
+
+Scala
+:  @@snip [TestKitExamples.scala](/akka-docs/src/test/scala/docs/persistence/testkit/TestKitExamples.scala) { #set-snapshot-storage-policy }
+
+Java
+:  @@snip [TestKitExamples.java](/akka-docs/src/test/java/jdocs/persistence/testkit/TestKitExamples.java) { #set-snapshot-storage-policy } 
+
+### Configuration of Persistence TestKit
+
+There are several configuration properties for persistence testkit, please refer
+to the @ref:[reference configuration](../general/configuration-reference.md#config-akka-persistence-testkit)
+
 ## Integration testing
 
 The in-memory journal and file based snapshot store can be used also for integration style testing of a single

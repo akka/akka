@@ -60,6 +60,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   persistenceShared,
   persistenceTck,
   persistenceTyped,
+  persistenceTestkit,
   protobuf,
   protobufV3,
   remote,
@@ -194,7 +195,8 @@ lazy val docs = akkaModule("akka-docs")
     clusterTyped % "compile->compile;test->test",
     clusterShardingTyped % "compile->compile;test->test",
     actorTypedTests % "compile->compile;test->test",
-    streamTestkit % "compile->compile;test->test")
+    streamTestkit % "compile->compile;test->test",
+    persistenceTestkit % "compile->compile;test->test")
   .settings(Dependencies.docs)
   .settings(Paradox.settings)
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
@@ -266,6 +268,12 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .settings(AutomaticModuleName.settings("akka.persistence.tck"))
   //.settings(OSGi.persistenceTck) TODO: we do need to export this as OSGi bundle too?
   .settings(fork in Test := true)
+  .disablePlugins(MimaPlugin)
+
+lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
+  .dependsOn(persistenceTyped % "compile->compile;provided->provided;test->test", testkit % "compile->compile;test->test", persistenceTck % "test")
+  .settings(Dependencies.persistenceTestKit)
+  .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
   .disablePlugins(MimaPlugin)
 
 lazy val protobuf = akkaModule("akka-protobuf")
