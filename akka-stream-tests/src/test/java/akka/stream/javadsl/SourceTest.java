@@ -35,6 +35,7 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static akka.NotUsed.notUsed;
@@ -1156,5 +1157,14 @@ public class SourceTest extends StreamTest {
     final akka.stream.scaladsl.Source<Integer, NotUsed> scalaSource =
         akka.stream.scaladsl.Source.empty();
     Source<Integer, NotUsed> javaSource = scalaSource.asJava();
+  }
+
+  @Test
+  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletion() {
+    final Iterator<Integer> iterator = IntStream.range(1, 10).iterator();
+    final Creator<Iterator<Integer>> input = () -> iterator;
+    final Done completion =
+            Source.fromIterator(input).map(it -> it * 10).run(system).toCompletableFuture().join();
+    assertEquals(completion, Done.getInstance());
   }
 }
