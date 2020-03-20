@@ -85,6 +85,13 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       scalaTestWithActorTestKit2.testKit.system.settings.config.hasPath("test.from-application") should ===(false)
     }
 
+    "have unique names for probes across untyped testkit" in {
+      import akka.actor.typed.scaladsl.adapter._
+      createTestProbe()
+      akka.testkit.TestProbe()(system.toClassic)
+      // not throw
+    }
+
   }
 
 }

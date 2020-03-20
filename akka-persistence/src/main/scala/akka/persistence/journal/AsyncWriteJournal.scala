@@ -69,6 +69,11 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
         val atomicWriteCount = messages.count(_.isInstanceOf[AtomicWrite])
         val prepared = Try(preparePersistentBatch(messages))
         val writeResult = (prepared match {
+          case Success(prep) if prep.isEmpty =>
+            // prep is empty when all messages are instances of NonPersistentRepr (used for defer) in that case,
+            // we continue right away without calling the journal plugin (most plugins fail calling head on empty Seq).
+            // Ordering of the replies is handled by Resequencer
+            Future.successful(Nil)
           case Success(prep) =>
             // try in case the asyncWriteMessages throws
             try breaker.withCircuitBreaker(asyncWriteMessages(prep))
@@ -117,7 +122,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
             }
 
           case Failure(e) =>
-            resequencer ! Desequenced(WriteMessagesFailed(e), cctr, persistentActor, self)
+            resequencer ! Desequenced(WriteMessagesFailed(e, atomicWriteCount), cctr, persistentActor, self)
             var n = cctr + 1
             messages.foreach {
               case a: AtomicWrite =>

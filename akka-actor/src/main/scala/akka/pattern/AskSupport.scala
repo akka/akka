@@ -8,12 +8,13 @@ import java.util.concurrent.TimeoutException
 
 import akka.actor._
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg._
 import akka.util.{ Timeout, Unsafe }
 import com.github.ghik.silencer.silent
 
 import scala.annotation.tailrec
-import scala.concurrent.{ ExecutionContext, Future, Promise }
+import scala.concurrent.{ Future, Promise }
 import scala.language.implicitConversions
 import scala.util.{ Failure, Success }
 
@@ -543,9 +544,6 @@ private[akka] final class PromiseActorRef private (
 
   override def getParent: InternalActorRef = provider.tempContainer
 
-  def internalCallingThreadExecutionContext: ExecutionContext =
-    provider.guardian.underlying.systemImpl.internalCallingThreadExecutionContext
-
   /**
    * Contract of this method:
    * Must always return the same ActorPath, which must have
@@ -657,7 +655,7 @@ private[akka] object PromiseActorRef {
     val result = Promise[Any]()
     val scheduler = provider.guardian.underlying.system.scheduler
     val a = new PromiseActorRef(provider, result, messageClassName)
-    implicit val ec = a.internalCallingThreadExecutionContext
+    implicit val ec = ExecutionContexts.parasitic
     val f = scheduler.scheduleOnce(timeout.duration) {
       result.tryComplete {
         val wasSentBy = if (sender == ActorRef.noSender) "" else s" was sent by [$sender]"

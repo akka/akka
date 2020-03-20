@@ -216,6 +216,18 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
       f.futureValue.size should ===(1000)
       f.futureValue.toSet should ===(Set(42))
     }
+
+    "repeat example" in {
+      // #repeat
+      val source: Source[Int, NotUsed] = Source.repeat(42)
+      val f = source.take(4).runWith(Sink.foreach(println))
+      // 42
+      // 42
+      // 42
+      // 42
+      // #repeat
+      f.futureValue shouldBe Done
+    }
   }
 
   "Unfold Source" must {

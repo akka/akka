@@ -7,7 +7,7 @@ An overview of the changes in Akka 2.6 is presented in the [What's new in Akka 2
 and the [release announcement](https://akka.io/blog/news/2019/11/06/akka-2.6.0-released).
 
 Akka 2.6.x is binary backwards compatible with 2.5.x with the ordinary exceptions listed in the
-@ref:[Binary Compatibility Rules](../common/circuitbreaker.md).
+@ref:[Binary Compatibility Rules](../common/binary-compatibility-rules.md).
 
 This means that updating an application from Akka 2.5.x to 2.6.x should be a smooth process, and
 that libraries built for Akka 2.5.x can also be used with Akka 2.6.x. For example Akka HTTP 10.1.10
@@ -279,6 +279,8 @@ down of the Cluster you have to enable Classic remoting. Later, you can plan for
 Explicitly disable Artery by setting property `akka.remote.artery.enabled` to `false`. Further, any configuration under `akka.remote` that is
 specific to classic remoting needs to be moved to `akka.remote.classic`. To see which configuration options
 are specific to classic search for them in: @ref:[`akka-remote/reference.conf`](../general/configuration-reference.md#config-akka-remote).
+
+If you have a [Lightbend Platform Subscription](https://www.lightbend.com/lightbend-platform-subscription) you can use our [Config Checker](https://doc.akka.io/docs/akka-enhancements/current/config-checker.html) enhancement to flag any settings that have not been properly migrated.
 
 ### Persistent mode for Cluster Sharding
 

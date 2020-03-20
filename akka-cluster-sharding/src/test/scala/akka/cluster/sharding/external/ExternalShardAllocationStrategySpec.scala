@@ -20,6 +20,16 @@ class ExternalShardAllocationStrategySpec extends AkkaSpec("""
 
   val requester = TestProbe()
 
+  "ExternalShardAllocationClient" must {
+    "default to no locations if sharding never started" in {
+      ExternalShardAllocation(system)
+        .clientFor("not found")
+        .shardLocations()
+        .futureValue
+        .locations shouldEqual Map.empty
+    }
+  }
+
   "ExternalShardAllocation allocate" must {
     "default to requester if query times out" in {
       val (strat, _) = createStrategy()

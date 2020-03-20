@@ -61,7 +61,7 @@ object KillSwitches {
         case _            =>
           // callback.invoke is a simple actor send, so it is fine to run on the invoking thread
           terminationSignal.onComplete(getAsyncCallback[Try[Done]](onSwitch).invoke)(
-            akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+            akka.dispatch.ExecutionContexts.parasitic)
       }
     }
 

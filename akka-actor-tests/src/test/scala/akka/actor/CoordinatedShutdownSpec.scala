@@ -308,10 +308,10 @@ class CoordinatedShutdownSpec
             Future {
               testProbe.ref ! BMessage("concurrentB")
               Done
-            }(ExecutionContexts.sameThreadExecutionContext)
+            }(ExecutionContexts.parasitic)
           }
           Done
-        }(ExecutionContexts.sameThreadExecutionContext)
+        }(ExecutionContexts.parasitic)
 
       val cancellationFut: Future[Done] = {
         val cancellables = (0 until 20).map { _ =>

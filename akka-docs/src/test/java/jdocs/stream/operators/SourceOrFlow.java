@@ -35,12 +35,14 @@ import java.util.Arrays;
 // #zip
 
 // #log
+import akka.event.LogMarker;
 import akka.stream.Attributes;
 
 // #log
 
 import java.time.Duration;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -58,6 +60,20 @@ class SourceOrFlow {
                 Attributes.logLevelInfo(), // onFinish
                 Attributes.logLevelError())) // onFailure
     // #log
+    ;
+  }
+
+  void logWithMarkerExample() {
+    Flow.of(String.class)
+        // #logWithMarker
+        .logWithMarker(
+            "myStream", (e) -> LogMarker.create("myMarker", Collections.singletonMap("element", e)))
+        .addAttributes(
+            Attributes.createLogLevels(
+                Attributes.logLevelOff(), // onElement
+                Attributes.logLevelInfo(), // onFinish
+                Attributes.logLevelError())) // onFailure
+    // #logWithMarker
     ;
   }
 
@@ -355,7 +371,7 @@ class SourceOrFlow {
         Source.from(
             Arrays.asList(
                 ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
-                        + "ut labore et dolore magna aliqua.")
+                        + "ut labore et dolore magna aliqua")
                     .split(" ")));
 
     Source<String, NotUsed> longWords = words.filter(w -> w.length() > 6);
@@ -364,7 +380,6 @@ class SourceOrFlow {
     // consectetur
     // adipiscing
     // eiusmod
-    // tempor
     // incididunt
     // #filter
   }
@@ -375,17 +390,40 @@ class SourceOrFlow {
         Source.from(
             Arrays.asList(
                 ("Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt "
-                        + "ut labore et dolore magna aliqua.")
+                        + "ut labore et dolore magna aliqua")
                     .split(" ")));
 
-    Source<String, NotUsed> longWords = words.filterNot(w -> w.length() <= 5);
+    Source<String, NotUsed> longWords = words.filterNot(w -> w.length() <= 6);
 
     longWords.runWith(Sink.foreach(System.out::print), system);
     // consectetur
     // adipiscing
     // eiusmod
-    // tempor
     // incididunt
     // #filterNot
+  }
+
+  void dropExample() {
+    // #drop
+    Source<Integer, NotUsed> fiveIntegers = Source.from(Arrays.asList(1, 2, 3, 4, 5));
+    Source<Integer, NotUsed> droppedThreeInts = fiveIntegers.drop(3);
+
+    droppedThreeInts.runWith(Sink.foreach(System.out::print), system);
+    // 4
+    // 5
+    // #drop
+  }
+
+  void dropWhileExample() {
+    // #dropWhile
+    Source<Integer, NotUsed> droppedWhileNegative =
+        Source.from(Arrays.asList(-3, -2, -1, 0, 1, 2, 3, -1)).dropWhile(integer -> integer < 0);
+
+    droppedWhileNegative.runWith(Sink.foreach(System.out::print), system);
+    // 1
+    // 2
+    // 3
+    // -1
+    // #dropWhile
   }
 }

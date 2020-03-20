@@ -307,7 +307,7 @@ private[akka] object Running {
           // ignore
           this
 
-        case WriteMessagesFailed(_) =>
+        case WriteMessagesFailed(_, _) =>
           // ignore
           this // it will be stopped by the first WriteMessageFailure message; not applying side effects
 

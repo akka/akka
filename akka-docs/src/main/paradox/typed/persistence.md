@@ -31,7 +31,8 @@ events to the actor, allowing it to rebuild its state. This can be either the fu
 or starting from a checkpoint in a snapshot which can dramatically reduce recovery times.
 
 The [Event Sourcing with Akka 2.6 video](https://akka.io/blog/news/2020/01/07/akka-event-sourcing-video)
-is a good starting point for learning Event Sourcing.
+is a good starting point for learning Event Sourcing, and then followed by the
+[CQRS with Akka 2.6 video](https://akka.io/blog/news/2020/02/05/akka-cqrs-video).
 
 @@@ note
 

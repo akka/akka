@@ -223,7 +223,7 @@ import scala.concurrent.{ Future, Promise }
           .onComplete {
             case scala.util.Success(_) =>
             case scala.util.Failure(e) => p.tryFailure(e)
-          }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+          }(akka.dispatch.ExecutionContexts.parasitic)
         p.future
       }
       override def complete(): Unit = callback.invoke(Completion)

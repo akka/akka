@@ -204,9 +204,9 @@ class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures 
             .lazyInitAsync(() => Future.successful(FileIO.toPath(f)))
             // map a Future[Option[Future[IOResult]]] into a Future[Option[IOResult]]
             .mapMaterializedValue(_.flatMap {
-              case Some(future) => future.map(Some(_))(ExecutionContexts.sameThreadExecutionContext)
+              case Some(future) => future.map(Some(_))(ExecutionContexts.parasitic)
               case None         => Future.successful(None)
-            }(ExecutionContexts.sameThreadExecutionContext)))
+            }(ExecutionContexts.parasitic)))
 
         Await.result(completion, 3.seconds)
         checkFileContents(f, TestLines.head)

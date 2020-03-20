@@ -142,6 +142,7 @@ private[io] abstract class TcpConnection(val tcp: TcpExt, val channel: SocketCha
     case SuspendReading  => suspendReading(info)
     case ResumeReading   => resumeReading(info)
     case ChannelReadable => doRead(info, closeCommander)
+    case Close           => doCloseConnection(info.handler, closeCommander, Close.event)
     case Abort           => handleClose(info, Some(sender()), Aborted)
   }
 

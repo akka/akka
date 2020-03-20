@@ -4,6 +4,7 @@
 
 package docs.stream.operators
 
+import akka.Done
 import akka.actor.ActorSystem
 import akka.testkit.TestProbe
 
@@ -29,23 +30,30 @@ object SourceOperators {
 
   def actorRef(): Unit = {
     //#actorRef
-
-    import akka.actor.Status.Success
+    import akka.Done
     import akka.actor.ActorRef
     import akka.stream.OverflowStrategy
     import akka.stream.CompletionStrategy
     import akka.stream.scaladsl._
+    import scala.util.Failure
 
-    val bufferSize = 100
-
-    val source: Source[Any, ActorRef] = Source.actorRef[Any](bufferSize, OverflowStrategy.dropHead)
+    val source: Source[Any, ActorRef] = Source.actorRef(
+      completionMatcher = {
+        case Done =>
+          // complete stream immediately if we send it Done
+          CompletionStrategy.immediately
+      },
+      // never fail the stream because of a message
+      failureMatcher = PartialFunction.empty,
+      bufferSize = 100,
+      overflowStrategy = OverflowStrategy.dropHead)
     val actorRef: ActorRef = source.to(Sink.foreach(println)).run()
 
     actorRef ! "hello"
     actorRef ! "hello"
 
     // The stream completes successfully with the following message
-    actorRef ! Success(CompletionStrategy.immediately)
+    actorRef ! Done
     //#actorRef
   }
 

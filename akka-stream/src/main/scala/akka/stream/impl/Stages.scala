@@ -55,6 +55,7 @@ import akka.stream._
     val detacher = name("detacher")
     val groupBy = name("groupBy")
     val prefixAndTail = name("prefixAndTail")
+    val flatMapPrefix = name("flatMapPrefix")
     val split = name("split")
     val concatAll = name("concatAll")
     val processor = name("processor")

@@ -11,6 +11,7 @@ import java.time.temporal.ChronoUnit
 import java.util.Arrays
 import java.util.Locale
 import java.util.Optional
+import java.util.UUID
 import java.util.logging.FileHandler
 
 import scala.collection.immutable
@@ -49,7 +50,9 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.StreamReadFeature
 import com.fasterxml.jackson.core.StreamWriteFeature
+import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 import com.github.ghik.silencer.silent
 
 object ScalaTestMessages {
@@ -69,6 +72,7 @@ object ScalaTestMessages {
   final case class BooleanCommand(published: Boolean) extends TestMessage
   final case class TimeCommand(timestamp: LocalDateTime, duration: FiniteDuration) extends TestMessage
   final case class InstantCommand(instant: Instant) extends TestMessage
+  final case class UUIDCommand(uuid: UUID) extends TestMessage
   final case class CollectionsCommand(strings: List[String], objects: Vector[SimpleCommand]) extends TestMessage
   final case class CommandWithActorRef(name: String, replyTo: ActorRef) extends TestMessage
   final case class CommandWithTypedActorRef(name: String, replyTo: akka.actor.typed.ActorRef[String])
@@ -92,6 +96,21 @@ object ScalaTestMessages {
   final case class Cockroach(name: String) extends Animal
 
   final case class OldCommandNotInBindings(name: String)
+
+  // #jackson-scala-enumeration
+  object Planet extends Enumeration {
+    type Planet = Value
+    val Mercury, Venus, Earth, Mars, Krypton = Value
+  }
+
+  // Uses default Jackson serialization format for Scala Enumerations
+  final case class Alien(name: String, planet: Planet.Planet) extends TestMessage
+
+  // Serializes planet values as a JsonString
+  class PlanetType extends TypeReference[Planet.type] {}
+  final case class Superhero(name: String, @JsonScalaEnumeration(classOf[PlanetType]) planet: Planet.Planet)
+      extends TestMessage
+  // #jackson-scala-enumeration
 
 }
 
@@ -460,6 +479,15 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
     }
 
+    "deserialize Enumerations as String when configured" in {
+      val json = """{"name":"Superman", "planet":"Krypton"}"""
+
+      val expected = Superhero("Superman", Planet.Krypton)
+      val serializer = serializerFor(expected)
+
+      deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
+    }
+
     "compress large payload with gzip" in {
       val conf = JacksonObjectMapperProvider.configForBinding("jackson-json", system.settings.config)
       val compressionAlgo = conf.getString("compression.algorithm")
@@ -719,6 +747,14 @@ abstract class JacksonSerializerSpec(serializerName: String)
       checkSerialization(BooleanCommand(false))
     }
 
+    "serialize message with Enumeration property (using Jackson legacy format)" in {
+      checkSerialization(Alien("E.T.", Planet.Mars))
+    }
+
+    "serialize message with Enumeration property as a String" in {
+      checkSerialization(Superhero("Kal El", Planet.Krypton))
+    }
+
     "serialize message with Optional property" in {
       checkSerialization(OptionCommand(Some("abc")))
       checkSerialization(OptionCommand(None))
@@ -746,6 +782,11 @@ abstract class JacksonSerializerSpec(serializerName: String)
         val deserialized = javaSerializer.fromBinary(blob, javaSerializer.manifest(javaMsg))
         deserialized should ===(javaMsg)
       }
+    }
+
+    "serialize message with UUID property" in {
+      val uuid = UUID.randomUUID()
+      checkSerialization(UUIDCommand(uuid))
     }
 
     "serialize case object" in {

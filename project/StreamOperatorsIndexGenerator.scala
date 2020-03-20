@@ -33,6 +33,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     "Fan-out operators",
     "Watching status operators",
     "Actor interop operators",
+    "Compression operators",
     "Error handling")
 
   def categoryId(name: String): String = name.toLowerCase.replace(' ', '-')
@@ -98,7 +99,12 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "actorSubscriber",
       "foldAsync",
       "newOnCompleteStage",
+    ),
+    "Compression" -> Seq(
+      "inflate",
+      "gunzip",
     )
+
   )
 
   val ignore =
@@ -151,6 +157,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
         "akka-stream/src/main/scala/akka/stream/javadsl/RestartSink.scala",
         "akka-stream/src/main/scala/akka/stream/scaladsl/RetryFlow.scala",
         "akka-stream/src/main/scala/akka/stream/javadsl/RetryFlow.scala",
+        "akka-stream/src/main/scala/akka/stream/scaladsl/Compression.scala",
+        "akka-stream/src/main/scala/akka/stream/javadsl/Compression.scala",
         // akka-stream-typed
         "akka-stream-typed/src/main/scala/akka/stream/typed/javadsl/ActorSource.scala",
         "akka-stream-typed/src/main/scala/akka/stream/typed/scaladsl/ActorSource.scala",
@@ -243,7 +251,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       // This forces the short description to be on a single line. We could make this smarter,
       // but 'forcing' the short description to be really short seems nice as well.
       val description = lines(2)
-        .replaceAll("]\\(", "](" + file.getAbsolutePath.replaceFirst(".*/([^/]+/).*", "$1"))
+        .replaceAll("ref:?\\[(.*?)\\]\\(", "ref[$1](" + file.getAbsolutePath.replaceFirst(".*/([^/]+/).*", "$1"))
       require(!description.isEmpty, s"description in $file must be non-empty, single-line description at the 3rd line")
       val categoryLink = lines(4)
       require(

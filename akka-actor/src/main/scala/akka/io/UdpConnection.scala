@@ -9,6 +9,8 @@ import java.nio.ByteBuffer
 import java.nio.channels.DatagramChannel
 import java.nio.channels.SelectionKey._
 
+import akka.actor.Status.Failure
+
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ Actor, ActorLogging, ActorRef }
@@ -50,7 +52,9 @@ private[io] class UdpConnection(
         context.become(resolving())
     }
   } else {
-    doConnect(remoteAddress)
+    reportConnectFailure {
+      doConnect(remoteAddress)
+    }
   }
 
   def resolving(): Receive = {
@@ -58,18 +62,22 @@ private[io] class UdpConnection(
       reportConnectFailure {
         doConnect(new InetSocketAddress(r.address(), remoteAddress.getPort))
       }
+    case Failure(ex) =>
+      // async-dns responds with a Failure on DNS server lookup failure
+      reportConnectFailure {
+        throw new RuntimeException(ex)
+      }
   }
 
   def doConnect(@unused address: InetSocketAddress): Unit = {
-    reportConnectFailure {
-      channel = DatagramChannel.open
-      channel.configureBlocking(false)
-      val socket = channel.socket
-      options.foreach(_.beforeDatagramBind(socket))
-      localAddress.foreach(socket.bind)
-      channel.connect(remoteAddress)
-      channelRegistry.register(channel, OP_READ)
-    }
+    channel = DatagramChannel.open
+    channel.configureBlocking(false)
+    val socket = channel.socket
+    options.foreach(_.beforeDatagramBind(socket))
+    localAddress.foreach(socket.bind)
+    channel.connect(remoteAddress)
+    channelRegistry.register(channel, OP_READ)
+
     log.debug("Successfully connected to [{}]", remoteAddress)
   }
 

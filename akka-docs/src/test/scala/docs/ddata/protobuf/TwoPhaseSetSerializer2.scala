@@ -7,7 +7,6 @@ package docs.ddata.protobuf
 //#serializer
 import akka.actor.ExtendedActorSystem
 import akka.cluster.ddata.GSet
-import akka.cluster.ddata.protobuf.ReplicatedDataSerializer
 import akka.cluster.ddata.protobuf.SerializationSupport
 import akka.serialization.Serializer
 import docs.ddata.TwoPhaseSet
@@ -18,8 +17,6 @@ class TwoPhaseSetSerializer2(val system: ExtendedActorSystem) extends Serializer
   override def includeManifest: Boolean = false
 
   override def identifier = 99999
-
-  val replicatedDataSerializer = new ReplicatedDataSerializer(system)
 
   override def toBinary(obj: AnyRef): Array[Byte] = obj match {
     case m: TwoPhaseSet => twoPhaseSetToProto(m).toByteArray

@@ -64,7 +64,9 @@ The source object is translated to a String according to the following rules:
 `LogSource[T]` is in scope for the type in question] @java[the `simpleName` of its class] is used
 
 The log message may contain argument placeholders `{}`, which will be
-substituted if the log level is enabled. Giving more arguments than
+substituted if the log level is enabled. Compared to constructing a full string
+for the log message this has the advantage of avoiding superfluous string concatenation
+and object allocations when the log level is disabled. Giving more arguments than
 placeholders results in a warning being appended to the log statement (i.e. on
 the same line with the same severity). You may pass an array as the only
 substitution argument to have its elements be treated individually:

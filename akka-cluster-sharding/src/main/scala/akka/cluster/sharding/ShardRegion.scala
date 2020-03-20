@@ -6,29 +6,24 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.Future
-import scala.reflect.ClassTag
-import scala.concurrent.Promise
-import scala.runtime.AbstractFunction1
-import scala.util.Success
-import scala.util.Failure
-
 import akka.Done
-import akka.annotation.InternalApi
 import akka.actor._
-import akka.cluster.Cluster
+import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent._
-import akka.cluster.Member
-import akka.cluster.MemberStatus
-import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.Shard.ShardStats
+import akka.cluster.{ Cluster, ClusterSettings, Member, MemberStatus }
 import akka.event.Logging
 import akka.pattern.{ ask, pipe }
 import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.duration._
+import scala.concurrent.{ Future, Promise }
+import scala.reflect.ClassTag
+import scala.runtime.AbstractFunction1
+import scala.util.{ Failure, Success }
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -355,7 +350,7 @@ object ShardRegion {
    * The state contains information about what shards are running in this region
    * and what entities are running on each of those shards.
    */
-  @SerialVersionUID(1L) case object GetShardRegionState extends ShardRegionQuery
+  @SerialVersionUID(1L) case object GetShardRegionState extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
    * Java API:
@@ -367,7 +362,9 @@ object ShardRegion {
    *
    * If gathering the shard information times out the set of shards will be empty.
    */
-  @SerialVersionUID(1L) final case class CurrentShardRegionState(shards: Set[ShardState]) {
+  @SerialVersionUID(1L) final class CurrentShardRegionState(val shards: Set[ShardState], val failed: Set[ShardId])
+      extends ClusterShardingSerializable
+      with Product {
 
     /**
      * Java API:
@@ -378,6 +375,38 @@ object ShardRegion {
       import akka.util.ccompat.JavaConverters._
       shards.asJava
     }
+
+    /** Java API */
+    def getFailed(): java.util.Set[ShardId] = {
+      import akka.util.ccompat.JavaConverters._
+      failed.asJava
+    }
+
+    // For binary compatibility
+    def this(shards: Set[ShardState]) = this(shards, Set.empty[ShardId])
+    private[sharding] def copy(shards: Set[ShardState] = shards): CurrentShardRegionState =
+      new CurrentShardRegionState(shards, this.failed)
+
+    // For binary compatibility: class conversion from case class
+    override def equals(other: Any): Boolean = other match {
+      case o: CurrentShardRegionState => o.shards == shards && o.failed == failed
+      case _                          => false
+    }
+    override def hashCode: Int = shards.## + failed.##
+    override def toString: String = s"CurrentShardRegionState[shards=$shards, failed=$failed]"
+    override def productArity: Int = 2
+    override def productElement(n: Int) =
+      if (n == 0) shards else if (n == 1) failed else throw new NoSuchElementException
+    override def canEqual(o: Any): Boolean = o.isInstanceOf[CurrentShardRegionState]
+  }
+  // For binary compatibility
+  object CurrentShardRegionState extends AbstractFunction1[Set[ShardState], CurrentShardRegionState] {
+    def apply(shards: Set[ShardState]): CurrentShardRegionState =
+      apply(shards, Set.empty[ShardId])
+    def apply(shards: Set[ShardState], failed: Set[ShardId]): CurrentShardRegionState =
+      new CurrentShardRegionState(shards, failed)
+    def unapply(state: CurrentShardRegionState): Option[Set[ShardState]] =
+      Option(state.shards)
   }
 
   @SerialVersionUID(1L) final case class ShardState(shardId: ShardId, entityIds: Set[EntityId]) {
@@ -412,7 +441,9 @@ object ShardRegion {
    * Sent back when a `ShardRegion.StartEntity` message was received and triggered the entity
    * to start (it does not guarantee the entity successfully started)
    */
-  final case class StartEntityAck(entityId: EntityId, shardId: ShardRegion.ShardId) extends ClusterShardingSerializable
+  final case class StartEntityAck(entityId: EntityId, shardId: ShardRegion.ShardId)
+      extends ClusterShardingSerializable
+      with DeadLetterSuppression
 
   /**
    * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entities and when all of
@@ -494,9 +525,9 @@ private[akka] class ShardRegion(
     extends Actor
     with Timers {
 
-  import ShardingQueries.ShardsQueryResult
   import ShardCoordinator.Internal._
   import ShardRegion._
+  import ShardingQueries.ShardsQueryResult
   import settings._
   import settings.tuningParameters._
 
@@ -816,11 +847,9 @@ private[akka] class ShardRegion(
   def replyToRegionStateQuery(ref: ActorRef): Unit = {
     queryShards[Shard.CurrentShardState](shards, Shard.GetCurrentShardState)
       .map { qr =>
-        // Productionize CurrentShardRegionState #27406
-        val state =
-          qr.responses.map(state => ShardRegion.ShardState(state.shardId, state.entityIds)) ++
-          qr.failed.map(sid => ShardRegion.ShardState(sid, Set.empty))
-        CurrentShardRegionState(state.toSet)
+        CurrentShardRegionState(
+          qr.responses.map(state => ShardRegion.ShardState(state.shardId, state.entityIds)).toSet,
+          qr.failed)
       }
       .pipeTo(ref)
   }
@@ -899,9 +928,18 @@ private[akka] class ShardRegion(
           shardBuffers.totalSize,
           coordinatorMessage)
       } else {
+        // Members start off as "Removed"
+        val partOfCluster = cluster.selfMember.status != MemberStatus.Removed
+        val possibleReason =
+          if (partOfCluster)
+            "Has Cluster Sharding been started on every node and nodes been configured with the correct role(s)?"
+          else
+            "Probably, no seed-nodes configured and manual cluster or bootstrap join not performed?"
+
         log.warning(
-          "{}: No coordinator found to register. Probably, no seed-nodes configured and manual cluster join not performed? Total [{}] buffered messages.",
+          "{}: No coordinator found to register. {} Total [{}] buffered messages.",
           typeName,
+          possibleReason,
           shardBuffers.totalSize)
       }
     }

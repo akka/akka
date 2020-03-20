@@ -4,11 +4,9 @@ Materialize an `ActorRef`; sending messages to it will emit them on the stream.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@ div { .group-scala }
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #actorRef }
-@@@
+@apidoc[Source.actorRef](Source$) { scala="#actorRef[T](completionMatcher:PartialFunction[Any,akka.stream.CompletionStrategy],failureMatcher:PartialFunction[Any,Throwable],bufferSize:Int,overflowStrategy:akka.stream.OverflowStrategy):akka.stream.scaladsl.Source[T,akka.actor.ActorRef]" java="#actorRef(akka.japi.function.Function,akka.japi.function.Function,int,akka.stream.OverflowStrategy)" }
 
 ## Description
 

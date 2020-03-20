@@ -71,14 +71,14 @@ a snapshot to https://repo.akka.io/snapshots from any branch.
 ## Announcing
 
 * Prepare milestone on github:
- * go to the [Milestones tab](https://github.com/akka/akka/milestones)
- * move all open issues so that this milestone contains completed work only
- * close that milestone
- * create a new milestone for next patch version
+  * go to the [Milestones tab](https://github.com/akka/akka/milestones)
+  * move all open issues so that this milestone contains completed work only
+  * close that milestone
+  * create a new milestone for next patch version
 
 * In case of a new minor release:
- * update the branch descriptions at CONTRIBUTING.md#branches-summary
- * write blog post for akka.io and lightbend.com
+  * update the branch descriptions at CONTRIBUTING.md#branches-summary
+  * write blog post for akka.io and lightbend.com
 
 * Create an announcement as a PR against akka/akka.github.com .
   * credits can be generated with `scripts/authors.scala v2.3.5 v2.3.6`
@@ -91,9 +91,9 @@ Now wait until all artifacts have been properly propagated. Then:
 * Change the symbolic links from 'current': `ssh akkarepo@gustav.akka.io ./update-akka-current-version.sh <x.y.z>`
 
 * Publish the release announcement
-* Tweet about it
-* Post about it on Discuss
-* Post about it on Gitter
+  * Tweet about it
+  * Post about it on Discuss
+  * Post about it on Gitter
 
 ## Update references
 

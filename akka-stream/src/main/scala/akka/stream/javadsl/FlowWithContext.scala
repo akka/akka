@@ -6,7 +6,7 @@ package akka.stream.javadsl
 
 import akka.japi.{ function, Pair, Util }
 import akka.stream._
-import akka.event.LoggingAdapter
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.util.ConstantFun
 
 import scala.annotation.unchecked.uncheckedVariance
@@ -237,6 +237,50 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
    */
   def log(name: String): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     this.log(name, ConstantFun.javaIdentityFunction[Out], null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].
+   *
+   * @see [[akka.stream.javadsl.Flow.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: function.Function2[Out, CtxOut, LogMarker],
+      extract: function.Function[Out, Any],
+      log: MarkerLoggingAdapter): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.logWithMarker(name, (e, c) => marker.apply(e, c), e => extract.apply(e))(log))
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].
+   *
+   * @see [[akka.stream.javadsl.Flow.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: function.Function2[Out, CtxOut, LogMarker],
+      extract: function.Function[Out, Any]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    this.logWithMarker(name, marker, extract, null)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].
+   *
+   * @see [[akka.stream.javadsl.Flow.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: function.Function2[Out, CtxOut, LogMarker],
+      log: MarkerLoggingAdapter): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], log)
+
+  /**
+   * Context-preserving variant of [[akka.stream.javadsl.Flow.logWithMarker]].
+   *
+   * @see [[akka.stream.javadsl.Flow.logWithMarker]]
+   */
+  def logWithMarker(
+      name: String,
+      marker: function.Function2[Out, CtxOut, LogMarker]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    this.logWithMarker(name, marker, ConstantFun.javaIdentityFunction[Out], null)
 
   def asScala: scaladsl.FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
     scaladsl.FlowWithContext.fromTuples(

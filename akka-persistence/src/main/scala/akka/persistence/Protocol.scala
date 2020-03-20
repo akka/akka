@@ -9,7 +9,7 @@ import akka.actor.NoSerializationVerificationNeeded
 /**
  * INTERNAL API.
  *
- * Messages exchanged between persistent actors, views and a journal/snapshot-store.
+ * Messages exchanged between persistent actors and a journal/snapshot-store.
  */
 private[persistence] object Protocol {
 

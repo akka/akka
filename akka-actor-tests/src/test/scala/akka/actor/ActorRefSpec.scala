@@ -258,7 +258,7 @@ class ActorRefSpec extends AkkaSpec("""
         (intercept[java.lang.IllegalStateException] {
           wrap(result =>
             actorOf(Props(new OuterActor(actorOf(Props(promiseIntercept({
-              throw new IllegalStateException("Ur state be b0rked"); new InnerActor
+              throw new IllegalStateException("Ur state be b0rked")
             })(result)))))))
         }).getMessage should ===("Ur state be b0rked")
 

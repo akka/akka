@@ -139,7 +139,7 @@ class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "work with same-thread executor plus blocking" in {
-      val ec = akka.dispatch.ExecutionContexts.sameThreadExecutionContext
+      val ec = akka.dispatch.ExecutionContexts.parasitic
       var x = 0
       ec.execute(new Runnable {
         override def run = {

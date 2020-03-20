@@ -20,6 +20,7 @@ import akka.util.{ BoxedType, Timeout }
 import akka.actor.IllegalActorStateException
 import akka.actor.DeadLetter
 import akka.actor.Terminated
+import akka.annotation.InternalApi
 import com.github.ghik.silencer.silent
 
 object TestActor {
@@ -342,6 +343,44 @@ trait TestKitBase {
     }
 
     poll(_max min interval)
+  }
+
+  /**
+   * Evaluate the given assert every `interval` until exception is thrown or `max` timeout is expired.
+   *
+   * Returns the result of last evaluation of the assertion.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   */
+  def assertForDuration[A](a: => A, max: FiniteDuration, interval: Duration = 100.millis): A = {
+    val _max = remainingOrDilated(max)
+    val stop = now + _max
+
+    @tailrec
+    def poll(t: Duration): A = {
+      // cannot use null-ness of result as signal it failed
+      // because Java API and not wanting to return a value will be "return null"
+      val instantNow = now
+      val result =
+        try {
+          a
+        } catch {
+          case e: Throwable => throw e
+        }
+
+      if (instantNow < stop) {
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      } else {
+        result
+      }
+    }
+
+    poll(max min interval)
   }
 
   /**
@@ -928,7 +967,12 @@ trait TestKitBase {
 class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
 
 object TestKit {
-  private[testkit] val testActorId = new AtomicInteger(0)
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] val testActorId = new AtomicInteger(0)
 
   /**
    * Await until the given condition evaluates to `true` or the timeout

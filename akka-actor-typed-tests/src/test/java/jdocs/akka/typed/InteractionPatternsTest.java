@@ -99,6 +99,11 @@ public class InteractionPatternsTest extends JUnitSuite {
         // #request-response-send
         cookieFabric.tell(new CookieFabric.Request("give me cookies", context.getSelf()));
         // #request-response-send
+
+        // #ignore-reply
+        cookieFabric.tell(
+            new CookieFabric.Request("don't send cookies back", context.getSystem().ignoreRef()));
+        // #ignore-reply
       }
     }
 

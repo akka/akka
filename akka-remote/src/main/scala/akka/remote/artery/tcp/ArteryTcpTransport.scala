@@ -121,13 +121,17 @@ private[remote] class ArteryTcpTransport(
     val port = outboundContext.remoteAddress.port.get
     val remoteAddress = InetSocketAddress.createUnresolved(host, port)
 
-    def connectionFlow: Flow[ByteString, ByteString, Future[Tcp.OutgoingConnection]] =
+    def connectionFlow: Flow[ByteString, ByteString, Future[Tcp.OutgoingConnection]] = {
+      val localAddress = settings.Advanced.Tcp.OutboundClientHostname match {
+        case None                 => None
+        case Some(clientHostname) => Some(new InetSocketAddress(clientHostname, 0))
+      }
       if (tlsEnabled) {
         val sslProvider = sslEngineProvider.get
         Tcp().outgoingConnectionWithTls(
           remoteAddress,
           createSSLEngine = () => sslProvider.createClientSSLEngine(host, port),
-          localAddress = None,
+          localAddress,
           options = Nil,
           connectTimeout = settings.Advanced.Tcp.ConnectionTimeout,
           idleTimeout = Duration.Inf,
@@ -136,9 +140,11 @@ private[remote] class ArteryTcpTransport(
       } else {
         Tcp().outgoingConnection(
           remoteAddress,
+          localAddress,
           halfClose = true, // issue https://github.com/akka/akka/issues/24392 if set to false
           connectTimeout = settings.Advanced.Tcp.ConnectionTimeout)
       }
+    }
 
     def connectionFlowWithRestart: Flow[ByteString, ByteString, NotUsed] = {
       val restartCount = new AtomicInteger(0)
@@ -267,7 +273,7 @@ private[remote] class ArteryTcpTransport(
                   s"Failed to bind TCP to [$bindHost:$bindPort] due to: " +
                   e.getMessage,
                   e))
-          }(ExecutionContexts.sameThreadExecutionContext)
+          }(ExecutionContexts.parasitic)
 
         // only on initial startup, when ActorSystem is starting
         val b = Await.result(binding, settings.Bind.BindTimeout)
