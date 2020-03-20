@@ -24,7 +24,7 @@ object Dependencies {
   val protobufJavaVersion = "3.10.0"
   val logbackVersion = "1.2.3"
 
-  val scala212Version = "2.12.10"
+  val scala212Version = "2.12.11"
   val scala213Version = "2.13.1"
 
   val reactiveStreamsVersion = "1.0.3"
@@ -192,11 +192,7 @@ object Dependencies {
         Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
       )
 
-  val actorTestkitTyped = l ++= Seq(
-        Provided.logback,
-        Provided.junit,
-        Provided.scalatest,
-        Test.scalatestJUnit)
+  val actorTestkitTyped = l ++= Seq(Provided.logback, Provided.junit, Provided.scalatest, Test.scalatestJUnit)
 
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
@@ -238,12 +234,7 @@ object Dependencies {
         Test.commonsIo,
         Test.commonsCodec)
 
-  val persistenceQuery = l ++= Seq(
-        Test.scalatest,
-        Test.junit,
-        Test.commonsIo,
-        Provided.levelDB,
-        Provided.levelDBNative)
+  val persistenceQuery = l ++= Seq(Test.scalatest, Test.junit, Test.commonsIo, Provided.levelDB, Provided.levelDBNative)
 
   val persistenceTck = l ++= Seq(
         Test.scalatest.withConfigurations(Some("compile")),
