@@ -1,7 +1,6 @@
 # Classic Distributed Publish Subscribe in Cluster
 
 @@include[includes.md](includes.md) { #actor-api }
-
 For the new API see @ref[Distributed Publish Subscribe in Cluster](./typed/distributed-pub-sub.md) 
 
 ## Module info
