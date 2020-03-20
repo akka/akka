@@ -25,16 +25,16 @@ To use reliable delivery, add the module to your project:
 
 ## Introduction
 
-Normal @ref:[message delivery reliability](../general/message-delivery-reliability.md) is at-most once delivery, which
+Normal @ref:[message delivery reliability](../general/message-delivery-reliability.md) is at-most-once delivery, which
 means that messages may be lost. That should be rare, but still possible.
 
-For interactions between some actors, that is not acceptable and at-least once delivery or effectively-once processing
+For interactions between some actors, that is not acceptable and at-least-once delivery or effectively-once processing
 is needed. The tools for reliable delivery described here help with implementing that. It can't be achieved
-automatically under the hood without collaboration from the application, because confirming when a message has been
+automatically under the hood without collaboration from the application. This is because confirming when a message has been
 fully processed is a business level concern. Only ensuring that it was transferred over the network or delivered to 
 the mailbox of the actor would not be enough, since the actor may crash right before being able to process the message.
 
-Lost messages are detected, resent, and deduplicated as needed. In addition, it also includes flow control for
+Lost messages are detected, resent and deduplicated as needed. In addition, it also includes flow control for
 the sending of messages to avoid that a fast producer overwhelms a slower consumer or sends messages at
 a higher rate than what can be transferred over the network. This can be a common problem in interactions between
 actors, resulting in fatal errors like `OutOfMemoryError` because too many messages are queued in the mailboxes
@@ -76,12 +76,12 @@ For the `ProducerController` to know where to send the messages, it must be conn
 `ConsumerController.RegisterToProducerController` messages. When using the point-to-point pattern,
 it is the application's responsibility to connect them together. For example, this can be done by sending the `ActorRef`
 in an ordinary message to the other side, or by registering the `ActorRef` in the @ref:[Receptionist](actor-discovery.md)
-so that it can be found on the other side.
+so it can be found on the other side.
 
 You must also take measures to reconnect them if any of the sides crashes, for example by watching it
 for termination.
 
-Messages sent by the producer are wrapped in `ConsumerController.Delivery` when received  by a consumer and the consumer
+Messages sent by the producer are wrapped in `ConsumerController.Delivery` when received by a consumer and the consumer
 should reply with `ConsumerController.Confirmed` when it has processed the message.
 
 The next message is not delivered until the previous one is confirmed. Any messages from the producer that arrive
@@ -138,13 +138,13 @@ Unconfirmed messages may be lost if the producer crashes. To avoid that, you nee
 queue](#durable-producer) on the producer side. By doing so, any stored unconfirmed messages will be redelivered when the
 corresponding producer is started again. Even if the same `ConsumerController` instance is used, there may be
 delivery of messages that had already been processed but the fact that they were confirmed had not been stored yet.
-This means that we have at-least once delivery.
+This means that we have at-least-once delivery.
 
 If the consumer crashes, a new `ConsumerController` can be connected to the original `ProducerConsumer`
 without restarting it. The `ProducerConsumer` will then redeliver all unconfirmed messages. In that case
-the unconfirmed messages will be delivered to the new consumer, and some of these may already have been
+the unconfirmed messages will be delivered to the new consumer and some of these may already have been
 processed by the previous consumer.
-Again, this means that we have at-least once delivery.
+Again, this means that we have at-least-once delivery.
 
 ## Work pulling
 
@@ -238,10 +238,10 @@ Unconfirmed messages may be lost if the producer crashes. To avoid that you need
 queue](#durable-producer) on the producer side. The stored unconfirmed messages will be redelivered when the
 corresponding producer is started again. Those messages may be routed to different workers than before
 and some of them may have already been processed but the fact that they were confirmed had not been stored
-yet. Meaning at-least once delivery.
+yet. Meaning at-least-once delivery.
 
 If a worker crashes or is stopped gracefully the unconfirmed messages will be redelivered to other workers.
-In that case some of these may already have been processed by the previous worker. Meaning at-least once delivery.
+In that case some of these may already have been processed by the previous worker. Meaning at-least-once delivery.
 
 ## Sharding
 
@@ -335,7 +335,7 @@ processing without any business level deduplication.
 Unconfirmed messages may be lost if the producer crashes. To avoid that you need to enable the @ref:[durable
 queue](#durable-producer) on the producer side. The stored unconfirmed messages will be redelivered when the
 corresponding producer is started again. In that case there may be delivery of messages that had already been
-processed but the fact that they were confirmed had not been stored yet. Meaning at-least once delivery.
+processed but the fact that they were confirmed had not been stored yet. Meaning at-least-once delivery.
 
 If the consumer crashes or the shard is rebalanced the unconfirmed messages will be redelivered. In that case
 some of these may already have been processed by the previous consumer.
