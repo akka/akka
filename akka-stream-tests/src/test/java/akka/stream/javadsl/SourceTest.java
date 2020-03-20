@@ -1194,4 +1194,18 @@ public class SourceTest extends StreamTest {
         Source.fromIterator(input).map(it -> it * 10).run(system).toCompletableFuture().join();
     assertEquals(completion, Done.getInstance());
   }
+
+  @Test
+  public void mustRunSourceAndIgnoreElementsItOutputsAndOnlySignalTheCompletionWithMaterializer() {
+    final Materializer materializer = Materializer.createMaterializer(system);
+    final Iterator<Integer> iterator = IntStream.range(1, 10).iterator();
+    final Creator<Iterator<Integer>> input = () -> iterator;
+    final Done completion =
+        Source.fromIterator(input)
+            .map(it -> it * 10)
+            .run(materializer)
+            .toCompletableFuture()
+            .join();
+    assertEquals(completion, Done.getInstance());
+  }
 }
