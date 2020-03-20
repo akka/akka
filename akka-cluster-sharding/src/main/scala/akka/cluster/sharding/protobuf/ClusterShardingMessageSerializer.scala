@@ -40,7 +40,11 @@ private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSy
   import ShardCoordinator.Internal._
   import Shard.{ CurrentShardState, GetCurrentShardState }
   import Shard.{ GetShardStats, ShardStats }
-  import Shard.{ State => EntityState, EntityStarted, EntityStopped }
+  import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore.{
+    State => EntityState,
+    EntityStarted,
+    EntityStopped
+  }
 
   private final val BufferSize = 1024 * 4
 

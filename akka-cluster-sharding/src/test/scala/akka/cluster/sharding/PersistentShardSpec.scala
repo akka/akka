@@ -20,6 +20,7 @@ object PersistentShardSpec {
   }
 
   val config = ConfigFactory.parseString("""
+      akka.loglevel=debug
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """.stripMargin)
 }
@@ -30,12 +31,22 @@ class PersistentShardSpec extends AkkaSpec(PersistentShardSpec.config) with AnyW
 
     "remember entities started with StartEntity" in {
       val props =
-        Props(new PersistentShard("cats", "shard-1", _ => Props(new EntityActor), ClusterShardingSettings(system), {
-          case _ => ("entity-1", "msg")
-        }, { _ =>
-          "shard-1"
-        }, PoisonPill))
-      val persistentShard = system.actorOf(props)
+        Props(
+          new Shard(
+            "cats",
+            "shard-1",
+            _ => Props(new EntityActor),
+            ClusterShardingSettings(system)
+              .withRememberEntities(true)
+              .withStateStoreMode(ClusterShardingSettings.StateStoreModePersistence),
+            system.deadLetters, {
+              case _ => ("entity-1", "msg")
+            }, { _ =>
+              "shard-1"
+            },
+            PoisonPill,
+            0))
+      val persistentShard = system.actorOf(props, "shard-1")
       watch(persistentShard)
 
       persistentShard ! StartEntity("entity-1")
@@ -47,6 +58,7 @@ class PersistentShardSpec extends AkkaSpec(PersistentShardSpec.config) with AnyW
       system.log.info("Starting shard again")
       val secondIncarnation = system.actorOf(props)
 
+      // FIXME how did this ever work when the RestartEntity goes through the parent, expected to be a shard region?
       secondIncarnation ! GetShardStats
       awaitAssert(expectMsg(ShardStats("shard-1", 1)))
     }
