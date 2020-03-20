@@ -431,23 +431,20 @@ class ConsumerControllerSpec
 
       consumerController ! ConsumerController.Start(consumerProbe.ref)
       // unstashed 44, 41, 45
-      // 44 is not first so will trigger a full Resend
+      // 44 is not first so will trigger a full Resend, and also clears stashed messages
       producerControllerProbe.expectMessage(ProducerControllerImpl.Resend(0))
+      consumerController ! sequencedMessage(producerId, 41, producerControllerProbe.ref).asFirst
+      consumerController ! sequencedMessage(producerId, 42, producerControllerProbe.ref)
+      consumerController ! sequencedMessage(producerId, 43, producerControllerProbe.ref)
+      consumerController ! sequencedMessage(producerId, 44, producerControllerProbe.ref)
+      consumerController ! sequencedMessage(producerId, 45, producerControllerProbe.ref)
+
       // and 41 is first, which will trigger the initial Request
       producerControllerProbe.expectMessage(ProducerControllerImpl.Request(0, 60, true, false))
 
       consumerProbe.expectMessageType[ConsumerController.Delivery[TestConsumer.Job]].seqNr should ===(41)
       consumerController ! ConsumerController.Confirmed
       producerControllerProbe.expectMessage(ProducerControllerImpl.Request(41, 60, true, false))
-
-      // 45 not expected
-      producerControllerProbe.expectMessage(ProducerControllerImpl.Resend(42))
-
-      // from previous Resend request
-      consumerController ! sequencedMessage(producerId, 42, producerControllerProbe.ref)
-      consumerController ! sequencedMessage(producerId, 43, producerControllerProbe.ref)
-      consumerController ! sequencedMessage(producerId, 44, producerControllerProbe.ref)
-      consumerController ! sequencedMessage(producerId, 45, producerControllerProbe.ref)
 
       consumerProbe.expectMessageType[ConsumerController.Delivery[TestConsumer.Job]].seqNr should ===(42)
       consumerController ! ConsumerController.Confirmed

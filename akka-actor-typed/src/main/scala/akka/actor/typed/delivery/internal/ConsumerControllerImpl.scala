@@ -18,6 +18,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.StashBuffer
 import akka.actor.typed.scaladsl.TimerScheduler
+import akka.util.ConstantFun.scalaIdentityFunction
 import akka.annotation.InternalApi
 
 /**
@@ -115,12 +116,12 @@ import akka.annotation.InternalApi
             }
             Behaviors.withTimers { timers =>
               // wait for the `Start` message from the consumer, SequencedMessage will be stashed
-              def waitForStart(
-                  registering: Option[ActorRef[ProducerController.Command[A]]]): Behavior[InternalCommand] = {
+              def waitForStart(registering: Option[ActorRef[ProducerController.Command[A]]], stopping: Boolean)
+                  : Behavior[InternalCommand] = {
                 Behaviors.receiveMessagePartial {
                   case reg: RegisterToProducerController[A] @unchecked =>
                     reg.producerController ! ProducerController.RegisterConsumer(context.self)
-                    waitForStart(Some(reg.producerController))
+                    waitForStart(Some(reg.producerController), stopping)
 
                   case s: Start[A] @unchecked =>
                     ConsumerControllerImpl.enforceLocalConsumer(s.deliverTo)
@@ -129,20 +130,30 @@ import akka.annotation.InternalApi
                     flightRecorder.consumerStarted(context.self.path)
                     val activeBehavior =
                       new ConsumerControllerImpl[A](context, timers, stashBuffer, settings)
-                        .active(initialState(context, s, registering))
+                        .active(initialState(context, s, registering, stopping))
                     context.log.debug("Received Start, unstash [{}] messages.", stashBuffer.size)
-                    stashBuffer.unstashAll(activeBehavior)
+                    stashBuffer.unstash(activeBehavior, 1, scalaIdentityFunction)
 
                   case seqMsg: SequencedMessage[A] @unchecked =>
+                    if (stashBuffer.isFull) {
+                      flightRecorder.consumerStashFull(seqMsg.producerId, seqMsg.seqNr)
+                      context.log.debug(
+                        "Received SequencedMessage seqNr [{}], stashing before Start, discarding message because stash is full.",
+                        seqMsg.seqNr)
+                    } else {
+                      context.log.trace(
+                        "Received SequencedMessage seqNr [{}], stashing before Start, stashed size [{}].",
+                        seqMsg.seqNr,
+                        stashBuffer.size + 1)
+                    }
                     stashBuffer.stash(seqMsg)
                     Behaviors.same
 
-                  case d: DeliverThenStop[_] =>
+                  case _: DeliverThenStop[_] =>
                     if (stashBuffer.isEmpty) {
                       Behaviors.stopped
                     } else {
-                      stashBuffer.stash(d)
-                      Behaviors.same
+                      waitForStart(registering, stopping = true)
                     }
 
                   case Retry =>
@@ -161,7 +172,7 @@ import akka.annotation.InternalApi
               }
 
               timers.startTimerWithFixedDelay(Retry, Retry, settings.resendInterval)
-              waitForStart(None)
+              waitForStart(None, stopping = false)
             }
           }
         }
@@ -179,7 +190,8 @@ import akka.annotation.InternalApi
   private def initialState[A](
       context: ActorContext[InternalCommand],
       start: Start[A],
-      registering: Option[ActorRef[ProducerController.Command[A]]]): State[A] = {
+      registering: Option[ActorRef[ProducerController.Command[A]]],
+      stopping: Boolean): State[A] = {
     State(
       producerController = context.system.deadLetters,
       "n/a",
@@ -188,7 +200,7 @@ import akka.annotation.InternalApi
       confirmedSeqNr = 0,
       requestedSeqNr = 0,
       registering,
-      stopping = false)
+      stopping)
   }
 
   def enforceLocalConsumer(ref: ActorRef[_]): Unit = {
@@ -235,12 +247,12 @@ private class ConsumerControllerImpl[A](
           if (s.isProducerChanged(seqMsg)) {
             if (seqMsg.first)
               context.log.trace("Received first SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
-            receiveChangedProducer(s, seqMsg)
+            receiveChangedProducer(s, seqMsg, () => active(s))
           } else if (s.registering.isDefined) {
             context.log.debug(
               "Received SequencedMessage seqNr [{}], discarding message because registering to new ProducerController.",
               seqNr)
-            Behaviors.same
+            stashBuffer.unstash(active(s), 1, scalaIdentityFunction)
           } else if (s.isNextExpected(seqMsg)) {
             context.log.trace("Received SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
             deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
@@ -253,18 +265,18 @@ private class ConsumerControllerImpl[A](
               if (resendLost) "requesting resend from expected seqNr" else "delivering to consumer anyway")
             if (resendLost) {
               seqMsg.producerController ! Resend(fromSeqNr = expectedSeqNr)
+              clearStashBuffer()
               resending(s)
             } else {
-              s.consumer ! Delivery(seqMsg.message, context.self, pid, seqNr)
-              waitingForConfirmation(s.copy(receivedSeqNr = seqNr), seqMsg)
+              deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
             }
           } else { // seqNr < expectedSeqNr
             flightRecorder.consumerDuplicate(pid, expectedSeqNr, seqNr)
             context.log.debug2("Received duplicate SequencedMessage seqNr [{}], expected [{}].", seqNr, expectedSeqNr)
             if (seqMsg.first)
-              active(retryRequest(s))
+              stashBuffer.unstash(active(retryRequest(s)), 1, scalaIdentityFunction)
             else
-              Behaviors.same
+              stashBuffer.unstash(active(s), 1, scalaIdentityFunction)
           }
 
         case Retry =>
@@ -293,7 +305,10 @@ private class ConsumerControllerImpl[A](
       }
   }
 
-  private def receiveChangedProducer(s: State[A], seqMsg: SequencedMessage[A]): Behavior[InternalCommand] = {
+  private def receiveChangedProducer(
+      s: State[A],
+      seqMsg: SequencedMessage[A],
+      nextBehaviorIfUnexpectedProducer: () => Behavior[InternalCommand]): Behavior[InternalCommand] = {
     val seqNr = seqMsg.seqNr
 
     if (seqMsg.first || !resendLost) {
@@ -320,6 +335,7 @@ private class ConsumerControllerImpl[A](
         seqMsg.producerController)
       // request resend of all unconfirmed, and mark first
       seqMsg.producerController ! Resend(0)
+      clearStashBuffer()
       resending(s)
     } else {
       context.log.warnN(
@@ -328,7 +344,7 @@ private class ConsumerControllerImpl[A](
         seqNr,
         seqMsg.producerController,
         s.producerController)
-      Behaviors.same
+      stashBuffer.unstash(nextBehaviorIfUnexpectedProducer(), 1, scalaIdentityFunction)
     }
 
   }
@@ -353,6 +369,8 @@ private class ConsumerControllerImpl[A](
   // ProducerController with the missing seqNr. Other SequencedMessage with different seqNr will be
   // discarded since they were in flight before the Resend request and will anyway be sent again.
   private def resending(s: State[A]): Behavior[InternalCommand] = {
+    if (stashBuffer.nonEmpty)
+      throw new IllegalStateException("StashBuffer should be cleared before resending.")
     Behaviors
       .receiveMessage[InternalCommand] {
         case seqMsg: SequencedMessage[A] =>
@@ -361,7 +379,7 @@ private class ConsumerControllerImpl[A](
           if (s.isProducerChanged(seqMsg)) {
             if (seqMsg.first)
               context.log.trace("Received first SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
-            receiveChangedProducer(s, seqMsg)
+            receiveChangedProducer(s, seqMsg, () => resending(s))
           } else if (s.registering.isDefined) {
             context.log.debug(
               "Received SequencedMessage seqNr [{}], discarding message because registering to new ProducerController.",
@@ -414,6 +432,10 @@ private class ConsumerControllerImpl[A](
       }
   }
 
+  private def clearStashBuffer(): Unit = {
+    stashBuffer.unstashAll(Behaviors.ignore)
+  }
+
   private def deliver(s: State[A], seqMsg: SequencedMessage[A]): Behavior[InternalCommand] = {
     s.consumer ! Delivery(seqMsg.message, context.self, seqMsg.producerId, seqMsg.seqNr)
     waitingForConfirmation(s, seqMsg)
@@ -464,8 +486,10 @@ private class ConsumerControllerImpl[A](
               s.producerController ! Ack(seqNr)
             }
           } else {
-            // FIXME #28718 can we use unstashOne instead of all?
-            stashBuffer.unstashAll(active(s.copy(confirmedSeqNr = seqNr, requestedSeqNr = newRequestedSeqNr)))
+            stashBuffer.unstash(
+              active(s.copy(confirmedSeqNr = seqNr, requestedSeqNr = newRequestedSeqNr)),
+              1,
+              scalaIdentityFunction)
           }
 
         case msg: SequencedMessage[A] =>
@@ -476,14 +500,17 @@ private class ConsumerControllerImpl[A](
           } else if (stashBuffer.isFull) {
             // possible that the stash is full if ProducerController resends unconfirmed (duplicates)
             // dropping them since they can be resent
+            flightRecorder.consumerStashFull(seqMsg.producerId, seqMsg.seqNr)
             context.log.debug(
               "Received SequencedMessage seqNr [{}], discarding message because stash is full.",
               msg.seqNr)
           } else {
-            context.log.trace(
-              "Received SequencedMessage seqNr [{}], stashing while waiting for consumer to confirm [{}].",
-              msg.seqNr,
-              seqMsg.seqNr)
+            if (context.log.isTraceEnabled())
+              context.log.traceN(
+                "Received SequencedMessage seqNr [{}], stashing while waiting for consumer to confirm [{}], stashed size [{}].",
+                msg.seqNr,
+                seqMsg.seqNr,
+                stashBuffer.size + 1)
             stashBuffer.stash(msg)
           }
           Behaviors.same

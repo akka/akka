@@ -72,6 +72,7 @@ private[akka] trait ActorFlightRecorder extends Extension {
   def consumerReceivedResend(seqNr: Long): Unit
   def consumerSentRequest(producerId: String, requestedSeqNr: Long): Unit
   def consumerChangedProducer(producerId: String): Unit
+  def consumerStashFull(producerId: String, seqNr: Long): Unit
 }
 
 /**
@@ -111,5 +112,6 @@ private[akka] case object NoOpActorFlightRecorder extends ActorFlightRecorder {
   override def consumerReceivedResend(seqNr: Long): Unit = ()
   override def consumerSentRequest(producerId: String, requestedSeqNr: Long): Unit = ()
   override def consumerChangedProducer(producerId: String): Unit = ()
+  override def consumerStashFull(producerId: String, seqNr: Long): Unit = ()
 
 }
