@@ -165,7 +165,7 @@ class QueueSourceSpec extends StreamSpec {
       sub.cancel()
     }
 
-    "allow to wait only one offer future in backpressure mode with default maxConcurrentPulls" in assertAllStagesStopped {
+    "fail the second (concurrent) offer in backpressure mode with default maxConcurrentPulls" in assertAllStagesStopped {
       val (queue, probe) = Source.queue[Int](5, OverflowStrategy.backpressure).toMat(TestSink.probe)(Keep.both).run()
 
       for (i <- 1 to 5) assertSuccess(queue.offer(i))

@@ -808,13 +808,13 @@ object Source {
    * for downstream demand unless there is another message waiting for downstream demand, in that case
    * offer result will be completed according to the overflow strategy.
    *
-   * Current source is materialized for the single producer usage only.
+   * The materialized SourceQueue may only be used from a single producer.
    *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
-    queue(bufferSize, overflowStrategy, 1)
+    queue(bufferSize, overflowStrategy, maxConcurrentOffers = 1)
 
   /**
    * Creates a `Source` that is materialized as an [[akka.stream.scaladsl.SourceQueueWithComplete]].
@@ -841,7 +841,7 @@ object Source {
    * for downstream demand unless there is another message waiting for downstream demand, in that case
    * offer result will be completed according to the overflow strategy.
    *
-   * Current source is materialized for the `maxConcurrentOffers` number of producers usage.
+   * The materialized SourceQueue may be used by up to maxConcurrentOffers concurrent producers.
    *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
