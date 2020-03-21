@@ -76,7 +76,11 @@ private[metrics] object MetricsCollector {
         create(collectorCustom).orElse(create(collectorSigar)).orElse(create(collectorJMX))
 
     collector.recover {
-      case e => throw new ConfigurationException(s"Could not create metrics collector: ${e}")
+      case e => {
+        if (useCustom && collector.isFailure)
+          log.debug(s"Failed to create custom metrics collector: ${e}")
+        throw new ConfigurationException(s"Could not create metrics collector: ${e}")
+      }
     }.get
   }
 }
