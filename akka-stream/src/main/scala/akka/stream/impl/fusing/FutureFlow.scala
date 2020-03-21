@@ -21,7 +21,7 @@ import scala.util.{ Failure, Success, Try }
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
-    val pr = Promise[M]
+    val innerMatValue = Promise[M]
     val logic = new GraphStageLogic(shape) {
 
       //seems like we must set handlers BEFORE preStart
@@ -41,16 +41,15 @@ import scala.util.{ Failure, Success, Try }
       }
 
       override def postStop(): Unit = {
-        if (!pr.isCompleted) {
-          pr.failure(new NeverMaterializedException())
+        if (!innerMatValue.isCompleted) {
+          innerMatValue.failure(new NeverMaterializedException())
         }
         super.postStop()
       }
 
       object initializing extends InHandler with OutHandler {
         override def onPush(): Unit = {
-          //just leave it in the port
-          println("initialized: pushed")
+          throw new IllegalStateException("unexpected push during initialization")
         }
 
         var upstreamFailure = OptionVal.none[Throwable]
@@ -58,7 +57,10 @@ import scala.util.{ Failure, Success, Try }
           upstreamFailure = OptionVal.Some(ex)
         }
 
-        override def onPull(): Unit = pull(in)
+        var hasBeenPulled = false
+        override def onPull(): Unit = {
+          hasBeenPulled = true
+        }
 
         var downstreamCause = OptionVal.none[Throwable]
         override def onDownstreamFinish(cause: Throwable): Unit = {
@@ -68,7 +70,7 @@ import scala.util.{ Failure, Success, Try }
         def onFuture(futureRes: Try[Flow[In, Out, M]]) = futureRes match {
           case Failure(exception) =>
             setKeepGoing(false)
-            pr.failure(new NeverMaterializedException(exception))
+            innerMatValue.failure(new NeverMaterializedException(exception))
             failStage(exception)
           case Success(flow) =>
             //materialize flow, connect to inlets, feed with potential events and set handlers
@@ -83,11 +85,8 @@ import scala.util.{ Failure, Success, Try }
 
         subSource.setHandler {
           new OutHandler {
-            override def onPull(): Unit = {
-              if (!isClosed(in) && !hasBeenPulled(in)) {
-                pull(in)
-              }
-            }
+            override def onPull(): Unit = if (!isClosed(in)) tryPull(in)
+
 
             override def onDownstreamFinish(cause: Throwable): Unit = {
               if (!isClosed(in)) {
@@ -111,16 +110,12 @@ import scala.util.{ Failure, Success, Try }
             }
           }
         }
-        pr.complete {
-          Try {
-            Source.fromGraph(subSource.source).viaMat(fl)(Keep.right).to(subSink.sink).run()(subFusingMaterializer)
-          }
-        }
-        pr.future.value.get match {
-          case Success(_) =>
-            if (isAvailable(in)) {
-              subSource.push(grab(in))
-            }
+
+        Try {
+          Source.fromGraph(subSource.source).viaMat(fl)(Keep.right).to(subSink.sink).run()(subFusingMaterializer)
+        } match {
+          case Success(matVal) =>
+            innerMatValue.success(matVal)
             initializing.upstreamFailure match {
               case OptionVal.Some(ex) =>
                 subSource.fail(ex)
@@ -132,11 +127,14 @@ import scala.util.{ Failure, Success, Try }
               case OptionVal.Some(cause) =>
                 subSink.cancel(cause)
               case OptionVal.None =>
-                if (hasBeenPulled(in)) {
+                //todo: should this be invoked before and independently of checking downstreamCause?
+                // in most case if downstream pulls and then closes, the pull is 'lost'. is it possible for some flows to actually care about this? (non-eager broadcast?)
+                if (initializing.hasBeenPulled) {
                   subSink.pull()
                 }
             }
           case Failure(ex) =>
+            innerMatValue.failure(ex)
             failStage(ex)
         }
 
@@ -164,6 +162,6 @@ import scala.util.{ Failure, Success, Try }
         }
       }
     }
-    (logic, pr.future)
+    (logic, innerMatValue.future)
   }
 }
