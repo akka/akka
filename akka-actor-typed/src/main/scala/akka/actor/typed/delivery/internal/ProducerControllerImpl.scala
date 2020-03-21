@@ -6,7 +6,6 @@ package akka.actor.typed.delivery.internal
 
 import java.util.concurrent.TimeoutException
 
-import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.Failure
 import scala.util.Success
@@ -360,7 +359,7 @@ private class ProducerControllerImpl[A: ClassTag](
         else Vector.empty // no resending, no need to keep unconfirmed
 
       if (s.currentSeqNr == s.firstSeqNr)
-        timers.startTimerWithFixedDelay(ResendFirst, ResendFirst, 1.second)
+        timers.startTimerWithFixedDelay(ResendFirst, ResendFirst, delay = settings.durableQueueResendInterval)
 
       s.send(seqMsg)
       val newRequested =
@@ -537,7 +536,7 @@ private class ProducerControllerImpl[A: ClassTag](
         consumerController,
         newFirstSeqNr)
       if (s.unconfirmed.nonEmpty) {
-        timers.startTimerWithFixedDelay(ResendFirst, ResendFirst, 1.second)
+        timers.startTimerWithFixedDelay(ResendFirst, ResendFirst, delay = settings.durableQueueResendInterval)
         context.self ! ResendFirst
       }
       // update the send function
