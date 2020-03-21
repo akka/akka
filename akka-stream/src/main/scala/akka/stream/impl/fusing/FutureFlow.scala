@@ -6,7 +6,7 @@ package akka.stream.impl.fusing
 
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
-import akka.stream.{ Attributes, FlowShape, Inlet, NeverMaterializedException, Outlet }
+import akka.stream.{ AbruptStageTerminationException, Attributes, FlowShape, Inlet, NeverMaterializedException, Outlet }
 import akka.stream.scaladsl.{ Flow, Keep, Source }
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler, OutHandler }
 import akka.util.OptionVal
@@ -42,7 +42,7 @@ import scala.util.{ Failure, Success, Try }
 
       override def postStop(): Unit = {
         if (!innerMatValue.isCompleted) {
-          innerMatValue.failure(new NeverMaterializedException())
+          innerMatValue.failure(new AbruptStageTerminationException(this))
         }
         super.postStop()
       }

@@ -5,7 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
-import akka.stream.NeverMaterializedException
+import akka.stream.{ AbruptStageTerminationException, Materializer, NeverMaterializedException }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
@@ -331,12 +331,11 @@ class FlowFutureFlowSpec extends StreamSpec {
       val (fNotUsed, fSeq) = src10()
         .viaMat {
           Flow.futureFlow {
-            Future.successful{
-              Flow[Int]
-                .map{
-                  case 5 => throw TE("fail on 5")
-                  case x => x
-                }
+            Future.successful {
+              Flow[Int].map {
+                case 5 => throw TE("fail on 5")
+                case x => x
+              }
             }
           }
         }(Keep.right)
@@ -359,16 +358,52 @@ class FlowFutureFlowSpec extends StreamSpec {
       fNotUsed.value should be(empty)
       fSeq.value should be(empty)
 
-      prFlow.success{
-        Flow[Int]
-          .map{
-            case 5 => throw TE("fail on 5")
-            case x => x
-          }
+      prFlow.success {
+        Flow[Int].map {
+          case 5 => throw TE("fail on 5")
+          case x => x
+        }
       }
 
       fNotUsed.futureValue should be(NotUsed)
       fSeq.failed.futureValue should equal(TE("fail on 5"))
+    }
+
+    "allow flow to handle downstream completion with a completed future" in assertAllStagesStopped {
+      val (fSeq1, fSeq2) = src10()
+        .viaMat {
+          Flow.futureFlow {
+            Future.successful {
+              Flow.fromSinkAndSourceMat(Sink.seq[Int], src10(10))(Keep.left)
+            }
+          }
+        }(Keep.right)
+        .take(5)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      fSeq1.flatten.futureValue should be(0 until 10)
+      fSeq2.futureValue should equal(10 until 15)
+    }
+
+    "abrupt termination before future completion" in assertAllStagesStopped {
+      val mat = Materializer(system)
+      val prFlow = Promise[Flow[Int, Int, Future[collection.immutable.Seq[Int]]]]
+      val (fSeq1, fSeq2) = src10()
+        .viaMat {
+          Flow.futureFlow(prFlow.future)
+        }(Keep.right)
+        .take(5)
+        .toMat(Sink.seq)(Keep.both)
+        .run()(mat)
+
+      fSeq1.value should be(empty)
+      fSeq2.value should be(empty)
+
+      mat.shutdown()
+
+      fSeq1.failed.futureValue should be(a[AbruptStageTerminationException])
+      fSeq2.failed.futureValue should be(a[AbruptStageTerminationException])
     }
 
   }
