@@ -256,6 +256,40 @@ class FlowFutureFlowSpec extends StreamSpec {
       fNotUsed.futureValue should be(NotUsed)
       fSeq.futureValue should equal(99 :: Nil)
     }
+
+    "fails properly on materialization failure with a completed future" in assertAllStagesStopped {
+      val (fNotUsed, fSeq) = src10()
+        .viaMat {
+          Flow.futureFlow {
+            Future.successful(Flow[Int].mapMaterializedValue[NotUsed](_ => throw TE("BBOM!")))
+          }
+        }(Keep.right)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      fNotUsed.failed.futureValue should be(a[NeverMaterializedException])
+      fNotUsed.failed.futureValue.getCause should equal(TE("BBOM!"))
+      fSeq.failed.futureValue should equal(TE("BBOM!"))
+    }
+
+    "fails properly on materialization failure with a late future" in assertAllStagesStopped {
+      val prFlow = Promise[Flow[Int, Int, NotUsed]]
+      val (fNotUsed, fSeq) = src10()
+        .viaMat {
+          Flow.futureFlow(prFlow.future)
+        }(Keep.right)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      fNotUsed.value should be(empty)
+      fSeq.value should be(empty)
+
+      prFlow.success(Flow[Int].mapMaterializedValue[NotUsed](_ => throw TE("BBOM!")))
+
+      fNotUsed.failed.futureValue should be(a[NeverMaterializedException])
+      fNotUsed.failed.futureValue.getCause should equal(TE("BBOM!"))
+      fSeq.failed.futureValue should equal(TE("BBOM!"))
+    }
   }
 
 }

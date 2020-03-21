@@ -137,7 +137,7 @@ import scala.util.{ Failure, Success, Try }
                 }
             }
           case Failure(ex) =>
-            innerMatValue.failure(ex)
+            innerMatValue.failure(new NeverMaterializedException(ex))
             failStage(ex)
         }
 
