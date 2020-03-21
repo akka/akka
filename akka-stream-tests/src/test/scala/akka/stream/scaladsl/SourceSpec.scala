@@ -370,11 +370,7 @@ class SourceSpec extends StreamSpec with DefaultTimeout {
 
   "A Source.run" must {
     "ignore elements it outputs and only signal the completion of the processing" in {
-      Source
-        .fromIterator(() => (1 to 5).toIterator)
-        .map(_ * 10)
-        .run()
-        .futureValue shouldBe Done
+      Source.fromIterator(() => (1 to 5).toIterator).map(_ * 10).run().futureValue shouldBe Done
     }
   }
 
