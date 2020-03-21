@@ -57,6 +57,10 @@ import scala.util.{ Failure, Success, Try }
           upstreamFailure = OptionVal.Some(ex)
         }
 
+        override def onUpstreamFinish(): Unit = {
+          //will later be propagated to the materialized flow
+        }
+
         var hasBeenPulled = false
         override def onPull(): Unit = {
           hasBeenPulled = true
