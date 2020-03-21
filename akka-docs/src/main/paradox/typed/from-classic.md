@@ -56,12 +56,12 @@ APIs, which is familiar from Akka Streams.
 
 Examples of a few package names:
 
-| Classic               | Typed for Scala                 | Typed for Java                 |
-|-----------------------|---------------------------------|--------------------------------|
-| akka.actor            | akka.actor.typed.scaladsl       | akka.actor.typed.javadsl       |
-| akka.cluster          | akka.cluster.typed              | akka.cluster.typed             |
-| akka.cluster.sharding | akka.cluster.sharding.scaladsl  | akka.cluster.sharding.javadsl  |
-| akka.persistence      | akka.persistence.typed.scaladsl | akka.persistence.typed.javadsl |
+| Classic               | Typed for Scala                       | Typed for Java                       |
+|-----------------------|---------------------------------------|--------------------------------------|
+| akka.actor            | akka.actor.typed.scaladsl             | akka.actor.typed.javadsl             |
+| akka.cluster          | akka.cluster.typed                    | akka.cluster.typed                   |
+| akka.cluster.sharding | akka.cluster.sharding.typed.scaladsl  | akka.cluster.sharding.typed.javadsl  |
+| akka.persistence      | akka.persistence.typed.scaladsl       | akka.persistence.typed.javadsl       |
 
 ## Actor definition
 
