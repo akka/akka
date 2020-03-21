@@ -130,6 +130,42 @@ class FlowFutureFlowSpec extends StreamSpec {
       fSeq.futureValue should equal(List(0, 1, 2, 3, 4, 99))
     }
 
+    "propagate upstream failure when future is pre-completed" in assertAllStagesStopped {
+      val (fNotUsed, fSeq) = src10WithFailure()(5)
+        .viaMat {
+          Flow.futureFlow {
+            Future.successful {
+              Flow[Int]
+            }
+          }
+        }(Keep.right)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      fNotUsed.futureValue should be(NotUsed)
+      fSeq.failed.futureValue should equal(TE("fail on 5"))
+    }
+
+    "propagate upstream failure when future is late-completed" in assertAllStagesStopped {
+      val prFlow = Promise[Flow[Int, Int, NotUsed]]
+      val (fNotUsed, fSeq) = src10WithFailure()(5)
+        .viaMat {
+          Flow.futureFlow(prFlow.future)
+        }(Keep.right)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      fNotUsed.value should be(empty)
+      fSeq.value should be(empty)
+
+      prFlow.success {
+        Flow[Int]
+      }
+
+      fNotUsed.futureValue should be(NotUsed)
+      fSeq.failed.futureValue should equal(TE("fail on 5"))
+    }
+
     "handle early upstream error when flow future is pre-completed" in assertAllStagesStopped {
       val (fNotUsed, fSeq) = Source
         .failed(TE("not today my friend"))
@@ -290,6 +326,51 @@ class FlowFutureFlowSpec extends StreamSpec {
       fNotUsed.failed.futureValue.getCause should equal(TE("BBOM!"))
       fSeq.failed.futureValue should equal(TE("BBOM!"))
     }
+
+    "propagate flow failures with a completed future" in assertAllStagesStopped {
+      val (fNotUsed, fSeq) = src10()
+        .viaMat {
+          Flow.futureFlow {
+            Future.successful{
+              Flow[Int]
+                .map{
+                  case 5 => throw TE("fail on 5")
+                  case x => x
+                }
+            }
+          }
+        }(Keep.right)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      fNotUsed.futureValue should be(NotUsed)
+      fSeq.failed.futureValue should equal(TE("fail on 5"))
+    }
+
+    "propagate flow failures with a late future" in assertAllStagesStopped {
+      val prFlow = Promise[Flow[Int, Int, NotUsed]]
+      val (fNotUsed, fSeq) = src10()
+        .viaMat {
+          Flow.futureFlow(prFlow.future)
+        }(Keep.right)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      fNotUsed.value should be(empty)
+      fSeq.value should be(empty)
+
+      prFlow.success{
+        Flow[Int]
+          .map{
+            case 5 => throw TE("fail on 5")
+            case x => x
+          }
+      }
+
+      fNotUsed.futureValue should be(NotUsed)
+      fSeq.failed.futureValue should equal(TE("fail on 5"))
+    }
+
   }
 
 }
