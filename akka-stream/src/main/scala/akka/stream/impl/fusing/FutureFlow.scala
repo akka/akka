@@ -87,7 +87,6 @@ import scala.util.{ Failure, Success, Try }
           new OutHandler {
             override def onPull(): Unit = if (!isClosed(in)) tryPull(in)
 
-
             override def onDownstreamFinish(cause: Throwable): Unit = {
               if (!isClosed(in)) {
                 cancel(in, cause)

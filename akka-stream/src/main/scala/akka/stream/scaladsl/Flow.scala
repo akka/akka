@@ -679,8 +679,7 @@ object Flow {
         case Seq(a) =>
           val f: Flow[I, O, Future[M]] =
             futureFlow(create()
-              .map(Flow[I].prepend(Source.single(a)).viaMat(_)(Keep.right))(akka.dispatch.ExecutionContexts.parasitic)
-            )
+              .map(Flow[I].prepend(Source.single(a)).viaMat(_)(Keep.right))(akka.dispatch.ExecutionContexts.parasitic))
           f
         case Seq() =>
           val f: Flow[I, O, Future[M]] = Flow[I]
