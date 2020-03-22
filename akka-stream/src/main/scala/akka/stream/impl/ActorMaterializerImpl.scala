@@ -228,7 +228,7 @@ private[akka] class SubFusingActorMaterializerImpl(
   implicit val ec = context.dispatcher
   override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 
-  def receive = {
+  def receive: Receive = {
     case Materialize(props, name) =>
       val impl = context.actorOf(props, name)
       sender() ! impl
@@ -243,7 +243,6 @@ private[akka] class SubFusingActorMaterializerImpl(
   }
 
   def takeSnapshotsOfChildren(): Future[immutable.Seq[StreamSnapshot]] = {
-    implicit val scheduler = context.system.scheduler
     // Arbitrary timeout but should always be quick, the failure scenario is that
     // the child/stream stopped, and we do retry below
     implicit val timeout: Timeout = 1.second
@@ -255,7 +254,7 @@ private[akka] class SubFusingActorMaterializerImpl(
 
     // If the timeout hits it is likely because one of the streams stopped between looking at the list
     // of children and asking it for a snapshot. We retry the entire snapshot in that case
-    retry(() => takeSnapshot(), 3, Duration.Zero)
+    retry(() => takeSnapshot(), 3)
   }
 
   override def postStop(): Unit = haveShutDown.set(true)
