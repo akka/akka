@@ -1,7 +1,7 @@
 # Classic Distributed Publish Subscribe in Cluster
 
 @@include[includes.md](includes.md) { #actor-api }
-For the new API see FIXME https://github.com/akka/akka/issues/26338.
+For the new API see @ref[Distributed Publish Subscribe in Cluster](./typed/distributed-pub-sub.md) 
 
 ## Module info
 
