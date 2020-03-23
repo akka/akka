@@ -29,7 +29,7 @@ object ActorFlightRecorder extends ExtensionId[ActorFlightRecorder] {
         (classOf[ActorSystem[_]], system) :: Nil) match {
         case Success(jfr) => jfr
         case Failure(ex) =>
-          system.log.warn("Failed to load JFR Actor flight recorder, falling back to noop. Exception: {}", ex)
+          system.log.warn("Failed to load JFR Actor flight recorder, falling back to noop. Exception: {}", ex.toString)
           NoOpActorFlightRecorder
       } // fallback if not possible to dynamically load for some reason
     } else

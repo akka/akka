@@ -271,7 +271,10 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .disablePlugins(MimaPlugin)
 
 lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
-  .dependsOn(persistenceTyped % "compile->compile;provided->provided;test->test", testkit % "compile->compile;test->test", persistenceTck % "test")
+  .dependsOn(
+    persistenceTyped % "compile->compile;provided->provided;test->test",
+    testkit % "compile->compile;test->test",
+    persistenceTck % "test")
   .settings(Dependencies.persistenceTestKit)
   .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
   .disablePlugins(MimaPlugin)
@@ -325,7 +328,7 @@ lazy val remote =
 lazy val remoteTests = akkaModule("akka-remote-tests")
   .dependsOn(
     actorTests % "test->test",
-    remote % "test->test",
+    remote % "compile->CompileJdk9",
     streamTestkit % "test",
     multiNodeTestkit,
     jackson % "test->test")
@@ -435,11 +438,13 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
 
 lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .dependsOn(
+    actorTyped % "compile->CompileJdk9",
     clusterTyped % "compile->compile;test->test;multi-jvm->multi-jvm",
     clusterSharding,
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",
+    remote % "compile->CompileJdk9",
     remoteTests % "test->test",
     jackson % "test->test")
   .settings(javacOptions += "-parameters") // for Jackson
@@ -466,7 +471,7 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .settings(Dependencies.actorTestkitTyped)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
-  .dependsOn(actorTyped, actorTestkitTyped % "compile->compile;test->test")
+  .dependsOn(actorTyped % "compile->CompileJdk9", actorTestkitTyped % "compile->compile;test->test")
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
