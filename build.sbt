@@ -328,7 +328,7 @@ lazy val remote =
 lazy val remoteTests = akkaModule("akka-remote-tests")
   .dependsOn(
     actorTests % "test->test",
-    remote % "compile->CompileJdk9",
+    remote % "compile->CompileJdk9;test->test",
     streamTestkit % "test",
     multiNodeTestkit,
     jackson % "test->test")
@@ -444,7 +444,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",
-    remote % "compile->CompileJdk9",
+    remote % "compile->CompileJdk9;test->test",
     remoteTests % "test->test",
     jackson % "test->test")
   .settings(javacOptions += "-parameters") // for Jackson
