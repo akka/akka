@@ -99,6 +99,15 @@ final class Source[+Out, +Mat](
   }
 
   /**
+   * Connect this `Source` to the `Sink.ignore` and run it. Elements from the stream will be consumed and discarded.
+   *
+   * Note that the `ActorSystem` can be used as the implicit `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
+   */
+  def run()(implicit materializer: Materializer): Future[Done] =
+    toMat(Sink.ignore)(Keep.right).run()
+
+  /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value
    * of the `Sink`, e.g. the `Publisher` of a [[akka.stream.scaladsl.Sink#publisher]].
    *
