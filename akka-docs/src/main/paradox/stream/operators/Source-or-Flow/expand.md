@@ -20,6 +20,21 @@ element, allowing for it to be rewritten and/or filtered.
 See @ref:[Understanding extrapolate and expand](../../stream-rate.md#understanding-extrapolate-and-expand) for more information
 and examples.
 
+## Example
+
+Imagine a streaming client decoding a video. It is possible the network bandwidth is a bit 
+unreliable. It's fine, as long as the audio remains fluent, it doesn't matter if we can't decode 
+a frame or two (or more). But we also want to watermark every decoded frame with the name of 
+our colleague. `expand` provides access to the element flowing through the stream
+and let's us create extra frames in case the producer slows down:
+
+Scala
+:   @@snip [ExpandScala.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ExpandScala.scala) { #expand }
+
+Java
+:   @@snip [ExpandJava.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/ExpandJava.java) { #expand }
+
+
 ## Reactive Streams semantics
 
 @@@div { .callout }
