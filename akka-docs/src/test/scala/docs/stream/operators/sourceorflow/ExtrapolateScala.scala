@@ -13,6 +13,8 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
+import docs.stream.operators.sourceorflow.ExtrapolateScala.nowInSeconds
+import docs.stream.operators.sourceorflow.ExtrapolateScala.videoAt25Fps
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -20,19 +22,24 @@ import scala.util.Random
 /**
  *
  */
-object Extrapolate extends App {
+object ExtrapolateMain extends App {
+  implicit val sys = ActorSystem("25fps-stream")
+  videoAt25Fps.map(_.pixels.utf8String).map(frame => s"$nowInSeconds - $frame").to(Sink.foreach(println)).run()
+
+}
+object ExtrapolateScala {
 
   val periodInMillis = 40
+  val fps = 1000 / periodInMillis
 
-  implicit val sys = ActorSystem("25fps-stream")
   // This `networkSource` simulates a client sending frames over the network. There's a
   // stage throttling the elements at 24fps and then a `delayWith` that randomly delays
   // frames simulating network latency and bandwidth limitations (uses buffer of
   // default capacity).
   val networkSource: Source[ByteString, NotUsed] =
     Source
-      .fromIterator(() => (1 to 1000000).iterator)
-      .throttle(24, 1.second)
+      .fromIterator(() => Iterator.from(0)) // produce frameIds
+      .throttle(fps, 1.second)
       .map(i => ByteString.fromString(s"fakeFrame-$i"))
       .delayWith(
         () =>
@@ -57,11 +64,12 @@ object Extrapolate extends App {
   // let's create a 25fps stream (a Frame every 40.millis)
   val tickSource = Source.tick(0.seconds, 40.millis, Tick)
 
-  private val videoAt25Fps: Source[Frame, Cancellable] =
+  val videoAt25Fps: Source[Frame, Cancellable] =
     tickSource.zip(videoSource).map(_._2)
 
   // #extrapolate
-  videoAt25Fps.map(_.pixels.utf8String).to(Sink.foreach(println)).run()
+
+  def nowInSeconds = System.nanoTime() / 1000000000
 
   case object Tick
 
