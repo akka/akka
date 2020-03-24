@@ -9,7 +9,6 @@ import akka.remote.{ RARP, RemoteActorRef }
 import akka.testkit.TestProbe
 import akka.util.ByteString
 
-import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.testkit.JavaSerializable
 
@@ -125,5 +124,6 @@ class LargeMessagesStreamSpec extends ArteryMultiNodeSpec("""
     }
   }
 
-  def awaitResolve(selection: ActorSelection): ActorRef = Await.result(selection.resolveOne(3.seconds), 3.seconds)
+  def awaitResolve(selection: ActorSelection): ActorRef =
+    awaitAssert(selection.resolveOne(3.seconds).futureValue, 3.seconds)
 }
