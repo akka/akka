@@ -4,6 +4,8 @@
 
 package akka.cluster.typed.internal.receptionist
 
+import java.util.concurrent.ThreadLocalRandom
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
@@ -105,6 +107,33 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
         service ! Perish
         regProbe2.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+      } finally {
+        testKit1.shutdownTestKit()
+        testKit2.shutdownTestKit()
+      }
+    }
+
+    "handle registrations before joining" in {
+      val testKit1 = ActorTestKit("ClusterReceptionistSpec-test-2", ClusterReceptionistSpec.config)
+      val system1 = testKit1.system
+      val testKit2 = ActorTestKit(system1.name, system1.settings.config)
+      val system2 = testKit2.system
+      try {
+        val regProbe1 = TestProbe[Any]()(system1)
+        val regProbe2 = TestProbe[Any]()(system2)
+        val service = testKit1.spawn(pingPongBehavior)
+        testKit1.system.receptionist ! Register(PingKey, service, regProbe1.ref)
+        regProbe1.expectMessage(Registered(PingKey, service))
+        system2.receptionist ! Subscribe(PingKey, regProbe2.ref)
+        regProbe2.expectMessage(Listing(PingKey, Set.empty[ActorRef[PingProtocol]]))
+
+        val clusterNode1 = Cluster(system1)
+        clusterNode1.manager ! Join(clusterNode1.selfMember.address)
+        val clusterNode2 = Cluster(system2)
+        clusterNode2.manager ! Join(clusterNode1.selfMember.address)
+
+        val PingKey.Listing(remoteServiceRefs) = regProbe2.expectMessageType[Listing](10.seconds)
+        remoteServiceRefs.head.path.address should ===(Cluster(system1).selfMember.address)
       } finally {
         testKit1.shutdownTestKit()
         testKit2.shutdownTestKit()
@@ -735,5 +764,62 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
     }
     // Fixme concurrent registration and unregistration
+
+    "notify subscribers when registering and joining simultaneously" in {
+      // failing test reproducer for issue #28792
+      val config = ConfigFactory.parseString("""
+        # quick dissemination to increase the chance of the race condition
+        akka.cluster.typed.receptionist.distributed-data.write-consistency = all
+        akka.cluster.typed.receptionist.distributed-data.gossip-interval = 500ms
+        """).withFallback(ClusterReceptionistSpec.config)
+      val numberOfNodes = 6
+      val testKits = Vector.fill(numberOfNodes)(ActorTestKit("ClusterReceptionistSpec", config))
+      try {
+        val probes = testKits.map(t => TestProbe[Any]()(t.system))
+        testKits.zip(probes).foreach { case (t, p) => t.system.receptionist ! Subscribe(PingKey, p.ref) }
+
+        val clusterNode1 = Cluster(testKits.head.system)
+        // join 3 first
+        (0 until 3).foreach { i =>
+          val t = testKits(i)
+          Cluster(t.system).manager ! Join(clusterNode1.selfMember.address)
+          val ref = t.spawn(pingPongBehavior)
+          t.system.receptionist ! Register(PingKey, ref)
+        }
+        // wait until all those are Up
+        (0 until 3).foreach { i =>
+          probes(i).awaitAssert(
+            Cluster(testKits(i).system).state.members.count(_.status == MemberStatus.Up) should ===(3),
+            10.seconds)
+        }
+
+        // then join the rest randomly to the first 3
+        // important to not join all to first to be able to reproduce the problem
+        testKits.drop(3).foreach { t =>
+          val i = ThreadLocalRandom.current().nextInt(3)
+          Cluster(t.system).manager ! Join(Cluster(testKits(i).system).selfMember.address)
+          val ref = t.spawn(pingPongBehavior)
+          Thread.sleep(100) // increase chance of the race condition
+          t.system.receptionist ! Register(PingKey, ref)
+        }
+
+        (0 until numberOfNodes).foreach { i =>
+          probes(i).awaitAssert(
+            Cluster(testKits(i).system).state.members.count(_.status == MemberStatus.Up) should ===(numberOfNodes),
+            30.seconds)
+        }
+
+        // eventually, all should be included in the Listing
+        (0 until numberOfNodes).foreach { i =>
+          probes(i).fishForMessage(10.seconds, s"$i") {
+            case PingKey.Listing(actors) if actors.size == numberOfNodes => FishingOutcomes.complete
+            case PingKey.Listing(_)                                      => FishingOutcomes.continue
+          }
+        }
+
+      } finally {
+        testKits.foreach(_.shutdownTestKit())
+      }
+    }
   }
 }
