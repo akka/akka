@@ -901,6 +901,8 @@ class DistributedPubSubMediator(settings: DistributedPubSubSettings)
 object DistributedPubSub extends ExtensionId[DistributedPubSub] with ExtensionIdProvider {
   override def get(system: ActorSystem): DistributedPubSub = super.get(system)
 
+  override def get(system: ClassicActorSystemProvider): DistributedPubSub = super.get(system)
+
   override def lookup = DistributedPubSub
 
   override def createExtension(system: ExtendedActorSystem): DistributedPubSub =

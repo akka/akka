@@ -6,6 +6,7 @@ package akka.cluster.ddata
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -14,6 +15,7 @@ import akka.cluster.{ Cluster, UniqueAddress }
 
 object DistributedData extends ExtensionId[DistributedData] with ExtensionIdProvider {
   override def get(system: ActorSystem): DistributedData = super.get(system)
+  override def get(system: ClassicActorSystemProvider): DistributedData = super.get(system)
 
   override def lookup = DistributedData
 

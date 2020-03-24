@@ -13,6 +13,7 @@ import scala.concurrent.duration._
 import java.net.InetSocketAddress
 
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
@@ -107,6 +108,8 @@ object Tcp extends ExtensionId[Tcp] with ExtensionIdProvider {
   }
 
   override def get(system: ActorSystem): Tcp = super.get(system)
+
+  override def get(system: ClassicActorSystemProvider): Tcp = super.get(system)
 
   def lookup() = Tcp
 

@@ -436,6 +436,7 @@ private[akka] object ActorPublisherState extends ExtensionId[ActorPublisherState
   import ActorPublisher.Internal.LifecycleState
 
   override def get(system: ActorSystem): ActorPublisherState = super.get(system)
+  override def get(system: ClassicActorSystemProvider): ActorPublisherState = super.get(system)
 
   override def lookup() = ActorPublisherState
 

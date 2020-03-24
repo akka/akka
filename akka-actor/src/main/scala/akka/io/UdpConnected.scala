@@ -38,6 +38,7 @@ object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvide
    * Java API: retrieve the UdpConnected extension for the given system.
    */
   override def get(system: ActorSystem): UdpConnectedExt = super.get(system)
+  override def get(system: ClassicActorSystemProvider): UdpConnectedExt = super.get(system)
 
   /**
    * The common interface for [[Command]] and [[Event]].

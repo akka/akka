@@ -68,6 +68,7 @@ object PersistencePluginProxyExtension
     new PersistencePluginProxyExtensionImpl(system)
   override def lookup(): ExtensionId[_ <: Extension] = PersistencePluginProxyExtension
   override def get(system: ActorSystem): PersistencePluginProxyExtensionImpl = super.get(system)
+  override def get(system: ClassicActorSystemProvider): PersistencePluginProxyExtensionImpl = super.get(system)
 }
 
 final class PersistencePluginProxy(config: Config) extends Actor with Stash with ActorLogging {
