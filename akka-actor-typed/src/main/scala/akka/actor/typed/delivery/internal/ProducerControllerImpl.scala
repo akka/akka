@@ -18,6 +18,7 @@ import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.ConsumerController.SequencedMessage
 import akka.actor.typed.delivery.DurableProducerQueue
 import akka.actor.typed.delivery.ProducerController
+import akka.actor.typed.internal.ActorFlightRecorder
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
@@ -128,6 +129,7 @@ object ProducerControllerImpl {
       settings: ProducerController.Settings): Behavior[Command[A]] = {
     Behaviors
       .setup[InternalCommand] { context =>
+        ActorFlightRecorder(context.system).delivery.producerCreated(producerId, context.self.path)
         Behaviors.withMdc(staticMdc = Map("producerId" -> producerId)) {
           context.setLoggerName("akka.actor.typed.delivery.ProducerController")
           val durableQueue = askLoadState(context, durableQueueBehavior, settings)
@@ -161,6 +163,7 @@ object ProducerControllerImpl {
       send: ConsumerController.SequencedMessage[A] => Unit): Behavior[Command[A]] = {
     Behaviors
       .setup[InternalCommand] { context =>
+        ActorFlightRecorder(context.system).delivery.producerCreated(producerId, context.self.path)
         Behaviors.withMdc(staticMdc = Map("producerId" -> producerId)) {
           context.setLoggerName("akka.actor.typed.delivery.ProducerController")
           val durableQueue = askLoadState(context, durableQueueBehavior, settings)
@@ -301,10 +304,13 @@ object ProducerControllerImpl {
       state: State[A]): Behavior[InternalCommand] = {
 
     Behaviors.setup { context =>
+      val flightRecorder = ActorFlightRecorder(context.system).delivery
+      flightRecorder.producerStarted(producerId, context.self.path)
       Behaviors.withTimers { timers =>
         val msgAdapter: ActorRef[A] = context.messageAdapter(msg => Msg(msg))
         val requested =
           if (state.unconfirmed.isEmpty) {
+            flightRecorder.producerRequestNext(producerId, 1L, 0)
             state.producer ! RequestNext(producerId, 1L, 0L, msgAdapter, context.self)
             true
           } else {
@@ -345,6 +351,7 @@ private class ProducerControllerImpl[A: ClassTag](
   import ProducerController.Start
   import ProducerControllerImpl._
 
+  private val flightRecorder = ActorFlightRecorder(context.system).delivery
   // for the durableQueue StoreMessageSent ask
   private implicit val askTimeout: Timeout = settings.durableQueueRequestTimeout
 
@@ -362,11 +369,14 @@ private class ProducerControllerImpl[A: ClassTag](
       if (s.currentSeqNr == s.firstSeqNr)
         timers.startTimerWithFixedDelay(ResendFirst, ResendFirst, 1.second)
 
+      flightRecorder.producerSent(producerId, seqMsg.seqNr)
       s.send(seqMsg)
       val newRequested =
-        if (s.currentSeqNr == s.requestedSeqNr)
+        if (s.currentSeqNr == s.requestedSeqNr) {
+          flightRecorder.producerWaitingForRequest(producerId, s.currentSeqNr)
           false
-        else {
+        } else {
+          flightRecorder.producerRequestNext(producerId, s.currentSeqNr + 1, s.confirmedSeqNr)
           s.producer ! RequestNext(producerId, s.currentSeqNr + 1, s.confirmedSeqNr, msgAdapter, context.self)
           true
         }
@@ -391,6 +401,7 @@ private class ProducerControllerImpl[A: ClassTag](
         newRequestedSeqNr: SeqNr,
         supportResend: Boolean,
         viaTimeout: Boolean): Behavior[InternalCommand] = {
+      flightRecorder.producerReceivedRequest(producerId, newRequestedSeqNr)
       context.log.debugN(
         "Received Request, confirmed [{}], requested [{}], current [{}]",
         newConfirmedSeqNr,
@@ -422,8 +433,10 @@ private class ProducerControllerImpl[A: ClassTag](
           stateAfterAck.currentSeqNr)
 
       if (newRequestedSeqNr2 > s.requestedSeqNr) {
-        if (!s.requested && (newRequestedSeqNr2 - s.currentSeqNr) > 0)
+        if (!s.requested && (newRequestedSeqNr2 - s.currentSeqNr) > 0) {
+          flightRecorder.producerRequestNext(producerId, s.currentSeqNr, newConfirmedSeqNr)
           s.producer ! RequestNext(producerId, s.currentSeqNr, newConfirmedSeqNr, msgAdapter, context.self)
+        }
         active(
           stateAfterAck.copy(
             requested = true,
@@ -485,6 +498,7 @@ private class ProducerControllerImpl[A: ClassTag](
     }
 
     def receiveResend(fromSeqNr: SeqNr): Behavior[InternalCommand] = {
+      flightRecorder.producerReceivedResend(producerId, fromSeqNr)
       val newUnconfirmed =
         if (fromSeqNr == 0 && s.unconfirmed.nonEmpty)
           s.unconfirmed.head.asFirst +: s.unconfirmed.tail
@@ -495,13 +509,18 @@ private class ProducerControllerImpl[A: ClassTag](
     }
 
     def resendUnconfirmed(newUnconfirmed: Vector[SequencedMessage[A]]): Unit = {
-      if (newUnconfirmed.nonEmpty)
-        context.log.debug("Resending [{} - {}].", newUnconfirmed.head.seqNr, newUnconfirmed.last.seqNr)
-      newUnconfirmed.foreach(s.send)
+      if (newUnconfirmed.nonEmpty) {
+        val fromSeqNr = newUnconfirmed.head.seqNr
+        val toSeqNr = newUnconfirmed.last.seqNr
+        flightRecorder.producerResentUnconfirmed(producerId, fromSeqNr, toSeqNr)
+        context.log.debug("Resending [{} - {}].", fromSeqNr, toSeqNr)
+        newUnconfirmed.foreach(s.send)
+      }
     }
 
     def receiveResendFirstUnconfirmed(): Behavior[InternalCommand] = {
       if (s.unconfirmed.nonEmpty) {
+        flightRecorder.producerResentFirstUnconfirmed(producerId, s.unconfirmed.head.seqNr)
         context.log.debug("Resending first unconfirmed [{}].", s.unconfirmed.head.seqNr)
         s.send(s.unconfirmed.head)
       }
@@ -510,6 +529,7 @@ private class ProducerControllerImpl[A: ClassTag](
 
     def receiveResendFirst(): Behavior[InternalCommand] = {
       if (s.unconfirmed.nonEmpty && s.unconfirmed.head.seqNr == s.firstSeqNr) {
+        flightRecorder.producerResentFirst(producerId, s.firstSeqNr)
         context.log.debug("Resending first, [{}].", s.firstSeqNr)
         s.send(s.unconfirmed.head.asFirst)
       } else {
@@ -522,8 +542,10 @@ private class ProducerControllerImpl[A: ClassTag](
     def receiveStart(start: Start[A]): Behavior[InternalCommand] = {
       ProducerControllerImpl.enforceLocalProducer(start.producer)
       context.log.debug("Register new Producer [{}], currentSeqNr [{}].", start.producer, s.currentSeqNr)
-      if (s.requested)
+      if (s.requested) {
+        flightRecorder.producerRequestNext(producerId, s.currentSeqNr, s.confirmedSeqNr)
         start.producer ! RequestNext(producerId, s.currentSeqNr, s.confirmedSeqNr, msgAdapter, context.self)
+      }
       active(s.copy(producer = start.producer))
     }
 
@@ -547,6 +569,7 @@ private class ProducerControllerImpl[A: ClassTag](
 
     Behaviors.receiveMessage {
       case MessageWithConfirmation(m: A, replyTo) =>
+        flightRecorder.producerReceived(producerId, s.currentSeqNr)
         val newReplyAfterStore = s.replyAfterStore.updated(s.currentSeqNr, replyTo)
         if (durableQueue.isEmpty) {
           onMsg(m, newReplyAfterStore, ack = true)
@@ -558,6 +581,7 @@ private class ProducerControllerImpl[A: ClassTag](
         }
 
       case Msg(m: A) =>
+        flightRecorder.producerReceived(producerId, s.currentSeqNr)
         if (durableQueue.isEmpty) {
           onMsg(m, s.replyAfterStore, ack = false)
         } else {
