@@ -401,7 +401,7 @@ private class ProducerControllerImpl[A: ClassTag](
         newRequestedSeqNr: SeqNr,
         supportResend: Boolean,
         viaTimeout: Boolean): Behavior[InternalCommand] = {
-      flightRecorder.producerReceivedRequest(producerId, newRequestedSeqNr)
+      flightRecorder.producerReceivedRequest(producerId, newRequestedSeqNr, newConfirmedSeqNr)
       context.log.debugN(
         "Received Request, confirmed [{}], requested [{}], current [{}]",
         newConfirmedSeqNr,

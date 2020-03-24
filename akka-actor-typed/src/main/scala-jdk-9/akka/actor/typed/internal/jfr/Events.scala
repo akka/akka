@@ -85,7 +85,8 @@ final class DeliveryProducerReceived(val producerId: String, val currentSeqNr: L
 @Enabled(true)
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ProducerController")) @Label("Delivery ProducerController received demand request")
-final class DeliveryProducerReceivedRequest(val producerId: String, val requestedSeqNr: Long) extends Event
+final class DeliveryProducerReceivedRequest(val producerId: String, val requestedSeqNr: Long, confirmedSeqNr: Long)
+    extends Event
 
 /** INTERNAL API */
 @InternalApi
@@ -129,14 +130,14 @@ final class DeliveryConsumerReceivedPreviousInProgress(val producerId: String, v
 @Enabled(true)
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ConsumerController")) @Label("Delivery ConsumerController received duplicate")
-final class DeliveryConsumerDuplicate(val pid: String, val expectedSeqNr: Long, val seqNr: Long) extends Event
+final class DeliveryConsumerDuplicate(val producerId: String, val expectedSeqNr: Long, val seqNr: Long) extends Event
 
 /** INTERNAL API */
 @InternalApi
 @Enabled(true)
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ConsumerController")) @Label("Delivery ConsumerController received missing")
-final class DeliveryConsumerMissing(val pid: String, val expectedSeqNr: Long, val seqNr: Long) extends Event
+final class DeliveryConsumerMissing(val producerId: String, val expectedSeqNr: Long, val seqNr: Long) extends Event
 
 /** INTERNAL API */
 @InternalApi
