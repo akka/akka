@@ -195,27 +195,28 @@ public class ActorHierarchyExperiments {
 }
 // #print-refs
 
-
 class StartingActorHierarchyActors {
 
   public void showStartAndStopActors() {
-    Behaviors.setup(context -> {
-      // #start-stop-main
-      ActorRef<String> first = context.spawn(StartStopActor1.create(), "first");
-      first.tell("stop");
-      // #start-stop-main
-      return Behaviors.empty();
-    });
+    Behaviors.setup(
+        context -> {
+          // #start-stop-main
+          ActorRef<String> first = context.spawn(StartStopActor1.create(), "first");
+          first.tell("stop");
+          // #start-stop-main
+          return Behaviors.empty();
+        });
   }
 
   public void showSuperviseActors() {
-    Behaviors.setup(context -> {
-      // #supervise-main
-      ActorRef<String> supervisingActor =
-          context.spawn(SupervisingActor.create(), "supervising-actor");
-      supervisingActor.tell("failChild");
-      // #supervise-main
-      return Behaviors.empty();
-    });
+    Behaviors.setup(
+        context -> {
+          // #supervise-main
+          ActorRef<String> supervisingActor =
+              context.spawn(SupervisingActor.create(), "supervising-actor");
+          supervisingActor.tell("failChild");
+          // #supervise-main
+          return Behaviors.empty();
+        });
   }
 }
