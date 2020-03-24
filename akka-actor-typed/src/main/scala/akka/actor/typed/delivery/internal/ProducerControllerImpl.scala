@@ -359,7 +359,7 @@ private class ProducerControllerImpl[A: ClassTag](
         else Vector.empty // no resending, no need to keep unconfirmed
 
       if (s.currentSeqNr == s.firstSeqNr)
-        timers.startTimerWithFixedDelay(ResendFirst, ResendFirst, delay = settings.durableQueueResendInterval)
+        timers.startTimerWithFixedDelay(ResendFirst, ResendFirst, delay = settings.durableQueueResendFirstInterval)
 
       s.send(seqMsg)
       val newRequested =
@@ -536,7 +536,7 @@ private class ProducerControllerImpl[A: ClassTag](
         consumerController,
         newFirstSeqNr)
       if (s.unconfirmed.nonEmpty) {
-        timers.startTimerWithFixedDelay(ResendFirst, ResendFirst, delay = settings.durableQueueResendInterval)
+        timers.startTimerWithFixedDelay(ResendFirst, ResendFirst, delay = settings.durableQueueResendFirstInterval)
         context.self ! ResendFirst
       }
       // update the send function
