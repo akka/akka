@@ -107,10 +107,10 @@ Java
 A typical scenario is to create a persistent actor, send commands to it and check that it persists events as it is expected:
 
 Scala
-:  @@snip [TestKitExamples.scala](/akka-docs/src/test/scala/docs/persistence/testkit/TestKitExamples.scala) { #testkit-typed-usecase }
+:  @@snip [TestKitExamples.scala](/akka-docs/src/test/scala/docs/persistence/testkit/TestKitExamples.scala) { #test }
 
 Java
-:  @@snip [TestKitExamples.java](/akka-docs/src/test/java/jdocs/persistence/testkit/TestKitExamples.java) { #testkit-typed-usecase }
+:  @@snip [TestKitExamples.java](/akka-docs/src/test/java/jdocs/persistence/testkit/PersistenceTestKitSampleTest.java) { #test }
 
 You can safely use persistence testkit in combination with main akka testkit.
 
@@ -188,7 +188,7 @@ For tests that involve more than one Cluster node you have to use another journa
 While it's possible to use the @ref:[Persistence Plugin Proxy](../persistence-plugins.md#persistence-plugin-proxy)
 it's often better and more realistic to use a real database.
 
-See [akka-samples issue #128](https://github.com/akka/akka-samples/issues/128).
+The @ref:[CQRS example](../project/examples.md#cqrs) includes tests that are using Akka Persistence Cassandra.
 
 ### Plugin initialization
 
