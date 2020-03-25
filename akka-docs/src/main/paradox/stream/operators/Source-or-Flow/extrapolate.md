@@ -1,16 +1,13 @@
-ç# extrapolate
+# extrapolate
 
 Allow for a faster downstream by expanding the last emitted element to an `Iterator`.
 
 @ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #extrapolate }
+@apidoc[Flow.extrapolate](Flow) { scala="#extrapolate%5BU%3E:Out](extrapolator:U=%3EIterator[U],initial:Option[U]):FlowOps.this.Repr[U]" java="#extrapolate(akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 
@@ -33,11 +30,10 @@ if we can't decode a frame or two (or more). When a frame is dropped, though, we
 frame decoded:
 
 Scala
-:   @@snip [ExtrapolateScala.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ExtrapolateScala.scala) { #extrapolate }
+:   @@snip [ExtrapolateAndExpandScala.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ExtrapolateAndExpandScala.scala) { #extrapolate }
 
 Java
-:   @@snip [ExtrapolateJava.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/ExtrapolateJava.java) { #extrapolate }
- 
+:   @@snip [ExtrapolateAndExpandJava.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/ExtrapolateAndExpandJava.java) { #extrapolate }
 
 ## Reactive Streams semantics
 

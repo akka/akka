@@ -4,13 +4,10 @@ Like `extrapolate`, but does not have the `initial` argument, and the `Iterator`
 
 @ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #expand }
+@apidoc[Flow.expand](Flow) { scala="#expand[U](expander:Out=%3EIterator[U]):FlowOps.this.Repr[U]" java="#expand(akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 
@@ -29,10 +26,10 @@ our colleague. `expand` provides access to the element flowing through the strea
 and let's us create extra frames in case the producer slows down:
 
 Scala
-:   @@snip [ExpandScala.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ExpandScala.scala) { #expand }
+:   @@snip [ExtrapolateAndExpandScala.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ExtrapolateAndExpandScala.scala) { #expand }
 
 Java
-:   @@snip [ExpandJava.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/ExpandJava.java) { #expand }
+:   @@snip [ExtrapolateAndExpandJava.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/ExtrapolateAndExpandJava.java) { #expand }
 
 
 ## Reactive Streams semantics

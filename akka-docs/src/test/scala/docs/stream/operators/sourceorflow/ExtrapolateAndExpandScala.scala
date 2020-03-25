@@ -13,8 +13,8 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import docs.stream.operators.sourceorflow.ExpandScala.nowInSeconds
-import docs.stream.operators.sourceorflow.ExpandScala.videoAt25Fps
+import docs.stream.operators.sourceorflow.ExtrapolateAndExpandScala.nowInSeconds
+import docs.stream.operators.sourceorflow.ExtrapolateAndExpandScala.videoAt25Fps
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -22,12 +22,12 @@ import scala.util.Random
 /**
  *
  */
-object ExpandMain extends App {
+object ExtrapolateAndExpandMain extends App {
   implicit val sys = ActorSystem("25fps-stream")
   videoAt25Fps.map(_.pixels.utf8String).map(frame => s"$nowInSeconds - $frame").to(Sink.foreach(println)).run()
 
 }
-object ExpandScala {
+object ExtrapolateAndExpandScala {
 
   val periodInMillis = 40
   val fps = 1000 / periodInMillis
@@ -52,23 +52,42 @@ object ExpandScala {
   val decode: Flow[ByteString, Frame, NotUsed] =
     Flow[ByteString].map(Frame.decode)
 
+  // #extrapolate
+  // if upstream is too slow, produce copies of the last frame but grayed out.
+  val rateControl: Flow[Frame, Frame, NotUsed] =
+    Flow[Frame].extrapolate((frame: Frame) => {
+      val grayedOut = frame.withFilter(Gray)
+      Iterator.continually(grayedOut)
+    }, Some(Frame.blackFrame))
+
+  val videoSource: Source[Frame, NotUsed] = networkSource.via(decode).via(rateControl)
+
+  // let's create a 25fps stream (a Frame every 40.millis)
+  val tickSource: Source[Tick.type, Cancellable] = Source.tick(0.seconds, 40.millis, Tick)
+
+  val videoAt25Fps: Source[Frame, Cancellable] =
+    tickSource.zip(videoSource).map(_._2)
+  // #extrapolate
+
   // #expand
   // each element flowing through the stream is expanded to a watermark copy
   // of the upstream frame and grayed out copies. The grayed out copies should
   // only be used downstream if the producer is too slow.
-  val rateControl = Flow[Frame].expand((frame: Frame) => {
-    val watermarked = frame.withFilter(Watermark)
-    val grayedOut = frame.withFilter(Gray)
-    (Iterator.single(watermarked) ++ Iterator.continually(grayedOut))
-  })
+  val watermarkerRateControl: Flow[Frame, Frame, NotUsed] =
+    Flow[Frame].expand((frame: Frame) => {
+      val watermarked = frame.withFilter(Watermark)
+      val grayedOut = frame.withFilter(Gray)
+      (Iterator.single(watermarked) ++ Iterator.continually(grayedOut))
+    })
 
-  val videoSource = networkSource.via(decode).via(rateControl)
+  val watermakerdVideoSource: Source[Frame, NotUsed] =
+    networkSource.via(decode).via(rateControl)
 
   // let's create a 25fps stream (a Frame every 40.millis)
-  val tickSource = Source.tick(0.seconds, 40.millis, Tick)
+  val ticks: Source[Tick.type, Cancellable] = Source.tick(0.seconds, 40.millis, Tick)
 
-  val videoAt25Fps: Source[Frame, Cancellable] =
-    tickSource.zip(videoSource).map(_._2)
+  val watermarekedvideoAt25Fps: Source[Frame, Cancellable] =
+    ticks.zip(watermarekedvideoAt25Fps).map(_._2)
 
   // #expand
 
