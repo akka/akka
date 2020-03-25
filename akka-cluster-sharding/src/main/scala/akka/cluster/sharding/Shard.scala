@@ -184,8 +184,6 @@ private[akka] final class Shard(
   private var entityIds: Set[EntityId] = Set.empty
   private var idByRef = Map.empty[ActorRef, EntityId]
   private var refById = Map.empty[EntityId, ActorRef]
-  // toggles when shard actor is waiting for some async op
-  private var waiting = true
   private var lastMessageTimestamp = Map.empty[EntityId, Long]
   private var passivating = Set.empty[ActorRef]
   private val messageBuffers = new MessageBufferMap[EntityId]
@@ -212,13 +210,15 @@ private[akka] final class Shard(
     case None    => 5.seconds // not used
   }
 
+  def receive: Receive = {
+    case _ => throw new IllegalStateException("Default receive never expected to actually be used")
+  }
+
   override def preStart(): Unit = {
     acquireLeaseIfNeeded()
   }
 
-  /**
-   * Will call onLeaseAcquired when completed, also when lease isn't used
-   */
+  // ===== lease handling initialization =====
   def acquireLeaseIfNeeded(): Unit = {
     lease match {
       case Some(l) =>
@@ -229,85 +229,10 @@ private[akka] final class Shard(
     }
   }
 
-  // Override to execute logic once the lease has been acquired
-  // Will be called on the actor thread
-  def onLeaseAcquired(): Unit = {
-    log.debug("Lease acquired")
-    waitingForInitialEntities()
-  }
-
-  private def tryGetLease(l: Lease): Unit = {
-    log.info("Acquiring lease {}", l.settings)
-    pipe(l.acquire(reason => self ! LeaseLost(reason)).map(r => LeaseAcquireResult(r, None)).recover {
-      case t => LeaseAcquireResult(acquired = false, Some(t))
-    }).to(self)
-  }
-
-  def waitingForInitialEntities(): Unit = {
-    def loadingEntityIdsFailed(ex: Throwable): Unit =
-      throw new RuntimeException("Failed to load initial entity ids from remember entities store", ex)
-
-    val futureEntityIds = rememberEntitiesStore.getEntities(shardId)
-
-    futureEntityIds.value match {
-      case Some(Success(entityIds)) => gotEntityIds(entityIds)
-      case Some(Failure(ex))        => loadingEntityIdsFailed(ex)
-      case None =>
-        log.debug("Waiting for load of entity ids using [{}] to complete", rememberEntitiesStore)
-        futureEntityIds.map(RememberedEntityIds)(ExecutionContexts.parasitic).pipeTo(self)
-        context.become {
-          case RememberedEntityIds(entityIds) =>
-            gotEntityIds(entityIds)
-          case Failure(ex) =>
-            loadingEntityIdsFailed(ex)
-          case _ =>
-            stash()
-        }
-    }
-  }
-
-  def gotEntityIds(ids: Set[EntityId]): Unit = {
-    if (ids.nonEmpty) {
-      restartRememberedEntities(ids)
-    } else {
-      log.debug("Shard initialized")
-    }
-    waiting = false
-    context.parent ! ShardInitialized(shardId)
-    context.become(receiveCommand)
-    unstashAll()
-  }
-
-  def restartRememberedEntities(ids: Set[EntityId]): Unit = {
-    log.debug(
-      "Shard starting [{}] remembered entities using strategy [{}]",
-      ids.size,
-      rememberedEntitiesRecoveryStrategy)
-    rememberedEntitiesRecoveryStrategy.recoverEntities(ids).foreach { scheduledRecovery =>
-      import context.dispatcher
-      scheduledRecovery.filter(_.nonEmpty).map(RestartEntities).pipeTo(self)
-    }
-  }
-
-  def restartEntities(ids: Set[EntityId]): Unit = {
-    log.debug("Restarting set of [{}] entities", ids.size)
-    context.actorOf(RememberEntityStarter.props(context.parent, ids, settings, sender()))
-  }
-
-  // copied from ddata shard, looks fishy to me
-  override protected[akka] def aroundReceive(rcv: Receive, msg: Any): Unit = {
-    super.aroundReceive(rcv, msg)
-    if (!waiting)
-      unstash() // unstash one message
-  }
-
-  def receive: Receive = receiveCommand
-
   // Don't send back ShardInitialized so that messages are buffered in the ShardRegion
   // while awaiting the lease
   private def awaitingLease(): Receive = {
     case LeaseAcquireResult(true, _) =>
-      log.debug("Acquired lease")
       onLeaseAcquired()
     case LeaseAcquireResult(false, None) =>
       log.error(
@@ -331,6 +256,76 @@ private[akka] final class Shard(
     case _ =>
       stash()
   }
+
+  // Override to execute logic once the lease has been acquired
+  // Will be called on the actor thread
+  def onLeaseAcquired(): Unit = {
+    log.debug("Lease acquired")
+    tryLoadRememberedEntities()
+  }
+
+  private def tryGetLease(l: Lease): Unit = {
+    log.info("Acquiring lease {}", l.settings)
+    pipe(l.acquire(reason => self ! LeaseLost(reason)).map(r => LeaseAcquireResult(r, None)).recover {
+      case t => LeaseAcquireResult(acquired = false, Some(t))
+    }).to(self)
+  }
+
+  // ===== remember entities initialization =====
+  def tryLoadRememberedEntities(): Unit = {
+    val futureEntityIds = rememberEntitiesStore.getEntities(shardId)
+
+    futureEntityIds.value match {
+      case Some(Success(entityIds)) => onEntitiesRemembered(entityIds)
+      case Some(Failure(ex))        => loadingEntityIdsFailed(ex)
+      case None =>
+        log.debug("Waiting for load of entity ids using [{}] to complete", rememberEntitiesStore)
+        futureEntityIds.map(RememberedEntityIds)(ExecutionContexts.parasitic).pipeTo(self)
+        context.become(awaitingRememberedEntities())
+    }
+  }
+
+  def awaitingRememberedEntities(): Receive = {
+    case RememberedEntityIds(entityIds) =>
+      onEntitiesRemembered(entityIds)
+    case Failure(ex) =>
+      loadingEntityIdsFailed(ex)
+    case _ =>
+      // FIXME Should this rather go in the buffer?
+      stash()
+  }
+
+  def loadingEntityIdsFailed(ex: Throwable): Unit =
+    throw new RuntimeException("Failed to load initial entity ids from remember entities store", ex)
+
+  def onEntitiesRemembered(ids: Set[EntityId]): Unit = {
+    if (ids.nonEmpty) {
+      restartRememberedEntities(ids)
+    } else {
+      log.debug("Shard initialized")
+    }
+    context.parent ! ShardInitialized(shardId)
+    context.become(receiveCommand)
+    unstashAll()
+  }
+
+  def restartRememberedEntities(ids: Set[EntityId]): Unit = {
+    log.debug(
+      "Shard starting [{}] remembered entities using strategy [{}]",
+      ids.size,
+      rememberedEntitiesRecoveryStrategy)
+    rememberedEntitiesRecoveryStrategy.recoverEntities(ids).foreach { scheduledRecovery =>
+      import context.dispatcher
+      scheduledRecovery.filter(_.nonEmpty).map(RestartEntities).pipeTo(self)
+    }
+  }
+
+  def restartEntities(ids: Set[EntityId]): Unit = {
+    log.debug("Restarting set of [{}] entities", ids.size)
+    context.actorOf(RememberEntityStarter.props(context.parent, ids, settings, sender()))
+  }
+
+  // ===== shard up and running =====
 
   def receiveCommand: Receive = {
     case Terminated(ref)                         => receiveTerminated(ref)
@@ -356,7 +351,6 @@ private[akka] final class Shard(
           // FIXME do we need a more specific done message?
           case Done =>
             whenDone(entityId)
-            waiting = false
             context.become(receiveCommand)
 
           // FIXME do we need a more specific failure message?
@@ -390,7 +384,15 @@ private[akka] final class Shard(
 
   def receiveLeaseLost(msg: LeaseLost): Unit = {
     // The shard region will re-create this when it receives a message for this shard
-    log.error("Shard type [{}] id [{}] lease lost. Reason: {}", typeName, shardId, msg.reason)
+    log.error(
+      "Shard type [{}] id [{}] lease lost, stopping shard and killing [{}] entities.{}",
+      typeName,
+      shardId,
+      entityIds.size,
+      msg.reason match {
+        case Some(reason) => s" Reason for losing lease: $reason"
+        case None         => ""
+      })
     // Stop entities ASAP rather than send termination message
     context.stop(self)
   }

@@ -55,7 +55,7 @@ private[akka] final class EventSourcedRememberEntities(eventSourcedStore: ActorR
       .mapTo[EventSourcedRememberEntitiesStore.EntityIds]
       .map(_.ids)(ExecutionContexts.parasitic)
 
-  override def toString: ShardId = s"${getClass.getName}($eventSourcedStore)"
+  override def toString: ShardId = s"${getClass.getSimpleName}($eventSourcedStore)"
 }
 
 /**

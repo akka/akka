@@ -129,7 +129,7 @@ class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
       awaitAssert({
         region ! 4
         expectMsg(4)
-      }, max = 5.seconds)
+      }, max = 10.seconds)
     }
   }
 }
