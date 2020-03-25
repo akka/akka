@@ -4,9 +4,11 @@
 
 package akka.cluster.sharding
 
+import akka.actor.ActorLogging
 import akka.actor.{ Actor, PoisonPill, Props }
-import akka.cluster.sharding.PersistentShardSpec.EntityActor
+import akka.cluster.sharding.PersistentShardSpec.FakeShardRegion
 import akka.cluster.sharding.Shard.{ GetShardStats, ShardStats }
+import akka.cluster.sharding.ShardRegion.ShardInitialized
 import akka.cluster.sharding.ShardRegion.{ StartEntity, StartEntityAck }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.ConfigFactory
@@ -16,6 +18,40 @@ object PersistentShardSpec {
   class EntityActor extends Actor {
     override def receive: Receive = {
       case _ =>
+    }
+  }
+
+  object FakeShardRegion {
+    val props = Props(new FakeShardRegion)
+  }
+
+  // Needed since the shard triggers restarts of remembered entities by messaging through its
+  // parent shard region and the shard stats will respond with entities actually started
+  class FakeShardRegion extends Actor with ActorLogging {
+
+    val shardProps = Props(
+      new Shard(
+        "cats",
+        "shard-1",
+        _ => Props(new EntityActor),
+        ClusterShardingSettings(context.system)
+          .withRememberEntities(true)
+          .withStateStoreMode(ClusterShardingSettings.StateStoreModePersistence),
+        context.system.deadLetters, {
+          case _ => ("entity-1", "msg")
+        }, { _ =>
+          "shard-1"
+        },
+        PoisonPill,
+        0))
+
+    val fakeShard = context.actorOf(shardProps)
+
+    override def receive: Receive = {
+      case _: ShardInitialized =>
+      case msg =>
+        log.debug("Fake shard region forwarding {}", msg)
+        fakeShard.forward(msg)
     }
   }
 
@@ -30,22 +66,8 @@ class PersistentShardSpec extends AkkaSpec(PersistentShardSpec.config) with AnyW
   "Persistent Shard" must {
 
     "remember entities started with StartEntity" in {
-      val props =
-        Props(
-          new Shard(
-            "cats",
-            "shard-1",
-            _ => Props(new EntityActor),
-            ClusterShardingSettings(system)
-              .withRememberEntities(true)
-              .withStateStoreMode(ClusterShardingSettings.StateStoreModePersistence),
-            system.deadLetters, {
-              case _ => ("entity-1", "msg")
-            }, { _ =>
-              "shard-1"
-            },
-            PoisonPill,
-            0))
+      val props = FakeShardRegion.props
+
       val persistentShard = system.actorOf(props, "shard-1")
       watch(persistentShard)
 
@@ -58,9 +80,10 @@ class PersistentShardSpec extends AkkaSpec(PersistentShardSpec.config) with AnyW
       system.log.info("Starting shard again")
       val secondIncarnation = system.actorOf(props)
 
-      // FIXME how did this ever work when the RestartEntity goes through the parent, expected to be a shard region?
-      secondIncarnation ! GetShardStats
-      awaitAssert(expectMsg(ShardStats("shard-1", 1)))
+      awaitAssert {
+        secondIncarnation ! GetShardStats
+        expectMsg(ShardStats("shard-1", 1))
+      }
     }
   }
 
