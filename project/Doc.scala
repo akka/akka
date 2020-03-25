@@ -30,7 +30,7 @@ object Scaladoc extends AutoPlugin {
   override lazy val projectSettings = {
     inTask(doc)(
       Seq(
-        scalacOptions in Compile ++= scaladocOptions(version.value, (baseDirectory in ThisBuild).value),
+        scalacOptions in Compile ++= scaladocOptions(scalaVersion.value, version.value, (baseDirectory in ThisBuild).value),
         // -release caused build failures when generating javadoc:
         scalacOptions in Compile --= Seq("-release", "8"),
         autoAPIMappings := CliOptions.scaladocAutoAPI.get)) ++
@@ -43,7 +43,7 @@ object Scaladoc extends AutoPlugin {
     })
   }
 
-  def scaladocOptions(ver: String, base: File): List[String] = {
+  def scaladocOptions(scalaVersion: String, ver: String, base: File): List[String] = {
     val urlString = GitHub.url(ver) + "/€{FILE_PATH}.scala"
     val opts = List(
       "-implicits",
@@ -55,7 +55,15 @@ object Scaladoc extends AutoPlugin {
       "-doc-title",
       "Akka",
       "-doc-version",
-      ver)
+      ver) ++
+      (CrossVersion.partialVersion(scalaVersion) match {
+      case Some((2, 11)) => Seq()
+      case _ =>
+        Seq(
+          "-doc-canonical-base-url",
+          "https://doc.akka.io/api/akka/current/"
+        )
+    })
     CliOptions.scaladocDiagramsEnabled.ifTrue("-diagrams").toList ::: opts
   }
 
