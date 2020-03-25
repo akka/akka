@@ -35,7 +35,6 @@ object RemoteFeaturesSpec {
        akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
        akka.remote.artery.enabled = on
        akka.remote.artery.canonical.port = 0
-       akka.remote.artery.advanced.flight-recorder.enabled = off
        akka.log-dead-letters-during-shutdown = off
        """
 

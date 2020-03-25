@@ -17,10 +17,6 @@ object RemotingMultiNodeSpec {
   def commonConfig =
     ConfigFactory.parseString(s"""
         akka.actor.warn-about-java-serializer-usage = off
-        akka.remote.artery.advanced.flight-recorder {
-          enabled=on
-          destination=target/flight-recorder-${UUID.randomUUID().toString}.afr
-        }
       """).withFallback(ArterySpecSupport.tlsConfig) // TLS only used if transport=tls-tcp
 
 }
