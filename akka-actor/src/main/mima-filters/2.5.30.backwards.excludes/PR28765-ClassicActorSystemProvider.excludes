@@ -1,6 +1,8 @@
+# New methods in @DoNotInherit abstract classes / traits
 ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.ExtendedActorSystem.classicSystem")
 ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.ActorSystem.classicSystem")
 
+# New methods in @DoNotInherit abstract classes / traits
 ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.AbstractActor#ActorContext.classicActorContext")
 ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.ActorContext.classicActorContext")
 ProblemFilters.exclude[InheritedNewAbstractMethodProblem]("akka.actor.UntypedActorContext.classicActorContext")
