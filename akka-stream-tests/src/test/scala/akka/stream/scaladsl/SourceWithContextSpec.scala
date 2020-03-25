@@ -92,21 +92,14 @@ class SourceWithContextSpec extends StreamSpec {
         .expectComplete()
     }
 
-    sealed trait TransformPosition
-    case object Only extends TransformPosition
-    case object None extends TransformPosition
-    case object First extends TransformPosition
-    case object Within extends TransformPosition
-    case object Last extends TransformPosition
-    final case class OffsetContext(offset: Long, position: TransformPosition = Only)
+    final case class OffsetContext(offset: Long, position: String = "only")
 
     "use iterate strategy on contexts via mapConcat" in {
       val contextMapping = ContextMapStrategy.iterate(
         fn = (_: String, inCtx: OffsetContext, _: String, index: Int, hasNext: Boolean) => {
-          if (index == 0 && hasNext) OffsetContext(inCtx.offset, First)
-          else if (index == 0 && !hasNext) OffsetContext(inCtx.offset, Only)
-          else if (!hasNext) OffsetContext(inCtx.offset, Last)
-          else OffsetContext(inCtx.offset, Within)
+          if (index == 0 && hasNext) OffsetContext(inCtx.offset, "first")
+          else if (!hasNext) OffsetContext(inCtx.offset, "last")
+          else OffsetContext(inCtx.offset, "within")
         }
       )
 
@@ -121,14 +114,14 @@ class SourceWithContextSpec extends StreamSpec {
         )
         .runWith(TestSink.probe[(String, OffsetContext)])
         .request(3)
-        .expectNext(("a-1", OffsetContext(1L, First)), ("a-2", OffsetContext(1L, Within)), ("a-3", OffsetContext(1L, Last)))
+        .expectNext(("a-1", OffsetContext(1L, "first")), ("a-2", OffsetContext(1L, "within")), ("a-3", OffsetContext(1L, "last")))
         .expectComplete()
     }
 
     "use iterateOrEmpty strategy on contexts via mapConcat" in {
       val contextMapping = ContextMapStrategy.iterateOrEmpty(
         fn = (_: String, inCtx: OffsetContext, _: String, _: Int, _: Boolean) => inCtx,
-        emptyFn = (_: String, inCtx: OffsetContext) => ("empty",  OffsetContext(inCtx.offset, None))
+        emptyFn = (_: String, inCtx: OffsetContext) => ("empty",  OffsetContext(inCtx.offset, "empty"))
       )
 
       Source(Message("a", 1L) :: Nil)
@@ -140,7 +133,7 @@ class SourceWithContextSpec extends StreamSpec {
         )
         .runWith(TestSink.probe[(String, OffsetContext)])
         .request(1)
-        .expectNext(("empty", OffsetContext(1L, None)))
+        .expectNext(("empty", OffsetContext(1L, "empty")))
         .expectComplete()
     }
 

@@ -11,8 +11,8 @@ import akka.NotUsed
 import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.util.ConstantFun
-import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
-import akka.stream.impl.fusing.StatefulMapConcatWithContext
+import akka.event.{LogMarker, LoggingAdapter, MarkerLoggingAdapter}
+import akka.stream.impl.fusing.{FlattenMergeWithContext, StatefulMapConcatWithContext}
 
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
@@ -171,6 +171,34 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
     strategy: ContextMapStrategy.Iterate[Out @uncheckedVariance, Ctx @uncheckedVariance, Out2]
   ): Repr[Out2, Ctx] =
     via(flow.via(new StatefulMapConcatWithContext[Out, Ctx, Out2](() => f, strategy)))
+
+  def flatMapConcat[Out2, InnerMat](
+    f: Out => Graph[SourceShape[Out2], InnerMat],
+    strategy: ContextMapStrategy.Iterate[Out @uncheckedVariance, Ctx @uncheckedVariance, Out2]
+  ): Repr[Out2, Ctx] = {
+    via(flow[Out, Ctx]
+      //.map[(Graph[SourceShape[(Out2, Ctx)], InnerMat], Out)] {
+      .map { case (in, ctx) =>
+          val sourceWithContext: Graph[SourceShape[(Out2, Ctx)], InnerMat] =
+            Source.fromGraph(f(in)).map(out => (out, ctx))
+          (sourceWithContext, in)
+      }
+      .via(
+        new FlattenMergeWithContext[Out, Out2, Ctx, InnerMat](
+          1,
+          strategy
+        )
+      )
+    )
+
+
+    //???
+
+//    val withContext: Flow[(Graph[SourceShape[(Any, Ctx)], Any], Out), (Any, Ctx), NotUsed] =
+//      flow.via(flattenMergeWithContext)
+//    map(e => (f(e), e))
+//      .via(withContext)
+  }
 
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).

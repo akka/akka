@@ -2237,8 +2237,8 @@ private[stream] object Collect {
   val strategy: ContextMapStrategy.Iterate[In, Ctx, Out]
 )
   extends GraphStage[FlowShape[(In, Ctx), (Out, Ctx)]] {
-  val in = Inlet[(In, Ctx)]("StatefulMapConcat.in")
-  val out = Outlet[(Out, Ctx)]("StatefulMapConcat.out")
+  val in = Inlet[(In, Ctx)]("StatefulMapConcatWithContext.in")
+  val out = Outlet[(Out, Ctx)]("StatefulMapConcatWithContext.out")
   override val shape = FlowShape(in, out)
 
   override def initialAttributes: Attributes = DefaultAttributes.statefulMapConcat
@@ -2317,7 +2317,7 @@ private[stream] object Collect {
     }
   }
 
-  override def toString = "StatefulMapConcat"
+  override def toString = "StatefulMapConcatWithContext"
 
 }
 
