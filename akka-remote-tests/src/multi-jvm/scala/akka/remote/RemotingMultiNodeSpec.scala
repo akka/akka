@@ -4,8 +4,6 @@
 
 package akka.remote
 
-import java.util.UUID
-
 import akka.remote.artery.ArterySpecSupport
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.{ DefaultTimeout, ImplicitSender }

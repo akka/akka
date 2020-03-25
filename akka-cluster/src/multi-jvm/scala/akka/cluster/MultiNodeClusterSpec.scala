@@ -4,7 +4,6 @@
 
 package akka.cluster
 
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor.{ Actor, ActorRef, ActorSystem, Address, Deploy, PoisonPill, Props, RootActorPath }
