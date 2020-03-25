@@ -4,23 +4,29 @@
 
 package akka.persistence
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicReference
 import java.util.function.Consumer
 
-import akka.actor._
-import akka.event.{ Logging, LoggingAdapter }
-import akka.persistence.journal.{ EventAdapters, IdentityEventAdapters }
-import akka.util.Collections.EmptyImmutableSeq
-import akka.util.Helpers.ConfigOps
-import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
+import scala.concurrent.Future
 import scala.concurrent.duration._
-
-import akka.util.Reflect
 import scala.util.control.NonFatal
 
+import akka.Done
+import akka.actor._
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.persistence.journal.EventAdapters
+import akka.persistence.journal.IdentityEventAdapters
+import akka.util.Collections.EmptyImmutableSeq
+import akka.util.Helpers.ConfigOps
+import akka.util.Reflect
+import akka.util.Timeout
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
 
 /**
  * Persistence configuration.
@@ -280,6 +286,33 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    */
   private def verifySnapshotPluginConfigExists(pluginConfig: Config, configPath: String): Unit =
     verifyPluginConfigExists(pluginConfig.withFallback(system.settings.config), configPath, "Snapshot store")
+
+  /**
+   * Scala API: Initialize the given journal and snapshot plugins.
+   *
+   * The `snapshotPluginId` can be empty (`""`) if snapshot plugin isn't used.
+   * @return a `Future` that is completed when the initialization has completed
+   */
+  def initializePlugin(journalPluginId: String, snapshotPluginId: String, timeout: FiniteDuration): Future[Done] = {
+    val persistenceId: String = s"persistenceInit-${UUID.randomUUID()}"
+    val ref =
+      system.systemActorOf(PersistenceInit.props(journalPluginId, snapshotPluginId, persistenceId), persistenceId)
+    import akka.pattern.ask
+    import system.dispatcher
+    implicit val askTimeout: Timeout = timeout
+    (ref ? "start").map(_ => Done)
+  }
+
+  /**
+   * Java API: Initialize the given journal and snapshot plugins.
+   *
+   * The `snapshotPluginId` can be empty (`""`) if snapshot plugin isn't used.
+   * @return a `Future` that is completed when the initialization has completed
+   */
+  def initializePlugin(journalPluginId: String, snapshotPluginId: String, timeout: java.time.Duration): Future[Done] = {
+    import akka.util.JavaDurationConverters._
+    initializePlugin(journalPluginId, snapshotPluginId, timeout.asScala)
+  }
 
   /**
    * Returns an [[akka.persistence.journal.EventAdapters]] object which serves as a per-journal collection of bound event adapters.
