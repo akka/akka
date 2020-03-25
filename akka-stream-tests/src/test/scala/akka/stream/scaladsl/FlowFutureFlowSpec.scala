@@ -386,6 +386,27 @@ class FlowFutureFlowSpec extends StreamSpec {
       fSeq2.futureValue should equal(10 until 15)
     }
 
+    "allow flow to handle downstream completion with a late future" in assertAllStagesStopped {
+      val pr = Promise[Flow[Int, Int, Future[Seq[Int]]]]
+      val (fSeq1, fSeq2) = src10()
+        .viaMat {
+          Flow.futureFlow(pr.future)
+        }(Keep.right)
+        .take(5)
+        .toMat(Sink.seq)(Keep.both)
+        .run()
+
+      fSeq1.value should be(empty)
+      fSeq2.value should be(empty)
+
+      pr.success {
+        Flow.fromSinkAndSourceMat(Sink.seq[Int], src10(10))(Keep.left)
+      }
+
+      fSeq1.flatten.futureValue should be(0 until 10)
+      fSeq2.futureValue should equal(10 until 15)
+    }
+
     "abrupt termination before future completion" in assertAllStagesStopped {
       val mat = Materializer(system)
       val prFlow = Promise[Flow[Int, Int, Future[collection.immutable.Seq[Int]]]]
