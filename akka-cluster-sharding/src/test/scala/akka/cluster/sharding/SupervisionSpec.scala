@@ -17,7 +17,7 @@ object SupervisionSpec {
   val config =
     ConfigFactory.parseString("""
     akka.actor.provider = "cluster"
-    akka.loglevel = INFO
+    akka.loglevel = DEBUG
     """)
 
   case class Msg(id: Long, msg: Any)
@@ -59,8 +59,7 @@ object SupervisionSpec {
 
 }
 
-class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSender {
-
+class DeprecatedSupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSender {
   import SupervisionSpec._
 
   "Supervision for a sharded actor (deprecated)" must {
@@ -98,6 +97,11 @@ class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSend
       expectMsgType[Response](20.seconds)
     }
   }
+}
+
+class SupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSender {
+
+  import SupervisionSpec._
 
   "Supervision for a sharded actor" must {
 
