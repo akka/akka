@@ -17,7 +17,7 @@ object Publish extends AutoPlugin {
 
   override lazy val projectSettings = Seq(
     pomExtra := akkaPomExtra,
-    publishTo := akkaPublishTo.value,
+    publishTo := Some(akkaPublishTo.value),
     credentials ++= akkaCredentials,
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com")),
@@ -40,18 +40,13 @@ object Publish extends AutoPlugin {
   }
 
   private def akkaPublishTo = Def.setting {
-    sonatypeRepo(version.value).orElse(localRepo(defaultPublishTo.value))
+    val key = new java.io.File(
+      Option(System.getProperty("akka.gustav.key", null)).getOrElse(sys.env("HOME") + "/.ssh/id_rsa_gustav.pem"))
+    if (isSnapshot.value)
+      Resolver.sftp("Akka snapshots", "gustav.akka.io", "/home/akkarepo/www/snapshots").as("akkarepo", key)
+    else
+      Opts.resolver.sonatypeStaging
   }
-
-  private def sonatypeRepo(version: String): Option[Resolver] =
-    Option(sys.props("publish.maven.central")).filter(_.toLowerCase == "true").map { _ =>
-      val nexus = "https://oss.sonatype.org/"
-      if (version.endsWith("-SNAPSHOT")) "snapshots".at(nexus + "content/repositories/snapshots")
-      else "releases".at(nexus + "service/local/staging/deploy/maven2")
-    }
-
-  private def localRepo(repository: File) =
-    Some(Resolver.file("Default Local Repository", repository))
 
   private def akkaCredentials: Seq[Credentials] =
     Option(System.getProperty("akka.publish.credentials", null)).map(f => Credentials(new File(f))).toSeq
