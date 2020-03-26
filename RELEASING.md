@@ -62,7 +62,7 @@ a snapshot to https://repo.akka.io/snapshots from any branch.
 
 ## Release steps
 
-* tag the release: `git tag -am "Version 2.6.x" v2.6.x`
+* Tag the release: `git tag -am "Version 2.6.x" v2.6.x`
 * Do a `project/scripts/release` dry run
 * If all goes well, `project/scripts/release --real-run`
 * Log into sonatype, 'close' the staging repo.
