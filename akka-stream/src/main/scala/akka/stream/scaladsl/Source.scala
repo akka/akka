@@ -845,7 +845,7 @@ object Source {
    *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
-   * @param maxConcurrentOffers maximum number of pending offers when buffer is full
+   * @param maxConcurrentOffers maximum number of pending offers when buffer is full, should be greater than 0
    */
   def queue[T](
       bufferSize: Int,

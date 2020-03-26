@@ -34,7 +34,7 @@ import scala.concurrent.{ Future, Promise }
     extends GraphStageWithMaterializedValue[SourceShape[T], SourceQueueWithComplete[T]] {
   import QueueSource._
 
-  require(maxConcurrentOffers > 1, "Max concurrent offers must be greater than 1")
+  require(maxConcurrentOffers > 0, "Max concurrent offers must be greater than 0")
 
   val out = Outlet[T]("queueSource.out")
   override val shape: SourceShape[T] = SourceShape.of(out)
