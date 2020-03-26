@@ -10,6 +10,7 @@ import java.util.function.{ Function => JFunction }
 import scala.collection.immutable
 import scala.util.{ Failure, Success, Try }
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -21,6 +22,7 @@ import akka.coordination.lease.LeaseSettings
 @ApiMayChange
 object LeaseProvider extends ExtensionId[LeaseProvider] with ExtensionIdProvider {
   override def get(system: ActorSystem): LeaseProvider = super.get(system)
+  override def get(system: ClassicActorSystemProvider): LeaseProvider = super.get(system)
 
   override def lookup = LeaseProvider
 

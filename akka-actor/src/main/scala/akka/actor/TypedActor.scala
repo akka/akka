@@ -102,6 +102,7 @@ trait TypedActorFactory {
  */
 object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvider {
   override def get(system: ActorSystem): TypedActorExtension = super.get(system)
+  override def get(system: ClassicActorSystemProvider): TypedActorExtension = super.get(system)
 
   def lookup() = this
   def createExtension(system: ExtendedActorSystem): TypedActorExtension = new TypedActorExtension(system)

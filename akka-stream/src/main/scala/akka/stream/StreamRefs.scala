@@ -10,6 +10,7 @@ import akka.stream.scaladsl.{ Sink, Source }
 import scala.language.implicitConversions
 
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -125,6 +126,8 @@ object StreamRefResolver extends ExtensionId[StreamRefResolver] {
    * Java API
    */
   override def get(system: ActorSystem): StreamRefResolver = super.get(system)
+
+  override def get(system: ClassicActorSystemProvider): StreamRefResolver = super.get(system)
 
   override def createExtension(system: ExtendedActorSystem): StreamRefResolver =
     new StreamRefResolverImpl(system)

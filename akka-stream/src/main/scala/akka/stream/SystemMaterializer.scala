@@ -5,6 +5,7 @@
 package akka.stream
 
 import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.Extension
 import akka.actor.ExtensionId
@@ -18,6 +19,7 @@ import akka.actor.ExtensionIdProvider
  */
 object SystemMaterializer extends ExtensionId[SystemMaterializer] with ExtensionIdProvider {
   override def get(system: ActorSystem): SystemMaterializer = super.get(system)
+  override def get(system: ClassicActorSystemProvider): SystemMaterializer = super.get(system)
 
   override def lookup = SystemMaterializer
 

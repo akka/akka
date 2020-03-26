@@ -318,6 +318,7 @@ private[akka] final class ActorSubscriberImpl[T](val impl: ActorRef) extends Sub
  */
 private[akka] object ActorSubscriberState extends ExtensionId[ActorSubscriberState] with ExtensionIdProvider {
   override def get(system: ActorSystem): ActorSubscriberState = super.get(system)
+  override def get(system: ClassicActorSystemProvider): ActorSubscriberState = super.get(system)
 
   override def lookup() = ActorSubscriberState
 

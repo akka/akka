@@ -103,6 +103,8 @@ object Discovery extends ExtensionId[Discovery] with ExtensionIdProvider {
 
   override def get(system: ActorSystem): Discovery = super.get(system)
 
+  override def get(system: ClassicActorSystemProvider): Discovery = super.get(system)
+
   override def createExtension(system: ExtendedActorSystem): Discovery = new Discovery()(system)
 
   /**
