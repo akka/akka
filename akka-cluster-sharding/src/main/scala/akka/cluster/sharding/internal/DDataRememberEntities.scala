@@ -117,14 +117,16 @@ private[akka] class DDataRememberEntities(
         case NotFound(_, _) =>
           Set.empty[EntityId]
         case GetFailure(_, _) =>
+          // FIXME is timeout the only reason here can we provide more details?
           throw new RuntimeException(
-            s"Unable to get an initial state within 'waiting-for-state-timeout': ${PrettyDuration.format(askTimeout.duration)}")
+            s"Unable to get an initial state within 'waiting-for-state-timeout': ${PrettyDuration.format(
+              askTimeout.duration)} using ${readMajority}")
         case GetDataDeleted(_, _) =>
           throw new RuntimeException(s"Unable to get an initial state because it was deleted")
-
       }
     }
     Future.sequence(responsePerKey).map(_.flatten)(ExecutionContexts.parasitic)
   }
 
+  override def toString: ShardId = s"DDataRememberEntities($typeName, $replicator)"
 }

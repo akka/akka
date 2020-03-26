@@ -31,8 +31,10 @@ import akka.coordination.lease.scaladsl.LeaseProvider
 import akka.dispatch.ExecutionContexts
 import akka.pattern.pipe
 import akka.util.MessageBufferMap
+import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
+import akka.actor.Status.{ Failure => AkkaFailure }
 
 import scala.collection.immutable.Set
 import scala.concurrent.Future
@@ -85,11 +87,6 @@ private[akka] object Shard {
   final case object LeaseRetry extends DeadLetterSuppression
   private val LeaseRetryTimer = "lease-retry"
 
-  /**
-   * Factory method for the [[akka.actor.Props]] of the [[Shard]] actor.
-   * If `settings.rememberEntities` is enabled the `PersistentShard`
-   * subclass is used, otherwise `Shard`.
-   */
   def props(
       typeName: String,
       shardId: ShardRegion.ShardId,
@@ -116,6 +113,7 @@ private[akka] object Shard {
 
   private final case class RememberedEntityIds(ids: Set[EntityId])
   private final case class RememberEntityStoreCrashed(store: ActorRef)
+  private final case object AsyncWriteDone
 
 }
 
@@ -180,10 +178,12 @@ private[akka] final class Shard(
     }
   }
 
-  // FIXME do we really need to repeat the entities three times here?
+  // this will contain entity ids even if not yet started (or stopped without graceful stop)
   private var entityIds: Set[EntityId] = Set.empty
+
   private var idByRef = Map.empty[ActorRef, EntityId]
   private var refById = Map.empty[EntityId, ActorRef]
+
   private var lastMessageTimestamp = Map.empty[EntityId, Long]
   private var passivating = Set.empty[ActorRef]
   private val messageBuffers = new MessageBufferMap[EntityId]
@@ -225,7 +225,7 @@ private[akka] final class Shard(
         tryGetLease(l)
         context.become(awaitingLease())
       case None =>
-        onLeaseAcquired()
+        tryLoadRememberedEntities()
     }
   }
 
@@ -233,7 +233,8 @@ private[akka] final class Shard(
   // while awaiting the lease
   private def awaitingLease(): Receive = {
     case LeaseAcquireResult(true, _) =>
-      onLeaseAcquired()
+      log.debug("Lease acquired")
+      tryLoadRememberedEntities()
     case LeaseAcquireResult(false, None) =>
       log.error(
         "Failed to get lease for shard type [{}] id [{}]. Retry in {}",
@@ -255,13 +256,6 @@ private[akka] final class Shard(
       receiveLeaseLost(ll)
     case _ =>
       stash()
-  }
-
-  // Override to execute logic once the lease has been acquired
-  // Will be called on the actor thread
-  def onLeaseAcquired(): Unit = {
-    log.debug("Lease acquired")
-    tryLoadRememberedEntities()
   }
 
   private def tryGetLease(l: Lease): Unit = {
@@ -288,18 +282,21 @@ private[akka] final class Shard(
   def awaitingRememberedEntities(): Receive = {
     case RememberedEntityIds(entityIds) =>
       onEntitiesRemembered(entityIds)
-    case Failure(ex) =>
+    case AkkaFailure(ex) =>
       loadingEntityIdsFailed(ex)
-    case _ =>
-      // FIXME Should this rather go in the buffer?
+    case msg =>
+      log.debug("Got msg while waiting for remember entitites: {}", msg)
       stash()
   }
 
-  def loadingEntityIdsFailed(ex: Throwable): Unit =
-    throw new RuntimeException("Failed to load initial entity ids from remember entities store", ex)
+  def loadingEntityIdsFailed(ex: Throwable): Unit = {
+    log.error(ex, "Failed to load initial entity ids from remember entities store")
+    context.stop(self)
+  }
 
   def onEntitiesRemembered(ids: Set[EntityId]): Unit = {
     if (ids.nonEmpty) {
+      entityIds = ids
       restartRememberedEntities(ids)
     } else {
       log.debug("Shard initialized")
@@ -338,7 +335,7 @@ private[akka] final class Shard(
     case PassivateIdleTick                       => passivateIdleEntities()
     case msg: LeaseLost                          => receiveLeaseLost(msg)
     case msg: RememberEntityStoreCrashed         => rememberEntityStoreCrashed(msg)
-    case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender())
+    case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender(), OptionVal.None)
   }
 
   def waitForAsyncWrite(entityId: EntityId, done: Future[Done])(whenDone: EntityId => Unit): Unit = {
@@ -346,16 +343,13 @@ private[akka] final class Shard(
       case Some(Success(_))  => whenDone(entityId)
       case Some(Failure(ex)) => throw ex
       case None =>
-        done.pipeTo(self)
+        done.map(_ => AsyncWriteDone)(ExecutionContexts.parasitic).pipeTo(self)
         context.become {
-          // FIXME do we need a more specific done message?
-          case Done =>
+          case AsyncWriteDone =>
             whenDone(entityId)
             context.become(receiveCommand)
-
-          // FIXME do we need a more specific failure message?
-          case Failure(ex) =>
-            // FIXME would be nice with if it was a start or a stop as well
+          case AkkaFailure(ex) =>
+            // FIXME would be nice with if it included detail about what operation failed
             throw new RuntimeException(s"Remember entities write for [$entityId] failed", ex)
 
           // below cases should handle same messages as in Shard.receiveCommand
@@ -369,7 +363,7 @@ private[akka] final class Shard(
           case PassivateIdleTick                       => stash()
           case msg: LeaseLost                          => receiveLeaseLost(msg)
           case msg: RememberEntityStoreCrashed         => rememberEntityStoreCrashed(msg)
-          case msg if extractEntityId.isDefinedAt(msg) => deliverOrBufferMessage(msg, entityId)
+          case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender(), OptionVal.Some(entityId))
           case msg                                     =>
             // shouldn't be any other message types, but just in case
             log.debug(
@@ -398,7 +392,7 @@ private[akka] final class Shard(
   }
 
   private def receiveShardCommand(msg: ShardCommand): Unit = msg match {
-    // those are only used with remembering entities
+    // these are only used with remembering entities upon start
     case RestartEntity(id)    => getOrCreateEntity(id)
     case RestartEntities(ids) => restartEntities(ids)
   }
@@ -486,7 +480,7 @@ private[akka] final class Shard(
       lastMessageTimestamp -= id
     }
     if (messageBuffers.getOrEmpty(id).nonEmpty) {
-      //Note; because we're not persisting the EntityStopped, we don't need
+      // Note; because we're not persisting the EntityStopped, we don't need
       // to persist the EntityStarted either.
       log.debug("Starting entity [{}] again, there are buffered messages for it", id)
       sendMsgBuffer(id)
@@ -497,7 +491,7 @@ private[akka] final class Shard(
         import context.dispatcher
         context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))
       } else {
-        // FIXME wait for completion or not?
+        // FIXME optional wait for completion as optimization where stops are not critical
         waitForAsyncWrite(id, rememberEntitiesStore.removeEntity(shardId, id))(passivateCompleted)
       }
     }
@@ -545,29 +539,22 @@ private[akka] final class Shard(
       waitForAsyncWrite(entityId, rememberEntitiesStore.addEntity(shardId, entityId))(sendMsgBuffer)
     } else {
       log.debug("Entity stopped after passivation [{}]", entityId)
-      messageBuffers.remove(entityId)
+      dropBufferFor(entityId)
     }
 
   }
 
-  // After entity started
-  def sendMsgBuffer(entityId: EntityId): Unit = {
-    //Get the buffered messages and remove the buffer
-    val messages = messageBuffers.getOrEmpty(entityId)
-    messageBuffers.remove(entityId)
-
-    if (messages.nonEmpty) {
-      log.debug("Sending message buffer for entity [{}] ([{}] messages)", entityId, messages.size)
-      getOrCreateEntity(entityId)
-      //Now there is no deliveryBuffer we can try to redeliver
-      // and as the child exists, the message will be directly forwarded
-      messages.foreach {
-        case (msg, snd) => deliverMessage(msg, snd)
-      }
-    }
-  }
-
-  def deliverMessage(msg: Any, snd: ActorRef): Unit = {
+  /**
+   * If we are waiting for a remember entity write and the message is for the same entity as we are waiting for
+   * the message it will be added to its messageBuffer, which will be sent after the update has completed.
+   *
+   * If the message is for another entity that is already started (and not in progress of passivating)
+   * it will be delivered immediately.
+   *
+   * Otherwise it will be stashed, and processed after the update has been completed.
+   */
+  // FIXME I'd still like to fold this and the next method into one to get a more clear delivery logic
+  private def deliverMessage(msg: Any, snd: ActorRef, entityIdWaitingForWrite: OptionVal[EntityId]): Unit = {
     val (id, payload) = extractEntityId(msg)
     if (id == null || id == "") {
       log.warning("Id must not be empty, dropping message [{}]", msg.getClass.getName)
@@ -576,61 +563,18 @@ private[akka] final class Shard(
       payload match {
         case start: ShardRegion.StartEntity =>
           // in case it was wrapped, used in Typed
-          receiveStartEntity(start)
-        case _ =>
-          if (messageBuffers.contains(id))
-            appendToMessageBuffer(id, msg, snd)
+          // we can only start a new entity if we are not currently waiting for another write
+          if (entityIdWaitingForWrite.isEmpty)
+            receiveStartEntity(start)
           else
-            deliverTo(id, msg, payload, snd)
-      }
-    }
-  }
-
-  // FIXME this vs deliverMessage
-  /**
-   * If the message is for the same entity as we are waiting for the update it will be added to
-   * its messageBuffer, which will be sent after the update has completed.
-   *
-   * If the message is for another entity that is already started (and not in progress of passivating)
-   * it will be delivered immediately.
-   *
-   * Otherwise it will be stashed, and processed after the update has been completed.
-   */
-  private def deliverOrBufferMessage(msg: Any, entityIdWaitingForWrite: EntityId): Unit = {
-    val (id, payload) = extractEntityId(msg)
-    if (id == null || id == "") {
-      log.warning("Id must not be empty, dropping message [{}]", msg.getClass.getName)
-      context.system.deadLetters ! msg
-    } else {
-      payload match {
-        case _: ShardRegion.StartEntity =>
-          // in case it was wrapped, used in Typed
-          stash()
+            stash()
         case _ =>
-          if (id == entityIdWaitingForWrite) {
-            appendToMessageBuffer(id, msg, sender())
+          if (entityIdWaitingForWrite.contains(id)) {
+            appendToMessageBuffer(id, msg, snd)
           } else {
-            val name = URLEncoder.encode(id, "utf-8")
-            // messageBuffers.contains(id) when passivation is in progress
-            if (!messageBuffers.contains(id) && context.child(name).nonEmpty) {
-              deliverTo(id, msg, payload, sender())
-            } else {
-              // FIXME curious log message, stashing "to"?
-              log.debug("Stashing to [{}] while waiting for remember entities update", id)
-              stash()
-            }
+            deliverTo(id, msg, payload, snd)
           }
       }
-    }
-  }
-
-  def appendToMessageBuffer(id: EntityId, msg: Any, snd: ActorRef): Unit = {
-    if (messageBuffers.totalSize >= bufferSize) {
-      log.debug("Buffer is full, dropping message for entity [{}]", id)
-      context.system.deadLetters ! msg
-    } else {
-      log.debug("Message for entity [{}] buffered", id)
-      messageBuffers.append(id, msg, snd)
     }
   }
 
@@ -639,7 +583,8 @@ private[akka] final class Shard(
       touchLastMessageTimestamp(id)
       getOrCreateEntity(id).tell(payload, snd)
     } else {
-      // remember entities has more expensive tricky logic looking at children. Why you ask. Not sure.
+      // With remember entities enabled we may be in the process of saving that we are starting up the entity
+      // and in that case we need to buffer messages until that completes
       val name = URLEncoder.encode(id, "utf-8")
       context.child(name) match {
         case Some(actor) =>
@@ -647,12 +592,16 @@ private[akka] final class Shard(
           actor.tell(payload, snd)
         case None =>
           if (entityIds.contains(id)) {
-            // this may happen when entity is stopped without passivation
+            // No entity actor but id is in set of entities, this can happen in two scenarios:
+            // 1. we are starting up and the entity id is remembered but not yet started
+            // 2. the entity is stopped but not passivated, and should be restarted
             require(!messageBuffers.contains(id), s"Message buffers contains id [$id].")
-            getOrCreateEntity(id).tell(payload, snd)
+            // this is not actually orCreate it is always create, needed to have a single path for entity creation
+            getOrCreateEntity(id)
           } else {
-            //Note; we only do this if remembering, otherwise the buffer is an overhead
-            messageBuffers.append(id, msg, snd)
+            // No actor and id is unknown, start actor and deliver message when started
+            // Note; we only do this if remembering, otherwise the buffer is an overhead
+            appendToMessageBuffer(id, msg, snd)
             waitForAsyncWrite(id, rememberEntitiesStore.addEntity(shardId, id))(sendMsgBuffer)
           }
       }
@@ -673,6 +622,45 @@ private[akka] final class Shard(
         touchLastMessageTimestamp(id)
         a
     }
+  }
+
+  // ===== buffering while busy saving a start or stop when remembering entities =====
+  def appendToMessageBuffer(id: EntityId, msg: Any, snd: ActorRef): Unit = {
+    if (messageBuffers.totalSize >= bufferSize) {
+      if (log.isDebugEnabled)
+        log.debug("Buffer is full, dropping message of type [{}] for entity [{}]", msg.getClass.getName, id)
+      context.system.deadLetters ! msg
+    } else {
+      if (log.isDebugEnabled)
+        log.debug("Message of type [{}] for entity [{}] buffered", msg.getClass.getName, id)
+      messageBuffers.append(id, msg, snd)
+    }
+  }
+
+  // After entity started
+  def sendMsgBuffer(entityId: EntityId): Unit = {
+    //Get the buffered messages and remove the buffer
+    val messages = messageBuffers.getOrEmpty(entityId)
+    messageBuffers.remove(entityId)
+
+    if (messages.nonEmpty) {
+      getOrCreateEntity(entityId)
+      log.debug("Sending message buffer for entity [{}] ([{}] messages)", entityId, messages.size)
+      //Now there is no deliveryBuffer we can try to redeliver
+      // and as the child exists, the message will be directly forwarded
+      messages.foreach {
+        case (msg, snd) => deliverMessage(msg, snd, OptionVal.None)
+      }
+    }
+  }
+
+  def dropBufferFor(entityId: EntityId): Unit = {
+    if (log.isDebugEnabled) {
+      val messages = messageBuffers.getOrEmpty(entityId)
+      if (messages.nonEmpty)
+        log.debug("Dropping [{}] buffered messages", entityId, messages.size)
+    }
+    messageBuffers.remove(entityId)
   }
 
   def rememberEntityStoreCrashed(msg: RememberEntityStoreCrashed): Unit = {

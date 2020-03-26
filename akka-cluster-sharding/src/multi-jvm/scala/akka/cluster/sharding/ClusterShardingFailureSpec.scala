@@ -20,13 +20,20 @@ object ClusterShardingFailureSpec {
   case class Add(id: String, i: Int) extends CborSerializable
   case class Value(id: String, n: Int) extends CborSerializable
 
-  class Entity extends Actor {
+  class Entity extends Actor with ActorLogging {
+    log.debug("Starting")
     var n = 0
 
     def receive = {
-      case Get(id)   => sender() ! Value(id, n)
-      case Add(_, i) => n += i
+      case Get(id) =>
+        log.debug("Got get request from {}", sender())
+        sender() ! Value(id, n)
+      case Add(_, i) =>
+        n += i
+        log.debug("Got add request from {}", sender())
     }
+
+    override def postStop(): Unit = log.debug("Stopping")
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
@@ -44,6 +51,7 @@ abstract class ClusterShardingFailureSpecConfig(override val mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
       additionalConfig = s"""
+        akka.loglevel=DEBUG
         akka.cluster.roles = ["backend"]
         akka.cluster.sharding {
           coordinator-failure-backoff = 3s
