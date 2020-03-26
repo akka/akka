@@ -471,15 +471,19 @@ private[remote] class Decoder(
                 case OptionVal.Some(assoc) =>
                   val remoteAddress = assoc.remoteAddress
                   sender match {
-                    case OptionVal.Some(snd) if shouldCount(snd) =>
-                      compressions.hitActorRef(originUid, remoteAddress, snd, 1)
-                    case _ => // ignore
+                    case OptionVal.Some(snd) =>
+                      if (shouldCount(snd)) {
+                        compressions.hitActorRef(originUid, remoteAddress, snd, 1)
+                      }
+                    case OptionVal.None =>
                   }
 
                   recipient match {
-                    case OptionVal.Some(rcp) if shouldCount(rcp) =>
-                      compressions.hitActorRef(originUid, remoteAddress, rcp, 1)
-                    case _ => // ignore
+                    case OptionVal.Some(rcp) =>
+                      if (shouldCount(rcp)) {
+                        compressions.hitActorRef(originUid, remoteAddress, rcp, 1)
+                      }
+                    case OptionVal.None =>
                   }
 
                   compressions.hitClassManifest(originUid, remoteAddress, classManifest, 1)
@@ -621,8 +625,11 @@ private[remote] class Decoder(
   }
 
   protected def shouldCount(v: InternalActorRef): Boolean =
-    // don't count temporary refs
-    !v.path.elements.headOption.contains("temp")
+    if (v.isLocal) {
+      !v.isInstanceOf[PromiseActorRef]
+    } else {
+      !(v.path.root.name == "temp")
+    }
 
 }
 
