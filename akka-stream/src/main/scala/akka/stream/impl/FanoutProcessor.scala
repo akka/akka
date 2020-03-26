@@ -13,7 +13,7 @@ import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.Attributes
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
 import org.reactivestreams.Subscriber
-import akka.actor.{Timers => ActorTimers}
+import akka.actor.{ Timers => ActorTimers }
 
 /**
  * INTERNAL API
@@ -119,7 +119,9 @@ import akka.actor.{Timers => ActorTimers}
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes) extends ActorProcessorImpl(attributes) with ActorTimers {
+@InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes)
+    extends ActorProcessorImpl(attributes)
+    with ActorTimers {
 
   val timeoutMode = {
     val StreamSubscriptionTimeout(timeout, mode) = attributes.mandatoryAttribute[StreamSubscriptionTimeout]
