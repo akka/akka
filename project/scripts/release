@@ -71,9 +71,9 @@
 #
 # Run the script in two stages.
 #  First a dry run:
-#    shell> project/scripts/release <version>
+#    shell> project/scripts/release
 #  And if all goes well a real run:
-#    shell> project/scripts/release --real-run <version>
+#    shell> project/scripts/release --real-run
 #
 # The artifacts published to oss.sonatype.org needs to be released by following the
 # instructions under release here
@@ -112,7 +112,7 @@ declare -r script_dir="$(cd -P "$(dirname "${script_path}")" && pwd)"
 function usage {
   cat <<EOM
 Dry run is be default.
-Usage: ${script_name} [options] VERSION
+Usage: ${script_name} [options]
   -h | --help            Print this usage message
   -t | --run-tests       Run all tests before releasing
   -s | --server SERVER   Set the release server (default ${default_server})
@@ -158,12 +158,6 @@ while true; do
   esac
 done
 
-if [ $# != "1" ]; then
-  usage
-  fail "A release version must be specified"
-fi
-
-declare -r version=$1
 declare -r publish_path="${release_server}:${release_path}"
 
 JAVA_VERSION=`java -version 2>&1 | grep -E "java version|openjdk version" | cut -d '"' -f2 | cut -d '.' -f1`
@@ -210,8 +204,6 @@ function git_cleanup {
   echoerr "Cleaning up..."
   safely git reset --hard
   safely git clean -f
-  local tags=$(git tag -l)
-  [[ "${tags}" == *v${version}* ]] && safely git tag -d v${version}
 }
 
 # clean up and fail the script with an error message
@@ -236,7 +228,13 @@ function try {
   "$@" || bail_out "Failed to create release"
 }
 
-echolog "Creating release ${version} ..."
+declare -r version=$(get_current_version)
+
+if [ ${#version} -gt 6 ]; then
+  fail "Version [$version] is too long to be a regular release, have you created a tag?"
+fi
+
+echolog "Creating release ${version}..."
 
 if [ $dry_run ]; then
   echodry "Building everything but not pushing release"
@@ -250,14 +248,6 @@ fi
 echolog "Checking ssh connection to ${release_server}"
 try ssh -t ${release_server} echo "Successfully contacted release server."
 
-echolog "Getting current project version from sbt..."
-declare -r current_version=$(get_current_version)
-echolog "Current version is ${current_version}"
-
-if [ "${current_version:0:3}" != "${version:0:3}" ]; then
-  fail "Releasing $version from wrong branch with version $current_version"
-fi
-
 # start clean
 try sbt clean
 
@@ -268,6 +258,13 @@ if [ $run_tests ]; then
   echolog "All tests are green"
 fi
 
+# check binary compatibility for dry run
+if [ ! $no_mima ] && [ $dry_run ]; then
+  echodry "Running migration manager report..."
+  try sbt $RELEASE_OPT +mimaReportBinaryIssues
+  echodry "Finished migration manager report"
+fi
+
 # build the release
 echolog "Building the release..."
 if [ ! $dry_run ]; then
@@ -276,25 +273,17 @@ else
   RELEASE_OPT="-Dakka.genjavadoc.enabled=true"
 fi
 
-# tag this release
-echolog "Tagging..."
-try git tag -am "Version ${version}" v${version}
-
+# Release artifacts
 try sbt $RELEASE_OPT +buildRelease
+
+echolog "Successfully created released artifacts"
+
+# Build the docs
 try sbt $RELEASE_OPT buildDocs
 
-echolog "Successfully created local release"
-
-# check binary compatibility for dry run
-if [ ! $no_mima ] && [ $dry_run ]; then
-  echodry "Running migration manager report..."
-  try sbt $RELEASE_OPT +mimaReportBinaryIssues
-  echodry "Finished migration manager report"
-fi
+echolog "Successfully created docs"
 
 try sbt $RELEASE_OPT whitesourceCheckPolicies
-
-# the point of no return... we're now pushing out to servers
 
 # use a special failure from now on
 function arrgh {
@@ -331,8 +320,8 @@ else
   important git push origin --tags
 fi
 
-# push the release to the server
-echolog "Pushing ${release_dir} to ${publish_path} ..."
+# push the docs to the server
+echolog "Pushing ${release_dir} docs to ${publish_path} ..."
 if [ $dry_run ]; then
   echodry "Not actually pushing to server. Commands:"
   echodry "  sbt $RELEASE_OPT deployRsync"
@@ -358,7 +347,6 @@ if [ $dry_run ]; then
     git_cleanup
   fi
   echodry "Successfully created release ${version}"
-  echodry "See ${release_dir}"
 else
   echolog "Successfully created release ${version}"
 fi
