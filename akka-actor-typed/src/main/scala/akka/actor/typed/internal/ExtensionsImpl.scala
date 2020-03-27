@@ -20,7 +20,7 @@ import akka.util.ccompat.JavaConverters._
  * Actor system extensions registry
  */
 @InternalApi
-private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
+private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] with InternalRecipientRef[_] =>
 
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
