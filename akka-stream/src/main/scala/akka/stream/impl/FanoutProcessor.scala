@@ -13,7 +13,6 @@ import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.Attributes
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
 import org.reactivestreams.Subscriber
-import akka.actor.{ Timers => ActorTimers }
 
 /**
  * INTERNAL API
@@ -119,17 +118,13 @@ import akka.actor.{ Timers => ActorTimers }
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes)
-    extends ActorProcessorImpl(attributes)
-    with ActorTimers {
+@InternalApi private[akka] class FanoutProcessorImpl(attributes: Attributes) extends ActorProcessorImpl(attributes) {
 
-  val timeoutMode = {
-    val StreamSubscriptionTimeout(timeout, mode) = attributes.mandatoryAttribute[StreamSubscriptionTimeout]
-    if (mode != StreamSubscriptionTimeoutTerminationMode.noop) {
-      timers.startSingleTimer(ActorProcessorImpl.SubscriptionTimeout, ActorProcessorImpl.SubscriptionTimeout, timeout)
-    }
-    mode
-  }
+  val StreamSubscriptionTimeout(timeout, timeoutMode) = attributes.mandatoryAttribute[StreamSubscriptionTimeout]
+  val timeoutTimer = if (timeoutMode != StreamSubscriptionTimeoutTerminationMode.noop) {
+    import context.dispatcher
+    Some(context.system.scheduler.scheduleOnce(timeout, self, ActorProcessorImpl.SubscriptionTimeout))
+  } else None
 
   override val primaryOutputs: FanoutOutputs = {
     val inputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer]
@@ -145,6 +140,11 @@ import akka.actor.{ Timers => ActorTimers }
   override def pumpFinished(): Unit = {
     primaryInputs.cancel()
     primaryOutputs.complete()
+  }
+
+  override def postStop(): Unit = {
+    super.postStop()
+    timeoutTimer.foreach(_.cancel())
   }
 
   def afterFlush(): Unit = context.stop(self)
