@@ -12,7 +12,6 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
-import akka.util.TypedMultiMap
 
 /**
  * Marker interface to use with dynamic access
@@ -36,8 +35,49 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
   override val name = "localReceptionist"
 
-  private type Service[K <: AbstractServiceKey] = ActorRef[K#Protocol]
-  private type Subscriber[K <: AbstractServiceKey] = ActorRef[ReceptionistMessages.Listing[K#Protocol]]
+  private type ServiceF[Protocol] = Protocol
+  private type Service[T] = ActorRef[ServiceF[T]] // == ActorRef[T]
+  private type SubscriberF[Protocol] = ReceptionistMessages.Listing[Protocol]
+  private type Subscriber[T] = ActorRef[SubscriberF[T]]
+
+  /**
+   * Because dotty drop general type projection AbstractServiceKey#Protocol, so we use path-dependent type:
+   * With X is Service | Subscriber and `type X[K <: AbstractServiceKey] = ActorRef[XF[K#Protocol]]` then
+   * + Instead of using TypedMultiMap[AbstractServiceKey, X], we use: ServiceMultiMap[XF]
+   * + Instead of using X[key.type], we use X[key.Protocol]
+   * @tparam F is ServiceF | SubscriberF
+   */
+  private class ServiceMultiMap[F[_]] private (private val map: Map[ServiceMultiMap.K, Set[ActorRef[Nothing]]]) {
+    import ServiceMultiMap.K
+
+    def get(key: K): Set[ActorRef[F[key.Protocol]]] = map.get(key) match {
+      case Some(s) => s.asInstanceOf[Set[ActorRef[F[key.Protocol]]]]
+      case None    => Set.empty
+    }
+
+    def inserted(key: K)(value: ActorRef[F[key.Protocol]]): ServiceMultiMap[F] = {
+      val set = map.getOrElse(key, Set.empty)
+      new ServiceMultiMap(map.updated(key, set + value))
+    }
+
+    def removed(key: K)(value: ActorRef[F[key.Protocol]]): ServiceMultiMap[F] = {
+      map.get(key) match {
+        case Some(set) if set(value) =>
+          val newset = set - value
+          val newmap = if (newset.isEmpty) map - key else map.updated(key, newset)
+          new ServiceMultiMap(newmap)
+        case _ => this
+      }
+    }
+  }
+
+  private object ServiceMultiMap {
+    private type K = AbstractServiceKey
+
+    private val _empty = new ServiceMultiMap[Nothing](Map.empty)
+
+    def empty[F[_]]: ServiceMultiMap[F] = _empty.asInstanceOf[ServiceMultiMap[F]]
+  }
 
   private sealed trait InternalCommand
   private final case class RegisteredActorTerminated[T](ref: ActorRef[T]) extends InternalCommand
@@ -46,11 +86,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
   private object State {
     def empty =
-      State(
-        TypedMultiMap.empty[AbstractServiceKey, Service],
-        Map.empty,
-        TypedMultiMap.empty[AbstractServiceKey, Subscriber],
-        Map.empty)
+      State(ServiceMultiMap.empty, Map.empty, ServiceMultiMap.empty, Map.empty)
   }
 
   /**
@@ -60,12 +96,12 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
    * @param subscriptionsPerActor current subscriptions per subscriber (needed since a subscriber can subscribe to several keys) FIXME is it really needed?
    */
   private final case class State(
-      services: TypedMultiMap[AbstractServiceKey, Service],
+      services: ServiceMultiMap[ServiceF],
       servicesPerActor: Map[ActorRef[_], Set[AbstractServiceKey]],
-      subscriptions: TypedMultiMap[AbstractServiceKey, Subscriber],
+      subscriptions: ServiceMultiMap[SubscriberF],
       subscriptionsPerActor: Map[ActorRef[_], Set[AbstractServiceKey]]) {
 
-    def serviceInstanceAdded[Key <: AbstractServiceKey, SI <: Service[Key]](key: Key)(serviceInstance: SI): State = {
+    def serviceInstanceAdded[Key <: AbstractServiceKey](key: Key)(serviceInstance: Service[key.Protocol]): State = {
       val newServices = services.inserted(key)(serviceInstance)
       val newServicePerActor =
         servicesPerActor.updated(
@@ -74,7 +110,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
       copy(services = newServices, servicesPerActor = newServicePerActor)
     }
 
-    def serviceInstanceRemoved[Key <: AbstractServiceKey, SI <: Service[Key]](key: Key)(serviceInstance: SI): State = {
+    def serviceInstanceRemoved[Key <: AbstractServiceKey](key: Key)(serviceInstance: Service[key.Protocol]): State = {
       val newServices = services.removed(key)(serviceInstance)
       val newServicePerActor =
         servicesPerActor.get(serviceInstance) match {
@@ -97,12 +133,12 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
         if (keys.isEmpty) services
         else
           keys.foldLeft(services)((acc, key) =>
-            acc.removed(key.asServiceKey)(serviceInstance.asInstanceOf[Service[AbstractServiceKey]]))
+            acc.removed(key.asServiceKey)(serviceInstance.asInstanceOf[Service[key.Protocol]]))
       val newServicesPerActor = servicesPerActor - serviceInstance
       copy(services = newServices, servicesPerActor = newServicesPerActor)
     }
 
-    def subscriberAdded[Key <: AbstractServiceKey](key: Key)(subscriber: Subscriber[key.type]): State = {
+    def subscriberAdded[Key <: AbstractServiceKey](key: Key)(subscriber: Subscriber[key.Protocol]): State = {
       val newSubscriptions = subscriptions.inserted(key)(subscriber)
       val newSubscriptionsPerActor =
         subscriptionsPerActor.updated(
@@ -112,7 +148,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
       copy(subscriptions = newSubscriptions, subscriptionsPerActor = newSubscriptionsPerActor)
     }
 
-    def subscriptionRemoved[Key <: AbstractServiceKey](key: Key)(subscriber: Subscriber[key.type]): State = {
+    def subscriptionRemoved[Key <: AbstractServiceKey](key: Key)(subscriber: Subscriber[key.Protocol]): State = {
       val newSubscriptions = subscriptions.removed(key)(subscriber)
       val newSubscriptionsPerActor =
         subscriptionsPerActor.get(subscriber) match {
@@ -136,7 +172,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
       else {
         val newSubscriptions = keys.foldLeft(subscriptions) { (subscriptions, key) =>
           val serviceKey = key.asServiceKey
-          subscriptions.removed(serviceKey)(subscriber.asInstanceOf[Subscriber[serviceKey.type]])
+          subscriptions.removed(serviceKey)(subscriber.asInstanceOf[Subscriber[serviceKey.Protocol]])
         }
         val newSubscriptionsPerActor = subscriptionsPerActor - subscriber
         copy(subscriptions = newSubscriptions, subscriptionsPerActor = newSubscriptionsPerActor)
@@ -199,7 +235,7 @@ private[akka] object LocalReceptionist extends ReceptionistBehaviorProvider {
 
           updateServices(Set(key), { state =>
             val newState = state.serviceInstanceRemoved(key)(serviceInstance)
-            if (state.servicesPerActor.getOrElse(serviceInstance, Set.empty).isEmpty)
+            if ((state.servicesPerActor.getOrElse(serviceInstance, Set.empty): Set[_]).isEmpty)
               ctx.unwatch(serviceInstance)
             newState
           })
