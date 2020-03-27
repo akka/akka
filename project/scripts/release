@@ -278,7 +278,7 @@ else
 fi
 
 # Release artifacts
-try sbt $RELEASE_OPT +buildRelease
+try sbt $RELEASE_OPT +publishSigned
 
 echolog "Successfully released artifacts"
 

@@ -30,7 +30,6 @@ object AkkaBuild {
     Dependencies.Versions)
 
   lazy val rootSettings = Def.settings(
-    Release.settings,
     UnidocRoot.akkaSettings,
     Protobuf.settings,
     parallelExecution in GlobalScope := System.getProperty("akka.parallelExecution", parallelExecutionByDefault.toString).toBoolean,
