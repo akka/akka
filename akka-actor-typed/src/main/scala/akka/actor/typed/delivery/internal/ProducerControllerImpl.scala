@@ -14,6 +14,7 @@ import scala.util.Success
 import akka.actor.DeadLetterSuppression
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.ConsumerController.SequencedMessage
 import akka.actor.typed.delivery.DurableProducerQueue
@@ -192,7 +193,7 @@ object ProducerControllerImpl {
       settings: ProducerController.Settings): Option[ActorRef[DurableProducerQueue.Command[A]]] = {
 
     durableQueueBehavior.map { b =>
-      val ref = context.spawn(b, "durable")
+      val ref = context.spawn(b, "durable", DispatcherSelector.sameAsParent())
       context.watchWith(ref, DurableQueueTerminated)
       askLoadState(context, Some(ref), settings, attempt = 1)
       ref

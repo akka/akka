@@ -13,6 +13,7 @@ import scala.util.Success
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.DurableProducerQueue
 import akka.actor.typed.delivery.DurableProducerQueue.ConfirmationQualifier
@@ -236,7 +237,7 @@ import akka.util.Timeout
       settings: ShardingProducerController.Settings): Option[ActorRef[DurableProducerQueue.Command[A]]] = {
 
     durableQueueBehavior.map { b =>
-      val ref = context.spawn(b, "durable")
+      val ref = context.spawn(b, "durable", DispatcherSelector.sameAsParent())
       context.watchWith(ref, DurableQueueTerminated)
       askLoadState(context, Some(ref), settings, attempt = 1)
       ref
@@ -332,7 +333,8 @@ private class ShardingProducerControllerImpl[A: ClassTag](
             }
             val p = context.spawn(
               ProducerController[A](outKey, durableQueueBehavior = None, settings.producerControllerSettings, send),
-              entityId)
+              entityId,
+              DispatcherSelector.sameAsParent())
             p ! ProducerController.Start(requestNextAdapter)
             s.copy(
               out = s.out.updated(
