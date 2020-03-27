@@ -7,7 +7,15 @@ package akka.util
 import akka.testkit.AkkaSpec
 import akka.util.LineNumbers._
 
+import scala.util.Try
+
 class LineNumberSpec extends AkkaSpec {
+  private lazy val isDotty = Try {
+    getClass.getClassLoader.loadClass("dotty.DottyPredef$")
+    true
+  }.recover {
+    case _: ClassNotFoundException => false
+  }.get
 
   "LineNumbers" when {
 
@@ -20,16 +28,17 @@ class LineNumberSpec extends AkkaSpec {
 
       "work for larger functions" in {
         val result = LineNumbers(twoline)
-        result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 15, 15))
+        result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 15, if (isDotty) 17 else 15))
       }
 
       "work for partial functions" in {
-        LineNumbers(partial) should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 20, 22))
+        LineNumbers(partial) should ===(
+          SourceFileLines("LineNumberSpecCodeForScala.scala", if (isDotty) 21 else 20, 22))
       }
 
       "work for `def`" in {
         val result = LineNumbers(method("foo"))
-        result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", 26, 27))
+        result should ===(SourceFileLines("LineNumberSpecCodeForScala.scala", if (isDotty) 25 else 26, 27))
       }
 
     }
