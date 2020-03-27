@@ -64,7 +64,12 @@
 # 3.2) Install your public ssh key to avoid typing in your password.
 #      From the command line:
 #        shell> cat ~/.ssh/id_rsa.pub | ssh akkarepo@gustav.akka.io "cat >> ~/.ssh/authorized_keys"
-##
+#
+# 3.3) Also make it available for publishing snapshots.
+#      From the command line:
+#        shell> cp ~/.ssh/id_rsa.pub ~/.ssh/id_rsa_gustav.pem
+#        shell> ssh-keygen -p -f ~/.ssh/id_rsa_gustav.pem -m pem
+#
 # 4) Have access to github.com/akka/akka. This should be a given.
 #
 # Now you should be all set to run the script
