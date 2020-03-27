@@ -15,6 +15,11 @@ import akka.japi.Procedure
 import akka.testkit._
 
 object EventBusSpec {
+  type EventBusAux[E, C, S] = EventBus {
+    type Event = E
+    type Classifier = C
+    type Subscriber = S
+  }
   class TestActorWrapperActor(testActor: ActorRef) extends Actor {
     def receive = {
       case x => testActor.forward(x)
@@ -22,28 +27,34 @@ object EventBusSpec {
   }
 }
 
-abstract class EventBusSpec(busName: String, conf: Config = ConfigFactory.empty())
+import EventBusSpec._
+abstract class EventBusSpec[
+    Event,
+    Classifier,
+    Subscriber,
+    BusType <: EventBusSpec.EventBusAux[Event, Classifier, Subscriber]](
+    busName: String,
+    conf: Config = ConfigFactory.empty())
     extends AkkaSpec(conf)
     with BeforeAndAfterEach {
-  type BusType <: EventBus
 
   def createNewEventBus(): BusType
 
-  def createEvents(numberOfEvents: Int): Iterable[BusType#Event]
+  def createEvents(numberOfEvents: Int): Iterable[Event]
 
-  def createSubscriber(pipeTo: ActorRef): BusType#Subscriber
+  def createSubscriber(pipeTo: ActorRef): Subscriber
 
-  def classifierFor(event: BusType#Event): BusType#Classifier
+  def classifierFor(event: Event): Classifier
 
-  def disposeSubscriber(system: ActorSystem, subscriber: BusType#Subscriber): Unit
+  def disposeSubscriber(system: ActorSystem, subscriber: Subscriber): Unit
 
-  lazy val bus = createNewEventBus()
+  final lazy val bus = createNewEventBus()
 
   busName must {
-    def createNewSubscriber() = createSubscriber(testActor).asInstanceOf[bus.Subscriber]
-    def getClassifierFor(event: BusType#Event) = classifierFor(event).asInstanceOf[bus.Classifier]
-    def createNewEvents(numberOfEvents: Int): Iterable[bus.Event] =
-      createEvents(numberOfEvents).asInstanceOf[Iterable[bus.Event]]
+    def createNewSubscriber() = createSubscriber(testActor)
+    def getClassifierFor(event: Event) = classifierFor(event)
+    def createNewEvents(numberOfEvents: Int): Iterable[Event] =
+      createEvents(numberOfEvents)
 
     val events = createNewEvents(100)
     val event = events.head
@@ -168,9 +179,13 @@ object ActorEventBusSpec {
   case class Notification(ref: ActorRef, payload: Int)
 }
 
-class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf) {
-  import EventBusSpec.TestActorWrapperActor
-
+import ActorEventBusSpec.MyActorEventBus
+class ActorEventBusSpec(conf: Config)
+    extends EventBusSpec[
+      MyActorEventBus#Event,
+      MyActorEventBus#Classifier,
+      MyActorEventBus#Subscriber,
+      MyActorEventBus]("ActorEventBus", conf) {
   import akka.event.ActorEventBusSpec._
 
   def this() =
@@ -304,8 +319,13 @@ object ScanningEventBusSpec {
   }
 }
 
-class ScanningEventBusSpec extends EventBusSpec("ScanningEventBus") {
-  import ScanningEventBusSpec._
+import ScanningEventBusSpec.MyScanningEventBus
+class ScanningEventBusSpec
+    extends EventBusSpec[
+      MyScanningEventBus#Event,
+      MyScanningEventBus#Classifier,
+      MyScanningEventBus#Subscriber,
+      MyScanningEventBus]("ScanningEventBus") {
 
   type BusType = MyScanningEventBus
 
@@ -335,8 +355,13 @@ object LookupEventBusSpec {
   }
 }
 
-class LookupEventBusSpec extends EventBusSpec("LookupEventBus") {
-  import LookupEventBusSpec._
+import LookupEventBusSpec.MyLookupEventBus
+class LookupEventBusSpec
+    extends EventBusSpec[
+      MyLookupEventBus#Event,
+      MyLookupEventBus#Classifier,
+      MyLookupEventBus#Subscriber,
+      MyLookupEventBus]("LookupEventBus") {
 
   type BusType = MyLookupEventBus
 
