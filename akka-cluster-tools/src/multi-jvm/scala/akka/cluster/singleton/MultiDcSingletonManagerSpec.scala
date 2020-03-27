@@ -82,7 +82,7 @@ abstract class MultiDcSingletonManagerSpec
       runOn(first, second, third) {
         system.actorOf(
           ClusterSingletonManager
-            .props(Props[MultiDcSingleton](), PoisonPill, ClusterSingletonManagerSettings(system).withRole(worker)),
+            .props(Props[MultiDcSingleton], PoisonPill, ClusterSingletonManagerSettings(system).withRole(worker)),
           "singletonManager")
       }
 

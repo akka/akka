@@ -94,7 +94,7 @@ object PersistenceDocSpec {
     abstract class MyActor extends Actor {
       import PersistAsync.MyPersistentActor
       //#backoff
-      val childProps = Props[MyPersistentActor]()
+      val childProps = Props[MyPersistentActor]
       val props = BackoffSupervisor.props(BackoffOpts
         .onStop(childProps, childName = "myActor", minBackoff = 3.seconds, maxBackoff = 30.seconds, randomFactor = 0.2))
       context.actorOf(props, name = "mySupervisor")

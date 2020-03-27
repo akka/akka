@@ -38,8 +38,8 @@ class GetShardTypeNamesSpec extends AkkaSpec(GetShardTypeNamesSpec.config) {
     "contain started shards when started 2 shards" in {
       Cluster(system).join(Cluster(system).selfAddress)
       val settings = ClusterShardingSettings(system)
-      ClusterSharding(system).start("type1", Props[EchoActor](), settings, extractEntityId, extractShardId)
-      ClusterSharding(system).start("type2", Props[EchoActor](), settings, extractEntityId, extractShardId)
+      ClusterSharding(system).start("type1", Props[EchoActor], settings, extractEntityId, extractShardId)
+      ClusterSharding(system).start("type2", Props[EchoActor], settings, extractEntityId, extractShardId)
 
       ClusterSharding(system).shardTypeNames should ===(Set("type1", "type2"))
     }

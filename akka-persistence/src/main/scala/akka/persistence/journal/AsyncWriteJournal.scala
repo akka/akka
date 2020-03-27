@@ -50,7 +50,7 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
   private val replayFilterWindowSize: Int = config.getInt("replay-filter.window-size")
   private val replayFilterMaxOldWriters: Int = config.getInt("replay-filter.max-old-writers")
 
-  private val resequencer = context.actorOf(Props[Resequencer]())
+  private val resequencer = context.actorOf(Props[Resequencer])
   private var resequencerCounter = 1L
 
   final def receive = receiveWriteJournal.orElse[Any, Unit](receivePluginInternal)

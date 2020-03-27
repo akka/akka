@@ -430,7 +430,7 @@ class TypedActorSpec
         t.optionPigdog() should ===(Some("Pigdog"))
         mustStop(t)
 
-        val ta: F = TypedActor(system).typedActorOf(TypedProps[FI]())
+        val ta: F = TypedActor(system).typedActorOf(TypedProps[FI])
         intercept[IllegalStateException] { ta.f(true) }.getMessage should ===("expected")
         ta.f(false) should ===(1)
 
@@ -446,7 +446,7 @@ class TypedActorSpec
     }
 
     "be able to support implementation only typed actors" in within(timeout.duration) {
-      val t: Foo = TypedActor(system).typedActorOf(TypedProps[Bar]())
+      val t: Foo = TypedActor(system).typedActorOf(TypedProps[Bar])
       val f = t.futurePigdog(200 millis)
       val f2 = t.futurePigdog(Duration.Zero)
       f2.isCompleted should ===(false)
@@ -456,7 +456,7 @@ class TypedActorSpec
     }
 
     "be able to support implementation only typed actors with complex interfaces" in {
-      val t: Stackable1 with Stackable2 = TypedActor(system).typedActorOf(TypedProps[StackedImpl]())
+      val t: Stackable1 with Stackable2 = TypedActor(system).typedActorOf(TypedProps[StackedImpl])
       t.stackable1 should ===("foo")
       t.stackable2 should ===("bar")
       mustStop(t)
@@ -602,7 +602,7 @@ class TypedActorRouterSpec
 
       val router = system.actorOf(RoundRobinGroup(routees).props(), "router")
 
-      val typedRouter = TypedActor(system).typedActorOf[Foo, Foo](TypedProps[Foo](), router)
+      val typedRouter = TypedActor(system).typedActorOf[Foo, Foo](TypedProps[Foo], router)
 
       info("got = " + typedRouter.optionPigdog())
       info("got = " + typedRouter.optionPigdog())

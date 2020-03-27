@@ -100,7 +100,7 @@ abstract class MultiDcClusterShardingSpec
     startSharding(
       system,
       typeName = "Entity",
-      entityProps = Props[Entity](),
+      entityProps = Props[Entity],
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)
   }

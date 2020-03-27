@@ -210,7 +210,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
     }
 
     "only notify when watching" in {
-      val subject = system.actorOf(Props[EmptyActor]())
+      val subject = system.actorOf(Props[EmptyActor])
 
       testActor
         .asInstanceOf[InternalActorRef]
@@ -222,7 +222,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
 
     "discard Terminated when unwatched between sysmsg and processing" in {
       val t1, t2 = TestLatch()
-      val w = system.actorOf(Props[WUWatcher]().withDeploy(Deploy.local), "myDearWatcher")
+      val w = system.actorOf(Props[WUWatcher].withDeploy(Deploy.local), "myDearWatcher")
       val p = TestProbe()
       w ! W(p.ref)
       w ! Latches(t1, t2)

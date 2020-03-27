@@ -125,8 +125,8 @@ class RemoveInternalClusterShardingDataSpec
     "setup sharding" in {
       Cluster(system).join(Cluster(system).selfAddress)
       val settings = ClusterShardingSettings(system)
-      ClusterSharding(system).start("type1", Props[EchoActor](), settings, extractEntityId, extractShardId)
-      ClusterSharding(system).start("type2", Props[EchoActor](), settings, extractEntityId, extractShardId)
+      ClusterSharding(system).start("type1", Props[EchoActor], settings, extractEntityId, extractShardId)
+      ClusterSharding(system).start("type2", Props[EchoActor], settings, extractEntityId, extractShardId)
     }
 
     "work when no data" in within(10.seconds) {
@@ -185,7 +185,7 @@ class RemoveInternalClusterShardingDataSpec
       Cluster(system).join(Cluster(system).selfAddress)
       val settings = ClusterShardingSettings(system)
       typeNames.foreach { typeName =>
-        ClusterSharding(system).start(typeName, Props[EchoActor](), settings, extractEntityId, extractShardId)
+        ClusterSharding(system).start(typeName, Props[EchoActor], settings, extractEntityId, extractShardId)
       }
     }
 

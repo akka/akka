@@ -46,19 +46,19 @@ class CoordinatedShutdownShardingSpec extends AkkaSpec(CoordinatedShutdownShardi
 
   val region1 = ClusterSharding(sys1).start(
     "type1",
-    Props[EchoActor](),
+    Props[EchoActor],
     ClusterShardingSettings(sys1),
     extractEntityId,
     extractShardId)
   val region2 = ClusterSharding(sys2).start(
     "type1",
-    Props[EchoActor](),
+    Props[EchoActor],
     ClusterShardingSettings(sys2),
     extractEntityId,
     extractShardId)
   val region3 = ClusterSharding(sys3).start(
     "type1",
-    Props[EchoActor](),
+    Props[EchoActor],
     ClusterShardingSettings(sys3),
     extractEntityId,
     extractShardId)
