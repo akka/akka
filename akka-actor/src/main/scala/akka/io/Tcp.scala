@@ -39,7 +39,7 @@ import com.github.ghik.silencer.silent
  */
 object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
 
-  override def lookup = Tcp
+  override def lookup() = Tcp
 
   override def createExtension(system: ExtendedActorSystem): TcpExt = new TcpExt(system)
 

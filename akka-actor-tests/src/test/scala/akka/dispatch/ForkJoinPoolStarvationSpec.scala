@@ -36,7 +36,7 @@ object ForkJoinPoolStarvationSpec {
 
     override def receive = {
       case "ping" =>
-        sender ! "All fine"
+        sender() ! "All fine"
     }
   }
 

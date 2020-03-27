@@ -24,7 +24,7 @@ object ActorWithStashSpec {
     def greeted: Receive = {
       case "bye" =>
         state.s = "bye"
-        state.finished.await
+        state.finished.await()
       case _ => // do nothing
     }
 
@@ -63,7 +63,7 @@ object ActorWithStashSpec {
             context.unbecome()
           case _ => stash()
         }
-      case "done" => state.finished.await
+      case "done" => state.finished.await()
       case _      => stash()
     }
   }
@@ -105,11 +105,11 @@ class JavaActorWithStashSpec extends StashJavaAPI with JUnitSuiteLike
 class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfterEach {
   import ActorWithStashSpec._
 
-  override def atStartup: Unit = {
+  override def atStartup(): Unit = {
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 
-  override def beforeEach() = state.finished.reset
+  override def beforeEach() = state.finished.reset()
 
   "An Actor with Stash" must {
 
@@ -117,7 +117,7 @@ class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfte
       val stasher = system.actorOf(Props(new StashingActor))
       stasher ! "bye"
       stasher ! "hello"
-      state.finished.await
+      state.finished.await()
       state.s should ===("bye")
     }
 
@@ -130,7 +130,7 @@ class ActorWithStashSpec extends AkkaSpec with DefaultTimeout with BeforeAndAfte
       protoActor ! "write"
       protoActor ! "close"
       protoActor ! "done"
-      state.finished.await
+      state.finished.await()
     }
 
     "throw an IllegalStateException if the same messages is stashed twice" in {

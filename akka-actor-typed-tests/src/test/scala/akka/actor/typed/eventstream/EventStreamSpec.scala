@@ -45,9 +45,9 @@ class EventStreamSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wit
   }
 
   "a system event stream subscriber" must {
-    val rootEventListener = testKit.createTestProbe[Root]
-    val level1EventListener = testKit.createTestProbe[Level1]
-    val rootEventListenerForLevel1 = testKit.createTestProbe[Root]
+    val rootEventListener = testKit.createTestProbe[Root]()
+    val level1EventListener = testKit.createTestProbe[Level1]()
+    val rootEventListenerForLevel1 = testKit.createTestProbe[Root]()
     testKit.system.eventStream ! Subscribe(rootEventListener.ref)
     testKit.system.eventStream ! Subscribe(level1EventListener.ref)
     testKit.system.eventStream ! Subscribe[Level1](rootEventListenerForLevel1.ref)

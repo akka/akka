@@ -44,7 +44,7 @@ object DeathWatchSpec {
         context.become {
           case Terminated(`currentKid`) =>
             testActor ! "GREEN"
-            context unbecome
+            context.unbecome()
         }
     }
   }
@@ -83,7 +83,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
 
   "The Death Watch" must {
     def expectTerminationOf(actorRef: ActorRef) =
-      expectMsgPF(5 seconds, actorRef + ": Stopped or Already terminated when linking") {
+      expectMsgPF(5 seconds, actorRef.toString + ": Stopped or Already terminated when linking") {
         case WrappedTerminated(Terminated(`actorRef`)) => true
       }
 
@@ -217,7 +217,7 @@ trait DeathWatchSpec { this: AkkaSpec with ImplicitSender with DefaultTimeout =>
         .sendSystemMessage(DeathWatchNotification(subject, existenceConfirmed = true, addressTerminated = false))
 
       // the testActor is not watching subject and will not receive a Terminated msg
-      expectNoMessage
+      expectNoMessage()
     }
 
     "discard Terminated when unwatched between sysmsg and processing" in {

@@ -19,7 +19,7 @@ import org.scalatestplus.junit.JUnitSuiteLike
 class JavaExtensionSpec extends JavaExtension with JUnitSuiteLike
 
 object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider {
-  def lookup = this
+  def lookup() = this
   def createExtension(s: ExtendedActorSystem) = new TestExtension(s)
 }
 
@@ -27,7 +27,7 @@ object TestExtension extends ExtensionId[TestExtension] with ExtensionIdProvider
 class TestExtension(val system: ExtendedActorSystem) extends Extension
 
 object FailingTestExtension extends ExtensionId[FailingTestExtension] with ExtensionIdProvider {
-  def lookup = this
+  def lookup() = this
   def createExtension(s: ExtendedActorSystem) = new FailingTestExtension(s)
 
   class TestException extends IllegalArgumentException("ERR") with NoStackTrace

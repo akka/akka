@@ -160,7 +160,7 @@ object SupervisorHierarchySpec {
 
     def suspendCount = context.asInstanceOf[ActorCell].mailbox.suspendCount
 
-    override def preStart: Unit = {
+    override def preStart(): Unit = {
       log :+= Event("started", identityHashCode(this))
       listener ! Ready(self)
       val s = size - 1 // subtract myself
@@ -258,7 +258,7 @@ object SupervisorHierarchySpec {
       }
     }
 
-    override def postStop: Unit = {
+    override def postStop(): Unit = {
       if (failed || suspended) {
         listener ! ErrorLog("not resumed (" + failed + ", " + suspended + ")", log)
         val state = stateCache.get(self)
@@ -442,7 +442,7 @@ object SupervisorHierarchySpec {
         Ping(ref)
       case x =>
         // fail one child
-        val pick = ((if (x >= 0.25) x - 0.25 else x) * 4 * activeChildren.size).toInt
+        val pick = ((if (x >= 0.25f) x - 0.25f else x) * 4 * activeChildren.size).toInt
         Fail(activeChildren(pick), if (x > 0.25) Restart else Resume)
     })
 
@@ -456,7 +456,7 @@ object SupervisorHierarchySpec {
       throw ActorKilledException("I said I wanted to DIE, dammit!")
     }
 
-    override def postStop: Unit = {
+    override def postStop(): Unit = {
       testActor ! "stressTestStopped"
     }
 
@@ -479,7 +479,7 @@ object SupervisorHierarchySpec {
         } else {
           children :+= ref
           if (children.size == size) goto(Stress)
-          else stay
+          else stay()
         }
       case Event(StateTimeout, _) =>
         testActor ! "did not get children list"
@@ -516,7 +516,7 @@ object SupervisorHierarchySpec {
     when(Stress) {
       case Event(Work, _) if idleChildren.isEmpty =>
         context.system.scheduler.scheduleOnce(workSchedule, self, Work)(context.dispatcher)
-        stay
+        stay()
       case Event(Work, x) if x > 0 =>
         nextJob.next match {
           case Ping(ref) => ref ! "ping"
@@ -537,15 +537,15 @@ object SupervisorHierarchySpec {
         }
         if (idleChildren.nonEmpty) self ! Work
         else context.system.scheduler.scheduleOnce(workSchedule, self, Work)(context.dispatcher)
-        stay.using(x - 1)
+        stay().using(x - 1)
       case Event(Work, _) => if (pingChildren.isEmpty) goto(LastPing) else goto(Finishing)
       case Event(Died(path), _) =>
         bury(path)
-        stay
+        stay()
       case Event("pong", _) =>
         pingChildren -= sender()
         idleChildren :+= sender()
-        stay
+        stay()
       case Event(StateTimeout, todo) =>
         log.info("dumping state due to StateTimeout")
         log.info(
@@ -566,10 +566,10 @@ object SupervisorHierarchySpec {
       case Event("pong", _) =>
         pingChildren -= sender()
         idleChildren :+= sender()
-        if (pingChildren.isEmpty) goto(LastPing) else stay
+        if (pingChildren.isEmpty) goto(LastPing) else stay()
       case Event(Died(ref), _) =>
         bury(ref)
-        if (pingChildren.isEmpty) goto(LastPing) else stay
+        if (pingChildren.isEmpty) goto(LastPing) else stay()
     }
 
     onTransition {
@@ -583,10 +583,10 @@ object SupervisorHierarchySpec {
       case Event("pong", _) =>
         pingChildren -= sender()
         idleChildren :+= sender()
-        if (pingChildren.isEmpty) goto(Stopping) else stay
+        if (pingChildren.isEmpty) goto(Stopping) else stay()
       case Event(Died(ref), _) =>
         bury(ref)
-        if (pingChildren.isEmpty) goto(Stopping) else stay
+        if (pingChildren.isEmpty) goto(Stopping) else stay()
     }
 
     onTransition {
@@ -596,14 +596,14 @@ object SupervisorHierarchySpec {
     }
 
     when(Stopping, stateTimeout = 5.seconds.dilated) {
-      case Event(PongOfDeath, _) => stay
+      case Event(PongOfDeath, _) => stay()
       case Event(Terminated(r), _) if r == hierarchy =>
         @silent
         val undead = children.filterNot(_.isTerminated)
         if (undead.nonEmpty) {
           log.info("undead:\n" + undead.mkString("\n"))
           testActor ! "stressTestFailed (" + undead.size + " undead)"
-          stop
+          stop()
         } else if (false) {
           /*
            * This part of the test is normally disabled, because it does not
@@ -621,7 +621,7 @@ object SupervisorHierarchySpec {
           goto(GC)
         } else {
           testActor ! "stressTestSuccessful"
-          stop
+          stop()
         }
       case Event(StateTimeout, _) =>
         errors :+= self -> ErrorLog("timeout while Stopping", Vector.empty)
@@ -630,7 +630,7 @@ object SupervisorHierarchySpec {
         printErrors()
         idleChildren.foreach(println)
         testActor ! "timeout in Stopping"
-        stop
+        stop()
       case Event(e: ErrorLog, _) =>
         errors :+= sender() -> e
         goto(Failed)
@@ -642,14 +642,14 @@ object SupervisorHierarchySpec {
         if (next.nonEmpty) {
           context.system.scheduler.scheduleOnce(workSchedule, self, GCcheck(next))(context.dispatcher)
           System.gc()
-          stay
+          stay()
         } else {
           testActor ! "stressTestSuccessful"
-          stop
+          stop()
         }
       case Event(StateTimeout, _) =>
         testActor ! "timeout in GC"
-        stop
+        stop()
     }
 
     var errors = Vector.empty[(ActorRef, ErrorLog)]
@@ -658,19 +658,19 @@ object SupervisorHierarchySpec {
       case Event(e: ErrorLog, _) =>
         if (!e.msg.startsWith("not resumed") || !ignoreNotResumedLogs)
           errors :+= sender() -> e
-        stay
+        stay()
       case Event(Terminated(r), _) if r == hierarchy =>
         printErrors()
         testActor ! "stressTestFailed"
-        stop
+        stop()
       case Event(StateTimeout, _) =>
         getErrors(hierarchy, 10)
         printErrors()
         testActor ! "timeout in Failed"
-        stop
-      case Event("pong", _)  => stay // don’t care?
-      case Event(Work, _)    => stay
-      case Event(Died(_), _) => stay
+        stop()
+      case Event("pong", _)  => stay() // don’t care?
+      case Event(Work, _)    => stay()
+      case Event(Died(_), _) => stay()
     }
 
     def getErrors(target: ActorRef, depth: Int): Unit = {
@@ -716,9 +716,9 @@ object SupervisorHierarchySpec {
         activeChildren :+= ref
         children :+= ref
         idleChildren :+= ref
-        stay
+        stay()
       case Event(e: ErrorLog, _) =>
-        if (e.msg.startsWith("not resumed")) stay
+        if (e.msg.startsWith("not resumed")) stay()
         else {
           errors :+= sender() -> e
           // don’t stop the hierarchy, that is going to happen all by itself and in the right order
@@ -737,7 +737,7 @@ object SupervisorHierarchySpec {
         goto(Failed)
       case Event(msg, _) =>
         testActor ! ("received unexpected msg: " + msg)
-        stop
+        stop()
     }
 
     initialize()

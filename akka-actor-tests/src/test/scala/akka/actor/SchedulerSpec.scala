@@ -330,7 +330,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
               case Crash => throw new Exception("CRASH")
             }
 
-            override def postRestart(reason: Throwable) = restartLatch.open
+            override def postRestart(reason: Throwable) = restartLatch.open()
           })
           val actor = Await.result((supervisor ? props).mapTo[ActorRef], timeout.duration)
 

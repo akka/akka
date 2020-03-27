@@ -57,7 +57,7 @@ import java.util.concurrent.TimeUnit
 private[testkit] object CallingThreadDispatcherQueues
     extends ExtensionId[CallingThreadDispatcherQueues]
     with ExtensionIdProvider {
-  override def lookup = CallingThreadDispatcherQueues
+  override def lookup() = CallingThreadDispatcherQueues
   override def createExtension(system: ExtendedActorSystem): CallingThreadDispatcherQueues =
     new CallingThreadDispatcherQueues
 }
@@ -276,7 +276,7 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
         }
         if (handle ne null) {
           try {
-            if (Mailbox.debug) println(mbox.actor.self + " processing message " + handle)
+            if (Mailbox.debug) println(s"${mbox.actor.self} processing message $handle")
             mbox.actor.invoke(handle)
             intex = checkThreadInterruption(intex)
             true

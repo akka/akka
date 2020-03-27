@@ -49,8 +49,8 @@ class TypedSupervisingClassicSpec extends ScalaTestWithActorTestKit("""
   "Typed supervising classic" should {
     "default to restart" in {
       val ref: ActorRef[Protocol] = spawn(classicActorOf())
-      val lifecycleProbe = TestProbe[String]
-      val probe = TestProbe[SpawnedClassicActor]
+      val lifecycleProbe = TestProbe[String]()
+      val probe = TestProbe[SpawnedClassicActor]()
       ref ! SpawnClassicActor(classic.Props(new CLassicActor(lifecycleProbe.ref)), probe.ref)
       val spawnedClassic = probe.expectMessageType[SpawnedClassicActor].ref
       lifecycleProbe.expectMessage("preStart")

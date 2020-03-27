@@ -14,7 +14,7 @@ import Tcp._
 import akka.actor.ActorSystem
 import akka.dispatch.ExecutionContexts
 
-trait TcpIntegrationSpecSupport { _: AkkaSpec =>
+trait TcpIntegrationSpecSupport { this: AkkaSpec =>
 
   class TestSetup(shouldBindServer: Boolean = true, runClientInExtraSystem: Boolean = true) {
     val clientSystem =

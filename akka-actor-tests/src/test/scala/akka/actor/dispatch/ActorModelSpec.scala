@@ -352,7 +352,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       val a = newTestActor(dispatcher.id).asInstanceOf[InternalActorRef]
       awaitStarted(a)
       val done = new CountDownLatch(1)
-      a.suspend
+      a.suspend()
       a ! CountDown(done)
       assertNoCountDown(done, 1000, "Should not process messages while suspended")
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, suspensions = 1)
@@ -410,14 +410,14 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                     "Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
 
                   import akka.util.ccompat.JavaConverters._
-                  team.asScala.toList.sortBy(_.self.path).foreach { cell: ActorCell =>
+                  team.asScala.toList.sortBy(_.self.path).foreach { (cell: ActorCell) =>
                     System.err.println(
                       " - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.currentStatus + " "
                       + cell.mailbox.numberOfMessages + " " + cell.mailbox.systemDrain(SystemMessageList.LNil).size)
                   }
 
                   System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
-                  Iterator.continually(mq.dequeue).takeWhile(_ ne null).foreach(System.err.println)
+                  Iterator.continually(mq.dequeue()).takeWhile(_ ne null).foreach(System.err.println)
                 case _ =>
               }
 

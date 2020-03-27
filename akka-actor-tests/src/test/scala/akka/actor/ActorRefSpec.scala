@@ -391,7 +391,7 @@ class ActorRefSpec extends AkkaSpec("""
 
       Await.ready(latch, timeout.duration)
 
-      latch.reset
+      latch.reset()
 
       clientRef ! "complex2"
       clientRef ! "simple"

@@ -21,7 +21,7 @@ import com.github.ghik.silencer.silent
 @silent
 class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
-  override def atStartup: Unit = {
+  override def atStartup(): Unit = {
     system.eventStream.publish(Mute(EventFilter[Exception]("Crashing...")))
   }
 
@@ -116,7 +116,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
         def receive = {
           case Ping =>
-            if (!pingLatch.isOpen) pingLatch.open else secondPingLatch.open
+            if (!pingLatch.isOpen) pingLatch.open() else secondPingLatch.open()
           case Crash => throw new Exception("Crashing...")
         }
         override def postRestart(reason: Throwable) = {

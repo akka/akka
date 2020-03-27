@@ -30,7 +30,7 @@ import com.github.ghik.silencer.silent
 @ccompatUsedUntil213
 object UdpConnected extends ExtensionId[UdpConnectedExt] with ExtensionIdProvider {
 
-  override def lookup = UdpConnected
+  override def lookup() = UdpConnected
 
   override def createExtension(system: ExtendedActorSystem): UdpConnectedExt = new UdpConnectedExt(system)
 

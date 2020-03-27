@@ -148,7 +148,7 @@ class TestProbeSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with 
       val probe = createTestProbe[EventT]()
       eventsT(10).forall { e =>
         probe.ref ! e
-        probe.receiveMessage == e
+        probe.receiveMessage() == e
       } should ===(true)
 
       probe.expectNoMessage()

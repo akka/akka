@@ -69,12 +69,12 @@ object BehaviorTestKitSpec {
           context.stop(child)
           Behaviors.same
         case SpawnAdapter =>
-          context.spawnMessageAdapter { r: Reproduce =>
+          context.spawnMessageAdapter { (r: Reproduce) =>
             SpawnAnonymous(r.times)
           }
           Behaviors.same
         case SpawnAdapterWithName(name) =>
-          context.spawnMessageAdapter({ r: Reproduce =>
+          context.spawnMessageAdapter({ (r: Reproduce) =>
             SpawnAnonymous(r.times)
           }, name)
           Behaviors.same
@@ -310,7 +310,7 @@ class BehaviorTestKitSpec extends AnyWordSpec with Matchers with LogCapturing {
       val d = TestInbox[Done]()
       testkit.run(KillSession(sessionRef, d.ref))
 
-      d.receiveAll shouldBe Seq(Done)
+      d.receiveAll() shouldBe Seq(Done)
       testkit.expectEffectType[Stopped]
     }
 

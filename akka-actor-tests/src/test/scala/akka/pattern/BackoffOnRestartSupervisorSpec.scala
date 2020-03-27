@@ -119,7 +119,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
         val supervisorChildSelection = system.actorSelection(supervisor.path / "*")
         supervisorChildSelection.tell("testmsg", probe.ref)
         probe.expectMsg("testmsg")
-        probe.expectNoMessage
+        probe.expectNoMessage()
       }
     }
 
@@ -141,10 +141,10 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
     class SlowlyFailingActor(latch: CountDownLatch) extends Actor {
       def receive = {
         case "THROW" =>
-          sender ! "THROWN"
+          sender() ! "THROWN"
           throw new NormalException
         case "PING" =>
-          sender ! "PONG"
+          sender() ! "PONG"
       }
 
       override def postStop(): Unit = {

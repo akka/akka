@@ -139,7 +139,7 @@ private[akka] class Mailboxes(
   protected[akka] def getMailboxType(props: Props, dispatcherConfig: Config): MailboxType = {
     val id = dispatcherConfig.getString("id")
     val deploy = props.deploy
-    val actorClass = props.actorClass
+    val actorClass = props.actorClass()
     lazy val actorRequirement = getRequiredType(actorClass)
 
     val mailboxRequirement: Class[_] = getMailboxRequirement(dispatcherConfig)
