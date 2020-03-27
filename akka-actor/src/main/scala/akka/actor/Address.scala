@@ -24,7 +24,7 @@ import akka.annotation.InternalApi
  * information with an address, then this must be done externally.
  */
 @SerialVersionUID(1L)
-final case class Address private (protocol: String, system: String, host: Option[String], port: Option[Int]) {
+final case class Address private[actor] (protocol: String, system: String, host: Option[String], port: Option[Int]) {
   // Please note that local/non-local distinction must be preserved:
   // host.isDefined == hasGlobalScope
   // host.isEmpty == hasLocalScope
