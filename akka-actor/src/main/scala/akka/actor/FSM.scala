@@ -178,12 +178,17 @@ object FSM {
      */
     private[akka] override def notifies: Boolean = false
 
-    override def copy(
-        stateName: S = stateName,
-        stateData: D = stateData,
+    // When manually implementing `copy` method of generic case class,
+    // To make this def dotty compatible, we must declare it as a genetic def (has type params)
+    // See: lampepfl/dotty#8403
+    // For scala 2.12 compatible, we can't shadow types
+    // So `def copy[S1, D1]` instead of `def copy[S, D]`
+    override def copy[S1, D1](
+        stateName: S1 = stateName,
+        stateData: D1 = stateData,
         timeout: Option[FiniteDuration] = timeout,
         stopReason: Option[Reason] = stopReason,
-        replies: List[Any] = replies): State[S, D] = {
+        replies: List[Any] = replies): State[S1, D1] = {
       new SilentState(stateName, stateData, timeout, stopReason, replies)
     }
   }
@@ -206,12 +211,12 @@ object FSM {
     private[akka] def notifies: Boolean = true
 
     // defined here to be able to override it in SilentState
-    def copy(
-        stateName: S = stateName,
-        stateData: D = stateData,
+    def copy[S1, D1](
+        stateName: S1 = stateName,
+        stateData: D1 = stateData,
         timeout: Option[FiniteDuration] = timeout,
         stopReason: Option[Reason] = stopReason,
-        replies: List[Any] = replies): State[S, D] = {
+        replies: List[Any] = replies): State[S1, D1] = {
       State(stateName, stateData, timeout, stopReason, replies)
     }
 
