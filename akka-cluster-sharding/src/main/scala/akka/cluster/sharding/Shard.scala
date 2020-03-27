@@ -8,6 +8,7 @@ import java.net.URLEncoder
 
 import akka.Done
 import akka.actor.Actor
+import akka.actor.ActorContext
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.DeadLetterSuppression
@@ -15,14 +16,13 @@ import akka.actor.Deploy
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.actor.Stash
+import akka.actor.Status.{ Failure => AkkaFailure }
 import akka.actor.Terminated
 import akka.actor.Timers
 import akka.annotation.InternalStableApi
 import akka.cluster.Cluster
-import akka.cluster.sharding.internal.DDataRememberEntities
+import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.EntityRecoveryStrategy
-import akka.cluster.sharding.internal.EventSourcedRememberEntities
-import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore
 import akka.cluster.sharding.internal.NoOpStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntityStarter
@@ -34,7 +34,6 @@ import akka.util.MessageBufferMap
 import akka.util.OptionVal
 import akka.util.PrettyDuration._
 import akka.util.unused
-import akka.actor.Status.{ Failure => AkkaFailure }
 
 import scala.collection.immutable.Set
 import scala.concurrent.Future
@@ -95,24 +94,22 @@ private[akka] object Shard {
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId,
       handOffStopMessage: Any,
-      replicator: ActorRef,
-      majorityMinCap: Int): Props =
+      createRememberEntitiesStore: (ShardId, ActorContext) => RememberEntitiesShardStore): Props =
     Props(
       new Shard(
         typeName,
         shardId,
         entityProps,
         settings,
-        replicator,
         extractEntityId,
         extractShardId,
         handOffStopMessage,
-        majorityMinCap)).withDeploy(Deploy.local)
+        createRememberEntitiesStore)).withDeploy(Deploy.local)
 
   case object PassivateIdleTick extends NoSerializationVerificationNeeded
 
   private final case class RememberedEntityIds(ids: Set[EntityId])
-  private final case class RememberEntityStoreCrashed(store: ActorRef)
+  final case class RememberEntityStoreCrashed(store: ActorRef)
   private final case object AsyncWriteDone
 
 }
@@ -125,18 +122,17 @@ private[akka] object Shard {
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-// FIXME changes to constructor will break telemetry
+// FIXME I broke bin comp here
 @InternalStableApi
-private[akka] final class Shard(
+private[akka] class Shard(
     typeName: String,
     shardId: ShardRegion.ShardId,
     entityProps: String => Props,
     settings: ClusterShardingSettings,
-    replicator: ActorRef,
     extractEntityId: ShardRegion.ExtractEntityId,
     @unused extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    majorityMinCap: Int)
+    createRememberEntitiesStore: (ShardId, ActorContext) => RememberEntitiesShardStore)
     extends Actor
     with ActorLogging
     with Stash
@@ -154,17 +150,7 @@ private[akka] final class Shard(
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
   import settings.tuningParameters._
 
-  private val rememberEntitiesStore: RememberEntitiesShardStore =
-    if (settings.rememberEntities)
-      settings.stateStoreMode match {
-        case ClusterShardingSettings.StateStoreModeDData =>
-          // FIXME share a single instance across the region
-          new DDataRememberEntities(context.system, typeName, settings, replicator, majorityMinCap)
-        case ClusterShardingSettings.StateStoreModePersistence =>
-          val store = context.actorOf(EventSourcedRememberEntitiesStore.props(typeName, shardId, settings))
-          context.watchWith(store, RememberEntityStoreCrashed(store))
-          new EventSourcedRememberEntities(store)
-      } else NoOpStore
+  private val rememberEntitiesStore: RememberEntitiesShardStore = createRememberEntitiesStore(shardId, context)
 
   private val rememberedEntitiesRecoveryStrategy: EntityRecoveryStrategy = {
     import settings.tuningParameters._
