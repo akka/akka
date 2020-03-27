@@ -266,6 +266,12 @@ trait ScanningClassification { self: EventBus =>
 trait ManagedActorClassification { this: ActorEventBus with ActorClassifier =>
   import scala.annotation.tailrec
 
+  // re-define Subscriber & Classifier here to fix dotty compile error:
+  // cannot resolve reference to type ActorClassificationUnsubscriber.this.bus.Subscriber
+  // see also: https://gitter.im/lampepfl/dotty?at=5e5aca5eec7f8746aaa548df
+  type Subscriber = ActorRef
+  type Classifier = ActorRef
+
   protected def system: ActorSystem
 
   private class ManagedActorClassificationMappings(

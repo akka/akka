@@ -195,6 +195,9 @@ abstract class ManagedActorEventBus[E](system: ActorSystem) extends EventBus[E, 
   with akka.event.ActorClassifier {
     type Event = E
 
+    override type Subscriber = ActorRef
+    override type Classifier = ActorRef
+
     override val system = ManagedActorEventBus.this.system
 
     override protected def mapSize: Int = ManagedActorEventBus.this.mapSize()

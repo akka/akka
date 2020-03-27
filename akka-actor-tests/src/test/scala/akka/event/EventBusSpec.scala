@@ -171,6 +171,10 @@ object ActorEventBusSpec {
 
     type Event = Notification
 
+    // TODO remove
+    override type Subscriber = ActorRef
+    override type Classifier = ActorRef
+
     def classify(event: Event) = event.ref
     protected def mapSize = 32
     def publish(event: Event, subscriber: Subscriber) = subscriber ! event

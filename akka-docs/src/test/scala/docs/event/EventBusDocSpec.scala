@@ -133,6 +133,10 @@ object EventBusDocSpec {
       with ManagedActorClassification {
     type Event = Notification
 
+    // TODO remove
+    override type Subscriber = ActorRef
+    override type Classifier = ActorRef
+
     // is used for extracting the classifier from the incoming events
     override protected def classify(event: Event): ActorRef = event.ref
 
