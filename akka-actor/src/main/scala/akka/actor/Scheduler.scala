@@ -98,7 +98,7 @@ trait Scheduler {
         }
       }
 
-      @tailrec final def cancel(): Boolean = {
+      final def cancel(): Boolean = {
         get match {
           case null => false
           case c =>
