@@ -16,8 +16,6 @@ import scala.concurrent.duration._
 import scala.language.implicitConversions
 import scala.util.Success
 
-import com.github.ghik.silencer.silent
-
 import akka.dispatch.ExecutionContexts
 import akka.pattern.ask
 import akka.routing.MurmurHash
@@ -328,8 +326,6 @@ private[akka] final case class ActorSelectionMessage(
 /**
  * INTERNAL API
  */
-@silent("@SerialVersionUID has no effect on traits")
-@SerialVersionUID(1L)
 private[akka] sealed trait SelectionPathElement
 
 /**
