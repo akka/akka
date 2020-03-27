@@ -10,6 +10,7 @@ import java.util.concurrent.{ ConcurrentHashMap, TimeUnit }
 import com.typesafe.config._
 
 import scala.util.{ Failure, Success, Try }
+import java.lang.Enum
 
 /**
  * INTERNAL API
