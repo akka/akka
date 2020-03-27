@@ -20,7 +20,7 @@ import akka.actor.typed.ExtensionSetup
  * Actor system extensions registry
  */
 @InternalApi
-private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] =>
+private[akka] trait ExtensionsImpl extends Extensions { self: ActorSystem[_] with InternalRecipientRef[_] =>
 
   private val extensions = new ConcurrentHashMap[ExtensionId[_], AnyRef]
 
