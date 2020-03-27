@@ -106,7 +106,7 @@ object Tcp extends ExtensionId[TcpExt] with ExtensionIdProvider {
    * This is the common trait for all commands understood by TCP actors.
    */
   trait Command extends Message with SelectionHandler.HasFailureMessage {
-    def failureMessage = CommandFailed(this)
+    def failureMessage: CommandFailed = CommandFailed(this)
   }
 
   /**
