@@ -103,7 +103,7 @@ object ActorRef {
  * the unique id of the actor is not taken into account when comparing actor paths.
  */
 abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable {
-  scalaRef: InternalActorRef =>
+  scalaRef: InternalActorRef with ActorRefScope =>
 
   /**
    * Returns the path for this actor (from this actor up to the root actor).
@@ -166,7 +166,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
  * There are implicit conversions in package.scala
  * from ActorRef -&gt; ScalaActorRef and back
  */
-trait ScalaActorRef { ref: ActorRef =>
+trait ScalaActorRef { ref: ActorRef with InternalActorRef with ActorRefScope =>
 
   /**
    * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
