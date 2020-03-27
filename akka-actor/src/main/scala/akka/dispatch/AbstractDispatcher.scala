@@ -22,7 +22,7 @@ import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 import scala.util.control.NonFatal
 
-final case class Envelope private (val message: Any, val sender: ActorRef)
+final case class Envelope private[akka] (message: Any, sender: ActorRef)
 
 object Envelope {
   def apply(message: Any, sender: ActorRef, system: ActorSystem): Envelope = {
