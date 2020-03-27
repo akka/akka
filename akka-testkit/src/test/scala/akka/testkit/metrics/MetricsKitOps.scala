@@ -8,6 +8,7 @@ import com.codahale.metrics._
 import java.util
 import com.codahale.metrics.jvm
 import com.codahale.metrics.jvm.MemoryUsageGaugeSet
+import org.scalatest.Notifying
 
 /**
  * User Land operations provided by the [[MetricsKit]].
@@ -15,9 +16,7 @@ import com.codahale.metrics.jvm.MemoryUsageGaugeSet
  * Extracted to give easy overview of user-API detached from MetricsKit internals.
  */
 private[akka] trait MetricsKitOps extends MetricKeyDSL {
-  this: MetricsKit =>
-
-  type MetricKey = MetricKeyDSL#MetricKey
+  this: MetricsKit with Notifying =>
 
   /** Simple thread-safe counter, backed by `java.util.concurrent.LongAdder` so can pretty efficiently work even when hit by multiple threads */
   def counter(key: MetricKey): Counter = registry.counter(key.toString)
