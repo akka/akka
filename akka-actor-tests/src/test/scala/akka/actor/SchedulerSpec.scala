@@ -692,7 +692,22 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     val prb = TestProbe()
     val tf = system.asInstanceOf[ActorSystemImpl].threadFactory
     val sched =
-      new { @volatile var time = start } with LARS(config.withFallback(system.settings.config), log, tf) {
+      new LARS(config.withFallback(system.settings.config), log, tf) {
+        @volatile private var time = start
+        // To make dotty compatible, we use reflection instead of:
+        // `new { @volatile var time = start } with LARS..`
+        // The logic here is:
+        // we need: override def clock = time
+        // and need init super.start = time (== the outer `start` val)
+        // But super.start is defined as `private val start = clock()` == System.nanoTime
+        // So we use reflection here
+        private[this] def earlyInit(): Unit = {
+          val f = classOf[LARS].getDeclaredField("akka$actor$LightArrayRevolverScheduler$$start")
+          f.setAccessible(true)
+          f.setLong(this, time)
+        }
+        earlyInit()
+
         override protected def clock(): Long = {
           // println(s"clock=$time")
           time

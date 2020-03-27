@@ -16,8 +16,6 @@ import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
 
-import com.github.ghik.silencer.silent
-
 import akka.actor._
 import akka.actor.DeadLetter
 import akka.actor.IllegalActorStateException
@@ -160,7 +158,7 @@ trait TestKitBase {
 
   import TestActor.{ Message, NullMessage, RealMessage, Spawn }
 
-  implicit val system: ActorSystem
+  implicit def system: ActorSystem
   val testKitSettings = TestKitExtension(system)
 
   private val queue = new LinkedBlockingDeque[Message]()
@@ -965,8 +963,7 @@ trait TestKitBase {
  *
  * @since 1.1
  */
-@silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
-class TestKit(_system: ActorSystem) extends { implicit val system: ActorSystem = _system } with TestKitBase
+class TestKit(_system: ActorSystem) extends ScalaVersionSpecificTestkit(_system)
 
 object TestKit {
 
