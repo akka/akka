@@ -246,6 +246,9 @@ private[remote] class Association(
   @volatile
   @silent("never used")
   private[this] var _sharedStateDoNotCallMeDirectly: AssociationState = AssociationState()
+  @silent private def _dotty_pls_dont_remove_my_unused_private = {
+    _sharedStateDoNotCallMeDirectly
+  }
 
   /**
    * Helper method for access to underlying state via Unsafe

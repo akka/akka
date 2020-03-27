@@ -105,6 +105,12 @@ private[akka] trait Children { this: ActorCell =>
   }
 
   @silent @volatile private var _nextNameDoNotCallMeDirectly = 0L
+  @silent private def _dotty_pls_dont_remove_my_unused_private = {
+    _childrenRefsDoNotCallMeDirectly
+    _functionRefsDoNotCallMeDirectly
+    _nextNameDoNotCallMeDirectly
+  }
+
   final protected def randomName(sb: java.lang.StringBuilder): String = {
     val num = Unsafe.instance.getAndAddLong(this, AbstractActorCell.nextNameOffset, 1)
     Helpers.base64(num, sb)

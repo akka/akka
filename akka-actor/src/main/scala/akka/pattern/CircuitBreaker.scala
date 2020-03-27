@@ -203,6 +203,10 @@ class CircuitBreaker(
   @volatile
   @silent("never used")
   private[this] var _currentResetTimeoutDoNotCallMeDirectly: FiniteDuration = resetTimeout
+  @silent private def _dotty_pls_dont_remove_my_unused_private = {
+    _currentStateDoNotCallMeDirectly
+    _currentResetTimeoutDoNotCallMeDirectly
+  }
 
   /**
    * Helper method for access to underlying state via Unsafe

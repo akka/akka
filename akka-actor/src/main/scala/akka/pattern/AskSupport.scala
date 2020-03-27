@@ -536,6 +536,11 @@ private[akka] final class PromiseActorRef private (
   @silent("never used")
   private[this] var _watchedByDoNotCallMeDirectly: Set[ActorRef] = ActorCell.emptyActorRefSet
 
+  @silent private def _dotty_pls_dont_remove_my_unused_private = {
+    _stateDoNotCallMeDirectly
+    _watchedByDoNotCallMeDirectly
+  }
+
   @inline
   private[this] def watchedBy: Set[ActorRef] =
     Unsafe.instance.getObjectVolatile(this, watchedByOffset).asInstanceOf[Set[ActorRef]]
