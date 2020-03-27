@@ -7,7 +7,6 @@ package akka.japi
 import java.util.Collections.{ emptyList, singletonList }
 
 import akka.util.Collections.EmptyImmutableSeq
-import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.language.implicitConversions
@@ -83,8 +82,6 @@ object Pair {
  *
  * This class is kept for compatibility, but for future API's please prefer [[akka.japi.function.Creator]].
  */
-@silent("@SerialVersionUID has no effect")
-@SerialVersionUID(1L)
 trait Creator[T] extends Serializable {
 
   /**
