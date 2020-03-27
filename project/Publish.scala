@@ -69,17 +69,18 @@ object DeployRsync extends AutoPlugin {
   override def requires = plugins.JvmPlugin
 
   trait Keys {
-    val deployRsyncArtifact = taskKey[Seq[(File, String)]]("File or directory and a path to deploy to")
-    val deployRsync = inputKey[Unit]("Deploy using SCP")
+    val deployRsyncArtifacts = taskKey[Seq[(File, String)]]("File or directory and a path to deploy to")
+    val deployRsync = inputKey[Unit]("Deploy using rsync")
   }
 
   object autoImport extends Keys
   import autoImport._
 
-  override def projectSettings =
-    Seq(deployRsync := {
+  override def projectSettings = Seq(
+    deployRsyncArtifacts := List(),
+    deployRsync := {
       val (_, host) = (Space ~ StringBasic).parsed
-      deployRsyncArtifact.value.foreach {
+      deployRsyncArtifacts.value.foreach {
         case (from, to) => s"rsync -rvz $from/ $host:$to" !
       }
     })

@@ -12,6 +12,7 @@ import sbtunidoc.GenJavadocPlugin.autoImport._
 import sbt.Keys._
 import sbt.File
 import scala.annotation.tailrec
+import DeployRsync.autoImport.deployRsyncArtifacts
 
 import sbt.ScopeFilter.ProjectFilter
 
@@ -23,7 +24,7 @@ object Scaladoc extends AutoPlugin {
   }
 
   override def trigger = allRequirements
-  override def requires = plugins.JvmPlugin
+  override def requires = plugins.JvmPlugin && DeployRsync
 
   val validateDiagrams = settingKey[Boolean]("Validate generated scaladoc diagrams")
 
@@ -132,10 +133,22 @@ object UnidocRoot extends AutoPlugin {
       .getOrElse(sbtunidoc.ScalaUnidocPlugin)
 
   val akkaSettings = UnidocRoot.CliOptions.genjavadocEnabled
-    .ifTrue(Seq(javacOptions in (JavaUnidoc, unidoc) := {
-      if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
-      else Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories")
-    }))
+    .ifTrue(Seq(
+      javacOptions in (JavaUnidoc, unidoc) := {
+        if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
+        else Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories")
+      },
+      deployRsyncArtifacts := {
+        val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
+        (Compile / unidoc).value match {
+          case Seq(japi, api) =>
+            Seq(
+              (japi -> s"www/japi/akka/$releaseVersion"),
+              (api -> s"www/api/akka/$releaseVersion")
+            )
+        }
+      }
+    ))
     .getOrElse(Nil)
 
   override lazy val projectSettings = {
