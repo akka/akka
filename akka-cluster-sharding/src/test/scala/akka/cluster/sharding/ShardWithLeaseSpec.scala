@@ -15,17 +15,19 @@ import akka.coordination.lease.LeaseUsageSettings
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
 import akka.testkit.TestProbe
+import akka.testkit.WithLogCapturing
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.control.NoStackTrace
 
+// FIXME this looks like it is the same test as ClusterShardingLeaseSpec is there any difference?
 object ShardWithLeaseSpec {
   val config =
     """
-      akka.loglevel = INFO
-      akka.loggers = [akka.testkit.TestEventListener]
+      akka.loglevel = DEBUG
+      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = "cluster"
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
@@ -60,7 +62,7 @@ object ShardWithLeaseSpec {
   case class BadLease(msg: String) extends RuntimeException(msg) with NoStackTrace
 }
 
-class ShardWithLeaseSpec extends AkkaSpec(ShardWithLeaseSpec.config) {
+class ShardWithLeaseSpec extends AkkaSpec(ShardWithLeaseSpec.config) with WithLogCapturing {
 
   import ShardWithLeaseSpec._
 

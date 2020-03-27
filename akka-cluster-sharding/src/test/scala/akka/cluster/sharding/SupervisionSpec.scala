@@ -8,6 +8,7 @@ import akka.actor.{ Actor, ActorLogging, ActorRef, PoisonPill, Props }
 import akka.cluster.Cluster
 import akka.cluster.sharding.ShardRegion.Passivate
 import akka.pattern.{ BackoffOpts, BackoffSupervisor }
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.ConfigFactory
 
@@ -17,6 +18,7 @@ object SupervisionSpec {
   val config =
     ConfigFactory.parseString("""
     akka.actor.provider = "cluster"
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.loglevel = DEBUG
     """)
 
@@ -59,7 +61,7 @@ object SupervisionSpec {
 
 }
 
-class DeprecatedSupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSender {
+class DeprecatedSupervisionSpec extends AkkaSpec(SupervisionSpec.config) with ImplicitSender with WithLogCapturing {
   import SupervisionSpec._
 
   "Supervision for a sharded actor (deprecated)" must {

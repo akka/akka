@@ -9,17 +9,21 @@ import scala.concurrent.duration._
 import akka.actor.ActorRef
 import akka.testkit.AkkaSpec
 import akka.testkit.TestActors
+import akka.testkit.WithLogCapturing
+
 import scala.concurrent.duration.FiniteDuration
 
 object ProxyShardingSpec {
   val config = """
-  akka.actor.provider = "cluster"
+  akka.actor.provider = cluster
+  akka.loglevel = DEBUG
+  akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
   akka.remote.classic.netty.tcp.port = 0
   akka.remote.artery.canonical.port = 0
   """
 }
 
-class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) {
+class ProxyShardingSpec extends AkkaSpec(ProxyShardingSpec.config) with WithLogCapturing {
 
   val role = "Shard"
   val clusterSharding: ClusterSharding = ClusterSharding(system)

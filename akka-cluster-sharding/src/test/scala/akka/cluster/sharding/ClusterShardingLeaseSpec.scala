@@ -6,6 +6,7 @@ package akka.cluster.sharding
 import akka.actor.Props
 import akka.cluster.{ Cluster, MemberStatus, TestLease, TestLeaseExt }
 import akka.testkit.TestActors.EchoActor
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.{ Config, ConfigFactory }
 
@@ -17,7 +18,7 @@ import scala.util.control.NoStackTrace
 object ClusterShardingLeaseSpec {
   val config = ConfigFactory.parseString("""
     akka.loglevel = DEBUG
-    #akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
+    akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
     akka.remote.classic.netty.tcp.port = 0
     akka.remote.artery.canonical.port = 0
@@ -59,7 +60,8 @@ class DDataClusterShardingLeaseSpec extends ClusterShardingLeaseSpec(ClusterShar
 
 class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
     extends AkkaSpec(config.withFallback(ClusterShardingLeaseSpec.config))
-    with ImplicitSender {
+    with ImplicitSender
+    with WithLogCapturing {
   import ClusterShardingLeaseSpec._
 
   def this() = this(ConfigFactory.empty(), false)

@@ -10,6 +10,7 @@ import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Prop
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.{ Cluster, MemberStatus }
 import akka.testkit.TestEvent.Mute
+import akka.testkit.WithLogCapturing
 import akka.testkit.{ AkkaSpec, DeadLettersFilter, TestProbe }
 import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
@@ -24,7 +25,8 @@ object ShardRegionSpec {
 
   val config =
     ConfigFactory.parseString(tempConfig).withFallback(ConfigFactory.parseString(s"""
-        akka.loglevel = INFO
+        akka.loglevel = DEBUG
+        akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
         akka.actor.provider = "cluster"
         akka.remote.classic.netty.tcp.port = 0
         akka.remote.artery.canonical.port = 0
@@ -57,7 +59,7 @@ object ShardRegionSpec {
     }
   }
 }
-class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) {
+class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) with WithLogCapturing {
 
   import ShardRegionSpec._
   import scala.concurrent.duration._

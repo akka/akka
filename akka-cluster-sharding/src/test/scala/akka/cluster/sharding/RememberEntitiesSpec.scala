@@ -16,6 +16,7 @@ import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.cluster.sharding.ShardRegion.StartEntityAck
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
+import akka.testkit.WithLogCapturing
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -39,13 +40,18 @@ object RememberEntitiesSpec {
   }
 
   val config = ConfigFactory.parseString("""
-      akka.loglevel=info
+      akka.loglevel=DEBUG
+      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = cluster
       akka.persistence.journal.plugin = "akka.persistence.journal.inmem"
     """.stripMargin)
 }
 
-class RememberEntitiesSpec extends AkkaSpec(RememberEntitiesSpec.config) with AnyWordSpecLike with ImplicitSender {
+class RememberEntitiesSpec
+    extends AkkaSpec(RememberEntitiesSpec.config)
+    with AnyWordSpecLike
+    with ImplicitSender
+    with WithLogCapturing {
 
   import RememberEntitiesSpec._
 

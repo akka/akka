@@ -21,6 +21,7 @@ import akka.util.ccompat._
 object CoordinatedShutdownShardingSpec {
   val config =
     """
+    akka.loglevel = DEBUG
     akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
     akka.actor.provider = "cluster"
     akka.remote.classic.netty.tcp.port = 0

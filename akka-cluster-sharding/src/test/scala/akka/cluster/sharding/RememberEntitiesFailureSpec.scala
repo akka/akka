@@ -21,14 +21,15 @@ import akka.testkit.TestProbe
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 import akka.pattern.after
+import akka.testkit.WithLogCapturing
 
 import scala.concurrent.duration._
 import scala.concurrent.Future
 
 object RememberEntitiesFailureSpec {
   val config = ConfigFactory.parseString(s"""
-      akka.loglevel=info
-      akka.loggers = [akka.testkit.TestEventListener]
+      akka.loglevel = DEBUG
+      akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = cluster
       akka.cluster.sharding.distributed-data.durable.keys = []
       akka.cluster.sharding.custom-store = "akka.cluster.sharding.RememberEntitiesFailureSpec$$FakeStore"
@@ -102,7 +103,10 @@ object RememberEntitiesFailureSpec {
   }
 }
 
-class RememberEntitiesFailureSpec extends AkkaSpec(RememberEntitiesFailureSpec.config) with AnyWordSpecLike {
+class RememberEntitiesFailureSpec
+    extends AkkaSpec(RememberEntitiesFailureSpec.config)
+    with AnyWordSpecLike
+    with WithLogCapturing {
 
   import RememberEntitiesFailureSpec._
 
@@ -143,6 +147,8 @@ class RememberEntitiesFailureSpec extends AkkaSpec(RememberEntitiesFailureSpec.c
               sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
               probe.expectMsg("hello-1")
             }
+
+            system.stop(sharding)
           } finally {
             failInitial = Map.empty
           }
@@ -179,6 +185,7 @@ class RememberEntitiesFailureSpec extends AkkaSpec(RememberEntitiesFailureSpec.c
           sharding.tell(EntityEnvelope(11, "hello-11-2"), probe.ref)
           probe.expectMsg("hello-11-2")
         }
+        system.stop(sharding)
       }
 
       s"recover on abrupt entity stop when storing a stop event fails $wayToFail" in {
@@ -212,6 +219,7 @@ class RememberEntitiesFailureSpec extends AkkaSpec(RememberEntitiesFailureSpec.c
           sharding.tell(EntityEnvelope(1, "hello-2"), probe.ref)
           probe.expectMsg("hello-2")
         }, 5.seconds)
+        system.stop(sharding)
       }
 
       s"recover on graceful entity stop when storing a stop event fails $wayToFail" in {
@@ -247,6 +255,7 @@ class RememberEntitiesFailureSpec extends AkkaSpec(RememberEntitiesFailureSpec.c
           sharding.tell(EntityEnvelope(1, "hello-2"), probe.ref)
           probe.expectMsg("hello-2")
         }, 5.seconds)
+        system.stop(sharding)
       }
     }
   }
