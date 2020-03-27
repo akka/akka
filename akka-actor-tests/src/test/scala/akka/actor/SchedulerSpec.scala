@@ -692,7 +692,15 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
     val prb = TestProbe()
     val tf = system.asInstanceOf[ActorSystemImpl].threadFactory
     val sched =
-      new { @volatile var time = start } with LARS(config.withFallback(system.settings.config), log, tf) {
+      new LARS(config.withFallback(system.settings.config), log, tf) {
+        @volatile var time = start
+        private[this] def earlyInit(): Unit = {
+          val f = classOf[LARS].getDeclaredField("akka$actor$LightArrayRevolverScheduler$$start")
+          f.setAccessible(true)
+          f.setLong(this, time)
+        }
+        earlyInit()
+
         override protected def clock(): Long = {
           // println(s"clock=$time")
           time
