@@ -176,7 +176,7 @@ object FSM {
      */
     private[akka] override def notifies: Boolean = false
 
-    override def copy(
+    override def copy[S, D](
         stateName: S = stateName,
         stateData: D = stateData,
         timeout: Option[FiniteDuration] = timeout,
@@ -204,7 +204,7 @@ object FSM {
     private[akka] def notifies: Boolean = true
 
     // defined here to be able to override it in SilentState
-    def copy(
+    def copy[S, D](
         stateName: S = stateName,
         stateData: D = stateData,
         timeout: Option[FiniteDuration] = timeout,
