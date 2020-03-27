@@ -342,7 +342,8 @@ object LogSource {
     override def genString(c: Class[_], system: ActorSystem): String = genString(c) + "(" + system + ")"
     override def getClazz(c: Class[_]): Class[_] = c
   }
-  implicit def fromAnyClass[T]: LogSource[Class[T]] = fromClass.asInstanceOf[LogSource[Class[T]]]
+
+  implicit def fromAnyClass[T]: LogSource[Class[_ <: T]] = fromClass.asInstanceOf[LogSource[Class[_ <: T]]]
 
   /**
    * Convenience converter access: given an implicit `LogSource`, generate the
