@@ -13,6 +13,7 @@ import akka.cluster.TestLeaseExt
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.coordination.lease.LeaseUsageSettings
 import akka.testkit.AkkaSpec
+import akka.testkit.EventFilter
 import akka.testkit.TestProbe
 
 import scala.concurrent.Future
@@ -24,6 +25,7 @@ object ShardWithLeaseSpec {
   val config =
     """
       akka.loglevel = INFO
+      akka.loggers = [akka.testkit.TestEventListener]
       akka.actor.provider = "cluster"
       akka.remote.classic.netty.tcp.port = 0
       akka.remote.artery.canonical.port = 0
@@ -83,20 +85,29 @@ class ShardWithLeaseSpec extends AkkaSpec(ShardWithLeaseSpec.config) {
 
     "retry if lease acquire returns false" in new Setup {
       val probe = TestProbe()
-      sharding.tell(EntityEnvelope(1, "hello"), probe.ref)
-      val lease = leaseFor("1")
-      lease.initialPromise.complete(Success(false))
-      probe.expectNoMessage(shortDuration)
+      val lease =
+        EventFilter.error(start = s"Failed to get lease for shard type [$typeName] id [1]", occurrences = 1).intercept {
+          sharding.tell(EntityEnvelope(1, "hello"), probe.ref)
+          val lease = leaseFor("1")
+          lease.initialPromise.complete(Success(false))
+          probe.expectNoMessage(shortDuration)
+          lease
+        }
+
       lease.setNextAcquireResult(Future.successful(true))
       probe.expectMsg("ack hello")
     }
 
     "retry if the lease acquire fails" in new Setup {
       val probe = TestProbe()
-      sharding.tell(EntityEnvelope(1, "hello"), probe.ref)
-      val lease = leaseFor("1")
-      lease.initialPromise.failure(BadLease("no lease for you"))
-      probe.expectNoMessage(shortDuration)
+      val lease =
+        EventFilter.error(start = s"Failed to get lease for shard type [$typeName] id [1]", occurrences = 1).intercept {
+          sharding.tell(EntityEnvelope(1, "hello"), probe.ref)
+          val lease = leaseFor("1")
+          lease.initialPromise.failure(BadLease("no lease for you"))
+          probe.expectNoMessage(shortDuration)
+          lease
+        }
       lease.setNextAcquireResult(Future.successful(true))
       probe.expectMsg("ack hello")
     }
@@ -108,9 +119,17 @@ class ShardWithLeaseSpec extends AkkaSpec(ShardWithLeaseSpec.config) {
       lease.initialPromise.complete(Success(true))
       probe.expectMsg("ack hello")
 
-      lease.getCurrentCallback().apply(Some(BadLease("bye bye lease")))
-      sharding.tell(EntityEnvelope(1, "hello"), probe.ref)
-      probe.expectNoMessage(shortDuration)
+      EventFilter
+        .error(
+          start =
+            s"Shard type [$typeName] id [1] lease lost, stopping shard and killing [1] entities. Reason for losing lease: ${classOf[
+              BadLease].getName}: bye bye lease",
+          occurrences = 1)
+        .intercept {
+          lease.getCurrentCallback().apply(Some(BadLease("bye bye lease")))
+          sharding.tell(EntityEnvelope(1, "hello"), probe.ref)
+          probe.expectNoMessage(shortDuration)
+        }
     }
   }
 
