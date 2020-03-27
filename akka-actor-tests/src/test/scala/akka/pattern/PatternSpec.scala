@@ -11,6 +11,7 @@ import akka.actor.{ Actor, Props }
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
 import scala.concurrent.ExecutionContextExecutor
+import akka.actor.actorRef2Scala
 
 object PatternSpec {
   final case class Work(duration: Duration)

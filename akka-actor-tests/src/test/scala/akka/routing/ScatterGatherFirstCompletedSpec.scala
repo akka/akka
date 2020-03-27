@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.{ Actor, Props }
+import akka.actor.actorRef2Scala
 import akka.pattern.ask
 import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TestLatch }
 import akka.actor.ActorSystem

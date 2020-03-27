@@ -8,6 +8,7 @@ import akka.actor.Actor
 import akka.actor.ActorCell
 import akka.actor.ActorInitializationException
 import akka.actor.ActorRef
+import akka.actor.actorRef2Scala
 import akka.actor.ActorSystemImpl
 import akka.actor.IndirectActorProducer
 import akka.actor.InternalActorRef

@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 import java.nio.channels.{ DatagramChannel, SelectionKey }
 
 import akka.actor.{ Actor, ActorLogging, ActorRef }
+import akka.actor.actorRef2Scala
 import akka.io.Udp.{ CommandFailed, Send }
 import akka.io.SelectionHandler._
 import akka.io.dns.DnsProtocol

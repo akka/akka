@@ -110,6 +110,7 @@ private[akka] object ActorContextAdapter {
   }
   override private[akka] def internalSpawnMessageAdapter[U](f: U => T, _name: String): ActorRef[U] = {
     val cell = classicContext.asInstanceOf[akka.actor.ActorCell]
+    import akka.actor.actorRef2Scala
     // apply the function inside the actor by wrapping the msg and f, handled by ActorAdapter
     val ref = cell.addFunctionRef((_, msg) => classicContext.self ! AdaptMessage[U, T](msg.asInstanceOf[U], f), _name)
     ActorRefAdapter[U](ref)

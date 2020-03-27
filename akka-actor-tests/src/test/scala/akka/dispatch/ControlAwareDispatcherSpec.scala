@@ -6,6 +6,7 @@ package akka.dispatch
 
 import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.actor.{ Actor, Props }
+import akka.actor.actorRef2Scala
 
 object ControlAwareDispatcherSpec {
   val config = """

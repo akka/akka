@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import akka.event.Logging
 import org.scalatest.BeforeAndAfterEach
 import akka.actor.ActorRef
+import akka.actor.actorRef2Scala
 import akka.event.Logging.InitializeLogger
 import akka.event.Logging.LoggerInitialized
 import akka.event.Logging.LogEvent

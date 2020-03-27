@@ -7,7 +7,7 @@ package akka.serialization
 import java.nio.{ ByteBuffer, ByteOrder }
 
 import akka.actor.ExtendedActorSystem
-
+import akka.actor.actorRef2Scala
 import scala.concurrent.duration._
 import akka.testkit._
 

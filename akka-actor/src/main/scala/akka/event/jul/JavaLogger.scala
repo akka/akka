@@ -7,6 +7,7 @@ package akka.event.jul
 import java.util.logging
 
 import akka.actor.Actor
+import akka.actor.actorRef2Scala
 import akka.actor.ActorSystem
 import akka.dispatch.RequiresMessageQueue
 import akka.event.DummyClassForStringSources

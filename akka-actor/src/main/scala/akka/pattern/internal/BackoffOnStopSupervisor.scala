@@ -6,6 +6,7 @@ package akka.pattern.internal
 
 import akka.actor.SupervisorStrategy.{ Directive, Escalate }
 import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
+import akka.actor.actorRef2Scala
 import akka.annotation.InternalApi
 import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
 

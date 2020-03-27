@@ -10,12 +10,12 @@ import scala.concurrent.duration._
 import scala.collection.immutable
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, Deploy, Props }
+import akka.actor.actorRef2Scala
 import akka.actor.UnstartedCell
 import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
 import akka.pattern.gracefulStop
 import com.typesafe.config.Config
 import akka.actor.ActorSystem
-import akka.testkit.TestProbe
 import akka.testkit.TestProbe
 import akka.actor.ExtendedActorSystem
 import akka.testkit.TestActors.echoActorProps

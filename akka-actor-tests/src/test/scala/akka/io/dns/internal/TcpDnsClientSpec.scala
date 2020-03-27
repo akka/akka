@@ -6,6 +6,7 @@ package akka.io.dns.internal
 
 import java.net.InetSocketAddress
 
+import akka.actor.actorRef2Scala
 import akka.actor.Props
 import akka.io.Tcp
 import akka.io.Tcp.{ Connected, PeerClosed, Register }

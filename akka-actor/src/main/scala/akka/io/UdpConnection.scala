@@ -14,6 +14,7 @@ import akka.actor.Status.Failure
 import scala.annotation.tailrec
 import scala.util.control.NonFatal
 import akka.actor.{ Actor, ActorLogging, ActorRef }
+import akka.actor.actorRef2Scala
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.{ unused, ByteString }
 import akka.io.SelectionHandler._

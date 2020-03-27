@@ -5,6 +5,7 @@
 package akka.dispatch
 
 import akka.actor.{ Actor, Props }
+import akka.actor.actorRef2Scala
 import akka.testkit.{ AkkaSpec, ImplicitSender }
 import com.typesafe.config.ConfigFactory
 

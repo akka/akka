@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
 import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }
+import akka.actor.actorRef2Scala
 import akka.annotation.InternalApi
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.io.PeriodicCacheCleanup

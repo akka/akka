@@ -8,6 +8,7 @@ import scala.annotation.tailrec
 import scala.collection.immutable
 import akka.testkit.{ AkkaSpec, TestProbe }
 import akka.actor.ActorRef
+import akka.actor.actorRef2Scala
 import akka.io.Inet.SocketOption
 import akka.testkit.SocketUtil.temporaryServerAddress
 import Tcp._

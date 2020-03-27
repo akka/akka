@@ -7,6 +7,7 @@ package akka.routing
 import java.util.concurrent.atomic.AtomicInteger
 import scala.concurrent.Await
 import akka.actor.{ Actor, Props }
+import akka.actor.actorRef2Scala
 import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TestLatch }
 import akka.pattern.ask
 

@@ -8,6 +8,7 @@ import java.net.InetSocketAddress
 
 import akka.AkkaException
 import akka.actor.{ Actor, ActorLogging, ActorRef, Stash }
+import akka.actor.actorRef2Scala
 import akka.annotation.InternalApi
 import akka.io.dns.internal.DnsClient.Answer
 import akka.io.Tcp

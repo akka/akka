@@ -6,6 +6,7 @@ package akka.io.dns.internal
 
 import java.net.InetAddress
 
+import akka.actor.actorRef2Scala
 import akka.io.Dns
 import akka.io.dns.AAAARecord
 import akka.io.dns.DnsProtocol.{ Resolve, Resolved }

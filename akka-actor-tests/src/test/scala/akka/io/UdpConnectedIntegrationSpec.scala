@@ -7,6 +7,7 @@ package akka.io
 import java.net.InetSocketAddress
 
 import akka.actor.ActorRef
+import akka.actor.actorRef2Scala
 import akka.testkit.SocketUtil.temporaryServerAddresses
 import akka.testkit.WithLogCapturing
 import akka.testkit.AkkaSpec

@@ -8,6 +8,7 @@ package docs.akka.typed.fromclassic
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.Props
+import akka.actor.actorRef2Scala
 
 // #hello-world-actor
 

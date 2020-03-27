@@ -5,6 +5,7 @@
 package akka.event
 
 import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.actorRef2Scala
 import akka.event.Logging.simpleName
 import akka.util.Subclassification
 import java.util.concurrent.atomic.AtomicReference

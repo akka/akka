@@ -5,6 +5,7 @@
 package akka.event
 
 import akka.actor.{ ActorRef, ActorSystem }
+import akka.actor.actorRef2Scala
 import akka.util.Index
 import java.util.concurrent.ConcurrentSkipListSet
 import java.util.Comparator

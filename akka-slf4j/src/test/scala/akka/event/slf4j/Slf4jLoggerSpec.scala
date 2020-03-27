@@ -7,7 +7,7 @@ package akka.event.slf4j
 import language.postfixOps
 import akka.testkit.AkkaSpec
 import akka.actor.{ Actor, DiagnosticActorLogging, Props }
-
+import akka.actor.actorRef2Scala
 import scala.concurrent.duration._
 import akka.event.{ LogMarker, Logging }
 import ch.qos.logback.core.OutputStreamAppender

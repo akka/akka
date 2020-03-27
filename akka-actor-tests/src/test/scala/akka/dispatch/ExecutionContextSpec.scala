@@ -14,6 +14,7 @@ import akka.util.SerializedSuspendableExecutionContext
 import akka.testkit.TestActorRef
 import akka.actor.Props
 import akka.actor.Actor
+import akka.actor.actorRef2Scala
 import akka.testkit.TestProbe
 import akka.testkit.CallingThreadDispatcher
 

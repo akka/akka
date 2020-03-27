@@ -10,6 +10,7 @@ import scala.concurrent.duration.Duration
 import scala.reflect.ClassTag
 
 import akka.actor.{ ActorSystem, DeadLetter, UnhandledMessage }
+import akka.actor.actorRef2Scala
 import akka.dispatch.sysmsg.{ SystemMessage, Terminate }
 import akka.event.Logging.{ Debug, Error, Info, InitializeLogger, LogEvent, LoggerInitialized, Warning }
 import akka.event.Logging

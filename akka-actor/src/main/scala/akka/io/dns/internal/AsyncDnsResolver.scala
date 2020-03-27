@@ -7,6 +7,7 @@ package akka.io.dns.internal
 import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 
 import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
+import akka.actor.actorRef2Scala
 import akka.annotation.InternalApi
 import akka.io.SimpleDnsCache
 import akka.io.dns.CachePolicy.{ Never, Ttl }

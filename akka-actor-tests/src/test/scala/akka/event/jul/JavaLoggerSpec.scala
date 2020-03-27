@@ -6,6 +6,7 @@ package akka.event.jul
 
 import com.typesafe.config.ConfigFactory
 import akka.actor.{ Actor, ActorLogging, Props }
+import akka.actor.actorRef2Scala
 import akka.testkit.AkkaSpec
 import java.util.logging
 import scala.util.control.NoStackTrace

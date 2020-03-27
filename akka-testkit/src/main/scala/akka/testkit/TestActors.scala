@@ -5,6 +5,7 @@
 package akka.testkit
 
 import akka.actor.{ Actor, ActorRef, Props }
+import akka.actor.actorRef2Scala
 
 /**
  * A collection of common actor patterns used in tests.

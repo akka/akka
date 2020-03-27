@@ -10,6 +10,7 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.AtomicBoolean
 import akka.testkit.AkkaSpec
 import akka.actor.{ Actor, Props }
+import akka.actor.actorRef2Scala
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.testkit.DefaultTimeout

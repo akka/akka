@@ -7,6 +7,7 @@ package akka.dispatch
 import language.postfixOps
 import com.typesafe.config.Config
 import akka.actor.{ Actor, ActorSystem, Props }
+import akka.actor.actorRef2Scala
 import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.util.unused
 

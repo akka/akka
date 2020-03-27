@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit
 import akka.actor.Status
 import akka.io.dns.CachePolicy._
 import akka.actor.{ Actor, ActorLogging }
+import akka.actor.actorRef2Scala
 import akka.annotation.InternalApi
 import akka.io.dns.AAAARecord
 import akka.io.dns.ARecord

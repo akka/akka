@@ -12,6 +12,7 @@ import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorRef.ActorRefOps
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props

@@ -8,6 +8,7 @@ import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import akka.testkit._
 import akka.actor.{ Actor, Props }
+import akka.actor.actorRef2Scala
 import akka.testkit.AkkaSpec
 import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.Await

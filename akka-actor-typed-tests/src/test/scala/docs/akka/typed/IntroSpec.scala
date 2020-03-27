@@ -12,6 +12,7 @@ import akka.actor.typed.{ ActorRef, ActorSystem, Behavior }
 //#imports
 //#fiddle_code
 
+import akka.actor.typed.ActorRef.ActorRefOps
 import akka.NotUsed
 import akka.Done
 import akka.actor.typed.{ DispatcherSelector, Terminated }

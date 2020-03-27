@@ -14,6 +14,7 @@ import akka.actor.{ Address, CoordinatedShutdown, InvalidMessageException }
 import akka.actor.testkit.typed.scaladsl.TestInbox
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.ActorRef.ActorRefOps
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures

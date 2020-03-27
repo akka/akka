@@ -5,6 +5,7 @@
 package akka.routing
 
 import akka.actor.{ Actor, ActorRef }
+import akka.actor.actorRef2Scala
 import java.util.{ Set, TreeSet }
 
 sealed trait ListenerMessage

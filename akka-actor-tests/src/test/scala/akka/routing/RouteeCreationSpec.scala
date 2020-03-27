@@ -10,6 +10,7 @@ import akka.actor.Actor
 import scala.concurrent.duration._
 import akka.actor.Identify
 import akka.actor.ActorIdentity
+import akka.actor.actorRef2Scala
 
 class RouteeCreationSpec extends AkkaSpec {
 

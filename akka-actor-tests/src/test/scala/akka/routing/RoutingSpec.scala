@@ -7,6 +7,8 @@ package akka.routing
 import language.postfixOps
 
 import akka.actor._
+import akka.actor.actorRef2Scala
+
 import scala.collection.immutable
 import akka.testkit._
 import scala.concurrent.duration._

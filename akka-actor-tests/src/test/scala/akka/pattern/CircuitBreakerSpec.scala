@@ -5,6 +5,7 @@
 package akka.pattern
 
 import akka.actor.ActorSystem
+import akka.actor.actorRef2Scala
 import akka.testkit._
 
 import scala.concurrent.Await

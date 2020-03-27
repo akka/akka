@@ -8,6 +8,7 @@ import java.net.{ Inet6Address, InetAddress }
 
 import akka.actor.Status.Failure
 import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
+import akka.actor.actorRef2Scala
 import akka.io.SimpleDnsCache
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol._

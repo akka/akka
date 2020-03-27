@@ -5,6 +5,7 @@
 package akka.pattern
 
 import akka.actor.{ Actor, ActorRef, Props }
+import akka.actor.actorRef2Scala
 import akka.annotation.InternalApi
 
 /**

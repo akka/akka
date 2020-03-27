@@ -8,6 +8,7 @@ import java.net.{ InetAddress, InetSocketAddress }
 
 import akka.actor.Status.Failure
 import akka.actor.{ Actor, ActorLogging, ActorRef, NoSerializationVerificationNeeded, Props, Stash }
+import akka.actor.actorRef2Scala
 import akka.annotation.InternalApi
 import akka.io.dns.{ RecordClass, RecordType, ResourceRecord }
 import akka.io.{ IO, Tcp, Udp }

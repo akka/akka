@@ -24,6 +24,7 @@ import akka.{ actor => classic }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+import akka.actor.actorRef2Scala
 
 object AdapterSpec {
   val classic1: classic.Props = classic.Props(new Classic1)

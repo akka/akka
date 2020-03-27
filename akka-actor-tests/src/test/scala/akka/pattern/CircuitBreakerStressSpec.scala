@@ -8,6 +8,7 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import java.util.concurrent.ThreadLocalRandom
 import akka.actor.Actor
+import akka.actor.actorRef2Scala
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.actor.Status.Failure

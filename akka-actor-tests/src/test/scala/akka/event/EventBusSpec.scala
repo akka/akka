@@ -11,6 +11,7 @@ import akka.testkit._
 import scala.concurrent.duration._
 
 import akka.actor.{ Actor, ActorRef, ActorSystem, PoisonPill, Props }
+import akka.actor.actorRef2Scala
 import akka.japi.{ Procedure }
 import com.typesafe.config.{ Config, ConfigFactory }
 

@@ -4,6 +4,7 @@
 
 package akka.actor.typed.coexistence
 import akka.actor.Actor
+import akka.actor.actorRef2Scala
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed._

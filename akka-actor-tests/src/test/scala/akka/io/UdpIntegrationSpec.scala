@@ -9,6 +9,7 @@ import java.net.InetSocketAddress
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 import akka.util.ByteString
 import akka.actor.ActorRef
+import akka.actor.actorRef2Scala
 import akka.io.Udp._
 import akka.io.Inet._
 import akka.testkit.SocketUtil.temporaryServerAddresses

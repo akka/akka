@@ -6,6 +6,7 @@ package akka.actor.typed
 package scaladsl
 
 import akka.Done
+import akka.actor.typed.ActorRef.ActorRefOps
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing

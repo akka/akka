@@ -10,6 +10,7 @@ import scala.concurrent.duration._
 import akka.actor.{ Actor, Props }
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestLatch }
 import akka.actor.ActorRef
+import akka.actor.actorRef2Scala
 import org.scalatest.BeforeAndAfterEach
 import java.net.URLEncoder
 

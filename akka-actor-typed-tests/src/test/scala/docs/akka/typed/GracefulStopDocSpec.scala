@@ -20,6 +20,7 @@ import org.scalatest.wordspec.AnyWordSpecLike
 import akka.actor.typed.Terminated
 
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.ActorRef.ActorRefOps
 
 object GracefulStopDocSpec {
 

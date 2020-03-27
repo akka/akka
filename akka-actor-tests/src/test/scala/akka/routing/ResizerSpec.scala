@@ -8,6 +8,7 @@ import com.typesafe.config.{ Config, ConfigFactory }
 
 import language.postfixOps
 import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
+import akka.actor.actorRef2Scala
 import akka.testkit._
 import akka.testkit.TestEvent._
 import scala.concurrent.Await
