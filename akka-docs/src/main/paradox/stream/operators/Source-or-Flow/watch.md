@@ -2,7 +2,7 @@
 
 Watch a specific `ActorRef` and signal a failure downstream once the actor terminates.
 
-@ref[Simple operators](../index.md#simple-operators)
+@ref[Actor interop operators](../index.md#actor-interop-operators)
 
 @@@div { .group-scala }
 
