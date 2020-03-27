@@ -15,7 +15,7 @@ import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NonFatal
 
-trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
+trait DockerBindDnsService extends Eventually with AkkaSpec.StartAndTerminateMixin { this: AkkaSpec =>
   val client = DefaultDockerClient.fromEnv().build()
 
   val hostPort: Int
@@ -24,9 +24,9 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
 
   def dockerAvailable() = Try(client.ping()).isSuccess
 
-  override def atStartup(): Unit = {
+  abstract override def atStartup(): Unit = {
     log.info("Running on port port {}", hostPort)
-    self.atStartup()
+    super.atStartup()
 
     // https://github.com/sameersbn/docker-bind/pull/61
     val image = "raboof/bind:9.11.3-20180713-nochown"
@@ -85,8 +85,8 @@ trait DockerBindDnsService extends Eventually { self: AkkaSpec =>
     id.foreach(id => log.info("Nameserver std err: {} ", client.logs(id, LogsParam.stderr()).readFully()))
   }
 
-  override def afterTermination(): Unit = {
-    self.afterTermination()
+  abstract override def afterTermination(): Unit = {
+    super.afterTermination()
     id.foreach(client.killContainer)
     id.foreach(client.removeContainer)
   }

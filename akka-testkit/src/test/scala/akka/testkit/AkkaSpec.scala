@@ -91,6 +91,12 @@ object AkkaSpec {
       .replaceAll("""\$\$?\w+""", "") // drop scala anonymous functions/classes
       .replaceAll("[^a-zA-Z_0-9]", "_")
   }
+
+  trait StartAndTerminateMixin {
+    protected def atStartup(): Unit
+    protected def beforeTermination(): Unit
+    protected def afterTermination(): Unit
+  }
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
@@ -98,6 +104,7 @@ abstract class AkkaSpec(_system: ActorSystem)
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
+    with AkkaSpec.StartAndTerminateMixin
     with WatchedByCoroner
     with TypeCheckedTripleEquals
     with ScalaFutures {
