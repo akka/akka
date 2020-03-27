@@ -49,6 +49,11 @@ object AkkaSpec {
     ConfigFactory.parseMap(map.asJava)
   }
 
+  trait StartAndTerminateMixin {
+    protected def atStartup(): Unit
+    protected def beforeTermination(): Unit
+    protected def afterTermination(): Unit
+  }
 }
 
 abstract class AkkaSpec(_system: ActorSystem)
@@ -56,6 +61,7 @@ abstract class AkkaSpec(_system: ActorSystem)
     with AnyWordSpecLike
     with Matchers
     with BeforeAndAfterAll
+    with AkkaSpec.StartAndTerminateMixin
     with WatchedByCoroner
     with TypeCheckedTripleEquals
     with ScalaFutures {
