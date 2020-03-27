@@ -12,7 +12,6 @@ import akka.dispatch._
 import scala.concurrent.Await
 import scala.reflect.ClassTag
 import akka.pattern.ask
-import com.github.ghik.silencer.silent
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it
@@ -21,40 +20,27 @@ import com.github.ghik.silencer.silent
  *
  * @since 1.1
  */
-@silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
-class TestActorRef[T <: Actor](_system: ActorSystem, _props: Props, _supervisor: ActorRef, name: String) extends {
-  val props =
-    _props.withDispatcher(
-      if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
-      else _props.dispatcher)
-  val dispatcher = _system.dispatchers.lookup(props.dispatcher)
-  private val disregard = _supervisor match {
-    case l: LocalActorRef => l.underlying.reserveChild(name)
-    case r: RepointableActorRef =>
-      r.underlying match {
-        case _: UnstartedCell =>
-          throw new IllegalStateException(
-            "cannot attach a TestActor to an unstarted top-level actor, ensure that it is started by sending a message and observing the reply")
-        case c: ActorCell => c.reserveChild(name)
-        case o =>
-          _system.log.error(
-            "trying to attach child {} to unknown type of supervisor cell {}, this is not going to end well",
-            name,
-            o.getClass)
-      }
-    case s =>
-      _system.log.error(
-        "trying to attach child {} to unknown type of supervisor {}, this is not going to end well",
-        name,
-        s.getClass)
-  }
-} with LocalActorRef(
-  _system.asInstanceOf[ActorSystemImpl],
-  props,
-  dispatcher,
-  _system.mailboxes.getMailboxType(props, dispatcher.configurator.config),
-  _supervisor.asInstanceOf[InternalActorRef],
-  _supervisor.path / name) {
+import TestActorRef.EarlyInit
+class TestActorRef[T <: Actor] private (
+    _system: ActorSystem,
+    _props: Props,
+    _supervisor: ActorRef,
+    name: String,
+    earlyInit: EarlyInit)
+    extends LocalActorRef(
+      _system.asInstanceOf[ActorSystemImpl],
+      earlyInit.props,
+      earlyInit.dispatcher,
+      _system.mailboxes.getMailboxType(earlyInit.props, earlyInit.dispatcher.configurator.config),
+      _supervisor.asInstanceOf[InternalActorRef],
+      _supervisor.path / name) {
+
+  def this(_system: ActorSystem, _props: Props, _supervisor: ActorRef, name: String) =
+    this(_system, _props, _supervisor, name, new EarlyInit(_system, _props, _supervisor, name))
+
+  // export earlyInit._
+  val props = earlyInit.props
+  val dispatcher = earlyInit.dispatcher
 
   // we need to start ourselves since the creation of an actor has been split into initialization and starting
   underlying.start()
@@ -134,6 +120,36 @@ class TestActorRef[T <: Actor](_system: ActorSystem, _props: Props, _supervisor:
 }
 
 object TestActorRef {
+  private class EarlyInit(_system: ActorSystem, _props: Props, _supervisor: ActorRef, name: String) {
+    val props =
+      _props.withDispatcher(
+        if (_props.deploy.dispatcher == Deploy.NoDispatcherGiven) CallingThreadDispatcher.Id
+        else _props.dispatcher)
+
+    val dispatcher = _system.dispatchers.lookup(props.dispatcher)
+
+    /*private val disregard = */
+    _supervisor match {
+      case l: LocalActorRef => l.underlying.reserveChild(name)
+      case r: RepointableActorRef =>
+        r.underlying match {
+          case _: UnstartedCell =>
+            throw new IllegalStateException(
+              "cannot attach a TestActor to an unstarted top-level actor, ensure that it is started by sending a message and observing the reply")
+          case c: ActorCell => c.reserveChild(name)
+          case o =>
+            _system.log.error(
+              "trying to attach child {} to unknown type of supervisor cell {}, this is not going to end well",
+              name,
+              o.getClass)
+        }
+      case s =>
+        _system.log.error(
+          "trying to attach child {} to unknown type of supervisor {}, this is not going to end well",
+          name,
+          s.getClass)
+    }
+  }
 
   private case object InternalGetActor extends AutoReceivedMessage with PossiblyHarmful
 
