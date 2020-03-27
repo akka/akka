@@ -75,6 +75,13 @@ import akka.util.{ unused, ConstantFun }
     this
   }
 
+  override def clear(): Unit = {
+    _first = null
+    _last = null
+    _size = 0
+    stashCleared(ctx)
+  }
+
   @InternalStableApi
   private def createNode(message: T, @unused ctx: scaladsl.ActorContext[T]): Node[T] = {
     new Node(null, message)
