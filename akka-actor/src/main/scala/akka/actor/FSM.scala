@@ -176,12 +176,12 @@ object FSM {
      */
     private[akka] override def notifies: Boolean = false
 
-    override def copy[S, D](
-        stateName: S = stateName,
-        stateData: D = stateData,
+    override def copy[S1, D1](
+        stateName: S1 = stateName,
+        stateData: D1 = stateData,
         timeout: Option[FiniteDuration] = timeout,
         stopReason: Option[Reason] = stopReason,
-        replies: List[Any] = replies): State[S, D] = {
+        replies: List[Any] = replies): State[S1, D1] = {
       new SilentState(stateName, stateData, timeout, stopReason, replies)
     }
   }
@@ -204,12 +204,12 @@ object FSM {
     private[akka] def notifies: Boolean = true
 
     // defined here to be able to override it in SilentState
-    def copy[S, D](
-        stateName: S = stateName,
-        stateData: D = stateData,
+    def copy[S1, D1](
+        stateName: S1 = stateName,
+        stateData: D1 = stateData,
         timeout: Option[FiniteDuration] = timeout,
         stopReason: Option[Reason] = stopReason,
-        replies: List[Any] = replies): State[S, D] = {
+        replies: List[Any] = replies): State[S1, D1] = {
       State(stateName, stateData, timeout, stopReason, replies)
     }
 
