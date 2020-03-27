@@ -113,7 +113,7 @@ class RememberEntitiesFailureSpec extends AkkaSpec(RememberEntitiesFailureSpec.c
     awaitAssert(cluster.readView.members.count(_.status == MemberStatus.Up) should ===(1))
   }
 
-  "Remember entities handling" must {
+  "Remember entities handling in sharding" must {
 
     List(Immediate, InFutureImmediate, InFutureLater).foreach { wayToFail: Fail =>
       // FIXME Immediate does not work, should it?
