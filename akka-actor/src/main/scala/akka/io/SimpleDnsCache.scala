@@ -91,11 +91,7 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
 }
 object SimpleDnsCache {
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[io] class Cache[K, V](
+  private class Cache[K, V](
       queue: immutable.SortedSet[ExpiryEntry[K]],
       cache: immutable.Map[K, CacheEntry[V]],
       clock: () => Long) {
