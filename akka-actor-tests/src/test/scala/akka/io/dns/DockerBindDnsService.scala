@@ -71,7 +71,8 @@ trait DockerBindDnsService extends Eventually with AkkaSpec.StartAndTerminateMix
       })
 
     val creation = client.createContainer(containerConfig, containerName)
-    creation.warnings() should be(null).or(have(size(0)))
+    val warnings = creation.warnings()
+    assert(warnings == null || warnings.isEmpty)
     id = Some(creation.id())
 
     client.startContainer(creation.id())
