@@ -584,7 +584,7 @@ object Flow {
     "Use 'Flow.futureFlow' in combination with prefixAndTail(1) instead, see `futureFlow` operator docs for details",
     "2.6.0")
   def lazyInit[I, O, M](flowFactory: I => Future[Flow[I, O, M]], fallback: () => M): Flow[I, O, M] =
-    /*Flow.fromGraph(new LazyFlow[I, O, M](flowFactory)).mapMaterializedValue(_ => fallback())*/ Flow[I]
+    Flow[I]
       .flatMapPrefix(1) {
         case Seq(a) => futureFlow(flowFactory(a)).mapMaterializedValue(_ => NotUsed)
         case Seq()  => Flow[I].asInstanceOf[Flow[I, O, NotUsed]]
@@ -609,10 +609,7 @@ object Flow {
    */
   @deprecated("Use 'Flow.lazyFutureFlow' instead", "2.6.0")
   def lazyInitAsync[I, O, M](flowFactory: () => Future[Flow[I, O, M]]): Flow[I, O, Future[Option[M]]] =
-    /*Flow.fromGraph(new LazyFlow[I, O, M](_ => flowFactory())).mapMaterializedValue { v =>
-      implicit val ec = akka.dispatch.ExecutionContexts.parasitic
-      v.map[Option[M]](Some.apply _).recover { case _: NeverMaterializedException => None }
-    }*/ Flow.lazyFutureFlow(flowFactory).mapMaterializedValue {
+    Flow.lazyFutureFlow(flowFactory).mapMaterializedValue {
       implicit val ec = akka.dispatch.ExecutionContexts.parasitic
       _.map(Some.apply).recover { case _: NeverMaterializedException => None }
     }
@@ -625,7 +622,7 @@ object Flow {
    * [[NeverMaterializedException]] if upstream fails or downstream cancels before the future has completed.
    */
   def futureFlow[I, O, M](flow: Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
-    /*lazyFutureFlow(() => flow)*/ Flow.fromGraph(new FutureFlow(flow))
+    Flow.fromGraph(new FutureFlow(flow))
 
   /**
    * Defers invoking the `create` function to create a future flow until there is downstream demand and passing
@@ -649,7 +646,6 @@ object Flow {
    * '''Cancels when''' downstream cancels
    */
   def lazyFlow[I, O, M](create: () => Flow[I, O, M]): Flow[I, O, Future[M]] =
-    /*lazyFutureFlow(() => Future.successful(create()))*/ /*Flow[I].flatMapPrefixMat(0)(_ => create())(Keep.right)*/
     lazyFutureFlow(() => Future.successful(create()))
 
   /**
@@ -674,7 +670,7 @@ object Flow {
    * '''Cancels when''' downstream cancels
    */
   def lazyFutureFlow[I, O, M](create: () => Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
-    /*Flow.fromGraph(new LazyFlow(_ => create()))*/ Flow[I]
+    Flow[I]
       .flatMapPrefixMat(1) {
         case Seq(a) =>
           val f: Flow[I, O, Future[M]] =
@@ -687,10 +683,7 @@ object Flow {
             .mapMaterializedValue(_ => Future.failed[M](new NeverMaterializedException()))
           f
       }(Keep.right)
-      .mapMaterializedValue(_.flatten) /*.mapMaterializedValue(_.flatten.transform(scala.Predef.identity, {
-      case nme : NeverMaterializedException if nme.getCause ne null => nme.getCause
-      case other => other
-    })(akka.dispatch.ExecutionContexts.sameThreadExecutionContext))*/
+      .mapMaterializedValue(_.flatten)
 
 }
 

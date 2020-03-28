@@ -14,7 +14,7 @@ import akka.util.OptionVal
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
-@InternalApi private[akka] final class FutureFlow[In, Out, M](future: Future[Flow[In, Out, M]])
+@InternalApi private[akka] final class FutureFlow[In, Out, M](futureFlow: Future[Flow[In, Out, M]])
     extends GraphStageWithMaterializedValue[FlowShape[In, Out], Future[M]] {
   val in = Inlet[In](s"${this}.in")
   val out = Outlet[Out](s"${this}.out")
@@ -28,13 +28,12 @@ import scala.util.{ Failure, Success, Try }
       setHandlers(in, out, initializing)
 
       override def preStart(): Unit = {
-        super.preStart()
-        future.value match {
-          case Some(tr) =>
-            initializing.onFuture(tr)
+        futureFlow.value match {
+          case Some(tryFlow) =>
+            initializing.onFuture(tryFlow)
           case None =>
             val cb = getAsyncCallback(initializing.onFuture)
-            future.onComplete(cb.invoke)(ExecutionContexts.parasitic)
+            futureFlow.onComplete(cb.invoke)(ExecutionContexts.parasitic)
             //in case both ports are closed before future completion
             setKeepGoing(true)
         }
@@ -44,7 +43,6 @@ import scala.util.{ Failure, Success, Try }
         if (!innerMatValue.isCompleted) {
           innerMatValue.failure(new AbruptStageTerminationException(this))
         }
-        super.postStop()
       }
 
       object initializing extends InHandler with OutHandler {
@@ -83,7 +81,7 @@ import scala.util.{ Failure, Success, Try }
             setKeepGoing(false)
         }
       }
-      class Initialized(fl: Flow[In, Out, M]) extends InHandler with OutHandler {
+      class Initialized(flow: Flow[In, Out, M]) extends InHandler with OutHandler {
         val subSource = new SubSourceOutlet[In](s"${FutureFlow.this}.subIn")
         val subSink = new SubSinkInlet[Out](s"${FutureFlow.this}.subOut")
 
@@ -115,7 +113,7 @@ import scala.util.{ Failure, Success, Try }
         }
 
         Try {
-          Source.fromGraph(subSource.source).viaMat(fl)(Keep.right).to(subSink.sink).run()(subFusingMaterializer)
+          Source.fromGraph(subSource.source).viaMat(flow)(Keep.right).to(subSink.sink).run()(subFusingMaterializer)
         } match {
           case Success(matVal) =>
             innerMatValue.success(matVal)

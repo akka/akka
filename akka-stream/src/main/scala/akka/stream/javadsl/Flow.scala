@@ -19,7 +19,6 @@ import akka.japi.Pair
 import akka.japi.Util
 import akka.japi.function
 import akka.stream._
-import akka.stream.impl.fusing.LazyFlow
 import akka.util.JavaDurationConverters._
 import akka.util.unused
 import akka.util.ConstantFun
@@ -262,9 +261,9 @@ object Flow {
       flowFactory: function.Function[I, CompletionStage[Flow[I, O, M]]],
       fallback: function.Creator[M]): Flow[I, O, M] = {
     import scala.compat.java8.FutureConverters._
-    val sflow = scaladsl.Flow
-      .fromGraph(new LazyFlow[I, O, M](t => flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.parasitic)))
-      .mapMaterializedValue(_ => fallback.create())
+    val sflow = scaladsl.Flow.lazyInit((flowFactory.apply(_)).andThen(_.toScala.map(_.asScala)(ExecutionContexts.parasitic)),
+      fallback.create _
+    )
     new Flow(sflow)
   }
 
