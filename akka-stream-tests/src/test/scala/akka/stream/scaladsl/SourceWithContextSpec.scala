@@ -4,17 +4,25 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Future
+import scala.util.control.NoStackTrace
+
+import akka.NotUsed
 import akka.stream.ContextMapStrategy
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
-
-import scala.util.control.NoStackTrace
 
 case class Message(data: String, offset: Long)
 
 class SourceWithContextSpec extends StreamSpec {
 
   "A SourceWithContext" must {
+
+    // This could perhaps be a default strategy, for adding context as metadata that is OK to be reordered, duplicated or lost?
+    // Perhaps dangerous though.
+    def allowAllStrategy[Ctx] = new ContextMapStrategy[Ctx] with ContextMapStrategy.Reordering[Ctx] with ContextMapStrategy.Iteration[Ctx] {
+      override def next(in: Ctx, index: Long, hasNext: Boolean): Ctx = in
+    }
 
     "get created from Source.asSourceWithContext" in {
       val msg = Message("a", 1L)
@@ -55,7 +63,8 @@ class SourceWithContextSpec extends StreamSpec {
       Source(Vector(Message("A", 1L), Message("B", 2L), Message("D", 3L), Message("C", 4L)))
         .asSourceWithContext(_.offset)
         .map(_.data.toLowerCase)
-        .filter(_ != "b")
+        .filter(_ != "b", allowAllStrategy)
+        // TODO also add strategy to filterNot
         .filterNot(_ == "d")
         .toMat(TestSink.probe[(String, Long)])(Keep.right)
         .run
@@ -83,35 +92,53 @@ class SourceWithContextSpec extends StreamSpec {
       Source(Vector(Message("a", 1L)))
         .asSourceWithContext(_.offset)
         .map(_.data)
-        .mapConcat { str =>
+        .mapConcat({ str =>
           List(1, 2, 3).map(i => s"$str-$i")
-        }
+        }, allowAllStrategy)
         .runWith(TestSink.probe[(String, Long)])
         .request(3)
         .expectNext(("a-1", 1L), ("a-2", 1L), ("a-3", 1L))
         .expectComplete()
     }
 
-    sealed trait TransformPosition
-    case object Only extends TransformPosition
-    case object None extends TransformPosition
-    case object First extends TransformPosition
-    case object Within extends TransformPosition
-    case object Last extends TransformPosition
-    final case class OffsetContext(offset: Long, position: TransformPosition = Only)
+    /* (could be Alpakka Kafka's CommittableOffset) */
+    final case class OffsetContext(offset: Long)
 
-    "use iterate strategy on contexts via mapConcat" in {
-      val contextMapping = ContextMapStrategy.iterate(
-        fn = (_: String, inCtx: OffsetContext, _: String, index: Int, hasNext: Boolean) => {
-          if (index == 0 && hasNext) OffsetContext(inCtx.offset, First)
-          else if (index == 0 && !hasNext) OffsetContext(inCtx.offset, Only)
-          else if (!hasNext) OffsetContext(inCtx.offset, Last)
-          else OffsetContext(inCtx.offset, Within)
-        }
-      )
+    /*
+     * (This could be provided by alpakka-kafka. It would be coupled with a Sink that would commit any Some(offset) it sees.)
+     *
+     * A simple strategy that allows iteration and filtering (but not reordering or substreaming).
+     */
+    object SimpleKafkaContextMapStrategy extends ContextMapStrategy[Option[OffsetContext]]
+      with ContextMapStrategy.Iteration[Option[OffsetContext]] {
 
+        // When iterating, this strategy postpones committing until the last element
+       override def next(in: Option[OffsetContext], index: Long, hasNext: Boolean): Option[OffsetContext] =
+        if (hasNext) None
+        else in
+    }
+
+    /*
+     * (This could be provided by alpakka-kafka. It would be coupled with a Sink that keeps track of which offsets are ready to be committed,
+     * and which are still being waited on.
+     *
+     * A strategy that allows reordering, but not iteration or filtering (but not reordering or substreaming).
+     */
+    object ReorderingKafkaContextMapStrategy extends ContextMapStrategy[OffsetContext] with ContextMapStrategy.Reordering[OffsetContext] {
+
+    }
+
+    /**
+     * (This could be some Alpakka function, creating flows that are usable with any strategy as long as it allows iteration)
+     */
+    def sendToFooSelective[Ctx](contextMapStrategy: ContextMapStrategy.Filtering[Ctx]): FlowWithContext[String, Ctx, String, Ctx, NotUsed] =
+    FlowWithContext[String, Ctx]
+      .filter(!_.contains("2"), contextMapStrategy)
+
+    "use a strategy that allows iteration in a flow that uses iteration" in {
+      val contextMapping = SimpleKafkaContextMapStrategy
       Source(Message("a", 1L) :: Nil)
-        .asSourceWithContext(msg => OffsetContext(msg.offset))
+        .asSourceWithContext(msg => Option(OffsetContext(msg.offset)))
         .map(_.data)
         .mapConcat(
           { str =>
@@ -119,28 +146,34 @@ class SourceWithContextSpec extends StreamSpec {
           },
           contextMapping
         )
-        .runWith(TestSink.probe[(String, OffsetContext)])
+        .via(sendToFooSelective(contextMapping))
+        .runWith(TestSink.probe[(String,Option[OffsetContext])])
         .request(3)
-        .expectNext(("a-1", OffsetContext(1L, First)), ("a-2", OffsetContext(1L, Within)), ("a-3", OffsetContext(1L, Last)))
+        .expectNext(("a-1", None), ("a-3", Some(OffsetContext(1L))))
         .expectComplete()
     }
 
-    "use iterateOrEmpty strategy on contexts via mapConcat" in {
-      val contextMapping = ContextMapStrategy.iterateOrEmpty(
-        fn = (_: String, inCtx: OffsetContext, _: String, _: Int, _: Boolean) => inCtx,
-        emptyFn = (_: String, inCtx: OffsetContext) => ("empty",  OffsetContext(inCtx.offset, None))
-      )
+    /**
+     * (This could be some Alpakka function, creating flows that are usable with any strategy as long as it allows reordering)
+     */
+    def sendToFooFast[Ctx](strategy: ContextMapStrategy.Reordering[Ctx]): FlowWithContext[String, Ctx, String, Ctx, NotUsed] =
+      FlowWithContext[String, Ctx]
+        .mapAsyncUnordered(100, strategy)(msg => Future.successful(s"[$msg] successfully sent"))
 
+    "use a strategy that allows reordering in a flow that uses reordering" in {
+      val contextMapping = ReorderingKafkaContextMapStrategy
       Source(Message("a", 1L) :: Nil)
         .asSourceWithContext(msg => OffsetContext(msg.offset))
         .map(_.data)
-        .mapConcat(
-          f = _ => Nil,
-          contextMapping
+        .mapAsyncUnordered(
+          parallelism = 100,
+          contextMapping)(
+          data => Future.successful(s"$data to send"),
         )
+        .via(sendToFooFast(contextMapping))
         .runWith(TestSink.probe[(String, OffsetContext)])
         .request(1)
-        .expectNext(("empty", OffsetContext(1L, None)))
+        .expectNext(("[a to send] successfully sent", OffsetContext(1L)))
         .expectComplete()
     }
 
@@ -148,9 +181,9 @@ class SourceWithContextSpec extends StreamSpec {
       Source(Vector(Message("a", 1L)))
         .asSourceWithContext(_.offset)
         .map(_.data)
-        .mapConcat { str =>
+        .mapConcat({ str =>
           List(1, 2, 3, 4).map(i => s"$str-$i")
-        }
+        }, allowAllStrategy)
         .grouped(2)
         .toMat(TestSink.probe[(Seq[String], Seq[Long])])(Keep.right)
         .run
