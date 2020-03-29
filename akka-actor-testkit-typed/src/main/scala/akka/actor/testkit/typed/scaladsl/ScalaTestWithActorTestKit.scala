@@ -11,7 +11,7 @@ import org.scalatest.{ BeforeAndAfterAll, TestSuite }
 import org.scalatest.concurrent.Eventually
 import org.scalatest.concurrent.ScalaFutures
 import org.scalatest.time.Span
-import org.scalatest.matchers.should.Matchers
+
 
 /**
  * A ScalaTest base class for the [[ActorTestKit]], making it possible to have ScalaTest manage the lifecycle of the testkit.
@@ -29,7 +29,6 @@ import org.scalatest.matchers.should.Matchers
 abstract class ScalaTestWithActorTestKit(testKit: ActorTestKit)
     extends ActorTestKitBase(testKit)
     with TestSuite
-    with Matchers
     with BeforeAndAfterAll
     with ScalaFutures
     with Eventually {
