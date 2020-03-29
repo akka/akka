@@ -767,12 +767,15 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
 
     "notify subscribers when registering and joining simultaneously" in {
       // failing test reproducer for issue #28792
+      // It's possible that the registry entry from the ddata update arrives before MemberJoined.
       val config = ConfigFactory.parseString("""
         # quick dissemination to increase the chance of the race condition
         akka.cluster.typed.receptionist.distributed-data.write-consistency = all
         akka.cluster.typed.receptionist.distributed-data.gossip-interval = 500ms
+        # run the RemoveTick cleanup often to exercise that scenario 
+        akka.cluster.typed.receptionist.pruning-interval = 50ms
         """).withFallback(ClusterReceptionistSpec.config)
-      val numberOfNodes = 6
+      val numberOfNodes = 6 // use 9 or more to stress it more
       val testKits = Vector.fill(numberOfNodes)(ActorTestKit("ClusterReceptionistSpec", config))
       try {
         val probes = testKits.map(t => TestProbe[Any]()(t.system))
@@ -816,8 +819,11 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
             case PingKey.Listing(_)                                      => FishingOutcomes.continue
           }
         }
+        testKits.head.system.log.debug("All expected listings found.")
 
       } finally {
+        // faster to terminate all at the same time
+        testKits.foreach(_.system.terminate())
         testKits.foreach(_.shutdownTestKit())
       }
     }
