@@ -142,7 +142,6 @@ private[akka] class Shard(
   import ShardCoordinator.Internal.HandOff
   import ShardCoordinator.Internal.ShardStopped
   import ShardRegion.EntityId
-  import ShardRegion.Msg
   import ShardRegion.Passivate
   import ShardRegion.ShardInitialized
   import ShardRegion.handOffStopperProps
@@ -539,7 +538,6 @@ private[akka] class Shard(
    *
    * Otherwise it will be stashed, and processed after the update has been completed.
    */
-  // FIXME I'd still like to fold this and the next method into one to get a more clear delivery logic
   private def deliverMessage(msg: Any, snd: ActorRef, entityIdWaitingForWrite: OptionVal[EntityId]): Unit = {
     val (id, payload) = extractEntityId(msg)
     if (id == null || id == "") {
@@ -555,40 +553,35 @@ private[akka] class Shard(
           else
             stash()
         case _ =>
-          if (entityIdWaitingForWrite.contains(id)) {
+          if (rememberEntitiesStore == NoOpStore) {
+            // optimized path for when not using remember entities
+            touchLastMessageTimestamp(id)
+            getOrCreateEntity(id).tell(payload, snd)
+          } else if (entityIdWaitingForWrite.contains(id)) {
+            // write of stop or start of this exact entity in progress
             appendToMessageBuffer(id, msg, snd)
           } else {
-            deliverTo(id, msg, payload, snd)
-          }
-      }
-    }
-  }
-
-  def deliverTo(id: EntityId, msg: Any, payload: Msg, snd: ActorRef): Unit = {
-    if (rememberEntitiesStore == NoOpStore) {
-      touchLastMessageTimestamp(id)
-      getOrCreateEntity(id).tell(payload, snd)
-    } else {
-      // With remember entities enabled we may be in the process of saving that we are starting up the entity
-      // and in that case we need to buffer messages until that completes
-      val name = URLEncoder.encode(id, "utf-8")
-      context.child(name) match {
-        case Some(actor) =>
-          touchLastMessageTimestamp(id)
-          actor.tell(payload, snd)
-        case None =>
-          if (entityIds.contains(id)) {
-            // No entity actor but id is in set of entities, this can happen in two scenarios:
-            // 1. we are starting up and the entity id is remembered but not yet started
-            // 2. the entity is stopped but not passivated, and should be restarted
-            require(!messageBuffers.contains(id), s"Message buffers contains id [$id].")
-            // this is not actually orCreate it is always create, needed to have a single path for entity creation
-            getOrCreateEntity(id)
-          } else {
-            // No actor and id is unknown, start actor and deliver message when started
-            // Note; we only do this if remembering, otherwise the buffer is an overhead
-            appendToMessageBuffer(id, msg, snd)
-            waitForAsyncWrite(id, rememberEntitiesStore.addEntity(shardId, id))(sendMsgBuffer)
+            // With remember entities enabled we may be in the process of saving that we are starting up the entity
+            // and in that case we need to buffer messages until that completes
+            refById.get(id) match {
+              case Some(actor) =>
+                touchLastMessageTimestamp(id)
+                actor.tell(payload, snd)
+              case None =>
+                if (entityIds.contains(id)) {
+                  // No entity actor running but id is in set of entities, this can happen in two scenarios:
+                  // 1. we are starting up and the entity id is remembered but not yet started
+                  // 2. the entity is stopped but not passivated, and should be restarted
+                  require(!messageBuffers.contains(id), s"Message buffers contains id [$id].")
+                  // this is not actually orCreate it is always create, needed to have a single path for entity creation
+                  getOrCreateEntity(id)
+                } else {
+                  // No actor and id is unknown, start actor and deliver message when started
+                  // Note; we only do this if remembering, otherwise the buffer is an overhead
+                  appendToMessageBuffer(id, msg, snd)
+                  waitForAsyncWrite(id, rememberEntitiesStore.addEntity(shardId, id))(sendMsgBuffer)
+                }
+            }
           }
       }
     }
@@ -596,11 +589,11 @@ private[akka] class Shard(
 
   @InternalStableApi
   def getOrCreateEntity(id: EntityId): ActorRef = {
-    val name = URLEncoder.encode(id, "utf-8")
-    context.child(name) match {
+    refById.get(id) match {
       case Some(child) => child
       case None =>
-        log.debug("Starting entity [{}] in shard [{}]", id, shardId)
+        val name = URLEncoder.encode(id, "utf-8")
+        log.debug("Starting entity [{}] as [{}] in shard [{}]", id, name, shardId)
         val a = context.watch(context.actorOf(entityProps(id), name))
         idByRef = idByRef.updated(a, id)
         refById = refById.updated(id, a)
