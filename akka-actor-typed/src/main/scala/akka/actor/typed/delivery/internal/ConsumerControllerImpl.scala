@@ -265,7 +265,7 @@ private class ConsumerControllerImpl[A](
               if (resendLost) "requesting resend from expected seqNr" else "delivering to consumer anyway")
             if (resendLost) {
               seqMsg.producerController ! Resend(fromSeqNr = expectedSeqNr)
-              clearStashBuffer()
+              stashBuffer.clear()
               resending(s)
             } else {
               deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
@@ -335,7 +335,7 @@ private class ConsumerControllerImpl[A](
         seqMsg.producerController)
       // request resend of all unconfirmed, and mark first
       seqMsg.producerController ! Resend(0)
-      clearStashBuffer()
+      stashBuffer.clear()
       resending(s)
     } else {
       context.log.warnN(
@@ -430,10 +430,6 @@ private class ConsumerControllerImpl[A](
       .receiveSignal {
         case (_, PostStop) => postStop(s)
       }
-  }
-
-  private def clearStashBuffer(): Unit = {
-    stashBuffer.unstashAll(Behaviors.ignore)
   }
 
   private def deliver(s: State[A], seqMsg: SequencedMessage[A]): Behavior[InternalCommand] = {
