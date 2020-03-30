@@ -8,7 +8,6 @@ import java.net.URLEncoder
 
 import akka.Done
 import akka.actor.Actor
-import akka.actor.ActorContext
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.DeadLetterSuppression
@@ -21,10 +20,10 @@ import akka.actor.Terminated
 import akka.actor.Timers
 import akka.annotation.InternalStableApi
 import akka.cluster.Cluster
-import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.EntityRecoveryStrategy
 import akka.cluster.sharding.internal.NoOpStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
+import akka.cluster.sharding.internal.RememberEntitiesShardStoreProvider
 import akka.cluster.sharding.internal.RememberEntityStarter
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
@@ -94,7 +93,7 @@ private[akka] object Shard {
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId,
       handOffStopMessage: Any,
-      createRememberEntitiesStore: (ShardId, ActorContext) => RememberEntitiesShardStore): Props =
+      rememberEntitiesProvider: RememberEntitiesShardStoreProvider): Props =
     Props(
       new Shard(
         typeName,
@@ -104,7 +103,7 @@ private[akka] object Shard {
         extractEntityId,
         extractShardId,
         handOffStopMessage,
-        createRememberEntitiesStore)).withDeploy(Deploy.local)
+        rememberEntitiesProvider)).withDeploy(Deploy.local)
 
   case object PassivateIdleTick extends NoSerializationVerificationNeeded
 
@@ -132,7 +131,7 @@ private[akka] class Shard(
     extractEntityId: ShardRegion.ExtractEntityId,
     @unused extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    createRememberEntitiesStore: (ShardId, ActorContext) => RememberEntitiesShardStore)
+    rememberEntitiesProvider: RememberEntitiesShardStoreProvider)
     extends Actor
     with ActorLogging
     with Stash
@@ -149,7 +148,7 @@ private[akka] class Shard(
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
   import settings.tuningParameters._
 
-  private val rememberEntitiesStore: RememberEntitiesShardStore = createRememberEntitiesStore(shardId, context)
+  private val rememberEntitiesStore: RememberEntitiesShardStore = rememberEntitiesProvider.createStoreForShard(shardId)
 
   private val rememberedEntitiesRecoveryStrategy: EntityRecoveryStrategy = {
     import settings.tuningParameters._
@@ -252,7 +251,7 @@ private[akka] class Shard(
 
   // ===== remember entities initialization =====
   def tryLoadRememberedEntities(): Unit = {
-    val futureEntityIds = rememberEntitiesStore.getEntities(shardId)
+    val futureEntityIds = rememberEntitiesStore.getEntities()
 
     futureEntityIds.value match {
       case Some(Success(entityIds)) => onEntitiesRemembered(entityIds)
@@ -390,11 +389,10 @@ private[akka] class Shard(
       getOrCreateEntity(start.entityId)
       requester ! ShardRegion.StartEntityAck(start.entityId, shardId)
     } else {
-      waitForAsyncWrite("add (start entity)", start.entityId, rememberEntitiesStore.addEntity(shardId, start.entityId)) {
-        id =>
-          getOrCreateEntity(id)
-          sendMsgBuffer(id)
-          requester ! ShardRegion.StartEntityAck(id, shardId)
+      waitForAsyncWrite("add (start entity)", start.entityId, rememberEntitiesStore.addEntity(start.entityId)) { id =>
+        getOrCreateEntity(id)
+        sendMsgBuffer(id)
+        requester ! ShardRegion.StartEntityAck(id, shardId)
       }
     }
   }
@@ -406,7 +404,7 @@ private[akka] class Shard(
       waitForAsyncWrite(
         "remove (started in other shard)",
         ack.entityId,
-        rememberEntitiesStore.removeEntity(shardId, ack.entityId)) { id =>
+        rememberEntitiesStore.removeEntity(ack.entityId)) { id =>
         entityIds = entityIds - id
         messageBuffers.remove(id)
       }
@@ -480,8 +478,7 @@ private[akka] class Shard(
         context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))
       } else {
         // FIXME optional wait for completion as optimization where stops are not critical
-        waitForAsyncWrite("remove (terminated)", id, rememberEntitiesStore.removeEntity(shardId, id))(
-          passivateCompleted)
+        waitForAsyncWrite("remove (terminated)", id, rememberEntitiesStore.removeEntity(id))(passivateCompleted)
       }
     }
 
@@ -525,8 +522,7 @@ private[akka] class Shard(
     entityIds = entityIds - entityId
     if (hasBufferedMessages) {
       log.debug("Entity stopped after passivation [{}], but will be started again due to buffered messages.", entityId)
-      waitForAsyncWrite("remove (passivated)", entityId, rememberEntitiesStore.addEntity(shardId, entityId))(
-        sendMsgBuffer)
+      waitForAsyncWrite("remove (passivated)", entityId, rememberEntitiesStore.addEntity(entityId))(sendMsgBuffer)
     } else {
       log.debug("Entity stopped after passivation [{}]", entityId)
       dropBufferFor(entityId)
@@ -584,7 +580,7 @@ private[akka] class Shard(
                   // No actor and id is unknown, start actor and deliver message when started
                   // Note; we only do this if remembering, otherwise the buffer is an overhead
                   appendToMessageBuffer(id, msg, snd)
-                  waitForAsyncWrite("start (message)", id, rememberEntitiesStore.addEntity(shardId, id))(sendMsgBuffer)
+                  waitForAsyncWrite("start (message)", id, rememberEntitiesStore.addEntity(id))(sendMsgBuffer)
                 }
             }
           }
@@ -653,5 +649,6 @@ private[akka] class Shard(
 
   override def postStop(): Unit = {
     passivateIdleTask.foreach(_.cancel())
+    rememberEntitiesStore.stop()
   }
 }

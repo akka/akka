@@ -4,9 +4,13 @@
 
 package akka.cluster.sharding.internal
 
+import java.net.URLEncoder
+
 import akka.Done
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ClusterShardingSerializable
@@ -34,28 +38,54 @@ import scala.concurrent.Future
  * INTERNAL API
  */
 @InternalApi
+private[akka] final class EventSourcedRememberEntitiesStoreProvider(
+    system: ActorSystem,
+    typeName: String,
+    settings: ClusterShardingSettings)
+    extends RememberEntitiesShardStoreProvider {
+
+  override def createStoreForShard(shardId: ShardId): RememberEntitiesShardStore = {
+    // one persistent store per shard
+    val name = URLEncoder.encode(s"Sharding-$typeName-Store-$shardId", "utf-8")
+
+    val store = system
+      .asInstanceOf[ExtendedActorSystem]
+      .systemActorOf(EventSourcedRememberEntitiesStore.props(typeName, shardId, settings), name)
+    // FIXME should shard notice if store crashes? or is failing reads/writes crashing the shard good enough?
+    new EventSourcedRememberEntities(store, settings)
+  }
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] final class EventSourcedRememberEntities(eventSourcedStore: ActorRef, settings: ClusterShardingSettings)
     extends RememberEntitiesShardStore {
 
-  override def addEntity(shardId: ShardId, entityId: EntityId): Future[Done] = {
+  override def addEntity(entityId: EntityId): Future[Done] = {
     implicit val askTimeout: Timeout = settings.tuningParameters.updatingStateTimeout
     (eventSourcedStore ? EventSourcedRememberEntitiesStore.EntityStarted(entityId))
       .mapTo[EventSourcedRememberEntitiesStore.StartedAck.type]
       .map(_ => Done)(ExecutionContexts.parasitic)
   }
 
-  override def removeEntity(shardId: ShardId, entityId: EntityId): Future[Done] = {
+  override def removeEntity(entityId: EntityId): Future[Done] = {
     implicit val askTimeout: Timeout = settings.tuningParameters.updatingStateTimeout
     (eventSourcedStore ? EventSourcedRememberEntitiesStore.EntityStopped(entityId))
       .mapTo[EventSourcedRememberEntitiesStore.StoppedAck.type]
       .map(_ => Done)(ExecutionContexts.parasitic)
   }
 
-  override def getEntities(shardId: ShardId): Future[Set[EntityId]] = {
+  override def getEntities(): Future[Set[EntityId]] = {
     implicit val askTimeout: Timeout = settings.tuningParameters.waitingForStateTimeout
     (eventSourcedStore ? EventSourcedRememberEntitiesStore.GetEntityIds)
       .mapTo[EventSourcedRememberEntitiesStore.EntityIds]
       .map(_.ids)(ExecutionContexts.parasitic)
+  }
+
+  override def stop(): Unit = {
+    eventSourcedStore ! EventSourcedRememberEntitiesStore.StopStore
   }
 
   override def toString: ShardId = s"${getClass.getSimpleName}($eventSourcedStore)"
@@ -93,8 +123,10 @@ private[akka] object EventSourcedRememberEntitiesStore {
 
   case object StoppedAck
 
-  final case object GetEntityIds
+  case object GetEntityIds
   final case class EntityIds(ids: Set[EntityId])
+
+  case object StopStore
 
   def props(typeName: String, shardId: ShardRegion.ShardId, settings: ClusterShardingSettings): Props =
     Props(new EventSourcedRememberEntitiesStore(typeName, shardId, settings))
@@ -173,6 +205,9 @@ private[akka] final class EventSourcedRememberEntitiesStore(
     case DeleteSnapshotsFailure(m, reason) =>
       log.warning("PersistentShard snapshots matching [{}] deletion failure: [{}]", m, reason.getMessage)
 
+    case StopStore =>
+      log.debug("PersistentShard store stopping")
+      context.stop(self)
   }
 
   def saveSnapshotWhenNeeded(): Unit = {

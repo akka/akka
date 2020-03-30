@@ -12,23 +12,31 @@ import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.Shard.ShardStats
-import akka.cluster.sharding.internal.DDataRememberEntities
-import akka.cluster.sharding.internal.EventSourcedRememberEntities
-import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore
+import akka.cluster.sharding.internal.CustomStateStoreModeProvider
+import akka.cluster.sharding.internal.DDataRememberEntitiesShardStoreProvider
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStoreProvider
 import akka.cluster.sharding.internal.NoOpStore
-import akka.cluster.sharding.internal.RememberEntitiesShardStore
-import akka.cluster.{ Cluster, ClusterSettings, Member, MemberStatus }
+import akka.cluster.sharding.internal.RememberEntitiesShardStoreProvider
+import akka.cluster.Cluster
+import akka.cluster.ClusterSettings
+import akka.cluster.Member
+import akka.cluster.MemberStatus
 import akka.event.Logging
-import akka.pattern.{ ask, pipe }
-import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
+import akka.pattern.ask
+import akka.pattern.pipe
+import akka.util.MessageBufferMap
+import akka.util.PrettyDuration
+import akka.util.Timeout
 
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.reflect.ClassTag
 import scala.runtime.AbstractFunction1
-import scala.util.{ Failure, Success }
+import scala.util.Failure
+import scala.util.Success
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -505,9 +513,6 @@ object ShardRegion {
       handoffTimeout: FiniteDuration): Props =
     Props(new HandOffStopper(shard, replyTo, entities, stopMessage, handoffTimeout)).withDeploy(Deploy.local)
 
-  // cached factory for when not remembering entities
-  private val noOpStoreCreator: (ShardId, ActorContext) => RememberEntitiesShardStore = (_, _) => NoOpStore
-
 }
 
 /**
@@ -566,38 +571,17 @@ private[akka] class ShardRegion(
   val initRegistrationDelay: FiniteDuration = 100.millis.max(retryInterval / 2 / 2 / 2)
   var nextRegistrationDelay: FiniteDuration = initRegistrationDelay
 
-  // FIXME not too happy about giving the shard actor context to the factory but the persistent one needs to spawn a child
-  val shardRememberEntitiesStoreFactory: (ShardId, ActorContext) => RememberEntitiesShardStore = {
-    if (settings.rememberEntities) {
-      if (context.system.settings.config.hasPath("akka.cluster.sharding.custom-store")) {
-        // FIXME not really meant for pluggable store, here for testability, can we not have it in the prod code?
-        val customClassName = context.system.settings.config.getString("akka.cluster.sharding.custom-store")
-
-        { (shardId, shardCtx) =>
-          shardCtx.system
-            .asInstanceOf[ExtendedActorSystem]
-            .dynamicAccess
-            .createInstanceFor[RememberEntitiesShardStore](
-              customClassName,
-              Vector((classOf[String], shardId), (classOf[ActorContext], shardCtx)))
-            .get
-        }
-      } else {
-        settings.stateStoreMode match {
-          case ClusterShardingSettings.StateStoreModeDData =>
-            // share a single instance across the region
-            val store = new DDataRememberEntities(context.system, typeName, settings, replicator, majorityMinCap)
-            (_, _) => store
-          case ClusterShardingSettings.StateStoreModePersistence => { (shardId, shardCtx) =>
-            // one persistent store per shard
-            val store = shardCtx.actorOf(EventSourcedRememberEntitiesStore.props(typeName, shardId, settings))
-            context.watchWith(store, Shard.RememberEntityStoreCrashed(store)) // FIXME yuck
-            new EventSourcedRememberEntities(store, settings)
-          }
-        }
+  val shardRememberEntitiesStoreProvider: RememberEntitiesShardStoreProvider =
+    if (!settings.rememberEntities) NoOpStore
+    else
+      settings.stateStoreMode match {
+        case ClusterShardingSettings.StateStoreModeDData =>
+          new DDataRememberEntitiesShardStoreProvider(context.system, typeName, settings, replicator, majorityMinCap)
+        case ClusterShardingSettings.StateStoreModePersistence =>
+          new EventSourcedRememberEntitiesStoreProvider(context.system, typeName, settings)
+        case ClusterShardingSettings.StateStoreModeCustom =>
+          new CustomStateStoreModeProvider(context.system, typeName, settings)
       }
-    } else noOpStoreCreator
-  }
 
   // for CoordinatedShutdown
   val gracefulShutdownProgress = Promise[Done]()
@@ -1155,7 +1139,7 @@ private[akka] class ShardRegion(
                     extractEntityId,
                     extractShardId,
                     handOffStopMessage,
-                    shardRememberEntitiesStoreFactory)
+                    shardRememberEntitiesStoreProvider)
                   .withDispatcher(context.props.dispatcher),
                 name))
             shardsByRef = shardsByRef.updated(shard, id)

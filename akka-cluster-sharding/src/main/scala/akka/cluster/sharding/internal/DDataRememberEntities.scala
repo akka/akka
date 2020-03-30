@@ -43,6 +43,26 @@ import scala.concurrent.Future
  * INTERNAL API
  */
 @InternalApi
+private[akka] final class DDataRememberEntitiesShardStoreProvider(
+    system: ActorSystem,
+    typeName: String,
+    settings: ClusterShardingSettings,
+    replicator: ActorRef,
+    majorityMinCap: Int)
+    extends RememberEntitiesShardStoreProvider {
+
+  implicit private val node = Cluster(system)
+  implicit private val selfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
+
+  override def createStoreForShard(shardId: ShardId): RememberEntitiesShardStore =
+    new DDataRememberEntities(shardId, system, typeName, settings, replicator, majorityMinCap)
+
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] object DDataRememberEntities {
   val FutureDone: Future[Done] = Future.successful(Done)
 }
@@ -52,18 +72,16 @@ private[akka] object DDataRememberEntities {
  */
 @InternalApi
 private[akka] final class DDataRememberEntities(
+    shardId: ShardId,
     system: ActorSystem,
     typeName: String,
     settings: ClusterShardingSettings,
     replicator: ActorRef,
-    majorityMinCap: Int)
+    majorityMinCap: Int)(implicit val node: Cluster, selfUniqueAddress: SelfUniqueAddress)
     extends RememberEntitiesShardStore {
 
   import DDataRememberEntities._
-
   import system.dispatcher
-  implicit private val node = Cluster(system)
-  implicit private val selfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
 
   // The default maximum-frame-size is 256 KiB with Artery.
   // When using entity identifiers with 36 character strings (e.g. UUID.randomUUID).
@@ -88,7 +106,7 @@ private[akka] final class DDataRememberEntities(
     stateKeys(shardId)(i)
   }
 
-  override def addEntity(shardId: ShardId, entityId: EntityId): Future[Done] = {
+  override def addEntity(entityId: EntityId): Future[Done] = {
     implicit val askTimeout = Timeout(writeMajority.timeout * 2)
     def tryAddEntity(retriesLeft: Int): Future[Done] = {
       val result = (replicator ? Update(key(shardId, entityId), ORSet.empty[EntityId], writeMajority) { existing =>
@@ -101,7 +119,7 @@ private[akka] final class DDataRememberEntities(
     tryAddEntity(maxUpdateAttempts)
   }
 
-  override def removeEntity(shardId: ShardId, entityId: EntityId): Future[Done] = {
+  override def removeEntity(entityId: EntityId): Future[Done] = {
     implicit val askTimeout = Timeout(writeMajority.timeout * 2)
     def tryRemoveEntity(retriesLeft: Int): Future[Done] = {
       val result = (replicator ? Update(key(shardId, entityId), ORSet.empty[EntityId], writeMajority) { existing =>
@@ -135,7 +153,7 @@ private[akka] final class DDataRememberEntities(
       throw new RuntimeException(s"Unable to update state, due to delete")
   }
 
-  override def getEntities(shardId: ShardId): Future[Set[EntityId]] = {
+  override def getEntities(): Future[Set[EntityId]] = {
     import system.dispatcher
     implicit val askTimeout = Timeout(readMajority.timeout * 2)
     val responsePerKey = (0 until numberOfKeys).toSet[Int].map { i =>
@@ -155,6 +173,8 @@ private[akka] final class DDataRememberEntities(
     }
     Future.sequence(responsePerKey).map(_.flatten)(ExecutionContexts.parasitic)
   }
+
+  override def stop(): Unit = ()
 
   override def toString: ShardId = s"DDataRememberEntities($typeName, $replicator)"
 }

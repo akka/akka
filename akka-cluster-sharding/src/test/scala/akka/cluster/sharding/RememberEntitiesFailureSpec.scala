@@ -6,32 +6,34 @@ package akka.cluster.sharding
 
 import akka.Done
 import akka.actor.Actor
-import akka.actor.ActorContext
 import akka.actor.ActorLogging
+import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
-import akka.testkit.TestException
+import akka.pattern.after
 import akka.testkit.AkkaSpec
 import akka.testkit.EventFilter
+import akka.testkit.TestException
 import akka.testkit.TestProbe
+import akka.testkit.WithLogCapturing
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-import akka.pattern.after
-import akka.testkit.WithLogCapturing
 
-import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 object RememberEntitiesFailureSpec {
   val config = ConfigFactory.parseString(s"""
       akka.loglevel = DEBUG
       akka.loggers = ["akka.testkit.SilenceAllTestEventListener"]
       akka.actor.provider = cluster
+      akka.remote.artery.canonical.port = 0
       akka.cluster.sharding.distributed-data.durable.keys = []
+      akka.cluster.sharding.state-store-mode = custom
       akka.cluster.sharding.custom-store = "akka.cluster.sharding.RememberEntitiesFailureSpec$$FakeStore"
       # quick backoff for stop tests
       akka.cluster.sharding.entity-restart-backoff = 1s
@@ -63,43 +65,48 @@ object RememberEntitiesFailureSpec {
   case object InFutureImmediate extends Fail
   case object InFutureLater extends Fail
 
-  // outside store since shard allocation triggers initaialization of store
+  // outside store since shard allocation triggers initialization of store
   @volatile var failInitial = Map.empty[ShardId, Fail]
 
   case class StoreCreated(store: FakeStore, shardId: ShardId)
-  case class FakeStore(shardId: ShardId, shardContext: ActorContext) extends RememberEntitiesShardStore {
-    implicit val ec = shardContext.system.dispatcher
+  case class FakeStore(system: ActorSystem, settings: ClusterShardingSettings, typeName: String, shardId: ShardId)
+      extends RememberEntitiesShardStore {
+
+    implicit val ec = system.dispatcher
     @volatile var failAddEntity = Map.empty[EntityId, Fail]
     @volatile var failRemoveEntity = Map.empty[EntityId, Fail]
 
-    shardContext.system.eventStream.publish(StoreCreated(this, shardId))
-    override def getEntities(shardId: ShardId): Future[Set[EntityId]] = {
+    system.eventStream.publish(StoreCreated(this, shardId))
+
+    override def getEntities(): Future[Set[EntityId]] = {
       failInitial.get(shardId) match {
         case None                    => Future.successful(Set.empty)
         case Some(Immediate)         => throw TestException("immediate fail")
         case Some(InFutureImmediate) => Future.failed(TestException("future immediately failed"))
         case Some(InFutureLater) =>
-          after(50.millis, shardContext.system.scheduler)(Future.failed(TestException("future failing later")))
+          after(50.millis, system.scheduler)(Future.failed(TestException("future failing later")))
       }
     }
 
-    override def addEntity(shardId: ShardId, entityId: EntityId): Future[Done] =
+    override def addEntity(entityId: EntityId): Future[Done] =
       failAddEntity.get(entityId) match {
         case None                    => Future.successful(Done)
         case Some(Immediate)         => throw TestException("immediate fail")
         case Some(InFutureImmediate) => Future.failed(TestException("future immediately failed"))
         case Some(InFutureLater) =>
-          after(50.millis, shardContext.system.scheduler)(Future.failed(TestException("future failing later")))
+          after(50.millis, system.scheduler)(Future.failed(TestException("future failing later")))
       }
 
-    override def removeEntity(shardId: ShardId, entityId: EntityId): Future[Done] =
+    override def removeEntity(entityId: EntityId): Future[Done] =
       failRemoveEntity.get(entityId) match {
         case None                    => Future.successful(Done)
         case Some(Immediate)         => throw TestException("immediate fail")
         case Some(InFutureImmediate) => Future.failed(TestException("future immediately failed"))
         case Some(InFutureLater) =>
-          after(50.millis, shardContext.system.scheduler)(Future.failed(TestException("future failing later")))
+          after(50.millis, system.scheduler)(Future.failed(TestException("future failing later")))
       }
+
+    override def stop(): Unit = ()
   }
 }
 
