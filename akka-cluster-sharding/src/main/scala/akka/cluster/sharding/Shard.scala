@@ -323,7 +323,7 @@ private[akka] class Shard(
     case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender(), OptionVal.None)
   }
 
-  def waitForAsyncWrite(entityId: EntityId, done: Future[Done])(whenDone: EntityId => Unit): Unit = {
+  def waitForAsyncWrite(operation: String, entityId: EntityId, done: Future[Done])(whenDone: EntityId => Unit): Unit = {
     done.value match {
       case Some(Success(_))  => whenDone(entityId)
       case Some(Failure(ex)) => throw ex
@@ -334,8 +334,7 @@ private[akka] class Shard(
             whenDone(entityId)
             context.become(receiveCommand)
           case AkkaFailure(ex) =>
-            // FIXME would be nice with if it included detail about what operation failed
-            throw new RuntimeException(s"Remember entities write for [$entityId] failed", ex)
+            throw new RuntimeException(s"Remember entities write of $operation for [$entityId] failed", ex)
 
           // below cases should handle same messages as in Shard.receiveCommand
           case _: Terminated                           => stash()
@@ -391,10 +390,11 @@ private[akka] class Shard(
       getOrCreateEntity(start.entityId)
       requester ! ShardRegion.StartEntityAck(start.entityId, shardId)
     } else {
-      waitForAsyncWrite(start.entityId, rememberEntitiesStore.addEntity(shardId, start.entityId)) { id =>
-        getOrCreateEntity(id)
-        sendMsgBuffer(id)
-        requester ! ShardRegion.StartEntityAck(id, shardId)
+      waitForAsyncWrite("add (start entity)", start.entityId, rememberEntitiesStore.addEntity(shardId, start.entityId)) {
+        id =>
+          getOrCreateEntity(id)
+          sendMsgBuffer(id)
+          requester ! ShardRegion.StartEntityAck(id, shardId)
       }
     }
   }
@@ -403,7 +403,10 @@ private[akka] class Shard(
     if (ack.shardId != shardId && entityIds(ack.entityId)) {
       log.debug("Entity [{}] previously owned by shard [{}] started in shard [{}]", ack.entityId, shardId, ack.shardId)
 
-      waitForAsyncWrite(ack.entityId, rememberEntitiesStore.removeEntity(shardId, ack.entityId)) { id =>
+      waitForAsyncWrite(
+        "remove (started in other shard)",
+        ack.entityId,
+        rememberEntitiesStore.removeEntity(shardId, ack.entityId)) { id =>
         entityIds = entityIds - id
         messageBuffers.remove(id)
       }
@@ -477,7 +480,8 @@ private[akka] class Shard(
         context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))
       } else {
         // FIXME optional wait for completion as optimization where stops are not critical
-        waitForAsyncWrite(id, rememberEntitiesStore.removeEntity(shardId, id))(passivateCompleted)
+        waitForAsyncWrite("remove (terminated)", id, rememberEntitiesStore.removeEntity(shardId, id))(
+          passivateCompleted)
       }
     }
 
@@ -521,7 +525,8 @@ private[akka] class Shard(
     entityIds = entityIds - entityId
     if (hasBufferedMessages) {
       log.debug("Entity stopped after passivation [{}], but will be started again due to buffered messages.", entityId)
-      waitForAsyncWrite(entityId, rememberEntitiesStore.addEntity(shardId, entityId))(sendMsgBuffer)
+      waitForAsyncWrite("remove (passivated)", entityId, rememberEntitiesStore.addEntity(shardId, entityId))(
+        sendMsgBuffer)
     } else {
       log.debug("Entity stopped after passivation [{}]", entityId)
       dropBufferFor(entityId)
@@ -579,7 +584,7 @@ private[akka] class Shard(
                   // No actor and id is unknown, start actor and deliver message when started
                   // Note; we only do this if remembering, otherwise the buffer is an overhead
                   appendToMessageBuffer(id, msg, snd)
-                  waitForAsyncWrite(id, rememberEntitiesStore.addEntity(shardId, id))(sendMsgBuffer)
+                  waitForAsyncWrite("start (message)", id, rememberEntitiesStore.addEntity(shardId, id))(sendMsgBuffer)
                 }
             }
           }
