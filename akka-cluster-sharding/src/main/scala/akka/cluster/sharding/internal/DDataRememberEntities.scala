@@ -43,13 +43,23 @@ import scala.concurrent.Future
  * INTERNAL API
  */
 @InternalApi
-private[akka] class DDataRememberEntities(
+private[akka] object DDataRememberEntities {
+  val FutureDone: Future[Done] = Future.successful(Done)
+}
+
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] final class DDataRememberEntities(
     system: ActorSystem,
     typeName: String,
     settings: ClusterShardingSettings,
     replicator: ActorRef,
     majorityMinCap: Int)
     extends RememberEntitiesShardStore {
+
+  import DDataRememberEntities._
 
   import system.dispatcher
   implicit private val node = Cluster(system)
@@ -70,8 +80,7 @@ private[akka] class DDataRememberEntities(
 
   private val readMajority = ReadMajority(settings.tuningParameters.waitingForStateTimeout, majorityMinCap)
   private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
-  // FIXME retrying writes?
-  // private val maxUpdateAttempts = 3
+  private val maxUpdateAttempts = 3
 
   private def key(shardId: ShardId, entityId: EntityId): ORSetKey[EntityId] = {
     val i = math.abs(entityId.hashCode % numberOfKeys)
@@ -80,24 +89,43 @@ private[akka] class DDataRememberEntities(
 
   override def addEntity(shardId: ShardId, entityId: EntityId): Future[Done] = {
     implicit val askTimeout = Timeout(writeMajority.timeout * 2)
-    (replicator ? Update(key(shardId, entityId), ORSet.empty[EntityId], writeMajority) { existing =>
-      existing :+ entityId
-    }).mapTo[UpdateResponse[ORSet[EntityId]]].map(doneOrFail)
+    def tryAddEntity(retriesLeft: Int): Future[Done] = {
+      val result = (replicator ? Update(key(shardId, entityId), ORSet.empty[EntityId], writeMajority) { existing =>
+        existing :+ entityId
+      }).mapTo[UpdateResponse[ORSet[EntityId]]]
+
+      result.flatMap(retryDoneOrFail(_, retriesLeft, () => tryAddEntity(retriesLeft - 1)))
+    }
+
+    tryAddEntity(maxUpdateAttempts)
   }
 
   override def removeEntity(shardId: ShardId, entityId: EntityId): Future[Done] = {
     implicit val askTimeout = Timeout(writeMajority.timeout * 2)
-    (replicator ? Update(key(shardId, entityId), ORSet.empty[EntityId], writeMajority) { existing =>
-      existing.remove(entityId)
-    }).mapTo[UpdateResponse[ORSet[EntityId]]].map(doneOrFail)
+    def tryRemoveEntity(retriesLeft: Int): Future[Done] = {
+      val result = (replicator ? Update(key(shardId, entityId), ORSet.empty[EntityId], writeMajority) { existing =>
+        existing.remove(entityId)
+      }).mapTo[UpdateResponse[ORSet[EntityId]]]
+
+      result.flatMap(retryDoneOrFail(_, maxUpdateAttempts, () => tryRemoveEntity(retriesLeft - 1)))
+    }
+
+    tryRemoveEntity(maxUpdateAttempts)
   }
 
-  private def doneOrFail(res: UpdateResponse[ORSet[EntityId]]): Done = res match {
+  private def retryDoneOrFail(
+      res: UpdateResponse[ORSet[EntityId]],
+      retriesLeft: Int,
+      retry: () => Future[Done]): Future[Done] = res match {
     case UpdateSuccess(_, _) =>
-      Done
+      FutureDone
     case UpdateTimeout(_, _) =>
-      throw new RuntimeException(
-        s"Unable to update state, within 'updating-state-timeout'= ${PrettyDuration.format(writeMajority.timeout)}")
+      if (retriesLeft > 0) retry()
+      else
+        throw new RuntimeException(
+          "Unable to update state, within " +
+          s"'updating-state-timeout'= ${PrettyDuration.format(writeMajority.timeout)}, " +
+          s"gave up after $maxUpdateAttempts retries")
     case StoreFailure(_, _) =>
       throw new RuntimeException("Unable to update state, due to store failure")
     case ModifyFailure(_, error, cause, _) =>
@@ -117,7 +145,6 @@ private[akka] class DDataRememberEntities(
         case NotFound(_, _) =>
           Set.empty[EntityId]
         case GetFailure(_, _) =>
-          // FIXME is timeout the only reason here can we provide more details?
           throw new RuntimeException(
             s"Unable to get an initial state within 'waiting-for-state-timeout': ${PrettyDuration.format(
               askTimeout.duration)} using ${readMajority}")
