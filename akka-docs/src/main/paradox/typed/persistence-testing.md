@@ -188,4 +188,25 @@ For tests that involve more than one Cluster node you have to use another journa
 While it's possible to use the @ref:[Persistence Plugin Proxy](../persistence-plugins.md#persistence-plugin-proxy)
 it's often better and more realistic to use a real database.
 
-See [akka-samples issue #128](https://github.com/akka/akka-samples/issues/128).    
+See [akka-samples issue #128](https://github.com/akka/akka-samples/issues/128).
+
+### Plugin initialization
+
+Some Persistence plugins create tables automatically, but has the limitation that it can't be done concurrently
+from several ActorSystems. That can be a problem if the test creates a Cluster and all nodes tries to initialize
+the plugins at the same time. To coordinate initialization you can use the `PersistenceInit` utility.
+
+`PersistenceInit` is part of `akka-persistence-testkit` and you need to add the dependency to your project:
+
+@@dependency[sbt,Maven,Gradle] {
+  group="com.typesafe.akka"
+  artifact="akka-persistence-testkit_$scala.binary_version$"
+  version="$akka.version$"
+}
+
+Scala
+:  @@snip [PersistenceInitSpec.scala](/akka-docs/src/test/scala/docs/persistence/testkit/PersistenceInitSpec.scala) { #imports #init }
+
+Java
+:  @@snip [PersistenceInitTest.java](/akka-docs/src/test/java/jdocs/persistence/testkit/PersistenceInitTest.java) { #imports #init }
+  

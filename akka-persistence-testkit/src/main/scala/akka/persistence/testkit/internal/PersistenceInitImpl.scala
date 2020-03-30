@@ -1,21 +1,24 @@
 /*
  * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
-package akka.persistence
+
+package akka.persistence.testkit.internal
 
 import java.util.concurrent.TimeUnit
 
 import akka.actor.ActorLogging
 import akka.actor.Props
 import akka.annotation.InternalApi
+import akka.persistence.PersistentActor
+import akka.persistence.RecoveryCompleted
 
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] object PersistenceInit {
+@InternalApi private[akka] object PersistenceInitImpl {
 
   def props(journalPluginId: String, snapshotPluginId: String, persistenceId: String): Props = {
-    Props(new PersistenceInit(journalPluginId, snapshotPluginId, persistenceId))
+    Props(new PersistenceInitImpl(journalPluginId, snapshotPluginId, persistenceId))
   }
 }
 
@@ -24,7 +27,7 @@ import akka.annotation.InternalApi
  * and send any message to it. It will reply to the `sender()` with the same message when
  * recovery has completed.
  */
-@InternalApi private[akka] class PersistenceInit(
+@InternalApi private[akka] class PersistenceInitImpl(
     override val journalPluginId: String,
     override val snapshotPluginId: String,
     override val persistenceId: String)
