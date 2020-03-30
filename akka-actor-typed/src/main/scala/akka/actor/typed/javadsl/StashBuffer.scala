@@ -75,6 +75,11 @@ import akka.japi.function.Procedure
   def forEach(f: Procedure[T]): Unit
 
   /**
+   * Removes all messages from the buffer.
+   */
+  def clear(): Unit
+
+  /**
    * Process all stashed messages with the `behavior` and the returned
    * [[Behavior]] from each processed message. The `StashBuffer` will be
    * empty after processing all messages, unless an exception is thrown
