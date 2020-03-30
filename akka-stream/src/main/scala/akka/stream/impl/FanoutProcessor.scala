@@ -13,6 +13,7 @@ import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.Attributes
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
 import org.reactivestreams.Subscriber
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -123,8 +124,8 @@ import org.reactivestreams.Subscriber
   val StreamSubscriptionTimeout(timeout, timeoutMode) = attributes.mandatoryAttribute[StreamSubscriptionTimeout]
   val timeoutTimer = if (timeoutMode != StreamSubscriptionTimeoutTerminationMode.noop) {
     import context.dispatcher
-    Some(context.system.scheduler.scheduleOnce(timeout, self, ActorProcessorImpl.SubscriptionTimeout))
-  } else None
+    OptionVal.Some(context.system.scheduler.scheduleOnce(timeout, self, ActorProcessorImpl.SubscriptionTimeout))
+  } else OptionVal.None
 
   override val primaryOutputs: FanoutOutputs = {
     val inputBuffer = attributes.mandatoryAttribute[Attributes.InputBuffer]
@@ -144,7 +145,10 @@ import org.reactivestreams.Subscriber
 
   override def postStop(): Unit = {
     super.postStop()
-    timeoutTimer.foreach(_.cancel())
+    timeoutTimer match {
+      case OptionVal.Some(timer) => timer.cancel()
+      case _                     =>
+    }
   }
 
   def afterFlush(): Unit = context.stop(self)
