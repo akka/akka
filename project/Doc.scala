@@ -138,7 +138,7 @@ object UnidocRoot extends AutoPlugin {
         if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
         else Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories")
       },
-      deployRsyncArtifacts := {
+      deployRsyncArtifacts ++= {
         val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
         (Compile / unidoc).value match {
           case Seq(japi, api) =>
