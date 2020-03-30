@@ -247,12 +247,12 @@ private class ConsumerControllerImpl[A](
           if (s.isProducerChanged(seqMsg)) {
             if (seqMsg.first)
               context.log.trace("Received first SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
-            receiveChangedProducer(s, seqMsg, () => active(s))
+            receiveChangedProducer(s, seqMsg)
           } else if (s.registering.isDefined) {
             context.log.debug(
               "Received SequencedMessage seqNr [{}], discarding message because registering to new ProducerController.",
               seqNr)
-            stashBuffer.unstash(active(s), 1, scalaIdentityFunction)
+            stashBuffer.unstash(Behaviors.same, 1, scalaIdentityFunction)
           } else if (s.isNextExpected(seqMsg)) {
             context.log.trace("Received SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
             deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
@@ -276,7 +276,7 @@ private class ConsumerControllerImpl[A](
             if (seqMsg.first)
               stashBuffer.unstash(active(retryRequest(s)), 1, scalaIdentityFunction)
             else
-              stashBuffer.unstash(active(s), 1, scalaIdentityFunction)
+              stashBuffer.unstash(Behaviors.same, 1, scalaIdentityFunction)
           }
 
         case Retry =>
@@ -305,10 +305,7 @@ private class ConsumerControllerImpl[A](
       }
   }
 
-  private def receiveChangedProducer(
-      s: State[A],
-      seqMsg: SequencedMessage[A],
-      nextBehaviorIfUnexpectedProducer: () => Behavior[InternalCommand]): Behavior[InternalCommand] = {
+  private def receiveChangedProducer(s: State[A], seqMsg: SequencedMessage[A]): Behavior[InternalCommand] = {
     val seqNr = seqMsg.seqNr
 
     if (seqMsg.first || !resendLost) {
@@ -344,7 +341,7 @@ private class ConsumerControllerImpl[A](
         seqNr,
         seqMsg.producerController,
         s.producerController)
-      stashBuffer.unstash(nextBehaviorIfUnexpectedProducer(), 1, scalaIdentityFunction)
+      stashBuffer.unstash(Behaviors.same, 1, scalaIdentityFunction)
     }
 
   }
@@ -379,7 +376,7 @@ private class ConsumerControllerImpl[A](
           if (s.isProducerChanged(seqMsg)) {
             if (seqMsg.first)
               context.log.trace("Received first SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
-            receiveChangedProducer(s, seqMsg, () => resending(s))
+            receiveChangedProducer(s, seqMsg)
           } else if (s.registering.isDefined) {
             context.log.debug(
               "Received SequencedMessage seqNr [{}], discarding message because registering to new ProducerController.",
