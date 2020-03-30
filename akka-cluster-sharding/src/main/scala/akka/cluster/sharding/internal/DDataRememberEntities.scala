@@ -79,6 +79,7 @@ private[akka] final class DDataRememberEntities(
       shardId => Array.tabulate(numberOfKeys)(i => ORSetKey[EntityId](s"shard-$typeName-$shardId-$i")))
 
   private val readMajority = ReadMajority(settings.tuningParameters.waitingForStateTimeout, majorityMinCap)
+  // Note that the timeout is actually updatingStateTimeout x 3 since we do 3 retries
   private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
   private val maxUpdateAttempts = 3
 

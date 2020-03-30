@@ -29,31 +29,34 @@ import akka.persistence.SnapshotSelectionCriteria
 import akka.util.Timeout
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class EventSourcedRememberEntities(eventSourcedStore: ActorRef) extends RememberEntitiesShardStore {
+private[akka] final class EventSourcedRememberEntities(eventSourcedStore: ActorRef, settings: ClusterShardingSettings)
+    extends RememberEntitiesShardStore {
 
-  // FIXME configurable
-  private implicit val askTimeout: Timeout = 10.seconds
-
-  override def addEntity(shardId: ShardId, entityId: EntityId): Future[Done] =
+  override def addEntity(shardId: ShardId, entityId: EntityId): Future[Done] = {
+    implicit val askTimeout: Timeout = settings.tuningParameters.updatingStateTimeout
     (eventSourcedStore ? EventSourcedRememberEntitiesStore.EntityStarted(entityId))
       .mapTo[EventSourcedRememberEntitiesStore.StartedAck.type]
       .map(_ => Done)(ExecutionContexts.parasitic)
+  }
 
-  override def removeEntity(shardId: ShardId, entityId: EntityId): Future[Done] =
+  override def removeEntity(shardId: ShardId, entityId: EntityId): Future[Done] = {
+    implicit val askTimeout: Timeout = settings.tuningParameters.updatingStateTimeout
     (eventSourcedStore ? EventSourcedRememberEntitiesStore.EntityStopped(entityId))
       .mapTo[EventSourcedRememberEntitiesStore.StoppedAck.type]
       .map(_ => Done)(ExecutionContexts.parasitic)
+  }
 
-  override def getEntities(shardId: ShardId): Future[Set[EntityId]] =
+  override def getEntities(shardId: ShardId): Future[Set[EntityId]] = {
+    implicit val askTimeout: Timeout = settings.tuningParameters.waitingForStateTimeout
     (eventSourcedStore ? EventSourcedRememberEntitiesStore.GetEntityIds)
       .mapTo[EventSourcedRememberEntitiesStore.EntityIds]
       .map(_.ids)(ExecutionContexts.parasitic)
+  }
 
   override def toString: ShardId = s"${getClass.getSimpleName}($eventSourcedStore)"
 }

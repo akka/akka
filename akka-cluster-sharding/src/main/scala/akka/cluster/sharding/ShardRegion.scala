@@ -592,7 +592,7 @@ private[akka] class ShardRegion(
             // one persistent store per shard
             val store = shardCtx.actorOf(EventSourcedRememberEntitiesStore.props(typeName, shardId, settings))
             context.watchWith(store, Shard.RememberEntityStoreCrashed(store)) // FIXME yuck
-            new EventSourcedRememberEntities(store)
+            new EventSourcedRememberEntities(store, settings)
           }
         }
       }
