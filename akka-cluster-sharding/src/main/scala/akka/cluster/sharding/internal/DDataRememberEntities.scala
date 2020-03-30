@@ -38,7 +38,6 @@ import akka.util.PrettyDuration
 import akka.util.Timeout
 
 import scala.concurrent.Future
-import scala.concurrent.duration._
 
 /**
  * INTERNAL API
@@ -73,8 +72,6 @@ private[akka] class DDataRememberEntities(
   private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
   // FIXME retrying writes?
   // private val maxUpdateAttempts = 3
-  // FIXME configurable
-  private implicit val askTimeout: Timeout = 10.seconds
 
   private def key(shardId: ShardId, entityId: EntityId): ORSetKey[EntityId] = {
     val i = math.abs(entityId.hashCode % numberOfKeys)
@@ -82,12 +79,14 @@ private[akka] class DDataRememberEntities(
   }
 
   override def addEntity(shardId: ShardId, entityId: EntityId): Future[Done] = {
+    implicit val askTimeout = Timeout(writeMajority.timeout * 2)
     (replicator ? Update(key(shardId, entityId), ORSet.empty[EntityId], writeMajority) { existing =>
       existing :+ entityId
     }).mapTo[UpdateResponse[ORSet[EntityId]]].map(doneOrFail)
   }
 
   override def removeEntity(shardId: ShardId, entityId: EntityId): Future[Done] = {
+    implicit val askTimeout = Timeout(writeMajority.timeout * 2)
     (replicator ? Update(key(shardId, entityId), ORSet.empty[EntityId], writeMajority) { existing =>
       existing.remove(entityId)
     }).mapTo[UpdateResponse[ORSet[EntityId]]].map(doneOrFail)
@@ -109,6 +108,7 @@ private[akka] class DDataRememberEntities(
 
   override def getEntities(shardId: ShardId): Future[Set[EntityId]] = {
     import system.dispatcher
+    implicit val askTimeout = Timeout(readMajority.timeout * 2)
     val responsePerKey = (0 until numberOfKeys).toSet[Int].map { i =>
       val key = stateKeys(shardId)(i)
       (replicator ? Get(key, readMajority, Some(i))).mapTo[GetResponse[ORSet[ShardId]]].map {
