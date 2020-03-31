@@ -176,7 +176,7 @@ public interface IntroTest {
 
       private final ActorRef<HelloWorld.Greet> greeter;
 
-      private HelloWorldMain(ActorContext<SayHello> context) {
+      private HelloWorldMain(ActorContext<HelloWorldMain.SayHello> context) {
         super(context);
 
         final String dispatcherPath = "akka.actor.default-blocking-io-dispatcher";
@@ -187,7 +187,7 @@ public interface IntroTest {
       // createReceive ...
       // #hello-world-main-with-dispatchers
       @Override
-      public Receive<SayHello> createReceive() {
+      public Receive<HelloWorldMain.SayHello> createReceive() {
         return null;
       }
       // #hello-world-main-with-dispatchers
