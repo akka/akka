@@ -76,7 +76,7 @@ package object adapter {
   implicit class TypedActorSystemOps(val sys: ActorSystem[_]) extends AnyVal {
     @deprecated("Use 'toClassic' instead", "2.5.26")
     def toUntyped: akka.actor.ActorSystem = toClassic
-    def toClassic: akka.actor.ActorSystem = ActorSystemAdapter.toClassic(sys)
+    def toClassic: akka.actor.ActorSystem = sys.classicSystem
 
     /**
      * INTERNAL API

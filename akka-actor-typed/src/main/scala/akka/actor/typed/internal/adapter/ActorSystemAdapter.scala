@@ -43,7 +43,7 @@ import akka.event.LoggingFilterWithMarker
 
   import ActorRefAdapter.sendSystemMessage
 
-  override private[akka] def classicSystem: untyped.ActorSystem = untypedSystem
+  override def classicSystem: untyped.ActorSystem = untypedSystem
 
   // Members declared in akka.actor.typed.ActorRef
   override def tell(msg: T): Unit = {
@@ -140,12 +140,5 @@ private[akka] object ActorSystemAdapter {
       new LoadTypedExtensions(system)
   }
 
-  def toClassic[U](sys: ActorSystem[_]): untyped.ActorSystem =
-    sys match {
-      case adapter: ActorSystemAdapter[_] => adapter.untypedSystem
-      case _ =>
-        throw new UnsupportedOperationException(
-          "only adapted untyped ActorSystem permissible " +
-          s"($sys of class ${sys.getClass.getName})")
-    }
+  def toClassic[U](sys: ActorSystem[_]): untyped.ActorSystem = sys.classicSystem
 }
