@@ -63,7 +63,7 @@ object Slf4jLoggerSpec {
   val output = new ByteArrayOutputStream
   def outputString: String = output.toString("UTF-8")
 
-  class TestAppender extends OutputStreamAppender {
+  class TestAppender[E] extends OutputStreamAppender[E] {
 
     override def start(): Unit = {
       setOutputStream(output)
