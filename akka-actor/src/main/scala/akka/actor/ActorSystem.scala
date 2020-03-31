@@ -864,7 +864,7 @@ private[akka] class ActorSystemImpl(
   def /(actorName: String): ActorPath = guardian.path / actorName
   def /(path: Iterable[String]): ActorPath = guardian.path / path
 
-  override private[akka] def classicSystem: ActorSystem = this
+  override def classicSystem: ActorSystem = this
 
   // Used for ManifestInfo.checkSameVersion
   private def allModules: List[String] =
