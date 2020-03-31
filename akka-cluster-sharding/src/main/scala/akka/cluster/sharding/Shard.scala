@@ -21,7 +21,6 @@ import akka.actor.Timers
 import akka.annotation.InternalStableApi
 import akka.cluster.Cluster
 import akka.cluster.sharding.internal.EntityRecoveryStrategy
-import akka.cluster.sharding.internal.NoOpStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStoreProvider
 import akka.cluster.sharding.internal.RememberEntityStarter
@@ -111,6 +110,8 @@ private[akka] object Shard {
   final case class RememberEntityStoreCrashed(store: ActorRef)
   private final case object AsyncWriteDone
 
+  // FIXME Leaving this on while we are working on the remember entities refactor
+  final val VerboseDebug = true
 }
 
 /**
@@ -169,6 +170,9 @@ private[akka] class Shard(
   private var refById = Map.empty[EntityId, ActorRef]
 
   private var lastMessageTimestamp = Map.empty[EntityId, Long]
+
+  // that an entity is passivating it is added to the passivating set and its id is added to the message buffers
+  // to buffer any messages coming in during passivation
   private var passivating = Set.empty[ActorRef]
   private val messageBuffers = new MessageBufferMap[EntityId]
 
@@ -323,6 +327,7 @@ private[akka] class Shard(
   }
 
   def waitForAsyncWrite(operation: String, entityId: EntityId, done: Future[Done])(whenDone: EntityId => Unit): Unit = {
+    if (VerboseDebug) log.debug("Waiting for async write of [{}] {}", entityId, operation)
     done.value match {
       case Some(Success(_))  => whenDone(entityId)
       case Some(Failure(ex)) => throw ex
@@ -330,8 +335,10 @@ private[akka] class Shard(
         done.map(_ => AsyncWriteDone)(ExecutionContexts.parasitic).pipeTo(self)
         context.become {
           case AsyncWriteDone =>
+            if (VerboseDebug) log.debug("Completed async write of [{}] {}", entityId, operation)
             whenDone(entityId)
             context.become(receiveCommand)
+            unstashAll()
           case AkkaFailure(ex) =>
             throw new RuntimeException(s"Remember entities write of $operation for [$entityId] failed", ex)
 
@@ -489,13 +496,15 @@ private[akka] class Shard(
     idByRef.get(entity) match {
       case Some(id) =>
         if (!messageBuffers.contains(id)) {
+          if (VerboseDebug)
+            log.debug("Passivation started for {}", entity)
           passivating = passivating + entity
           messageBuffers.add(id)
           entity ! stopMessage
         } else {
-          log.debug("Passivation already in progress for {}. Not sending stopMessage back to entity.", entity)
+          log.debug("Passivation already in progress for {}. Not sending stopMessage back to entity", entity)
         }
-      case None => log.debug("Unknown entity {}. Not sending stopMessage back to entity.", entity)
+      case None => log.debug("Unknown entity {}. Not sending stopMessage back to entity", entity)
     }
   }
 
@@ -531,13 +540,8 @@ private[akka] class Shard(
   }
 
   /**
-   * If we are waiting for a remember entity write and the message is for the same entity as we are waiting for
-   * the message it will be added to its messageBuffer, which will be sent after the update has completed.
-   *
-   * If the message is for another entity that is already started (and not in progress of passivating)
-   * it will be delivered immediately.
-   *
-   * Otherwise it will be stashed, and processed after the update has been completed.
+   * @param entityIdWaitingForWrite an id for an remember entity write in progress, if non empty messages for that id
+   *                                will be buffered
    */
   private def deliverMessage(msg: Any, snd: ActorRef, entityIdWaitingForWrite: OptionVal[EntityId]): Unit = {
     val (id, payload) = extractEntityId(msg)
@@ -547,25 +551,25 @@ private[akka] class Shard(
     } else {
       payload match {
         case start: ShardRegion.StartEntity =>
-          // in case it was wrapped, used in Typed
           // we can only start a new entity if we are not currently waiting for another write
-          if (entityIdWaitingForWrite.isEmpty)
-            receiveStartEntity(start)
-          else
-            stash()
+          if (entityIdWaitingForWrite.isEmpty) receiveStartEntity(start)
+          // write in progress, see waitForAsyncWrite for unstash
+          else stash()
         case _ =>
-          if (rememberEntitiesStore == NoOpStore) {
-            // optimized path for when not using remember entities
-            touchLastMessageTimestamp(id)
-            getOrCreateEntity(id).tell(payload, snd)
-          } else if (entityIdWaitingForWrite.contains(id)) {
-            // write of stop or start of this exact entity in progress
+          if (messageBuffers.contains(id) || entityIdWaitingForWrite.contains(id)) {
+            // either:
+            // 1. entity is passivating, buffer until passivation complete (id in message buffers)
+            // 2. we are waiting for storing entity start or stop with remember entities to complete
+            //    and want to buffer until write completes
             appendToMessageBuffer(id, msg, snd)
           } else {
             // With remember entities enabled we may be in the process of saving that we are starting up the entity
             // and in that case we need to buffer messages until that completes
             refById.get(id) match {
               case Some(actor) =>
+                // not using remember entities or write is in progress for other entity and this entity is running already
+                // go ahead and deliver
+                if (VerboseDebug) log.debug("Delivering message of type [{}] to [{}]", payload.getClass, id)
                 touchLastMessageTimestamp(id)
                 actor.tell(payload, snd)
               case None =>
@@ -573,14 +577,23 @@ private[akka] class Shard(
                   // No entity actor running but id is in set of entities, this can happen in two scenarios:
                   // 1. we are starting up and the entity id is remembered but not yet started
                   // 2. the entity is stopped but not passivated, and should be restarted
-                  require(!messageBuffers.contains(id), s"Message buffers contains id [$id].")
-                  // this is not actually orCreate it is always create, needed to have a single path for entity creation
-                  getOrCreateEntity(id)
+
+                  // FIXME won't this potentially lead to not remembered for case 2?
+                  val actor = getOrCreateEntity(id)
+                  touchLastMessageTimestamp(id)
+                  actor.tell(payload, snd)
+
                 } else {
-                  // No actor and id is unknown, start actor and deliver message when started
-                  // Note; we only do this if remembering, otherwise the buffer is an overhead
-                  appendToMessageBuffer(id, msg, snd)
-                  waitForAsyncWrite("start (message)", id, rememberEntitiesStore.addEntity(id))(sendMsgBuffer)
+                  if (entityIdWaitingForWrite.isEmpty) {
+                    // No actor and id is unknown, start actor and deliver message when started
+                    // Note; we only do this if remembering, otherwise the buffer is an overhead
+                    appendToMessageBuffer(id, msg, snd)
+                    waitForAsyncWrite("start (message)", id, rememberEntitiesStore.addEntity(id))(sendMsgBuffer)
+                  } else {
+                    // we'd need to start the entity but a start/stop write is already in progress
+                    // see waitForAsyncWrite for unstash
+                    stash()
+                  }
                 }
             }
           }
@@ -594,8 +607,8 @@ private[akka] class Shard(
       case Some(child) => child
       case None =>
         val name = URLEncoder.encode(id, "utf-8")
-        log.debug("Starting entity [{}] as [{}] in shard [{}]", id, name, shardId)
         val a = context.watch(context.actorOf(entityProps(id), name))
+        log.debug("Started entity [{}] with entity id [{}] in shard [{}]", a, id, shardId)
         idByRef = idByRef.updated(a, id)
         refById = refById.updated(id, a)
         entityIds = entityIds + id
@@ -631,6 +644,7 @@ private[akka] class Shard(
       messages.foreach {
         case (msg, snd) => deliverMessage(msg, snd, OptionVal.None)
       }
+      touchLastMessageTimestamp(entityId)
     }
   }
 
