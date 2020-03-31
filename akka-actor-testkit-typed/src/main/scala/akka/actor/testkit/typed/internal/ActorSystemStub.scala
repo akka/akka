@@ -66,7 +66,7 @@ import org.slf4j.LoggerFactory
   override def provider: ActorRefProvider = throw new UnsupportedOperationException("no provider")
 
   // stream materialization etc. using stub not supported
-  override private[akka] def classicSystem =
+  override def classicSystem =
     throw new UnsupportedOperationException("no classic actor system available")
 
   // impl InternalRecipientRef
