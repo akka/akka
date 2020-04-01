@@ -60,6 +60,27 @@ copied over to a maven server. If you have access, the Jenkins job at
 https://jenkins.akka.io:8498/job/akka-publish-wip/ can be used to publish
 a snapshot to https://repo.akka.io/snapshots from any branch.
 
+## Releasing only updated docs
+
+It is possible to release a revised documentation to the already existing release.
+
+1. Create a new branch from a release tag. If a revised documentation is for the `v2.6.4` release, then the name of the new branch should be `docs/v2.6.4`.
+1. Add and commit `version.sbt` file that pins the version to the one that is being revised. Also set `isSnapshot` to `false` for the stable documentation links. For example:
+    ```scala
+    ThisBuild / version := "2.6.4"
+    ThisBuild / isSnapshot := false
+    ```
+1. Make all of the required changes to the documentation.
+1. Build documentation locally with:
+    ```sh
+    sbt akka-docs/paradoxBrowse
+    ```
+1. If the generated documentation looks good, send it to Gustav:
+    ```sh
+    sbt "akka-docs/deployRsync akkarepo@gustav.akka.io"
+    ```
+1. Do not forget to push the new branch back to GitHub.
+
 ## Release steps
 
 * Tag the release: `git tag -am "Version 2.6.x" v2.6.x`
