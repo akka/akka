@@ -33,3 +33,11 @@ the laziness and will trigger the factory immediately.
 
 @@@
 
+## Example
+
+An example prints Fibonacci numbers
+
+Scala
+: @@snip [LazySource.scala](/akka-docs/src/test/scala/docs/stream/operators/source/LazySource.scala) { #LazySource }
+
+
