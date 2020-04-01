@@ -197,7 +197,6 @@ operation at the same time (usually handling the completion of a @scala[`Future`
 
 | |Operator|Description|
 |--|--|--|
-|Source/Flow|<a name="ask"></a>@ref[ask](Source-or-Flow/ask.md)|Use the `ask` pattern to send a request-reply message to the target `ref` actor.|
 |Source/Flow|<a name="mapasync"></a>@ref[mapAsync](Source-or-Flow/mapAsync.md)|Pass incoming elements to a function that return a @scala[`Future`] @java[`CompletionStage`] result.|
 |Source/Flow|<a name="mapasyncunordered"></a>@ref[mapAsyncUnordered](Source-or-Flow/mapAsyncUnordered.md)|Like `mapAsync` but @scala[`Future`] @java[`CompletionStage`] results are passed downstream as they arrive regardless of the order of the elements that triggered them.|
 
