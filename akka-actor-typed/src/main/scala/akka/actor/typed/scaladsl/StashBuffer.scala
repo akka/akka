@@ -56,6 +56,13 @@ import akka.annotation.{ DoNotInherit, InternalApi }
   def size: Int
 
   /**
+   * What is the capacity of this buffer.
+   *
+   * @return the capacity of this buffer
+   */
+  def capacity: Int
+
+  /**
    * @return `true` if no more messages can be added, i.e. size equals the capacity of the stash buffer
    */
   def isFull: Boolean

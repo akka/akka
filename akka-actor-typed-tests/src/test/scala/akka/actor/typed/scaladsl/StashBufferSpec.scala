@@ -241,5 +241,11 @@ class StashBufferSpec extends AnyWordSpec with Matchers with LogCapturing {
       intercept[IllegalArgumentException](stash.unstashAll(Behaviors.unhandled))
     }
 
+    "answer thruthfully about its capacity" in {
+      val capacity = 42
+      val stash = StashBuffer[String](context, capacity)
+
+      stash.capacity should ===(capacity)
+    }
   }
 }
