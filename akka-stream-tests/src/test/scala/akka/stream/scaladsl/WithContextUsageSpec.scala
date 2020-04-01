@@ -5,6 +5,7 @@
 package akka.stream.scaladsl
 
 import akka.NotUsed
+import akka.stream.ContextMapStrategy
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.scaladsl.TestSink
@@ -12,6 +13,13 @@ import akka.stream.testkit.scaladsl.TestSink
 import scala.collection.immutable
 
 class WithContextUsageSpec extends StreamSpec {
+
+  // The approach demonstrated in this spec works for streams that allow iteration/filtering but
+  // not reordering.
+  // I wonder if we can use the strategy approach to replace this approach with this nicer entirely, though.
+  def strategy[Ctx, In, Out] = new ContextMapStrategy[Ctx] with ContextMapStrategy.Iteration[Ctx, In, Out] {
+    override def next(inputElement: In, in: Ctx, outputElement: Out, index: Long, hasNext: Boolean): Ctx = in
+  }
 
   "Context propagation used for committing offsets" must {
 
@@ -49,7 +57,7 @@ class WithContextUsageSpec extends StreamSpec {
       val expectedOffsets = input.filter(cm => f(cm.record)).map(cm => Offset(cm)).init
       val expectedRecords = toRecords(input).filter(f)
 
-      val src = createSourceWithContext(input).filter(f).asSource
+      val src = createSourceWithContext(input).filter(f, strategy).asSource
 
       src
         .map { case (e, _) => e }
@@ -75,7 +83,7 @@ class WithContextUsageSpec extends StreamSpec {
       val expectedOffsets = testRange.map(ix => Offset(ix)).init
       val expectedRecords = toRecords(input).flatMap(f)
 
-      val src = createSourceWithContext(input).mapConcat(f).asSource
+      val src = createSourceWithContext(input).mapConcat(f, strategy[Offset, Record, Record]).asSource
 
       src
         .map { case (e, _) => e }
@@ -132,7 +140,7 @@ class WithContextUsageSpec extends StreamSpec {
       val expectedMultiRecords = toRecords(input).flatMap(f).grouped(groupSize).map(l => MultiRecord(l)).toVector
 
       val src = createSourceWithContext(input)
-        .mapConcat(f)
+        .mapConcat(f, strategy[Offset, Record, Record])
         .grouped(groupSize)
         .map(l => MultiRecord(l))
         .mapContext(_.last)

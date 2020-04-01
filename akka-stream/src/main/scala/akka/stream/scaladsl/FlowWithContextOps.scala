@@ -4,16 +4,18 @@
 
 package akka.stream.scaladsl
 
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.annotation.unchecked.uncheckedVariance
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts
-import akka.stream._
-import akka.util.ConstantFun
 import akka.event.{LogMarker, LoggingAdapter, MarkerLoggingAdapter}
+import akka.stream._
 import akka.stream.impl.fusing.FlattenMergeWithContext.InElement
 import akka.stream.impl.fusing.{FlattenMergeWithContext, StatefulMapConcatWithContext}
+import akka.util.ConstantFun
+import com.github.ghik.silencer.silent
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.concurrent.Future
 
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context
@@ -79,6 +81,17 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
     })
 
   /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.mapAsyncUnordered]].
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.mapAsyncUnordered]]
+   */
+  @silent("strategy .* is never used")
+  def mapAsyncUnordered[Out2](parallelism: Int, strategy: ContextMapStrategy.Reordering[Ctx])(f: Out => Future[Out2]): Repr[Out2, Ctx] =
+  via(flow.mapAsyncUnordered(parallelism) {
+    case (e, ctx) => f(e).map(o => (o, ctx))(ExecutionContexts.sameThreadExecutionContext)
+  })
+
+  /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.collect]].
    *
    * Note, that the context of elements that are filtered out is skipped as well.
@@ -97,8 +110,20 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.filter]]
    */
+  @deprecated("use the filter method taking a 'ContextMappingStrategy' to check your strategy allows filtering", "2.6.5")
   def filter(pred: Out => Boolean): Repr[Out, Ctx] =
     collect { case e if pred(e) => e }
+
+    /**
+   * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.filter]].
+   *
+   * Note, that the context of elements that are filtered out is skipped as well.
+   *
+   * @see [[akka.stream.scaladsl.FlowOps.filter]]
+   */
+  @silent("strategy .* never used")
+  def filter(pred: Out => Boolean, strategy: ContextMapStrategy.Filtering[Ctx]): Repr[Out, Ctx] =
+  collect { case e if pred(e) => e }
 
   /**
    * Context-preserving variant of [[akka.stream.scaladsl.FlowOps.filterNot]].
@@ -164,18 +189,26 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
    *
    * @see [[akka.stream.scaladsl.FlowOps.mapConcat]]
    */
-  def mapConcat[Out2](f: Out => immutable.Iterable[Out2]): Repr[Out2, Ctx] =
-    mapConcat(f, ContextMapStrategy.same[Out, Ctx, Out2]())
+  @deprecated("Please specify the desired strategy for how to handle the context", "2.6.5")
+  def mapConcat[Out2](f: Out => immutable.Iterable[Out2]): Repr[Out2, Ctx] = {
+    val copyCtxToAllStrategy = new ContextMapStrategy[Ctx] with ContextMapStrategy.Iteration[Ctx, Out, Out2] {
+      override def next(inputElement: Out, in: Ctx, outputElement: Out2, index: Long, hasNext: Boolean): Ctx = in
+    }
+
+    mapConcat(f, copyCtxToAllStrategy)
+  }
 
   def mapConcat[Out2](
     f: Out => immutable.Iterable[Out2],
-    strategy: ContextMapStrategy.Iterate[Out @uncheckedVariance, Ctx @uncheckedVariance, Out2]
+    // TODO variance might actually matter here
+    strategy: ContextMapStrategy.Iteration[Ctx @uncheckedVariance, Out @uncheckedVariance, Out2]
   ): Repr[Out2, Ctx] =
     via(flow.via(new StatefulMapConcatWithContext[Out, Ctx, Out2](() => f, strategy)))
 
   def flatMapConcat[Out2, InnerMat](
     f: Out => Graph[SourceShape[Out2], InnerMat],
-    strategy: ContextMapStrategy.Iterate[Out @uncheckedVariance, Ctx @uncheckedVariance, Out2]
+    // TODO variance might actually matter here
+    strategy: ContextMapStrategy.Iteration[Ctx @uncheckedVariance, Out @uncheckedVariance, Out2]
   ): Repr[Out2, Ctx] = {
     via(flow[Out, Ctx]
       .map { case (in, ctx) =>

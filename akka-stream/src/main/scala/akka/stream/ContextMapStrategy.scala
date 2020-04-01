@@ -4,53 +4,39 @@
 
 package akka.stream
 
+import com.github.ghik.silencer.silent
+
+/**
+ * A ContextMapStrategy defines how the context parameter of a FlowWithContext is manipulated
+ * as various operations are performed in the flow
+ *
+ * @typeparam Ctx the context type
+ */
+class ContextMapStrategy[-Ctx]
+
 object ContextMapStrategy {
-
-  final case class Iterate[In, Ctx, Out](
-      iterateFn: (In, Ctx, Out, Long, Boolean) => Ctx,
-      emptyFn: Option[(In, Ctx) => (Out, Ctx)] = None)
+  /**
+   * Trait that is mixed into strategies that allow elements (including their offsets) to be filtered out of the stream.
+   */
+  trait Filtering[-Ctx] {
+    self: ContextMapStrategy[Ctx] =>
+  }
 
   /**
-   * Passthrough the same context [[Ctx] of the input element [[In]] to all output elements [[Out]].
+   * Trait that is mixed into strategies that allow elements (including their offsets) to be reordered.
    */
-  def same[In, Ctx, Out](): Iterate[In, Ctx, Out] = Iterate(
-    iterateFn = (_: In, inCtx: Ctx, _: Out, _: Long, _: Boolean) => inCtx
-  )
+  trait Reordering[-Ctx] {
+    self: ContextMapStrategy[Ctx] =>
+  }
 
   /**
-   * Transform the context of the first element given the input element [[In]] and context [[Ctx]].
+   * Trait that is mixed into strategies that allows operations like 'mapConcat', which
+   * turn a single element into zero or more elements, where it is known before the last
+   * element is emitted that this is the last element.
    */
-  def first[In, Ctx, Out](firstFn: (In, Ctx, Out) => Ctx): Iterate[In, Ctx, Out] = Iterate(
-    iterateFn = (in: In, inCtx: Ctx, out: Out, index: Long, _: Boolean) =>
-      if (index == 0) firstFn(in, inCtx, out)
-      else inCtx
-  )
-
-  /**
-   * Transform the context of the last element given the input element [[In]], context [[Ctx]], and the index
-   * of the element.
-   */
-  def last[In, Ctx, Out](fn: (In, Ctx, Out, Long) => Ctx): Iterate[In, Ctx, Out] = Iterate(
-    iterateFn = (in: In, inCtx: Ctx, out: Out, index: Long, hasNext: Boolean) =>
-      if (!hasNext) fn(in, inCtx, out, index)
-      else inCtx
-  )
-
-  /**
-   * Iterate over each element and transform the context given the element [[In]], context [[InCtx]],
-   * output element [[Out]], index, and if the there is a next output element [[Out]]. This strategy can be used to
-   * satisfy all 1:many use cases.
-   */
-  def iterate[In, Ctx, Out](fn: (In, Ctx, Out, Long, Boolean) => Ctx): Iterate[In, Ctx, Out] = Iterate(fn)
-
-  /**
-   * Iterate over each element and transform the context given the element [[In]], context [[InCtx]],
-   * output element [[Out]], index, and if the there is a next output element [[Out]]. If there are no output elements
-   * then we can emit a single output element [[Out]] and output context [[Ctx]] that represents this state.
-   * This strategy can be used to satisfy all 1:many and 1:0 use cases.
-   */
-  def iterateOrEmpty[In, Ctx, Out](
-                                    fn: (In, Ctx, Out, Long, Boolean) => Ctx,
-                                    emptyFn: (In, Ctx) => (Out, Ctx)
-                                  ): Iterate[In, Ctx, Out] = Iterate(iterateFn = fn, emptyFn = Some(emptyFn))
+  trait Iteration[Ctx, In, Out] extends Filtering[Ctx] { self: ContextMapStrategy[Ctx] =>
+    def next(inputElement: In, in: Ctx, outputElement: Out, index: Long, hasNext: Boolean): Ctx
+    @silent("parameter value .* is never used")
+    def empty(inputElement: In, in: Ctx): Option[(Out, Ctx)] = None
+  }
 }

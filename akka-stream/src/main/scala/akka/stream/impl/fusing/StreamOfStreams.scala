@@ -146,7 +146,7 @@ import scala.util.control.NonFatal
 
 @InternalApi private[akka] final class FlattenMergeWithContext[In, Out, Ctx, InnerMat](
    val breadth: Int,
-   val strategy: ContextMapStrategy.Iterate[In, Ctx, Out]
+   val strategy: ContextMapStrategy.Iteration[Ctx, In, Out]
   ) extends GraphStage[FlowShape[(Graph[SourceShape[(Out, Ctx)], InnerMat], InElement[In, Ctx]), (Out, Ctx)]] {
 
   private val in = Inlet[(Graph[SourceShape[(Out, Ctx)], InnerMat], InElement[In, Ctx])]("FlattenMergeWithContext.in")
@@ -206,7 +206,7 @@ import scala.util.control.NonFatal
         case OptionVal.Some(single) =>
           if (isAvailable(out) && queue.isEmpty) {
             val (outElement, ctx) = single.elem.asInstanceOf[(Out, Ctx)]
-            val outCtx = strategy.iterateFn(inputElement.input, ctx, outElement, 0, false)
+            val outCtx = strategy.next(inputElement.input, ctx, outElement, index = 0, hasNext = false)
             push(out, (outElement, outCtx))
           } else {
             queue.enqueue(single)
@@ -219,7 +219,7 @@ import scala.util.control.NonFatal
               sources(sinkIn) match {
                 case (inputElement, Some(NextElement(index, ctx, outElement))) if isAvailable(out) =>
                   grabAndPull(sinkIn, inputElement, index + 1)
-                  val outCtx = strategy.iterateFn(inputElement.input, ctx, outElement, index, true)
+                  val outCtx = strategy.next(inputElement.input, ctx, outElement, index, hasNext = true)
                   push(out, (outElement, outCtx))
                 case (inputElement, None) if isAvailable(out) =>
                   grabAndPull(sinkIn, inputElement, index = 0)
@@ -230,15 +230,12 @@ import scala.util.control.NonFatal
             override def onUpstreamFinish(): Unit = {
               sources(sinkIn) match {
                 case (InElement(_, element), Some(NextElement(index, ctx, outElement))) if isAvailable(out) =>
-                  val outCtx = strategy.iterateFn(element, ctx, outElement, index, false)
+                  val outCtx = strategy.next(element, ctx, outElement, index, hasNext = false)
                   push(out, (outElement, outCtx))
                 case (InElement(ctx, element), None) if isAvailable(out) =>
-                  strategy match {
-                    case ContextMapStrategy.Iterate(_, Some(f)) =>
-                      val (noneOut, noneOutContext): (Out, Ctx) = f(element, ctx)
-                      push(out, (noneOut, noneOutContext))
-                    case _ => ()
-                  }
+                  strategy
+                    .empty(element, ctx)
+                    .foreach(outputElement => push(out, outputElement))
                 case _ =>
               }
               if (!sinkIn.isAvailable) removeSource(sinkIn)

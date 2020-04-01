@@ -18,6 +18,8 @@ import akka.util.ccompat.JavaConverters._
 import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
 
+import com.github.ghik.silencer.silent
+
 object SourceWithContext {
 
   /**
@@ -96,6 +98,11 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
   def collect[Out2](pf: PartialFunction[Out, Out2]): SourceWithContext[Out2, Ctx, Mat] =
     viaScala(_.collect(pf))
 
+  @silent("deprecated")
+  @Deprecated
+  def filter(p: function.Predicate[Out]): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.filter(p.test))
+
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.filter]].
    *
@@ -103,8 +110,8 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    *
    * @see [[akka.stream.javadsl.Source.filter]]
    */
-  def filter(p: function.Predicate[Out]): SourceWithContext[Out, Ctx, Mat] =
-    viaScala(_.filter(p.test))
+  def filter(p: function.Predicate[Out], strategy: ContextMapStrategy.Filtering[Ctx]): SourceWithContext[Out, Ctx, Mat] =
+    viaScala(_.filter(p.test, strategy))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.filterNot]].
@@ -140,6 +147,12 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
       f: function.Function[Out, CompletionStage[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
     viaScala(_.mapAsync[Out2](parallelism)(o => f.apply(o).toScala))
 
+  def mapAsyncUnordered[Out2](
+      parallelism: Int,
+      f: function.Function[Out, CompletionStage[Out2]],
+      strategy: ContextMapStrategy.Reordering[Ctx]): SourceWithContext[Out2, Ctx, Mat] =
+    viaScala(_.mapAsyncUnordered[Out2](parallelism, strategy)(o => f.apply(o).toScala))
+
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Source.mapConcat]].
    *
@@ -168,8 +181,12 @@ final class SourceWithContext[+Out, +Ctx, +Mat](delegate: scaladsl.SourceWithCon
    *
    * @see [[akka.stream.javadsl.Source.mapConcat]]
    */
+  @silent("deprecated")
+  @Deprecated
   def mapConcat[Out2](f: function.Function[Out, _ <: java.lang.Iterable[Out2]]): SourceWithContext[Out2, Ctx, Mat] =
     viaScala(_.mapConcat(elem => Util.immutableSeq(f.apply(elem))))
+
+  // TODO javadsl mapConcat that takes a strategy
 
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).

@@ -15,6 +15,8 @@ import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters._
 
+import com.github.ghik.silencer.silent
+
 object FlowWithContext {
 
   def create[In, Ctx](): FlowWithContext[In, Ctx, In, Ctx, akka.NotUsed] =
@@ -100,6 +102,11 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
   def collect[Out2](pf: PartialFunction[Out, Out2]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
     viaScala(_.collect(pf))
 
+  @silent("deprecated")
+  @Deprecated
+  def filter(p: function.Predicate[Out]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.filter(p.test))
+
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Flow.filter]].
    *
@@ -107,8 +114,8 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
    *
    * @see [[akka.stream.javadsl.Flow.filter]]
    */
-  def filter(p: function.Predicate[Out]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
-    viaScala(_.filter(p.test))
+  def filter(p: function.Predicate[Out], strategy: ContextMapStrategy.Filtering[CtxOut]): FlowWithContext[In, CtxIn, Out, CtxOut, Mat] =
+    viaScala(_.filter(p.test, strategy))
 
   /**
    * Context-preserving variant of [[akka.stream.javadsl.Flow.filterNot]].
@@ -176,9 +183,13 @@ final class FlowWithContext[In, CtxIn, Out, CtxOut, +Mat](
    *
    * @see [[akka.stream.javadsl.Flow.mapConcat]]
    */
+  @silent("deprecated")
+  @Deprecated
   def mapConcat[Out2](
       f: function.Function[Out, _ <: java.lang.Iterable[Out2]]): FlowWithContext[In, CtxIn, Out2, CtxOut, Mat] =
     viaScala(_.mapConcat(elem => Util.immutableSeq(f.apply(elem))))
+
+  // TODO javadsl mapConcat variant accepting a strategy
 
   /**
    * Apply the given function to each context element (leaving the data elements unchanged).
