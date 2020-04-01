@@ -24,7 +24,7 @@ object Scaladoc extends AutoPlugin {
   }
 
   override def trigger = allRequirements
-  override def requires = plugins.JvmPlugin && DeployRsync
+  override def requires = plugins.JvmPlugin
 
   val validateDiagrams = settingKey[Boolean]("Validate generated scaladoc diagrams")
 
