@@ -25,14 +25,14 @@ To use reliable delivery, add the module to your project:
 
 ## Introduction
 
-Normal @ref:[message delivery reliability](../general/message-delivery-reliability.md) is at-most once delivery, which
+Normal @ref:[message delivery reliability](../general/message-delivery-reliability.md) is at-most-once delivery, which
 means that messages may be lost. That should be rare, but still possible.
 
-For interactions between some actors that is not acceptable and at-least once delivery or effectively once processing
+For interactions between some actors, that is not acceptable and at-least-once delivery or effectively-once processing
 is needed. The tools for reliable delivery described here help with implementing that. It can't be achieved
-automatically under the hood without collaboration from the application because confirming when a message has been
+automatically under the hood without collaboration from the application. This is because confirming when a message has been
 fully processed is a business level concern. Only ensuring that it was transferred over the network or delivered to 
-the mailbox of the actor would not be enough, since it may crash right after without being processed.
+the mailbox of the actor would not be enough, since the actor may crash right before being able to process the message.
 
 Lost messages are detected, resent and deduplicated as needed. In addition, it also includes flow control for
 the sending of messages to avoid that a fast producer overwhelms a slower consumer or sends messages at
@@ -50,7 +50,7 @@ There are 3 supported patterns, which are described in the following sections:
 
 ## Point-to-point
 
-Point-to-point reliable delivery between a single producer actor sending messages and a single consumer actor
+This pattern implements point-to-point reliable delivery between a single producer actor sending messages and a single consumer actor
 receiving the messages.
 
 Messages are sent from the producer to @apidoc[ProducerController] and via @apidoc[ConsumerController] actors, which
@@ -65,33 +65,34 @@ The `ProducerController` sends `RequestNext` to the producer, which is then allo
 message to the `ProducerController`. Thereafter the producer will receive a new `RequestNext`
 when it's allowed to send one more message.
 
-The producer and `ProducerController` actors are supposed to be local so that these messages are
-fast and not lost. This is enforced by a runtime check.
+The producer and `ProducerController` actors are required to be local so that message delivery is
+both fast and guaranteed. This requirement is enforced by a runtime check.
 
 Similarly, on the consumer side the destination consumer actor will start the flow by sending an
 initial `ConsumerController.Start` message to the `ConsumerController`. 
 
-For the `ProducerController` to know where to send the messages it must be connected with the
-`ConsumerController`. You do this is with `ProducerController.RegisterConsumer` or
-`ConsumerController.RegisterToProducerController` messages. When using the the point-to-point pattern
-it is the application's responsibility to connect them together. For example, by sending the `ActorRef`
-in an ordinary message to the other side, or register the `ActorRef` in the @ref:[Receptionist](actor-discovery.md)
-and find it on the other side.
+For the `ProducerController` to know where to send the messages, it must be connected with the
+`ConsumerController`. This can be done with the `ProducerController.RegisterConsumer` or
+`ConsumerController.RegisterToProducerController` messages. When using the point-to-point pattern,
+it is the application's responsibility to connect them together. For example, this can be done by sending the `ActorRef`
+in an ordinary message to the other side, or by registering the `ActorRef` in the @ref:[Receptionist](actor-discovery.md)
+so it can be found on the other side.
 
 You must also take measures to reconnect them if any of the sides crashes, for example by watching it
 for termination.
 
-Received messages from the producer are wrapped in `ConsumerController.Delivery` when sent to the consumer,
-which is supposed to reply with `ConsumerController.Confirmed` when it has processed the message.
-Next message is not delivered until the previous is confirmed. More messages from the producer that arrive
+Messages sent by the producer are wrapped in `ConsumerController.Delivery` when received by a consumer and the consumer
+should reply with `ConsumerController.Confirmed` when it has processed the message.
+
+The next message is not delivered until the previous one is confirmed. Any messages from the producer that arrive
 while waiting for the confirmation are stashed by the `ConsumerController` and delivered when the previous
 message is confirmed.
 
-The consumer and the `ConsumerController` actors are supposed to be local so that these messages are fast
-and not lost. This is enforced by a runtime check.
+Similar to the producer side, the consumer and the `ConsumerController` actors are required to be local so that message delivery is
+both fast and guaranteed. This requirement is enforced by a runtime check.
 
 Many unconfirmed messages can be in flight between the `ProducerController` and `ConsumerController`, but
-it is limited by a flow control window. The flow control is driven by the consumer side, which means that
+their number is limited by a flow control window. The flow control is driven by the consumer side, which means that
 the `ProducerController` will not send faster than the demand requested by the `ConsumerController`.
 
 ### Point-to-point example
@@ -129,25 +130,25 @@ Java
 
 ### Point-to-point delivery semantics
 
-As long as neither producer nor consumer crash the messages are delivered to the consumer actor in the same order
-as they were sent as they were sent to the `ProducerController`, without loss or duplicates. Meaning effectively
-once processing without any business level deduplication.
+As long as neither producer nor consumer crash, the messages are delivered to the consumer actor in the same order
+as they were sent to the `ProducerController`, without loss or duplicates. This means effectively-once
+processing without any business level deduplication.
 
-Unconfirmed messages may be lost if the producer crashes. To avoid that you need to enable the @ref:[durable
-queue](#durable-producer) on the producer side. The stored unconfirmed messages will be redelivered when the
-corresponding producer is started again. Even if the same `ConsumerController` instance is used there may be
+Unconfirmed messages may be lost if the producer crashes. To avoid that, you need to enable the @ref:[durable
+queue](#durable-producer) on the producer side. By doing so, any stored unconfirmed messages will be redelivered when the
+corresponding producer is started again. Even if the same `ConsumerController` instance is used, there may be
 delivery of messages that had already been processed but the fact that they were confirmed had not been stored yet.
-Meaning at-least once delivery.
+This means that we have at-least-once delivery.
 
-If the consumer crashes a new `ConsumerController` can be connected to the original `ProducerConsumer`
+If the consumer crashes, a new `ConsumerController` can be connected to the original `ProducerConsumer`
 without restarting it. The `ProducerConsumer` will then redeliver all unconfirmed messages. In that case
-the unconfirmed messages will be delivered to the new consumer, and some of these may already have been
+the unconfirmed messages will be delivered to the new consumer and some of these may already have been
 processed by the previous consumer.
-Meaning at-least once delivery.
+Again, this means that we have at-least-once delivery.
 
 ## Work pulling
 
-Work pulling is a pattern where several worker actors pull tasks in their own pace from
+Work pulling is a pattern where several worker actors pull tasks at their own pace from
 a shared work manager instead of that the manager pushes work to the workers blindly
 without knowing their individual capacity and current availability.
 
@@ -230,17 +231,17 @@ For work pulling the order of the messages should not matter, because each messa
 to one of the workers with demand and can therefore be processed in any order.
 
 As long as neither producers nor workers crash (or workers being removed for other reasons) the messages are
-delivered to the workers without loss or duplicates. Meaning effectively once processing without any
+delivered to the workers without loss or duplicates. Meaning effectively-once processing without any
 business level deduplication.
 
 Unconfirmed messages may be lost if the producer crashes. To avoid that you need to enable the @ref:[durable
 queue](#durable-producer) on the producer side. The stored unconfirmed messages will be redelivered when the
 corresponding producer is started again. Those messages may be routed to different workers than before
 and some of them may have already been processed but the fact that they were confirmed had not been stored
-yet. Meaning at-least once delivery.
+yet. Meaning at-least-once delivery.
 
 If a worker crashes or is stopped gracefully the unconfirmed messages will be redelivered to other workers.
-In that case some of these may already have been processed by the previous worker. Meaning at-least once delivery.
+In that case some of these may already have been processed by the previous worker. Meaning at-least-once delivery.
 
 ## Sharding
 
@@ -328,13 +329,13 @@ Java
 ### Sharding delivery semantics
 
 As long as neither producer nor consumer crash the messages are delivered to the consumer actor in the same order
-as they were sent to the `ShardingProducerController`, without loss or duplicates. Meaning effectively once
+as they were sent to the `ShardingProducerController`, without loss or duplicates. Meaning effectively-once
 processing without any business level deduplication.
 
 Unconfirmed messages may be lost if the producer crashes. To avoid that you need to enable the @ref:[durable
 queue](#durable-producer) on the producer side. The stored unconfirmed messages will be redelivered when the
 corresponding producer is started again. In that case there may be delivery of messages that had already been
-processed but the fact that they were confirmed had not been stored yet. Meaning at-least once delivery.
+processed but the fact that they were confirmed had not been stored yet. Meaning at-least-once delivery.
 
 If the consumer crashes or the shard is rebalanced the unconfirmed messages will be redelivered. In that case
 some of these may already have been processed by the previous consumer.
