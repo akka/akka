@@ -12,6 +12,7 @@ import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.util.ConstantFun
 import akka.event.{LogMarker, LoggingAdapter, MarkerLoggingAdapter}
+import akka.stream.impl.fusing.FlattenMergeWithContext.InElement
 import akka.stream.impl.fusing.{FlattenMergeWithContext, StatefulMapConcatWithContext}
 
 /**
@@ -177,11 +178,10 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
     strategy: ContextMapStrategy.Iterate[Out @uncheckedVariance, Ctx @uncheckedVariance, Out2]
   ): Repr[Out2, Ctx] = {
     via(flow[Out, Ctx]
-      //.map[(Graph[SourceShape[(Out2, Ctx)], InnerMat], Out)] {
       .map { case (in, ctx) =>
           val sourceWithContext: Graph[SourceShape[(Out2, Ctx)], InnerMat] =
             Source.fromGraph(f(in)).map(out => (out, ctx))
-          (sourceWithContext, in)
+          (sourceWithContext, InElement(ctx, in))
       }
       .via(
         new FlattenMergeWithContext[Out, Out2, Ctx, InnerMat](
@@ -190,14 +190,6 @@ trait FlowWithContextOps[+Out, +Ctx, +Mat] {
         )
       )
     )
-
-
-    //???
-
-//    val withContext: Flow[(Graph[SourceShape[(Any, Ctx)], Any], Out), (Any, Ctx), NotUsed] =
-//      flow.via(flattenMergeWithContext)
-//    map(e => (f(e), e))
-//      .via(withContext)
   }
 
   /**

@@ -94,15 +94,20 @@ class SourceWithContextSpec extends StreamSpec {
 
     final case class OffsetContext(offset: Long, position: String = "only")
 
-    "use iterate strategy on contexts via mapConcat" in {
-      val contextMapping = ContextMapStrategy.iterate(
-        fn = (_: String, inCtx: OffsetContext, _: String, index: Int, hasNext: Boolean) => {
-          if (index == 0 && hasNext) OffsetContext(inCtx.offset, "first")
-          else if (!hasNext) OffsetContext(inCtx.offset, "last")
-          else OffsetContext(inCtx.offset, "within")
-        }
-      )
+    val iterateStrategy = ContextMapStrategy.iterate(
+      fn = (_: String, inCtx: OffsetContext, _: String, index: Long, hasNext: Boolean) => {
+        if (index == 0 && hasNext) OffsetContext(inCtx.offset, "first")
+        else if (!hasNext) OffsetContext(inCtx.offset, "last")
+        else OffsetContext(inCtx.offset, "within")
+      }
+    )
 
+    val emptyStrategy = ContextMapStrategy.iterateOrEmpty(
+      fn = (_: String, inCtx: OffsetContext, _: String, _: Long, _: Boolean) => inCtx,
+      emptyFn = (_: String, inCtx: OffsetContext) => ("empty",  OffsetContext(inCtx.offset, "empty"))
+    )
+
+    "use iterate strategy on contexts via mapConcat" in {
       Source(Message("a", 1L) :: Nil)
         .asSourceWithContext(msg => OffsetContext(msg.offset))
         .map(_.data)
@@ -110,7 +115,7 @@ class SourceWithContextSpec extends StreamSpec {
           { str =>
             List(1, 2, 3).map(i => s"$str-$i")
           },
-          contextMapping
+          iterateStrategy
         )
         .runWith(TestSink.probe[(String, OffsetContext)])
         .request(3)
@@ -119,17 +124,42 @@ class SourceWithContextSpec extends StreamSpec {
     }
 
     "use iterateOrEmpty strategy on contexts via mapConcat" in {
-      val contextMapping = ContextMapStrategy.iterateOrEmpty(
-        fn = (_: String, inCtx: OffsetContext, _: String, _: Int, _: Boolean) => inCtx,
-        emptyFn = (_: String, inCtx: OffsetContext) => ("empty",  OffsetContext(inCtx.offset, "empty"))
-      )
-
       Source(Message("a", 1L) :: Nil)
         .asSourceWithContext(msg => OffsetContext(msg.offset))
         .map(_.data)
         .mapConcat(
           f = _ => Nil,
-          contextMapping
+          emptyStrategy
+        )
+        .runWith(TestSink.probe[(String, OffsetContext)])
+        .request(1)
+        .expectNext(("empty", OffsetContext(1L, "empty")))
+        .expectComplete()
+    }
+
+    "use iterate strategy on contexts via flatMapConcat" in {
+      Source(Message("a", 1L) :: Nil)
+        .asSourceWithContext(msg => OffsetContext(msg.offset))
+        .map(_.data)
+        .flatMapConcat(
+          { str =>
+            Source(1 to 3).map(i => s"$str-$i")
+          },
+          iterateStrategy
+        )
+        .runWith(TestSink.probe[(String, OffsetContext)])
+        .request(3)
+        .expectNext(("a-1", OffsetContext(1L, "first")), ("a-2", OffsetContext(1L, "within")), ("a-3", OffsetContext(1L, "last")))
+        .expectComplete()
+    }
+
+    "use iterateOrEmpty strategy on contexts via flatMapConcat" in {
+      Source(Message("a", 1L) :: Nil)
+        .asSourceWithContext(msg => OffsetContext(msg.offset))
+        .map(_.data)
+        .flatMapConcat(
+          f = _ => Source.empty[String],
+          emptyStrategy
         )
         .runWith(TestSink.probe[(String, OffsetContext)])
         .request(1)

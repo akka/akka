@@ -17,7 +17,8 @@ import akka.stream.impl.fusing.GraphStages.SingleSource
 import akka.stream.impl.ActorSubscriberMessage
 import akka.stream.impl.SubscriptionTimeoutException
 import akka.stream.impl.TraversalBuilder
-import akka.stream.impl.{ Buffer => BufferImpl }
+import akka.stream.impl.fusing.FlattenMergeWithContext.{InElement, NextElement}
+import akka.stream.impl.{Buffer => BufferImpl}
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.util.OptionVal
@@ -135,19 +136,27 @@ import scala.util.control.NonFatal
 
 /**
  * INTERNAL API
+ *
+ * TODO: Merge with FlatternMerge?
  */
+@InternalApi private[akka] object FlattenMergeWithContext {
+  final case class InElement[In, Ctx](context: Ctx, input: In)
+  final case class NextElement[Out, Ctx](index: Long, context: Ctx, output: Out)
+}
+
 @InternalApi private[akka] final class FlattenMergeWithContext[In, Out, Ctx, InnerMat](
    val breadth: Int,
    val strategy: ContextMapStrategy.Iterate[In, Ctx, Out]
-  ) extends GraphStage[FlowShape[(Graph[SourceShape[(Out, Ctx)], InnerMat], In), (Out, Ctx)]] {
-  private val in = Inlet[(Graph[SourceShape[(Out, Ctx)], InnerMat], In)]("FlattenMergeWithContext.in")
+  ) extends GraphStage[FlowShape[(Graph[SourceShape[(Out, Ctx)], InnerMat], InElement[In, Ctx]), (Out, Ctx)]] {
+
+  private val in = Inlet[(Graph[SourceShape[(Out, Ctx)], InnerMat], InElement[In, Ctx])]("FlattenMergeWithContext.in")
   private val out = Outlet[(Out, Ctx)]("FlattenMergeWithContext.out")
 
   override def initialAttributes = DefaultAttributes.flattenMerge
   override val shape = FlowShape(in, out)
 
   override def createLogic(enclosingAttributes: Attributes) = new GraphStageLogic(shape) {
-    var sources = Set.empty[SubSinkInlet[(Out, Ctx)]]
+    var sources = immutable.Map[SubSinkInlet[(Out, Ctx)], (InElement[In, Ctx], Option[NextElement[Out, Ctx]])]()
     var pendingSingleSources = 0
     def activeSources = sources.size + pendingSingleSources
 
@@ -171,8 +180,8 @@ import scala.util.control.NonFatal
 
     setHandler(in, new InHandler {
       override def onPush(): Unit = {
-        val (source, inputElement @ _) : (Graph[SourceShape[(Out, Ctx)], InnerMat], In) = grab(in)
-        addSource(source)
+        val (source, inputElement): (Graph[SourceShape[(Out, Ctx)], InnerMat], InElement[In, Ctx]) = grab(in)
+        addSource(source, inputElement)
         if (activeSources < breadth) tryPull(in)
       }
       override def onUpstreamFinish(): Unit = if (activeSources == 0) completeStage()
@@ -190,13 +199,15 @@ import scala.util.control.NonFatal
       override def onPull(): Unit = if (queue.nonEmpty && isAvailable(out)) pushOut()
     }
 
-    def addSource(source: Graph[SourceShape[(Out, Ctx)], InnerMat]): Unit = {
+    def addSource(source: Graph[SourceShape[(Out, Ctx)], InnerMat], inputElement: InElement[In, Ctx]): Unit = {
       // If it's a SingleSource or wrapped such we can push the element directly instead of materializing it.
       // Have to use AnyRef because of OptionVal null value.
       TraversalBuilder.getSingleSource(source.asInstanceOf[Graph[SourceShape[AnyRef], InnerMat]]) match {
         case OptionVal.Some(single) =>
           if (isAvailable(out) && queue.isEmpty) {
-            push(out, single.elem.asInstanceOf[(Out, Ctx)])
+            val (outElement, ctx) = single.elem.asInstanceOf[(Out, Ctx)]
+            val outCtx = strategy.iterateFn(inputElement.input, ctx, outElement, 0, false)
+            push(out, (outElement, outCtx))
           } else {
             queue.enqueue(single)
             pendingSingleSources += 1
@@ -205,20 +216,48 @@ import scala.util.control.NonFatal
           val sinkIn = new SubSinkInlet[(Out, Ctx)]("FlattenMergeWithContext")
           sinkIn.setHandler(new InHandler {
             override def onPush(): Unit = {
-              if (isAvailable(out)) {
-                push(out, sinkIn.grab())
-                sinkIn.pull()
-              } else {
-                queue.enqueue(sinkIn)
+              sources(sinkIn) match {
+                case (inputElement, Some(NextElement(index, ctx, outElement))) if isAvailable(out) =>
+                  grabAndPull(sinkIn, inputElement, index + 1)
+                  val outCtx = strategy.iterateFn(inputElement.input, ctx, outElement, index, true)
+                  push(out, (outElement, outCtx))
+                case (inputElement, None) if isAvailable(out) =>
+                  grabAndPull(sinkIn, inputElement, index = 0)
+                case _ =>
+                  queue.enqueue(sinkIn)
               }
             }
-            override def onUpstreamFinish(): Unit = if (!sinkIn.isAvailable) removeSource(sinkIn)
+            override def onUpstreamFinish(): Unit = {
+              sources(sinkIn) match {
+                case (InElement(_, element), Some(NextElement(index, ctx, outElement))) if isAvailable(out) =>
+                  val outCtx = strategy.iterateFn(element, ctx, outElement, index, false)
+                  push(out, (outElement, outCtx))
+                case (InElement(ctx, element), None) if isAvailable(out) =>
+                  strategy match {
+                    case ContextMapStrategy.Iterate(_, Some(f)) =>
+                      val (noneOut, noneOutContext): (Out, Ctx) = f(element, ctx)
+                      push(out, (noneOut, noneOutContext))
+                    case _ => ()
+                  }
+                case _ =>
+              }
+              if (!sinkIn.isAvailable) removeSource(sinkIn)
+            }
           })
           sinkIn.pull()
-          sources += sinkIn
+          sources = sources.updated(sinkIn, (inputElement, None.asInstanceOf[Option[NextElement[Out, Ctx]]]))
           val graph = Source.fromGraph(source).to(sinkIn.sink)
           interpreter.subFusingMaterializer.materialize(graph, defaultAttributes = enclosingAttributes)
       }
+    }
+
+    /**
+     * Grab the next element for the subsink and queue it in the sources Map.
+     */
+    def grabAndPull(sinkIn: SubSinkInlet[(Out, Ctx)], inputElement: InElement[In, Ctx], index: Long): Unit = {
+      val (nextOutElement, nextCtx) = sinkIn.grab()
+      sources = sources.updated(sinkIn, (inputElement, Some(NextElement(index, nextCtx, nextOutElement))))
+      sinkIn.pull()
     }
 
     def removeSource(src: AnyRef): Unit = {
@@ -233,8 +272,7 @@ import scala.util.control.NonFatal
       if (activeSources == 0 && isClosed(in)) completeStage()
     }
 
-    override def postStop(): Unit = sources.foreach(_.cancel())
-
+    override def postStop(): Unit = sources.keys.foreach(_.cancel())
   }
 
   override def toString: String = s"FlattenMergeWithContext($breadth)"
