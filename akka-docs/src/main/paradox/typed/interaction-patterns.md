@@ -246,6 +246,7 @@ Java
 **Problems:**
 
 The returned `ActorRef` ignores all messages sent to it, therefore it should be used carefully.
+ 
  * Passing it around inadvertently as if it was a normal `ActorRef` may result in broken actor-to-actor interactions.
  * Using it when performing an `ask` from outside the Actor System will cause the @scala[`Future`]@java[`CompletionStage`] returned by the `ask` to timeout since it will never complete.
  * Finally, it's legal to `watch` it, but since it's of a special kind, it never terminates and therefore you will never receive a `Terminated` signal from it.
