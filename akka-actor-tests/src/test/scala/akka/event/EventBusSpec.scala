@@ -172,9 +172,8 @@ class ActorEventBusSpec(conf: Config) extends EventBusSpec("ActorEventBus", conf
   import akka.event.ActorEventBusSpec._
   import EventBusSpec.TestActorWrapperActor
 
-  def this() {
+  def this() =
     this(ConfigFactory.parseString("akka.actor.debug.event-stream = on").withFallback(AkkaSpec.testConf))
-  }
 
   type BusType = MyActorEventBus
   def createNewEventBus(): BusType = new MyActorEventBus(system)
