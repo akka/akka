@@ -84,6 +84,10 @@ import com.typesafe.config.Config
  * The `producerId` is used in logging and included as MDC entry with key `"producerId"`. It's propagated
  * to the `ConsumerController` and is useful for correlating log messages. It can be any `String` but it's
  * recommended to use a unique identifier of representing the producer.
+ *
+ * If the `DurableProducerQueue` is defined it is created as a child actor of the `ShardingProducerController` actor.
+ * `ProducerController` actors are created for each destination entity. Those child actors use the same dispatcher
+ * as the parent `ShardingProducerController`.
  */
 @ApiMayChange // TODO #28719 when removing ApiMayChange consider removing `case class` for some of the messages
 object ShardingProducerController {
