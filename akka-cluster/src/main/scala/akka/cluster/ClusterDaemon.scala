@@ -177,7 +177,7 @@ private[cluster] object InternalClusterAction {
   final case class PublishChanges(state: MembershipState) extends PublishMessage
   final case class PublishEvent(event: ClusterDomainEvent) extends PublishMessage
 
-  final case object ExitingCompleted
+  case object ExitingCompleted
 
 }
 

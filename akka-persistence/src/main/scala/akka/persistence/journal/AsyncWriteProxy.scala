@@ -98,7 +98,7 @@ private[persistence] trait AsyncWriteProxy extends AsyncWriteJournal with Stash 
  */
 private[persistence] object AsyncWriteProxy {
   final case class SetStore(ref: ActorRef)
-  final case object InitTimeout
+  case object InitTimeout
 }
 
 /**

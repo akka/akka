@@ -36,7 +36,7 @@ object ExternalShardAllocationStrategy {
 
   // local only messages
   private[akka] final case class GetShardLocation(shard: ShardId)
-  private[akka] final case object GetShardLocations
+  private[akka] case object GetShardLocations
   private[akka] final case class GetShardLocationsResponse(desiredAllocations: Map[ShardId, Address])
   private[akka] final case class GetShardLocationResponse(address: Option[Address])
 

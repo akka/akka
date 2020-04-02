@@ -30,9 +30,9 @@ object SocketUtil {
   }
 
   sealed trait Protocol
-  final case object Tcp extends Protocol
-  final case object Udp extends Protocol
-  final case object Both extends Protocol
+  case object Tcp extends Protocol
+  case object Udp extends Protocol
+  case object Both extends Protocol
 
   /** @return A port on 'localhost' that is currently available */
   def temporaryLocalPort(udp: Boolean = false): Int = temporaryServerAddress("localhost", udp).getPort

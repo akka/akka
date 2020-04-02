@@ -44,10 +44,10 @@ object EventSourcedBehaviorRetentionSpec extends Matchers {
     """)
 
   sealed trait Command extends CborSerializable
-  final case object Increment extends Command
+  case object Increment extends Command
   final case class IncrementWithPersistAll(nr: Int) extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
-  final case object StopIt extends Command
+  case object StopIt extends Command
 
   final case class WrappedSignal(signal: EventSourcedSignal)
 

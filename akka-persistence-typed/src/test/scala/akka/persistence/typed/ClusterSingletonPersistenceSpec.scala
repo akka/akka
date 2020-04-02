@@ -32,7 +32,7 @@ object ClusterSingletonPersistenceSpec {
   sealed trait Command
   final case class Add(s: String) extends Command
   final case class Get(replyTo: ActorRef[String]) extends Command
-  private final case object StopPlz extends Command
+  private case object StopPlz extends Command
 
   val persistentActor: Behavior[Command] =
     EventSourcedBehavior[Command, String, String](

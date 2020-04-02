@@ -180,7 +180,7 @@ import akka.util.unused
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case object PopAttributes extends Traversal
+@InternalApi private[akka] case object PopAttributes extends Traversal
 
 /**
  * INTERNAL API
@@ -190,7 +190,7 @@ import akka.util.unused
 /**
  * INTERNAL API
  */
-@InternalApi private[akka] final case object ExitIsland extends Traversal
+@InternalApi private[akka] case object ExitIsland extends Traversal
 
 /**
  * INTERNAL API

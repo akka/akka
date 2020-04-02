@@ -424,5 +424,5 @@ private final case class BackoffOnFailureOptionsImpl[T](
 }
 
 private[akka] sealed trait BackoffReset
-private[akka] final case object ManualReset extends BackoffReset
+private[akka] case object ManualReset extends BackoffReset
 private[akka] final case class AutoReset(resetBackoff: FiniteDuration) extends BackoffReset

@@ -30,7 +30,7 @@ private[akka] object ActorTestKitGuardian {
   final case class StopActor[T](ref: ActorRef[T], replyTo: ActorRef[Ack.type]) extends TestKitCommand
   final case class ActorStopped[T](replyTo: ActorRef[Ack.type]) extends TestKitCommand
 
-  final case object Ack
+  case object Ack
 
   val testKitGuardian: Behavior[TestKitCommand] = Behaviors.receive[TestKitCommand] {
     case (context, SpawnActor(name, behavior, reply, props)) =>

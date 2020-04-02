@@ -217,7 +217,7 @@ object ClusterSingletonManager {
 
     final case class HandOverRetry(count: Int)
     final case class TakeOverRetry(count: Int)
-    final case object LeaseRetry
+    case object LeaseRetry
     case object Cleanup
     case object StartOldestChangedBuffer
 

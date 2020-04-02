@@ -203,7 +203,7 @@ object ShardRegion {
    * the `ShardRegion` and then the `ShardRegion` actor will be stopped. You can `watch`
    * it to know when it is completed.
    */
-  @SerialVersionUID(1L) final case object GracefulShutdown extends ShardRegionCommand
+  @SerialVersionUID(1L) case object GracefulShutdown extends ShardRegionCommand
 
   /**
    * We must be sure that a shard is initialized before to start send messages to it.
@@ -226,7 +226,7 @@ object ShardRegion {
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    */
-  @SerialVersionUID(1L) final case object GetCurrentRegions extends ShardRegionQuery with ClusterShardingSerializable
+  @SerialVersionUID(1L) case object GetCurrentRegions extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
    * Java API:

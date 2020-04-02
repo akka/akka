@@ -246,7 +246,7 @@ object BackoffSupervisor {
    * Send this message to the `BackoffSupervisor` and it will reply with
    * [[BackoffSupervisor.CurrentChild]] containing the `ActorRef` of the current child, if any.
    */
-  final case object GetCurrentChild
+  case object GetCurrentChild
 
   /**
    * Java API: Send this message to the `BackoffSupervisor` and it will reply with
@@ -270,7 +270,7 @@ object BackoffSupervisor {
    * Send this message to the `BackoffSupervisor` and it will reset the back-off.
    * This should be used in conjunction with `withManualReset` in [[BackoffOptions]].
    */
-  final case object Reset
+  case object Reset
 
   /**
    * Java API: Send this message to the `BackoffSupervisor` and it will reset the back-off.
@@ -282,7 +282,7 @@ object BackoffSupervisor {
    * Send this message to the `BackoffSupervisor` and it will reply with
    * [[BackoffSupervisor.RestartCount]] containing the current restart count.
    */
-  final case object GetRestartCount
+  case object GetRestartCount
 
   /**
    * Java API: Send this message to the `BackoffSupervisor` and it will reply with
