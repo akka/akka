@@ -21,7 +21,7 @@ class AkkaClusterTypedSerializerSpec extends ScalaTestWithActorTestKit with AnyW
 
   "AkkaClusterTypedSerializer" must {
 
-    Seq("ReceptionistEntry" -> ClusterReceptionist.Entry(ref, 666L)).foreach {
+    Seq("ReceptionistEntry" -> ClusterReceptionist.Entry(ref, 666L)(System.currentTimeMillis())).foreach {
       case (scenario, item) =>
         s"resolve serializer for $scenario" in {
           val serializer = SerializationExtension(classicSystem)

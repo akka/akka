@@ -61,13 +61,17 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
       .toByteArray
   }
 
-  private def receptionistEntryToBinary(e: Entry): Array[Byte] =
-    ClusterMessages.ReceptionistEntry
+  private def receptionistEntryToBinary(e: Entry): Array[Byte] = {
+    val b = ClusterMessages.ReceptionistEntry
       .newBuilder()
       .setActorRef(resolver.toSerializationFormat(e.ref))
       .setSystemUid(e.systemUid)
-      .build()
-      .toByteArray
+
+    if (e.createdTimestamp != 0L)
+      b.setCreatedTimestamp(e.createdTimestamp)
+
+    b.build().toByteArray
+  }
 
   private def pubSubMessageFromBinary(bytes: Array[Byte]): TopicImpl.MessagePublished[_] = {
     val parsed = ClusterMessages.PubSubMessagePublished.parseFrom(bytes)
@@ -77,6 +81,7 @@ private[akka] final class AkkaClusterTypedSerializer(override val system: Extend
 
   private def receptionistEntryFromBinary(bytes: Array[Byte]): Entry = {
     val re = ClusterMessages.ReceptionistEntry.parseFrom(bytes)
-    Entry(resolver.resolveActorRef(re.getActorRef), re.getSystemUid)
+    val createdTimestamp = if (re.hasCreatedTimestamp) re.getCreatedTimestamp else 0L
+    Entry(resolver.resolveActorRef(re.getActorRef), re.getSystemUid)(createdTimestamp)
   }
 }
