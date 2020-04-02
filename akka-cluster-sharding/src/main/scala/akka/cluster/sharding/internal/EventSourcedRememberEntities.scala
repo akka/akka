@@ -135,7 +135,7 @@ private[akka] object EventSourcedRememberEntitiesStore {
 /**
  * INTERNAL API
  *
- * Persistent actor keeping the state for the EventSourcedRememberEntities (enabled through `state-store-mode=persistence`).
+ * Persistent actor keeping the state for Akka Persistence backed remember entities (enabled through `state-store-mode=persistence`).
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
@@ -149,7 +149,7 @@ private[akka] final class EventSourcedRememberEntitiesStore(
   import EventSourcedRememberEntitiesStore._
   import settings.tuningParameters._
 
-  log.debug("PersistentShard starting up [{}] [{}]", typeName, shardId)
+  log.debug("Starting up [{}] [{}]", typeName, shardId)
   private var state = State()
   override def persistenceId = s"/sharding/${typeName}Shard/$shardId"
   override def journalPluginId: String = settings.journalPluginId
@@ -160,7 +160,7 @@ private[akka] final class EventSourcedRememberEntitiesStore(
     case EntityStopped(id)                 => state = state.copy(state.entities - id)
     case SnapshotOffer(_, snapshot: State) => state = snapshot
     case RecoveryCompleted =>
-      log.debug("PersistentShard recovery completed shard [{}] with [{}] entities", shardId, state.entities.size)
+      log.debug("Recovery completed for shard [{}] with [{}] entities", shardId, state.entities.size)
   }
 
   override def receiveCommand: Receive = {
@@ -180,39 +180,39 @@ private[akka] final class EventSourcedRememberEntitiesStore(
       sender() ! EntityIds(state.entities)
 
     case e: SaveSnapshotSuccess =>
-      log.debug("PersistentShard snapshot saved successfully")
+      log.debug("Snapshot saved successfully")
       internalDeleteMessagesBeforeSnapshot(e, keepNrOfBatches, snapshotAfter)
 
     case SaveSnapshotFailure(_, reason) =>
-      log.warning("PersistentShard snapshot failure: [{}]", reason.getMessage)
+      log.warning("Snapshot failure: [{}]", reason.getMessage)
 
     case DeleteMessagesSuccess(toSequenceNr) =>
       val deleteTo = toSequenceNr - 1
       val deleteFrom = math.max(0, deleteTo - (keepNrOfBatches * snapshotAfter))
       log.debug(
-        "PersistentShard messages to [{}] deleted successfully. Deleting snapshots from [{}] to [{}]",
+        "Messages to [{}] deleted successfully. Deleting snapshots from [{}] to [{}]",
         toSequenceNr,
         deleteFrom,
         deleteTo)
       deleteSnapshots(SnapshotSelectionCriteria(minSequenceNr = deleteFrom, maxSequenceNr = deleteTo))
 
     case DeleteMessagesFailure(reason, toSequenceNr) =>
-      log.warning("PersistentShard messages to [{}] deletion failure: [{}]", toSequenceNr, reason.getMessage)
+      log.warning("Messages to [{}] deletion failure: [{}]", toSequenceNr, reason.getMessage)
 
     case DeleteSnapshotsSuccess(m) =>
-      log.debug("PersistentShard snapshots matching [{}] deleted successfully", m)
+      log.debug("Snapshots matching [{}] deleted successfully", m)
 
     case DeleteSnapshotsFailure(m, reason) =>
-      log.warning("PersistentShard snapshots matching [{}] deletion failure: [{}]", m, reason.getMessage)
+      log.warning("Snapshots matching [{}] deletion failure: [{}]", m, reason.getMessage)
 
     case StopStore =>
-      log.debug("PersistentShard store stopping")
+      log.debug("Store stopping")
       context.stop(self)
   }
 
   def saveSnapshotWhenNeeded(): Unit = {
     if (lastSequenceNr % snapshotAfter == 0 && lastSequenceNr != 0) {
-      log.debug("PersistentShard saving snapshot, sequence number [{}]", snapshotSequenceNr)
+      log.debug("Saving snapshot, sequence number [{}]", snapshotSequenceNr)
       saveSnapshot(state)
     }
   }
