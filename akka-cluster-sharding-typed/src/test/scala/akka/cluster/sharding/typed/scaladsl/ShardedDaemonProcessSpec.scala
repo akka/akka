@@ -79,6 +79,7 @@ class ShardedDaemonProcessSpec
 
       val started = probe.receiveMessages(5)
       started.toSet.size should ===(5)
+      probe.expectNoMessage()
     }
 
     "restart actors if they stop" in {
@@ -114,7 +115,7 @@ class ShardedDaemonProcessSpec
 
   def docExample(): Unit = {
     // #tag-processing
-    val tags = "tag-1" :: "tag-2" :: "tag-3" :: Nil
+    val tags = Vector("tag-1", "tag-2", "tag-3")
     ShardedDaemonProcess(system).init("TagProcessors", tags.size, id => TagProcessor(tags(id)))
     // #tag-processing
   }

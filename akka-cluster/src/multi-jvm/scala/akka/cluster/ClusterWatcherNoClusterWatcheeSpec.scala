@@ -32,7 +32,6 @@ class ClusterWatcherNoClusterWatcheeConfig(val useUnsafe: Boolean, artery: Boole
       akka.remote.use-unsafe-remote-features-outside-cluster = $useUnsafe
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
-      akka.remote.artery.advanced.flight-recorder.enabled = off
       akka.log-dead-letters = off
       akka.loggers =["akka.testkit.TestEventListener"]
       akka.actor.allow-java-serialization = on

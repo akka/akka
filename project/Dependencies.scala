@@ -24,7 +24,7 @@ object Dependencies {
   val protobufJavaVersion = "3.10.0"
   val logbackVersion = "1.2.3"
 
-  val scala212Version = "2.12.10"
+  val scala212Version = "2.12.11"
   val scala213Version = "2.13.1"
 
   val reactiveStreamsVersion = "1.0.3"
@@ -129,8 +129,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.4" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.4" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.5" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.5" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
@@ -192,11 +192,7 @@ object Dependencies {
         Provided.activation // dockerClient needs javax.activation.DataSource in JDK 11+
       )
 
-  val actorTestkitTyped = l ++= Seq(
-        Provided.logback,
-        Provided.junit,
-        Provided.scalatest,
-        Test.scalatestJUnit)
+  val actorTestkitTyped = l ++= Seq(Provided.logback, Provided.junit, Provided.scalatest, Test.scalatestJUnit)
 
   val remoteDependencies = Seq(netty, aeronDriver, aeronClient)
   val remoteOptionalDependencies = remoteDependencies.map(_ % "optional")
@@ -238,18 +234,15 @@ object Dependencies {
         Test.commonsIo,
         Test.commonsCodec)
 
-  val persistenceQuery = l ++= Seq(
-        Test.scalatest,
-        Test.junit,
-        Test.commonsIo,
-        Provided.levelDB,
-        Provided.levelDBNative)
+  val persistenceQuery = l ++= Seq(Test.scalatest, Test.junit, Test.commonsIo, Provided.levelDB, Provided.levelDBNative)
 
   val persistenceTck = l ++= Seq(
         Test.scalatest.withConfigurations(Some("compile")),
         Test.junit.withConfigurations(Some("compile")),
         Provided.levelDB,
         Provided.levelDBNative)
+
+  val persistenceTestKit = l ++= Seq(Test.scalatest)
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
@@ -277,7 +270,7 @@ object Dependencies {
 
   val docs = l ++= Seq(Test.scalatest, Test.junit, Docs.sprayJson, Docs.gson, Provided.levelDB)
 
-  val benchJmh = l ++= Seq(Provided.levelDB, Provided.levelDBNative, Compile.jctools)
+  val benchJmh = l ++= Seq(logback, Provided.levelDB, Provided.levelDBNative, Compile.jctools)
 
   // akka stream
 

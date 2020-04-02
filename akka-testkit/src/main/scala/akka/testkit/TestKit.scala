@@ -346,6 +346,44 @@ trait TestKitBase {
   }
 
   /**
+   * Evaluate the given assert every `interval` until exception is thrown or `max` timeout is expired.
+   *
+   * Returns the result of last evaluation of the assertion.
+   *
+   * If no timeout is given, take it from the innermost enclosing `within`
+   * block.
+   *
+   * Note that the timeout is scaled using Duration.dilated,
+   * which uses the configuration entry "akka.test.timefactor".
+   */
+  def assertForDuration[A](a: => A, max: FiniteDuration, interval: Duration = 100.millis): A = {
+    val _max = remainingOrDilated(max)
+    val stop = now + _max
+
+    @tailrec
+    def poll(t: Duration): A = {
+      // cannot use null-ness of result as signal it failed
+      // because Java API and not wanting to return a value will be "return null"
+      val instantNow = now
+      val result =
+        try {
+          a
+        } catch {
+          case e: Throwable => throw e
+        }
+
+      if (instantNow < stop) {
+        Thread.sleep(t.toMillis)
+        poll((stop - now) min interval)
+      } else {
+        result
+      }
+    }
+
+    poll(max min interval)
+  }
+
+  /**
    * Execute code block while bounding its execution time between `min` and
    * `max`. `within` blocks may be nested. All methods in this trait which
    * take maximum wait times are available in a version which implicitly uses

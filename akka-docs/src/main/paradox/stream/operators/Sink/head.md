@@ -17,6 +17,14 @@ Materializes into a @scala[`Future`] @java[`CompletionStage`] which completes wi
 Materializes into a @scala[`Future`] @java[`CompletionStage`] which completes with the first value arriving,
 after this the stream is canceled. If no element is emitted, the @scala[`Future`] @java[`CompletionStage`] is failed.
 
+## Example
+
+Scala
+:   @@snip [HeadSinkSpec.scala](/akka-stream-tests/src/test/scala/akka/stream/scaladsl/HeadSinkSpec.scala) { #head-operator-example }
+
+Java
+:   @@snip [SinkDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SinkDocExamples.java) { #head-operator-example }
+
 ## Reactive Streams semantics
 
 @@@div { .callout }

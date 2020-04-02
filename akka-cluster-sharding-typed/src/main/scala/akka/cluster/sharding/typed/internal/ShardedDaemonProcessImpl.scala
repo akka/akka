@@ -108,7 +108,7 @@ private[akka] final class ShardedDaemonProcessImpl(system: ActorSystem[_])
 
     // One shard per actor identified by the numeric id encoded in the entity id
     val numberOfShards = numberOfInstances
-    val entityIds = (0 to numberOfInstances).map(_.toString)
+    val entityIds = (0 until numberOfInstances).map(_.toString)
 
     val shardingSettings = {
       val shardingBaseSettings =

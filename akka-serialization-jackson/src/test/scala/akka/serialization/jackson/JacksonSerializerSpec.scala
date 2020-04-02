@@ -17,7 +17,6 @@ import java.util.logging.FileHandler
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
-
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -51,7 +50,9 @@ import com.fasterxml.jackson.core.JsonParser
 import com.fasterxml.jackson.core.JsonGenerator
 import com.fasterxml.jackson.core.StreamReadFeature
 import com.fasterxml.jackson.core.StreamWriteFeature
+import com.fasterxml.jackson.core.`type`.TypeReference
 import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
 import com.github.ghik.silencer.silent
 
 object ScalaTestMessages {
@@ -95,6 +96,21 @@ object ScalaTestMessages {
   final case class Cockroach(name: String) extends Animal
 
   final case class OldCommandNotInBindings(name: String)
+
+  // #jackson-scala-enumeration
+  object Planet extends Enumeration {
+    type Planet = Value
+    val Mercury, Venus, Earth, Mars, Krypton = Value
+  }
+
+  // Uses default Jackson serialization format for Scala Enumerations
+  final case class Alien(name: String, planet: Planet.Planet) extends TestMessage
+
+  // Serializes planet values as a JsonString
+  class PlanetType extends TypeReference[Planet.type] {}
+  final case class Superhero(name: String, @JsonScalaEnumeration(classOf[PlanetType]) planet: Planet.Planet)
+      extends TestMessage
+  // #jackson-scala-enumeration
 
 }
 
@@ -463,6 +479,15 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
     }
 
+    "deserialize Enumerations as String when configured" in {
+      val json = """{"name":"Superman", "planet":"Krypton"}"""
+
+      val expected = Superhero("Superman", Planet.Krypton)
+      val serializer = serializerFor(expected)
+
+      deserializeFromJsonString(json, serializer.identifier, serializer.manifest(expected)) should ===(expected)
+    }
+
     "compress large payload with gzip" in {
       val conf = JacksonObjectMapperProvider.configForBinding("jackson-json", system.settings.config)
       val compressionAlgo = conf.getString("compression.algorithm")
@@ -720,6 +745,14 @@ abstract class JacksonSerializerSpec(serializerName: String)
     "serialize message with boolean property" in {
       checkSerialization(BooleanCommand(true))
       checkSerialization(BooleanCommand(false))
+    }
+
+    "serialize message with Enumeration property (using Jackson legacy format)" in {
+      checkSerialization(Alien("E.T.", Planet.Mars))
+    }
+
+    "serialize message with Enumeration property as a String" in {
+      checkSerialization(Superhero("Kal El", Planet.Krypton))
     }
 
     "serialize message with Optional property" in {

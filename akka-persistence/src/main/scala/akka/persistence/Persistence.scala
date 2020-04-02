@@ -13,13 +13,14 @@ import akka.persistence.journal.{ EventAdapters, IdentityEventAdapters }
 import akka.util.Collections.EmptyImmutableSeq
 import akka.util.Helpers.ConfigOps
 import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.annotation.tailrec
 import scala.concurrent.duration._
-import akka.util.Reflect
 
+import akka.util.Reflect
 import scala.util.control.NonFatal
+
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 
 /**
  * Persistence configuration.
@@ -348,6 +349,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * When configured, uses `journalPluginId` as absolute path to the journal configuration entry.
    * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
    */
+  @InternalStableApi
   private[akka] final def journalFor(
       journalPluginId: String,
       journalPluginConfig: Config = ConfigFactory.empty): ActorRef = {
@@ -364,6 +366,7 @@ class Persistence(val system: ExtendedActorSystem) extends Extension {
    * When configured, uses `snapshotPluginId` as absolute path to the snapshot store configuration entry.
    * Configuration entry must contain few required fields, such as `class`. See `src/main/resources/reference.conf`.
    */
+  @InternalStableApi
   private[akka] final def snapshotStoreFor(
       snapshotPluginId: String,
       snapshotPluginConfig: Config = ConfigFactory.empty): ActorRef = {

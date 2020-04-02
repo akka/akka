@@ -51,7 +51,7 @@ import org.slf4j.{ Logger, LoggerFactory }
 
   import ActorRefAdapter.sendSystemMessage
 
-  override private[akka] def classicSystem: classic.ActorSystem = system
+  override def classicSystem: classic.ActorSystem = system
 
   // Members declared in akka.actor.typed.ActorRef
   override def tell(msg: T): Unit = {
@@ -155,12 +155,5 @@ private[akka] object ActorSystemAdapter {
       new LoadTypedExtensions(system)
   }
 
-  def toClassic[U](sys: ActorSystem[_]): classic.ActorSystem =
-    sys match {
-      case adapter: ActorSystemAdapter[_] => adapter.classicSystem
-      case _ =>
-        throw new UnsupportedOperationException(
-          "Only adapted classic ActorSystem permissible " +
-          s"($sys of class ${sys.getClass.getName})")
-    }
+  def toClassic[U](sys: ActorSystem[_]): classic.ActorSystem = sys.classicSystem
 }

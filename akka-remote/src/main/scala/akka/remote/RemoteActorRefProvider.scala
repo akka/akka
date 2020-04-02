@@ -372,9 +372,6 @@ private[akka] class RemoteActorRefProvider(
     if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy, async)
     else {
 
-      if (!system.dispatchers.hasDispatcher(props.dispatcher))
-        throw new ConfigurationException(s"Dispatcher [${props.dispatcher}] not configured for path $path")
-
       /*
        * This needs to deal with “mangled” paths, which are created by remote
        * deployment, also in this method. The scheme is the following:

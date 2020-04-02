@@ -207,6 +207,9 @@ Scala
 Java
 :   @@snip [RateTransformationDocTest.java](/akka-docs/src/test/java/jdocs/stream/RateTransformationDocTest.java) { #conflate-sample }
 
+See also @ref:[`conflate`](operators/Source-or-Flow/conflate.md) and @ref:[conflateWithSeed`](operators/Source-or-Flow/conflateWithSeed.md) for more information and examples.
+
+
 ### Understanding extrapolate and expand
 
 Now we will discuss two operators, `extrapolate` and `expand`, helping to deal with slow producers that are unable to keep 

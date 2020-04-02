@@ -36,6 +36,8 @@ You may want to use this operation for example to apply an average operation on 
 while the downstream backpressures. This allows us to keep processing upstream elements, and give an average
 number to the downstream once it is ready to process the next one.
 
+See @ref:[Rate transformation](../../stream-rate.md#rate-transformation) for more information and examples.
+
 ## Reactive Streams semantics 
 
 @@@div { .callout }

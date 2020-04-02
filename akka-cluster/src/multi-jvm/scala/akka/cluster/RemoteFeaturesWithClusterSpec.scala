@@ -29,7 +29,6 @@ class ClusterRemoteFeaturesConfig(artery: Boolean) extends MultiNodeConfig {
       akka.remote.log-remote-lifecycle-events = off
       akka.remote.artery.enabled = $artery
       akka.remote.artery.canonical.port = 0
-      akka.remote.artery.advanced.flight-recorder.enabled = off
       akka.log-dead-letters-during-shutdown = off
       """).withFallback(MultiNodeClusterSpec.clusterConfig)
 

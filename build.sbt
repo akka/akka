@@ -60,6 +60,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   persistenceShared,
   persistenceTck,
   persistenceTyped,
+  persistenceTestkit,
   protobuf,
   protobufV3,
   remote,
@@ -74,6 +75,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
+  .enablePlugins(DeployRsync)
   .settings(rootSettings: _*)
   .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
@@ -194,7 +196,8 @@ lazy val docs = akkaModule("akka-docs")
     clusterTyped % "compile->compile;test->test",
     clusterShardingTyped % "compile->compile;test->test",
     actorTypedTests % "compile->compile;test->test",
-    streamTestkit % "compile->compile;test->test")
+    streamTestkit % "compile->compile;test->test",
+    persistenceTestkit % "compile->compile;test->test")
   .settings(Dependencies.docs)
   .settings(Paradox.settings)
   .settings(ParadoxSupport.paradoxWithCustomDirectives)
@@ -268,6 +271,15 @@ lazy val persistenceTck = akkaModule("akka-persistence-tck")
   .settings(fork in Test := true)
   .disablePlugins(MimaPlugin)
 
+lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
+  .dependsOn(
+    persistenceTyped % "compile->compile;provided->provided;test->test",
+    testkit % "compile->compile;test->test",
+    persistenceTck % "test")
+  .settings(Dependencies.persistenceTestKit)
+  .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
+  .disablePlugins(MimaPlugin)
+
 lazy val protobuf = akkaModule("akka-protobuf")
   .settings(OSGi.protobuf)
   .settings(AutomaticModuleName.settings("akka.protobuf"))
@@ -285,7 +297,6 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
           .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
           .inLibrary(Dependencies.Compile.protobufRuntime)),
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeBin = false),
-    crossPaths := false,
     autoScalaLibrary := false, // do not include scala dependency in pom
     exportJars := true, // in dependent projects, use assembled and shaded jar
     makePomConfiguration := makePomConfiguration.value
@@ -317,7 +328,7 @@ lazy val remote =
 lazy val remoteTests = akkaModule("akka-remote-tests")
   .dependsOn(
     actorTests % "test->test",
-    remote % "test->test",
+    remote % "compile->CompileJdk9;test->test",
     streamTestkit % "test",
     multiNodeTestkit,
     jackson % "test->test")
@@ -389,6 +400,7 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
       import akka.util.Timeout
       implicit val timeout = Timeout(5.seconds)
     """)
+  .enablePlugins(Jdk9)
 
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
@@ -426,11 +438,13 @@ lazy val clusterTyped = akkaModule("akka-cluster-typed")
 
 lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
   .dependsOn(
+    actorTyped % "compile->CompileJdk9",
     clusterTyped % "compile->compile;test->test;multi-jvm->multi-jvm",
     clusterSharding,
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",
+    remote % "compile->CompileJdk9;test->test",
     remoteTests % "test->test",
     jackson % "test->test")
   .settings(javacOptions += "-parameters") // for Jackson
@@ -457,10 +471,7 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .settings(Dependencies.actorTestkitTyped)
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
-  .dependsOn(
-    actorTyped,
-    actorTestkitTyped % "compile->compile;test->test"
-  )
+  .dependsOn(actorTyped % "compile->CompileJdk9", actorTestkitTyped % "compile->compile;test->test")
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)

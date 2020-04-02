@@ -804,7 +804,7 @@ to the application configuration. If not specified, an exception will be throw w
 
 For more advanced schema evolution techniques refer to the @ref:[Persistence - Schema Evolution](persistence-schema-evolution.md) documentation.
 
-## Testing
+## Testing with LevelDB journal
 
 When running tests with LevelDB default settings in `sbt`, make sure to set `fork := true` in your sbt project. Otherwise, you'll see an `UnsatisfiedLinkError`. Alternatively, you can switch to a LevelDB Java port by setting
 
@@ -889,5 +889,5 @@ Java
 ## See also
 
 * @ref[Persistent FSM](persistence-fsm.md)
-* @ref[Building a new storage backend](persistence-plugins.md)
+* @ref[Persistence plugins](persistence-plugins.md)
 * @ref[Building a new storage backend](persistence-journals.md)

@@ -5,8 +5,10 @@
 package akka.remote.testconductor
 
 import java.util.concurrent.TimeoutException
+
 import akka.actor._
 import akka.remote.testconductor.RemoteConnection.getAddrString
+
 import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
@@ -25,9 +27,12 @@ import org.jboss.netty.channel.{
 import akka.pattern.{ ask, AskTimeoutException }
 import akka.event.{ Logging, LoggingAdapter }
 import java.net.{ ConnectException, InetSocketAddress }
+
 import akka.remote.transport.ThrottlerTransportAdapter.{ Blackhole, SetThrottle, TokenBucket, Unthrottled }
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.util.ccompat._
+
+import scala.util.control.NonFatal
 
 @ccompatUsedUntil213
 object Player {
@@ -300,7 +305,13 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
 
   onTermination {
     case StopEvent(_, _, Data(Some(channel), _)) =>
-      channel.close()
+      try {
+        channel.close()
+      } catch {
+        case NonFatal(ex) =>
+          // silence this one to not make tests look like they failed, it's not really critical
+          log.debug(s"Failed closing channel with ${ex.getClass.getName} ${ex.getMessage}")
+      }
   }
 
   initialize()

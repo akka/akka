@@ -63,7 +63,7 @@ akka {
 }
 ```
 
-As you can see in the example above there are five things you need to add to get started:
+As you can see in the example above there are four things you need to add to get started:
 
  * Change provider from `local`. We recommend using @ref:[Akka Cluster](cluster-usage.md) over using remoting directly.
  * Disable artery remoting. Artery is the default remoting implementation since `2.6.0`
