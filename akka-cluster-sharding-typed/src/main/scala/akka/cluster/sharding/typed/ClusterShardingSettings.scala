@@ -127,7 +127,7 @@ object ClusterShardingSettings {
       val updatingStateTimeout: FiniteDuration,
       val waitingForStateTimeout: FiniteDuration) {
 
-    def this(classic: ClassicShardingSettings.TuningParameters) {
+    def this(classic: ClassicShardingSettings.TuningParameters) =
       this(
         bufferSize = classic.bufferSize,
         coordinatorFailureBackoff = classic.coordinatorFailureBackoff,
@@ -146,8 +146,6 @@ object ClusterShardingSettings {
         entityRecoveryStrategy = classic.entityRecoveryStrategy,
         entityRecoveryConstantRateStrategyFrequency = classic.entityRecoveryConstantRateStrategyFrequency,
         entityRecoveryConstantRateStrategyNumberOfEntities = classic.entityRecoveryConstantRateStrategyNumberOfEntities)
-
-    }
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",

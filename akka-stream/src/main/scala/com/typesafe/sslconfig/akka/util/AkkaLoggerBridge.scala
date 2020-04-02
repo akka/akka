@@ -17,7 +17,7 @@ final class AkkaLoggerFactory(system: ActorSystem) extends LoggerFactory {
 }
 
 class AkkaLoggerBridge(bus: EventStream, logSource: String, logClass: Class[_]) extends NoDepsLogger {
-  def this(bus: EventStream, clazz: Class[_]) { this(bus, clazz.getCanonicalName, clazz) }
+  def this(bus: EventStream, clazz: Class[_]) = this(bus, clazz.getCanonicalName, clazz)
 
   override def isDebugEnabled: Boolean = true
 

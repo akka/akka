@@ -371,9 +371,8 @@ object Framing {
       extends GraphStage[FlowShape[ByteString, ByteString]] {
 
     //for the sake of binary compatibility
-    def this(lengthFieldLength: Int, lengthFieldOffset: Int, maximumFrameLength: Int, byteOrder: ByteOrder) {
+    def this(lengthFieldLength: Int, lengthFieldOffset: Int, maximumFrameLength: Int, byteOrder: ByteOrder) =
       this(lengthFieldLength, lengthFieldOffset, maximumFrameLength, byteOrder, None)
-    }
 
     private val minimumChunkSize = lengthFieldOffset + lengthFieldLength
     private val intDecoder = byteOrder match {

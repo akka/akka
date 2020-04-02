@@ -104,7 +104,7 @@ final class DistributedPubSubSettings(
       routingLogic: RoutingLogic,
       gossipInterval: FiniteDuration,
       removedTimeToLive: FiniteDuration,
-      maxDeltaElements: Int) {
+      maxDeltaElements: Int) =
     this(
       role,
       routingLogic,
@@ -112,7 +112,6 @@ final class DistributedPubSubSettings(
       removedTimeToLive,
       maxDeltaElements,
       sendToDeadLettersWhenNoSubscribers = true)
-  }
 
   require(
     !routingLogic.isInstanceOf[ConsistentHashingRoutingLogic],

@@ -45,7 +45,7 @@ class LocalConcurrencySpec(_system: ActorSystem)
     with ImplicitSender {
   import LocalConcurrencySpec._
 
-  def this() {
+  def this() =
     this(
       ActorSystem(
         "LocalConcurrencySpec",
@@ -54,7 +54,6 @@ class LocalConcurrencySpec(_system: ActorSystem)
       akka.remote.classic.netty.tcp.port=0
       akka.remote.artery.canonical.port = 0
       """)))
-  }
 
   override def afterAll(): Unit = {
     shutdown(system)
