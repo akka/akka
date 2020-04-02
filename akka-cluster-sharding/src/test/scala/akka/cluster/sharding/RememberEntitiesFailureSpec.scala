@@ -7,23 +7,22 @@ package akka.cluster.sharding
 import akka.Done
 import akka.actor.Actor
 import akka.actor.ActorLogging
-import akka.actor.ActorSystem
+import akka.actor.ActorRef
 import akka.actor.Props
 import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
-import akka.pattern.after
+import akka.cluster.sharding.internal.RememberEntitiesShardStoreProvider
 import akka.testkit.AkkaSpec
-import akka.testkit.EventFilter
 import akka.testkit.TestException
 import akka.testkit.TestProbe
 import akka.testkit.WithLogCapturing
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.Future
 import scala.concurrent.duration._
 
 object RememberEntitiesFailureSpec {
@@ -36,8 +35,9 @@ object RememberEntitiesFailureSpec {
       akka.cluster.sharding.distributed-data.durable.keys = []
       akka.cluster.sharding.state-store-mode = custom
       akka.cluster.sharding.custom-store = "akka.cluster.sharding.RememberEntitiesFailureSpec$$FakeStore"
-      # quick backoff for stop tests
+      # quick backoffs
       akka.cluster.sharding.entity-restart-backoff = 1s
+      akka.cluster.sharding.shard-failure-backoff = 1s
     """)
 
   class EntityActor extends Actor with ActorLogging {
@@ -62,52 +62,67 @@ object RememberEntitiesFailureSpec {
   }
 
   sealed trait Fail
-  case object Immediate extends Fail
-  case object InFutureImmediate extends Fail
-  case object InFutureLater extends Fail
+  case object NoResponse extends Fail
+  case object CrashStore extends Fail
 
-  // outside store since shard allocation triggers initialization of store
+  // outside store since shard allocation triggers initialization of store and we can't interact with the fake store actor before that
   @volatile var failInitial = Map.empty[ShardId, Fail]
 
-  case class StoreCreated(store: FakeStore, shardId: ShardId)
-  case class FakeStore(system: ActorSystem, settings: ClusterShardingSettings, typeName: String, shardId: ShardId)
-      extends RememberEntitiesShardStore {
+  case class StoreCreated(store: ActorRef, shardId: ShardId)
+  @silent("never used")
+  class FakeStore(settings: ClusterShardingSettings, typeName: String) extends RememberEntitiesShardStoreProvider {
+    override def shardStoreProps(shardId: ShardId): Props = FakeStoreActor.props(shardId)
+  }
+  object FakeStoreActor {
+    def props(shardId: ShardId): Props = Props(new FakeStoreActor(shardId))
 
-    implicit val ec = system.dispatcher
-    @volatile var failAddEntity = Map.empty[EntityId, Fail]
-    @volatile var failRemoveEntity = Map.empty[EntityId, Fail]
+    case class FailAddEntity(entityId: EntityId, whichWay: Fail)
+    case class DoNotFailAddEntity(entityId: EntityId)
+    case class FailRemoveEntity(entityId: EntityId, whichWay: Fail)
+    case class DoNotFailRemoveEntity(entityId: EntityId)
+  }
+  class FakeStoreActor(shardId: ShardId) extends Actor with ActorLogging {
+    import FakeStoreActor._
 
-    system.eventStream.publish(StoreCreated(this, shardId))
+    implicit val ec = context.system.dispatcher
+    private var failAddEntity = Map.empty[EntityId, Fail]
+    private var failRemoveEntity = Map.empty[EntityId, Fail]
 
-    override def getEntities(): Future[Set[EntityId]] = {
-      failInitial.get(shardId) match {
-        case None                    => Future.successful(Set.empty)
-        case Some(Immediate)         => throw TestException("immediate fail")
-        case Some(InFutureImmediate) => Future.failed(TestException("future immediately failed"))
-        case Some(InFutureLater) =>
-          after(50.millis, system.scheduler)(Future.failed(TestException("future failing later")))
-      }
+    context.system.eventStream.publish(StoreCreated(self, shardId))
+
+    override def receive: Receive = {
+      case RememberEntitiesShardStore.GetEntities =>
+        failInitial.get(shardId) match {
+          case None             => sender ! RememberEntitiesShardStore.RememberedEntities(Set.empty)
+          case Some(NoResponse) => log.debug("Sending no response for GetEntities")
+          case Some(CrashStore) => throw TestException("store crash on GetEntities")
+        }
+      case RememberEntitiesShardStore.AddEntity(entityId) =>
+        failAddEntity.get(entityId) match {
+          case None             => sender ! RememberEntitiesShardStore.UpdateDone(entityId)
+          case Some(NoResponse) => log.debug("Sending no response for AddEntity")
+          case Some(CrashStore) => throw TestException("store crash on AddEntity")
+        }
+      case RememberEntitiesShardStore.RemoveEntity(entityId) =>
+        failRemoveEntity.get(entityId) match {
+          case None             => sender ! RememberEntitiesShardStore.UpdateDone(entityId)
+          case Some(NoResponse) => log.debug("Sending no response for RemoveEntity")
+          case Some(CrashStore) => throw TestException("store crash on AddEntity")
+        }
+      case FailAddEntity(id, whichWay) =>
+        failAddEntity = failAddEntity.updated(id, whichWay)
+        sender() ! Done
+      case DoNotFailAddEntity(id) =>
+        failAddEntity = failAddEntity - id
+        sender() ! Done
+      case FailRemoveEntity(id, whichWay) =>
+        failRemoveEntity = failRemoveEntity.updated(id, whichWay)
+        sender() ! Done
+      case DoNotFailRemoveEntity(id) =>
+        failRemoveEntity = failRemoveEntity - id
+        sender() ! Done
+
     }
-
-    override def addEntity(entityId: EntityId): Future[Done] =
-      failAddEntity.get(entityId) match {
-        case None                    => Future.successful(Done)
-        case Some(Immediate)         => throw TestException("immediate fail")
-        case Some(InFutureImmediate) => Future.failed(TestException("future immediately failed"))
-        case Some(InFutureLater) =>
-          after(50.millis, system.scheduler)(Future.failed(TestException("future failing later")))
-      }
-
-    override def removeEntity(entityId: EntityId): Future[Done] =
-      failRemoveEntity.get(entityId) match {
-        case None                    => Future.successful(Done)
-        case Some(Immediate)         => throw TestException("immediate fail")
-        case Some(InFutureImmediate) => Future.failed(TestException("future immediately failed"))
-        case Some(InFutureLater) =>
-          after(50.millis, system.scheduler)(Future.failed(TestException("future failing later")))
-      }
-
-    override def stop(): Unit = ()
   }
 }
 
@@ -127,39 +142,35 @@ class RememberEntitiesFailureSpec
 
   "Remember entities handling in sharding" must {
 
-    List(Immediate, InFutureImmediate, InFutureLater).foreach { wayToFail: Fail =>
-      // FIXME Immediate does not work, should it?
-      if (wayToFail != Immediate) {
-        s"recover when initial remember entities load fails $wayToFail" in {
-          failInitial = Map("1" -> wayToFail)
+    List(NoResponse, CrashStore).foreach { wayToFail: Fail =>
+      s"recover when initial remember entities load fails $wayToFail" in {
+        log.debug("Getting entities for shard 1 will fail")
+        failInitial = Map("1" -> wayToFail)
 
-          try {
-            val probe = TestProbe()
-            val sharding = ClusterSharding(system).start(
-              s"initial-$wayToFail",
-              Props[EntityActor],
-              ClusterShardingSettings(system).withRememberEntities(true),
-              extractEntityId,
-              extractShardId)
+        try {
+          val probe = TestProbe()
+          val sharding = ClusterSharding(system).start(
+            s"initial-$wayToFail",
+            Props[EntityActor],
+            ClusterShardingSettings(system).withRememberEntities(true),
+            extractEntityId,
+            extractShardId)
 
-            // FIXME why two error logs here?
-            EventFilter[TestException](occurrences = 2).intercept {
-              sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
-            }
-            probe.expectNoMessage() // message is lost because shard crashes
+          sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
+          probe.expectNoMessage() // message is lost because shard crashes
 
-            failInitial = Map.empty
+          log.debug("Resetting initial fail")
+          failInitial = Map.empty
 
-            // shard should be restarted and eventually succeed
-            awaitAssert {
-              sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
-              probe.expectMsg("hello-1")
-            }
-
-            system.stop(sharding)
-          } finally {
-            failInitial = Map.empty
+          // shard should be restarted and eventually succeed
+          awaitAssert {
+            sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
+            probe.expectMsg("hello-1")
           }
+
+          system.stop(sharding)
+        } finally {
+          failInitial = Map.empty
         }
       }
 
@@ -181,18 +192,23 @@ class RememberEntitiesFailureSpec
         probe.expectMsg("hello-1")
 
         // hit shard with other entity that will fail
-        shard1Store.failAddEntity = Map("11" -> wayToFail)
-        EventFilter[RuntimeException](occurrences = 1).intercept {
-          sharding.tell(EntityEnvelope(11, "hello-11"), probe.ref)
-        }
+        shard1Store.tell(FakeStoreActor.FailAddEntity("11", wayToFail), storeProbe.ref)
+        storeProbe.expectMsg(Done)
+
+        sharding.tell(EntityEnvelope(11, "hello-11"), probe.ref)
+
         // do we get an answer here? shard crashes
         probe.expectNoMessage()
 
-        shard1Store.failAddEntity = Map.empty
-        awaitAssert {
+        val stopFailingProbe = TestProbe()
+        shard1Store.tell(FakeStoreActor.DoNotFailAddEntity("11"), stopFailingProbe.ref)
+        stopFailingProbe.expectMsg(Done)
+
+        // it takes a while - timeout hits and then backoff
+        awaitAssert({
           sharding.tell(EntityEnvelope(11, "hello-11-2"), probe.ref)
           probe.expectMsg("hello-11-2")
-        }
+        }, 10.seconds)
         system.stop(sharding)
       }
 
@@ -215,18 +231,20 @@ class RememberEntitiesFailureSpec
         probe.expectMsg("hello-1")
 
         // fail it when stopping
-        shard1Store.failRemoveEntity = Map("1" -> wayToFail)
+        shard1Store.tell(FakeStoreActor.FailRemoveEntity("1", wayToFail), storeProbe.ref)
+        storeProbe.expectMsg(Done)
 
         // FIXME restart without passivating is not saved and re-started again without storing the stop so this isn't testing anything
         sharding ! EntityEnvelope(1, "stop")
 
-        shard1Store.failRemoveEntity = Map.empty
+        shard1Store.tell(FakeStoreActor.DoNotFailRemoveEntity("1"), storeProbe.ref)
+        storeProbe.expectMsg(Done)
 
-        // it takes a while?
+        // it takes a while - timeout hits and then backoff
         awaitAssert({
           sharding.tell(EntityEnvelope(1, "hello-2"), probe.ref)
           probe.expectMsg("hello-2")
-        }, 5.seconds)
+        }, 10.seconds)
         system.stop(sharding)
       }
 
@@ -251,12 +269,13 @@ class RememberEntitiesFailureSpec
         probe.expectMsg("hello-1")
 
         // fail it when stopping
-        shard1Store.failRemoveEntity = Map("1" -> wayToFail)
+        shard1Store.tell(FakeStoreActor.FailRemoveEntity("1", wayToFail), storeProbe.ref)
+        storeProbe.expectMsg(Done)
 
-        EventFilter[RuntimeException](occurrences = 1).intercept {
-          sharding ! EntityEnvelope(1, "graceful-stop")
-        }
-        shard1Store.failRemoveEntity = Map.empty
+        sharding ! EntityEnvelope(1, "graceful-stop")
+
+        shard1Store.tell(FakeStoreActor.DoNotFailRemoveEntity("1"), storeProbe.ref)
+        storeProbe.expectMsg(Done)
 
         // it takes a while?
         awaitAssert({

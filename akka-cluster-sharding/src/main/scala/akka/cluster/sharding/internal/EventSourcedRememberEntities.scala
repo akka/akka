@@ -4,13 +4,7 @@
 
 package akka.cluster.sharding.internal
 
-import java.net.URLEncoder
-
-import akka.Done
 import akka.actor.ActorLogging
-import akka.actor.ActorRef
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ClusterShardingSerializable
@@ -18,8 +12,6 @@ import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
-import akka.dispatch.ExecutionContexts
-import akka.pattern._
 import akka.persistence.DeleteMessagesFailure
 import akka.persistence.DeleteMessagesSuccess
 import akka.persistence.DeleteSnapshotsFailure
@@ -30,65 +22,17 @@ import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotOffer
 import akka.persistence.SnapshotSelectionCriteria
-import akka.util.Timeout
-
-import scala.concurrent.Future
 
 /**
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class EventSourcedRememberEntitiesStoreProvider(
-    system: ActorSystem,
-    typeName: String,
-    settings: ClusterShardingSettings)
+private[akka] final class EventSourcedRememberEntitiesStoreProvider(typeName: String, settings: ClusterShardingSettings)
     extends RememberEntitiesShardStoreProvider {
 
-  override def createStoreForShard(shardId: ShardId): RememberEntitiesShardStore = {
-    // one persistent store per shard
-    val name = URLEncoder.encode(s"Sharding-$typeName-Store-$shardId", "utf-8")
+  override def shardStoreProps(shardId: ShardId): Props =
+    EventSourcedRememberEntitiesStore.props(typeName, shardId, settings)
 
-    val store = system
-      .asInstanceOf[ExtendedActorSystem]
-      .systemActorOf(EventSourcedRememberEntitiesStore.props(typeName, shardId, settings), name)
-    // FIXME should shard notice if store crashes? or is failing reads/writes crashing the shard good enough?
-    new EventSourcedRememberEntities(store, settings)
-  }
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] final class EventSourcedRememberEntities(eventSourcedStore: ActorRef, settings: ClusterShardingSettings)
-    extends RememberEntitiesShardStore {
-
-  override def addEntity(entityId: EntityId): Future[Done] = {
-    implicit val askTimeout: Timeout = settings.tuningParameters.updatingStateTimeout
-    (eventSourcedStore ? EventSourcedRememberEntitiesStore.EntityStarted(entityId))
-      .mapTo[EventSourcedRememberEntitiesStore.StartedAck.type]
-      .map(_ => Done)(ExecutionContexts.parasitic)
-  }
-
-  override def removeEntity(entityId: EntityId): Future[Done] = {
-    implicit val askTimeout: Timeout = settings.tuningParameters.updatingStateTimeout
-    (eventSourcedStore ? EventSourcedRememberEntitiesStore.EntityStopped(entityId))
-      .mapTo[EventSourcedRememberEntitiesStore.StoppedAck.type]
-      .map(_ => Done)(ExecutionContexts.parasitic)
-  }
-
-  override def getEntities(): Future[Set[EntityId]] = {
-    implicit val askTimeout: Timeout = settings.tuningParameters.waitingForStateTimeout
-    (eventSourcedStore ? EventSourcedRememberEntitiesStore.GetEntityIds)
-      .mapTo[EventSourcedRememberEntitiesStore.EntityIds]
-      .map(_.ids)(ExecutionContexts.parasitic)
-  }
-
-  override def stop(): Unit = {
-    eventSourcedStore ! EventSourcedRememberEntitiesStore.StopStore
-  }
-
-  override def toString: ShardId = s"${getClass.getSimpleName}($eventSourcedStore)"
 }
 
 /**
@@ -106,27 +50,19 @@ private[akka] object EventSourcedRememberEntitiesStore {
   /**
    * Persistent state of the Shard.
    */
-  @SerialVersionUID(1L) final case class State private[akka] (entities: Set[EntityId] = Set.empty)
-      extends ClusterShardingSerializable
+  final case class State private[akka] (entities: Set[EntityId] = Set.empty) extends ClusterShardingSerializable
 
   /**
    * `State` change for starting an entity in this `Shard`
    */
-  @SerialVersionUID(1L) final case class EntityStarted(entityId: EntityId) extends StateChange
+  final case class EntityStarted(entityId: EntityId) extends StateChange
 
   case object StartedAck
 
   /**
    * `State` change for an entity which has terminated.
    */
-  @SerialVersionUID(1L) final case class EntityStopped(entityId: EntityId) extends StateChange
-
-  case object StoppedAck
-
-  case object GetEntityIds
-  final case class EntityIds(ids: Set[EntityId])
-
-  case object StopStore
+  final case class EntityStopped(entityId: EntityId) extends StateChange
 
   def props(typeName: String, shardId: ShardRegion.ShardId, settings: ClusterShardingSettings): Props =
     Props(new EventSourcedRememberEntitiesStore(typeName, shardId, settings))
@@ -149,7 +85,7 @@ private[akka] final class EventSourcedRememberEntitiesStore(
   import EventSourcedRememberEntitiesStore._
   import settings.tuningParameters._
 
-  log.debug("Starting up [{}] [{}]", typeName, shardId)
+  log.debug("Starting up EventSourcedRememberEntitiesStore")
   private var state = State()
   override def persistenceId = s"/sharding/${typeName}Shard/$shardId"
   override def journalPluginId: String = settings.journalPluginId
@@ -164,20 +100,20 @@ private[akka] final class EventSourcedRememberEntitiesStore(
   }
 
   override def receiveCommand: Receive = {
-    case started: EntityStarted =>
-      persist(started) { _ =>
-        sender() ! StartedAck
+    case RememberEntitiesShardStore.AddEntity(id) =>
+      persist(EntityStarted(id)) { started =>
+        sender() ! RememberEntitiesShardStore.UpdateDone(id)
         state.copy(state.entities + started.entityId)
         saveSnapshotWhenNeeded()
       }
-    case stopped: EntityStopped =>
-      persist(stopped) { _ =>
-        sender() ! StoppedAck
+    case RememberEntitiesShardStore.RemoveEntity(id) =>
+      persist(EntityStopped(id)) { stopped =>
+        sender() ! RememberEntitiesShardStore.UpdateDone(id)
         state.copy(state.entities - stopped.entityId)
         saveSnapshotWhenNeeded()
       }
-    case GetEntityIds =>
-      sender() ! EntityIds(state.entities)
+    case RememberEntitiesShardStore.GetEntities =>
+      sender() ! RememberEntitiesShardStore.RememberedEntities(state.entities)
 
     case e: SaveSnapshotSuccess =>
       log.debug("Snapshot saved successfully")
@@ -205,7 +141,7 @@ private[akka] final class EventSourcedRememberEntitiesStore(
     case DeleteSnapshotsFailure(m, reason) =>
       log.warning("Snapshots matching [{}] deletion failure: [{}]", m, reason.getMessage)
 
-    case StopStore =>
+    case RememberEntitiesShardStore.StopStore =>
       log.debug("Store stopping")
       context.stop(self)
   }

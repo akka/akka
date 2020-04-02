@@ -9,18 +9,17 @@ import java.net.URLEncoder
 import akka.Done
 import akka.actor._
 import akka.annotation.InternalApi
+import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
+import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.Member
+import akka.cluster.MemberStatus
 import akka.cluster.sharding.Shard.ShardStats
 import akka.cluster.sharding.internal.CustomStateStoreModeProvider
 import akka.cluster.sharding.internal.DDataRememberEntitiesShardStoreProvider
 import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStoreProvider
-import akka.cluster.sharding.internal.NoOpStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStoreProvider
-import akka.cluster.Cluster
-import akka.cluster.ClusterSettings
-import akka.cluster.Member
-import akka.cluster.MemberStatus
 import akka.event.Logging
 import akka.pattern.ask
 import akka.pattern.pipe
@@ -30,9 +29,9 @@ import akka.util.Timeout
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.runtime.AbstractFunction1
 import scala.util.Failure
@@ -571,17 +570,18 @@ private[akka] class ShardRegion(
   val initRegistrationDelay: FiniteDuration = 100.millis.max(retryInterval / 2 / 2 / 2)
   var nextRegistrationDelay: FiniteDuration = initRegistrationDelay
 
-  val shardRememberEntitiesStoreProvider: RememberEntitiesShardStoreProvider =
-    if (!settings.rememberEntities) NoOpStore
+  val shardRememberEntitiesStoreProvider: Option[RememberEntitiesShardStoreProvider] =
+    if (!settings.rememberEntities) None
     else
-      settings.stateStoreMode match {
+      // this construction will move upwards when we get to refactoring the coordinator
+      Some(settings.stateStoreMode match {
         case ClusterShardingSettings.StateStoreModeDData =>
-          new DDataRememberEntitiesShardStoreProvider(context.system, typeName, settings, replicator, majorityMinCap)
+          new DDataRememberEntitiesShardStoreProvider(typeName, settings, replicator, majorityMinCap)
         case ClusterShardingSettings.StateStoreModePersistence =>
-          new EventSourcedRememberEntitiesStoreProvider(context.system, typeName, settings)
+          new EventSourcedRememberEntitiesStoreProvider(typeName, settings)
         case ClusterShardingSettings.StateStoreModeCustom =>
-          new CustomStateStoreModeProvider(context.system, typeName, settings)
-      }
+          new CustomStateStoreModeProvider(typeName, context.system, settings)
+      })
 
   // for CoordinatedShutdown
   val gracefulShutdownProgress = Promise[Done]()

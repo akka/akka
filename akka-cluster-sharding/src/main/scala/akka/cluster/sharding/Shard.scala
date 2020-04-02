@@ -6,7 +6,6 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 
-import akka.Done
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -15,18 +14,17 @@ import akka.actor.Deploy
 import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.actor.Stash
-import akka.actor.Status.{ Failure => AkkaFailure }
 import akka.actor.Terminated
 import akka.actor.Timers
 import akka.annotation.InternalStableApi
 import akka.cluster.Cluster
 import akka.cluster.sharding.internal.EntityRecoveryStrategy
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
+import akka.cluster.sharding.internal.RememberEntitiesShardStore.GetEntities
 import akka.cluster.sharding.internal.RememberEntitiesShardStoreProvider
 import akka.cluster.sharding.internal.RememberEntityStarter
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
-import akka.dispatch.ExecutionContexts
 import akka.pattern.pipe
 import akka.util.MessageBufferMap
 import akka.util.OptionVal
@@ -34,10 +32,7 @@ import akka.util.PrettyDuration._
 import akka.util.unused
 
 import scala.collection.immutable.Set
-import scala.concurrent.Future
 import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
 
 /**
  * INTERNAL API
@@ -92,7 +87,7 @@ private[akka] object Shard {
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId,
       handOffStopMessage: Any,
-      rememberEntitiesProvider: RememberEntitiesShardStoreProvider): Props =
+      rememberEntitiesProvider: Option[RememberEntitiesShardStoreProvider]): Props =
     Props(
       new Shard(
         typeName,
@@ -107,10 +102,14 @@ private[akka] object Shard {
   case object PassivateIdleTick extends NoSerializationVerificationNeeded
 
   private final case class RememberedEntityIds(ids: Set[EntityId])
-  final case class RememberEntityStoreCrashed(store: ActorRef)
+  private final case class RememberEntityStoreCrashed(store: ActorRef)
   private final case object AsyncWriteDone
 
+  private val RememberEntityTimeoutKey = "RememberEntityTimeout"
+  case class RememberEntityTimeout(operation: RememberEntitiesShardStore.Command)
+
   // FIXME Leaving this on while we are working on the remember entities refactor
+  // should it go in settings perhaps, useful for tricky sharding bugs?
   final val VerboseDebug = true
 }
 
@@ -132,7 +131,7 @@ private[akka] class Shard(
     extractEntityId: ShardRegion.ExtractEntityId,
     @unused extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    rememberEntitiesProvider: RememberEntitiesShardStoreProvider)
+    rememberEntitiesProvider: Option[RememberEntitiesShardStoreProvider])
     extends Actor
     with ActorLogging
     with Stash
@@ -149,7 +148,12 @@ private[akka] class Shard(
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
   import settings.tuningParameters._
 
-  private val rememberEntitiesStore: RememberEntitiesShardStore = rememberEntitiesProvider.createStoreForShard(shardId)
+  private val rememberEntitiesStore: Option[ActorRef] =
+    rememberEntitiesProvider.map { provider =>
+      val store = context.actorOf(provider.shardStoreProps(shardId).withDeploy(Deploy.local), "RememberEntitiesStore")
+      context.watchWith(store, RememberEntityStoreCrashed(store))
+      store
+    }
 
   private val rememberedEntitiesRecoveryStrategy: EntityRecoveryStrategy = {
     import settings.tuningParameters._
@@ -255,31 +259,36 @@ private[akka] class Shard(
 
   // ===== remember entities initialization =====
   def tryLoadRememberedEntities(): Unit = {
-    val futureEntityIds = rememberEntitiesStore.getEntities()
-
-    futureEntityIds.value match {
-      case Some(Success(entityIds)) => onEntitiesRemembered(entityIds)
-      case Some(Failure(ex))        => loadingEntityIdsFailed(ex)
-      case None =>
-        log.debug("Waiting for load of entity ids using [{}] to complete", rememberEntitiesStore)
-        futureEntityIds.map(RememberedEntityIds)(ExecutionContexts.parasitic).pipeTo(self)
+    rememberEntitiesStore match {
+      case Some(store) =>
+        log.debug("Waiting for load of entity ids using [{}] to complete", store)
+        store ! RememberEntitiesShardStore.GetEntities
+        timers.startSingleTimer(
+          RememberEntityTimeoutKey,
+          RememberEntityTimeout(GetEntities),
+          settings.tuningParameters.waitingForStateTimeout)
         context.become(awaitingRememberedEntities())
+      case None =>
+        onEntitiesRemembered(Set.empty)
     }
   }
 
   def awaitingRememberedEntities(): Receive = {
-    case RememberedEntityIds(entityIds) =>
+    case RememberEntitiesShardStore.RememberedEntities(entityIds) =>
+      timers.cancel(RememberEntityTimeoutKey)
       onEntitiesRemembered(entityIds)
-    case AkkaFailure(ex) =>
-      loadingEntityIdsFailed(ex)
+    case RememberEntityTimeout(GetEntities) =>
+      loadingEntityIdsFailed()
     case msg =>
       if (VerboseDebug)
         log.debug("Got msg of type [{}] from [{}] while waiting for remember entitites", msg.getClass, sender())
       stash()
   }
 
-  def loadingEntityIdsFailed(ex: Throwable): Unit = {
-    log.error(ex, "Failed to load initial entity ids from remember entities store")
+  def loadingEntityIdsFailed(): Unit = {
+    log.error(
+      "Failed to load initial entity ids from remember entities store within [{}], stopping shard for backoff and restart",
+      settings.tuningParameters.waitingForStateTimeout.pretty)
     // parent ShardRegion supervisor will notice that it terminated and will start it again, after backoff
     context.stop(self)
   }
@@ -291,7 +300,7 @@ private[akka] class Shard(
       restartRememberedEntities(ids)
     } else {}
     context.parent ! ShardInitialized(shardId)
-    context.become(receiveCommand)
+    context.become(idle)
     unstashAll()
   }
 
@@ -313,7 +322,7 @@ private[akka] class Shard(
 
   // ===== shard up and running =====
 
-  def receiveCommand: Receive = {
+  def idle: Receive = {
     case Terminated(ref)                         => receiveTerminated(ref)
     case msg: CoordinatorMessage                 => receiveCoordinatorMessage(msg)
     case msg: ShardCommand                       => receiveShardCommand(msg)
@@ -327,23 +336,32 @@ private[akka] class Shard(
     case msg if extractEntityId.isDefinedAt(msg) => deliverMessage(msg, sender(), OptionVal.None)
   }
 
-  def waitForAsyncWrite(operation: String, entityId: EntityId, done: Future[Done])(whenDone: EntityId => Unit): Unit = {
-    if (VerboseDebug) log.debug("Waiting for async write of [{}] {}", entityId, operation)
-    done.value match {
-      case Some(Success(_))  => whenDone(entityId)
-      case Some(Failure(ex)) => throw ex
+  def waitForAsyncWrite(entityId: EntityId, command: RememberEntitiesShardStore.Command)(
+      whenDone: EntityId => Unit): Unit = {
+    rememberEntitiesStore match {
       case None =>
-        done.map(_ => AsyncWriteDone)(ExecutionContexts.parasitic).pipeTo(self)
-        context.become {
-          case AsyncWriteDone =>
-            if (VerboseDebug) log.debug("Completed async write of [{}] {}", entityId, operation)
-            whenDone(entityId)
-            context.become(receiveCommand)
-            unstashAll()
-          case AkkaFailure(ex) =>
-            throw new RuntimeException(s"Remember entities write of $operation for [$entityId] failed", ex)
+        whenDone(entityId)
 
-          // below cases should handle same messages as in Shard.receiveCommand
+      case Some(store) =>
+        if (VerboseDebug) log.debug("Waiting for async write of [{}] [{}]", entityId, command)
+        store ! command
+        timers.startSingleTimer(
+          RememberEntityTimeoutKey,
+          RememberEntityTimeout(command),
+          settings.tuningParameters.updatingStateTimeout)
+
+        context.become {
+          case RememberEntitiesShardStore.UpdateDone(entityId) =>
+            if (VerboseDebug) log.debug("Completed async write of [{}] {}", entityId, command)
+            timers.cancel(RememberEntityTimeoutKey)
+            whenDone(entityId)
+            context.become(idle)
+            unstashAll()
+          case RememberEntityTimeout(_) =>
+            throw new RuntimeException(
+              s"Async write for $entityId timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
+
+          // below cases should handle same messages as in idle
           case _: Terminated                           => stash()
           case _: CoordinatorMessage                   => stash()
           case _: ShardCommand                         => stash()
@@ -363,7 +381,6 @@ private[akka] class Shard(
               entityId)
             stash()
         }
-
     }
   }
 
@@ -397,7 +414,7 @@ private[akka] class Shard(
       getOrCreateEntity(start.entityId)
       requester ! ShardRegion.StartEntityAck(start.entityId, shardId)
     } else {
-      waitForAsyncWrite("add (start entity)", start.entityId, rememberEntitiesStore.addEntity(start.entityId)) { id =>
+      waitForAsyncWrite(start.entityId, RememberEntitiesShardStore.AddEntity(start.entityId)) { id =>
         getOrCreateEntity(id)
         sendMsgBuffer(id)
         requester ! ShardRegion.StartEntityAck(id, shardId)
@@ -409,10 +426,7 @@ private[akka] class Shard(
     if (ack.shardId != shardId && entityIds(ack.entityId)) {
       log.debug("Entity [{}] previously owned by shard [{}] started in shard [{}]", ack.entityId, shardId, ack.shardId)
 
-      waitForAsyncWrite(
-        "remove (started in other shard)",
-        ack.entityId,
-        rememberEntitiesStore.removeEntity(ack.entityId)) { id =>
+      waitForAsyncWrite(ack.entityId, RememberEntitiesShardStore.RemoveEntity(ack.entityId)) { id =>
         entityIds = entityIds - id
         messageBuffers.remove(id)
       }
@@ -486,7 +500,7 @@ private[akka] class Shard(
         context.system.scheduler.scheduleOnce(entityRestartBackoff, self, RestartEntity(id))
       } else {
         // FIXME optional wait for completion as optimization where stops are not critical
-        waitForAsyncWrite("remove (terminated)", id, rememberEntitiesStore.removeEntity(id))(passivateCompleted)
+        waitForAsyncWrite(id, RememberEntitiesShardStore.RemoveEntity(id))(passivateCompleted)
       }
     }
 
@@ -532,7 +546,7 @@ private[akka] class Shard(
     entityIds = entityIds - entityId
     if (hasBufferedMessages) {
       log.debug("Entity stopped after passivation [{}], but will be started again due to buffered messages.", entityId)
-      waitForAsyncWrite("remove (passivated)", entityId, rememberEntitiesStore.addEntity(entityId))(sendMsgBuffer)
+      waitForAsyncWrite(entityId, RememberEntitiesShardStore.AddEntity(entityId))(sendMsgBuffer)
     } else {
       log.debug("Entity stopped after passivation [{}]", entityId)
       dropBufferFor(entityId)
@@ -562,6 +576,12 @@ private[akka] class Shard(
             // 1. entity is passivating, buffer until passivation complete (id in message buffers)
             // 2. we are waiting for storing entity start or stop with remember entities to complete
             //    and want to buffer until write completes
+            if (VerboseDebug) {
+              if (entityIdWaitingForWrite.contains(id))
+                log.debug("Buffering message [{}] to [{}] because of write in progress for it", msg.getClass, id)
+              else
+                log.debug("Buffering message [{}] to [{}] because passivation in progress for it", msg.getClass, id)
+            }
             appendToMessageBuffer(id, msg, snd)
           } else {
             // With remember entities enabled we may be in the process of saving that we are starting up the entity
@@ -580,6 +600,11 @@ private[akka] class Shard(
                   // 2. the entity is stopped but not passivated, and should be restarted
 
                   // FIXME won't this potentially lead to not remembered for case 2?
+                  if (VerboseDebug)
+                    log.debug(
+                      "Delivering message of type [{}] to [{}] (starting because known but not running)",
+                      payload.getClass,
+                      id)
                   val actor = getOrCreateEntity(id)
                   touchLastMessageTimestamp(id)
                   actor.tell(payload, snd)
@@ -588,11 +613,19 @@ private[akka] class Shard(
                   if (entityIdWaitingForWrite.isEmpty) {
                     // No actor and id is unknown, start actor and deliver message when started
                     // Note; we only do this if remembering, otherwise the buffer is an overhead
+                    if (VerboseDebug)
+                      log.debug("Buffering message [{}] to [{}] and starting actor", payload.getClass, id)
                     appendToMessageBuffer(id, msg, snd)
-                    waitForAsyncWrite("start (message)", id, rememberEntitiesStore.addEntity(id))(sendMsgBuffer)
+                    waitForAsyncWrite(id, RememberEntitiesShardStore.AddEntity(id))(sendMsgBuffer)
                   } else {
                     // we'd need to start the entity but a start/stop write is already in progress
                     // see waitForAsyncWrite for unstash
+                    if (VerboseDebug)
+                      log.debug(
+                        "Stashing message [{}] to [{}] because of write in progress for ",
+                        payload.getClass,
+                        id,
+                        entityIdWaitingForWrite.get)
                     stash()
                   }
                 }
@@ -658,12 +691,12 @@ private[akka] class Shard(
     messageBuffers.remove(entityId)
   }
 
-  def rememberEntityStoreCrashed(msg: RememberEntityStoreCrashed): Unit = {
+  private def rememberEntityStoreCrashed(msg: RememberEntityStoreCrashed): Unit = {
     throw new RuntimeException(s"Remember entities store [${msg.store}] crashed")
   }
 
   override def postStop(): Unit = {
+    rememberEntitiesStore.foreach(_ ! RememberEntitiesShardStore.StopStore)
     passivateIdleTask.foreach(_.cancel())
-    rememberEntitiesStore.stop()
   }
 }

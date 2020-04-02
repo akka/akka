@@ -5,6 +5,7 @@
 package akka.cluster.sharding.internal
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
+import akka.actor.Props
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.event.Logging
@@ -15,37 +16,30 @@ import akka.event.Logging
  * Only intended for testing, not an extension point.
  */
 private[akka] final class CustomStateStoreModeProvider(
-    system: ActorSystem,
     typeName: String,
+    system: ActorSystem,
     settings: ClusterShardingSettings)
     extends RememberEntitiesShardStoreProvider {
 
   private val log = Logging(system, getClass)
-  log.warning("Using custom remember entities store, not intended for production use.")
+  log.warning("Using custom remember entities store for [{}], not intended for production use.", typeName)
+  val customStore = if (system.settings.config.hasPath("akka.cluster.sharding.custom-store")) {
+    val customClassName = system.settings.config.getString("akka.cluster.sharding.custom-store")
 
-  override def createStoreForShard(shardId: ShardId): RememberEntitiesShardStore = {
-    if (system.settings.config.hasPath("akka.cluster.sharding.custom-store")) {
-      val customClassName = system.settings.config.getString("akka.cluster.sharding.custom-store")
+    val store = system
+      .asInstanceOf[ExtendedActorSystem]
+      .dynamicAccess
+      .createInstanceFor[RememberEntitiesShardStoreProvider](
+        customClassName,
+        Vector((classOf[ClusterShardingSettings], settings), (classOf[String], typeName)))
+    log.debug("Will use custom remember entities store provider [{}]", store)
+    store.get
 
-      log.debug("Will use remember entities store [{}] for shard [{}]", customClassName, shardId)
-      val store = system
-        .asInstanceOf[ExtendedActorSystem]
-        .dynamicAccess
-        .createInstanceFor[RememberEntitiesShardStore](
-          customClassName,
-          Vector(
-            (classOf[ActorSystem], system),
-            (classOf[ClusterShardingSettings], settings),
-            (classOf[String], typeName),
-            (classOf[String], shardId)))
-
-      log.debug("Created remember entities store [{}] for shard [{}]", store, shardId)
-
-      store.get
-
-    } else {
-      log.error("Missing custom store class configuration for CustomStateStoreModeProvider")
-      throw new RuntimeException("Missing custom store class configuration")
-    }
+  } else {
+    log.error("Missing custom store class configuration for CustomStateStoreModeProvider")
+    throw new RuntimeException("Missing custom store class configuration")
   }
+
+  override def shardStoreProps(shardId: ShardId): Props = customStore.shardStoreProps(shardId)
+
 }

@@ -4,12 +4,10 @@
 
 package akka.cluster.sharding.internal
 
-import akka.Done
+import akka.actor.Props
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
-
-import scala.concurrent.Future
 
 /**
  * INTERNAL API
@@ -18,8 +16,7 @@ import scala.concurrent.Future
  */
 @InternalApi
 private[akka] trait RememberEntitiesShardStoreProvider {
-
-  def createStoreForShard(shardId: ShardId): RememberEntitiesShardStore
+  def shardStoreProps(shardId: ShardId): Props
 }
 
 /**
@@ -30,31 +27,17 @@ private[akka] trait RememberEntitiesShardStoreProvider {
  * Implementations are responsible for each of the methods failing the returned future after a timeout.
  */
 @InternalApi
-private[akka] trait RememberEntitiesShardStore {
+private[akka] object RememberEntitiesShardStore {
+  // SPI protocol for a remember entities store
+  sealed trait Command
 
-  /** Store the fact that the entity was started, complete future when write is confirmed */
-  def addEntity(entityId: EntityId): Future[Done]
+  case class AddEntity(entityId: EntityId) extends Command
+  case class RemoveEntity(entity: EntityId) extends Command
+  // response for both add and remove
+  case class UpdateDone(entityId: EntityId)
 
-  /** Store the fact that the entity was stopped, complete future when write is confirmed */
-  def removeEntity(entityId: EntityId): Future[Done]
+  case object GetEntities extends Command
+  case class RememberedEntities(entities: Set[EntityId])
 
-  /** List all entities that should be alive for a given shard id */
-  def getEntities(): Future[Set[EntityId]]
-
-  def stop(): Unit
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] object NoOpStore extends RememberEntitiesShardStore with RememberEntitiesShardStoreProvider {
-  private val AlreadyDone = Future.successful(Done)
-  private val NoEntities = Future.successful(Set.empty[EntityId])
-  override def addEntity(entityId: EntityId): Future[Done] = AlreadyDone
-  override def removeEntity(entityId: EntityId): Future[Done] = AlreadyDone
-  override def getEntities(): Future[Set[EntityId]] = NoEntities
-  override def stop(): Unit = ()
-
-  override def createStoreForShard(shardId: ShardId): RememberEntitiesShardStore = this
+  case object StopStore
 }
