@@ -187,6 +187,7 @@ private[akka] class RemoteActorRefProvider(
 
   override def rootPath: ActorPath = local.rootPath
   override def deadLetters: InternalActorRef = local.deadLetters
+  override def ignoreRef: ActorRef = local.ignoreRef
 
   // these are only available after init()
   override def rootGuardian: InternalActorRef = local.rootGuardian
@@ -371,9 +372,6 @@ private[akka] class RemoteActorRefProvider(
     if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy, async)
     else {
 
-      if (!system.dispatchers.hasDispatcher(props.dispatcher))
-        throw new ConfigurationException(s"Dispatcher [${props.dispatcher}] not configured for path $path")
-
       /*
        * This needs to deal with “mangled” paths, which are created by remote
        * deployment, also in this method. The scheme is the following:
@@ -524,6 +522,9 @@ private[akka] class RemoteActorRefProvider(
    * public `resolveActorRef(path: String)`.
    */
   private[akka] def internalResolveActorRef(path: String): ActorRef = path match {
+
+    case p if IgnoreActorRef.isIgnoreRefPath(p) => this.ignoreRef
+
     case ActorPathExtractor(address, elems) =>
       if (hasAddress(address)) local.resolveActorRef(rootGuardian, elems)
       else {
@@ -542,6 +543,7 @@ private[akka] class RemoteActorRefProvider(
             new EmptyLocalActorRef(this, rootPath, eventStream)
         }
       }
+
     case _ =>
       log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
       deadLetters

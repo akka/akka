@@ -61,7 +61,7 @@ object Source {
     new Source(scaladsl.Source.maybe[T].mapMaterializedValue { scalaOptionPromise: Promise[Option[T]] =>
       val javaOptionPromise = new CompletableFuture[Optional[T]]()
       scalaOptionPromise.completeWith(
-        javaOptionPromise.toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext))
+        javaOptionPromise.toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.parasitic))
 
       javaOptionPromise
     })
@@ -255,7 +255,7 @@ object Source {
    */
   def unfoldAsync[S, E](s: S, f: function.Function[S, CompletionStage[Optional[Pair[S, E]]]]): Source[E, NotUsed] =
     new Source(scaladsl.Source.unfoldAsync(s)((s: S) =>
-      f.apply(s).toScala.map(_.asScala.map(_.toScala))(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)))
+      f.apply(s).toScala.map(_.asScala.map(_.toScala))(akka.dispatch.ExecutionContexts.parasitic)))
 
   /**
    * Create a `Source` that immediately ends the stream with the `cause` failure to every connected `Sink`.
@@ -305,7 +305,7 @@ object Source {
    */
   def completionStageSource[T, M](completionStageSource: CompletionStage[Source[T, M]]): Source[T, CompletionStage[M]] =
     scaladsl.Source
-      .futureSource(completionStageSource.toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
+      .futureSource(completionStageSource.toScala.map(_.asScala)(ExecutionContexts.parasitic))
       .mapMaterializedValue(_.toJava)
       .asJava
 
@@ -697,13 +697,52 @@ object Source {
    * for downstream demand unless there is another message waiting for downstream demand, in that case
    * offer result will be completed according to the overflow strategy.
    *
-   * SourceQueue that current source is materialized to is for single thread usage only.
+   * The materialized SourceQueue may only be used from a single producer.
    *
    * @param bufferSize size of buffer in element count
    * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
    */
   def queue[T](bufferSize: Int, overflowStrategy: OverflowStrategy): Source[T, SourceQueueWithComplete[T]] =
-    new Source(scaladsl.Source.queue[T](bufferSize, overflowStrategy).mapMaterializedValue(_.asJava))
+    new Source(
+      scaladsl.Source.queue[T](bufferSize, overflowStrategy, maxConcurrentOffers = 1).mapMaterializedValue(_.asJava))
+
+  /**
+   * Creates a `Source` that is materialized as an [[akka.stream.javadsl.SourceQueueWithComplete]].
+   * You can push elements to the queue and they will be emitted to the stream if there is demand from downstream,
+   * otherwise they will be buffered until request for demand is received. Elements in the buffer will be discarded
+   * if downstream is terminated.
+   *
+   * Depending on the defined [[akka.stream.OverflowStrategy]] it might drop elements if
+   * there is no space available in the buffer.
+   *
+   * Acknowledgement mechanism is available.
+   * [[akka.stream.javadsl.SourceQueueWithComplete.offer]] returns `CompletionStage<QueueOfferResult>` which completes with
+   * `QueueOfferResult.enqueued` if element was added to buffer or sent downstream. It completes with
+   * `QueueOfferResult.dropped` if element was dropped. Can also complete with `QueueOfferResult.Failure` -
+   * when stream failed or `QueueOfferResult.QueueClosed` when downstream is completed.
+   *
+   * The strategy [[akka.stream.OverflowStrategy.backpressure]] will not complete `maxConcurrentOffers` number of
+   * `offer():CompletionStage` call when buffer is full.
+   *
+   * You can watch accessibility of stream with [[akka.stream.javadsl.SourceQueueWithComplete.watchCompletion]].
+   * It returns a future that completes with success when this operator is completed or fails when stream is failed.
+   *
+   * The buffer can be disabled by using `bufferSize` of 0 and then received message will wait
+   * for downstream demand unless there is another message waiting for downstream demand, in that case
+   * offer result will be completed according to the overflow strategy.
+   *
+   * The materialized SourceQueue may be used by up to maxConcurrentOffers concurrent producers.
+   *
+   * @param bufferSize size of buffer in element count
+   * @param overflowStrategy Strategy that is used when incoming elements cannot fit inside the buffer
+   * @param maxConcurrentOffers maximum number of pending offers when buffer is full, should be greater than 0
+   */
+  def queue[T](
+      bufferSize: Int,
+      overflowStrategy: OverflowStrategy,
+      maxConcurrentOffers: Int): Source[T, SourceQueueWithComplete[T]] =
+    new Source(
+      scaladsl.Source.queue[T](bufferSize, overflowStrategy, maxConcurrentOffers).mapMaterializedValue(_.asJava))
 
   /**
    * Start a new `Source` from some resource which can be opened, read and closed.
@@ -766,7 +805,7 @@ object Source {
     new Source(
       scaladsl.Source.unfoldResourceAsync[T, S](
         () => create.create().toScala,
-        (s: S) => read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.sameThreadExecutionContext),
+        (s: S) => read.apply(s).toScala.map(_.asScala)(akka.dispatch.ExecutionContexts.parasitic),
         (s: S) => close.apply(s).toScala))
 
   /**
@@ -928,6 +967,24 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
    */
   def toMat[M, M2](sink: Graph[SinkShape[Out], M], combine: function.Function2[Mat, M, M2]): javadsl.RunnableGraph[M2] =
     RunnableGraph.fromGraph(delegate.toMat(sink)(combinerToScala(combine)))
+
+  /**
+   * Connect this `Source` to the `Sink.ignore` and run it. Elements from the stream will be consumed and discarded.
+   *
+   * Note that the `ActorSystem` can be used as the `materializer` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
+   */
+  def run(materializer: Materializer): CompletionStage[Done] =
+    delegate.run()(materializer).toJava
+
+  /**
+   * Connect this `Source` to the `Sink.ignore` and run it. Elements from the stream will be consumed and discarded.
+   *
+   * Note that the `ActorSystem` can be used as the `systemProvider` parameter to use the
+   * [[akka.stream.SystemMaterializer]] for running the stream.
+   */
+  def run(systemProvider: ClassicActorSystemProvider): CompletionStage[Done] =
+    delegate.run()(SystemMaterializer(systemProvider.classicSystem).materializer).toJava
 
   /**
    * Connect this `Source` to a `Sink` and run it. The returned value is the materialized value

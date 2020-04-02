@@ -4,6 +4,7 @@
 
 package akka.pattern
 
+import java.util.Optional
 import java.util.concurrent.{ Callable, CompletionStage, TimeUnit }
 
 import akka.actor.{ ActorSelection, Scheduler }
@@ -455,9 +456,56 @@ object Patterns {
     afterCompletionStage(duration.asScala, scheduler)(value)(context)
 
   /**
+   * Returns an internally retrying [[java.util.concurrent.CompletionStage]]
+   * The first attempt will be made immediately, each subsequent attempt will be made immediately
+   * if the previous attempt failed.
+   *
+   * If attempts are exhausted the returned completion operator is simply the result of invoking attempt.
+   * Note that the attempt function will be invoked on the given execution context for subsequent tries
+   * and therefore must be thread safe (not touch unsafe mutable state).
+   */
+  def retry[T](attempt: Callable[CompletionStage[T]], attempts: Int, ec: ExecutionContext): CompletionStage[T] = {
+    require(attempt != null, "Parameter attempt should not be null.")
+    scalaRetry(() => attempt.call().toScala, attempts)(ec).toJava
+  }
+
+  /**
+   * Returns an internally retrying [[java.util.concurrent.CompletionStage]]
+   * The first attempt will be made immediately, each subsequent attempt will be made with a backoff time,
+   * if the previous attempt failed.
+   *
+   * If attempts are exhausted the returned future is simply the result of invoking attempt.
+   * Note that the attempt function will be invoked on the given execution context for subsequent tries and
+   * therefore must be thread safe (not touch unsafe mutable state).
+   *
+   * @param minBackoff   minimum (initial) duration until the child actor will
+   *                     started again, if it is terminated
+   * @param maxBackoff   the exponential back-off is capped to this duration
+   * @param randomFactor after calculation of the exponential back-off an additional
+   *                     random delay based on this factor is added, e.g. `0.2` adds up to `20%` delay.
+   *                     In order to skip this additional delay pass in `0`.
+   */
+  def retry[T](
+      attempt: Callable[CompletionStage[T]],
+      attempts: Int,
+      minBackoff: java.time.Duration,
+      maxBackoff: java.time.Duration,
+      randomFactor: Double,
+      scheduler: Scheduler,
+      ec: ExecutionContext): CompletionStage[T] = {
+    require(attempt != null, "Parameter attempt should not be null.")
+    require(minBackoff != null, "Parameter minBackoff should not be null.")
+    require(maxBackoff != null, "Parameter minBackoff should not be null.")
+    scalaRetry(() => attempt.call().toScala, attempts, minBackoff.asScala, maxBackoff.asScala, randomFactor)(
+      ec,
+      scheduler).toJava
+  }
+
+  /**
    * Returns an internally retrying [[scala.concurrent.Future]]
    * The first attempt will be made immediately, and each subsequent attempt will be made after 'delay'.
    * A scheduler (eg context.system.scheduler) must be provided to delay each retry
+   *
    * If attempts are exhausted the returned future is simply the result of invoking attempt.
    * Note that the attempt function will be invoked on the given execution context for subsequent tries and
    * therefore must be thread safe (not touch unsafe mutable state).
@@ -467,13 +515,16 @@ object Patterns {
       attempts: Int,
       delay: FiniteDuration,
       scheduler: Scheduler,
-      context: ExecutionContext): Future[T] =
+      context: ExecutionContext): Future[T] = {
+    require(attempt != null, "Parameter attempt should not be null.")
     scalaRetry(() => attempt.call, attempts, delay)(context, scheduler)
+  }
 
   /**
    * Returns an internally retrying [[java.util.concurrent.CompletionStage]]
    * The first attempt will be made immediately, and each subsequent attempt will be made after 'delay'.
    * A scheduler (eg context.system.scheduler) must be provided to delay each retry
+   *
    * If attempts are exhausted the returned completion operator is simply the result of invoking attempt.
    * Note that the attempt function will be invoked on the given execution context for subsequent tries
    * and therefore must be thread safe (not touch unsafe mutable state).
@@ -483,8 +534,37 @@ object Patterns {
       attempts: Int,
       delay: java.time.Duration,
       scheduler: Scheduler,
-      ec: ExecutionContext): CompletionStage[T] =
+      ec: ExecutionContext): CompletionStage[T] = {
+    require(attempt != null, "Parameter attempt should not be null.")
     scalaRetry(() => attempt.call().toScala, attempts, delay.asScala)(ec, scheduler).toJava
+  }
+
+  /**
+   * Returns an internally retrying [[java.util.concurrent.CompletionStage]].
+   * The first attempt will be made immediately, each subsequent attempt will be made after
+   * the 'delay' return by `delayFunction`(the input next attempt count start from 1).
+   * Return an empty [[Optional]] instance for no delay.
+   * A scheduler (eg context.system.scheduler) must be provided to delay each retry.
+   * You could provide a function to generate the next delay duration after first attempt,
+   * this function should never return `null`, otherwise an [[IllegalArgumentException]] will be through.
+   *
+   * If attempts are exhausted the returned future is simply the result of invoking attempt.
+   * Note that the attempt function will be invoked on the given execution context for subsequent tries and
+   * therefore must be thread safe (not touch unsafe mutable state).
+   */
+  def retry[T](
+      attempt: Callable[CompletionStage[T]],
+      attempts: Int,
+      delayFunction: java.util.function.IntFunction[Optional[java.time.Duration]],
+      scheduler: Scheduler,
+      context: ExecutionContext): CompletionStage[T] = {
+    import scala.compat.java8.OptionConverters._
+    require(attempt != null, "Parameter attempt should not be null.")
+    scalaRetry(
+      () => attempt.call().toScala,
+      attempts,
+      attempted => delayFunction.apply(attempted).asScala.map(_.asScala))(context, scheduler).toJava
+  }
 }
 
 /**

@@ -3,7 +3,7 @@ language: scala
 sudo: false
 
 scala:
-  - "2.12.9"
+  - "2.12.11"
   - "2.13.1"
 
 before_install: curl -Ls https://git.io/jabba | bash && . ~/.jabba/jabba.sh

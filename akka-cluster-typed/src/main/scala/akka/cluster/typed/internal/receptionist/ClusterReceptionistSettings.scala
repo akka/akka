@@ -40,6 +40,7 @@ private[akka] object ClusterReceptionistSettings {
     ClusterReceptionistSettings(
       writeConsistency,
       pruningInterval = config.getDuration("pruning-interval", MILLISECONDS).millis,
+      pruneRemovedOlderThan = config.getDuration("prune-removed-older-than", MILLISECONDS).millis,
       config.getInt("distributed-key-count"),
       replicatorSettings)
   }
@@ -52,5 +53,6 @@ private[akka] object ClusterReceptionistSettings {
 private[akka] case class ClusterReceptionistSettings(
     writeConsistency: WriteConsistency,
     pruningInterval: FiniteDuration,
+    pruneRemovedOlderThan: FiniteDuration,
     distributedKeyCount: Int,
     replicatorSettings: ReplicatorSettings)

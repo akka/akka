@@ -10,11 +10,13 @@ import akka.actor.testkit.typed.scaladsl.ActorTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.SpawnProtocol
+import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -40,12 +42,14 @@ object DispatcherSelectorSpec {
 
 }
 
-class DispatcherSelectorSpec
-    extends ScalaTestWithActorTestKit(DispatcherSelectorSpec.config)
+class DispatcherSelectorSpec(config: Config)
+    extends ScalaTestWithActorTestKit(config)
     with AnyWordSpecLike
     with LogCapturing {
   import DispatcherSelectorSpec.PingPong
   import DispatcherSelectorSpec.PingPong._
+
+  def this() = this(DispatcherSelectorSpec.config)
 
   "DispatcherSelector" must {
 
@@ -56,6 +60,14 @@ class DispatcherSelectorSpec
 
       val response = probe.receiveMessage()
       response.threadName should startWith("DispatcherSelectorSpec-ping-pong-dispatcher")
+    }
+
+    "detect unknown dispatcher from config" in {
+      val probe = createTestProbe[Pong]()
+      LoggingTestKit.error("Spawn failed").expect {
+        val ref = spawn(PingPong(), Props.empty.withDispatcherFromConfig("unknown"))
+        probe.expectTerminated(ref)
+      }
     }
 
     "select same dispatcher as parent" in {

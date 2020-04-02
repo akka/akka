@@ -321,18 +321,15 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
   "Unstashing" must {
 
     "work with initial Behaviors.same" in {
-      // FIXME #26148 unstashAll doesn't support Behavior.same
-      pending
-
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.receive[String] {
-        case (_, "unstash") =>
+      val ref = spawn(Behaviors.receiveMessage[String] {
+        case "unstash" =>
           Behaviors.withStash(10) { stash =>
             stash.stash("one")
             stash.unstashAll(Behaviors.same)
           }
-        case (_, msg) =>
+        case msg =>
           probe.ref ! msg
           Behaviors.same
       })
@@ -344,8 +341,8 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     "work with intermediate Behaviors.same" in {
       val probe = TestProbe[String]()
       // unstashing is inside setup
-      val ref = spawn(Behaviors.receivePartial[String] {
-        case (_, "unstash") =>
+      val ref = spawn(Behaviors.receiveMessagePartial[String] {
+        case "unstash" =>
           Behaviors.withStash(10) { stash =>
             stash.stash("one")
             stash.stash("two")
@@ -364,20 +361,17 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     }
 
     "work with supervised initial Behaviors.same" in {
-      // FIXME #26148 unstashAll doesn't support Behavior.same
-      pending
-
       val probe = TestProbe[String]()
       // unstashing is inside setup
       val ref = spawn(
         Behaviors
-          .supervise(Behaviors.receivePartial[String] {
-            case (_, "unstash") =>
+          .supervise(Behaviors.receiveMessagePartial[String] {
+            case "unstash" =>
               Behaviors.withStash(10) { stash =>
                 stash.stash("one")
                 stash.unstashAll(Behaviors.same)
               }
-            case (_, msg) =>
+            case msg =>
               probe.ref ! msg
               Behaviors.same
           })
@@ -394,8 +388,8 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
       // unstashing is inside setup
       val ref = spawn(
         Behaviors
-          .supervise(Behaviors.receivePartial[String] {
-            case (_, "unstash") =>
+          .supervise(Behaviors.receiveMessagePartial[String] {
+            case "unstash" =>
               Behaviors.withStash(10) { stash =>
                 stash.stash("one")
                 stash.stash("two")
@@ -412,6 +406,47 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
       probe.expectMessage("two")
       ref ! "three"
       probe.expectMessage("three")
+    }
+
+    "work with Behaviors.same when switching Behavior while unstashing one" in {
+      val probe = TestProbe[String]()
+
+      val ref = spawn(Behaviors.receiveMessage[String] {
+        case "unstash" =>
+          Behaviors.withStash(10) {
+            stash =>
+              def expectingA: Behaviors.Receive[String] = Behaviors.receiveMessage {
+                case "a" =>
+                  probe.ref ! "a"
+                  stash.unstash(expectingB, 1, identity)
+                case other =>
+                  probe.ref ! s"unexpected [$other] when expecting [a]"
+                  Behaviors.stopped
+              }
+
+              def expectingB: Behaviors.Receive[String] = Behaviors.receiveMessage {
+                case b @ ("b1" | "b2") =>
+                  probe.ref ! b
+                  stash.unstash(Behaviors.same, 1, identity)
+                case other =>
+                  probe.ref ! s"unexpected [$other] when expecting [b]"
+                  Behaviors.stopped
+              }
+
+              stash.stash("a")
+              stash.stash("b1")
+              stash.stash("b2")
+              stash.unstash(expectingA, 1, identity)
+          }
+        case other =>
+          probe.ref ! s"unexpected [$other] in first Behavior"
+          Behaviors.stopped
+      })
+
+      ref ! "unstash"
+      probe.expectMessage("a")
+      probe.expectMessage("b1")
+      probe.expectMessage("b2")
     }
 
     def testPostStop(probe: TestProbe[String], ref: ActorRef[String]): Unit = {

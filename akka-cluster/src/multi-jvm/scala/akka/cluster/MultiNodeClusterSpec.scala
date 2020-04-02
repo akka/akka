@@ -4,7 +4,6 @@
 
 package akka.cluster
 
-import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 
 import akka.actor.{ Actor, ActorRef, ActorSystem, Address, Deploy, PoisonPill, Props, RootActorPath }
@@ -60,10 +59,6 @@ object MultiNodeClusterSpec {
     akka.log-dead-letters-during-shutdown = off
     akka.remote {
       log-remote-lifecycle-events = off
-      artery.advanced.flight-recorder {
-        enabled=on
-        destination=target/flight-recorder-${UUID.randomUUID().toString}.afr
-      }
     }
     akka.loggers = ["akka.testkit.TestEventListener"]
     akka.test {

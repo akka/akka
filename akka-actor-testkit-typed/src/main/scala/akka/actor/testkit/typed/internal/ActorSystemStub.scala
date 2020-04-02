@@ -66,14 +66,16 @@ import org.slf4j.LoggerFactory
   override def provider: ActorRefProvider = throw new UnsupportedOperationException("no provider")
 
   // stream materialization etc. using stub not supported
-  override private[akka] def classicSystem =
+  override def classicSystem =
     throw new UnsupportedOperationException("no classic actor system available")
 
   // impl InternalRecipientRef
   def isTerminated: Boolean = whenTerminated.isCompleted
 
   val deadLettersInbox = new DebugRef[Any](path.parent / "deadLetters", true)
-  override def deadLetters[U]: akka.actor.typed.ActorRef[U] = deadLettersInbox
+  override def deadLetters[U]: ActorRef[U] = deadLettersInbox
+
+  override def ignoreRef[U]: ActorRef[U] = deadLettersInbox
 
   val controlledExecutor = new ControlledExecutor
   implicit override def executionContext: scala.concurrent.ExecutionContextExecutor = controlledExecutor

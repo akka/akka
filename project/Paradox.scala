@@ -7,6 +7,7 @@ package akka
 import com.lightbend.paradox.sbt.ParadoxPlugin
 import com.lightbend.paradox.sbt.ParadoxPlugin.autoImport._
 import com.lightbend.paradox.apidoc.ApidocPlugin
+import DeployRsync.autoImport.deployRsyncArtifacts
 import sbt.Keys._
 import sbt._
 
@@ -76,6 +77,8 @@ object Paradox {
       name in (Compile, paradox) := "Akka",
       resolvers += Resolver.jcenterRepo,
       ApidocPlugin.autoImport.apidocRootPackage := "akka",
-      DeployRsync.autoImport.deployRsyncArtifact := List(
-          (Compile / paradox).value -> s"www/docs/akka/${version.value}"))
+      deployRsyncArtifacts += {
+        val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
+        ((Compile / paradox).value -> s"www/docs/akka/$releaseVersion")
+      })
 }

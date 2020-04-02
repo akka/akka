@@ -445,7 +445,7 @@ All MDC properties as key-value entries can be included with `%mdc`:
 
 ```
   <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} - %msg {%mdc}%n</pattern>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg MDC: {%mdc}%n</pattern>
   </encoder>
 ```
 
@@ -544,7 +544,7 @@ All MDC properties as key-value entries can be included with `%mdc`:
 
 ```
   <encoder>
-    <pattern>%date{ISO8601} %-5level %logger{36} - %msg {%mdc}%n</pattern>
+    <pattern>%date{ISO8601} %-5level %logger{36} - %msg MDC: {%mdc}%n</pattern>
   </encoder>
 ```
 
@@ -574,7 +574,7 @@ The marker can be included in the Logback output with `%marker` and all MDC prop
 
 ```
   <encoder>
-    <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg {%mdc}%n</pattern>
+    <pattern>[%date{ISO8601}] [%level] [%logger] [%marker] [%thread] - %msg MDC: {%mdc}%n</pattern>
   </encoder>
 ```
 

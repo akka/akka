@@ -441,7 +441,9 @@ object ShardRegion {
    * Sent back when a `ShardRegion.StartEntity` message was received and triggered the entity
    * to start (it does not guarantee the entity successfully started)
    */
-  final case class StartEntityAck(entityId: EntityId, shardId: ShardRegion.ShardId) extends ClusterShardingSerializable
+  final case class StartEntityAck(entityId: EntityId, shardId: ShardRegion.ShardId)
+      extends ClusterShardingSerializable
+      with DeadLetterSuppression
 
   /**
    * INTERNAL API. Sends stopMessage (e.g. `PoisonPill`) to the entities and when all of

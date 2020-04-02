@@ -181,7 +181,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
       val Question(replyRef2) = probe.expectMessageType[Question]
 
       LoggingTestKit
-        .error("Exception thrown out of adapter. Stopping myself.")
+        .error("Unsupported number")
         .expect {
           replyRef2 ! 42L
         }(system)

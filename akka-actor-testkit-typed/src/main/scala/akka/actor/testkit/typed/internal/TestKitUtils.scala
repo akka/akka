@@ -6,11 +6,16 @@ package akka.actor.testkit.typed.internal
 
 import java.lang.reflect.Modifier
 
+import scala.util.control.Exception.Catcher
+
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.annotation.InternalApi
 import scala.concurrent.{ Await, TimeoutException }
 import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
+
+import akka.actor.typed.scaladsl.ActorContext
 
 /**
  * INTERNAL API
@@ -29,17 +34,31 @@ private[akka] object ActorTestKitGuardian {
 
   val testKitGuardian: Behavior[TestKitCommand] = Behaviors.receive[TestKitCommand] {
     case (context, SpawnActor(name, behavior, reply, props)) =>
-      reply ! context.spawn(behavior, name, props)
-      Behaviors.same
+      try {
+        reply ! context.spawn(behavior, name, props)
+        Behaviors.same
+      } catch handleSpawnException(context, reply, props)
     case (context, SpawnActorAnonymous(behavior, reply, props)) =>
-      reply ! context.spawnAnonymous(behavior, props)
-      Behaviors.same
+      try {
+        reply ! context.spawnAnonymous(behavior, props)
+        Behaviors.same
+      } catch handleSpawnException(context, reply, props)
     case (context, StopActor(ref, reply)) =>
       context.watchWith(ref, ActorStopped(reply))
       context.stop(ref)
       Behaviors.same
     case (_, ActorStopped(reply)) =>
       reply ! Ack
+      Behaviors.same
+  }
+
+  private def handleSpawnException[T](
+      context: ActorContext[ActorTestKitGuardian.TestKitCommand],
+      reply: ActorRef[ActorRef[T]],
+      props: Props): Catcher[Behavior[TestKitCommand]] = {
+    case NonFatal(e) =>
+      context.log.error(s"Spawn failed, props [$props]", e)
+      reply ! context.spawnAnonymous(Behaviors.stopped)
       Behaviors.same
   }
 }

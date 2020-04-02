@@ -54,7 +54,7 @@ private[remote] class TestInboundContext(
     val done = a.completeHandshake(peer)
     done.foreach { _ =>
       associationsByUid.put(peer.uid, a)
-    }(ExecutionContexts.sameThreadExecutionContext)
+    }(ExecutionContexts.parasitic)
     done
   }
 

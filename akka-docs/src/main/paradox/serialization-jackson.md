@@ -173,7 +173,17 @@ This can be solved by implementing a custom serialization for the enums. Annotat
 Scala
 :  @@snip [CustomAdtSerializer.scala](/akka-serialization-jackson/src/test/scala/doc/akka/serialization/jackson/CustomAdtSerializer.scala) { #adt-trait-object }
 
+### Enumerations
 
+Jackson support for Scala Enumerations defaults to serializing a `Value` as a `JsonObject` that includes a 
+field with the `"value"` and a field with the `"type"` whose value is the FQCN of the enumeration. Jackson
+includes the [`@JsonScalaEnumeration`](https://github.com/FasterXML/jackson-module-scala/wiki/Enumerations) to 
+statically specify the type information to a field. When using the `@JsonScalaEnumeration` annotation the enumeration 
+value is serialized as a JsonString.
+
+Scala
+:  @@snip [JacksonSerializerSpec.scala](/akka-serialization-jackson/src/test/scala/akka/serialization/jackson/JacksonSerializerSpec.scala) { #jackson-scala-enumeration }
+    
 @@@
 
 
