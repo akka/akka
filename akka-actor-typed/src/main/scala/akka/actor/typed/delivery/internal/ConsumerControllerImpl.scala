@@ -145,8 +145,8 @@ import akka.annotation.InternalApi
                         "Received SequencedMessage seqNr [{}], stashing before Start, stashed size [{}].",
                         seqMsg.seqNr,
                         stashBuffer.size + 1)
+                      stashBuffer.stash(seqMsg)
                     }
-                    stashBuffer.stash(seqMsg)
                     Behaviors.same
 
                   case _: DeliverThenStop[_] =>
