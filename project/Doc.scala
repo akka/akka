@@ -12,7 +12,7 @@ import sbtunidoc.GenJavadocPlugin.autoImport._
 import sbt.Keys._
 import sbt.File
 import scala.annotation.tailrec
-import DeployRsync.autoImport.deployRsyncArtifacts
+import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncArtifacts
 
 import sbt.ScopeFilter.ProjectFilter
 
@@ -138,7 +138,7 @@ object UnidocRoot extends AutoPlugin {
         if (JdkOptions.isJdk8) Seq("-Xdoclint:none")
         else Seq("-Xdoclint:none", "--ignore-source-errors", "--no-module-directories")
       },
-      deployRsyncArtifacts ++= {
+      publishRsyncArtifacts ++= {
         val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
         (Compile / unidoc).value match {
           case Seq(japi, api) =>
