@@ -31,6 +31,7 @@ import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.ReplicatorSettings
+import akka.cluster.sharding.internal.coordinator.DDataStateStore
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.event.Logging
 import akka.pattern.BackoffOpts
@@ -754,8 +755,17 @@ private[akka] class ClusterShardingGuardian extends Actor {
         val cPath = coordinatorPath(encName)
         val shardRegion = context.child(encName).getOrElse {
           if (context.child(cName).isEmpty) {
+            // FIXME we need to allow for configuring remember entities store and state store separately
+            val (stateStore, rememberEntitiesStore) = settings.stateStoreMode match {
+              case ClusterShardingSettings.StateStoreModePersistence =>
+
+              case ClusterShardingSettings.StateStoreModeDData =>
+                new DDataStateStore()
+              case ClusterShardingSettings.StateStoreModeCustom =>
+
+            }
             val coordinatorProps =
-              if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
+              if ()
                 ShardCoordinator.props(typeName, settings, allocationStrategy)
               else
                 ShardCoordinator.props(typeName, settings, allocationStrategy, rep, majorityMinCap)
