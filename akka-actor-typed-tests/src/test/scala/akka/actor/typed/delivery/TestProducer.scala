@@ -17,7 +17,7 @@ object TestProducer {
 
   trait Command
   final case class RequestNext(sendTo: ActorRef[TestConsumer.Job]) extends Command
-  private final case object Tick extends Command
+  private case object Tick extends Command
 
   val defaultProducerDelay: FiniteDuration = 20.millis
 

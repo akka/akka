@@ -22,7 +22,7 @@ import scala.concurrent.Promise
 @InternalApi
 private[akka] object MaterializerGuardian {
 
-  final case object StartMaterializer
+  case object StartMaterializer
   final case class MaterializerStarted(materializer: Materializer)
 
   // this is available to keep backwards compatibility with ActorMaterializer and should

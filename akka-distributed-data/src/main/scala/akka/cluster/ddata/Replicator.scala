@@ -781,7 +781,7 @@ object Replicator {
    * Get current number of replicas, including the local replica.
    * Will reply to sender with [[ReplicaCount]].
    */
-  final case object GetReplicaCount
+  case object GetReplicaCount
 
   /**
    * Java API: The `GetReplicaCount` instance

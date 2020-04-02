@@ -86,9 +86,9 @@ object MaxThroughputSpec extends MultiNodeConfig {
 
   case object Run
   sealed trait Echo extends DeadLetterSuppression with CborSerializable
-  final case object StartAck extends Echo
+  case object StartAck extends Echo
   final case class Start(correspondingReceiver: ActorRef) extends Echo
-  final case object End extends Echo
+  case object End extends Echo
   final case class Warmup(payload: AnyRef) extends CborSerializable
   final case class EndResult(totalReceived: Long) extends CborSerializable
   final case class FlowControl(id: Int, burstStartTime: Long) extends Echo

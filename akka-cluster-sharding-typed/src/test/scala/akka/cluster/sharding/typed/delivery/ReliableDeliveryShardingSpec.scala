@@ -42,7 +42,7 @@ object ReliableDeliveryShardingSpec {
     trait Command
     final case class RequestNext(sendToRef: ActorRef[ShardingEnvelope[TestConsumer.Job]]) extends Command
 
-    private final case object Tick extends Command
+    private case object Tick extends Command
 
     def apply(producerController: ActorRef[ShardingProducerController.Start[TestConsumer.Job]]): Behavior[Command] = {
       Behaviors.setup { context =>

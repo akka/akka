@@ -104,8 +104,8 @@ object ClusterShardingSettings {
       else
         throw new IllegalArgumentException("Not recognized StateStoreMode, only 'ddata' is supported.")
   }
-  final case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
-  final case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
+  case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
+  case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
 
   // generated using kaze-class
   final class TuningParameters private (

@@ -310,7 +310,7 @@ object Attributes {
 
   final case class LogLevels(onElement: Logging.LogLevel, onFinish: Logging.LogLevel, onFailure: Logging.LogLevel)
       extends Attribute
-  final case object AsyncBoundary extends Attribute
+  case object AsyncBoundary extends Attribute
 
   /**
    * Cancellation strategies provide a way to configure the behavior of a stage when `cancelStage` is called.

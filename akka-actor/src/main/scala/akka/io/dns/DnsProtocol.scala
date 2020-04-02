@@ -30,7 +30,7 @@ object DnsProtocol {
 
   sealed trait RequestType
   final case class Ip(ipv4: Boolean = true, ipv6: Boolean = true) extends RequestType
-  final case object Srv extends RequestType
+  case object Srv extends RequestType
 
   /**
    * Java API

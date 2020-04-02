@@ -96,7 +96,7 @@ private[akka] object Shard {
   final case class LeaseAcquireResult(acquired: Boolean, reason: Option[Throwable]) extends DeadLetterSuppression
   final case class LeaseLost(reason: Option[Throwable]) extends DeadLetterSuppression
 
-  final case object LeaseRetry extends DeadLetterSuppression
+  case object LeaseRetry extends DeadLetterSuppression
   private val LeaseRetryTimer = "lease-retry"
 
   object State {
