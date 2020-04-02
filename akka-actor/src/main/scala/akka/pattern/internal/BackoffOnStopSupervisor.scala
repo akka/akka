@@ -67,10 +67,10 @@ import scala.concurrent.duration.FiniteDuration
           context.system.scheduler.scheduleOnce(restartDelay, self, StartChild)
           restartCount = nextRestartCount
         } else {
-          log.debug(
-            "Terminating on restart #{} which exceeds max allowed restarts ({})",
-            nextRestartCount,
-            maxNrOfRetries)
+          log.warning(
+            "Supervised child exceeded max allowed number of restarts [{}] (restarded [{}] times), stopping supervisor",
+            maxNrOfRetries,
+            nextRestartCount)
           context.stop(self)
         }
       }
