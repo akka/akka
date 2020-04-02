@@ -481,7 +481,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           }
 
         case NodeAdded(uniqueAddress) =>
-          if (state.registry.nodes(uniqueAddress)) {
+          if (state.registry.nodes.contains(uniqueAddress)) {
             Behaviors.same
           } else {
             val newState = state.copy(registry = state.registry.addNode(uniqueAddress))
@@ -505,7 +505,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
             // If self cluster node is shutting down our own entries should have been removed via
             // watch-Terminated or will be removed by other nodes. This point is anyway too late.
             Behaviors.stopped
-          } else if (state.registry.nodes(uniqueAddress)) {
+          } else if (state.registry.nodes.contains(uniqueAddress)) {
 
             val keysForNode = state.registry.keysFor(uniqueAddress)
             val newState = state.copy(registry = state.registry.removeNode(uniqueAddress))
