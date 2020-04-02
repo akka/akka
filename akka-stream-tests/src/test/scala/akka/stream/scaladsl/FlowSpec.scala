@@ -7,7 +7,6 @@ package akka.stream.scaladsl
 import java.util.concurrent.ThreadLocalRandom
 
 import akka.NotUsed
-import akka.actor._
 import akka.stream.impl._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit._

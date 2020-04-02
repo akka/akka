@@ -4,7 +4,6 @@
 
 package akka.cluster.sharding
 
-import akka.actor._
 import akka.cluster.sharding.ShardRegion.{ ClusterShardingStats, GetClusterShardingStats }
 import akka.testkit._
 import com.typesafe.config.{ Config, ConfigFactory }
@@ -61,7 +60,7 @@ object ClusterShardingMinMembersPerRoleConfiguredConfig extends ClusterShardingM
 
   val commonRoleConfig =
     ConfigFactory.parseString("""
-    akka.cluster.min-nr-of-members = 3                                                  
+    akka.cluster.min-nr-of-members = 3
     akka.cluster.role.R1.min-nr-of-members = 3
     akka.cluster.role.R2.min-nr-of-members = 2
     """)

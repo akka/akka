@@ -30,6 +30,25 @@ object ActorRef {
    */
   final val noSender: ActorRef = Actor.noSender
 
+  implicit final class ActorRefOps(val ref: ActorRef) extends AnyVal {
+
+    /**
+     * Sends a one-way asynchronous message. E.g. fire-and-forget semantics.
+     * <p/>
+     *
+     * If invoked from within an actor then the actor reference is implicitly passed on as the implicit 'sender' argument.
+     * <p/>
+     *
+     * This actor 'sender' reference is then available in the receiving actor in the 'sender()' member variable,
+     * if invoked from within an Actor. If not then no sender is available.
+     * <pre>
+     *   actor ! message
+     * </pre>
+     * <p/>
+     */
+    def !(message: Any)(implicit sender: ActorRef = Actor.noSender): Unit =
+      ref.asInstanceOf[ScalaActorRef].!(message)(sender)
+  }
 }
 
 /**
@@ -132,7 +151,7 @@ abstract class ActorRef extends java.lang.Comparable[ActorRef] with Serializable
    *
    * Works, no matter whether originally sent with tell/'!' or ask/'?'.
    */
-  def forward(message: Any)(implicit context: ActorContext) = tell(message, context.sender())
+  def forward(message: Any)(implicit context: ActorContext): Unit = tell(message, context.sender())
 
   /**
    * INTERNAL API

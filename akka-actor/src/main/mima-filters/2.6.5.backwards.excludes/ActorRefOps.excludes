@@ -1,0 +1,2 @@
+# Replace actorRef2Scala with value class.
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.actor.package.actorRef2Scala")
