@@ -273,22 +273,23 @@ private[akka] class Shard(
     case AkkaFailure(ex) =>
       loadingEntityIdsFailed(ex)
     case msg =>
-      log.debug("Got msg while waiting for remember entitites: {}", msg)
+      if (VerboseDebug)
+        log.debug("Got msg of type [{}] from [{}] while waiting for remember entitites", msg.getClass, sender())
       stash()
   }
 
   def loadingEntityIdsFailed(ex: Throwable): Unit = {
     log.error(ex, "Failed to load initial entity ids from remember entities store")
+    // parent ShardRegion supervisor will notice that it terminated and will start it again, after backoff
     context.stop(self)
   }
 
   def onEntitiesRemembered(ids: Set[EntityId]): Unit = {
+    log.debug("Shard initialized")
     if (ids.nonEmpty) {
       entityIds = ids
       restartRememberedEntities(ids)
-    } else {
-      log.debug("Shard initialized")
-    }
+    } else {}
     context.parent ! ShardInitialized(shardId)
     context.become(receiveCommand)
     unstashAll()
