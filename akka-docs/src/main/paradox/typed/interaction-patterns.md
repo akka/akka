@@ -192,7 +192,10 @@ The response adapting function is running in the receiving actor and can safely 
 
 Sometimes you need to interact with actors from the outside of the actor system, this can be done with fire-and-forget as described above or through another version of `ask` that returns a @scala[`Future[Response]`]@java[`CompletionStage<Response>`] that is either completed with a successful response or failed with a `TimeoutException` if there was no response within the specified timeout.
  
-To do this we use @scala[`ActorRef.ask` (or the symbolic `ActorRef.?`) implicitly provided by `akka.actor.typed.scaladsl.AskPattern`]@java[`akka.actor.typed.javadsl.AskPattern.ask`] to send a message to an actor and get a @scala[`Future[Response]`]@java[`CompletionState[Response]`] back.
+@scala[To do this we use `ask` (or the symbolic `?`) implicitly added to `ActorRef` by `akka.actor.typed.scaladsl.AskPattern._`
+to send a message to an actor and get a `Future[Response]` back. `ask` takes implicit `Timeout` and `ActorSystem` parameters.]
+@java[To do this we use `akka.actor.typed.javadsl.AskPattern.ask` to send a message to an actor and get a 
+`CompletionState[Response]` back.]
 
 **Example:**
 
