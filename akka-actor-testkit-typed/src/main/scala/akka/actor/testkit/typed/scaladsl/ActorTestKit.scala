@@ -39,7 +39,10 @@ object ActorTestKit {
    */
   def apply(): ActorTestKit =
     new ActorTestKit(
-      ActorSystem(ActorTestKitGuardian.testKitGuardian, TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]), ApplicationTestConfig),
+      ActorSystem(
+        ActorTestKitGuardian.testKitGuardian,
+        TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
+        ApplicationTestConfig),
       settings = None)
 
   /**
@@ -84,7 +87,10 @@ object ActorTestKit {
    */
   def apply(customConfig: Config): ActorTestKit =
     new ActorTestKit(
-      ActorSystem(ActorTestKitGuardian.testKitGuardian, TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]), customConfig),
+      ActorSystem(
+        ActorTestKitGuardian.testKitGuardian,
+        TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
+        customConfig),
       settings = None)
 
   /**
@@ -149,9 +155,7 @@ object ActorTestKit {
  *
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
-final class ActorTestKit private[akka] (
-    val internalSystem: ActorSystem[_],
-    settings: Option[TestKitSettings]) {
+final class ActorTestKit private[akka] (val internalSystem: ActorSystem[_], settings: Option[TestKitSettings]) {
 
   // avoid slf4j noise by touching it first from single thread #28673
   LoggerFactory.getLogger(internalSystem.name).debug("Starting ActorTestKit")
@@ -192,7 +196,9 @@ final class ActorTestKit private[akka] (
    * guardian
    */
   def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] =
-    Await.result(internalTestKitGuardian.ask(ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
+    Await.result(
+      internalTestKitGuardian.ask(ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)),
+      timeout.duration)
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit
@@ -206,7 +212,9 @@ final class ActorTestKit private[akka] (
    * guardian
    */
   def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
-    Await.result(internalTestKitGuardian.ask(ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
+    Await.result(
+      internalTestKitGuardian.ask(ActorTestKitGuardian.SpawnActor(name, behavior, _, props)),
+      timeout.duration)
 
   /**
    * Stop the actor under test and wait until it terminates.
