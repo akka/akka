@@ -6,7 +6,6 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 
-import akka.actor.setup.ActorSystemSetup
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -50,21 +49,6 @@ object ActorTestKit {
    */
   def create(system: ActorSystem[_]): ActorTestKit =
     new ActorTestKit(scaladsl.ActorTestKit(system))
-
-  /**
-   * Create a testkit from the provided name and actor system setup.
-   *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name and actor system setup,
-   * e.g. threads will include the name and related actor system setup.
-   * When the test has completed you should terminate the `ActorSystem` and
-   * the testkit with [[ActorTestKit#shutdownTestKit]].
-   *
-   * Config loaded from `application-test.conf` if that exists, otherwise
-   * using default configuration from the reference.conf resources that ship with the Akka libraries.
-   * The application.conf of your project is not used in this case.
-   */
-  def create(name: String, actorSystemSetup: ActorSystemSetup): ActorTestKit =
-    new ActorTestKit(scaladsl.ActorTestKit(TestKitUtils.scrubActorSystemName(name), actorSystemSetup))
 
   /**
    * Create a named testkit.

@@ -6,9 +6,6 @@ package akka.actor.testkit.typed.scaladsl
 
 import java.util.concurrent.TimeoutException
 
-import akka.actor.BootstrapSetup
-import akka.actor.setup.ActorSystemSetup
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.TestKitSettings
@@ -42,8 +39,7 @@ object ActorTestKit {
    */
   def apply(): ActorTestKit =
     new ActorTestKit(
-      name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-      ActorSystemSetup.apply(BootstrapSetup(ApplicationTestConfig)),
+      ActorSystem(ActorTestKitGuardian.testKitGuardian, TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]), ApplicationTestConfig),
       settings = None)
 
   /**
@@ -57,27 +53,8 @@ object ActorTestKit {
    * Config loaded from `system.settings.config` if that exists, otherwise
    * using default configuration from the reference.conf resources that ship with the Akka libraries.
    */
-  def apply(system: ActorSystem[_]): ActorTestKit = {
-    new ActorTestKit(
-      name = TestKitUtils.scrubActorSystemName(system.name),
-      ActorSystemSetup.apply(BootstrapSetup(system.settings.config)),
-      settings = None)
-  }
-
-  /**
-   * Create a testkit named based on the provided ActorSystemSetup.
-   *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name and actor system setup,
-   * e.g. threads will include the name and related actor system setup.
-   * When the test has completed you should terminate the `ActorSystem` and
-   * the testkit with [[ActorTestKit#shutdownTestKit]].
-   *
-   * Config loaded from `application-test.conf` if that exists, otherwise
-   * using default configuration from the reference.conf resources that ship with the Akka libraries.
-   */
-  def apply(name: String, actorSystemSetup: ActorSystemSetup): ActorTestKit = {
-    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), actorSystemSetup, settings = None)
-  }
+  def apply(system: ActorSystem[_]): ActorTestKit =
+    new ActorTestKit(system, settings = None)
 
   /**
    * Create a named testkit.
@@ -93,8 +70,7 @@ object ActorTestKit {
    */
   def apply(name: String): ActorTestKit =
     new ActorTestKit(
-      name = TestKitUtils.scrubActorSystemName(name),
-      ActorSystemSetup.apply(BootstrapSetup(ApplicationTestConfig)),
+      ActorSystem(ActorTestKitGuardian.testKitGuardian, TestKitUtils.scrubActorSystemName(name), ApplicationTestConfig),
       settings = None)
 
   /**
@@ -108,8 +84,7 @@ object ActorTestKit {
    */
   def apply(customConfig: Config): ActorTestKit =
     new ActorTestKit(
-      name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-      ActorSystemSetup.apply(BootstrapSetup(customConfig)),
+      ActorSystem(ActorTestKitGuardian.testKitGuardian, TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]), customConfig),
       settings = None)
 
   /**
@@ -122,8 +97,7 @@ object ActorTestKit {
    */
   def apply(name: String, customConfig: Config): ActorTestKit =
     new ActorTestKit(
-      name = TestKitUtils.scrubActorSystemName(name),
-      ActorSystemSetup.apply(BootstrapSetup(customConfig)),
+      ActorSystem(ActorTestKitGuardian.testKitGuardian, TestKitUtils.scrubActorSystemName(name), customConfig),
       settings = None)
 
   /**
@@ -137,8 +111,7 @@ object ActorTestKit {
    */
   def apply(name: String, customConfig: Config, settings: TestKitSettings): ActorTestKit =
     new ActorTestKit(
-      name = TestKitUtils.scrubActorSystemName(name),
-      ActorSystemSetup.apply(BootstrapSetup(customConfig)),
+      ActorSystem(ActorTestKitGuardian.testKitGuardian, TestKitUtils.scrubActorSystemName(name), customConfig),
       settings = Some(settings))
 
   /**
@@ -177,12 +150,11 @@ object ActorTestKit {
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
 final class ActorTestKit private[akka] (
-    name: String,
-    systemSetup: ActorSystemSetup,
+    val internalSystem: ActorSystem[_],
     settings: Option[TestKitSettings]) {
 
   // avoid slf4j noise by touching it first from single thread #28673
-  LoggerFactory.getLogger(name).debug("Starting ActorTestKit")
+  LoggerFactory.getLogger(internalSystem.name).debug("Starting ActorTestKit")
 
   implicit def testKitSettings: TestKitSettings =
     settings.getOrElse(TestKitSettings(system))
@@ -190,8 +162,8 @@ final class ActorTestKit private[akka] (
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
-    ActorSystem(ActorTestKitGuardian.testKitGuardian, name, systemSetup)
+  @InternalApi private[akka] val internalTestKitGuardian: ActorRef[ActorTestKitGuardian.TestKitCommand] =
+    internalSystem.systemActorOf(ActorTestKitGuardian.testKitGuardian, "test")
 
   implicit def system: ActorSystem[Nothing] = internalSystem
 
@@ -220,7 +192,7 @@ final class ActorTestKit private[akka] (
    * guardian
    */
   def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] =
-    Await.result(internalSystem.ask(ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
+    Await.result(internalTestKitGuardian.ask(ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit
@@ -234,7 +206,7 @@ final class ActorTestKit private[akka] (
    * guardian
    */
   def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
-    Await.result(internalSystem.ask(ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
+    Await.result(internalTestKitGuardian.ask(ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
 
   /**
    * Stop the actor under test and wait until it terminates.
@@ -243,7 +215,7 @@ final class ActorTestKit private[akka] (
    */
   def stop[T](ref: ActorRef[T], max: FiniteDuration = timeout.duration): Unit =
     try {
-      Await.result(internalSystem.ask { x: ActorRef[ActorTestKitGuardian.Ack.type] =>
+      Await.result(internalTestKitGuardian.ask { x: ActorRef[ActorTestKitGuardian.Ack.type] =>
         ActorTestKitGuardian.StopActor(ref, x)
       }, max)
     } catch {

@@ -5,8 +5,6 @@
 package akka.actor.testkit.typed.scaladsl
 
 import akka.Done
-import akka.actor.BootstrapSetup
-import akka.actor.setup.ActorSystemSetup
 import akka.actor.testkit.typed.internal.ActorTestKitGuardian
 import akka.actor.typed.ActorSystem
 
@@ -29,15 +27,6 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       val config = ConfigFactory.parseString("test.specific-config = yes")
       val system = ActorSystem(ActorTestKitGuardian.testKitGuardian, "TestActor", config)
       val testkit2 = ActorTestKit(system)
-      try {
-        testkit2.system.name should ===("TestActor")
-        testkit2.system.settings.config.getString("test.specific-config") should ===("yes")
-      } finally testkit2.shutdownTestKit()
-    }
-
-    "generate a default name and load the ActorSystemSetup from the provided ActorSystemSetup" in {
-      val actorSystemSetup = ActorSystemSetup(BootstrapSetup(ConfigFactory.parseString("test.specific-config = yes")))
-      val testkit2 = ActorTestKit("TestActor", actorSystemSetup)
       try {
         testkit2.system.name should ===("TestActor")
         testkit2.system.settings.config.getString("test.specific-config") should ===("yes")
