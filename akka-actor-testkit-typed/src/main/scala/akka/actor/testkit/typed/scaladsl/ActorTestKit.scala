@@ -6,6 +6,9 @@ package akka.actor.testkit.typed.scaladsl
 
 import java.util.concurrent.TimeoutException
 
+import akka.actor.BootstrapSetup
+import akka.actor.setup.ActorSystemSetup
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.TestKitSettings
@@ -40,8 +43,41 @@ object ActorTestKit {
   def apply(): ActorTestKit =
     new ActorTestKit(
       name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-      config = ApplicationTestConfig,
+      ActorSystemSetup.create(BootstrapSetup(ApplicationTestConfig)),
       settings = None)
+
+  /**
+   * Create a testkit named based on the provided ActorSystem.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * e.g. threads will include the name, and the related actor sustem setup.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from `system.settings.config` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   */
+  def apply(system: ActorSystem[_]): ActorTestKit = {
+    new ActorTestKit(
+      name = TestKitUtils.scrubActorSystemName(system.name),
+      ActorSystemSetup.create(BootstrapSetup(system.settings.config)),
+      settings = None)
+  }
+
+  /**
+   * Create a testkit named based on the provided ActorSystemSetup.
+   *
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name and actor system setup,
+   * e.g. threads will include the name and related actor system setup.
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from `application-test.conf` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   */
+  def apply(name: String, actorSystemSetup: ActorSystemSetup): ActorTestKit = {
+    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), actorSystemSetup, settings = None)
+  }
 
   /**
    * Create a named testkit.
@@ -56,7 +92,10 @@ object ActorTestKit {
    * The application.conf of your project is not used in this case.
    */
   def apply(name: String): ActorTestKit =
-    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = ApplicationTestConfig, settings = None)
+    new ActorTestKit(
+      name = TestKitUtils.scrubActorSystemName(name),
+      ActorSystemSetup.create(BootstrapSetup(ApplicationTestConfig)),
+      settings = None)
 
   /**
    * Create a testkit named from the class that is calling this method,
@@ -70,7 +109,7 @@ object ActorTestKit {
   def apply(customConfig: Config): ActorTestKit =
     new ActorTestKit(
       name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-      config = customConfig,
+      ActorSystemSetup.create(BootstrapSetup(customConfig)),
       settings = None)
 
   /**
@@ -82,7 +121,10 @@ object ActorTestKit {
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
   def apply(name: String, customConfig: Config): ActorTestKit =
-    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = customConfig, settings = None)
+    new ActorTestKit(
+      name = TestKitUtils.scrubActorSystemName(name),
+      ActorSystemSetup.create(BootstrapSetup(customConfig)),
+      settings = None)
 
   /**
    * Create a named testkit, and use a custom config for the actor system,
@@ -94,7 +136,10 @@ object ActorTestKit {
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
   def apply(name: String, customConfig: Config, settings: TestKitSettings): ActorTestKit =
-    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = customConfig, settings = Some(settings))
+    new ActorTestKit(
+      name = TestKitUtils.scrubActorSystemName(name),
+      ActorSystemSetup.create(BootstrapSetup(customConfig)),
+      settings = Some(settings))
 
   /**
    * Shutdown the given [[akka.actor.typed.ActorSystem]] and block until it shuts down,
@@ -131,7 +176,10 @@ object ActorTestKit {
  *
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
-final class ActorTestKit private[akka] (val name: String, val config: Config, settings: Option[TestKitSettings]) {
+final class ActorTestKit private[akka] (
+    val name: String,
+    val systemSetup: ActorSystemSetup,
+    settings: Option[TestKitSettings]) {
 
   // avoid slf4j noise by touching it first from single thread #28673
   LoggerFactory.getLogger(name).debug("Starting ActorTestKit")
@@ -143,7 +191,7 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * INTERNAL API
    */
   @InternalApi private[akka] val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
-    ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
+    ActorSystem(ActorTestKitGuardian.testKitGuardian, name, systemSetup)
 
   implicit def system: ActorSystem[Nothing] = internalSystem
 
