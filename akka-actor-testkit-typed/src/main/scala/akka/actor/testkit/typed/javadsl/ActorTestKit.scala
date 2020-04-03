@@ -36,7 +36,6 @@ object ActorTestKit {
   def create(): ActorTestKit =
     new ActorTestKit(scaladsl.ActorTestKit(TestKitUtils.testNameFromCallStack(classOf[ActorTestKit])))
 
-
   /**
    * Create a testkit from the provided actor system.
    *
