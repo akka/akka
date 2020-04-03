@@ -17,6 +17,7 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
 
 import akka.annotation.InternalApi
+import akka.annotation.InternalStableApi
 import akka.compat
 import akka.dispatch.internal.SameThreadExecutionContext
 import akka.util.unused
@@ -86,7 +87,7 @@ object ExecutionContexts {
    * INTERNAL API
    */
   // Once Scala 2.12 is no longer supported this can be dropped in favour of directly using [[ExecutionContext.parasitic]]
-  @InternalApi
+  @InternalStableApi
   private[akka] val parasitic: ExecutionContext = SameThreadExecutionContext()
 
   /**
