@@ -46,7 +46,7 @@ object ActorTestKit {
       settings = None)
 
   /**
-   * Create a testkit named based on the provided ActorSystem.
+   * Create a testkit from the provided actor system.
    *
    * It will use the provided [[akka.actor.typed.ActorSystem]] and create a ActorTestKit,
    * e.g. threads will include the name of the provided actor system.

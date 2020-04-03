@@ -38,8 +38,8 @@ object ActorTestKit {
   /**
    * Create a testkit from the provided actor system.
    *
-   * It will create an [[akka.actor.typed.ActorSystem]] based on the provided actor system,
-   * e.g. threads will include the name of the related actor system.
+   * It will use the provided [[akka.actor.typed.ActorSystem]] and create a ActorTestKit,
+   * e.g. threads will include the name of the provided actor system.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    *
