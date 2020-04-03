@@ -141,9 +141,11 @@ private[akka] final class EventSourcedRememberEntitiesStore(
     case DeleteSnapshotsFailure(m, reason) =>
       log.warning("Snapshots matching [{}] deletion failure: [{}]", m, reason.getMessage)
 
-    case RememberEntitiesShardStore.StopStore =>
-      log.debug("Store stopping")
-      context.stop(self)
+  }
+
+  override def postStop(): Unit = {
+    super.postStop()
+    log.debug("Store stopping")
   }
 
   def saveSnapshotWhenNeeded(): Unit = {

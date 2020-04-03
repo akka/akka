@@ -45,19 +45,19 @@ private[akka] object Shard {
   /**
    * A Shard command
    */
-  sealed trait ShardCommand
+  sealed trait RememberEntityCommand
 
   /**
    * When remembering entities and the entity stops without issuing a `Passivate`, we
    * restart it after a back off using this message.
    */
-  final case class RestartEntity(entity: EntityId) extends ShardCommand
+  final case class RestartEntity(entity: EntityId) extends RememberEntityCommand
 
   /**
    * When initialising a shard with remember entities enabled the following message is used
    * to restart batches of entity actors at a time.
    */
-  final case class RestartEntities(entity: Set[EntityId]) extends ShardCommand
+  final case class RestartEntities(entity: Set[EntityId]) extends RememberEntityCommand
 
   /**
    * A query for information about the shard
@@ -325,7 +325,7 @@ private[akka] class Shard(
   def idle: Receive = {
     case Terminated(ref)                         => receiveTerminated(ref)
     case msg: CoordinatorMessage                 => receiveCoordinatorMessage(msg)
-    case msg: ShardCommand                       => receiveShardCommand(msg)
+    case msg: RememberEntityCommand              => receiveRememberEntityCommand(msg)
     case msg: ShardRegion.StartEntity            => receiveStartEntity(msg)
     case msg: ShardRegion.StartEntityAck         => receiveStartEntityAck(msg)
     case msg: ShardRegionCommand                 => receiveShardRegionCommand(msg)
@@ -343,28 +343,30 @@ private[akka] class Shard(
         whenDone(entityId)
 
       case Some(store) =>
-        if (VerboseDebug) log.debug("Waiting for async write of [{}] [{}]", entityId, command)
+        if (VerboseDebug) log.debug("Update of [{}] [{}] triggered", entityId, command)
         store ! command
         timers.startSingleTimer(
           RememberEntityTimeoutKey,
           RememberEntityTimeout(command),
+          // FIXME this timeout needs to match the timeout used in the ddata shard write since that tries 3 times
+          // and this could always fail before ddata store completes retrying writes
           settings.tuningParameters.updatingStateTimeout)
 
         context.become {
           case RememberEntitiesShardStore.UpdateDone(entityId) =>
-            if (VerboseDebug) log.debug("Completed async write of [{}] {}", entityId, command)
+            if (VerboseDebug) log.debug("Update of [{}] {} done", entityId, command)
             timers.cancel(RememberEntityTimeoutKey)
             whenDone(entityId)
             context.become(idle)
             unstashAll()
-          case RememberEntityTimeout(_) =>
+          case RememberEntityTimeout(`command`) =>
             throw new RuntimeException(
-              s"Async write for $entityId timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
+              s"Async write for entityId $entityId timed out after ${settings.tuningParameters.updatingStateTimeout.pretty}")
 
           // below cases should handle same messages as in idle
           case _: Terminated                           => stash()
           case _: CoordinatorMessage                   => stash()
-          case _: ShardCommand                         => stash()
+          case _: RememberEntityCommand                => stash()
           case _: ShardRegion.StartEntity              => stash()
           case _: ShardRegion.StartEntityAck           => stash()
           case _: ShardRegionCommand                   => stash()
@@ -399,9 +401,12 @@ private[akka] class Shard(
     context.stop(self)
   }
 
-  private def receiveShardCommand(msg: ShardCommand): Unit = msg match {
+  private def receiveRememberEntityCommand(msg: RememberEntityCommand): Unit = msg match {
     // these are only used with remembering entities upon start
-    case RestartEntity(id)    => getOrCreateEntity(id)
+    case RestartEntity(id) =>
+      // starting because it was remembered as started on shard startup (note that a message starting
+      // it up could already have arrived and in that case it will already be started)
+      getOrCreateEntity(id)
     case RestartEntities(ids) => restartEntities(ids)
   }
 
@@ -551,7 +556,6 @@ private[akka] class Shard(
       log.debug("Entity stopped after passivation [{}]", entityId)
       dropBufferFor(entityId)
     }
-
   }
 
   /**
@@ -622,7 +626,7 @@ private[akka] class Shard(
                     // see waitForAsyncWrite for unstash
                     if (VerboseDebug)
                       log.debug(
-                        "Stashing message [{}] to [{}] because of write in progress for ",
+                        "Stashing message [{}] to [{}] because of write in progress for [{}]",
                         payload.getClass,
                         id,
                         entityIdWaitingForWrite.get)
@@ -696,7 +700,6 @@ private[akka] class Shard(
   }
 
   override def postStop(): Unit = {
-    rememberEntitiesStore.foreach(_ ! RememberEntitiesShardStore.StopStore)
     passivateIdleTask.foreach(_.cancel())
   }
 }

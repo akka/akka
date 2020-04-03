@@ -6,6 +6,7 @@ package akka.cluster.sharding
 
 import akka.actor._
 import akka.cluster.sharding.ShardRegion.Passivate
+import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.remote.testconductor.RoleName
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
@@ -42,8 +43,9 @@ object ClusterShardingFailureSpec {
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case Get(id)    => id.charAt(0).toString
-    case Add(id, _) => id.charAt(0).toString
+    case Get(id)         => id.charAt(0).toString
+    case Add(id, _)      => id.charAt(0).toString
+    case StartEntity(id) => id
   }
 }
 
@@ -57,6 +59,8 @@ abstract class ClusterShardingFailureSpecConfig(override val mode: String)
           coordinator-failure-backoff = 3s
           shard-failure-backoff = 3s
         }
+        # don't leak ddata state across runs
+        akka.cluster.sharding.distributed-data.durable.keys = []
         akka.persistence.journal.leveldb-shared.store.native = off
         # using Java serialization for these messages because test is sending them
         # to other nodes, which isn't normal usage.

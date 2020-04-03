@@ -45,7 +45,7 @@ private[akka] final class DDataRememberEntitiesShardStoreProvider(
     extends RememberEntitiesShardStoreProvider {
 
   override def shardStoreProps(shardId: ShardId): Props =
-    Props(new DDataRememberEntitiesStore(shardId, typeName, settings, replicator, majorityMinCap))
+    DDataRememberEntitiesStore.props(shardId, typeName, settings, replicator, majorityMinCap)
 
 }
 
@@ -101,7 +101,13 @@ private[akka] final class DDataRememberEntitiesStore(
   private val maxUpdateAttempts = 3
   private val keys = stateKeys(typeName, shardId)
 
-  log.debug("Starting up DDataRememberEntitiesStore")
+  if (log.isDebugEnabled) {
+    log.debug(
+      "Starting up DDataRememberEntitiesStore, write timeout: [{}], read timeout: [{}], majority min cap: [{}]",
+      settings.tuningParameters.waitingForStateTimeout.pretty,
+      settings.tuningParameters.updatingStateTimeout.pretty,
+      majorityMinCap)
+  }
   // FIXME potential optimization: start loading entity ids immediately on start instead of waiting for request
   // (then throw away after request has been seen)
 
@@ -113,9 +119,8 @@ private[akka] final class DDataRememberEntitiesStore(
   override def receive: Receive = idle
 
   def idle: Receive = {
-    case RememberEntitiesShardStore.AddEntity(entityId)    => onAddEntity(entityId)
-    case RememberEntitiesShardStore.RemoveEntity(entityId) => onRemovEntity(entityId)
-    case RememberEntitiesShardStore.GetEntities            => onGetEntities()
+    case update: RememberEntitiesShardStore.UpdateEntityCommand => onUpdate(update)
+    case RememberEntitiesShardStore.GetEntities                 => onGetEntities()
   }
 
   def waitingForAllEntityIds(requestor: ActorRef, gotKeys: Set[Int], ids: Set[EntityId]): Receive = {
@@ -138,51 +143,67 @@ private[akka] final class DDataRememberEntitiesStore(
       case NotFound(_, Some(i: Int)) =>
         receiveOne(i, Set.empty)
       case GetFailure(key, _) =>
-        throw new RuntimeException(
-          s"Unable to get an initial state within 'waiting-for-state-timeout': ${readMajority.timeout.pretty} using ${readMajority} (key $key)")
+        log.error(
+          "Unable to get an initial state within 'waiting-for-state-timeout': [{}] using [{}] (key [{}])",
+          readMajority.timeout.pretty,
+          readMajority,
+          key)
+        context.stop(self)
       case GetDataDeleted(_, _) =>
-        throw new RuntimeException(s"Unable to get an initial state because it was deleted")
+        log.error("Unable to get an initial state because it was deleted")
+        context.stop(self)
     }
   }
 
-  private def onAddEntity(entityId: EntityId): Unit = {
+  private def onUpdate(update: RememberEntitiesShardStore.UpdateEntityCommand): Unit = {
+    val keyForEntity = key(update.entityId)
     val sendUpdate = () =>
-      replicator ! Update(key(entityId), ORSet.empty[EntityId], writeMajority) { existing =>
-        existing :+ entityId
+      replicator ! Update(keyForEntity, ORSet.empty[EntityId], writeMajority, Some(update)) { existing =>
+        update match {
+          case RememberEntitiesShardStore.AddEntity(id)    => existing :+ id
+          case RememberEntitiesShardStore.RemoveEntity(id) => existing.remove(id)
+        }
       }
 
     sendUpdate()
-    context.become(waitingForUpdate(sender(), entityId, maxUpdateAttempts, retry = sendUpdate))
+    context.become(waitingForUpdate(sender(), update, keyForEntity, maxUpdateAttempts, sendUpdate))
   }
 
-  private def onRemovEntity(entityId: EntityId): Unit = {
-    val sendUpdate = () =>
-      replicator ! Update(key(entityId), ORSet.empty[EntityId], writeMajority) { existing =>
-        existing.remove(entityId)
+  private def waitingForUpdate(
+      requestor: ActorRef,
+      update: RememberEntitiesShardStore.UpdateEntityCommand,
+      keyForEntity: ORSetKey[EntityId],
+      retriesLeft: Int,
+      retry: () => Unit): Receive = {
+    case UpdateSuccess(`keyForEntity`, Some(`update`)) =>
+      log.debug("The DDataShard state was successfully updated for [{}]", update.entityId)
+      requestor ! RememberEntitiesShardStore.UpdateDone(update.entityId)
+      context.become(idle)
+
+    case UpdateTimeout(`keyForEntity`, Some(`update`)) =>
+      if (retriesLeft > 0) {
+        log.debug("Retrying update because of write timeout, tries left [{}]", retriesLeft)
+        retry()
+      } else {
+        log.error(
+          "Unable to update state, within 'updating-state-timeout'= [{}], gave up after [{}] retries",
+          writeMajority.timeout.pretty,
+          maxUpdateAttempts)
+        // will trigger shard restart
+        context.stop(self)
       }
-
-    sendUpdate()
-    context.become(waitingForUpdate(sender(), entityId, maxUpdateAttempts, retry = sendUpdate))
-  }
-
-  private def waitingForUpdate(requestor: ActorRef, entityId: EntityId, retriesLeft: Int, retry: () => Unit): Receive = {
-    case UpdateSuccess(_, _) =>
-      log.debug("The DDataShard state was successfully updated for [{}]", entityId)
-      requestor ! RememberEntitiesShardStore.UpdateDone(entityId)
-
-    case UpdateTimeout(_, _) =>
-      if (retriesLeft > 0) retry()
-      else
-        throw new RuntimeException(
-          "Unable to update state, within " +
-          s"'updating-state-timeout'= ${writeMajority.timeout.pretty}, " +
-          s"gave up after $maxUpdateAttempts retries")
-    case StoreFailure(_, _) =>
-      throw new RuntimeException("Unable to update state, due to store failure")
-    case ModifyFailure(_, error, cause, _) =>
-      throw new RuntimeException(s"Unable to update state, due to modify failure: $error", cause)
-    case UpdateDataDeleted(_, _) =>
-      throw new RuntimeException(s"Unable to update state, due to delete")
+    case StoreFailure(`keyForEntity`, Some(`update`)) =>
+      log.error("Unable to update state, due to store failure")
+      // will trigger shard restart
+      context.stop(self)
+    case ModifyFailure(`keyForEntity`, error, cause, Some(`update`)) =>
+      log.error(cause, "Unable to update state, due to modify failure: {}", error)
+      // will trigger shard restart
+      context.stop(self)
+    case UpdateDataDeleted(`keyForEntity`, Some(`update`)) =>
+      log.error("Unable to update state, due to delete")
+      // will trigger shard restart
+      context.stop(self)
   }
 
   private def onGetEntities(): Unit = {
