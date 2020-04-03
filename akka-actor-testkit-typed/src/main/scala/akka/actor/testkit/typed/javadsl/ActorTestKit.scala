@@ -38,10 +38,10 @@ object ActorTestKit {
 
 
   /**
-   * Create a testkit named from the class that is calling this method.
+   * Create a testkit from the provided actor system.
    *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
-   * e.g. threads will include the name.
+   * It will create an [[akka.actor.typed.ActorSystem]] with the provided actor name,
+   * e.g. threads will include the provided actor name.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    *
@@ -53,9 +53,9 @@ object ActorTestKit {
     new ActorTestKit(scaladsl.ActorTestKit(system))
 
   /**
-   * Create a testkit named from the class that is calling this method.
+   * Create a testkit from the provided name and actor system setup.
    *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
+   * It will create an [[akka.actor.typed.ActorSystem]] with this name and actor system setup,
    * e.g. threads will include the name.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
