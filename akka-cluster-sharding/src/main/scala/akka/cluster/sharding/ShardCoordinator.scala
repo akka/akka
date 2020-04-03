@@ -4,34 +4,25 @@
 
 package akka.cluster.sharding
 
+import akka.actor.DeadLetterSuppression
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.cluster.Cluster
+import akka.cluster.ClusterEvent._
+import akka.cluster.sharding.internal.coordinator.CoordinatorStateStore
+import akka.cluster.sharding.internal.coordinator.CoordinatorRememberEntitiesStore
+import akka.dispatch.ExecutionContexts
+import akka.event.BusLogging
+import akka.event.Logging
+import akka.pattern.AskTimeoutException
+import akka.pattern.pipe
+import akka.util.PrettyDuration._
+import akka.util.Timeout
+
 import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
-import akka.actor._
-import akka.actor.DeadLetterSuppression
-import akka.annotation.InternalApi
-import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
-import akka.cluster.ddata.LWWRegister
-import akka.cluster.ddata.LWWRegisterKey
-import akka.cluster.ddata.Replicator._
-import akka.dispatch.ExecutionContexts
-import akka.pattern.{ pipe, AskTimeoutException }
-import akka.persistence._
-import akka.cluster.ClusterEvent
-import akka.cluster.ddata.GSet
-import akka.cluster.ddata.GSetKey
-import akka.cluster.ddata.Key
-import akka.cluster.ddata.ReplicatedData
-import akka.cluster.ddata.SelfUniqueAddress
-import akka.cluster.sharding.internal.RememberEntitiesCoordinatorStore
-import akka.cluster.sharding.internal.coordinator.CoordinatorStateStore
-import akka.event.BusLogging
-import akka.event.Logging
-import akka.util.PrettyDuration._
-import akka.util.Timeout
-import com.github.ghik.silencer.silent
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -40,18 +31,6 @@ object ShardCoordinator {
 
   import ShardRegion.ShardId
 
-  /*
-  /**
-   * INTERNAL API
-   * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor.
-   */
-  @silent("deprecated")
-  private[akka] def props(
-      typeName: String,
-      settings: ClusterShardingSettings,
-      allocationStrategy: ShardAllocationStrategy): Props =
-    Props(new PersistentShardCoordinator(typeName: String, settings, allocationStrategy)).withDeploy(Deploy.local)
-   */
   /**
    * INTERNAL API
    * Factory method for the [[akka.actor.Props]] of the [[ShardCoordinator]] actor with state based on ddata.
@@ -60,8 +39,8 @@ object ShardCoordinator {
       typeName: String,
       settings: ClusterShardingSettings,
       allocationStrategy: ShardAllocationStrategy,
-      stateStore: CoordinatorStateStore,
-      rememberEntitiesStore: RememberEntitiesCoordinatorStore): Props =
+      stateStore: ActorRef,
+      rememberEntitiesStore: ActorRef): Props =
     Props(new ShardCoordinator(typeName: String, settings, allocationStrategy, stateStore, rememberEntitiesStore))
       .withDeploy(Deploy.local)
 
@@ -506,11 +485,6 @@ object ShardCoordinator {
     Props(new RebalanceWorker(shard, from, handOffTimeout, regions, shuttingDownRegions))
   }
 
-  /**
-   * INTERNAL API
-   */
-  @InternalApi
-  private[akka] case object AsyncWriteDone
 }
 
 /**
@@ -522,13 +496,14 @@ final class ShardCoordinator(
     typeName: String,
     settings: ClusterShardingSettings,
     allocationStrategy: ShardCoordinator.ShardAllocationStrategy,
-    stateStore: CoordinatorStateStore,
-    rememberEntitiesStore: RememberEntitiesCoordinatorStore)
+    // FIXME should those rather be spawned by the coordinator as children?
+    stateStore: ActorRef,
+    rememberEntitiesStore: ActorRef)
     extends Actor
     with Stash {
 
-  import ShardCoordinator._
   import ShardCoordinator.Internal._
+  import ShardCoordinator._
   import ShardRegion.ShardId
   import settings.tuningParameters._
 
@@ -568,41 +543,39 @@ final class ShardCoordinator(
       case _ =>
     }
 
+    // FIXME watch, timeout, retry?
     if (settings.rememberEntities) {
-      val state = stateStore.getInitialState()
-      val rememberedShards = rememberEntitiesStore.getShards()
-      state
-        .zipWith(rememberedShards) { (state, shards) =>
-          val newUnallocatedShards = state.unallocatedShards.union(shards.diff(state.shards.keySet))
-          state.copy(unallocatedShards = newUnallocatedShards)
-        }(ExecutionContexts.parasitic)
-        .pipeTo(self)
-    } else {
-      stateStore.getInitialState().pipeTo(self)
+      // if we there is a state, do we really need to pick up remembered shards as well?
+      // can we handle cold start -> load remembered different from hot start -> state already knows entities?
+      rememberEntitiesStore ! CoordinatorRememberEntitiesStore.GetShards
     }
-    // FIXME wait for initial state to arrive
-    // FIXME and or wait for remembered entities?
+    stateStore ! CoordinatorStateStore.GetInitialState
+
+    context.become(waitingForInitialState())
   }
 
-  def receive: Receive = waitingForInitialState
+  def receive: Receive = waitingForInitialState()
 
+  // wait for state and if remember entities enabled the initial set of shards
   // from ddata coordinator: "This state will drop all other messages since they will be retried"
-  def waitingForInitialState: Receive = {
-    ({
-      case initialState: State =>
-        state = initialState
-        becomeWaitingForStateInitialized()
+  def waitingForInitialState(): Receive = {
+    /* FIXME combine remembered shards with state
+     * val newUnallocatedShards = state.unallocatedShards.union(shards.diff(state.shards.keySet))
+     *           state.copy(unallocatedShards = newUnallocatedShards)
+     */
 
-      case Status.Failure(ex) =>
-        // store is responsible for retrying, so this is a final failure to load state
-        throw ex
+    ({
+      case CoordinatorStateStore.InitialState(initialState) =>
+        // FIXME remembered shards as well
+        state = initialState
+        initializeState()
       case ShardCoordinator.Internal.Terminate =>
         log.debug("Received termination message while waiting for state")
         context.stop(self)
     }: Receive).orElse(receiveTerminated)
   }
 
-  private def becomeWaitingForStateInitialized(): Unit = {
+  private def initializeState(): Unit = {
     if (state.isEmpty) {
       // empty state, activate immediately
       activate()
@@ -917,24 +890,15 @@ final class ShardCoordinator(
   }
 
   def update[E <: DomainEvent](evt: E)(f: E => Unit): Unit = {
-    val future = stateStore.storeStateUpdate(evt)
-    future.value match {
-      case Some(_) =>
-        f(evt)
-      case None =>
-        future.map(_ => AsyncWriteDone)(ExecutionContexts.parasitic).pipeTo(self)
+    stateStore ! CoordinatorStateStore.UpdateState(evt)
 
-        context.become(
-          {
-            case AsyncWriteDone =>
-              unstashAll()
-              context.unbecome()
-            case Status.Failure(ex) =>
-              throw new RuntimeException(s"Failed to write domain evt $evt")
-            case _ =>
-              stash()
-          },
-          discardOld = false)
+    // FIXME timeout
+    context.become {
+      case CoordinatorStateStore.StateUpdateDone(`evt`) =>
+        unstashAll()
+        context.become(active)
+      case _ =>
+        stash()
     }
   }
 

@@ -3,22 +3,93 @@
  */
 package akka.cluster.sharding.internal.coordinator
 
+import akka.actor.ActorLogging
 import akka.actor.ActorRef
+import akka.annotation.InternalApi
 import akka.cluster.sharding.ClusterShardingSerializable
+import akka.cluster.sharding.ClusterShardingSettings
+import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.persistence.PersistentActor
+import ShardCoordinator.Internal.State
 
-object EventSourcedStateStoreActor {
+/**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object EventSourcedCoordinatorStore {
   // DomainEvents for the persistent state of the event sourced ShardCoordinator
   sealed trait DomainEvent extends ClusterShardingSerializable
-  @SerialVersionUID(1L) final case class ShardRegionRegistered(region: ActorRef) extends DomainEvent
-  @SerialVersionUID(1L) final case class ShardRegionProxyRegistered(regionProxy: ActorRef) extends DomainEvent
-  @SerialVersionUID(1L) final case class ShardRegionTerminated(region: ActorRef) extends DomainEvent
-  @SerialVersionUID(1L) final case class ShardRegionProxyTerminated(regionProxy: ActorRef) extends DomainEvent
-  @SerialVersionUID(1L) final case class ShardHomeAllocated(shard: ShardId, region: ActorRef) extends DomainEvent
-  @SerialVersionUID(1L) final case class ShardHomeDeallocated(shard: ShardId) extends DomainEvent
+  final case class ShardRegionRegistered(region: ActorRef) extends DomainEvent
+  final case class ShardRegionProxyRegistered(regionProxy: ActorRef) extends DomainEvent
+  final case class ShardRegionTerminated(region: ActorRef) extends DomainEvent
+  final case class ShardRegionProxyTerminated(regionProxy: ActorRef) extends DomainEvent
+  final case class ShardHomeAllocated(shard: ShardId, region: ActorRef) extends DomainEvent
+  final case class ShardHomeDeallocated(shard: ShardId) extends DomainEvent
 }
 
-class EventSourcedStateStoreActor {}
+/**
+ * INTERNAL API
+ *
+ * Implementation for the 'persistence' coordinator state store mode deprecated in 2.6.0 as well as remember entities
+ */
+@InternalApi
+private[akka] class EventSourcedCoordinatorStore(typeName: String, settings: ClusterShardingSettings)
+    extends PersistentActor
+    with ActorLogging {
+
+  import EventSourcedCoordinatorStore._
+
+  private var state: State = State.empty
+
+  override def persistenceId = s"/sharding/${typeName}Coordinator"
+
+  override def journalPluginId: String = settings.journalPluginId
+
+  override def snapshotPluginId: String = settings.snapshotPluginId
+
+  override def receiveRecover: Receive = {
+    case evt: DomainEvent =>
+      log.debug("receiveRecover {}", evt)
+      evt match {
+        case _: ShardRegionRegistered =>
+          state = state.updated(evt)
+        case _: ShardRegionProxyRegistered =>
+          state = state.updated(evt)
+        case ShardRegionTerminated(region) =>
+          if (state.regions.contains(region))
+            state = state.updated(evt)
+          else {
+            log.debug(
+              "ShardRegionTerminated, but region {} was not registered. This inconsistency is due to that " +
+              " some stored ActorRef in Akka v2.3.0 and v2.3.1 did not contain full address information. It will be " +
+              "removed by later watch.",
+              region)
+          }
+        case ShardRegionProxyTerminated(proxy) =>
+          if (state.regionProxies.contains(proxy))
+            state = state.updated(evt)
+        case _: ShardHomeAllocated =>
+          state = state.updated(evt)
+        case _: ShardHomeDeallocated =>
+          state = state.updated(evt)
+      }
+
+    case SnapshotOffer(_, st: State) =>
+      log.debug("receiveRecover SnapshotOffer {}", st)
+      state = st.withRememberEntities(settings.rememberEntities)
+      //Old versions of the state object may not have unallocatedShard set,
+      // thus it will be null.
+      if (state.unallocatedShards == null)
+        state = state.copy(unallocatedShards = Set.empty)
+
+    case RecoveryCompleted =>
+      state = state.withRememberEntities(settings.rememberEntities)
+      watchStateActors()
+  }
+
+  override def receive: Receive = ???
+}
 
 /*
 

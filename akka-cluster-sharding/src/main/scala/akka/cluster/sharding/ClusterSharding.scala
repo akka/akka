@@ -31,7 +31,7 @@ import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.ReplicatorSettings
-import akka.cluster.sharding.internal.coordinator.DDataStateStore
+import akka.cluster.sharding.internal.coordinator.DDataCoordinatorStateStore
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.event.Logging
 import akka.pattern.BackoffOpts
@@ -760,7 +760,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
               case ClusterShardingSettings.StateStoreModePersistence =>
 
               case ClusterShardingSettings.StateStoreModeDData =>
-                new DDataStateStore()
+                new DDataCoordinatorStateStore()
               case ClusterShardingSettings.StateStoreModeCustom =>
 
             }

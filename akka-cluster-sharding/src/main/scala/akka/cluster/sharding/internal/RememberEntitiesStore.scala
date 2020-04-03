@@ -26,6 +26,7 @@ private[akka] trait RememberEntitiesShardStoreProvider {
  *
  * Implementations are responsible for each of the methods failing the returned future after a timeout.
  */
+// FIXME rename/put in package to align with coordinator store naming
 @InternalApi
 private[akka] object RememberEntitiesShardStore {
   // SPI protocol for a remember entities store
