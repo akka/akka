@@ -151,7 +151,8 @@ object ProducerController {
     def apply(config: Config): Settings = {
       new Settings(
         durableQueueRequestTimeout = config.getDuration("durable-queue.request-timeout").asScala,
-        durableQueueRetryAttempts = config.getInt("durable-queue.retry-attempts"))
+        durableQueueRetryAttempts = config.getInt("durable-queue.retry-attempts"),
+        durableQueueResendFirstInterval = config.getDuration("durable-queue.resend-first-interval").asScala)
     }
 
     /**
@@ -169,7 +170,10 @@ object ProducerController {
       apply(config)
   }
 
-  final class Settings private (val durableQueueRequestTimeout: FiniteDuration, val durableQueueRetryAttempts: Int) {
+  final class Settings private (
+      val durableQueueRequestTimeout: FiniteDuration,
+      val durableQueueRetryAttempts: Int,
+      val durableQueueResendFirstInterval: FiniteDuration) {
 
     def withDurableQueueRetryAttempts(newDurableQueueRetryAttempts: Int): Settings =
       copy(durableQueueRetryAttempts = newDurableQueueRetryAttempts)
@@ -181,10 +185,22 @@ object ProducerController {
       copy(durableQueueRequestTimeout = newDurableQueueRequestTimeout)
 
     /**
+     * Scala API
+     */
+    def withDurableQueueResendFirstInterval(newDurableQueueResendFirstInterval: FiniteDuration): Settings =
+      copy(durableQueueResendFirstInterval = newDurableQueueResendFirstInterval)
+
+    /**
      * Java API
      */
     def withDurableQueueRequestTimeout(newDurableQueueRequestTimeout: JavaDuration): Settings =
       copy(durableQueueRequestTimeout = newDurableQueueRequestTimeout.asScala)
+
+    /**
+     * Java API
+     */
+    def withDurableQueueResendFirstInterval(newDurableQueueResendFirstInterval: JavaDuration): Settings =
+      copy(durableQueueResendFirstInterval = newDurableQueueResendFirstInterval.asScala)
 
     /**
      * Java API
@@ -197,11 +213,12 @@ object ProducerController {
      */
     private def copy(
         durableQueueRequestTimeout: FiniteDuration = durableQueueRequestTimeout,
-        durableQueueRetryAttempts: Int = durableQueueRetryAttempts) =
-      new Settings(durableQueueRequestTimeout, durableQueueRetryAttempts)
+        durableQueueRetryAttempts: Int = durableQueueRetryAttempts,
+        durableQueueResendFirstInterval: FiniteDuration = durableQueueResendFirstInterval) =
+      new Settings(durableQueueRequestTimeout, durableQueueRetryAttempts, durableQueueResendFirstInterval)
 
     override def toString: String =
-      s"Settings($durableQueueRequestTimeout, $durableQueueRetryAttempts)"
+      s"Settings($durableQueueRequestTimeout, $durableQueueRetryAttempts, $durableQueueResendFirstInterval)"
   }
 
   def apply[A: ClassTag](
