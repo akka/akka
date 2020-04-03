@@ -352,6 +352,7 @@ private class ProducerControllerImpl[A: ClassTag](
   import ProducerControllerImpl._
 
   private val flightRecorder = ActorFlightRecorder(context.system).delivery
+  private val traceEnabled = context.log.isTraceEnabled
   // for the durableQueue StoreMessageSent ask
   private implicit val askTimeout: Timeout = settings.durableQueueRequestTimeout
 
@@ -359,7 +360,7 @@ private class ProducerControllerImpl[A: ClassTag](
 
     def onMsg(m: A, newReplyAfterStore: Map[SeqNr, ActorRef[SeqNr]], ack: Boolean): Behavior[InternalCommand] = {
       checkOnMsgRequestedState()
-      if (context.log.isTraceEnabled)
+      if (traceEnabled)
         context.log.trace("Sending [{}] with seqNr [{}].", m.getClass.getName, s.currentSeqNr)
       val seqMsg = SequencedMessage(producerId, s.currentSeqNr, m, s.currentSeqNr == s.firstSeqNr, ack)(context.self)
       val newUnconfirmed =
@@ -449,7 +450,8 @@ private class ProducerControllerImpl[A: ClassTag](
     }
 
     def receiveAck(newConfirmedSeqNr: SeqNr): Behavior[InternalCommand] = {
-      context.log.trace2("Received Ack, confirmed [{}], current [{}].", newConfirmedSeqNr, s.currentSeqNr)
+      if (traceEnabled)
+        context.log.trace2("Received Ack, confirmed [{}], current [{}].", newConfirmedSeqNr, s.currentSeqNr)
       val stateAfterAck = onAck(newConfirmedSeqNr)
       if (newConfirmedSeqNr == s.firstSeqNr && stateAfterAck.unconfirmed.nonEmpty) {
         resendUnconfirmed(stateAfterAck.unconfirmed)
@@ -459,7 +461,7 @@ private class ProducerControllerImpl[A: ClassTag](
 
     def onAck(newConfirmedSeqNr: SeqNr): State[A] = {
       val (replies, newReplyAfterStore) = s.replyAfterStore.partition { case (seqNr, _) => seqNr <= newConfirmedSeqNr }
-      if (replies.nonEmpty)
+      if (replies.nonEmpty && traceEnabled)
         context.log.trace("Sending confirmation replies from [{}] to [{}].", replies.head._1, replies.last._1)
       replies.foreach {
         case (seqNr, replyTo) => replyTo ! seqNr
@@ -489,7 +491,8 @@ private class ProducerControllerImpl[A: ClassTag](
         throw new IllegalStateException(s"currentSeqNr [${s.currentSeqNr}] not matching stored seqNr [$seqNr]")
 
       s.replyAfterStore.get(seqNr).foreach { replyTo =>
-        context.log.trace("Sending confirmation reply to [{}] after storage.", seqNr)
+        if (traceEnabled)
+          context.log.trace("Sending confirmation reply to [{}] after storage.", seqNr)
         replyTo ! seqNr
       }
       val newReplyAfterStore = s.replyAfterStore - seqNr

@@ -278,6 +278,7 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
   import WorkPullingProducerController.WorkerStats
   import WorkPullingProducerControllerImpl._
 
+  private val traceEnabled = context.log.isTraceEnabled
   private val durableQueueAskTimeout: Timeout = settings.producerControllerSettings.durableQueueRequestTimeout
   private val workerAskTimeout: Timeout = settings.internalAskTimeout
 
@@ -288,7 +289,7 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
 
     def onMessage(msg: A, wasStashed: Boolean, replyTo: Option[ActorRef[Done]], totalSeqNr: TotalSeqNr): State[A] = {
       val consumersWithDemand = s.out.iterator.filter { case (_, out) => out.askNextTo.isDefined }.toVector
-      if (context.log.isTraceEnabled)
+      if (traceEnabled)
         context.log.traceN(
           "Received message seqNr [{}], wasStashed [{}], consumersWithDemand [{}], hasRequested [{}].",
           totalSeqNr,
@@ -337,7 +338,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
           }
 
           def tellRequestNext(): Unit = {
-            context.log.trace("Sending RequestNext to producer, seqNr [{}].", totalSeqNr)
+            if (traceEnabled)
+              context.log.trace("Sending RequestNext to producer, seqNr [{}].", totalSeqNr)
             s.producer ! requestNext
           }
 
@@ -452,7 +454,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
 
     def receiveStoreMessageSentCompleted(seqNr: SeqNr, m: A) = {
       s.replyAfterStore.get(seqNr).foreach { replyTo =>
-        context.log.trace("Sending reply for seqNr [{}] after storage.", seqNr)
+        if (traceEnabled)
+          context.log.trace("Sending reply for seqNr [{}] after storage.", seqNr)
         replyTo ! Done
       }
 
@@ -484,7 +487,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
       }
 
       if (confirmed.nonEmpty) {
-        context.log.trace("Received Ack seqNr [{}] from worker [{}].", confirmedSeqNr, outState.confirmationQualifier)
+        if (traceEnabled)
+          context.log.trace("Received Ack seqNr [{}] from worker [{}].", confirmedSeqNr, outState.confirmationQualifier)
         confirmed.foreach {
           case Unconfirmed(_, _, _, None) => // no reply
           case Unconfirmed(_, _, _, Some(replyTo)) =>
@@ -509,10 +513,11 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
       s.out.get(outKey) match {
         case Some(outState) =>
           val confirmedSeqNr = w.next.confirmedSeqNr
-          context.log.trace2(
-            "Received RequestNext from worker [{}], confirmedSeqNr [{}].",
-            w.next.producerId,
-            confirmedSeqNr)
+          if (traceEnabled)
+            context.log.trace2(
+              "Received RequestNext from worker [{}], confirmedSeqNr [{}].",
+              w.next.producerId,
+              confirmedSeqNr)
 
           val newUnconfirmed = onAck(outState, confirmedSeqNr)
 
@@ -528,7 +533,9 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
           } else if (s.requested) {
             active(s.copy(out = newOut))
           } else {
-            context.log.trace("Sending RequestNext to producer after RequestNext from worker [{}].", w.next.producerId)
+            if (traceEnabled)
+              context.log
+                .trace("Sending RequestNext to producer after RequestNext from worker [{}].", w.next.producerId)
             s.producer ! requestNext
             active(s.copy(out = newOut, requested = true))
           }

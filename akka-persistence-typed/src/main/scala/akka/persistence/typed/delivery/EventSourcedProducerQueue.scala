@@ -219,14 +219,17 @@ private class EventSourcedProducerQueue[A](
     cleanupUnusedAfter: FiniteDuration) {
   import DurableProducerQueue._
 
+  private val traceEnabled = context.log.isTraceEnabled
+
   def onCommand(state: State[A], command: Command[A]): Effect[Event, State[A]] = {
     command match {
       case StoreMessageSent(sent, replyTo) =>
         if (sent.seqNr == state.currentSeqNr) {
-          context.log.trace(
-            "StoreMessageSent seqNr [{}], confirmationQualifier [{}]",
-            sent.seqNr,
-            sent.confirmationQualifier)
+          if (traceEnabled)
+            context.log.trace(
+              "StoreMessageSent seqNr [{}], confirmationQualifier [{}]",
+              sent.seqNr,
+              sent.confirmationQualifier)
           Effect.persist(sent).thenReply(replyTo)(_ => StoreMessageSentAck(sent.seqNr))
         } else if (sent.seqNr == state.currentSeqNr - 1) {
           // already stored, could be a retry after timout
@@ -239,7 +242,11 @@ private class EventSourcedProducerQueue[A](
         }
 
       case StoreMessageConfirmed(seqNr, confirmationQualifier, timestampMillis) =>
-        context.log.trace("StoreMessageConfirmed seqNr [{}], confirmationQualifier [{}]", seqNr, confirmationQualifier)
+        if (traceEnabled)
+          context.log.trace(
+            "StoreMessageConfirmed seqNr [{}], confirmationQualifier [{}]",
+            seqNr,
+            confirmationQualifier)
         val previousConfirmedSeqNr = state.confirmedSeqNr.get(confirmationQualifier) match {
           case Some((nr, _)) => nr
           case None          => 0L

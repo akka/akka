@@ -228,6 +228,8 @@ private class ConsumerControllerImpl[A](
 
   private val flightRecorder = ActorFlightRecorder(context.system).delivery
 
+  private val traceEnabled = context.log.isTraceEnabled
+
   startRetryTimer()
 
   private def resendLost = !settings.onlyFlowControl
@@ -245,7 +247,7 @@ private class ConsumerControllerImpl[A](
           flightRecorder.consumerReceived(pid, seqNr)
 
           if (s.isProducerChanged(seqMsg)) {
-            if (seqMsg.first)
+            if (seqMsg.first && traceEnabled)
               context.log.trace("Received first SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
             receiveChangedProducer(s, seqMsg)
           } else if (s.registering.isDefined) {
@@ -254,7 +256,8 @@ private class ConsumerControllerImpl[A](
               seqNr)
             stashBuffer.unstash(Behaviors.same, 1, scalaIdentityFunction)
           } else if (s.isNextExpected(seqMsg)) {
-            context.log.trace("Received SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
+            if (traceEnabled)
+              context.log.trace("Received SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
             deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
           } else if (seqNr > expectedSeqNr) {
             flightRecorder.consumerMissing(pid, expectedSeqNr, seqNr)
@@ -374,7 +377,7 @@ private class ConsumerControllerImpl[A](
           val seqNr = seqMsg.seqNr
 
           if (s.isProducerChanged(seqMsg)) {
-            if (seqMsg.first)
+            if (seqMsg.first && traceEnabled)
               context.log.trace("Received first SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
             receiveChangedProducer(s, seqMsg)
           } else if (s.registering.isDefined) {
@@ -441,7 +444,11 @@ private class ConsumerControllerImpl[A](
       .receiveMessage[InternalCommand] {
         case Confirmed =>
           val seqNr = seqMsg.seqNr
-          context.log.trace("Received Confirmed seqNr [{}] from consumer, stashed size [{}].", seqNr, stashBuffer.size)
+          if (traceEnabled)
+            context.log.trace(
+              "Received Confirmed seqNr [{}] from consumer, stashed size [{}].",
+              seqNr,
+              stashBuffer.size)
 
           val newRequestedSeqNr =
             if (seqMsg.first) {
@@ -466,7 +473,8 @@ private class ConsumerControllerImpl[A](
               newRequestedSeqNr
             } else {
               if (seqMsg.ack) {
-                context.log.trace("Sending Ack seqNr [{}].", seqNr)
+                if (traceEnabled)
+                  context.log.trace("Sending Ack seqNr [{}].", seqNr)
                 s.producerController ! Ack(confirmedSeqNr = seqNr)
               }
               s.requestedSeqNr
@@ -498,7 +506,7 @@ private class ConsumerControllerImpl[A](
               "Received SequencedMessage seqNr [{}], discarding message because stash is full.",
               msg.seqNr)
           } else {
-            if (context.log.isTraceEnabled())
+            if (traceEnabled)
               context.log.traceN(
                 "Received SequencedMessage seqNr [{}], stashing while waiting for consumer to confirm [{}], stashed size [{}].",
                 msg.seqNr,
