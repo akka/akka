@@ -130,7 +130,7 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
       if (assertNodeUp) {
         within(max) {
           awaitAssert {
-            cluster.state.isMemberUp(node(from).address)
+            cluster.state.isMemberUp(node(from).address) should ===(true)
           }
         }
       }
