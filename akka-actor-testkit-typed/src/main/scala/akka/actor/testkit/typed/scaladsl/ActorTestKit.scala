@@ -43,14 +43,14 @@ object ActorTestKit {
   def apply(): ActorTestKit =
     new ActorTestKit(
       name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-      ActorSystemSetup.create(BootstrapSetup(ApplicationTestConfig)),
+      ActorSystemSetup.apply(BootstrapSetup(ApplicationTestConfig)),
       settings = None)
 
   /**
    * Create a testkit named based on the provided ActorSystem.
    *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
-   * e.g. threads will include the name, and the related actor sustem setup.
+   * It will create an [[akka.actor.typed.ActorSystem]] based on the provided actor system,
+   * e.g. threads will include the name, and the related actor system setup.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    *
@@ -60,7 +60,7 @@ object ActorTestKit {
   def apply(system: ActorSystem[_]): ActorTestKit = {
     new ActorTestKit(
       name = TestKitUtils.scrubActorSystemName(system.name),
-      ActorSystemSetup.create(BootstrapSetup(system.settings.config)),
+      ActorSystemSetup.apply(BootstrapSetup(system.settings.config)),
       settings = None)
   }
 
@@ -94,7 +94,7 @@ object ActorTestKit {
   def apply(name: String): ActorTestKit =
     new ActorTestKit(
       name = TestKitUtils.scrubActorSystemName(name),
-      ActorSystemSetup.create(BootstrapSetup(ApplicationTestConfig)),
+      ActorSystemSetup.apply(BootstrapSetup(ApplicationTestConfig)),
       settings = None)
 
   /**
@@ -109,7 +109,7 @@ object ActorTestKit {
   def apply(customConfig: Config): ActorTestKit =
     new ActorTestKit(
       name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-      ActorSystemSetup.create(BootstrapSetup(customConfig)),
+      ActorSystemSetup.apply(BootstrapSetup(customConfig)),
       settings = None)
 
   /**
@@ -123,7 +123,7 @@ object ActorTestKit {
   def apply(name: String, customConfig: Config): ActorTestKit =
     new ActorTestKit(
       name = TestKitUtils.scrubActorSystemName(name),
-      ActorSystemSetup.create(BootstrapSetup(customConfig)),
+      ActorSystemSetup.apply(BootstrapSetup(customConfig)),
       settings = None)
 
   /**
@@ -138,7 +138,7 @@ object ActorTestKit {
   def apply(name: String, customConfig: Config, settings: TestKitSettings): ActorTestKit =
     new ActorTestKit(
       name = TestKitUtils.scrubActorSystemName(name),
-      ActorSystemSetup.create(BootstrapSetup(customConfig)),
+      ActorSystemSetup.apply(BootstrapSetup(customConfig)),
       settings = Some(settings))
 
   /**
@@ -177,8 +177,8 @@ object ActorTestKit {
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
 final class ActorTestKit private[akka] (
-    val name: String,
-    val systemSetup: ActorSystemSetup,
+    name: String,
+    systemSetup: ActorSystemSetup,
     settings: Option[TestKitSettings]) {
 
   // avoid slf4j noise by touching it first from single thread #28673
