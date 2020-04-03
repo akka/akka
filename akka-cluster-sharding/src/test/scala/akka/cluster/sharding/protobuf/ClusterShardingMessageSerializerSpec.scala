@@ -5,7 +5,6 @@
 package akka.cluster.sharding.protobuf
 
 import scala.concurrent.duration._
-
 import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.actor.Props
@@ -13,6 +12,7 @@ import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardCoordinator
 import akka.cluster.sharding.ShardRegion
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStore
 import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 
@@ -70,12 +70,12 @@ class ClusterShardingMessageSerializerSpec extends AkkaSpec {
     }
 
     "be able to serialize PersistentShard snapshot state" in {
-      checkSerialization(Shard.State(Set("e1", "e2", "e3")))
+      checkSerialization(EventSourcedRememberEntitiesStore.State(Set("e1", "e2", "e3")))
     }
 
     "be able to serialize PersistentShard domain events" in {
-      checkSerialization(Shard.EntityStarted("e1"))
-      checkSerialization(Shard.EntityStopped("e1"))
+      checkSerialization(EventSourcedRememberEntitiesStore.EntityStarted("e1"))
+      checkSerialization(EventSourcedRememberEntitiesStore.EntityStopped("e1"))
     }
 
     "be able to serialize GetShardStats" in {

@@ -9,21 +9,33 @@ import java.net.URLEncoder
 import akka.Done
 import akka.actor._
 import akka.annotation.InternalApi
+import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
+import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.Member
+import akka.cluster.MemberStatus
 import akka.cluster.sharding.Shard.ShardStats
-import akka.cluster.{ Cluster, ClusterSettings, Member, MemberStatus }
+import akka.cluster.sharding.internal.CustomStateStoreModeProvider
+import akka.cluster.sharding.internal.DDataRememberEntitiesShardStoreProvider
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStoreProvider
+import akka.cluster.sharding.internal.RememberEntitiesShardStoreProvider
 import akka.event.Logging
-import akka.pattern.{ ask, pipe }
-import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
+import akka.pattern.ask
+import akka.pattern.pipe
+import akka.util.MessageBufferMap
+import akka.util.PrettyDuration
+import akka.util.Timeout
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
-import scala.concurrent.{ Future, Promise }
 import scala.reflect.ClassTag
 import scala.runtime.AbstractFunction1
-import scala.util.{ Failure, Success }
+import scala.util.Failure
+import scala.util.Success
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -499,6 +511,7 @@ object ShardRegion {
       stopMessage: Any,
       handoffTimeout: FiniteDuration): Props =
     Props(new HandOffStopper(shard, replyTo, entities, stopMessage, handoffTimeout)).withDeploy(Deploy.local)
+
 }
 
 /**
@@ -556,6 +569,19 @@ private[akka] class ShardRegion(
   var retryCount = 0
   val initRegistrationDelay: FiniteDuration = 100.millis.max(retryInterval / 2 / 2 / 2)
   var nextRegistrationDelay: FiniteDuration = initRegistrationDelay
+
+  val shardRememberEntitiesStoreProvider: Option[RememberEntitiesShardStoreProvider] =
+    if (!settings.rememberEntities) None
+    else
+      // this construction will move upwards when we get to refactoring the coordinator
+      Some(settings.stateStoreMode match {
+        case ClusterShardingSettings.StateStoreModeDData =>
+          new DDataRememberEntitiesShardStoreProvider(typeName, settings, replicator, majorityMinCap)
+        case ClusterShardingSettings.StateStoreModePersistence =>
+          new EventSourcedRememberEntitiesStoreProvider(typeName, settings)
+        case ClusterShardingSettings.StateStoreModeCustom =>
+          new CustomStateStoreModeProvider(typeName, context.system, settings)
+      })
 
   // for CoordinatedShutdown
   val gracefulShutdownProgress = Promise[Done]()
@@ -1101,6 +1127,7 @@ private[akka] class ShardRegion(
             log.debug(ShardingLogMarker.shardStarted(typeName, id), "{}: Starting shard [{}] in region", typeName, id)
 
             val name = URLEncoder.encode(id, "utf-8")
+
             val shard = context.watch(
               context.actorOf(
                 Shard
@@ -1112,8 +1139,7 @@ private[akka] class ShardRegion(
                     extractEntityId,
                     extractShardId,
                     handOffStopMessage,
-                    replicator,
-                    majorityMinCap)
+                    shardRememberEntitiesStoreProvider)
                   .withDispatcher(context.props.dispatcher),
                 name))
             shardsByRef = shardsByRef.updated(shard, id)

@@ -5,6 +5,7 @@
 package akka.cluster.sharding
 
 import akka.cluster.sharding.ShardRegion.EntityId
+import akka.cluster.sharding.internal.EntityRecoveryStrategy
 import akka.testkit.AkkaSpec
 
 class AllAtOnceEntityRecoveryStrategySpec extends AkkaSpec {

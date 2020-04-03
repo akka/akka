@@ -6,6 +6,7 @@ package akka.cluster.sharding
 
 import akka.actor._
 import akka.cluster.sharding.ShardRegion.Passivate
+import akka.cluster.sharding.ShardRegion.StartEntity
 import akka.remote.testconductor.RoleName
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
@@ -20,13 +21,20 @@ object ClusterShardingFailureSpec {
   case class Add(id: String, i: Int) extends CborSerializable
   case class Value(id: String, n: Int) extends CborSerializable
 
-  class Entity extends Actor {
+  class Entity extends Actor with ActorLogging {
+    log.debug("Starting")
     var n = 0
 
     def receive = {
-      case Get(id)   => sender() ! Value(id, n)
-      case Add(_, i) => n += i
+      case Get(id) =>
+        log.debug("Got get request from {}", sender())
+        sender() ! Value(id, n)
+      case Add(_, i) =>
+        n += i
+        log.debug("Got add request from {}", sender())
     }
+
+    override def postStop(): Unit = log.debug("Stopping")
   }
 
   val extractEntityId: ShardRegion.ExtractEntityId = {
@@ -35,8 +43,9 @@ object ClusterShardingFailureSpec {
   }
 
   val extractShardId: ShardRegion.ExtractShardId = {
-    case Get(id)    => id.charAt(0).toString
-    case Add(id, _) => id.charAt(0).toString
+    case Get(id)         => id.charAt(0).toString
+    case Add(id, _)      => id.charAt(0).toString
+    case StartEntity(id) => id
   }
 }
 
@@ -44,11 +53,14 @@ abstract class ClusterShardingFailureSpecConfig(override val mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
       additionalConfig = s"""
+        akka.loglevel=DEBUG
         akka.cluster.roles = ["backend"]
         akka.cluster.sharding {
           coordinator-failure-backoff = 3s
           shard-failure-backoff = 3s
         }
+        # don't leak ddata state across runs
+        akka.cluster.sharding.distributed-data.durable.keys = []
         akka.persistence.journal.leveldb-shared.store.native = off
         # using Java serialization for these messages because test is sending them
         # to other nodes, which isn't normal usage.

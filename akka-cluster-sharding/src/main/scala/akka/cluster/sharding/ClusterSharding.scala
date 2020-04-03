@@ -716,7 +716,9 @@ private[akka] class ClusterShardingGuardian extends Actor {
   }
 
   private def replicator(settings: ClusterShardingSettings): ActorRef = {
-    if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData) {
+    if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData ||
+        // FIXME for now coordinator still uses the replicator
+        settings.stateStoreMode == ClusterShardingSettings.StateStoreModeCustom) {
       // one Replicator per role
       replicatorByRole.get(settings.role) match {
         case Some(ref) => ref
