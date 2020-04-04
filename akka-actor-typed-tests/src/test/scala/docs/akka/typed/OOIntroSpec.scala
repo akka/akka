@@ -69,7 +69,7 @@ object OOIntroSpec {
       }
     }
 
-    object SessionBehavior {
+    private object SessionBehavior {
       def apply(
           room: ActorRef[PublishSessionMessage],
           screenName: String,
