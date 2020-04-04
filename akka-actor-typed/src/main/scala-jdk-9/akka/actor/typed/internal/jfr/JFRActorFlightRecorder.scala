@@ -64,5 +64,7 @@ private[akka] final class JFRActorFlightRecorder(val system: ActorSystem[_]) ext
     new DeliveryConsumerSentRequest(producerId, requestedSeqNr).commit()
   override def consumerChangedProducer(producerId: String): Unit =
     new DeliveryConsumerChangedProducer(producerId).commit()
+  override def consumerStashFull(producerId: String, seqNr: Long): Unit =
+    new DeliveryConsumerStashFull(producerId, seqNr).commit()
 
 }

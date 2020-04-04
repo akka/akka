@@ -159,3 +159,10 @@ final class DeliveryConsumerSentRequest(val producerId: String, val requestedSeq
 @StackTrace(false)
 @Category(Array("Akka", "Delivery", "ConsumerController")) @Label("Delivery ConsumerController producer changed")
 final class DeliveryConsumerChangedProducer(val producerId: String) extends Event
+
+/** INTERNAL API */
+@InternalApi
+@Enabled(true)
+@StackTrace(false)
+@Category(Array("Akka", "Delivery", "ConsumerController")) @Label("Delivery ConsumerController stash is full")
+final class DeliveryConsumerStashFull(val producerId: String, val seqNr: Long) extends Event
