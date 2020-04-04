@@ -78,9 +78,10 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
 
       val cookieFabric: ActorRef[CookieFabric.Request] = spawn(CookieFabric())
       val probe = createTestProbe[CookieFabric.Response]()
-      // shhh, don't tell anyone
-      import scala.language.reflectiveCalls
-      val context = new {
+      trait HasSelf {
+        def self: ActorRef[CookieFabric.Response]
+      }
+      val context = new HasSelf {
         def self = probe.ref
       }
 
