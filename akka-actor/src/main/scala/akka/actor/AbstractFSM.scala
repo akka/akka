@@ -171,8 +171,10 @@ abstract class AbstractFSM[S, D] extends FSM[S, D] {
    * <b>Multiple handlers may be installed, and every one of them will be
    * called, not only the first one matching.</b>
    */
-  final def onTransition(transitionHandler: UnitApply2[S, S]): Unit =
-    super.onTransition(transitionHandler(_: S, _: S))
+  final def onTransition(transitionHandler: UnitApply2[S, S]): Unit = {
+    // explicitly call `total2pf` because dotty can't implicit convert to TransitionHandler
+    super.onTransition(total2pf(transitionHandler(_: S, _: S)))
+  }
 
   /**
    * Set handler which is called upon reception of unhandled messages. Calling

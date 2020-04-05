@@ -262,8 +262,8 @@ class ExtensionsSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
       case None    => BootstrapSetup(ExtensionsSpec.config)
     }
     val sys = setup match {
-      case None    => ActorSystem[Any](Behaviors.empty[Any], name, bootstrap)
-      case Some(s) => ActorSystem[Any](Behaviors.empty[Any], name, s.and(bootstrap))
+      case None    => ActorSystem(Behaviors.empty[Any], name, bootstrap)
+      case Some(s) => ActorSystem(Behaviors.empty[Any], name, s.and(bootstrap))
     }
 
     try f(sys)
