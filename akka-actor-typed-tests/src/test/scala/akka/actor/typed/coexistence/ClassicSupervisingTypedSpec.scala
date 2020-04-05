@@ -83,7 +83,8 @@ class ClassicSupervisingTypedSpec extends AnyWordSpecLike with LogCapturing with
 
     "allows overriding the default" in {
       val probe = TestProbe()
-      val value = Behaviors.supervise(ProbedBehavior.behavior(probe.ref)).onFailure(SupervisorStrategy.restart)
+      val value =
+        Behaviors.supervise(ProbedBehavior.behavior(probe.ref)).onFailure[Throwable](SupervisorStrategy.restart)
       val underTest = classicSystem.spawn(value, "a2")
       watch(underTest.toClassic)
       underTest ! "throw"
@@ -107,7 +108,8 @@ class ClassicSupervisingTypedSpec extends AnyWordSpecLike with LogCapturing with
     "allow overriding the default (from context)" in {
       val classic = classicSystem.actorOf(u.Props(new ClassicToTyped()))
       val probe = TestProbe()
-      val behavior = Behaviors.supervise(ProbedBehavior.behavior(probe.ref)).onFailure(SupervisorStrategy.restart)
+      val behavior =
+        Behaviors.supervise(ProbedBehavior.behavior(probe.ref)).onFailure[Throwable](SupervisorStrategy.restart)
       classic ! SpawnFromClassic(behavior, "a4")
       val underTest = expectMsgType[TypedSpawnedFromClassicContext].actorRef
       watch(underTest.toClassic)

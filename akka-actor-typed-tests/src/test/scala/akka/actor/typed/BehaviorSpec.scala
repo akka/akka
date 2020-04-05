@@ -525,7 +525,7 @@ class InterceptScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec wi
 
 class RestarterScalaBehaviorSpec extends ImmutableWithSignalScalaBehaviorSpec with Reuse {
   override def behavior(monitor: ActorRef[Event]): (Behavior[Command], Aux) = {
-    SBehaviors.supervise(super.behavior(monitor)._1).onFailure(SupervisorStrategy.restart) -> null
+    SBehaviors.supervise(super.behavior(monitor)._1).onFailure[Throwable](SupervisorStrategy.restart) -> null
   }
 }
 

@@ -46,7 +46,7 @@ object SupervisionCompileOnly {
 
     //#top-level
     def apply(): Behavior[Command] =
-      Behaviors.supervise(counter(1)).onFailure(SupervisorStrategy.restart)
+      Behaviors.supervise(counter(1)).onFailure[Throwable](SupervisorStrategy.restart)
     //#top-level
 
     private def counter(count: Int): Behavior[Command] =
@@ -80,7 +80,7 @@ object SupervisionCompileOnly {
           }
         }
       }
-      .onFailure(SupervisorStrategy.restart)
+      .onFailure[Throwable](SupervisorStrategy.restart)
   }
   //#restart-stop-children
 
@@ -101,7 +101,7 @@ object SupervisionCompileOnly {
             Behaviors.same
           }
         }
-        .onFailure(SupervisorStrategy.restart.withStopChildren(false))
+        .onFailure[Throwable](SupervisorStrategy.restart.withStopChildren(false))
     }
   }
   //#restart-keep-children

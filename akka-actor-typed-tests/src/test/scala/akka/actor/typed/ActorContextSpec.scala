@@ -135,7 +135,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
         }
         .decorate
 
-      val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.restart)
+      val behavior = Behaviors.supervise(internal).onFailure[Throwable](SupervisorStrategy.restart)
       val actor = spawn(behavior)
       LoggingTestKit.error[TestException].expect {
         actor ! Fail
@@ -181,7 +181,8 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
         .decorate
 
       val parent: Behavior[Command] = Behaviors.setup[Command](context => {
-        val childRef = context.spawnAnonymous(Behaviors.supervise(child).onFailure(SupervisorStrategy.restart))
+        val childRef =
+          context.spawnAnonymous(Behaviors.supervise(child).onFailure[Throwable](SupervisorStrategy.restart))
         context.watch(childRef)
         probe.ref ! ChildMade(childRef)
 
@@ -254,7 +255,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
           }
         })
         .decorate
-      val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.restart)
+      val behavior = Behaviors.supervise(internal).onFailure[Throwable](SupervisorStrategy.restart)
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(1)
@@ -280,7 +281,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
           }
         })
         .decorate
-      val behavior = Behaviors.supervise(internal).onFailure(SupervisorStrategy.resume)
+      val behavior = Behaviors.supervise(internal).onFailure[Throwable](SupervisorStrategy.resume)
       val actor = spawn(behavior)
       actor ! Ping
       probe.expectMessage(1)
@@ -647,6 +648,8 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
     }
 
     "not allow null messages" in {
+      // need this for dotty
+      implicit val nullClassTag: ClassTag[Null] = ClassTag(classOf[Null])
       val actor = spawn(Behaviors.empty[Null].decorate)
       intercept[InvalidMessageException] {
         actor ! null

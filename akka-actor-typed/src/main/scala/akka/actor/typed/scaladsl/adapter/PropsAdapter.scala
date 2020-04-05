@@ -21,7 +21,7 @@ import akka.actor.typed.scaladsl.Behaviors
 object PropsAdapter {
   def apply[T](behavior: => Behavior[T], deploy: Props = Props.empty): akka.actor.Props =
     akka.actor.typed.internal.adapter.PropsAdapter(
-      () => Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+      () => Behaviors.supervise(behavior).onFailure[Throwable](SupervisorStrategy.stop),
       deploy,
       rethrowTypedFailure = false)
 }
