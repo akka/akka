@@ -56,7 +56,7 @@ class ClassicSupervisingTypedSpec extends AnyWordSpecLike with LogCapturing with
       akka.actor.testkit.typed.expect-no-message-default = 50 ms
       """))
   val classicTestKit = new akka.testkit.TestKit(classicSystem)
-  implicit val classicSender = classicTestKit.testActor
+  implicit val classicSender: u.ActorRef = classicTestKit.testActor
   import classicTestKit._
 
   "A classic actor system that spawns typed actors" should {

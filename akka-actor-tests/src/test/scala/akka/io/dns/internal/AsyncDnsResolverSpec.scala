@@ -39,7 +39,7 @@ class AsyncDnsResolverSpec extends AkkaSpec("""
     val dnsClient2 = TestProbe()
     val r = resolver(List(dnsClient1.ref, dnsClient2.ref), defaultConfig)
     val senderProbe = TestProbe()
-    implicit val sender = senderProbe.ref
+    implicit val sender: ActorRef = senderProbe.ref
   }
 
   "Async DNS Resolver" must {

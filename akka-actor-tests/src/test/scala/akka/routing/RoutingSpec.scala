@@ -14,6 +14,7 @@ import scala.concurrent.Await
 import akka.ConfigurationException
 import com.typesafe.config.ConfigFactory
 import akka.pattern.{ ask, pipe }
+import scala.concurrent.ExecutionContextExecutor
 
 object RoutingSpec {
 
@@ -47,7 +48,7 @@ object RoutingSpec {
 }
 
 class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with ImplicitSender {
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
   import RoutingSpec._
 
   muteDeadLetters(classOf[akka.dispatch.sysmsg.DeathWatchNotification])(system)

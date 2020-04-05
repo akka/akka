@@ -277,7 +277,7 @@ trait Conductor { this: TestConductorExt =>
 private[akka] class ConductorHandler(_createTimeout: Timeout, controller: ActorRef, log: LoggingAdapter)
     extends SimpleChannelUpstreamHandler {
 
-  implicit val createTimeout = _createTimeout
+  implicit val createTimeout: Timeout = _createTimeout
   val clients = new ConcurrentHashMap[Channel, ActorRef]()
 
   override def channelConnected(ctx: ChannelHandlerContext, event: ChannelStateEvent) = {

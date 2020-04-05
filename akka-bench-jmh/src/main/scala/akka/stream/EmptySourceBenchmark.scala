@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 class EmptySourceBenchmark {
-  implicit val system = ActorSystem("EmptySourceBenchmark")
+  implicit val system: ActorSystem = ActorSystem("EmptySourceBenchmark")
 
   @TearDown
   def shutdown(): Unit = {

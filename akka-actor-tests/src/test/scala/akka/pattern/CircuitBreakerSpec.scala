@@ -16,6 +16,7 @@ import scala.language.postfixOps
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
+import scala.concurrent.ExecutionContextExecutor
 
 object CircuitBreakerSpec {
 
@@ -83,7 +84,7 @@ object CircuitBreakerSpec {
 
 class CircuitBreakerSpec extends AkkaSpec {
   import CircuitBreakerSpec._
-  implicit def ec = system.dispatcher
+  implicit def ec: ExecutionContextExecutor = system.dispatcher
 
   val awaitTimeout = 2.seconds.dilated
 

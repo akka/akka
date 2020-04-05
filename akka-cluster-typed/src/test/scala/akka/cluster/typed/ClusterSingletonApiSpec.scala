@@ -54,7 +54,7 @@ class ClusterSingletonApiSpec
     with LogCapturing {
   import ClusterSingletonApiSpec._
 
-  implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings: TestKitSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
   val classicSystem1 = system.toClassic
 

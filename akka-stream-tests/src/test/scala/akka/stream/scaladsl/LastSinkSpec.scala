@@ -10,10 +10,11 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Future
+import scala.concurrent.ExecutionContextExecutor
 
 class LastSinkSpec extends StreamSpec with ScriptedTest {
 
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   "A Flow with Sink.last" must {
 

@@ -28,7 +28,7 @@ class ActorSystemSpec
     with Eventually
     with LogCapturing {
 
-  override implicit val patienceConfig = PatienceConfig(1.second)
+  override implicit val patienceConfig: PatienceConfig = PatienceConfig(1.second)
   def system[T](behavior: Behavior[T], name: String) = ActorSystem(behavior, name)
   def suite = "adapter"
 

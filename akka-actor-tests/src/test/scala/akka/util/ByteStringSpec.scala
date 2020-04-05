@@ -23,7 +23,7 @@ import scala.collection.mutable.Builder
 
 class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
-  implicit val betterGeneratorDrivenConfig = PropertyCheckConfiguration().copy(minSuccessful = 1000)
+  implicit val betterGeneratorDrivenConfig: PropertyCheckConfiguration = PropertyCheckConfiguration().copy(minSuccessful = 1000)
 
   def genSimpleByteString(min: Int, max: Int) =
     for {
@@ -57,7 +57,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 
   case class ByteStringGrouped(bs: ByteString, size: Int)
 
-  implicit val arbitraryByteStringGrouped = Arbitrary {
+  implicit val arbitraryByteStringGrouped: Arbitrary[ByteStringGrouped] = Arbitrary {
     for {
       xs <- arbitraryByteString.arbitrary
       size <- Gen.choose(1, 1 max xs.length)

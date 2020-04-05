@@ -780,8 +780,8 @@ private[akka] class DDataShard(
   private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
   private val maxUpdateAttempts = 3
 
-  implicit private val node = Cluster(context.system)
-  implicit private val selfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
+  implicit private val node: Cluster = Cluster(context.system)
+  implicit private val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
 
   // The default maximum-frame-size is 256 KiB with Artery.
   // When using entity identifiers with 36 character strings (e.g. UUID.randomUUID).

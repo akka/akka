@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 @OutputTimeUnit(TimeUnit.SECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 class InvokeWithFeedbackBenchmark {
-  implicit val system = ActorSystem("InvokeWithFeedbackBenchmark")
+  implicit val system: ActorSystem = ActorSystem("InvokeWithFeedbackBenchmark")
 
   var sourceQueue: SourceQueueWithComplete[Int] = _
   var sinkQueue: SinkQueueWithCancel[Int] = _

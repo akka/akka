@@ -102,7 +102,7 @@ abstract class AkkaSpec(_system: ActorSystem)
     with TypeCheckedTripleEquals
     with ScalaFutures {
 
-  implicit val patience = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, Millis))
+  implicit val patience: PatienceConfig = PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(100, Millis))
 
   def this(config: Config) =
     this(

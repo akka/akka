@@ -11,7 +11,7 @@ import org.scalatest.wordspec.AnyWordSpec
 
 class DefaultTimeoutSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with TestKitBase with DefaultTimeout {
 
-  implicit lazy val system = ActorSystem("AkkaCustomSpec")
+  implicit lazy val system: ActorSystem = ActorSystem("AkkaCustomSpec")
 
   override def afterAll = system.terminate
 

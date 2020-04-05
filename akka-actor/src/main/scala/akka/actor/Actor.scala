@@ -500,7 +500,7 @@ trait Actor {
    * self ! message
    * </pre>
    */
-  implicit final val self = context.self //MUST BE A VAL, TRUST ME
+  implicit final val self: ActorRef = context.self //MUST BE A VAL, TRUST ME
 
   /**
    * The reference sender Actor of the last received message.

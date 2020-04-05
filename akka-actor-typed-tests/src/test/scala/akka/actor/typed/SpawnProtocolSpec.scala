@@ -30,7 +30,7 @@ object SpawnProtocolSpec {
 class SpawnProtocolSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import SpawnProtocolSpec._
-  implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
   "Spawn behavior" must {
     "spawn child actor" in {

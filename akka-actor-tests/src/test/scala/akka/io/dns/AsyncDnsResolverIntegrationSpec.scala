@@ -33,7 +33,7 @@ class AsyncDnsResolverIntegrationSpec extends AkkaSpec(s"""
     akka.io.dns.async-dns.ndots = 2
   """) with DockerBindDnsService with WithLogCapturing {
   val duration = 10.seconds
-  implicit val timeout = Timeout(duration)
+  implicit val timeout: Timeout = Timeout(duration)
 
   val hostPort = AsyncDnsResolverIntegrationSpec.dockerDnsServerPort
 

@@ -17,7 +17,7 @@ class FlowJoinSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2
   """) {
 
-  implicit val defaultPatience =
+  implicit val defaultPatience: PatienceConfig =
     PatienceConfig(timeout = Span(2, Seconds), interval = Span(200, Millis))
 
   "A Flow using join" must {

@@ -26,7 +26,7 @@ class NullEmptyStateSpec
     with AnyWordSpecLike
     with LogCapturing {
 
-  implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
   def primitiveState(persistenceId: PersistenceId, probe: ActorRef[String]): Behavior[String] =
     EventSourcedBehavior[String, String, String](

@@ -28,7 +28,7 @@ import scala.concurrent.duration._
 
 class StreamConvertersSpec extends StreamSpec with DefaultTimeout {
 
-  implicit val config = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
+  implicit val config: PatienceConfig = PatienceConfig(timeout = Span(timeout.duration.toMillis, Millis))
 
   "Java Stream source" must {
     import java.util.stream.IntStream

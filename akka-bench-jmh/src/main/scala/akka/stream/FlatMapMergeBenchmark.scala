@@ -17,7 +17,7 @@ import scala.concurrent.duration._
 @OutputTimeUnit(TimeUnit.MILLISECONDS)
 @BenchmarkMode(Array(Mode.Throughput))
 class FlatMapMergeBenchmark {
-  implicit val system = ActorSystem("FlatMapMergeBenchmark")
+  implicit val system: ActorSystem = ActorSystem("FlatMapMergeBenchmark")
 
   val NumberOfElements = 100000
 

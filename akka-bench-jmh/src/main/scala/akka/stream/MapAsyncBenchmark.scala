@@ -39,7 +39,7 @@ class MapAsyncBenchmark {
     }
     """)
 
-  implicit val system = ActorSystem("MapAsyncBenchmark", config)
+  implicit val system: ActorSystem = ActorSystem("MapAsyncBenchmark", config)
   import system.dispatcher
 
   var testSource: Source[java.lang.Integer, NotUsed] = _

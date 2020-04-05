@@ -31,7 +31,7 @@ class ClusterSingletonPoisonPillSpec
     with AnyWordSpecLike
     with LogCapturing {
 
-  implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings: TestKitSettings = TestKitSettings(system)
   val clusterNode1 = Cluster(system)
   clusterNode1.manager ! Join(clusterNode1.selfMember.address)
   val classicSystem1 = system.toClassic

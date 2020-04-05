@@ -31,7 +31,7 @@ class SendQueueBenchmark {
   val config = ConfigFactory.parseString("""
     """)
 
-  implicit val system = ActorSystem("SendQueueBenchmark", config)
+  implicit val system: ActorSystem = ActorSystem("SendQueueBenchmark", config)
 
   @Setup
   def setup(): Unit = {

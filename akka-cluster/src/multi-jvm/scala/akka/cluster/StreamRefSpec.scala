@@ -56,7 +56,7 @@ object StreamRefSpec extends MultiNodeConfig {
 
   class DataSource(streamLifecycleProbe: ActorRef) extends Actor with ActorLogging {
     import context.dispatcher
-    implicit val mat = Materializer(context)
+    implicit val mat: Materializer = Materializer(context)
 
     def receive = {
       case RequestLogs(streamId) =>
@@ -102,7 +102,7 @@ object StreamRefSpec extends MultiNodeConfig {
   class DataReceiver(streamLifecycleProbe: ActorRef) extends Actor with ActorLogging {
 
     import context.dispatcher
-    implicit val mat = Materializer(context)
+    implicit val mat: Materializer = Materializer(context)
 
     def receive = {
       case PrepareUpload(nodeId) =>

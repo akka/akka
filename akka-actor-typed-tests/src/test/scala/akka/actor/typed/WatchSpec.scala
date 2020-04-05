@@ -17,6 +17,7 @@ import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor
 
 object WatchSpec {
 
@@ -45,7 +46,7 @@ object WatchSpec {
 
 class WatchSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
-  implicit def classicSystem = system.toClassic
+  implicit def classicSystem: actor.ActorSystem = system.toClassic
 
   import WatchSpec._
 

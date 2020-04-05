@@ -34,6 +34,7 @@ import akka.actor.ActorInitializationException
 import akka.annotation.InternalStableApi
 import akka.util.ccompat._
 import com.github.ghik.silencer.silent
+import akka.dispatch.MessageDispatcher
 
 /**
  * INTERNAL API
@@ -149,7 +150,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   import provider.remoteSettings._
 
-  private implicit val ec = system.dispatchers.lookup(Dispatcher)
+  private implicit val ec: MessageDispatcher = system.dispatchers.lookup(Dispatcher)
 
   val transportSupervisor = system.systemActorOf(configureDispatcher(Props[TransportSupervisor]), "transports")
 

@@ -42,14 +42,14 @@ class AskBenchmark {
     }
     """)
 
-  implicit val system = ActorSystem("MapAsyncBenchmark", config)
+  implicit val system: ActorSystem = ActorSystem("MapAsyncBenchmark", config)
   import system.dispatcher
 
   var testSource: Source[java.lang.Integer, NotUsed] = _
 
   var actor: ActorRef = _
 
-  implicit val timeout = Timeout(10.seconds)
+  implicit val timeout: Timeout = Timeout(10.seconds)
 
   @Param(Array("1", "4"))
   var parallelism = 0
