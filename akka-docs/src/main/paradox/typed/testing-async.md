@@ -1,6 +1,6 @@
 ## Asynchronous testing
 
-For the Akka Classic documentation of this feature see @ref:[Classic Testing](../testing.md).
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic Testing](../testing.md).
 
 Asynchronous testing uses a real @apidoc[akka.actor.typed.ActorSystem] that allows you to test your Actors in a more realistic environment.
 

@@ -3,7 +3,7 @@ project.description: Reliable delivery and flow control of messages between acto
 ---
 # Reliable delivery
 
-For the Akka Classic documentation of this feature see @ref:[Classic At-Least-Once Delivery](../persistence.md#at-least-once-delivery).
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic At-Least-Once Delivery](../persistence.md#at-least-once-delivery).
 
 @@@ warning
 

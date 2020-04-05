@@ -1,6 +1,6 @@
 # Distributed Publish Subscribe in Cluster
 
-For the Akka Classic documentation of this feature see @ref:[Classic Distributed Publish Subscribe](../distributed-pub-sub.md).
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic Distributed Publish Subscribe](../distributed-pub-sub.md).
 
 ## Module info
 

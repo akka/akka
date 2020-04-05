@@ -1,6 +1,6 @@
 # Cluster Singleton
 
-For the Akka Classic documentation of this feature see @ref:[Classic Cluster Singleton](../cluster-singleton.md).
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic Cluster Singleton](../cluster-singleton.md).
 
 ## Module info
 

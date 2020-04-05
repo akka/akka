@@ -3,7 +3,7 @@ project.description: The Actor model, managing internal state and changing behav
 ---
 # Introduction to Actors
 
-For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
 
 ## Module info
 

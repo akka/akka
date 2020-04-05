@@ -3,7 +3,7 @@ project.description: The Akka Actor lifecycle.
 ---
 # Actor lifecycle
 
-For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
 
 ## Dependency
 

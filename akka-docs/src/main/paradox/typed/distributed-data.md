@@ -3,7 +3,7 @@ project.description: Share data between nodes and perform updates without coordi
 ---
 # Distributed Data
 
-For the Akka Classic documentation of this feature see @ref:[Classic Distributed Data](../distributed-data.md).
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic Distributed Data](../distributed-data.md).
 
 ## Module info
 

@@ -1,6 +1,6 @@
 # Mailboxes
 
-For the Akka Classic documentation of this feature see @ref:[Classic Mailboxes](../mailboxes.md).
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic Mailboxes](../mailboxes.md).
 
 ## Dependency
 

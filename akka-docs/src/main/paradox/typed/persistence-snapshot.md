@@ -3,7 +3,7 @@ project.description: Append only event logs, snapshots and recovery with Akka ev
 ---
 # Snapshotting
 
-For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic Akka Persistence](../persistence.md).
 
 ## Snapshots
 

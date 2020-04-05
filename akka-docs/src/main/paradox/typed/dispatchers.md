@@ -3,7 +3,7 @@ project.description: Akka dispatchers and how to choose the right ones.
 ---
 # Dispatchers
 
-For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers](../dispatchers.md).
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers](../dispatchers.md).
 
 ## Dependency
 

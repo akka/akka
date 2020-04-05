@@ -1,6 +1,6 @@
 # Multi-DC Cluster
 
-For the Akka Classic documentation of this feature see @ref:[Classic Multi-DC Cluster](../cluster-dc.md)
+The current recommended API is fully typed, a.k.a. `akka-typed`.For the Akka Classic documentation of this feature see @ref:[Classic Multi-DC Cluster](../cluster-dc.md)
 
 This chapter describes how @ref[Akka Cluster](cluster.md) can be used across
 multiple data centers, availability zones or regions.
