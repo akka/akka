@@ -366,7 +366,7 @@ class ClusterReceptionistSpec extends AnyWordSpec with Matchers with LogCapturin
           val PingKey.Listing(entries) = msg.last
           entries should have size 1
           val ref = entries.head
-          val service3RemotePath = RootActorPath(clusterNode3.selfMember.address) / "user" / "instance"
+          val service3RemotePath = RootActorPath(clusterNode3.selfMember.address) / "system" / "test" / "instance"
           ref.path should ===(service3RemotePath)
           ref.path.uid should ===(service3Uid)
 
