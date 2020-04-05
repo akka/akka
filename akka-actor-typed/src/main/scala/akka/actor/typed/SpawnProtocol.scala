@@ -54,7 +54,7 @@ object SpawnProtocol {
   def apply(): Behavior[Command] =
     Behaviors.receive { (ctx, msg) =>
       msg match {
-        case Spawn(bhvr, name, props, replyTo) =>
+        case Spawn(bhvr: Behavior[Any], name, props, replyTo) =>
           val ref =
             if (name == null || name.equals(""))
               ctx.spawnAnonymous(bhvr, props)

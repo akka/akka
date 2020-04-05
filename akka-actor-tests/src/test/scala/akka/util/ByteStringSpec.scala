@@ -7,7 +7,7 @@ package akka.util
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, ObjectInputStream, ObjectOutputStream }
 import java.lang.Double.doubleToRawLongBits
 import java.lang.Float.floatToRawIntBits
-import java.nio.{ ByteBuffer, ByteOrder }
+import java.nio.{ Buffer, ByteBuffer, ByteOrder }
 import java.nio.ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 
 import akka.util.ByteString.{ ByteString1, ByteString1C, ByteStrings }
@@ -825,7 +825,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
           } == a
         }
         check { (a: ByteString) =>
-          a.asByteBuffers.forall(_.isReadOnly)
+          a.asByteBuffers.forall(_.asInstanceOf[Buffer].isReadOnly)
         }
         check { (a: ByteString) =>
           import akka.util.ccompat.JavaConverters._

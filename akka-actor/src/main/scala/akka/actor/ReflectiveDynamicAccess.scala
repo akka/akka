@@ -49,7 +49,7 @@ class ReflectiveDynamicAccess(val classLoader: ClassLoader) extends DynamicAcces
     }
 
   override def classIsOnClasspath(fqcn: String): Boolean =
-    getClassFor(fqcn) match {
+    getClassFor[Any](fqcn) match {
       case Failure(_: ClassNotFoundException | _: NoClassDefFoundError) =>
         false
       case _ =>
