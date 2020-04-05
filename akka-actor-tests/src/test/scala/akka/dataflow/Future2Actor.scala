@@ -13,9 +13,10 @@ import scala.concurrent.duration._
 import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.pattern.{ ask, pipe }
 import scala.concurrent.ExecutionException
+import scala.concurrent.ExecutionContextExecutor
 
 class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
   "The Future2Actor bridge" must {
 
     "support convenient sending to multiple destinations" in {

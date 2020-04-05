@@ -40,7 +40,7 @@ class PartitionHubBenchmark {
     }
     """)
 
-  implicit val system = ActorSystem("PartitionHubBenchmark", config)
+  implicit val system: ActorSystem = ActorSystem("PartitionHubBenchmark", config)
 
   @Param(Array("2", "5", "10", "20", "30"))
   var NumberOfStreams = 0

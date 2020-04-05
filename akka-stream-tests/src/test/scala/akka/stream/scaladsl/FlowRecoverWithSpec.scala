@@ -19,7 +19,7 @@ class FlowRecoverWithSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 1, maxSize = 1)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   val ex = new RuntimeException("ex") with NoStackTrace
 

@@ -19,10 +19,11 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.util.Failure
 import org.scalatest.matchers.should.Matchers
+import scala.concurrent.ExecutionContextExecutor
 
 class FlowScanAsyncSpec extends StreamSpec with Matchers {
 
-  implicit val executionContext = system.dispatcher
+  implicit val executionContext: ExecutionContextExecutor = system.dispatcher
 
   "A ScanAsync" must {
 

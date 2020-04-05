@@ -25,7 +25,7 @@ object LocalConcurrencySpec {
 
   class Updater extends Actor with Stash {
 
-    implicit val selfUniqueAddress = DistributedData(context.system).selfUniqueAddress
+    implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
 
     val replicator = DistributedData(context.system).replicator
 

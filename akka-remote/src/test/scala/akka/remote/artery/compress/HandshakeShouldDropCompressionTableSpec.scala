@@ -39,7 +39,7 @@ class HandshakeShouldDropCompressionTableSpec
     with ImplicitSender
     with BeforeAndAfter {
 
-  implicit val t = Timeout(3.seconds)
+  implicit val t: Timeout = Timeout(3.seconds)
   var systemB: ActorSystem = null
   val portB = freePort()
 

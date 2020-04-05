@@ -73,7 +73,7 @@ est Lorem ipsum dolor sit amet. Lorem ipsum dolor sit amet, consetetur sadipscin
       "\r\n",
       "\n")
 
-  implicit val system = ActorSystem(getClass.getSimpleName)
+  implicit val system: ActorSystem = ActorSystem(getClass.getSimpleName)
 
   override def afterAll() = TestKit.shutdownActorSystem(system)
 }

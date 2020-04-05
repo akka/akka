@@ -42,7 +42,7 @@ class ReplicatorORSetDeltaSpec
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val replicator =
     system.actorOf(Replicator.props(ReplicatorSettings(system).withGossipInterval(1.second)), "replicator")
   val timeout = 3.seconds.dilated

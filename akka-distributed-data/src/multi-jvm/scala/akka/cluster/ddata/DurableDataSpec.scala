@@ -84,7 +84,7 @@ abstract class DurableDataSpec(multiNodeConfig: DurableDataSpecConfig)
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val timeout = 14.seconds.dilated // initialization of lmdb can be very slow in CI environment
   val writeTwo = WriteTo(2, timeout)
   val readTwo = ReadFrom(2, timeout)

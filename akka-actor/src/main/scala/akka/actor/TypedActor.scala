@@ -24,6 +24,7 @@ import java.io.ObjectStreamException
 import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method, Proxy }
 
 import com.github.ghik.silencer.silent
+import scala.concurrent.ExecutionContextExecutor
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
@@ -252,7 +253,7 @@ object TypedActor extends ExtensionId[TypedActorExtension] with ExtensionIdProvi
   /**
    * Returns the default dispatcher (for a TypedActor) when inside a method call in a TypedActor.
    */
-  implicit def dispatcher = context.dispatcher
+  implicit def dispatcher: ExecutionContextExecutor = context.dispatcher
 
   /**
    * INTERNAL API

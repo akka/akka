@@ -30,6 +30,7 @@ import akka.io.dns.internal.AsyncDnsManager
 import akka.pattern.AskTimeoutException
 import akka.util.OptionVal
 import akka.util.Timeout
+import akka.dispatch.MessageDispatcher
 
 /**
  * INTERNAL API
@@ -91,7 +92,7 @@ private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends Ser
   // (eventually visible)
   private var asyncDnsCache: OptionVal[SimpleDnsCache] = OptionVal.None
 
-  private implicit val ec = system.dispatchers.internalDispatcher
+  private implicit val ec: MessageDispatcher = system.dispatchers.internalDispatcher
 
   dns.ask(AsyncDnsManager.GetCache)(Timeout(30.seconds)).onComplete {
     case Success(cache: SimpleDnsCache) =>

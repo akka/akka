@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory
 import org.slf4j.MDC
 import org.slf4j.helpers.BasicMarkerFactory
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.ActorSystem
 
 class SomeClass
 
@@ -57,7 +58,7 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
   val marker = new BasicMarkerFactory().getMarker("marker")
   val cause = TestException("böö")
 
-  implicit val classic = system.toClassic
+  implicit val classic: ActorSystem = system.toClassic
 
   class AnotherLoggerClass
 

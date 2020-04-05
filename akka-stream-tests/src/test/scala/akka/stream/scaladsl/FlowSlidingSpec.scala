@@ -17,7 +17,7 @@ class FlowSlidingSpec extends StreamSpec with ScalaCheckPropertyChecks {
   import system.dispatcher
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   "Sliding" must {
     import org.scalacheck.Shrink.shrinkAny

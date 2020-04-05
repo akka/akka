@@ -964,7 +964,7 @@ trait TestKitBase {
  * @since 1.1
  */
 @silent // 'early initializers' are deprecated on 2.13 and will be replaced with trait parameters on 2.14. https://github.com/akka/akka/issues/26753
-class TestKit(_system: ActorSystem) extends { implicit val system = _system } with TestKitBase
+class TestKit(_system: ActorSystem) extends { implicit val system: ActorSystem = _system } with TestKitBase
 
 object TestKit {
 
@@ -1071,7 +1071,7 @@ object TestProbe {
 }
 
 trait ImplicitSender { this: TestKitBase =>
-  implicit def self = testActor
+  implicit def self: ActorRef = testActor
 }
 
 trait DefaultTimeout { this: TestKitBase =>

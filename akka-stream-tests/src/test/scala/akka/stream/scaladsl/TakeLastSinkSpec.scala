@@ -16,7 +16,7 @@ class TakeLastSinkSpec extends StreamSpec {
 
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val mat = ActorMaterializer(settings)
+  implicit val mat: ActorMaterializer = ActorMaterializer(settings)
 
   "Sink.takeLast" must {
     "return the last 3 elements" in {

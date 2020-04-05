@@ -39,7 +39,7 @@ mailbox {
   mailbox-capacity = 1000000
 }
 """).withFallback(ConfigFactory.load())
-  implicit val sys = ActorSystem("ANQ", config)
+  implicit val sys: ActorSystem = ActorSystem("ANQ", config)
   val ref = sys.actorOf(Props(new Actor {
     def receive = {
       case Stop => sender() ! Stop

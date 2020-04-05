@@ -16,9 +16,10 @@ import scala.concurrent.Await
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+import scala.concurrent.ExecutionContextExecutor
 
 class QueueSinkSpec extends StreamSpec {
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   val ex = new RuntimeException("ex") with NoStackTrace
 

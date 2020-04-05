@@ -62,8 +62,8 @@ class TestConductorExt(val system: ExtendedActorSystem) extends Extension with C
     val ClientReconnects = config.getInt("client-reconnects")
     val ReconnectBackoff = config.getMillisDuration("reconnect-backoff")
 
-    implicit val BarrierTimeout = Timeout(config.getMillisDuration("barrier-timeout"))
-    implicit val QueryTimeout = Timeout(config.getMillisDuration("query-timeout"))
+    implicit val BarrierTimeout: Timeout = Timeout(config.getMillisDuration("barrier-timeout"))
+    implicit val QueryTimeout: Timeout = Timeout(config.getMillisDuration("query-timeout"))
     val PacketSplitThreshold = config.getMillisDuration("packet-split-threshold")
 
     private def computeWPS(config: Config): Int =

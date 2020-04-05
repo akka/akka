@@ -276,7 +276,7 @@ class SerializeSpec extends AkkaSpec(SerializationTests.serializeConf) {
 }
 
 class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerializabilityConf) {
-  implicit val timeout = Timeout(5 seconds)
+  implicit val timeout: Timeout = Timeout(5 seconds)
 
   "verify config" in {
     system.settings.SerializeAllCreators should ===(true)

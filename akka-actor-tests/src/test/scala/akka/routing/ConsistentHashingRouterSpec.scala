@@ -14,6 +14,7 @@ import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.testkit.AkkaSpec
 import akka.testkit._
+import scala.concurrent.ExecutionContextExecutor
 
 object ConsistentHashingRouterSpec {
 
@@ -56,7 +57,7 @@ class ConsistentHashingRouterSpec
     with DefaultTimeout
     with ImplicitSender {
   import ConsistentHashingRouterSpec._
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
 
   val router1 = system.actorOf(FromConfig.props(Props[Echo]), "router1")
 

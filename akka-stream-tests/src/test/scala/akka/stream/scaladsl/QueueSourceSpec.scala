@@ -22,11 +22,11 @@ import scala.concurrent._
 import scala.concurrent.duration._
 
 class QueueSourceSpec extends StreamSpec {
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
   val pause = 300.millis
 
   // more frequent checks than defaults from AkkaSpec
-  implicit val testPatience =
+  implicit val testPatience: PatienceConfig =
     PatienceConfig(testKitSettings.DefaultTimeout.duration, Span(5, org.scalatest.time.Millis))
 
   def assertSuccess(f: Future[QueueOfferResult]): Unit = {

@@ -37,6 +37,7 @@ import akka.pattern.ask
 import scala.concurrent.Future
 import scala.compat.java8.FutureConverters._
 import akka.util.JavaDurationConverters._
+import akka.dispatch.MessageDispatcher
 
 /**
  * INTERNAL API
@@ -55,8 +56,8 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
     system.settings.config
       .getDuration("akka.cluster.sharding.external-shard-allocation-strategy.client-timeout")
       .asScala
-  private implicit val askTimeout = Timeout(timeout * 2)
-  private implicit val ec = system.dispatchers.internalDispatcher
+  private implicit val askTimeout: Timeout = Timeout(timeout * 2)
+  private implicit val ec: MessageDispatcher = system.dispatchers.internalDispatcher
 
   private val Key = ExternalShardAllocationStrategy.ddataKey(typeName)
 

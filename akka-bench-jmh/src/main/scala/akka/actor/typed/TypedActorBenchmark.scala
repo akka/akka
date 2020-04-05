@@ -47,7 +47,7 @@ class TypedActorBenchmark {
 
   implicit var system: ActorSystem[Start] = _
 
-  implicit val askTimeout = akka.util.Timeout(timeout)
+  implicit val askTimeout: akka.util.Timeout = akka.util.Timeout(timeout)
 
   @Setup(Level.Trial)
   def setup(): Unit = {

@@ -34,7 +34,7 @@ object DeferredSpec {
 class DeferredSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
   import DeferredSpec._
-  implicit val testSettings = TestKitSettings(system)
+  implicit val testSettings: TestKitSettings = TestKitSettings(system)
 
   "Deferred behavior" must {
     "must create underlying" in {
