@@ -286,6 +286,17 @@ object Source {
     })
 
   /**
+   * Creates a source that wraps a Java 8 ``Stream``. ``Source`` uses a stream iterator to get all its
+   * elements and send them downstream on demand.
+   *
+   * You can use [[Source.async]] to create asynchronous boundaries between synchronous Java ``Stream``
+   * and the rest of flow.
+   */
+  def fromJavaStream[T, S <: java.util.stream.BaseStream[T, S]](
+      stream: () => java.util.stream.BaseStream[T, S]): Source[T, NotUsed] =
+    StreamConverters.fromJavaStream(stream);
+
+  /**
    * Creates [[Source]] that will continually produce given elements in specified order.
    *
    * Starts a new 'cycled' `Source` from the given elements. The producer stream of elements
