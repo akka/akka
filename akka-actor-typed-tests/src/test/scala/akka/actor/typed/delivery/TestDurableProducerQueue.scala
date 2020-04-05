@@ -33,7 +33,7 @@ object TestDurableProducerQueue {
           new TestDurableProducerQueue[A](context, delay, stateHolder, failWhen).active(state)
         }
       }
-      .onFailure(SupervisorStrategy.restartWithBackoff(delay, delay, 0.0))
+      .onFailure[Throwable](SupervisorStrategy.restartWithBackoff(delay, delay, 0.0))
   }
 
   def apply[A](delay: FiniteDuration, state: State[A]): Behavior[Command[A]] = {

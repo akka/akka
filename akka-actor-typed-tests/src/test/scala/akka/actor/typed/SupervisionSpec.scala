@@ -1159,7 +1159,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
             })
             .onFailure[TestException](SupervisorStrategy.resume)
         }
-      }).onFailure(SupervisorStrategy.restartWithBackoff(100.millis, 1.second, 0))
+      }).onFailure[Throwable](SupervisorStrategy.restartWithBackoff(100.millis, 1.second, 0))
 
       val ref = spawn(behv)
       probe.expectMessage("started 1")
@@ -1287,7 +1287,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
           .supervise(new AbstractBehavior[String](wrongContext) {
             override def onMessage(msg: String): Behavior[String] = Behaviors.same
           })
-          .onFailure(SupervisorStrategy.restart)
+          .onFailure[Throwable](SupervisorStrategy.restart)
       }
 
       intercept[IllegalArgumentException] {
@@ -1373,12 +1373,12 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     s"Supervision with the strategy $strategy" should {
 
       "that is initially stopped should be stopped" in {
-        val actor = spawn(Behaviors.supervise(Behaviors.stopped[Command]).onFailure(strategy))
+        val actor = spawn(Behaviors.supervise(Behaviors.stopped[Command]).onFailure[Throwable](strategy))
         createTestProbe().expectTerminated(actor, 3.second)
       }
 
       "that is stopped after setup should be stopped" in {
-        val actor = spawn(Behaviors.supervise[Command](Behaviors.setup(_ => Behaviors.stopped)).onFailure(strategy))
+        val actor = spawn(Behaviors.supervise[Command](Behaviors.setup(_ => Behaviors.stopped)).onFailure[Throwable](strategy))
         createTestProbe().expectTerminated(actor, 3.second)
       }
 

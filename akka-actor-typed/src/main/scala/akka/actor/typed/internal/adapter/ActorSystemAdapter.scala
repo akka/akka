@@ -112,7 +112,7 @@ import org.slf4j.{ Logger, LoggerFactory }
   override def systemActorOf[U](behavior: Behavior[U], name: String, props: Props): ActorRef[U] = {
     val ref = system.systemActorOf(
       PropsAdapter(
-        () => Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        () => Behaviors.supervise(behavior).onFailure[Throwable](SupervisorStrategy.stop),
         props,
         rethrowTypedFailure = false),
       name)

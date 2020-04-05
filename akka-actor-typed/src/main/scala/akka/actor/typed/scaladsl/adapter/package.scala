@@ -47,7 +47,7 @@ package object adapter {
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] = {
       ActorRefFactoryAdapter.spawnAnonymous(
         sys,
-        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        Behaviors.supervise(behavior).onFailure[Throwable](SupervisorStrategy.stop),
         props,
         rethrowTypedFailure = false)
     }
@@ -61,7 +61,7 @@ package object adapter {
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] = {
       ActorRefFactoryAdapter.spawn(
         sys,
-        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        Behaviors.supervise(behavior).onFailure[Throwable](SupervisorStrategy.stop),
         name,
         props,
         rethrowTypedFailure = false)
@@ -101,7 +101,7 @@ package object adapter {
     def spawnAnonymous[T](behavior: Behavior[T], props: Props = Props.empty): ActorRef[T] =
       ActorRefFactoryAdapter.spawnAnonymous(
         ctx,
-        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        Behaviors.supervise(behavior).onFailure[Throwable](SupervisorStrategy.stop),
         props,
         rethrowTypedFailure = false)
 
@@ -114,7 +114,7 @@ package object adapter {
     def spawn[T](behavior: Behavior[T], name: String, props: Props = Props.empty): ActorRef[T] =
       ActorRefFactoryAdapter.spawn(
         ctx,
-        Behaviors.supervise(behavior).onFailure(SupervisorStrategy.stop),
+        Behaviors.supervise(behavior).onFailure[Throwable](SupervisorStrategy.stop),
         name,
         props,
         rethrowTypedFailure = false)
