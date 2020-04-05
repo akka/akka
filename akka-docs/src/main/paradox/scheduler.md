@@ -52,7 +52,10 @@ The default implementation of `Scheduler` used by Akka is based on job
 buckets which are emptied according to a fixed schedule.  It does not
 execute tasks at the exact time, but on every tick, it will run everything
 that is (over)due.  The accuracy of the default Scheduler can be modified
-by the `akka.scheduler.tick-duration` configuration property.
+by the `akka.scheduler.tick-duration` configuration property, the default 
+value of `akka.scheduler.tick-duration` is set to `10ms`. The accuracy of it is
+platform related, the minimum supported `akka.scheduler.tick-duration` on Windows is `10ms`,
+on other platforms, it is `1ms`.
 
 @@@
 
