@@ -500,10 +500,6 @@ def akkaModule(name: String): Project =
     .settings(akka.AkkaBuild.buildSettings)
     .settings(akka.AkkaBuild.defaultSettings)
     .enablePlugins(BootstrapGenjavadoc)
-    .settings(
-      addCompilerPlugin(scalafixSemanticdb),
-      scalacOptions += "-Yrangepos"
-    )
 
 /* Command aliases one can run locally against a module
   - where three or more tasks should be checked for faster turnaround
