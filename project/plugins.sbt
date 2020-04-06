@@ -26,3 +26,5 @@ addSbtPlugin("com.hpe.sbt" % "sbt-pull-request-validator" % "1.0.0")
 addSbtPlugin("net.bzzt" % "sbt-reproducible-builds" % "0.24")
 addSbtPlugin("com.dwijnand" % "sbt-dynver" % "4.0.0")
 addSbtPlugin("com.lightbend.sbt" % "sbt-publish-rsync" % "0.2")
+
+addSbtPlugin("ch.epfl.lamp" % "sbt-dotty" % "0.4.1")
