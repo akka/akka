@@ -26,7 +26,7 @@ and examples.
 
 Imagine a videoconference client decoding a video feed from a colleague working remotely. It is possible 
 the network bandwidth is a bit unreliable. It's fine, as long as the audio remains fluent, it doesn't matter
-if we can't decode a frame or two (or more). When a frame is dropped, though, we want the UI to shwo the last 
+if we can't decode a frame or two (or more). When a frame is dropped, though, we want the UI to show the last 
 frame decoded:
 
 Scala
@@ -46,4 +46,3 @@ Java
 **completes** when upstream completes
 
 @@@
-
