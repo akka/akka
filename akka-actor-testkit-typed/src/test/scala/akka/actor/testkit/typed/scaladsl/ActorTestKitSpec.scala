@@ -5,8 +5,11 @@
 package akka.actor.testkit.typed.scaladsl
 
 import akka.Done
-import scala.concurrent.Promise
+import akka.actor.Dropped
+import akka.actor.UnhandledMessage
+import akka.actor.typed.eventstream.EventStream
 
+import scala.concurrent.Promise
 import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
@@ -90,6 +93,25 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       createTestProbe()
       akka.testkit.TestProbe()(system.toClassic)
       // not throw
+    }
+
+    "allow subscriptions for unhandled" in {
+      import akka.actor.typed.scaladsl.adapter._
+      val probe = testKit.createUnhandledMessageProbe()
+      system.eventStream ! EventStream.Publish(UnhandledMessage("message", probe.ref.toClassic, probe.ref.toClassic))
+      probe.receiveMessage().message should ===("message")
+    }
+
+    "allow subscriptions for dead letters" in {
+      val probe = testKit.createDeadLetterMessageProbe()
+      system.deadLetters ! "message"
+      probe.receiveMessage().message should ===("message")
+    }
+
+    "allow subscriptions for dropped messages" in {
+      val probe = testKit.createDroppedMessageProbe()
+      system.eventStream ! EventStream.Publish(Dropped("message", "it had gone bad", akka.actor.ActorRef.noSender))
+      probe.receiveMessage().message should ===("message")
     }
 
   }

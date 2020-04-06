@@ -4,25 +4,22 @@
 
 package akka.actor.typed
 
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
-import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent.{ ExecutionContext, TimeoutException }
-import scala.util.Success
-
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import scala.concurrent.Future
-
-import akka.actor.DeadLetter
-import akka.actor.UnhandledMessage
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.eventstream.EventStream
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.ExecutionContext
+import scala.concurrent.TimeoutException
+import scala.util.Success
 
 object AskSpec {
   sealed trait Msg
@@ -76,10 +73,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
     }
 
     "fail the future if the actor doesn't reply in time" in {
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      LoggingTestKit.debug(s"subscribing ${unhandledProbe.ref} to channel class akka.actor.UnhandledMessage").expect {
-        system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
-      }
+      val unhandledProbe = createUnhandledMessageProbe()
 
       val actor = spawn(Behaviors.empty[Foo])
       implicit val timeout: Timeout = 10.millis
@@ -100,10 +94,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
           fail("this test must only run in an adapted actor system")
       }
 
-      val deadLetterProbe = createTestProbe[DeadLetter]()
-      LoggingTestKit.debug(s"subscribing ${deadLetterProbe.ref} to channel class akka.actor.DeadLetter").expect {
-        system.eventStream ! EventStream.Subscribe(deadLetterProbe.ref)
-      }
+      val deadLetterProbe = createDeadLetterMessageProbe()
 
       val answer: Future[String] = noSuchActor.ask(Foo("bar", _))
       val result = answer.failed.futureValue
@@ -134,8 +125,8 @@ class AskSpec extends ScalaTestWithActorTestKit("""
 
         val legacyActor = classicSystem.actorOf(akka.actor.Props(new LegacyActor))
 
-        import scaladsl.AskPattern._
         import akka.actor.typed.scaladsl.adapter._
+        import scaladsl.AskPattern._
         implicit val timeout: Timeout = 3.seconds
         val typedLegacy: ActorRef[AnyRef] = legacyActor
         (typedLegacy.ask(Ping)).failed.futureValue should ===(ex)

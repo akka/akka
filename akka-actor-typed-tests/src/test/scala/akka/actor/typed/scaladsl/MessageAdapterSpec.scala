@@ -4,21 +4,18 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.UnhandledMessage
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.Props
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.eventstream.EventStream
 import com.typesafe.config.ConfigFactory
-import org.slf4j.event.Level
 import org.scalatest.wordspec.AnyWordSpecLike
-import akka.actor.typed.scaladsl.adapter._
+import org.slf4j.event.Level
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString("""
@@ -152,14 +149,7 @@ class MessageAdapterSpec
           Behaviors.same
       })
 
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
-      // make sure subscription completed before moving on
-      unhandledProbe.awaitAssert {
-        val uh = UnhandledMessage("dummy", akka.actor.ActorRef.noSender, unhandledProbe.ref.toClassic)
-        system.eventStream ! EventStream.Publish(uh)
-        unhandledProbe.expectMessageType[UnhandledMessage] shouldBe theSameInstanceAs(uh)
-      }
+      val unhandledProbe = createUnhandledMessageProbe()
       val probe = TestProbe[Wrapped]()
 
       val snitch = Behaviors.setup[Wrapped] { context =>

@@ -6,6 +6,11 @@ package akka.actor.testkit.typed.scaladsl
 
 import java.util.concurrent.TimeoutException
 
+import akka.actor.DeadLetter
+import akka.actor.DeadLetterSuppression
+import akka.actor.Dropped
+import akka.actor.UnhandledMessage
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import akka.actor.testkit.typed.TestKitSettings
@@ -16,12 +21,14 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
+import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.annotation.InternalApi
 import akka.util.Timeout
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
+import akka.actor.typed.scaladsl.adapter._
 
 object ActorTestKit {
 
@@ -117,6 +124,7 @@ object ActorTestKit {
    */
   val ApplicationTestConfig: Config = ConfigFactory.load("application-test")
 
+  private val dummyMessage = new DeadLetterSuppression {}
 }
 
 /**
@@ -214,6 +222,63 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * @tparam M the type of messages the probe should accept
    */
   def createTestProbe[M](name: String): TestProbe[M] = TestProbe(name)(system)
+
+  /**
+   * @return A test probe that is subscribed to unhandled messages from the system event bus. Subscription
+   *         will be completed and verified so any unhandled message after it will be caught by the probe.
+   */
+  def createUnhandledMessageProbe(): TestProbe[UnhandledMessage] = {
+    val probe = createTestProbe[Any]()
+    val narrowed = probe.ref.narrow[UnhandledMessage]
+    system.eventStream ! EventStream.Subscribe(narrowed)
+
+    // publish-receive roundtrip to verify we are subscribed before returning the probe
+    probe.awaitAssert {
+      val uh = UnhandledMessage(ActorTestKit.dummyMessage, probe.ref.toClassic, probe.ref.toClassic)
+      system.eventStream ! EventStream.Publish(uh)
+      if (probe.expectMessageType[UnhandledMessage].message != ActorTestKit.dummyMessage)
+        throw new RuntimeException("Not the expected unhandled")
+    }
+    probe.asInstanceOf[TestProbe[UnhandledMessage]]
+  }
+
+  /**
+   * @return A test probe that is subscribed to dead letters from the system event bus. Subscription
+   *         will be completed and verified so any dead letter after it will be caught by the probe.
+   */
+  def createDeadLetterMessageProbe(): TestProbe[DeadLetter] = {
+    val probe = createTestProbe[Any]()
+    val narrowed = probe.ref.narrow[DeadLetter]
+    system.eventStream ! EventStream.Subscribe(narrowed)
+
+    // publish-receive roundtrip to verify we are subscribed before returning the probe
+    probe.awaitAssert {
+      val dl = DeadLetter(ActorTestKit.dummyMessage, probe.ref.toClassic, probe.ref.toClassic)
+      system.eventStream ! EventStream.Publish(dl)
+      if (probe.expectMessageType[DeadLetter].message != ActorTestKit.dummyMessage)
+        throw new RuntimeException("Not the expected unhandled")
+    }
+    probe.asInstanceOf[TestProbe[DeadLetter]]
+  }
+
+  /**
+   * @return A test probe that is subscribed to dropped letters from the system event bus. Subscription
+   *         will be completed and verified so any dropped letter after it will be caught by the probe.
+   */
+  def createDroppedMessageProbe(): TestProbe[Dropped] = {
+    val probe = createTestProbe[Any]()
+    val narrowed = probe.ref.narrow[Dropped]
+    system.eventStream ! EventStream.Subscribe(narrowed)
+
+    // publish-receive roundtrip to verify we are subscribed before returning the probe
+    probe.awaitAssert {
+      val dl = Dropped(ActorTestKit.dummyMessage, "no reason", probe.ref.toClassic, probe.ref.toClassic)
+      system.eventStream ! EventStream.Publish(dl)
+      if (probe.expectMessageType[Dropped].message != ActorTestKit.dummyMessage)
+        throw new RuntimeException("Not the expected unhandled")
+    }
+    probe.asInstanceOf[TestProbe[Dropped]]
+  }
 
   /**
    * Additional testing utilities for serialization.

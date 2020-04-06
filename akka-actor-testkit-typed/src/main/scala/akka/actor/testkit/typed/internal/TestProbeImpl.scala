@@ -389,4 +389,5 @@ private[akka] final class TestProbeImpl[M](name: String, system: ActorSystem[_])
     testActor.asInstanceOf[ActorRef[AnyRef]] ! Stop
   }
 
+  override private[akka] def asJava: JavaTestProbe[M] = this
 }

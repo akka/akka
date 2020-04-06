@@ -7,13 +7,13 @@ package akka.actor.testkit.typed.scaladsl
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
-
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestProbeImpl
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 
 object FishingOutcomes {
 
@@ -241,4 +241,10 @@ object TestProbe {
    * Stops the [[TestProbe.ref]], which is useful when testing watch and termination.
    */
   def stop(): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi
+  private[akka] def asJava: akka.actor.testkit.typed.javadsl.TestProbe[M]
 }

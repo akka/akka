@@ -5,19 +5,16 @@
 package akka.actor.typed
 
 import akka.actor.InvalidMessageException
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
-
-import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.eventstream.EventStream
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.scaladsl.Behaviors
 import org.scalatest.wordspec.AnyWordSpecLike
-import akka.actor.typed.scaladsl.adapter._
+
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
 object ActorSpecMessages {
 
@@ -87,15 +84,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
     }
 
     "canonicalize behaviors" in {
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
-      // make sure subscription completed before moving on
-      unhandledProbe.awaitAssert {
-        val uh = UnhandledMessage("dummy", akka.actor.ActorRef.noSender, unhandledProbe.ref.toClassic)
-        system.eventStream ! EventStream.Publish(uh)
-        unhandledProbe.expectMessageType[UnhandledMessage] shouldBe theSameInstanceAs(uh)
-      }
-
+      val unhandledProbe = createUnhandledMessageProbe()
       val probe = TestProbe[Event]()
 
       lazy val behavior: Behavior[Command] = Behaviors

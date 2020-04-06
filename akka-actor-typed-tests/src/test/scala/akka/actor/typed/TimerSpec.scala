@@ -8,18 +8,17 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
-
 import akka.actor.DeadLetter
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl._
-import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.TimingTest
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
 
 class TimerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
@@ -296,6 +295,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
     }
 
     "not leak timers when PostStop is used" in {
+      val deadLetterProbe = createDeadLetterMessageProbe()
       val probe = TestProbe[DeadLetter]()
       val ref = spawn(Behaviors.withTimers[String] { timers =>
         Behaviors.setup { _ =>
@@ -309,8 +309,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
         ref ! "stop"
       }
       probe.expectTerminated(ref)
-      system.eventStream ! EventStream.Subscribe(probe.ref)
-      probe.expectNoMessage(1.second)
+      deadLetterProbe.expectNoMessage(1.second)
     }
   }
 
