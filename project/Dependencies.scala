@@ -6,6 +6,7 @@ package akka
 
 import sbt._
 import Keys._
+import scala.language.implicitConversions
 
 object Dependencies {
   import DependencyHelpers._
