@@ -19,7 +19,7 @@ class ExplicitAskSpec extends AkkaSpec {
 
   "The “ask” pattern with explicit sender" must {
     "allow to access an explicit reference to actor to respond to" in {
-      implicit val timeout = Timeout(5.seconds)
+      implicit val timeout: Timeout = Timeout(5.seconds)
 
       val target = system.actorOf(Props(new Actor {
         def receive = {
@@ -32,7 +32,7 @@ class ExplicitAskSpec extends AkkaSpec {
     }
 
     "work for ActorSelection" in {
-      implicit val timeout = Timeout(5.seconds)
+      implicit val timeout: Timeout = Timeout(5.seconds)
 
       val target = system.actorOf(Props(new Actor {
         def receive = {

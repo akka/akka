@@ -142,7 +142,7 @@ object AkkaBuild {
          |implicit def _system = system
          |def startSystem(remoting: Boolean = false) { system = ActorSystem("repl", if(remoting) remoteConfig else config); println("don’t forget to system.terminate()!") }
          |implicit def ec = system.dispatcher
-         |implicit val timeout = Timeout(5 seconds)
+         |implicit val timeout: Timeout = Timeout(5 seconds)
          |""".stripMargin,
 
     /**
