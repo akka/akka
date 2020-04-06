@@ -26,10 +26,8 @@ import org.slf4j.LoggerFactory
 object ActorTestKit {
 
   /**
-   * Create an [[akka.actor.typed.ActorSystem]] named from the ActorTestKit class.
+   * Create a testkit named from the ActorTestKit class.
    *
-   * It will create an [[akka.actor.typed.ActorSystem]] with the name ActorTestKit,
-   * e.g. threads will include the name ActorTestKit.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    *
@@ -48,8 +46,6 @@ object ActorTestKit {
   /**
    * Create a testkit from the provided actor system.
    *
-   * It will use the provided [[akka.actor.typed.ActorSystem]] and create a ActorTestKit,
-   * e.g. threads will include the name of the provided actor system.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    *
@@ -62,7 +58,7 @@ object ActorTestKit {
   }
 
   /**
-   * Create an [[akka.actor.typed.ActorSystem]] using the provided name.
+   * Create a testkit using the provided name.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,
    * e.g. threads will include the name.
@@ -80,11 +76,8 @@ object ActorTestKit {
   }
 
   /**
-   * Create an [[akka.actor.typed.ActorSystem]] named from the ActorTestKit class,
+   * Create a testkit named from the ActorTestKit class,
    * and use a custom config for the actor system.
-   *
-   * It will create an [[akka.actor.typed.ActorSystem]] with the name ActorTestKit,
-   * e.g. threads will include the name.
    *
    * It will also used the provided customConfig provided to create the `ActorSystem`
    *
@@ -100,7 +93,7 @@ object ActorTestKit {
   }
 
   /**
-   * Create an [[akka.actor.typed.ActorSystem]] named based on the provided name,
+   * Create a test kit named based on the provided name,
    * and uses the provided custom config for the actor system.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,

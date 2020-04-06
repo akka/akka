@@ -23,7 +23,7 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
       system.name should ===("ActorTestKitSpec")
     }
 
-    "generate a test kit from the provided actor" in {
+    "generate a test kit from the provided actor system" in {
       val config = ConfigFactory.parseString("test.specific-config = yes")
       val system = ActorSystem(ActorTestKitGuardian.testKitGuardian, "TestActor", config)
       val testkit2 = ActorTestKit(system)
