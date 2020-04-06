@@ -1,4 +1,5 @@
 import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ParadoxSupport, ScalafixIgnoreFilePlugin }
+import akka.DottySupport.{ ProjectOps, addSourceDirScalaBin }
 
 enablePlugins(
   UnidocRoot,
@@ -85,18 +86,17 @@ lazy val actor = akkaModule("akka-actor")
   .settings(Dependencies.actor)
   .settings(OSGi.actor)
   .settings(AutomaticModuleName.settings("akka.actor"))
-  .settings(unmanagedSourceDirectories in Compile += {
-    val ver = scalaVersion.value.take(4)
-    (scalaSource in Compile).value.getParentFile / s"scala-$ver"
-  })
+  .settings(addSourceDirScalaBin())
   .settings(VersionGenerator.settings)
   .enablePlugins(BoilerplatePlugin)
+  .dottySupport()
 
 lazy val actorTests = akkaModule("akka-actor-tests")
   .dependsOn(testkit % "compile->compile;test->test")
   .settings(Dependencies.actorTests)
   .enablePlugins(NoPublish)
   .disablePlugins(MimaPlugin, WhiteSourcePlugin)
+  .dottySupport()
 
 lazy val akkaScalaNightly = akkaModule("akka-scala-nightly")
   .aggregate(aggregatedProjects: _*)
@@ -345,6 +345,7 @@ lazy val slf4j = akkaModule("akka-slf4j")
   .settings(Dependencies.slf4j)
   .settings(AutomaticModuleName.settings("akka.slf4j"))
   .settings(OSGi.slf4j)
+  .dottySupport()
 
 lazy val stream = akkaModule("akka-stream")
   .dependsOn(actor, protobufV3)
@@ -386,6 +387,7 @@ lazy val testkit = akkaModule("akka-testkit")
   .settings(AutomaticModuleName.settings("akka.actor.testkit"))
   .settings(OSGi.testkit)
   .settings(initialCommands += "import akka.testkit._")
+  .dottySupport()
 
 lazy val actorTyped = akkaModule("akka-actor-typed")
   .dependsOn(actor, slf4j)
@@ -402,6 +404,7 @@ lazy val actorTyped = akkaModule("akka-actor-typed")
       implicit val timeout = Timeout(5.seconds)
     """)
   .enablePlugins(Jdk9)
+  .dottySupport(extraConfigs = Jdk9.CompileJdk9)
 
 lazy val persistenceTyped = akkaModule("akka-persistence-typed")
   .dependsOn(
@@ -470,12 +473,14 @@ lazy val actorTestkitTyped = akkaModule("akka-actor-testkit-typed")
   .dependsOn(actorTyped, slf4j, testkit % "compile->compile;test->test")
   .settings(AutomaticModuleName.settings("akka.actor.testkit.typed"))
   .settings(Dependencies.actorTestkitTyped)
+  .dottySupport()
 
 lazy val actorTypedTests = akkaModule("akka-actor-typed-tests")
   .dependsOn(actorTyped % "compile->CompileJdk9", actorTestkitTyped % "compile->compile;test->test")
   .settings(AkkaBuild.mayChangeSettings)
   .disablePlugins(MimaPlugin)
   .enablePlugins(NoPublish)
+  .dottySupport()
 
 lazy val discovery = akkaModule("akka-discovery")
   .dependsOn(actor, testkit % "test->test", actorTests % "test->test")
