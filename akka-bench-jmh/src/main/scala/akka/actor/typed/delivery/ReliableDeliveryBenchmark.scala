@@ -1,5 +1,5 @@
 /*
- * Copyright (C) 2014-2020 Lightbend Inc. <https://www.lightbend.com>
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
  */
 
 package akka.actor.typed.delivery
@@ -19,100 +19,100 @@ import akka.actor.typed.scaladsl.Behaviors
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
-object ReliableDeliveryBenchmark {
+object Producer {
+  trait Command
 
-  final val messagesPerOperation = 100000
-  final val timeout = 30.seconds
+  case object Run extends Command
+  private case class WrappedRequestNext(r: ProducerController.RequestNext[Consumer.Command]) extends Command
 
-  object Producer {
-    trait Command
+  def apply(
+      numberOfMessages: Int,
+      producerController: ActorRef[ProducerController.Command[Consumer.Command]]): Behavior[Command] = {
+    Behaviors.setup { context =>
+      val requestNextAdapter =
+        context.messageAdapter[ProducerController.RequestNext[Consumer.Command]](WrappedRequestNext(_))
 
-    case object Run extends Command
-    private case class WrappedRequestNext(r: ProducerController.RequestNext[Consumer.Command]) extends Command
-
-    def apply(
-        numberOfMessages: Int,
-        producerController: ActorRef[ProducerController.Command[Consumer.Command]]): Behavior[Command] = {
-      Behaviors.setup { context =>
-        val requestNextAdapter =
-          context.messageAdapter[ProducerController.RequestNext[Consumer.Command]](WrappedRequestNext(_))
-
-        Behaviors.receiveMessage {
-          case WrappedRequestNext(next) =>
-            if (next.confirmedSeqNr >= numberOfMessages) {
-              context.log.info("Completed {} messages", numberOfMessages)
-              Behaviors.stopped
-            } else {
-              next.sendNextTo ! Consumer.TheMessage
-              Behaviors.same
-            }
-
-          case Run =>
-            context.log.info("Starting {} messages", numberOfMessages)
-            producerController ! ProducerController.Start(requestNextAdapter)
+      Behaviors.receiveMessage {
+        case WrappedRequestNext(next) =>
+          if (next.confirmedSeqNr >= numberOfMessages) {
+            context.log.info("Completed {} messages", numberOfMessages)
+            Behaviors.stopped
+          } else {
+            next.sendNextTo ! Consumer.TheMessage
             Behaviors.same
-        }
-      }
-    }
-  }
+          }
 
-  object Consumer {
-    trait Command
-
-    case object TheMessage extends Command
-
-    private case class WrappedDelivery(d: ConsumerController.Delivery[Command]) extends Command
-
-    def apply(consumerController: ActorRef[ConsumerController.Command[Command]]): Behavior[Command] = {
-      Behaviors.setup { context =>
-        val deliveryAdapter =
-          context.messageAdapter[ConsumerController.Delivery[Command]](WrappedDelivery(_))
-        consumerController ! ConsumerController.Start(deliveryAdapter)
-
-        Behaviors.receiveMessagePartial {
-          case WrappedDelivery(d @ ConsumerController.Delivery(_, confirmTo)) =>
-            context.log.trace("Processed {}", d.seqNr)
-            confirmTo ! ConsumerController.Confirmed
-            Behaviors.same
-        }
-      }
-    }
-  }
-
-  object Guardian {
-
-    trait Command
-    final case class Run(id: String, numberOfMessages: Int, replyTo: ActorRef[Done]) extends Command
-    final case class ProducerTerminated(consumer: ActorRef[Consumer.Command], replyTo: ActorRef[Done]) extends Command
-
-    def apply(): Behavior[Command] = {
-      Behaviors.setup { context =>
-        Behaviors.receiveMessage {
-          case Run(id, numberOfMessages, replyTo) =>
-            val consumerController = context.spawn(ConsumerController[Consumer.Command](), s"consumerController-$id")
-            val consumer = context.spawn(Consumer(consumerController), s"consumer-$id")
-
-            val producerController = context.spawn(
-              ProducerController[Consumer.Command](id, durableQueueBehavior = None),
-              s"producerController-$id")
-            val producer = context.spawn(Producer(numberOfMessages, producerController), s"producer-$id")
-            context.watchWith(producer, ProducerTerminated(consumer, replyTo))
-
-            consumerController ! ConsumerController.RegisterToProducerController(producerController)
-
-            producer ! Producer.Run
-
-            Behaviors.same
-
-          case ProducerTerminated(consumer, replyTo) =>
-            context.stop(consumer)
-            replyTo ! Done
-            Behaviors.same
-        }
+        case Run =>
+          context.log.info("Starting {} messages", numberOfMessages)
+          producerController ! ProducerController.Start(requestNextAdapter)
+          Behaviors.same
       }
     }
   }
 }
+
+object Consumer {
+  trait Command
+
+  case object TheMessage extends Command
+
+  private case class WrappedDelivery(d: ConsumerController.Delivery[Command]) extends Command
+
+  def apply(consumerController: ActorRef[ConsumerController.Command[Command]]): Behavior[Command] = {
+    Behaviors.setup { context =>
+      val deliveryAdapter =
+        context.messageAdapter[ConsumerController.Delivery[Command]](WrappedDelivery(_))
+      consumerController ! ConsumerController.Start(deliveryAdapter)
+
+      Behaviors.receiveMessagePartial {
+        case WrappedDelivery(d @ ConsumerController.Delivery(_, confirmTo)) =>
+          context.log.trace("Processed {}", d.seqNr)
+          confirmTo ! ConsumerController.Confirmed
+          Behaviors.same
+      }
+    }
+  }
+}
+
+object Guardian {
+
+  trait Command
+  final case class Run(id: String, numberOfMessages: Int, replyTo: ActorRef[Done]) extends Command
+  final case class ProducerTerminated(consumer: ActorRef[Consumer.Command], replyTo: ActorRef[Done]) extends Command
+
+  def apply(): Behavior[Command] = {
+    Behaviors.setup { context =>
+      Behaviors.receiveMessage {
+        case Run(id, numberOfMessages, replyTo) =>
+          val consumerController = context.spawn(ConsumerController[Consumer.Command](), s"consumerController-$id")
+          val consumer = context.spawn(Consumer(consumerController), s"consumer-$id")
+
+          val producerController = context.spawn(
+            ProducerController[Consumer.Command](id, durableQueueBehavior = None),
+            s"producerController-$id")
+          val producer = context.spawn(Producer(numberOfMessages, producerController), s"producer-$id")
+          context.watchWith(producer, ProducerTerminated(consumer, replyTo))
+
+          consumerController ! ConsumerController.RegisterToProducerController(producerController)
+
+          producer ! Producer.Run
+
+          Behaviors.same
+
+        case ProducerTerminated(consumer, replyTo) =>
+          context.stop(consumer)
+          replyTo ! Done
+          Behaviors.same
+      }
+    }
+  }
+}
+
+object ReliableDeliveryBenchmark {
+  final val messagesPerOperation = 100000
+  final val timeout = 30.seconds
+}
+
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.Throughput))
 @Fork(1)
