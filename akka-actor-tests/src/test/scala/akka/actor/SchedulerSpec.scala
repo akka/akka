@@ -496,7 +496,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
       "execute multiple jobs at once when expiring multiple buckets" taggedAs TimingTest in {
         withScheduler() { (sched, driver) =>
-          implicit def ec = localEC
+          implicit def ec: ExecutionContext = localEC
           import driver._
           val start = step / 2
           (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, testActor, "hello"))
@@ -511,7 +511,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
       "properly defer jobs even when the timer thread oversleeps" taggedAs TimingTest in {
         withScheduler() { (sched, driver) =>
-          implicit def ec = localEC
+          implicit def ec: ExecutionContext = localEC
           import driver._
           sched.scheduleOnce(step * 3, probe.ref, "hello")
           wakeUp(step * 5)
@@ -526,7 +526,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
       "correctly wrap around wheel rounds" taggedAs TimingTest in {
         withScheduler(config = ConfigFactory.parseString("akka.scheduler.ticks-per-wheel=2")) { (sched, driver) =>
-          implicit def ec = localEC
+          implicit def ec: ExecutionContext = localEC
           import driver._
           val start = step / 2
           (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, probe.ref, "hello"))
@@ -553,7 +553,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
 
       "correctly execute jobs when clock wraps around" taggedAs TimingTest in {
         withScheduler(Long.MaxValue - 200000000L) { (sched, driver) =>
-          implicit def ec = localEC
+          implicit def ec: ExecutionContext = localEC
           import driver._
           val start = step / 2
           (0 to 3).foreach(i => sched.scheduleOnce(start + step * i, testActor, "hello"))
@@ -583,7 +583,7 @@ class LightArrayRevolverSchedulerSpec extends AkkaSpec(SchedulerSpec.testConfRev
         val targetTicks = Int.MaxValue - numEvents + 20
 
         withScheduler(_startTick = Int.MaxValue - 100) { (sched, driver) =>
-          implicit def ec = localEC
+          implicit def ec: ExecutionContext = localEC
           import driver._
 
           val start = step / 2

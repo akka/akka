@@ -428,7 +428,7 @@ object StyleGuideDocExamples {
     import akka.actor.typed.scaladsl.AskPattern._
     import akka.util.Timeout
 
-    implicit val timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = Timeout(3.seconds)
     val counter: ActorRef[Command] = ???
 
     val result: Future[OperationResult] = counter.ask(replyTo => Increment(delta = 2, replyTo))

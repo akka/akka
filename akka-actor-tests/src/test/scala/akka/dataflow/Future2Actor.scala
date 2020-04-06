@@ -7,6 +7,7 @@ package akka.dataflow
 import language.postfixOps
 
 import akka.actor.{ Actor, Props }
+import akka.actor.ActorRef
 import scala.concurrent.Future
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -25,7 +26,7 @@ class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
     }
 
     "support convenient sending to multiple destinations with implicit sender" in {
-      implicit val someActor = system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }))
+      implicit val someActor: ActorRef = system.actorOf(Props(new Actor { def receive = Actor.emptyBehavior }))
       Future(42).pipeTo(testActor).pipeTo(testActor)
       expectMsgAllOf(1 second, 42, 42)
       lastSender should ===(someActor)

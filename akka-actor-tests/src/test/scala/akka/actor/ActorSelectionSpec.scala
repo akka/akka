@@ -355,7 +355,7 @@ class ActorSelectionSpec extends AkkaSpec with DefaultTimeout {
 
     "identify actors with wildcard selection correctly" in {
       val creator = TestProbe()
-      implicit def self = creator.ref
+      implicit def self: ActorRef = creator.ref
       val top = system.actorOf(p, "a")
       val b1 = Await.result((top ? Create("b1")).mapTo[ActorRef], timeout.duration)
       val b2 = Await.result((top ? Create("b2")).mapTo[ActorRef], timeout.duration)
