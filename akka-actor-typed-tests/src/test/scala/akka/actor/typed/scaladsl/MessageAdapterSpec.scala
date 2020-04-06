@@ -18,6 +18,7 @@ import akka.actor.typed.eventstream.EventStream
 import com.typesafe.config.ConfigFactory
 import org.slf4j.event.Level
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.typed.scaladsl.adapter._
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString("""
@@ -153,6 +154,12 @@ class MessageAdapterSpec
 
       val unhandledProbe = createTestProbe[UnhandledMessage]()
       system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      // make sure subscription completed before moving on
+      unhandledProbe.awaitAssert {
+        val uh = UnhandledMessage("dummy", akka.actor.ActorRef.noSender, unhandledProbe.ref.toClassic)
+        system.eventStream ! EventStream.Publish(uh)
+        unhandledProbe.expectMessageType[UnhandledMessage] shouldBe theSameInstanceAs(uh)
+      }
       val probe = TestProbe[Wrapped]()
 
       val snitch = Behaviors.setup[Wrapped] { context =>

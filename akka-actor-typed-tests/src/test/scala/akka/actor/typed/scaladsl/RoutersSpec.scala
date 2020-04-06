@@ -5,13 +5,20 @@
 package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.testkit.typed.scaladsl.{ LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.eventstream.EventStream
-import akka.actor.typed.internal.routing.{ GroupRouterImpl, RoutingLogics }
-import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
+import akka.actor.typed.internal.routing.GroupRouterImpl
+import akka.actor.typed.internal.routing.RoutingLogics
+import akka.actor.typed.receptionist.Receptionist
+import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.{ ActorRef, Behavior }
-import akka.actor.{ ActorSystem, Dropped }
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.ActorSystem
+import akka.actor.Dropped
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -146,6 +153,12 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val group = spawn(Routers.group(serviceKey), "group-router-2")
       val probe = TestProbe[Dropped]()
       system.eventStream ! EventStream.Subscribe(probe.ref)
+      // make sure subscription completed before moving on
+      probe.awaitAssert {
+        val dropped = Dropped("dummy", "bad day", akka.actor.ActorRef.noSender, probe.ref.toClassic)
+        system.eventStream ! EventStream.Publish(dropped)
+        probe.expectMessageType[Dropped] shouldBe theSameInstanceAs(dropped)
+      }
 
       (0 to 3).foreach { n =>
         val msg = s"message-$n"

@@ -628,7 +628,15 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     "deal with unhandled the same way as normal unhandled" in {
       val probe = TestProbe[String]()
       val unhandledProbe = createTestProbe[UnhandledMessage]()
+
       system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      // make sure subscription completed before moving on
+      unhandledProbe.awaitAssert {
+        import akka.actor.typed.scaladsl.adapter._
+        val uh = UnhandledMessage("dummy", akka.actor.ActorRef.noSender, unhandledProbe.ref.toClassic)
+        system.eventStream ! EventStream.Publish(uh)
+        unhandledProbe.expectMessageType[UnhandledMessage] shouldBe theSameInstanceAs(uh)
+      }
 
       val ref = spawn(Behaviors.withStash[String](10) { stash =>
         stash.stash("unhandled")
@@ -681,6 +689,13 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
     "deal with stop" in {
       val probe = TestProbe[Any]
       system.eventStream ! EventStream.Subscribe(probe.ref.narrow[DeadLetter])
+      // make sure subscription completed before moving on
+      probe.awaitAssert {
+        import akka.actor.typed.scaladsl.adapter._
+        val dl = DeadLetter("dummy", probe.ref.toClassic, probe.ref.toClassic)
+        system.eventStream ! EventStream.Publish(dl)
+        probe.expectMessageType[DeadLetter] shouldBe theSameInstanceAs(dl)
+      }
 
       val ref = spawn(Behaviors.withStash[String](10) { stash =>
         stash.stash("one")
