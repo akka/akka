@@ -18,7 +18,7 @@ object PingPongExample {
     val PingServiceKey = ServiceKey[Ping]("pingService")
 
     final case class Ping(replyTo: ActorRef[Pong.type])
-    final case object Pong
+    case object Pong
 
     def apply(): Behavior[Ping] = {
       Behaviors.setup { context =>
