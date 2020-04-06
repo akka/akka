@@ -30,10 +30,10 @@ if we can't decode a frame or two (or more). When a frame is dropped, though, we
 frame decoded:
 
 Scala
-:   @@snip [ExtrapolateAndExpandScala.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ExtrapolateAndExpandScala.scala) { #extrapolate }
+:   @@snip [ExtrapolateAndExpand.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ExtrapolateAndExpand.scala) { #extrapolate }
 
 Java
-:   @@snip [ExtrapolateAndExpandJava.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/ExtrapolateAndExpandJava.java) { #extrapolate }
+:   @@snip [ExtrapolateAndExpand.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/ExtrapolateAndExpand.java) { #extrapolate }
 
 ## Reactive Streams semantics
 

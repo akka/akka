@@ -13,8 +13,10 @@ import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
-import docs.stream.operators.sourceorflow.ExtrapolateAndExpandScala.nowInSeconds
-import docs.stream.operators.sourceorflow.ExtrapolateAndExpandScala.videoAt25Fps
+import docs.stream.operators.sourceorflow.ExtrapolateAndExpand.fps
+import docs.stream.operators.sourceorflow.ExtrapolateAndExpand.nowInSeconds
+import docs.stream.operators.sourceorflow.ExtrapolateAndExpand.periodInMillis
+import docs.stream.operators.sourceorflow.ExtrapolateAndExpand.videoAt25Fps
 
 import scala.concurrent.duration._
 import scala.util.Random
@@ -27,27 +29,12 @@ object ExtrapolateAndExpandMain extends App {
   videoAt25Fps.map(_.pixels.utf8String).map(frame => s"$nowInSeconds - $frame").to(Sink.foreach(println)).run()
 
 }
-object ExtrapolateAndExpandScala {
+object ExtrapolateAndExpand {
 
   val periodInMillis = 40
   val fps = 1000 / periodInMillis
 
-  // This `networkSource` simulates a client sending frames over the network. There's a
-  // stage throttling the elements at 24fps and then a `delayWith` that randomly delays
-  // frames simulating network latency and bandwidth limitations (uses buffer of
-  // default capacity).
-  val networkSource: Source[ByteString, NotUsed] =
-    Source
-      .fromIterator(() => Iterator.from(0)) // produce frameIds
-      .throttle(fps, 1.second)
-      .map(i => ByteString.fromString(s"fakeFrame-$i"))
-      .delayWith(
-        () =>
-          new DelayStrategy[ByteString] {
-            override def nextDelay(elem: ByteString): FiniteDuration =
-              Random.nextInt(periodInMillis * 10).millis
-          },
-        DelayOverflowStrategy.dropBuffer)
+  import ExtrapolateAndExpandCommon._
 
   val decode: Flow[ByteString, Frame, NotUsed] =
     Flow[ByteString].map(Frame.decode)
@@ -80,18 +67,37 @@ object ExtrapolateAndExpandScala {
       (Iterator.single(watermarked) ++ Iterator.continually(grayedOut))
     })
 
-  val watermakerdVideoSource: Source[Frame, NotUsed] =
+  val watermarkedVideoSource: Source[Frame, NotUsed] =
     networkSource.via(decode).via(rateControl)
 
   // let's create a 25fps stream (a Frame every 40.millis)
   val ticks: Source[Tick.type, Cancellable] = Source.tick(0.seconds, 40.millis, Tick)
 
-  val watermarekedvideoAt25Fps: Source[Frame, Cancellable] =
-    ticks.zip(watermarekedvideoAt25Fps).map(_._2)
+  val watermarkedVideoAt25Fps: Source[Frame, Cancellable] =
+    ticks.zip(watermarkedVideoSource).map(_._2)
 
   // #expand
 
   def nowInSeconds = System.nanoTime() / 1000000000
+}
+
+object ExtrapolateAndExpandCommon {
+  // This `networkSource` simulates a client sending frames over the network. There's a
+  // stage throttling the elements at 24fps and then a `delayWith` that randomly delays
+  // frames simulating network latency and bandwidth limitations (uses buffer of
+  // default capacity).
+  val networkSource: Source[ByteString, NotUsed] =
+    Source
+      .fromIterator(() => Iterator.from(0)) // produce frameIds
+      .throttle(fps, 1.second)
+      .map(i => ByteString.fromString(s"fakeFrame-$i"))
+      .delayWith(
+        () =>
+          new DelayStrategy[ByteString] {
+            override def nextDelay(elem: ByteString): FiniteDuration =
+              Random.nextInt(periodInMillis * 10).millis
+          },
+        DelayOverflowStrategy.dropBuffer)
 
   case object Tick
 
@@ -114,5 +120,4 @@ object ExtrapolateAndExpandScala {
     val blackFrame: Frame = Frame(ByteString.empty)
     def decode(bs: ByteString): Frame = Frame(bs)
   }
-
 }

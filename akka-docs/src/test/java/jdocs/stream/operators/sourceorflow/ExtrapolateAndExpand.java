@@ -13,27 +13,27 @@ import akka.stream.javadsl.Flow;
 import akka.stream.javadsl.Sink;
 import akka.stream.javadsl.Source;
 import akka.util.ByteString;
-import docs.stream.operators.sourceorflow.ExtrapolateAndExpandScala;
-import docs.stream.operators.sourceorflow.ExtrapolateAndExpandScala.Frame;
+import docs.stream.operators.sourceorflow.ExtrapolateAndExpandCommon;
+import docs.stream.operators.sourceorflow.ExtrapolateAndExpandCommon.Frame;
 
 import java.time.Duration;
 import java.util.stream.Stream;
 
 /** */
-public class ExtrapolateAndExpandJava {
+public class ExtrapolateAndExpand {
   public static Function<ByteString, Frame> decodeAsFrame =
-      ExtrapolateAndExpandScala.Frame$.MODULE$::decode;
+      ExtrapolateAndExpandCommon.Frame$.MODULE$::decode;
 
-  public static Frame BLACK_FRAME = ExtrapolateAndExpandScala.Frame$.MODULE$.blackFrame();
+  public static Frame BLACK_FRAME = ExtrapolateAndExpandCommon.Frame$.MODULE$.blackFrame();
 
   public static long nowInSeconds() {
-    return ExtrapolateAndExpandScala.nowInSeconds();
+    return ExtrapolateAndExpand.nowInSeconds();
   }
 
   public static void main(String[] args) {
     ActorSystem actorSystem = ActorSystem.create("25fps-stream");
 
-    Source<ByteString, NotUsed> networkSource = ExtrapolateAndExpandScala.networkSource().asJava();
+    Source<ByteString, NotUsed> networkSource = ExtrapolateAndExpandCommon.networkSource().asJava();
 
     Flow<ByteString, Frame, NotUsed> decode = Flow.of(ByteString.class).<Frame>map(decodeAsFrame);
 
@@ -85,7 +85,7 @@ public class ExtrapolateAndExpandJava {
     // let's create a 25fps stream (a Frame every 40.millis)
     Source<String, Cancellable> ticks = Source.tick(Duration.ZERO, Duration.ofMillis(40), "tick");
 
-    Source<Frame, Cancellable> watermarekedvideoAt25Fps =
+    Source<Frame, Cancellable> watermarkedVideoAt25Fps =
         ticks.zip(watermakedVideoSource).map(Pair::second);
 
     // #expand

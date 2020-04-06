@@ -26,10 +26,10 @@ our colleague. `expand` provides access to the element flowing through the strea
 and let's us create extra frames in case the producer slows down:
 
 Scala
-:   @@snip [ExtrapolateAndExpandScala.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ExtrapolateAndExpandScala.scala) { #expand }
+:   @@snip [ExtrapolateAndExpand.scala](/akka-docs/src/test/scala/docs/stream/operators/sourceorflow/ExtrapolateAndExpand.scala) { #expand }
 
 Java
-:   @@snip [ExtrapolateAndExpandJava.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/ExtrapolateAndExpandJava.java) { #expand }
+:   @@snip [ExtrapolateAndExpand.java](/akka-docs/src/test/java/jdocs/stream/operators/sourceorflow/ExtrapolateAndExpand.java) { #expand }
 
 
 ## Reactive Streams semantics
