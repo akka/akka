@@ -225,7 +225,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "\n\n@@@ index\n\n" +
       groupedDefs
         .sortBy { case (_, method, _) => method.toLowerCase }
-        .map { case (_, method, md) => s"* [${methodToShow(method)}]($md)" }
+        .map { case (_, method, md) => s"* [$method]($md)" }
         .mkString("\n") + "\n\n@@@\n"
 
     if (!file.exists || IO.read(file) != content) IO.write(file, content)
