@@ -13,6 +13,13 @@ import dotty.tools.sbtplugin.DottyPlugin.autoImport._
 import DottySupport._
 import DottySupportInternal._
 
+// NOTE: To import sbt projects into IntelliJ with dotty libs:
+// + Open sbt Preference window. Add VM params: -Dakka.build.scalaVersion=<scala3Version's value>
+// + Regex replace all in build.sbt:
+//   Search:     `((akkaModule\("|val root = )(.*\n)(..(?!\.dottySupport\().*\n)*)\n`
+//   Replace by: `$1  .dottySupport() // todo remove\n\n`
+//   _don't include the ` char_
+// + Then reimport sbt projects
 object DottySupport {
   implicit class ProjectOps(val p: Project) extends AnyVal {
     /**
