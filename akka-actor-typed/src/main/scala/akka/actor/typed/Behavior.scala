@@ -5,16 +5,11 @@
 package akka.actor.typed
 
 import akka.actor.InvalidMessageException
-import akka.actor.typed.internal.BehaviorImpl
-import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
-import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
-import akka.actor.typed.internal.BehaviorTags
-import akka.actor.typed.internal.InterceptorImpl
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
+import akka.actor.typed.internal.BehaviorImpl.{ DeferredBehavior, StoppedBehavior }
+import akka.actor.typed.internal.{ BehaviorImpl, BehaviorTags, InterceptorImpl }
+import akka.annotation.{ DoNotInherit, InternalApi }
 
-import scala.annotation.switch
-import scala.annotation.tailrec
+import scala.annotation.{ switch, tailrec }
 import scala.reflect.ClassTag
 
 /**
@@ -162,17 +157,32 @@ object Behavior {
    * and then the resulting behavior is returned.
    */
   def start[T](behavior: Behavior[T], ctx: TypedActorContext[T]): Behavior[T] = {
-    // note that this can't be @tailrec, but normal stack of interceptors and similar shouldn't be
-    // that deep, and if they are it's most likely a bug which will be seen as StackOverflowError
-    behavior match {
-      case innerDeferred: DeferredBehavior[T]          => start(innerDeferred(ctx), ctx)
-      case wrapped: InterceptorImpl[T, Any] @unchecked =>
-        // make sure that a deferred behavior wrapped inside some other behavior is also started
-        val startedInner = start(wrapped.nestedBehavior, ctx.asInstanceOf[TypedActorContext[Any]])
-        if (startedInner eq wrapped.nestedBehavior) wrapped
-        else wrapped.replaceNested(startedInner)
-      case _ => behavior
+    @tailrec
+    def internalStart(
+        behavior: Behavior[T],
+        ctx: TypedActorContext[T],
+        interceptorsStack: List[InterceptorImpl[T, Any]] = Nil): Behavior[T] = {
+      // normal stack of interceptors and similar shouldn't be that deep,
+      // and if they are , which will generate a large interceptorsStack,
+      // it's most likely a bug which maybe be seen as OOM.
+      behavior match {
+        case innerDeferred: DeferredBehavior[T]          => internalStart(innerDeferred(ctx), ctx)
+        case wrapped: InterceptorImpl[T, Any] @unchecked =>
+          // make sure that a deferred behavior wrapped inside some other behavior is also started
+          val nestedBehavior = wrapped.nestedBehavior
+          internalStart(nestedBehavior.narrow, ctx.asInstanceOf[TypedActorContext[T]], wrapped :: interceptorsStack)
+        case _ =>
+          interceptorsStack match {
+            case Nil => behavior
+            case _ =>
+              interceptorsStack.foldLeft(behavior) {
+                case (b, acc) => acc.replaceNested(b.unsafeCast)
+              }
+          }
+
+      }
     }
+    internalStart(behavior, ctx)
   }
 
   /**

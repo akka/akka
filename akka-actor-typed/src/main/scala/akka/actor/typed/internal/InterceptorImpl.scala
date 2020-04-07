@@ -72,8 +72,9 @@ private[akka] final class InterceptorImpl[O, I](
     deduplicate(started, ctx)
   }
 
-  def replaceNested(newNested: Behavior[I]): Behavior[O] =
-    new InterceptorImpl(interceptor, newNested)
+  def replaceNested(newNested: Behavior[I]): Behavior[O] = {
+    if (newNested eq nestedBehavior) this else new InterceptorImpl(interceptor, newNested)
+  }
 
   override def receive(ctx: typed.TypedActorContext[O], msg: O): Behavior[O] = {
     // TODO performance optimization could maybe to avoid isAssignableFrom if interceptMessageClass is Class[Object]?
