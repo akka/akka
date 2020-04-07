@@ -96,7 +96,7 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
     log.debug("updateShardLocations {} for {}", locations, Key)
     (replicator ? Update(Key, LWWMap.empty[ShardId, String], WriteLocal, None) { existing =>
       locations.foldLeft(existing) {
-        case (acc, next) => acc.put(self, next._1, next._2.toString)
+        case (acc, (shardId, address)) => acc.put(self, shardId, address.toString)
       }
     }).flatMap {
       case UpdateSuccess(_, _) => Future.successful(Done)

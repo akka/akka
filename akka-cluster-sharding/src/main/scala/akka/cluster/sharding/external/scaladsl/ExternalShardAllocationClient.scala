@@ -34,12 +34,12 @@ trait ExternalShardAllocationClient {
 
   /**
    * Update all of the provided ShardLocations.
-   * The [[Address]] shoul match one of the nodes in the cluster. If the node has not joined
+   * The [[Address]] should match one of the nodes in the cluster. If the node has not joined
    * the cluster yet it will be moved to that node after the first cluster
-   * sharding rebalance after it does.
+   * sharding rebalance it does.
    *
    * @param locations to update
-   * @return Conformation that the update has been propagates to a majority of cluster nodes
+   * @return Confirmation that the update has been propagates to a majority of cluster nodes
    */
   def updateShardLocations(locations: Map[ShardId, Address]): Future[Done]
 
