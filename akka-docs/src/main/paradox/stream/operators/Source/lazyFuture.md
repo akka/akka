@@ -1,4 +1,4 @@
-# lazyFuture
+# Source.lazyFuture
 
 Defers creation of a future of a single element source until there is demand.
 

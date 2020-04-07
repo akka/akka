@@ -1,4 +1,4 @@
-# fromFutureSource
+# Source.fromFutureSource
 
 Deprecated by @ref:[`Source.futureSource`](futureSource.md).
 

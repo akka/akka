@@ -1,4 +1,4 @@
-# combine
+# Sink.combine
 
 Combine several sinks into one using a user specified strategy
 

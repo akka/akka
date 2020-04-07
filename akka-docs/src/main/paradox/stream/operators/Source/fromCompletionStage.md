@@ -1,4 +1,4 @@
-# fromCompletionStage
+# Source.fromCompletionStage
 
 Deprecated by @ref:[`Source.completionStage`](completionStage.md).
 

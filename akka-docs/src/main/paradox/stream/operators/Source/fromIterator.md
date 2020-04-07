@@ -1,4 +1,4 @@
-# fromIterator
+# Source.fromIterator
 
 Stream the values from an `Iterator`, requesting the next value when there is demand.
 

@@ -1,4 +1,4 @@
-# lazySingle
+# Source.lazySingle
 
 Defers creation of a single element source until there is demand.
 

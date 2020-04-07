@@ -1,4 +1,4 @@
-# lazyFutureSource
+# Source.lazyFutureSource
 
 Defers creation and materialization of a `Source` until there is demand.
 

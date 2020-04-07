@@ -1,4 +1,4 @@
-# head
+# Sink.head
 
 Materializes into a @scala[`Future`] @java[`CompletionStage`] which completes with the first value arriving, after this the stream is canceled.
 

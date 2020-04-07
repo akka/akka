@@ -1,4 +1,4 @@
-# actorRef
+# Sink.actorRef
 
 Send the elements from the stream to an `ActorRef`.
 

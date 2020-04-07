@@ -1,4 +1,4 @@
-# fold
+# Sink.fold
 
 Fold over emitted element with a function, where each invocation will get the new element and the result from the previous fold invocation.
 

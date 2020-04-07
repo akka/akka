@@ -1,4 +1,4 @@
-# @scala[apply]@java[from]
+# Source.@scala[apply]@java[from]
 
 Stream the values of an @scala[`immutable.Seq`]@java[`Iterable`].
 

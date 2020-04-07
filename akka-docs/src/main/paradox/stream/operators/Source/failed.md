@@ -1,4 +1,4 @@
-# failed
+# Source.failed
 
 Fail directly with a user specified exception.
 

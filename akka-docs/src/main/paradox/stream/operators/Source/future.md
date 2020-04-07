@@ -1,4 +1,4 @@
-# future
+# Source.future
 
 Send the single value of the `Future` when it completes and there is demand.
 
