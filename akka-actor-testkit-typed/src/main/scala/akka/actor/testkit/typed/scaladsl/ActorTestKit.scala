@@ -168,6 +168,10 @@ final class ActorTestKit private[akka] (
     internalTestKitGuardian: ActorRef[ActorTestKitGuardian.TestKitCommand],
     settings: Option[TestKitSettings]) {
 
+  val name = internalSystem.name
+
+  val config = internalSystem.settings.config
+
   // avoid slf4j noise by touching it first from single thread #28673
   LoggerFactory.getLogger(internalSystem.name).debug("Starting ActorTestKit")
 
