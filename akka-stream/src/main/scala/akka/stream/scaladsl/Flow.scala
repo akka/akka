@@ -587,7 +587,7 @@ object Flow {
     Flow[I]
       .flatMapPrefix(1) {
         case Seq(a) => futureFlow(flowFactory(a)).mapMaterializedValue(_ => NotUsed)
-        case Seq()  => Flow[I].asInstanceOf[Flow[I, O, NotUsed]]
+        case Nil  => Flow[I].asInstanceOf[Flow[I, O, NotUsed]]
       }
       .mapMaterializedValue(_ => fallback())
 
@@ -677,7 +677,7 @@ object Flow {
             futureFlow(create()
               .map(Flow[I].prepend(Source.single(a)).viaMat(_)(Keep.right))(akka.dispatch.ExecutionContexts.parasitic))
           f
-        case Seq() =>
+        case Nil =>
           val f: Flow[I, O, Future[M]] = Flow[I]
             .asInstanceOf[Flow[I, O, NotUsed]]
             .mapMaterializedValue(_ => Future.failed[M](new NeverMaterializedException()))
