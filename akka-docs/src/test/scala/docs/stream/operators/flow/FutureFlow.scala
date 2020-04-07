@@ -20,14 +20,14 @@ class FutureFlow {
     // #base-on-first-element
     def processingFlow(id: Int): Future[Flow[Int, String, NotUsed]] =
       Future {
-        Flow[Int].map(n => s"id: $id, value: $n")
+        Lazy[Int].map(n => s"id: $id, value: $n")
       }
 
     val source: Source[String, NotUsed] =
       Source(1 to 10).prefixAndTail(1).flatMapConcat {
         case (List(id), tail) =>
           // base the Future flow creation on the first element
-          tail.via(Flow.futureFlow(processingFlow(id)))
+          tail.via(Lazy.futureFlow(processingFlow(id)))
       }
     // #base-on-first-element
   }

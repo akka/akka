@@ -39,7 +39,7 @@ class StatefulMapConcat {
     val fruitsAndBlacklistCommands = Source(
       "banana" :: "pear" :: "orange" :: "blacklist:banana" :: "banana" :: "pear" :: "banana" :: Nil)
 
-    val blacklistingFlow = Flow[String].statefulMapConcat { () =>
+    val blacklistingFlow = Lazy[String].statefulMapConcat { () =>
       var blacklist = Set.empty[String]
 
       { element =>
@@ -67,7 +67,7 @@ class StatefulMapConcat {
     // #bs-last
     val words = Source("baboon" :: "crocodile" :: "bat" :: "flamingo" :: "hedgehog" :: "beaver" :: Nil)
 
-    val bWordsLast = Flow[String].concat(Source.single("-end-")).statefulMapConcat { () =>
+    val bWordsLast = Lazy[String].concat(Source.single("-end-")).statefulMapConcat { () =>
       var stashedBWords: List[String] = Nil
 
       { element =>
