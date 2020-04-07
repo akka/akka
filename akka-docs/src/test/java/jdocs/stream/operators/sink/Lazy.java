@@ -18,17 +18,20 @@ public class Lazy {
   void example() {
     // #simple-example
     CompletionStage<Optional<String>> matVal =
-        Source
-            .<String>maybe()
-            .map(element -> {
-              System.out.println("mapped " + element);
-              return element;
-            })
-            .toMat(Sink.lazySink(() -> {
-              System.out.println("Sink created");
-              return Sink.foreach(elem -> System.out.println("foreach " + elem));
-            }), Keep.left())
-        .run(system);
+        Source.<String>maybe()
+            .map(
+                element -> {
+                  System.out.println("mapped " + element);
+                  return element;
+                })
+            .toMat(
+                Sink.lazySink(
+                    () -> {
+                      System.out.println("Sink created");
+                      return Sink.foreach(elem -> System.out.println("foreach " + elem));
+                    }),
+                Keep.left())
+            .run(system);
 
     // some time passes
     // nothing has been printed

@@ -21,19 +21,26 @@ public class Lazy {
 
   void example() {
     // #simple-example
-    Source<Integer, NotUsed> numbers = Source.unfold(0, n -> {
-      int next = n + 1;
-      System.out.println("Source producing " + next);
-      return Optional.of(Pair.create(next, next));
-    }).take(3);
+    Source<Integer, NotUsed> numbers =
+        Source.unfold(
+                0,
+                n -> {
+                  int next = n + 1;
+                  System.out.println("Source producing " + next);
+                  return Optional.of(Pair.create(next, next));
+                })
+            .take(3);
 
-    Flow<Integer, Integer, CompletionStage<NotUsed>> flow = Flow.lazyFlow(() -> {
-      System.out.println("Creating the actual flow");
-      return Flow.fromFunction(element -> {
-        System.out.println("Actual flow mapped " + element);
-        return element;
-      });
-    });
+    Flow<Integer, Integer, CompletionStage<NotUsed>> flow =
+        Flow.lazyFlow(
+            () -> {
+              System.out.println("Creating the actual flow");
+              return Flow.fromFunction(
+                  element -> {
+                    System.out.println("Actual flow mapped " + element);
+                    return element;
+                  });
+            });
 
     numbers.via(flow).run(system);
     // prints:
@@ -47,14 +54,19 @@ public class Lazy {
 
   void statefulMap() {
     // #mutable-example
-    Flow<Integer, List<Integer>, CompletionStage<NotUsed>> mutableFold = Flow.lazyFlow(() -> {
-      List<Integer> zero = new ArrayList<>();
+    Flow<Integer, List<Integer>, CompletionStage<NotUsed>> mutableFold =
+        Flow.lazyFlow(
+            () -> {
+              List<Integer> zero = new ArrayList<>();
 
-      return Flow.of(Integer.class).fold(zero, (list, element) -> {
-        list.add(element);
-        return list;
-      });
-    });
+              return Flow.of(Integer.class)
+                  .fold(
+                      zero,
+                      (list, element) -> {
+                        list.add(element);
+                        return list;
+                      });
+            });
 
     RunnableGraph<NotUsed> stream =
         Source.range(1, 3).via(mutableFold).to(Sink.foreach(System.out::println));

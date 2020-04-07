@@ -25,10 +25,12 @@ public class Lazy {
 
   void notReallyThatLazy() {
     // #not-a-good-example
-    Source<String, CompletionStage<NotUsed>> source = Source.lazySource(() -> {
-      System.out.println("Creating the actual source");
-      return createExpensiveSource();
-    });
+    Source<String, CompletionStage<NotUsed>> source =
+        Source.lazySource(
+            () -> {
+              System.out.println("Creating the actual source");
+              return createExpensiveSource();
+            });
 
     SinkQueueWithCancel<String> queue = source.runWith(Sink.queue(), system);
 
@@ -43,21 +45,27 @@ public class Lazy {
     boolean thereAreMore() {
       throw new UnsupportedOperationException("Not implemented in sample");
     }
+
     String extractNext() {
       throw new UnsupportedOperationException("Not implemented in sample");
     }
   }
+
   void safeMutableSource() {
     // #one-per-materialization
     RunnableGraph<CompletionStage<NotUsed>> stream =
-        Source.lazySource(() -> {
-      IteratorLikeThing instance = new IteratorLikeThing();
-      return Source.unfold(instance, sameInstance -> {
-        if (sameInstance.thereAreMore()) return Optional.of(Pair.create(sameInstance, sameInstance.extractNext()));
-          else return Optional.empty();
-      });
-    })
-      .to(Sink.foreach(System.out::println));
+        Source.lazySource(
+                () -> {
+                  IteratorLikeThing instance = new IteratorLikeThing();
+                  return Source.unfold(
+                      instance,
+                      sameInstance -> {
+                        if (sameInstance.thereAreMore())
+                          return Optional.of(Pair.create(sameInstance, sameInstance.extractNext()));
+                        else return Optional.empty();
+                      });
+                })
+            .to(Sink.foreach(System.out::println));
 
     // each of the three materializations will have their own instance of IteratorLikeThing
     stream.run(system);
@@ -65,5 +73,4 @@ public class Lazy {
     stream.run(system);
     // #one-per-materialization
   }
-
 }
