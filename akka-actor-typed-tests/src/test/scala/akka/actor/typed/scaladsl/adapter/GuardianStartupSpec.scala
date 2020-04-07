@@ -31,7 +31,7 @@ class GuardianStartupSpec extends AnyWordSpec with Matchers with ScalaFutures wi
         system = ActorSystem(guardianBehavior, "GuardianStartupSpec-get-all")
         // use `tell` instead of `!` or dotty will complain:
         // (system : akka.actor.typed.ActorSystem[String]) is not a valid type prefix, since it is not an immutable path
-        system tell "msg"
+        system.tell("msg")
 
         sawMsg.await(3, TimeUnit.SECONDS) should ===(true)
 
@@ -51,7 +51,7 @@ class GuardianStartupSpec extends AnyWordSpec with Matchers with ScalaFutures wi
       }
       try {
         system = ActorSystem(guardianBehavior, "GuardianStartupSpec-initialized")
-        system tell "msg"
+        system.tell("msg")
 
         initialized.await(3, TimeUnit.SECONDS) should ===(true)
 

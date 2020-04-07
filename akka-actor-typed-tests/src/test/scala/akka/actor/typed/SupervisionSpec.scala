@@ -1378,7 +1378,8 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
       }
 
       "that is stopped after setup should be stopped" in {
-        val actor = spawn(Behaviors.supervise[Command](Behaviors.setup(_ => Behaviors.stopped)).onFailure[Throwable](strategy))
+        val actor =
+          spawn(Behaviors.supervise[Command](Behaviors.setup(_ => Behaviors.stopped)).onFailure[Throwable](strategy))
         createTestProbe().expectTerminated(actor, 3.second)
       }
 

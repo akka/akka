@@ -180,7 +180,8 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
         .decorate
 
       val parent: Behavior[Command] = Behaviors.setup[Command](context => {
-        val childRef = context.spawnAnonymous(Behaviors.supervise(child).onFailure[Throwable](SupervisorStrategy.restart))
+        val childRef =
+          context.spawnAnonymous(Behaviors.supervise(child).onFailure[Throwable](SupervisorStrategy.restart))
         context.watch(childRef)
         probe.ref ! ChildMade(childRef)
 
