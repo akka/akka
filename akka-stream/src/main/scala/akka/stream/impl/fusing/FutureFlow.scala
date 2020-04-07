@@ -76,12 +76,11 @@ import scala.util.{ Failure, Success, Try }
             failStage(exception)
           case Success(flow) =>
             //materialize flow, connect to inlets, feed with potential events and set handlers
-            val initialized = new Initialized(flow)
-            setHandlers(in, out, initialized)
+            connect(flow)
             setKeepGoing(false)
         }
       }
-      class Initialized(flow: Flow[In, Out, M]) extends InHandler with OutHandler {
+      def connect(flow: Flow[In, Out, M]): Unit = {
         val subSource = new SubSourceOutlet[In](s"${FutureFlow.this}.subIn")
         val subSink = new SubSinkInlet[Out](s"${FutureFlow.this}.subOut")
 
@@ -111,7 +110,6 @@ import scala.util.{ Failure, Success, Try }
             }
           }
         }
-
         Try {
           Source.fromGraph(subSource.source).viaMat(flow)(Keep.right).to(subSink.sink).run()(subFusingMaterializer)
         } match {
@@ -138,29 +136,32 @@ import scala.util.{ Failure, Success, Try }
             innerMatValue.failure(new NeverMaterializedException(ex))
             failStage(ex)
         }
+        setHandlers(in, out,
+          new InHandler with OutHandler {
+            override def onPull(): Unit = {
+              subSink.pull()
+            }
 
-        override def onPull(): Unit = {
-          subSink.pull()
-        }
+            override def onDownstreamFinish(cause: Throwable): Unit = {
+              subSink.cancel(cause)
+              //super.onDownstreamFinish(cause)
+            }
 
-        override def onDownstreamFinish(cause: Throwable): Unit = {
-          subSink.cancel(cause)
-          //super.onDownstreamFinish(cause)
-        }
+            override def onPush(): Unit = {
+              subSource.push(grab(in))
+            }
 
-        override def onPush(): Unit = {
-          subSource.push(grab(in))
-        }
+            override def onUpstreamFinish(): Unit = {
+              subSource.complete()
+              //super.onUpstreamFinish()
+            }
 
-        override def onUpstreamFinish(): Unit = {
-          subSource.complete()
-          //super.onUpstreamFinish()
-        }
-
-        override def onUpstreamFailure(ex: Throwable): Unit = {
-          subSource.fail(ex)
-          //super.onUpstreamFailure(ex)
-        }
+            override def onUpstreamFailure(ex: Throwable): Unit = {
+              subSource.fail(ex)
+              //super.onUpstreamFailure(ex)
+            }
+          }
+        )
       }
     }
     (logic, innerMatValue.future)
