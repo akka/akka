@@ -1,0 +1,22 @@
+# https://github.com/akka/akka/pull/28837#discussion_r400007356
+# @SerialVersionUID has no effect on traits
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.Creator.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.function.Procedure*.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.function.Function*.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.function.Effect.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.function.Predicate.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.function.Creator.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.actor.SelectionPathElement.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.actor.ActorPath.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.routing.RouterConfig.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.routing.RouterManagementMesssage.serialVersionUID")
+
+# private things
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.FSM#SilentState.*")
+
+# we can ignore those IncompatibleSignatureProblem(s) in State[S,D]
+# code change is: `def copy(_:S,_:D,..)` -> `def copy[S1, D1](_:S1,_:D1,..)`
+# `javap -v` descriptor is same: (Ljava/lang/Object;Ljava/lang/Object;...
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.actor.FSM#State.copy*")
+# similar for LogSource.fromAnyClass
+ProblemFilters.exclude[IncompatibleSignatureProblem]("akka.event.LogSource.fromAnyClass")

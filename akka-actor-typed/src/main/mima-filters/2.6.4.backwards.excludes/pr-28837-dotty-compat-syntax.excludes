@@ -1,0 +1,3 @@
+# https://github.com/akka/akka/pull/28837#discussion_r400009086
+# private things
+ProblemFilters.exclude[Problem]("akka.actor.typed.internal.receptionist.LocalReceptionist*")
