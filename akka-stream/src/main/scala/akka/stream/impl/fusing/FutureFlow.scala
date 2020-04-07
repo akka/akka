@@ -136,7 +136,9 @@ import scala.util.{ Failure, Success, Try }
             innerMatValue.failure(new NeverMaterializedException(ex))
             failStage(ex)
         }
-        setHandlers(in, out,
+        setHandlers(
+          in,
+          out,
           new InHandler with OutHandler {
             override def onPull(): Unit = {
               subSink.pull()
@@ -160,8 +162,7 @@ import scala.util.{ Failure, Success, Try }
               subSource.fail(ex)
               //super.onUpstreamFailure(ex)
             }
-          }
-        )
+          })
       }
     }
     (logic, innerMatValue.future)
