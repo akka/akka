@@ -10,9 +10,6 @@ import akka.actor.DeadLetter
 import akka.actor.DeadLetterSuppression
 import akka.actor.Dropped
 import akka.actor.UnhandledMessage
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.ActorTestKitGuardian
 import akka.actor.testkit.typed.internal.TestKitUtils
@@ -23,12 +20,16 @@ import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
 import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.scaladsl.AskPattern._
+import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 import akka.util.Timeout
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.slf4j.LoggerFactory
-import akka.actor.typed.scaladsl.adapter._
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
 
 object ActorTestKit {
 
@@ -227,57 +228,38 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * @return A test probe that is subscribed to unhandled messages from the system event bus. Subscription
    *         will be completed and verified so any unhandled message after it will be caught by the probe.
    */
-  def createUnhandledMessageProbe(): TestProbe[UnhandledMessage] = {
-    val probe = createTestProbe[Any]()
-    val narrowed = probe.ref.narrow[UnhandledMessage]
-    system.eventStream ! EventStream.Subscribe(narrowed)
-
-    // publish-receive roundtrip to verify we are subscribed before returning the probe
-    probe.awaitAssert {
-      val uh = UnhandledMessage(ActorTestKit.dummyMessage, probe.ref.toClassic, probe.ref.toClassic)
-      system.eventStream ! EventStream.Publish(uh)
-      if (probe.expectMessageType[UnhandledMessage].message != ActorTestKit.dummyMessage)
-        throw new RuntimeException("Not the expected unhandled")
-    }
-    probe.asInstanceOf[TestProbe[UnhandledMessage]]
-  }
+  def createUnhandledMessageProbe(): TestProbe[UnhandledMessage] =
+    subscribeEventBusAndVerifySubscribed[UnhandledMessage](() =>
+      UnhandledMessage(ActorTestKit.dummyMessage, system.deadLetters.toClassic, system.deadLetters.toClassic))
 
   /**
    * @return A test probe that is subscribed to dead letters from the system event bus. Subscription
    *         will be completed and verified so any dead letter after it will be caught by the probe.
    */
-  def createDeadLetterMessageProbe(): TestProbe[DeadLetter] = {
-    val probe = createTestProbe[Any]()
-    val narrowed = probe.ref.narrow[DeadLetter]
-    system.eventStream ! EventStream.Subscribe(narrowed)
-
-    // publish-receive roundtrip to verify we are subscribed before returning the probe
-    probe.awaitAssert {
-      val dl = DeadLetter(ActorTestKit.dummyMessage, probe.ref.toClassic, probe.ref.toClassic)
-      system.eventStream ! EventStream.Publish(dl)
-      if (probe.expectMessageType[DeadLetter].message != ActorTestKit.dummyMessage)
-        throw new RuntimeException("Not the expected unhandled")
-    }
-    probe.asInstanceOf[TestProbe[DeadLetter]]
-  }
+  def createDeadLetterProbe(): TestProbe[DeadLetter] =
+    subscribeEventBusAndVerifySubscribed[DeadLetter](() =>
+      DeadLetter(ActorTestKit.dummyMessage, system.deadLetters.toClassic, system.deadLetters.toClassic))
 
   /**
    * @return A test probe that is subscribed to dropped letters from the system event bus. Subscription
    *         will be completed and verified so any dropped letter after it will be caught by the probe.
    */
-  def createDroppedMessageProbe(): TestProbe[Dropped] = {
-    val probe = createTestProbe[Any]()
-    val narrowed = probe.ref.narrow[Dropped]
-    system.eventStream ! EventStream.Subscribe(narrowed)
+  def createDroppedMessageProbe(): TestProbe[Dropped] =
+    subscribeEventBusAndVerifySubscribed[Dropped](() =>
+      Dropped(ActorTestKit.dummyMessage, "no reason", system.deadLetters.toClassic, system.deadLetters.toClassic))
 
-    // publish-receive roundtrip to verify we are subscribed before returning the probe
+  private def subscribeEventBusAndVerifySubscribed[M <: AnyRef: ClassTag](createTestEvent: () => M): TestProbe[M] = {
+    val probe = createTestProbe[M]()
+    system.eventStream ! EventStream.Subscribe(probe.ref)
     probe.awaitAssert {
-      val dl = Dropped(ActorTestKit.dummyMessage, "no reason", probe.ref.toClassic, probe.ref.toClassic)
-      system.eventStream ! EventStream.Publish(dl)
-      if (probe.expectMessageType[Dropped].message != ActorTestKit.dummyMessage)
-        throw new RuntimeException("Not the expected unhandled")
+      val testEvent = createTestEvent()
+      system.eventStream ! EventStream.Publish(testEvent)
+      probe.fishForMessage(probe.remainingOrDefault) {
+        case m: AnyRef if m eq testEvent => FishingOutcomes.complete
+        case _                           => FishingOutcomes.continue
+      }
     }
-    probe.asInstanceOf[TestProbe[Dropped]]
+    probe
   }
 
   /**

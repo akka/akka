@@ -155,7 +155,7 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
   /**
    * See corresponding method on [[ActorTestKit]]
    */
-  def createDeadLetterMessageProbe(): TestProbe[DeadLetter] = testKit.createDeadLetterMessageProbe()
+  def createDeadLetterProbe(): TestProbe[DeadLetter] = testKit.createDeadLetterProbe()
 
   /**
    * See corresponding method on [[ActorTestKit]]

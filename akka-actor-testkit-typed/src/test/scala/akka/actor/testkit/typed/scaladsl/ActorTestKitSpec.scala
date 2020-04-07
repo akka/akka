@@ -103,7 +103,7 @@ class ActorTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike wi
     }
 
     "allow subscriptions for dead letters" in {
-      val probe = testKit.createDeadLetterMessageProbe()
+      val probe = testKit.createDeadLetterProbe()
       system.deadLetters ! "message"
       probe.receiveMessage().message should ===("message")
     }

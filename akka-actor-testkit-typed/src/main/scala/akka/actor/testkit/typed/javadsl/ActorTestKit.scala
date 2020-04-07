@@ -231,7 +231,7 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    * @return A test probe that is subscribed to dead letters from the system event bus. Subscription
    *         will be completed and verified so any dead letter after it will be caught by the probe.
    */
-  def createDeadLetterMessageProbe(): TestProbe[DeadLetter] = delegate.createDeadLetterMessageProbe().asJava
+  def createDeadLetterProbe(): TestProbe[DeadLetter] = delegate.createDeadLetterProbe().asJava
 
   /**
    * @return A test probe that is subscribed to unhandled messages from the system event bus. Subscription

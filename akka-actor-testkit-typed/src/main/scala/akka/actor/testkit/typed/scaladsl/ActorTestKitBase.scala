@@ -105,7 +105,7 @@ abstract class ActorTestKitBase(val testKit: ActorTestKit) {
   /**
    * See corresponding method on [[ActorTestKit]]
    */
-  def createDeadLetterMessageProbe(): TestProbe[DeadLetter] = testKit.createDeadLetterMessageProbe()
+  def createDeadLetterProbe(): TestProbe[DeadLetter] = testKit.createDeadLetterProbe()
 
   /**
    * See corresponding method on [[ActorTestKit]]

@@ -295,7 +295,7 @@ class TimerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogC
     }
 
     "not leak timers when PostStop is used" in {
-      val deadLetterProbe = createDeadLetterMessageProbe()
+      val deadLetterProbe = createDeadLetterProbe()
       val probe = TestProbe[DeadLetter]()
       val ref = spawn(Behaviors.withTimers[String] { timers =>
         Behaviors.setup { _ =>

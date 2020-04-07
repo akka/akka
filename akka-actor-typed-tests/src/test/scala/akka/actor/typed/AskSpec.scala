@@ -94,7 +94,7 @@ class AskSpec extends ScalaTestWithActorTestKit("""
           fail("this test must only run in an adapted actor system")
       }
 
-      val deadLetterProbe = createDeadLetterMessageProbe()
+      val deadLetterProbe = createDeadLetterProbe()
 
       val answer: Future[String] = noSuchActor.ask(Foo("bar", _))
       val result = answer.failed.futureValue

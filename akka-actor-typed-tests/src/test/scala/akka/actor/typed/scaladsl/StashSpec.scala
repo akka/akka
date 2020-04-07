@@ -676,7 +676,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
 
     "deal with stop" in {
       val probe = TestProbe[Any]
-      val deadLetterProbe = createDeadLetterMessageProbe()
+      val deadLetterProbe = createDeadLetterProbe()
 
       val ref = spawn(Behaviors.withStash[String](10) { stash =>
         stash.stash("one")
