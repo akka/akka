@@ -21,7 +21,7 @@ materialized value of the nested source once that is constructed.
 
 See also:
  
- * @ref:[Source.lazyFutureSource](lazyFutureSource.md)
+ * @ref:[Source.lazyFutureSource](lazyFutureSource.md) and @ref:[Source.lazyCompletionStageSource](lazyCompletionStageSource.md)
  * @ref:[Flow.lazyFlow](../Flow/lazyFlow.md)
  * @ref:[Sink.lazySink](../Sink/lazySink.md)
 

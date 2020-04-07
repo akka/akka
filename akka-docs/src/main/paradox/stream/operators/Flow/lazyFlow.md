@@ -10,8 +10,9 @@ Defers creation and materialization of a `Flow` until there is a first element.
 
 ## Description
 
-Defers `Flow` creation and materialization until when the first element comes from upstream the actual `Flow` is created and materialized.
-The internal `Flow` will not be created if there are no elements on completion or failure of up or downstream.
+Defers `Flow` creation and materialization until when the first element arrives at the `lazyFlow` from upstream. After
+that the stream behaves as if the nested flow replaced the `lazyFlow`.
+The nested `Flow` will not be created if there are no elements on completion or failure of up or downstream.
 
 Note that asynchronous boundaries and many other operators in the stream may do pre-fetching or trigger demand causing an element
 and therefore creation of the inner flow earlier than you would expect.
@@ -22,7 +23,7 @@ materialized value of the nested flow once that is constructed.
 See also: 
 
  * @ref:[flatMapPrefix](../Source-or-Flow/flatMapPrefix.md)
- * @ref:[Flow.lazyFutureFlow](lazyFutureFlow.md)
+ * @ref:[Flow.lazyFutureFlow](lazyFutureFlow.md) and @ref:[Flow.lazyCompletionStageFlow](lazyCompletionStageFlow.md)
  * @ref:[Source.lazySource](../Source/lazySource.md)
  * @ref:[Sink.lazySink](../Sink/lazySink.md)
 
