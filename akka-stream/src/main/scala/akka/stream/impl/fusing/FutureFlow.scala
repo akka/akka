@@ -25,14 +25,14 @@ import scala.util.{ Failure, Success, Try }
     val logic = new GraphStageLogic(shape) {
 
       //seems like we must set handlers BEFORE preStart
-      setHandlers(in, out, initializing)
+      setHandlers(in, out, Initializing)
 
       override def preStart(): Unit = {
         futureFlow.value match {
           case Some(tryFlow) =>
-            initializing.onFuture(tryFlow)
+            Initializing.onFuture(tryFlow)
           case None =>
-            val cb = getAsyncCallback(initializing.onFuture)
+            val cb = getAsyncCallback(Initializing.onFuture)
             futureFlow.onComplete(cb.invoke)(ExecutionContexts.parasitic)
             //in case both ports are closed before future completion
             setKeepGoing(true)
@@ -45,7 +45,7 @@ import scala.util.{ Failure, Success, Try }
         }
       }
 
-      object initializing extends InHandler with OutHandler {
+      object Initializing extends InHandler with OutHandler {
         override def onPush(): Unit = {
           throw new IllegalStateException("unexpected push during initialization")
         }
@@ -115,20 +115,20 @@ import scala.util.{ Failure, Success, Try }
         } match {
           case Success(matVal) =>
             innerMatValue.success(matVal)
-            initializing.upstreamFailure match {
+            Initializing.upstreamFailure match {
               case OptionVal.Some(ex) =>
                 subSource.fail(ex)
               case OptionVal.None =>
                 if (isClosed(in))
                   subSource.complete()
             }
-            initializing.downstreamCause match {
+            Initializing.downstreamCause match {
               case OptionVal.Some(cause) =>
                 subSink.cancel(cause)
               case OptionVal.None =>
                 //todo: should this be invoked before and independently of checking downstreamCause?
                 // in most case if downstream pulls and then closes, the pull is 'lost'. is it possible for some flows to actually care about this? (non-eager broadcast?)
-                if (initializing.hasBeenPulled) {
+                if (Initializing.hasBeenPulled) {
                   subSink.pull()
                 }
             }
