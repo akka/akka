@@ -16,6 +16,9 @@ import org.jboss.netty.bootstrap.{ ClientBootstrap, ServerBootstrap }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
 import java.net.InetSocketAddress
 import java.util.concurrent.Executors
+
+import scala.util.control.NonFatal
+
 import akka.event.Logging
 import akka.util.Helpers
 import org.jboss.netty.handler.codec.oneone.{ OneToOneDecoder, OneToOneEncoder }
@@ -109,8 +112,14 @@ private[akka] object RemoteConnection {
     case _                    => "[unknown]"
   }
 
-  def shutdown(channel: Channel) =
-    try channel.close()
-    finally try channel.getFactory.shutdown()
-    finally channel.getFactory.releaseExternalResources()
+  def shutdown(channel: Channel) = {
+    try {
+      try channel.close()
+      finally try channel.getFactory.shutdown()
+      finally channel.getFactory.releaseExternalResources()
+    } catch {
+      case NonFatal(_) =>
+      // silence this one to not make tests look like they failed, it's not really critical
+    }
+  }
 }
