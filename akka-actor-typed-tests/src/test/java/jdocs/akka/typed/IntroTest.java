@@ -176,7 +176,9 @@ public interface IntroTest {
 
       private final ActorRef<HelloWorld.Greet> greeter;
 
-      private HelloWorldMain(ActorContext<SayHello> context) {
+      // We need explicitly refer to SayHello by `HelloWorldMain.SayHello`
+      // otherwise => dotty compile error `Reference to SayHello is ambiguous`
+      private HelloWorldMain(ActorContext<HelloWorldMain.SayHello> context) {
         super(context);
 
         final String dispatcherPath = "akka.actor.default-blocking-io-dispatcher";
@@ -187,7 +189,7 @@ public interface IntroTest {
       // createReceive ...
       // #hello-world-main-with-dispatchers
       @Override
-      public Receive<SayHello> createReceive() {
+      public Receive<HelloWorldMain.SayHello> createReceive() {
         return null;
       }
       // #hello-world-main-with-dispatchers

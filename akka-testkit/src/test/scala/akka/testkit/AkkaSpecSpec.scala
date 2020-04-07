@@ -44,7 +44,7 @@ class AkkaSpecSpec extends AnyWordSpec with Matchers {
         "akka.stdout-loglevel" -> "DEBUG")
       val system = ActorSystem("AkkaSpec1", ConfigFactory.parseMap(conf.asJava).withFallback(AkkaSpec.testConf))
       var refs = Seq.empty[ActorRef]
-      val spec = new AkkaSpec(system) { refs = Seq(testActor, system.actorOf(Props.empty, "name")) }
+      val spec = new AkkaSpec(system) { refs = Seq(testActor, this.system.actorOf(Props.empty, "name")) }
       refs.foreach(_.isTerminated should not be true)
       TestKit.shutdownActorSystem(system)
       spec.awaitCond(refs.forall(_.isTerminated), 2 seconds)

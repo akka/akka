@@ -79,11 +79,11 @@ object ActorSystemSpec {
       extends MessageDispatcherConfigurator(_config, _prerequisites) {
     private val instance = new Dispatcher(
       this,
-      config.getString("id"),
-      config.getInt("throughput"),
-      config.getNanosDuration("throughput-deadline-time"),
+      this.config.getString("id"),
+      this.config.getInt("throughput"),
+      this.config.getNanosDuration("throughput-deadline-time"),
       configureExecutor(),
-      config.getMillisDuration("shutdown-timeout")) {
+      this.config.getMillisDuration("shutdown-timeout")) {
       val doneIt = new Switch
       override protected[akka] def registerForExecution(
           mbox: Mailbox,

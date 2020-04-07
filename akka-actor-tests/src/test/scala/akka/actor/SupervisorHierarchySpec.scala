@@ -64,8 +64,8 @@ object SupervisorHierarchySpec {
   case object Abort
   case object PingOfDeath
   case object PongOfDeath
-  final case class Event(msg: Any, identity: Long) { val time: Long = System.nanoTime }
-  final case class ErrorLog(msg: String, log: Vector[Event])
+  final case class MyEvent(msg: Any, identity: Long) { val time: Long = System.nanoTime }
+  final case class ErrorLog(msg: String, log: Vector[MyEvent])
   final case class Failure(
       directive: Directive,
       stop: Boolean,
@@ -102,8 +102,9 @@ object SupervisorHierarchySpec {
 
         override def suspend(cell: ActorCell): Unit = {
           cell.actor match {
-            case h: Hierarchy => h.log :+= Event("suspended " + cell.mailbox.suspendCount, identityHashCode(cell.actor))
-            case _            =>
+            case h: Hierarchy =>
+              h.log :+= MyEvent("suspended " + cell.mailbox.suspendCount, identityHashCode(cell.actor))
+            case _ =>
           }
           super.suspend(cell)
         }
@@ -111,7 +112,7 @@ object SupervisorHierarchySpec {
         override def resume(cell: ActorCell): Unit = {
           super.resume(cell)
           cell.actor match {
-            case h: Hierarchy => h.log :+= Event("resumed " + cell.mailbox.suspendCount, identityHashCode(cell.actor))
+            case h: Hierarchy => h.log :+= MyEvent("resumed " + cell.mailbox.suspendCount, identityHashCode(cell.actor))
             case _            =>
           }
         }
@@ -126,17 +127,17 @@ object SupervisorHierarchySpec {
    * upon Restart or would have to be managed by the highest supervisor (which
    * is undesirable).
    */
-  final case class HierarchyState(log: Vector[Event], kids: Map[ActorPath, Int], failConstr: Failure)
+  final case class HierarchyState(log: Vector[MyEvent], kids: Map[ActorPath, Int], failConstr: Failure)
   val stateCache = new ConcurrentHashMap[ActorPath, HierarchyState]()
   @volatile var ignoreFailConstr = false
 
   class Hierarchy(size: Int, breadth: Int, listener: ActorRef, myLevel: Int, random: Random) extends Actor {
 
-    var log = Vector.empty[Event]
+    var log = Vector.empty[MyEvent]
 
     stateCache.get(self.path) match {
-      case hs @ HierarchyState(l: Vector[Event], _, f: Failure) if f.failConstr > 0 && !ignoreFailConstr =>
-        val log = l :+ Event("Failed in constructor", identityHashCode(this))
+      case hs @ HierarchyState(l: Vector[MyEvent], _, f: Failure) if f.failConstr > 0 && !ignoreFailConstr =>
+        val log = l :+ MyEvent("Failed in constructor", identityHashCode(this))
         stateCache.put(self.path, hs.copy(log = log, failConstr = f.copy(failConstr = f.failConstr - 1)))
         throw f
       case _ =>
@@ -147,7 +148,7 @@ object SupervisorHierarchySpec {
 
     def abort(msg: String): Unit = {
       listener ! ErrorLog(msg, log)
-      log = Vector(Event("log sent", identityHashCode(this)))
+      log = Vector(MyEvent("log sent", identityHashCode(this)))
       context.parent ! Abort
       context.stop(self)
     }
@@ -161,7 +162,7 @@ object SupervisorHierarchySpec {
     def suspendCount = context.asInstanceOf[ActorCell].mailbox.suspendCount
 
     override def preStart(): Unit = {
-      log :+= Event("started", identityHashCode(this))
+      log :+= MyEvent("started", identityHashCode(this))
       listener ! Ready(self)
       val s = size - 1 // subtract myself
       val kidInfo: Map[ActorPath, Int] =
@@ -187,12 +188,12 @@ object SupervisorHierarchySpec {
       // do not scrap children
       if (preRestartCalled) abort("preRestart called twice")
       else {
-        log :+= Event("preRestart " + cause, identityHashCode(this))
+        log :+= MyEvent("preRestart " + cause, identityHashCode(this))
         preRestartCalled = true
         cause match {
           case f: Failure =>
             context.children.take(f.stopKids).foreach { child =>
-              log :+= Event("killing " + child, identityHashCode(this))
+              log :+= MyEvent("killing " + child, identityHashCode(this))
               context.unwatch(child)
               context.stop(child)
             }
@@ -213,22 +214,22 @@ object SupervisorHierarchySpec {
     }
     override val supervisorStrategy = OneForOneStrategy()(unwrap.andThen {
       case (_: Failure, _) if pongsToGo > 0 =>
-        log :+= Event("pongOfDeath resuming " + sender(), identityHashCode(this))
+        log :+= MyEvent("pongOfDeath resuming " + sender(), identityHashCode(this))
         Resume
       case (f: Failure, orig) =>
         if (f.depth > 0) {
           setFlags(f.directive)
-          log :+= Event("escalating " + f + " from " + sender(), identityHashCode(this))
+          log :+= MyEvent("escalating " + f + " from " + sender(), identityHashCode(this))
           throw f.copy(depth = f.depth - 1)
         }
         val prefix = orig match {
           case _: Failure => "applying "
           case _          => "re-applying "
         }
-        log :+= Event(prefix + f + " to " + sender(), identityHashCode(this))
+        log :+= MyEvent(prefix + f + " to " + sender(), identityHashCode(this))
         if (myLevel > 3 && f.failPost == 0 && f.stop) Stop else f.directive
       case (_, x) =>
-        log :+= Event("unhandled exception from " + sender() + Logging.stackTraceFor(x), identityHashCode(this))
+        log :+= MyEvent("unhandled exception from " + sender() + Logging.stackTraceFor(x), identityHashCode(this))
         sender() ! Dump(0)
         context.system.scheduler.scheduleOnce(1 second, self, Dump(0))(context.dispatcher)
         Resume
@@ -237,7 +238,7 @@ object SupervisorHierarchySpec {
     override def postRestart(cause: Throwable): Unit = {
       val state = stateCache.get(self.path)
       log = state.log
-      log :+= Event("restarted " + suspendCount + " " + cause, identityHashCode(this))
+      log :+= MyEvent("restarted " + suspendCount + " " + cause, identityHashCode(this))
       state.kids.foreach {
         case (childPath, kidSize) =>
           val name = childPath.name
@@ -270,7 +271,7 @@ object SupervisorHierarchySpec {
 
     def check(msg: Any): Boolean = {
       suspended = false
-      log :+= Event(msg, identityHashCode(Hierarchy.this))
+      log :+= MyEvent(msg, identityHashCode(Hierarchy.this))
       if (failed) {
         abort("processing message while failed")
         failed = false
@@ -314,13 +315,13 @@ object SupervisorHierarchySpec {
           } else {
             // WARNING: The Terminated that is logged by this is logged by check() above, too. It is not
             // an indication of duplicate Terminate messages
-            log :+= Event(s"${sender()} terminated while pongOfDeath", identityHashCode(Hierarchy.this))
+            log :+= MyEvent(s"${sender()} terminated while pongOfDeath", identityHashCode(Hierarchy.this))
           }
         case Abort => abort("terminating")
         case PingOfDeath =>
           if (size > 1) {
             pongsToGo = context.children.size
-            log :+= Event("sending " + pongsToGo + " pingOfDeath", identityHashCode(Hierarchy.this))
+            log :+= MyEvent("sending " + pongsToGo + " pingOfDeath", identityHashCode(Hierarchy.this))
             context.children.foreach(_ ! PingOfDeath)
           } else {
             context.stop(self)
