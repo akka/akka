@@ -2302,6 +2302,7 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
       val orderedNodes =
         if (requiresCausalDeliveryOfDeltas) reachableNodes.toVector.sorted ++ unreachable.toVector.sorted
         else scala.util.Random.shuffle(reachableNodes.toVector) ++ scala.util.Random.shuffle(unreachable.toVector)
+      // FIXME else reachableNodes.toVector.sorted ++ unreachable.toVector.sorted
       val (p, s) = orderedNodes.splitAt(primarySize)
       (p, s.take(MaxSecondaryNodes))
     }
@@ -2370,11 +2371,16 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   override def timeout: FiniteDuration = consistency.timeout
 
   override val doneWhenRemainingSize = consistency match {
-    case WriteTo(n, _) => nodes.size - (n - 1)
-    case _: WriteAll   => 0
+    case WriteTo(n, _)            => nodes.size - (n - 1)
+    case _: WriteAll              => 0
     case WriteMajority(_, minCap) =>
+      // +1 because local node is not included in `nodes`
       val N = nodes.size + 1
       val w = calculateMajorityWithMinCap(minCap, N)
+      // FIXME
+      log.debug(s"WriteMajority [{}] [{}] of [{}]. $nodes", key, w, N)
+
+      //log.debug("WriteMajority [{}] [{}] of [{}].", key, w, N)
       N - w
     case WriteLocal =>
       throw new IllegalArgumentException("WriteLocal not supported by WriteAggregator")
@@ -2500,7 +2506,8 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     override val unreachable: Set[UniqueAddress],
     localValue: Option[Replicator.Internal.DataEnvelope],
     replyTo: ActorRef)
-    extends ReadWriteAggregator {
+    extends ReadWriteAggregator
+    with ActorLogging {
 
   import Replicator._
   import Replicator.Internal._
@@ -2510,11 +2517,13 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
 
   var result = localValue
   override val doneWhenRemainingSize = consistency match {
-    case ReadFrom(n, _) => nodes.size - (n - 1)
-    case _: ReadAll     => 0
+    case ReadFrom(n, _)          => nodes.size - (n - 1)
+    case _: ReadAll              => 0
     case ReadMajority(_, minCap) =>
+      // +1 because local node is not included in `nodes`
       val N = nodes.size + 1
       val r = calculateMajorityWithMinCap(minCap, N)
+      log.debug("ReadMajority [{}] [{}] of [{}].", key, r, N)
       N - r
     case ReadLocal =>
       throw new IllegalArgumentException("ReadLocal not supported by ReadAggregator")
@@ -2523,7 +2532,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   val readMsg = Read(key.id, Some(selfUniqueAddress))
 
   private val (primaryNodes, secondaryNodes) = {
-    primaryAndSecondaryNodes(requiresCausalDeliveryOfDeltas = false)
+    // FIXME primaryAndSecondaryNodes(requiresCausalDeliveryOfDeltas = false)
+    val (p, s) = primaryAndSecondaryNodes(requiresCausalDeliveryOfDeltas = false)
+    (p.reverse -> s.reverse)
   }
 
   override def preStart(): Unit = {

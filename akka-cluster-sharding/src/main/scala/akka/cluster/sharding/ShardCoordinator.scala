@@ -336,6 +336,7 @@ object ShardCoordinator {
     @SerialVersionUID(1L) final case class ShardRegionProxyTerminated(regionProxy: ActorRef) extends DomainEvent
     @SerialVersionUID(1L) final case class ShardHomeAllocated(shard: ShardId, region: ActorRef) extends DomainEvent
     @SerialVersionUID(1L) final case class ShardHomeDeallocated(shard: ShardId) extends DomainEvent
+    @SerialVersionUID(1L) final case object ShardCoordinatorInitialized extends DomainEvent
 
     case object StateInitialized
 
@@ -404,6 +405,8 @@ object ShardCoordinator {
             shards = shards - shard,
             regions = regions.updated(region, regions(region).filterNot(_ == shard)),
             unallocatedShards = newUnallocatedShards)
+        case ShardCoordinatorInitialized =>
+          this
       }
     }
 
@@ -752,7 +755,12 @@ abstract class ShardCoordinator(
         sender() ! reply
 
       case ShardCoordinator.Internal.Terminate =>
-        log.debug("Received termination message")
+        if (rebalanceInProgress.isEmpty)
+          log.debug("Received termination message.")
+        else
+          log.debug(
+            "Received termination message. Rebalance in progress of shards [{}].",
+            rebalanceInProgress.keySet.mkString(", "))
         context.stop(self)
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
@@ -1016,6 +1024,8 @@ class PersistentShardCoordinator(
           state = state.updated(evt)
         case _: ShardHomeDeallocated =>
           state = state.updated(evt)
+        case ShardCoordinatorInitialized =>
+          () // not used here
       }
 
     case SnapshotOffer(_, st: State) =>
@@ -1098,7 +1108,9 @@ class DDataShardCoordinator(
   import akka.cluster.ddata.Replicator.Update
 
   private val readMajority = ReadMajority(settings.tuningParameters.waitingForStateTimeout, majorityMinCap)
-  private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
+  private val readAll = ReadAll(settings.tuningParameters.waitingForStateTimeout)
+//    ReadFrom(2, settings.tuningParameters.waitingForStateTimeout) // FIXME
+  private val writeMajority = WriteTo(2, settings.tuningParameters.waitingForStateTimeout) // FIXME WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
 
   implicit val node: Cluster = Cluster(context.system)
   private implicit val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
@@ -1128,7 +1140,9 @@ class DDataShardCoordinator(
   def waitingForState(remainingKeys: Set[Key[ReplicatedData]]): Receive =
     ({
       case g @ GetSuccess(CoordinatorStateKey, _) =>
-        state = g.get(CoordinatorStateKey).value.withRememberEntities(settings.rememberEntities)
+        val reg = g.get(CoordinatorStateKey)
+        checkClockSkew(reg, "when get state")
+        state = reg.value.withRememberEntities(settings.rememberEntities)
         log.debug("Received initial coordinator state [{}]", state)
         val newRemainingKeys = remainingKeys - CoordinatorStateKey
         if (newRemainingKeys.isEmpty)
@@ -1139,7 +1153,7 @@ class DDataShardCoordinator(
       case GetFailure(CoordinatorStateKey, _) =>
         log.error(
           "The ShardCoordinator was unable to get an initial state within 'waiting-for-state-timeout': {} millis (retrying). Has ClusterSharding been started on all nodes?",
-          readMajority.timeout.toMillis)
+          readAll.timeout.toMillis)
         // repeat until GetSuccess
         getCoordinatorState()
 
@@ -1177,6 +1191,13 @@ class DDataShardCoordinator(
       case ShardCoordinator.Internal.Terminate =>
         log.debug("Received termination message while waiting for state")
         context.stop(self)
+
+      case Register(region) =>
+        log.debug("ShardRegion tried to register but ShardCoordinator not initialized yet: [{}]", region)
+
+      case RegisterProxy(region) =>
+        log.debug("ShardRegion proxy tried to register but ShardCoordinator not initialized yet: [{}]", region)
+
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
   private def becomeWaitingForStateInitialized(): Unit = {
@@ -1194,10 +1215,14 @@ class DDataShardCoordinator(
   // which was scheduled by previous watchStateActors
   def waitingForStateInitialized: Receive = {
     case StateInitialized =>
-      unstashGetShardHomeRequests()
-      unstashAll()
-      stateInitialized()
-      activate()
+      log.debug("StateInitialized") // FIXME remove
+      update(ShardCoordinatorInitialized) { _ =>
+        log.debug("ShardCoordinatorInitialized completed") // FIXME remove
+        unstashGetShardHomeRequests()
+        unstashAll()
+        stateInitialized()
+        activate()
+      }
 
     case g: GetShardHome =>
       stashGetShardHomeRequest(sender(), g)
@@ -1336,7 +1361,7 @@ class DDataShardCoordinator(
   }
 
   def getCoordinatorState(): Unit = {
-    replicator ! Get(CoordinatorStateKey, readMajority)
+    replicator ! Get(CoordinatorStateKey, readAll)
   }
 
   def getAllShards(): Unit = {
@@ -1346,11 +1371,23 @@ class DDataShardCoordinator(
 
   def sendCoordinatorStateUpdate(evt: DomainEvent) = {
     val s = state.updated(evt)
-    log.debug("Publishing new coordinator state [{}]", state)
+    log.debug("Storing new coordinator state [{}]", state)
     replicator ! Update(CoordinatorStateKey, LWWRegister(selfUniqueAddress, initEmptyState), writeMajority, Some(evt)) {
       reg =>
+        checkClockSkew(reg, "when update state")
         reg.withValueOf(s)
     }
+  }
+
+  private def checkClockSkew(previousReg: LWWRegister[State], additionalMessage: String): Unit = {
+    val now = System.currentTimeMillis()
+    val diff = now - previousReg.timestamp
+    if (diff < 0) {
+      log.warning("Clock skew [{} ms] {}.", diff, additionalMessage) // FIXME better message if we keep this
+    } else {
+      log.debug("Clock diff [{} ms] {}.", diff, additionalMessage) // FIXME remove
+    }
+
   }
 
   def sendAllShardsUpdate(newShard: String) = {
