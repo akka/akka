@@ -112,7 +112,7 @@ private[akka] object RemoteConnection {
     case _                    => "[unknown]"
   }
 
-  def shutdown(channel: Channel) = {
+  def shutdown(channel: Channel): Unit = {
     try {
       try channel.close()
       finally try channel.getFactory.shutdown()
