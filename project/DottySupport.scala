@@ -36,6 +36,7 @@ object DottySupport {
       )
       .settings(Test / scalacOptions ifDotty T.add("-language:postfixOps"))
       .settings((Compile +: Test +: extraConfigs).map(_ / scalacOptions ifDotty scalacOptionsT))
+      .settings(DottyBugWorkaround(p.id))
   }
 
   object ModuleIDOps {
