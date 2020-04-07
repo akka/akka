@@ -35,7 +35,7 @@ object FromSinkAndSource {
     val source =
       Source.tick(1.second, 1.second, "tick").map(_ => ByteString(System.currentTimeMillis().toString + "\n"))
 
-    val serverFlow = Lazy.fromSinkAndSource(sink, source)
+    val serverFlow = Flow.fromSinkAndSource(sink, source)
 
     Tcp().bind("127.0.0.1", 9999).runForeach { incomingConnection =>
       incomingConnection.handleWith(serverFlow)
@@ -52,7 +52,7 @@ object FromSinkAndSource {
     val sinkWithFraming = framing.map(bytes => bytes.utf8String).to(sink)
     val sourceWithFraming = source.map(text => ByteString(text + "\n"))
 
-    val serverFlow = Lazy.fromSinkAndSource(sinkWithFraming, sourceWithFraming)
+    val serverFlow = Flow.fromSinkAndSource(sinkWithFraming, sourceWithFraming)
 
     Tcp().bind("127.0.0.1", 9999).runForeach { incomingConnection =>
       incomingConnection.handleWith(serverFlow)
@@ -65,7 +65,7 @@ object FromSinkAndSource {
     // #testing
     val inProbe = TestSubscriber.probe[String]
     val outProbe = TestPublisher.probe[String]()
-    val testFlow = Lazy.fromSinkAndSource(Sink.fromSubscriber(inProbe), Source.fromPublisher(outProbe))
+    val testFlow = Flow.fromSinkAndSource(Sink.fromSubscriber(inProbe), Source.fromPublisher(outProbe))
 
     myApiThatTakesAFlow(testFlow)
     inProbe.expectNext("first")
