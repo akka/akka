@@ -15,6 +15,7 @@ import scala.util.Success
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
+import akka.actor.typed.DispatcherSelector
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.DurableProducerQueue
 import akka.actor.typed.delivery.DurableProducerQueue.ConfirmationQualifier
@@ -230,7 +231,7 @@ import akka.util.Timeout
       settings: WorkPullingProducerController.Settings): Option[ActorRef[DurableProducerQueue.Command[A]]] = {
 
     durableQueueBehavior.map { b =>
-      val ref = context.spawn(b, "durable")
+      val ref = context.spawn(b, "durable", DispatcherSelector.sameAsParent())
       context.watchWith(ref, DurableQueueTerminated)
       askLoadState(context, Some(ref), settings, attempt = 1)
       ref
@@ -549,7 +550,8 @@ private class WorkPullingProducerControllerImpl[A: ClassTag](
         context.log.debug2("Registered worker [{}], with producerId [{}].", c, outKey)
         val p = context.spawn(
           ProducerController[A](outKey, durableQueueBehavior = None, settings.producerControllerSettings),
-          uuid)
+          uuid,
+          DispatcherSelector.sameAsParent())
         p ! ProducerController.Start(workerRequestNextAdapter)
         p ! ProducerController.RegisterConsumer(c)
         acc.copy(out = acc.out.updated(outKey, OutState(p, c, 0L, Vector.empty, None)))
