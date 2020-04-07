@@ -224,7 +224,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       tables +
       "\n\n@@@ index\n\n" +
       groupedDefs
-        .sortBy { case (_, method, _) => method }
+        .sortBy { case (_, method, _) => method.toLowerCase }
         .map { case (_, method, md) => s"* [${methodToShow(method)}]($md)" }
         .mkString("\n") + "\n\n@@@\n"
 
