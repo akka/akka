@@ -24,10 +24,8 @@ import com.typesafe.config.Config
 object ActorTestKit {
 
   /**
-   * Create a testkit named from the class that is calling this method.
+   * Create a testkit named from the ActorTestKit class.
    *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
-   * e.g. threads will include the name.
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    *
@@ -39,7 +37,19 @@ object ActorTestKit {
     new ActorTestKit(scaladsl.ActorTestKit(TestKitUtils.testNameFromCallStack(classOf[ActorTestKit])))
 
   /**
-   * Create a named testkit.
+   * Create a testkit from the provided actor system.
+   *
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from the provided actor if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   */
+  def create(system: ActorSystem[_]): ActorTestKit =
+    new ActorTestKit(scaladsl.ActorTestKit(system))
+
+  /**
+   * Create a testkit using the provided name.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,
    * e.g. threads will include the name.
@@ -54,11 +64,11 @@ object ActorTestKit {
     new ActorTestKit(scaladsl.ActorTestKit(name))
 
   /**
-   * Create a testkit named from the class that is calling this method,
+   * Create a testkit named from the ActorTestKit class,
    * and use a custom config for the actor system.
    *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
-   * e.g. threads will include the name.
+   * It will also used the provided customConfig provided to create the `ActorSystem`
+   *
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
@@ -66,10 +76,14 @@ object ActorTestKit {
     new ActorTestKit(scaladsl.ActorTestKit(TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]), customConfig))
 
   /**
-   * Create a named testkit, and use a custom config for the actor system.
+   * Create a test kit named based on the provided name,
+   * and uses the provided custom config for the actor system.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,
    * e.g. threads will include the name.
+   *
+   * It will also used the provided customConfig provided to create the `ActorSystem`
+   *
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
@@ -77,11 +91,14 @@ object ActorTestKit {
     new ActorTestKit(scaladsl.ActorTestKit(name, customConfig))
 
   /**
-   * Create a named testkit, and use a custom config for the actor system,
-   * and a custom [[akka.actor.testkit.typed.TestKitSettings]]
+   * Create an [[akka.actor.typed.ActorSystem]] named based on the provided name,
+   * use the provided custom config for the actor system, and the testkit will use the provided setting.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,
    * e.g. threads will include the name.
+   *
+   * It will also used the provided customConfig provided to create the `ActorSystem`, and provided setting.
+   *
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */

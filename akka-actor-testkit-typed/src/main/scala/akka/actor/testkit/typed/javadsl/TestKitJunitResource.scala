@@ -58,6 +58,11 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
   def this() = this(ActorTestKit.create(TestKitUtils.testNameFromCallStack(classOf[TestKitJunitResource])))
 
   /**
+   * Use a custom [[akka.actor.typed.ActorSystem]] for the actor system.
+   */
+  def this(system: ActorSystem[_]) = this(ActorTestKit.create(system))
+
+  /**
    * Use a custom config for the actor system.
    */
   def this(customConfig: String) =
