@@ -21,7 +21,7 @@ import akka.stream.{ Supervision, _ }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-import scala.concurrent.{ Future }
+import scala.concurrent.Future
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.{ Failure, Success, Try }
 import akka.stream.ActorAttributes.SupervisionStrategy
