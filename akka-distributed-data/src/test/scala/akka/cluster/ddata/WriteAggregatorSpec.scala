@@ -31,7 +31,7 @@ object WriteAggregatorSpec {
       consistency: Replicator.WriteConsistency,
       probes: Map[UniqueAddress, ActorRef],
       selfUniqueAddress: UniqueAddress,
-      nodes: Set[UniqueAddress],
+      nodes: Vector[UniqueAddress],
       unreachable: Set[UniqueAddress],
       replyTo: ActorRef,
       durable: Boolean): Props =
@@ -54,7 +54,7 @@ object WriteAggregatorSpec {
       consistency: Replicator.WriteConsistency,
       probes: Map[UniqueAddress, ActorRef],
       selfUniqueAddress: UniqueAddress,
-      nodes: Set[UniqueAddress],
+      nodes: Vector[UniqueAddress],
       unreachable: Set[UniqueAddress],
       replyTo: ActorRef,
       durable: Boolean): Props =
@@ -78,7 +78,7 @@ object WriteAggregatorSpec {
       consistency: Replicator.WriteConsistency,
       probes: Map[UniqueAddress, ActorRef],
       selfUniqueAddress: UniqueAddress,
-      nodes: Set[UniqueAddress],
+      nodes: Vector[UniqueAddress],
       unreachable: Set[UniqueAddress],
       replyTo: ActorRef,
       durable: Boolean)
@@ -91,6 +91,7 @@ object WriteAggregatorSpec {
         selfUniqueAddress,
         nodes,
         unreachable,
+        shuffle = false,
         replyTo,
         durable) {
 
@@ -148,7 +149,7 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
   val nodeC = UniqueAddress(Address(protocol, "Sys", "c", 2552), 17L)
   val nodeD = UniqueAddress(Address(protocol, "Sys", "d", 2552), 17L)
   // 4 replicas + the local => 5
-  val nodes = Set(nodeA, nodeB, nodeC, nodeD)
+  val nodes = Vector(nodeA, nodeB, nodeC, nodeD)
 
   val data = GSet.empty + "A" + "B"
   val timeout = 3.seconds.dilated
