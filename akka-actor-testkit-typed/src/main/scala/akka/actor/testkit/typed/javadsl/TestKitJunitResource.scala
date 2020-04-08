@@ -6,6 +6,9 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 
+import akka.actor.DeadLetter
+import akka.actor.Dropped
+import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestKitUtils
 import akka.actor.typed.ActorRef
@@ -148,6 +151,21 @@ final class TestKitJunitResource(_kit: ActorTestKit) extends ExternalResource {
    * See corresponding method on [[ActorTestKit]]
    */
   def stop[T](ref: ActorRef[T], max: Duration): Unit = testKit.stop(ref, max)
+
+  /**
+   * See corresponding method on [[ActorTestKit]]
+   */
+  def createUnhandledMessageProbe(): TestProbe[UnhandledMessage] = testKit.createUnhandledMessageProbe()
+
+  /**
+   * See corresponding method on [[ActorTestKit]]
+   */
+  def createDeadLetterProbe(): TestProbe[DeadLetter] = testKit.createDeadLetterProbe()
+
+  /**
+   * See corresponding method on [[ActorTestKit]]
+   */
+  def createDroppedMessageProbe(): TestProbe[Dropped] = testKit.createDroppedMessageProbe()
 
   /**
    * See corresponding method on [[ActorTestKit]]

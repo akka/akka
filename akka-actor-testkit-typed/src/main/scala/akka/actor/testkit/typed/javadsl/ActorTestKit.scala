@@ -6,17 +6,20 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 
+import akka.actor.DeadLetter
+import akka.actor.Dropped
+import akka.actor.UnhandledMessage
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.internal.TestKitUtils
+import akka.actor.testkit.typed.scaladsl
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.internal.TestKitUtils
-import akka.actor.testkit.typed.scaladsl
+import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 import com.typesafe.config.Config
-import akka.util.JavaDurationConverters._
 
 object ActorTestKit {
 
@@ -233,6 +236,25 @@ final class ActorTestKit private[akka] (delegate: akka.actor.testkit.typed.scala
    * @tparam M the type of messages the probe should accept
    */
   def createTestProbe[M](name: String, clazz: Class[M]): TestProbe[M] = TestProbe.create(name, clazz, system)
+
+  /**
+   * @return A test probe that is subscribed to dropped letters from the system event bus. Subscription
+   *         will be completed and verified so any dropped letter after it will be caught by the probe.
+   */
+  def createDroppedMessageProbe(): TestProbe[Dropped] =
+    delegate.createDroppedMessageProbe().asJava
+
+  /**
+   * @return A test probe that is subscribed to dead letters from the system event bus. Subscription
+   *         will be completed and verified so any dead letter after it will be caught by the probe.
+   */
+  def createDeadLetterProbe(): TestProbe[DeadLetter] = delegate.createDeadLetterProbe().asJava
+
+  /**
+   * @return A test probe that is subscribed to unhandled messages from the system event bus. Subscription
+   *         will be completed and verified so any unhandled message after it will be caught by the probe.
+   */
+  def createUnhandledMessageProbe(): TestProbe[UnhandledMessage] = delegate.createUnhandledMessageProbe().asJava
 
   // Note that if more methods are added here they should also be added to TestKitJunitResource
 
