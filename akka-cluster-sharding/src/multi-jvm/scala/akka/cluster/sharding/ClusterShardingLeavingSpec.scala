@@ -10,6 +10,7 @@ import akka.actor.{ Actor, ActorRef, Props }
 import akka.cluster.MemberStatus
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
+import akka.util.ccompat._
 
 object ClusterShardingLeavingSpec {
   case class Ping(id: String) extends CborSerializable
@@ -47,8 +48,10 @@ abstract class ClusterShardingLeavingSpecConfig(mode: String)
       additionalConfig =
         """
         akka.cluster.sharding.rebalance-interval = 120 s
-        # FIXME following is just some experiments
         akka.cluster.sharding.distributed-data.majority-min-cap = 1
+        akka.cluster.sharding.coordinator-state.write-majority-plus = 1
+        akka.cluster.sharding.coordinator-state.read-majority-plus = 1
+        # FIXME following is just some experiments
         akka.cluster.sharding.distributed-data.gossip-interval = 120s
         akka.cluster.sharding.distributed-data.delta-crdt.enabled = off #LWWRegister is not delta, but anyway
       """) {
@@ -120,7 +123,7 @@ abstract class ClusterShardingLeavingSpec(multiNodeConfig: ClusterShardingLeavin
       // all Up, everywhere before continuing
       awaitAssert {
         cluster.state.members.size should ===(roles.size)
-        cluster.state.members.map(_.status) should ===(Set(MemberStatus.Up))
+        cluster.state.members.unsorted.map(_.status) should ===(Set(MemberStatus.Up))
       }
 
       enterBarrier("after-2")

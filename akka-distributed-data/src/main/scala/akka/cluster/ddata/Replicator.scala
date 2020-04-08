@@ -441,6 +441,19 @@ object Replicator {
      */
     def this(timeout: java.time.Duration) = this(timeout.asScala, DefaultMajorityMinCap)
   }
+
+  /**
+   * `ReadMajority` but with the given number of `additional` nodes added to the majority count. At most
+   * all nodes.
+   */
+  final case class ReadMajorityPlus(timeout: FiniteDuration, additional: Int, minCap: Int = DefaultMajorityMinCap)
+      extends ReadConsistency {
+
+    /**
+     * Java API
+     */
+    def this(timeout: java.time.Duration, additional: Int) = this(timeout.asScala, additional, DefaultMajorityMinCap)
+  }
   final case class ReadAll(timeout: FiniteDuration) extends ReadConsistency {
 
     /**
@@ -471,6 +484,19 @@ object Replicator {
      * Java API
      */
     def this(timeout: java.time.Duration) = this(timeout.asScala, DefaultMajorityMinCap)
+  }
+
+  /**
+   * `WriteMajority` but with the given number of `additional` nodes added to the majority count. At most
+   * all nodes.
+   */
+  final case class WriteMajorityPlus(timeout: FiniteDuration, additional: Int, minCap: Int = DefaultMajorityMinCap)
+      extends WriteConsistency {
+
+    /**
+     * Java API
+     */
+    def this(timeout: java.time.Duration, additional: Int) = this(timeout.asScala, additional, DefaultMajorityMinCap)
   }
   final case class WriteAll(timeout: FiniteDuration) extends WriteConsistency {
 
@@ -2330,14 +2356,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
   case object SendToSecondary
   val MaxSecondaryNodes = 10
 
-  def calculateMajorityWithMinCap(minCap: Int, numberOfNodes: Int): Int = {
-    if (numberOfNodes <= minCap) {
-      numberOfNodes
-    } else {
-      val majority = numberOfNodes / 2 + 1
-      if (majority <= minCap) minCap
-      else majority
-    }
+  def calculateMajority(minCap: Int, numberOfNodes: Int, additional: Int): Int = {
+    val majority = numberOfNodes / 2 + 1
+    math.min(numberOfNodes, math.max(majority + additional, minCap))
   }
 }
 
@@ -2451,11 +2472,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     case WriteMajority(_, minCap) =>
       // +1 because local node is not included in `nodes`
       val N = nodes.size + 1
-      val w = calculateMajorityWithMinCap(minCap, N)
-      // FIXME
-      log.debug(s"WriteMajority [{}] [{}] of [{}]. $nodes", key, w, N)
-
-      //log.debug("WriteMajority [{}] [{}] of [{}].", key, w, N)
+      val w = calculateMajority(minCap, N, 0)
+      log.debug("WriteMajority [{}] [{}] of [{}].", key, w, N)
+      N - w
+    case WriteMajorityPlus(_, additional, minCap) =>
+      // +1 because local node is not included in `nodes`
+      val N = nodes.size + 1
+      val w = calculateMajority(minCap, N, additional)
+      log.debug("WriteMajorityPlus [{}] [{}] of [{}].", key, w, N)
       N - w
     case WriteLocal =>
       throw new IllegalArgumentException("WriteLocal not supported by WriteAggregator")
@@ -2594,8 +2618,14 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     case ReadMajority(_, minCap) =>
       // +1 because local node is not included in `nodes`
       val N = nodes.size + 1
-      val r = calculateMajorityWithMinCap(minCap, N)
+      val r = calculateMajority(minCap, N, 0)
       log.debug("ReadMajority [{}] [{}] of [{}].", key, r, N)
+      N - r
+    case ReadMajorityPlus(_, additional, minCap) =>
+      // +1 because local node is not included in `nodes`
+      val N = nodes.size + 1
+      val r = calculateMajority(minCap, N, additional)
+      log.debug("ReadMajorityPlus [{}] [{}] of [{}].", key, r, N)
       N - r
     case ReadLocal =>
       throw new IllegalArgumentException("ReadLocal not supported by ReadAggregator")

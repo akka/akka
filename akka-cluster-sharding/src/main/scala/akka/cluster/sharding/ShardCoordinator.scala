@@ -1107,10 +1107,16 @@ class DDataShardCoordinator(
   import ShardCoordinator.Internal._
   import akka.cluster.ddata.Replicator.Update
 
-  private val readMajority = ReadMajority(settings.tuningParameters.waitingForStateTimeout, majorityMinCap)
-  private val readAll = ReadAll(settings.tuningParameters.waitingForStateTimeout)
-//    ReadFrom(2, settings.tuningParameters.waitingForStateTimeout) // FIXME
-  private val writeMajority = WriteTo(2, settings.tuningParameters.waitingForStateTimeout) // FIXME WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
+  private val stateReadConsistency = settings.tuningParameters.coordinatorStateReadMajorityPlus match {
+    case Int.MaxValue => ReadAll(settings.tuningParameters.waitingForStateTimeout)
+    case additional   => ReadMajorityPlus(settings.tuningParameters.waitingForStateTimeout, majorityMinCap, additional)
+  }
+  private val stateWriteConsistency = settings.tuningParameters.coordinatorStateWriteMajorityPlus match {
+    case Int.MaxValue => WriteAll(settings.tuningParameters.waitingForStateTimeout)
+    case additional   => WriteMajorityPlus(settings.tuningParameters.waitingForStateTimeout, majorityMinCap, additional)
+  }
+  private val allShardsReadConsistency = ReadMajority(settings.tuningParameters.waitingForStateTimeout, majorityMinCap)
+  private val allShardsWriteConsistency = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
 
   implicit val node: Cluster = Cluster(context.system)
   private implicit val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
@@ -1153,7 +1159,7 @@ class DDataShardCoordinator(
       case GetFailure(CoordinatorStateKey, _) =>
         log.error(
           "The ShardCoordinator was unable to get an initial state within 'waiting-for-state-timeout': {} millis (retrying). Has ClusterSharding been started on all nodes?",
-          readAll.timeout.toMillis)
+          stateReadConsistency.timeout.toMillis)
         // repeat until GetSuccess
         getCoordinatorState()
 
@@ -1177,7 +1183,7 @@ class DDataShardCoordinator(
       case GetFailure(AllShardsKey, _) =>
         log.error(
           "The ShardCoordinator was unable to get all shards state within 'waiting-for-state-timeout': {} millis (retrying)",
-          readMajority.timeout.toMillis)
+          allShardsReadConsistency.timeout.toMillis)
         // repeat until GetSuccess
         getAllShards()
 
@@ -1251,7 +1257,7 @@ class DDataShardCoordinator(
       log.error(
         "The ShardCoordinator was unable to update a distributed state within 'updating-state-timeout': {} millis ({}). " +
         "Perhaps the ShardRegion has not started on all active nodes yet? event={}",
-        writeMajority.timeout.toMillis,
+        stateWriteConsistency.timeout.toMillis,
         if (terminating) "terminating" else "retrying",
         evt)
       if (terminating) {
@@ -1272,7 +1278,7 @@ class DDataShardCoordinator(
     case UpdateTimeout(AllShardsKey, Some(newShard: String)) =>
       log.error(
         "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis ({}), event={}",
-        writeMajority.timeout.toMillis,
+        allShardsWriteConsistency.timeout.toMillis,
         if (terminating) "terminating" else "retrying",
         evt)
       if (terminating) {
@@ -1361,21 +1367,24 @@ class DDataShardCoordinator(
   }
 
   def getCoordinatorState(): Unit = {
-    replicator ! Get(CoordinatorStateKey, readAll)
+    replicator ! Get(CoordinatorStateKey, stateReadConsistency)
   }
 
   def getAllShards(): Unit = {
     if (rememberEntities)
-      replicator ! Get(AllShardsKey, readMajority)
+      replicator ! Get(AllShardsKey, allShardsReadConsistency)
   }
 
   def sendCoordinatorStateUpdate(evt: DomainEvent) = {
     val s = state.updated(evt)
     log.debug("Storing new coordinator state [{}]", state)
-    replicator ! Update(CoordinatorStateKey, LWWRegister(selfUniqueAddress, initEmptyState), writeMajority, Some(evt)) {
-      reg =>
-        checkClockSkew(reg, "when update state")
-        reg.withValueOf(s)
+    replicator ! Update(
+      CoordinatorStateKey,
+      LWWRegister(selfUniqueAddress, initEmptyState),
+      stateWriteConsistency,
+      Some(evt)) { reg =>
+      checkClockSkew(reg, "when update state")
+      reg.withValueOf(s)
     }
   }
 
@@ -1391,7 +1400,7 @@ class DDataShardCoordinator(
   }
 
   def sendAllShardsUpdate(newShard: String) = {
-    replicator ! Update(AllShardsKey, GSet.empty[String], writeMajority, Some(newShard))(_ + newShard)
+    replicator ! Update(AllShardsKey, GSet.empty[String], allShardsWriteConsistency, Some(newShard))(_ + newShard)
   }
 
 }

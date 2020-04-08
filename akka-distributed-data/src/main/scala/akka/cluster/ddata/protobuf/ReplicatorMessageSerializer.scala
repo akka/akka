@@ -338,21 +338,27 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   }
 
   private def getToProto(get: Get[_]): dm.Get = {
-    val consistencyValue = get.consistency match {
-      case ReadLocal       => 1
-      case ReadFrom(n, _)  => n
-      case _: ReadMajority => 0
-      case _: ReadAll      => -1
-    }
-
     val timoutInMillis = get.consistency.timeout.toMillis
     require(timoutInMillis <= 0XFFFFFFFFL, "Timeouts must fit in a 32-bit unsigned int")
 
-    val b = dm.Get
-      .newBuilder()
-      .setKey(otherMessageToProto(get.key))
-      .setConsistency(consistencyValue)
-      .setTimeout(timoutInMillis.toInt)
+    val b = dm.Get.newBuilder().setKey(otherMessageToProto(get.key)).setTimeout(timoutInMillis.toInt)
+
+    get.consistency match {
+      case ReadLocal      => b.setConsistency(1)
+      case ReadFrom(n, _) => b.setConsistency(n)
+      case ReadMajority(_, minCap) =>
+        b.setConsistency(0)
+        if (minCap != 0)
+          b.setConsistencyMinCap(minCap)
+      case ReadMajorityPlus(_, additional, minCap) =>
+        b.setConsistency(0)
+        if (minCap != 0)
+          b.setConsistencyMinCap(minCap)
+        if (additional != 0)
+          b.setConsistencyAdditional(additional)
+      case _: ReadAll =>
+        b.setConsistency(-1)
+    }
 
     get.request.foreach(o => b.setRequest(otherMessageToProto(o)))
     b.build()
@@ -367,8 +373,13 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val timeout =
       if (get.getTimeout < 0) Duration(Int.MaxValue.toLong + (get.getTimeout - Int.MaxValue), TimeUnit.MILLISECONDS)
       else Duration(get.getTimeout.toLong, TimeUnit.MILLISECONDS)
+    def minCap = if (get.hasConsistencyMinCap) get.getConsistencyMinCap else 0
     val consistency = get.getConsistency match {
-      case 0  => ReadMajority(timeout)
+      case 0 =>
+        if (get.hasConsistencyAdditional)
+          ReadMajorityPlus(timeout, get.getConsistencyAdditional, minCap)
+        else
+          ReadMajority(timeout, minCap)
       case -1 => ReadAll(timeout)
       case 1  => ReadLocal
       case n  => ReadFrom(n, timeout)

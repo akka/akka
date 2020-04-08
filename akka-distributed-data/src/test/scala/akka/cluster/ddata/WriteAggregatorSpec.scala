@@ -257,16 +257,42 @@ class WriteAggregatorSpec extends AkkaSpec(s"""
 
       import ReadWriteAggregator._
 
-      calculateMajorityWithMinCap(minCap, 3) should be(3)
-      calculateMajorityWithMinCap(minCap, 4) should be(4)
-      calculateMajorityWithMinCap(minCap, 5) should be(5)
-      calculateMajorityWithMinCap(minCap, 6) should be(5)
-      calculateMajorityWithMinCap(minCap, 7) should be(5)
-      calculateMajorityWithMinCap(minCap, 8) should be(5)
-      calculateMajorityWithMinCap(minCap, 9) should be(5)
-      calculateMajorityWithMinCap(minCap, 10) should be(6)
-      calculateMajorityWithMinCap(minCap, 11) should be(6)
-      calculateMajorityWithMinCap(minCap, 12) should be(7)
+      calculateMajority(minCap, 3, 0) should be(3)
+      calculateMajority(minCap, 4, 0) should be(4)
+      calculateMajority(minCap, 5, 0) should be(5)
+      calculateMajority(minCap, 6, 0) should be(5)
+      calculateMajority(minCap, 7, 0) should be(5)
+      calculateMajority(minCap, 8, 0) should be(5)
+      calculateMajority(minCap, 9, 0) should be(5)
+      calculateMajority(minCap, 10, 0) should be(6)
+      calculateMajority(minCap, 11, 0) should be(6)
+      calculateMajority(minCap, 12, 0) should be(7)
+    }
+
+    "calculate majority with additional" in {
+      import ReadWriteAggregator._
+
+      calculateMajority(0, 3, 1) should be(3)
+      calculateMajority(0, 3, 2) should be(3)
+      calculateMajority(0, 4, 1) should be(4)
+      calculateMajority(0, 5, 1) should be(4)
+      calculateMajority(0, 5, 2) should be(5)
+      calculateMajority(0, 6, 1) should be(5)
+      calculateMajority(0, 7, 1) should be(5)
+      calculateMajority(0, 8, 1) should be(6)
+      calculateMajority(0, 8, 2) should be(7)
+      calculateMajority(0, 9, 1) should be(6)
+      calculateMajority(0, 10, 1) should be(7)
+      calculateMajority(0, 11, 1) should be(7)
+      calculateMajority(0, 11, 3) should be(9)
+    }
+
+    "calculate majority with additional and minCap" in {
+      import ReadWriteAggregator._
+
+      calculateMajority(5, 9, 1) should be(6)
+      calculateMajority(7, 9, 1) should be(7)
+      calculateMajority(10, 9, 1) should be(9)
     }
   }
 

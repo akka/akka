@@ -8,3 +8,4 @@ ProblemFilters.exclude[IncompatibleMethTypeProblem]("akka.cluster.ddata.Replicat
 ProblemFilters.exclude[Problem]("akka.cluster.ddata.ReadWriteAggregator.*")
 ProblemFilters.exclude[Problem]("akka.cluster.ddata.ReadAggregator*")
 ProblemFilters.exclude[Problem]("akka.cluster.ddata.WriteAggregator.*")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.cluster.ddata.protobuf.msg.ReplicatorMessages*")
