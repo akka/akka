@@ -110,7 +110,7 @@ Scala
 :  @@snip [TestKitExamples.scala](/akka-docs/src/test/scala/docs/persistence/testkit/TestKitExamples.scala) { #test }
 
 Java
-:  @@snip [TestKitExamples.java](/akka-docs/src/test/java/jdocs/persistence/testkit/PersistenceTestKitSampleTest.java) { #test }
+:  @@snip [PersistenceTestKitSampleTest.java](/akka-docs/src/test/java/jdocs/persistence/testkit/PersistenceTestKitSampleTest.java) { #test }
 
 You can safely use persistence testkit in combination with main akka testkit.
 
@@ -133,6 +133,12 @@ You can implement and set your own policy for the storage to control its actions
 Implement the @apidoc[ProcessingPolicy[EventStorage.JournalOperation]] @scala[trait]@java[interface] for event storage
 or @apidoc[ProcessingPolicy[SnapshotStorage.SnapshotOperation]] @scala[trait]@java[interface] for snapshot storage,
 and set it with `withPolicy()` method.
+
+Scala
+:  @@snip [TestKitExamples.scala](/akka-docs/src/test/scala/docs/persistence/testkit/TestKitExamples.scala) { #policy-test }
+
+Java
+:  @@snip [PersistenceTestKitPolicySampleTest.java](/akka-docs/src/test/java/jdocs/persistence/testkit/PersistenceTestKitPolicySampleTest.java) { #policy-test }
 
 `tryProcess()` method of the @apidoc[ProcessingPolicy] has two arguments: persistence id and the storage operation. 
 

@@ -9,7 +9,7 @@ import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
-import docs.persistence.testkit.PersistenceTestKitSampleSpec._
+import docs.persistence.testkit.PersistenceTestKitSampleSpec.{ Cmd, Evt, _ }
 import org.scalatest.BeforeAndAfterEach
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -117,3 +117,47 @@ class SampleSnapshotStoragePolicy extends SnapshotStorage.SnapshotPolicies.Polic
     }
 }
 //#set-snapshot-storage-policy
+
+//#policy-test
+class PersistenceTestKitSampleSpecWithPolicy
+    extends ScalaTestWithActorTestKit(PersistenceTestKitPlugin.config.withFallback(ConfigFactory.defaultApplication()))
+    with AnyWordSpecLike
+    with BeforeAndAfterEach {
+
+  val persistenceTestKit = PersistenceTestKit(system)
+
+  override def beforeEach(): Unit = {
+    persistenceTestKit.clearAll()
+    persistenceTestKit.returnDefaultPolicy()
+  }
+
+  "Testkit policy" should {
+
+    "fail all operations with custom exception" in {
+      val policy = new EventStorage.JournalPolicies.PolicyType {
+
+        class CustomFailure extends RuntimeException
+
+        override def tryProcess(persistenceId: String, processingUnit: JournalOperation): ProcessingResult =
+          processingUnit match {
+            case WriteEvents(_) => StorageFailure(new CustomFailure)
+            case _              => ProcessingSuccess
+          }
+      }
+      persistenceTestKit.withPolicy(policy)
+
+      val persistenceId = PersistenceId.ofUniqueId("your-persistence-id")
+      val persistentActor = spawn(
+        EventSourcedBehavior[Cmd, Evt, State](
+          persistenceId,
+          emptyState = State.empty,
+          commandHandler = (_, cmd) => Effect.persist(Evt(cmd.data)),
+          eventHandler = (state, evt) => state.updated(evt)))
+
+      persistentActor ! Cmd("data")
+      persistenceTestKit.expectNothingPersisted(persistenceId.id)
+
+    }
+  }
+}
+//#policy-test
