@@ -13,8 +13,9 @@ import akka.cluster.Cluster
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.RememberEntitiesCoordinatorStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
-import akka.cluster.sharding.internal.RememberEntitiesShardStoreProvider
+import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.testkit.AkkaSpec
 import akka.testkit.TestException
 import akka.testkit.TestProbe
@@ -65,34 +66,39 @@ object RememberEntitiesFailureSpec {
   case object NoResponse extends Fail
   case object CrashStore extends Fail
 
-  // outside store since shard allocation triggers initialization of store and we can't interact with the fake store actor before that
-  @volatile var failInitial = Map.empty[ShardId, Fail]
+  // outside store since we need to be able to set them before sharding initializes
+  @volatile var failShardGetEntities = Map.empty[ShardId, Fail]
+  @volatile var failCoordinatorGetShards: Option[Fail] = None
 
-  case class StoreCreated(store: ActorRef, shardId: ShardId)
+  case class ShardStoreCreated(store: ActorRef, shardId: ShardId)
+  case class CoordinatorStoreCreated(store: ActorRef)
+
   @silent("never used")
-  class FakeStore(settings: ClusterShardingSettings, typeName: String) extends RememberEntitiesShardStoreProvider {
-    override def shardStoreProps(shardId: ShardId): Props = FakeStoreActor.props(shardId)
+  class FakeStore(settings: ClusterShardingSettings, typeName: String) extends RememberEntitiesProvider {
+    override def shardStoreProps(shardId: ShardId): Props = FakeShardStoreActor.props(shardId)
+    override def coordinatorStoreProps(): Props = FakeCoordinatorStoreActor.props()
   }
-  object FakeStoreActor {
-    def props(shardId: ShardId): Props = Props(new FakeStoreActor(shardId))
+
+  object FakeShardStoreActor {
+    def props(shardId: ShardId): Props = Props(new FakeShardStoreActor(shardId))
 
     case class FailAddEntity(entityId: EntityId, whichWay: Fail)
     case class DoNotFailAddEntity(entityId: EntityId)
     case class FailRemoveEntity(entityId: EntityId, whichWay: Fail)
     case class DoNotFailRemoveEntity(entityId: EntityId)
   }
-  class FakeStoreActor(shardId: ShardId) extends Actor with ActorLogging {
-    import FakeStoreActor._
+  class FakeShardStoreActor(shardId: ShardId) extends Actor with ActorLogging {
+    import FakeShardStoreActor._
 
     implicit val ec = context.system.dispatcher
     private var failAddEntity = Map.empty[EntityId, Fail]
     private var failRemoveEntity = Map.empty[EntityId, Fail]
 
-    context.system.eventStream.publish(StoreCreated(self, shardId))
+    context.system.eventStream.publish(ShardStoreCreated(self, shardId))
 
     override def receive: Receive = {
       case RememberEntitiesShardStore.GetEntities =>
-        failInitial.get(shardId) match {
+        failShardGetEntities.get(shardId) match {
           case None             => sender ! RememberEntitiesShardStore.RememberedEntities(Set.empty)
           case Some(NoResponse) => log.debug("Sending no response for GetEntities")
           case Some(CrashStore) => throw TestException("store crash on GetEntities")
@@ -124,6 +130,27 @@ object RememberEntitiesFailureSpec {
 
     }
   }
+
+  object FakeCoordinatorStoreActor {
+    def props(): Props = Props(new FakeCoordinatorStoreActor)
+
+  }
+  class FakeCoordinatorStoreActor extends Actor with ActorLogging {
+
+    context.system.eventStream.publish(CoordinatorStoreCreated(context.self))
+
+    override def receive: Receive = {
+      case RememberEntitiesCoordinatorStore.GetShards =>
+        failCoordinatorGetShards match {
+          case None             => sender() ! RememberEntitiesCoordinatorStore.RememberedShards(Set.empty)
+          case Some(NoResponse) =>
+          case Some(CrashStore) =>
+            throw TestException("store crash on load")
+        }
+      case RememberEntitiesCoordinatorStore.AddShard(shardId) =>
+    }
+  }
+
 }
 
 class RememberEntitiesFailureSpec
@@ -145,7 +172,7 @@ class RememberEntitiesFailureSpec
     List(NoResponse, CrashStore).foreach { wayToFail: Fail =>
       s"recover when initial remember entities load fails $wayToFail" in {
         log.debug("Getting entities for shard 1 will fail")
-        failInitial = Map("1" -> wayToFail)
+        failShardGetEntities = Map("1" -> wayToFail)
 
         try {
           val probe = TestProbe()
@@ -160,7 +187,7 @@ class RememberEntitiesFailureSpec
           probe.expectNoMessage() // message is lost because shard crashes
 
           log.debug("Resetting initial fail")
-          failInitial = Map.empty
+          failShardGetEntities = Map.empty
 
           // shard should be restarted and eventually succeed
           awaitAssert {
@@ -170,13 +197,13 @@ class RememberEntitiesFailureSpec
 
           system.stop(sharding)
         } finally {
-          failInitial = Map.empty
+          failShardGetEntities = Map.empty
         }
       }
 
       s"recover when storing a start event fails $wayToFail" in {
         val storeProbe = TestProbe()
-        system.eventStream.subscribe(storeProbe.ref, classOf[StoreCreated])
+        system.eventStream.subscribe(storeProbe.ref, classOf[ShardStoreCreated])
 
         val sharding = ClusterSharding(system).start(
           s"storeStart-$wayToFail",
@@ -188,11 +215,11 @@ class RememberEntitiesFailureSpec
         // trigger shard start and store creation
         val probe = TestProbe()
         sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
-        val shard1Store = storeProbe.expectMsgType[StoreCreated].store
+        val shard1Store = storeProbe.expectMsgType[ShardStoreCreated].store
         probe.expectMsg("hello-1")
 
         // hit shard with other entity that will fail
-        shard1Store.tell(FakeStoreActor.FailAddEntity("11", wayToFail), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.FailAddEntity("11", wayToFail), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         sharding.tell(EntityEnvelope(11, "hello-11"), probe.ref)
@@ -201,7 +228,7 @@ class RememberEntitiesFailureSpec
         probe.expectNoMessage()
 
         val stopFailingProbe = TestProbe()
-        shard1Store.tell(FakeStoreActor.DoNotFailAddEntity("11"), stopFailingProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.DoNotFailAddEntity("11"), stopFailingProbe.ref)
         stopFailingProbe.expectMsg(Done)
 
         // it takes a while - timeout hits and then backoff
@@ -214,7 +241,7 @@ class RememberEntitiesFailureSpec
 
       s"recover on abrupt entity stop when storing a stop event fails $wayToFail" in {
         val storeProbe = TestProbe()
-        system.eventStream.subscribe(storeProbe.ref, classOf[StoreCreated])
+        system.eventStream.subscribe(storeProbe.ref, classOf[ShardStoreCreated])
 
         val sharding = ClusterSharding(system).start(
           s"storeStopAbrupt-$wayToFail",
@@ -227,17 +254,17 @@ class RememberEntitiesFailureSpec
 
         // trigger shard start and store creation
         sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
-        val shard1Store = storeProbe.expectMsgType[StoreCreated].store
+        val shard1Store = storeProbe.expectMsgType[ShardStoreCreated].store
         probe.expectMsg("hello-1")
 
         // fail it when stopping
-        shard1Store.tell(FakeStoreActor.FailRemoveEntity("1", wayToFail), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.FailRemoveEntity("1", wayToFail), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         // FIXME restart without passivating is not saved and re-started again without storing the stop so this isn't testing anything
         sharding ! EntityEnvelope(1, "stop")
 
-        shard1Store.tell(FakeStoreActor.DoNotFailRemoveEntity("1"), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.DoNotFailRemoveEntity("1"), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         // it takes a while - timeout hits and then backoff
@@ -250,7 +277,7 @@ class RememberEntitiesFailureSpec
 
       s"recover on graceful entity stop when storing a stop event fails $wayToFail" in {
         val storeProbe = TestProbe()
-        system.eventStream.subscribe(storeProbe.ref, classOf[StoreCreated])
+        system.eventStream.subscribe(storeProbe.ref, classOf[ShardStoreCreated])
 
         val sharding = ClusterSharding(system).start(
           s"storeStopGraceful-$wayToFail",
@@ -265,16 +292,16 @@ class RememberEntitiesFailureSpec
 
         // trigger shard start and store creation
         sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
-        val shard1Store = storeProbe.expectMsgType[StoreCreated].store
+        val shard1Store = storeProbe.expectMsgType[ShardStoreCreated].store
         probe.expectMsg("hello-1")
 
         // fail it when stopping
-        shard1Store.tell(FakeStoreActor.FailRemoveEntity("1", wayToFail), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.FailRemoveEntity("1", wayToFail), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         sharding ! EntityEnvelope(1, "graceful-stop")
 
-        shard1Store.tell(FakeStoreActor.DoNotFailRemoveEntity("1"), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.DoNotFailRemoveEntity("1"), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         // it takes a while?

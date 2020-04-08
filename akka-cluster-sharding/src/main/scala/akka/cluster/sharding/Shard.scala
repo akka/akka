@@ -21,7 +21,7 @@ import akka.cluster.Cluster
 import akka.cluster.sharding.internal.EntityRecoveryStrategy
 import akka.cluster.sharding.internal.RememberEntitiesShardStore
 import akka.cluster.sharding.internal.RememberEntitiesShardStore.GetEntities
-import akka.cluster.sharding.internal.RememberEntitiesShardStoreProvider
+import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.cluster.sharding.internal.RememberEntityStarter
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
@@ -87,7 +87,7 @@ private[akka] object Shard {
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId,
       handOffStopMessage: Any,
-      rememberEntitiesProvider: Option[RememberEntitiesShardStoreProvider]): Props =
+      rememberEntitiesProvider: Option[RememberEntitiesProvider]): Props =
     Props(
       new Shard(
         typeName,
@@ -131,7 +131,7 @@ private[akka] class Shard(
     extractEntityId: ShardRegion.ExtractEntityId,
     @unused extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    rememberEntitiesProvider: Option[RememberEntitiesShardStoreProvider])
+    rememberEntitiesProvider: Option[RememberEntitiesProvider])
     extends Actor
     with ActorLogging
     with Stash
