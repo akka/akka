@@ -26,7 +26,39 @@ import org.slf4j.LoggerFactory
 object ActorTestKit {
 
   /**
-   * Create a testkit named from the class that is calling this method.
+   * Create a testkit named from the ActorTestKit class.
+   *
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from `application-test.conf` if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   * The application.conf of your project is not used in this case.
+   */
+  def apply(): ActorTestKit = {
+    val system = ActorSystem(
+      ActorTestKitGuardian.testKitGuardian,
+      TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
+      ApplicationTestConfig)
+    new ActorTestKit(system, system, settings = None)
+  }
+
+  /**
+   * Create a testkit from the provided actor system.
+   *
+   * When the test has completed you should terminate the `ActorSystem` and
+   * the testkit with [[ActorTestKit#shutdownTestKit]].
+   *
+   * Config loaded from the provided actor if that exists, otherwise
+   * using default configuration from the reference.conf resources that ship with the Akka libraries.
+   */
+  def apply(system: ActorSystem[_]): ActorTestKit = {
+    val testKitGuardian = system.systemActorOf(ActorTestKitGuardian.testKitGuardian, "test")
+    new ActorTestKit(system, testKitGuardian, settings = None)
+  }
+
+  /**
+   * Create a testkit using the provided name.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,
    * e.g. threads will include the name.
@@ -37,64 +69,64 @@ object ActorTestKit {
    * using default configuration from the reference.conf resources that ship with the Akka libraries.
    * The application.conf of your project is not used in this case.
    */
-  def apply(): ActorTestKit =
-    new ActorTestKit(
-      name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-      config = ApplicationTestConfig,
-      settings = None)
+  def apply(name: String): ActorTestKit = {
+    val system =
+      ActorSystem(ActorTestKitGuardian.testKitGuardian, TestKitUtils.scrubActorSystemName(name), ApplicationTestConfig)
+    new ActorTestKit(system, system, settings = None)
+  }
 
   /**
-   * Create a named testkit.
-   *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
-   * e.g. threads will include the name.
-   * When the test has completed you should terminate the `ActorSystem` and
-   * the testkit with [[ActorTestKit#shutdownTestKit]].
-   *
-   * Config loaded from `application-test.conf` if that exists, otherwise
-   * using default configuration from the reference.conf resources that ship with the Akka libraries.
-   * The application.conf of your project is not used in this case.
-   */
-  def apply(name: String): ActorTestKit =
-    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = ApplicationTestConfig, settings = None)
-
-  /**
-   * Create a testkit named from the class that is calling this method,
+   * Create a testkit named from the ActorTestKit class,
    * and use a custom config for the actor system.
    *
-   * It will create an [[akka.actor.typed.ActorSystem]] with this name,
-   * e.g. threads will include the name.
+   * It will also used the provided customConfig provided to create the `ActorSystem`
+   *
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
-  def apply(customConfig: Config): ActorTestKit =
-    new ActorTestKit(
-      name = TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
-      config = customConfig,
-      settings = None)
+  def apply(customConfig: Config): ActorTestKit = {
+    val system = ActorSystem(
+      ActorTestKitGuardian.testKitGuardian,
+      TestKitUtils.testNameFromCallStack(classOf[ActorTestKit]),
+      customConfig)
+    new ActorTestKit(system, system, settings = None)
+  }
 
   /**
-   * Create a named testkit, and use a custom config for the actor system.
+   * Create a test kit named based on the provided name,
+   * and uses the provided custom config for the actor system.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,
    * e.g. threads will include the name.
+   *
+   * It will also used the provided customConfig provided to create the `ActorSystem`
+   *
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
-  def apply(name: String, customConfig: Config): ActorTestKit =
-    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = customConfig, settings = None)
+  def apply(name: String, customConfig: Config): ActorTestKit = {
+    val system =
+      ActorSystem(ActorTestKitGuardian.testKitGuardian, TestKitUtils.scrubActorSystemName(name), customConfig)
+    new ActorTestKit(system, system, settings = None)
+  }
 
   /**
-   * Create a named testkit, and use a custom config for the actor system,
-   * and a custom [[akka.actor.testkit.typed.TestKitSettings]]
+   * Create an [[akka.actor.typed.ActorSystem]] named based on the provided name,
+   * use the provided custom config for the actor system, and the testkit will use the provided setting.
    *
    * It will create an [[akka.actor.typed.ActorSystem]] with this name,
    * e.g. threads will include the name.
+   *
+   * It will also used the provided customConfig provided to create the `ActorSystem`, and provided setting.
+   *
    * When the test has completed you should terminate the `ActorSystem` and
    * the testkit with [[ActorTestKit#shutdownTestKit]].
    */
-  def apply(name: String, customConfig: Config, settings: TestKitSettings): ActorTestKit =
-    new ActorTestKit(name = TestKitUtils.scrubActorSystemName(name), config = customConfig, settings = Some(settings))
+  def apply(name: String, customConfig: Config, settings: TestKitSettings): ActorTestKit = {
+    val system =
+      ActorSystem(ActorTestKitGuardian.testKitGuardian, TestKitUtils.scrubActorSystemName(name), customConfig)
+    new ActorTestKit(system, system, settings = Some(settings))
+  }
 
   /**
    * Shutdown the given [[akka.actor.typed.ActorSystem]] and block until it shuts down,
@@ -131,10 +163,17 @@ object ActorTestKit {
  *
  * For synchronous testing of a `Behavior` see [[BehaviorTestKit]]
  */
-final class ActorTestKit private[akka] (val name: String, val config: Config, settings: Option[TestKitSettings]) {
+final class ActorTestKit private[akka] (
+    val internalSystem: ActorSystem[_],
+    internalTestKitGuardian: ActorRef[ActorTestKitGuardian.TestKitCommand],
+    settings: Option[TestKitSettings]) {
+
+  val name = internalSystem.name
+
+  val config = internalSystem.settings.config
 
   // avoid slf4j noise by touching it first from single thread #28673
-  LoggerFactory.getLogger(name).debug("Starting ActorTestKit")
+  LoggerFactory.getLogger(internalSystem.name).debug("Starting ActorTestKit")
 
   implicit def testKitSettings: TestKitSettings =
     settings.getOrElse(TestKitSettings(system))
@@ -142,9 +181,6 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
   /**
    * INTERNAL API
    */
-  @InternalApi private[akka] val internalSystem: ActorSystem[ActorTestKitGuardian.TestKitCommand] =
-    ActorSystem(ActorTestKitGuardian.testKitGuardian, name, config)
-
   implicit def system: ActorSystem[Nothing] = internalSystem
 
   private val childName: Iterator[String] = Iterator.from(0).map(_.toString)
@@ -172,7 +208,9 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * guardian
    */
   def spawn[T](behavior: Behavior[T], props: Props): ActorRef[T] =
-    Await.result(internalSystem.ask(ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)), timeout.duration)
+    Await.result(
+      internalTestKitGuardian.ask(ActorTestKitGuardian.SpawnActorAnonymous(behavior, _, props)),
+      timeout.duration)
 
   /**
    * Spawn the given behavior. This is created as a child of the test kit
@@ -186,7 +224,9 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    * guardian
    */
   def spawn[T](behavior: Behavior[T], name: String, props: Props): ActorRef[T] =
-    Await.result(internalSystem.ask(ActorTestKitGuardian.SpawnActor(name, behavior, _, props)), timeout.duration)
+    Await.result(
+      internalTestKitGuardian.ask(ActorTestKitGuardian.SpawnActor(name, behavior, _, props)),
+      timeout.duration)
 
   /**
    * Stop the actor under test and wait until it terminates.
@@ -195,7 +235,7 @@ final class ActorTestKit private[akka] (val name: String, val config: Config, se
    */
   def stop[T](ref: ActorRef[T], max: FiniteDuration = timeout.duration): Unit =
     try {
-      Await.result(internalSystem.ask { x: ActorRef[ActorTestKitGuardian.Ack.type] =>
+      Await.result(internalTestKitGuardian.ask { x: ActorRef[ActorTestKitGuardian.Ack.type] =>
         ActorTestKitGuardian.StopActor(ref, x)
       }, max)
     } catch {
