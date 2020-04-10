@@ -46,23 +46,19 @@ import scala.util.{ Failure, Success, Try }
       }
 
       object Initializing extends InHandler with OutHandler {
-        override def onPush(): Unit = {
-          throw new IllegalStateException("unexpected push during initialization")
-        }
+        // we don't expect a push since we bever pull upstream during initialization
+        override def onPush(): Unit = throw new IllegalStateException("unexpected push during initialization")
 
         var upstreamFailure = OptionVal.none[Throwable]
         override def onUpstreamFailure(ex: Throwable): Unit = {
           upstreamFailure = OptionVal.Some(ex)
         }
 
-        override def onUpstreamFinish(): Unit = {
-          //will later be propagated to the materialized flow
-        }
+        //will later be propagated to the materialized flow (by examining isClosed(in))
+        override def onUpstreamFinish(): Unit = {}
 
-        var hasBeenPulled = false
-        override def onPull(): Unit = {
-          hasBeenPulled = true
-        }
+        //will later be propagated to the materialized flow (by examining isAvailable(out))
+        override def onPull(): Unit = {}
 
         var downstreamCause = OptionVal.none[Throwable]
         override def onDownstreamFinish(cause: Throwable): Unit = {
@@ -75,7 +71,7 @@ import scala.util.{ Failure, Success, Try }
             innerMatValue.failure(new NeverMaterializedException(exception))
             failStage(exception)
           case Success(flow) =>
-            //materialize flow, connect to inlets, feed with potential events and set handlers
+            //materialize flow, connect inlet and outlet, feed with potential events and set handlers
             connect(flow)
             setKeepGoing(false)
         }
@@ -88,26 +84,16 @@ import scala.util.{ Failure, Success, Try }
           new OutHandler {
             override def onPull(): Unit = if (!isClosed(in)) tryPull(in)
 
-            override def onDownstreamFinish(cause: Throwable): Unit = {
-              if (!isClosed(in)) {
-                cancel(in, cause)
-              }
-            }
+            override def onDownstreamFinish(cause: Throwable): Unit = if (!isClosed(in)) cancel(in, cause)
           }
         }
         subSink.setHandler {
           new InHandler {
-            override def onPush(): Unit = {
-              push(out, subSink.grab())
-            }
+            override def onPush(): Unit = push(out, subSink.grab())
 
-            override def onUpstreamFinish(): Unit = {
-              complete(out)
-            }
+            override def onUpstreamFinish(): Unit = complete(out)
 
-            override def onUpstreamFailure(ex: Throwable): Unit = {
-              fail(out, ex)
-            }
+            override def onUpstreamFailure(ex: Throwable): Unit = fail(out, ex)
           }
         }
         Try {
@@ -128,7 +114,7 @@ import scala.util.{ Failure, Success, Try }
               case OptionVal.None =>
                 //todo: should this be invoked before and independently of checking downstreamCause?
                 // in most case if downstream pulls and then closes, the pull is 'lost'. is it possible for some flows to actually care about this? (non-eager broadcast?)
-                if (Initializing.hasBeenPulled) {
+                if (isAvailable(out)) {
                   subSink.pull()
                 }
             }
@@ -140,28 +126,14 @@ import scala.util.{ Failure, Success, Try }
           in,
           out,
           new InHandler with OutHandler {
-            override def onPull(): Unit = {
-              subSink.pull()
-            }
+            override def onPull(): Unit = subSink.pull()
+            override def onDownstreamFinish(cause: Throwable): Unit = subSink.cancel(cause)
 
-            override def onDownstreamFinish(cause: Throwable): Unit = {
-              subSink.cancel(cause)
-              //super.onDownstreamFinish(cause)
-            }
+            override def onPush(): Unit = subSource.push(grab(in))
 
-            override def onPush(): Unit = {
-              subSource.push(grab(in))
-            }
+            override def onUpstreamFinish(): Unit = subSource.complete()
 
-            override def onUpstreamFinish(): Unit = {
-              subSource.complete()
-              //super.onUpstreamFinish()
-            }
-
-            override def onUpstreamFailure(ex: Throwable): Unit = {
-              subSource.fail(ex)
-              //super.onUpstreamFailure(ex)
-            }
+            override def onUpstreamFailure(ex: Throwable): Unit = subSource.fail(ex)
           })
       }
     }
