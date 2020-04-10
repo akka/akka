@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
+import akka.{Done, NotUsed}
 import akka.stream.AbruptStageTerminationException
 import akka.stream.Materializer
 import akka.stream.NeverMaterializedException
@@ -159,6 +159,26 @@ class LazyFlowSpec extends StreamSpec("""
       list.failed.futureValue shouldBe a[TE]
       deferredMatVal.failed.futureValue shouldBe a[NeverMaterializedException]
       deferredMatVal.failed.futureValue.getCause shouldBe a[TE]
+    }
+
+    "work for a single element when the future is completed after the fact" in assertAllStagesStopped {
+      import system.dispatcher
+      val flowPromise = Promise[Flow[Int, String, NotUsed]]()
+      val firstElementArrived = Promise[Done]()
+
+      val result: Future[immutable.Seq[String]] =
+        Source(List(1))
+          .via(Flow.lazyFutureFlow { () =>
+            firstElementArrived.success(Done)
+            flowPromise.future
+          })
+          .runWith(Sink.seq)
+
+      firstElementArrived.future.map { _ =>
+        flowPromise.success(Flow[Int].map(_.toString))
+      }
+
+      result.futureValue shouldBe List("1")
     }
 
     "fail the flow when the future materialization fails" in assertAllStagesStopped {
