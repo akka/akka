@@ -122,19 +122,16 @@ import scala.util.{ Failure, Success, Try }
             innerMatValue.failure(new NeverMaterializedException(ex))
             failStage(ex)
         }
-        setHandlers(
-          in,
-          out,
-          new InHandler with OutHandler {
-            override def onPull(): Unit = subSink.pull()
-            override def onDownstreamFinish(cause: Throwable): Unit = subSink.cancel(cause)
+        setHandlers(in, out, new InHandler with OutHandler {
+          override def onPull(): Unit = subSink.pull()
+          override def onDownstreamFinish(cause: Throwable): Unit = subSink.cancel(cause)
 
-            override def onPush(): Unit = subSource.push(grab(in))
+          override def onPush(): Unit = subSource.push(grab(in))
 
-            override def onUpstreamFinish(): Unit = subSource.complete()
+          override def onUpstreamFinish(): Unit = subSource.complete()
 
-            override def onUpstreamFailure(ex: Throwable): Unit = subSource.fail(ex)
-          })
+          override def onUpstreamFailure(ex: Throwable): Unit = subSource.fail(ex)
+        })
       }
     }
     (logic, innerMatValue.future)

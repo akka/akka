@@ -4,7 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.{Done, NotUsed}
+import akka.{ Done, NotUsed }
 import akka.stream.AbruptStageTerminationException
 import akka.stream.Materializer
 import akka.stream.NeverMaterializedException
