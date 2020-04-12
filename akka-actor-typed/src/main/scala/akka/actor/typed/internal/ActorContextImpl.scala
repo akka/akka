@@ -114,6 +114,12 @@ import org.slf4j.LoggerFactory
 
   override def asScala: scaladsl.ActorContext[T] = this
 
+  override def narrow[U <: T]: TypedActorContext[U] = this.asInstanceOf[TypedActorContext[U]]
+
+  override def unsafeUpcast[U >: T]: TypedActorContext[U] = this.asInstanceOf[TypedActorContext[U]]
+
+  override private[akka] def unsafeCast[U]: TypedActorContext[U] = this.asInstanceOf[TypedActorContext[U]]
+
   override def getChild(name: String): Optional[ActorRef[Void]] =
     child(name) match {
       case Some(c) => Optional.of(c.unsafeUpcast[Void])

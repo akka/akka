@@ -168,7 +168,7 @@ object Behavior {
       case innerDeferred: DeferredBehavior[T]          => start(innerDeferred(ctx), ctx)
       case wrapped: InterceptorImpl[T, Any] @unchecked =>
         // make sure that a deferred behavior wrapped inside some other behavior is also started
-        val startedInner = start(wrapped.nestedBehavior, ctx.asInstanceOf[TypedActorContext[Any]])
+        val startedInner = start(wrapped.nestedBehavior, ctx.unsafeUpcast[Any])
         if (startedInner eq wrapped.nestedBehavior) wrapped
         else wrapped.replaceNested(startedInner)
       case _ => behavior

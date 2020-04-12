@@ -45,24 +45,24 @@ private[akka] final class InterceptorImpl[O, I](
 
   private val preStartTarget: PreStartTarget[I] = new PreStartTarget[I] {
     override def start(ctx: TypedActorContext[_]): Behavior[I] = {
-      Behavior.start[I](nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]])
+      Behavior.start[I](nestedBehavior, ctx.unsafeCast[I])
     }
     override def toString: String = s"PreStartTarget($nestedBehavior)"
   }
 
   private val receiveTarget: ReceiveTarget[I] = new ReceiveTarget[I] {
     override def apply(ctx: TypedActorContext[_], msg: I): Behavior[I] =
-      Behavior.interpretMessage(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], msg)
+      Behavior.interpretMessage(nestedBehavior, ctx.unsafeCast[I], msg)
 
     override def signalRestart(ctx: TypedActorContext[_]): Unit =
-      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], PreRestart)
+      Behavior.interpretSignal(nestedBehavior, ctx.unsafeCast[I], PreRestart)
 
     override def toString: String = s"ReceiveTarget($nestedBehavior)"
   }
 
   private val signalTarget = new SignalTarget[I] {
     override def apply(ctx: TypedActorContext[_], signal: Signal): Behavior[I] =
-      Behavior.interpretSignal(nestedBehavior, ctx.asInstanceOf[TypedActorContext[I]], signal)
+      Behavior.interpretSignal(nestedBehavior, ctx.unsafeCast[I], signal)
     override def toString: String = s"SignalTarget($nestedBehavior)"
   }
 
@@ -92,7 +92,7 @@ private[akka] final class InterceptorImpl[O, I](
   }
 
   private def deduplicate(interceptedResult: Behavior[I], ctx: TypedActorContext[O]): Behavior[O] = {
-    val started = Behavior.start(interceptedResult, ctx.asInstanceOf[TypedActorContext[I]])
+    val started = Behavior.start(interceptedResult, ctx.unsafeCast[I])
     if (started == BehaviorImpl.UnhandledBehavior || started == BehaviorImpl.SameBehavior || !Behavior.isAlive(started)) {
       started.unsafeCast[O]
     } else {

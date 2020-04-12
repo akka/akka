@@ -92,7 +92,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     val settings = EventSourcedSettings(ctx.system, journalPluginId.getOrElse(""), snapshotPluginId.getOrElse(""))
 
     // stashState outside supervise because StashState should survive restarts due to persist failures
-    val stashState = new StashState(ctx.asInstanceOf[ActorContext[InternalProtocol]], settings)
+    val stashState = new StashState(ctx.unsafeCast[InternalProtocol].asScala, settings)
 
     val actualSignalHandler: PartialFunction[(State, Signal), Unit] = signalHandler.orElse {
       // default signal handler is always the fallback
@@ -121,7 +121,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       .supervise {
         Behaviors.setup[Command] { _ =>
           val eventSourcedSetup = new BehaviorSetup(
-            ctx.asInstanceOf[ActorContext[InternalProtocol]],
+            ctx.unsafeCast[InternalProtocol].asScala,
             persistenceId,
             emptyState,
             commandHandler,

@@ -1,0 +1,4 @@
+#Add narrow,unsafeUpcast and unsafeCast methods to akka.actor.typed.TypedActorContext.
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.TypedActorContext.narrow")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.TypedActorContext.unsafeUpcast")
+ProblemFilters.exclude[ReversedMissingMethodProblem]("akka.actor.typed.TypedActorContext.unsafeCast")

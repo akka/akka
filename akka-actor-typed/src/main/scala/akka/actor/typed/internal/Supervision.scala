@@ -12,7 +12,6 @@ import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
-
 import akka.actor.DeadLetterSuppression
 import akka.actor.Dropped
 import akka.actor.typed.BehaviorInterceptor.PreStartTarget
@@ -370,7 +369,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
     }
 
     try {
-      val newBehavior = Behavior.validateAsInitial(Behavior.start(initial, ctx.asInstanceOf[TypedActorContext[T]]))
+      val newBehavior = Behavior.validateAsInitial(Behavior.start(initial, ctx.narrow[T]))
       val nextBehavior = restartingInProgress match {
         case OptionVal.None => newBehavior
         case OptionVal.Some((stashBuffer, _)) =>

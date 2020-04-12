@@ -39,7 +39,7 @@ private[akka] object BehaviorTags {
 @InternalApi private[akka] object BehaviorImpl {
 
   implicit class ContextAs[T](val ctx: AC[T]) extends AnyVal {
-    def as[U]: AC[U] = ctx.asInstanceOf[AC[U]]
+    def as[U]: AC[U] = ctx.unsafeCast[U]
   }
 
   def transformMessages[O: ClassTag, I](behavior: Behavior[I], matcher: PartialFunction[O, I]): Behavior[O] =

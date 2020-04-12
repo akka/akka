@@ -4,7 +4,9 @@
 
 package akka.actor.typed
 
-import akka.annotation.DoNotInherit
+import akka.annotation.{ DoNotInherit, InternalApi }
+
+import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * This trait is not meant to be extended by user code. If you do so, you may
@@ -25,4 +27,19 @@ trait TypedActorContext[T] {
    * Get the `scaladsl` of this `ActorContext`.
    */
   def asScala: scaladsl.ActorContext[T]
+
+  /**
+   * Narrow the type of this `TypedActorContext`, which is always a safe operation.
+   */
+  def narrow[U <: T]: TypedActorContext[U]
+
+  /**
+   * Unsafe utility method for widening the type accepted by this TypedActorContext.
+   * */
+  def unsafeUpcast[U >: T @uncheckedVariance]: TypedActorContext[U]
+
+  /**
+   * Unsafe utility method for changing the type accepted by this TypedActorContext.
+   * */
+  @InternalApi private[akka] def unsafeCast[U]: TypedActorContext[U]
 }
