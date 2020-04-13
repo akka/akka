@@ -33,7 +33,27 @@ object BenchmarkFileReporter {
 
   val formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd-HH-mm-ss")
 
-  def apply(test: String, system: ActorSystem): BenchmarkFileReporter =
+  def apply(test: String, system: ActorSystem): BenchmarkFileReporter = {
+    val settingsToReport =
+      Seq(
+        "akka.test.MaxThroughputSpec.totalMessagesFactor",
+        "akka.test.MaxThroughputSpec.real-message",
+        "akka.test.LatencySpec.totalMessagesFactor",
+        "akka.test.LatencySpec.repeatCount",
+        "akka.test.LatencySpec.real-message",
+        "akka.remote.artery.enabled",
+        "akka.remote.artery.advanced.inbound-lanes",
+        "akka.remote.artery.advanced.buffer-pool-size",
+        "akka.remote.artery.advanced.aeron.idle-cpu-level",
+        "akka.remote.artery.advanced.aeron.embedded-media-driver",
+        "akka.remote.default-remote-dispatcher.throughput",
+        "akka.remote.default-remote-dispatcher.fork-join-executor.parallelism-factor",
+        "akka.remote.default-remote-dispatcher.fork-join-executor.parallelism-min",
+        "akka.remote.default-remote-dispatcher.fork-join-executor.parallelism-max")
+    apply(test, system, settingsToReport)
+  }
+
+  def apply(test: String, system: ActorSystem, settingsToReport: Seq[String]): BenchmarkFileReporter =
     new BenchmarkFileReporter {
       override val testName = test
 
@@ -51,22 +71,6 @@ object BenchmarkFileReporter {
       val fos = Files.newOutputStream(testResultFile.toPath)
       reportResults(s"Git commit: $gitCommit")
 
-      val settingsToReport =
-        Seq(
-          "akka.test.MaxThroughputSpec.totalMessagesFactor",
-          "akka.test.MaxThroughputSpec.real-message",
-          "akka.test.LatencySpec.totalMessagesFactor",
-          "akka.test.LatencySpec.repeatCount",
-          "akka.test.LatencySpec.real-message",
-          "akka.remote.artery.enabled",
-          "akka.remote.artery.advanced.inbound-lanes",
-          "akka.remote.artery.advanced.buffer-pool-size",
-          "akka.remote.artery.advanced.aeron.idle-cpu-level",
-          "akka.remote.artery.advanced.aeron.embedded-media-driver",
-          "akka.remote.default-remote-dispatcher.throughput",
-          "akka.remote.default-remote-dispatcher.fork-join-executor.parallelism-factor",
-          "akka.remote.default-remote-dispatcher.fork-join-executor.parallelism-min",
-          "akka.remote.default-remote-dispatcher.fork-join-executor.parallelism-max")
       settingsToReport.foreach(reportSetting)
 
       def reportResults(result: String): Unit = synchronized {
