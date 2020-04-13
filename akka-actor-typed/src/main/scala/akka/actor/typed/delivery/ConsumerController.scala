@@ -14,6 +14,7 @@ import akka.actor.DeadLetterSuppression
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
+import akka.actor.typed.delivery.internal.ChunkedMessage
 import akka.actor.typed.delivery.internal.ConsumerControllerImpl
 import akka.actor.typed.delivery.internal.DeliverySerializable
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
@@ -124,6 +125,21 @@ object ConsumerController {
 
   final case class DeliverThenStop[A]() extends Command[A]
 
+  object SequencedMessage {
+
+    /**
+     * INTERNAL API
+     */
+    @InternalApi private[akka] def fromChunked[A](
+        producerId: String,
+        seqNr: SeqNr,
+        chunk: ChunkedMessage,
+        first: Boolean,
+        ack: Boolean,
+        producerController: ActorRef[ProducerControllerImpl.InternalCommand]): SequencedMessage[A] =
+      new SequencedMessage(producerId, seqNr, chunk.asInstanceOf[A], first, ack)(producerController)
+  }
+
   /**
    * This is used between the `ProducerController` and `ConsumerController`. Should rarely be used in
    * application code but is public because it's in the signature for the `EntityTypeKey` when using
@@ -144,6 +160,22 @@ object ConsumerController {
     /** INTERNAL API */
     @InternalApi private[akka] def asFirst: SequencedMessage[A] =
       copy(first = true)(producerController)
+
+    /** INTERNAL API */
+    @InternalApi private[akka] def isFirstChunk: Boolean = {
+      message match {
+        case c: ChunkedMessage => c.firstChunk
+        case _                 => true
+      }
+    }
+
+    /** INTERNAL API */
+    @InternalApi private[akka] def isLastChunk: Boolean = {
+      message match {
+        case c: ChunkedMessage => c.lastChunk
+        case _                 => true
+      }
+    }
   }
 
   object Settings {

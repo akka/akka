@@ -7,6 +7,7 @@ package akka.actor.typed.delivery
 import scala.collection.immutable
 
 import akka.actor.typed.ActorRef
+import akka.actor.typed.delivery.internal.ChunkedMessage
 import akka.actor.typed.delivery.internal.DeliverySerializable
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
@@ -67,7 +68,59 @@ object DurableProducerQueue {
       highestConfirmedSeqNr: SeqNr,
       confirmedSeqNr: Map[ConfirmationQualifier, (SeqNr, TimestampMillis)],
       unconfirmed: immutable.IndexedSeq[MessageSent[A]])
-      extends DeliverySerializable
+      extends DeliverySerializable {
+
+    def addMessageSent(sent: MessageSent[A]): State[A] = {
+      copy(currentSeqNr = sent.seqNr + 1, unconfirmed = unconfirmed :+ sent)
+    }
+
+    def confirmed(
+        seqNr: SeqNr,
+        confirmationQualifier: ConfirmationQualifier,
+        timestampMillis: TimestampMillis): State[A] = {
+      val newUnconfirmed = unconfirmed.filterNot { u =>
+        u.confirmationQualifier == confirmationQualifier && u.seqNr <= seqNr
+      }
+      copy(
+        highestConfirmedSeqNr = math.max(highestConfirmedSeqNr, seqNr),
+        confirmedSeqNr = confirmedSeqNr.updated(confirmationQualifier, (seqNr, timestampMillis)),
+        unconfirmed = newUnconfirmed)
+    }
+
+    def cleanup(confirmationQualifiers: Set[String]): State[A] = {
+      copy(confirmedSeqNr = confirmedSeqNr -- confirmationQualifiers)
+    }
+
+    /**
+     * If not all chunked messages were stored before crash those partial chunked messages should not be resent.
+     */
+    def cleanupPartialChunkedMessages(): State[A] = {
+      if (unconfirmed.isEmpty || unconfirmed.forall(u => u.isFirstChunk && u.isLastChunk)) {
+        this
+      } else {
+        var tmp = Vector.empty[MessageSent[A]]
+        var newUnconfirmed = Vector.empty[MessageSent[A]]
+        var newCurrentSeqNr = highestConfirmedSeqNr + 1
+        unconfirmed.foreach { u =>
+          if (u.isFirstChunk && u.isLastChunk) {
+            tmp = Vector.empty
+            newUnconfirmed :+= u
+            newCurrentSeqNr = u.seqNr + 1
+          } else if (u.isFirstChunk && !u.isLastChunk) {
+            tmp = Vector(u)
+          } else if (!u.isLastChunk) {
+            tmp :+= u
+          } else if (u.isLastChunk) {
+            newUnconfirmed ++= tmp
+            newUnconfirmed :+= u
+            newCurrentSeqNr = u.seqNr + 1
+            tmp = Vector.empty
+          }
+        }
+        copy(currentSeqNr = newCurrentSeqNr, unconfirmed = newUnconfirmed)
+      }
+    }
+  }
 
   /**
    * INTERNAL API
@@ -83,7 +136,38 @@ object DurableProducerQueue {
       ack: Boolean,
       confirmationQualifier: ConfirmationQualifier,
       timestampMillis: TimestampMillis)
-      extends Event
+      extends Event {
+
+    /** INTERNAL API */
+    @InternalApi private[akka] def isFirstChunk: Boolean = {
+      message match {
+        case c: ChunkedMessage => c.firstChunk
+        case _                 => true
+      }
+    }
+
+    /** INTERNAL API */
+    @InternalApi private[akka] def isLastChunk: Boolean = {
+      message match {
+        case c: ChunkedMessage => c.lastChunk
+        case _                 => true
+      }
+    }
+  }
+
+  object MessageSent {
+
+    /**
+     * INTERNAL API
+     */
+    @InternalApi private[akka] def fromChunked[A](
+        seqNr: SeqNr,
+        chunkedMessage: ChunkedMessage,
+        ack: Boolean,
+        confirmationQualifier: ConfirmationQualifier,
+        timestampMillis: TimestampMillis) =
+      MessageSent(seqNr, chunkedMessage.asInstanceOf[A], ack, confirmationQualifier, timestampMillis)
+  }
 
   /**
    * INTERNAL API: The fact (event) that a message has been confirmed to be delivered and processed.

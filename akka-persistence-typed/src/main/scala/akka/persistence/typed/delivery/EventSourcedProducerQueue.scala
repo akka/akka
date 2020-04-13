@@ -221,24 +221,28 @@ private class EventSourcedProducerQueue[A](
   import DurableProducerQueue._
 
   private val traceEnabled = context.log.isTraceEnabled
+  // transient
+  private var initialCleanupDone = false
 
   def onCommand(state: State[A], command: Command[A]): Effect[Event, State[A]] = {
     command match {
       case StoreMessageSent(sent, replyTo) =>
-        if (sent.seqNr == state.currentSeqNr) {
+        val currentSeqNr =
+          if (initialCleanupDone) state.currentSeqNr else state.cleanupPartialChunkedMessages().currentSeqNr
+        if (sent.seqNr == currentSeqNr) {
           if (traceEnabled)
             context.log.trace(
               "StoreMessageSent seqNr [{}], confirmationQualifier [{}]",
               sent.seqNr,
               sent.confirmationQualifier)
           Effect.persist(sent).thenReply(replyTo)(_ => StoreMessageSentAck(sent.seqNr))
-        } else if (sent.seqNr == state.currentSeqNr - 1) {
+        } else if (sent.seqNr == currentSeqNr - 1) {
           // already stored, could be a retry after timout
-          context.log.debug("Duplicate seqNr [{}], currentSeqNr [{}]", sent.seqNr, state.currentSeqNr)
+          context.log.debug("Duplicate seqNr [{}], currentSeqNr [{}]", sent.seqNr, currentSeqNr)
           Effect.reply(replyTo)(StoreMessageSentAck(sent.seqNr))
         } else {
           // may happen after failure
-          context.log.debug("Ignoring unexpected seqNr [{}], currentSeqNr [{}]", sent.seqNr, state.currentSeqNr)
+          context.log.debug("Ignoring unexpected seqNr [{}], currentSeqNr [{}]", sent.seqNr, currentSeqNr)
           Effect.unhandled // no reply, request will timeout
         }
 
@@ -258,7 +262,7 @@ private class EventSourcedProducerQueue[A](
           Effect.none // duplicate
 
       case LoadState(replyTo) =>
-        Effect.reply(replyTo)(state)
+        Effect.reply(replyTo)(if (initialCleanupDone) state else state.cleanupPartialChunkedMessages())
 
       case _: CleanupTick[_] =>
         val now = System.currentTimeMillis()
@@ -268,7 +272,9 @@ private class EventSourcedProducerQueue[A](
                 _.confirmationQualifier != confirmationQualifier) =>
             confirmationQualifier
         }.toSet
-        if (old.isEmpty) {
+        val stateWithoutPartialChunkedMessages = state.cleanupPartialChunkedMessages()
+        initialCleanupDone = true
+        if (old.isEmpty && (stateWithoutPartialChunkedMessages eq state)) {
           Effect.none
         } else {
           if (context.log.isDebugEnabled)
@@ -281,17 +287,11 @@ private class EventSourcedProducerQueue[A](
   def onEvent(state: State[A], event: Event): State[A] = {
     event match {
       case sent: MessageSent[A] @unchecked =>
-        state.copy(currentSeqNr = sent.seqNr + 1, unconfirmed = state.unconfirmed :+ sent)
+        state.addMessageSent(sent)
       case Confirmed(seqNr, confirmationQualifier, timestampMillis) =>
-        val newUnconfirmed = state.unconfirmed.filterNot { u =>
-          u.confirmationQualifier == confirmationQualifier && u.seqNr <= seqNr
-        }
-        state.copy(
-          highestConfirmedSeqNr = math.max(state.highestConfirmedSeqNr, seqNr),
-          confirmedSeqNr = state.confirmedSeqNr.updated(confirmationQualifier, (seqNr, timestampMillis)),
-          unconfirmed = newUnconfirmed)
+        state.confirmed(seqNr, confirmationQualifier, timestampMillis)
       case Cleanup(confirmationQualifiers) =>
-        state.copy(confirmedSeqNr = state.confirmedSeqNr -- confirmationQualifiers)
+        state.cleanup(confirmationQualifiers).cleanupPartialChunkedMessages()
     }
   }
 

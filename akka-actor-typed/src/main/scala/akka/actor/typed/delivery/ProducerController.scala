@@ -21,6 +21,7 @@ import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
+import akka.util.Helpers.Requiring
 import akka.util.JavaDurationConverters._
 
 /**
@@ -156,7 +157,9 @@ object ProducerController {
       new Settings(
         durableQueueRequestTimeout = config.getDuration("durable-queue.request-timeout").asScala,
         durableQueueRetryAttempts = config.getInt("durable-queue.retry-attempts"),
-        durableQueueResendFirstInterval = config.getDuration("durable-queue.resend-first-interval").asScala)
+        durableQueueResendFirstInterval = config.getDuration("durable-queue.resend-first-interval").asScala,
+        chunkLargeMessagesBytes =
+          config.getBytes("chunk-large-messages").requiring(_ <= Int.MaxValue, "Too large chunk-large-messages.").toInt)
     }
 
     /**
@@ -177,7 +180,8 @@ object ProducerController {
   final class Settings private (
       val durableQueueRequestTimeout: FiniteDuration,
       val durableQueueRetryAttempts: Int,
-      val durableQueueResendFirstInterval: FiniteDuration) {
+      val durableQueueResendFirstInterval: FiniteDuration,
+      val chunkLargeMessagesBytes: Int) {
 
     def withDurableQueueRetryAttempts(newDurableQueueRetryAttempts: Int): Settings =
       copy(durableQueueRetryAttempts = newDurableQueueRetryAttempts)
@@ -212,17 +216,25 @@ object ProducerController {
     def getDurableQueueRequestTimeout(): JavaDuration =
       durableQueueRequestTimeout.asJava
 
+    def withChunkLargeMessagesBytes(newChunkLargeMessagesBytes: Int): Settings =
+      copy(chunkLargeMessagesBytes = newChunkLargeMessagesBytes)
+
     /**
      * Private copy method for internal use only.
      */
     private def copy(
         durableQueueRequestTimeout: FiniteDuration = durableQueueRequestTimeout,
         durableQueueRetryAttempts: Int = durableQueueRetryAttempts,
-        durableQueueResendFirstInterval: FiniteDuration = durableQueueResendFirstInterval) =
-      new Settings(durableQueueRequestTimeout, durableQueueRetryAttempts, durableQueueResendFirstInterval)
+        durableQueueResendFirstInterval: FiniteDuration = durableQueueResendFirstInterval,
+        chunkLargeMessagesBytes: Int = chunkLargeMessagesBytes) =
+      new Settings(
+        durableQueueRequestTimeout,
+        durableQueueRetryAttempts,
+        durableQueueResendFirstInterval,
+        chunkLargeMessagesBytes)
 
     override def toString: String =
-      s"Settings($durableQueueRequestTimeout, $durableQueueRetryAttempts, $durableQueueResendFirstInterval)"
+      s"Settings($durableQueueRequestTimeout, $durableQueueRetryAttempts, $durableQueueResendFirstInterval, $chunkLargeMessagesBytes)"
   }
 
   def apply[A: ClassTag](

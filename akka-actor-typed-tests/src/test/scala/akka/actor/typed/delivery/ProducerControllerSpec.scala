@@ -6,17 +6,20 @@ package akka.actor.typed.delivery
 
 import scala.concurrent.duration._
 
-import ProducerController.MessageWithConfirmation
+import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.delivery.ProducerController.MessageWithConfirmation
+import akka.actor.typed.delivery.internal.ChunkedMessage
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 
 class ProducerControllerSpec
-    extends ScalaTestWithActorTestKit("""
+    extends ScalaTestWithActorTestKit(
+      ConfigFactory.parseString("""
   akka.reliable-delivery.consumer-controller.flow-control-window = 20
-  """)
+  """).withFallback(TestSerializer.config))
     with AnyWordSpecLike
     with LogCapturing {
   import TestConsumer.sequencedMessage
@@ -243,6 +246,50 @@ class ProducerControllerSpec
 
       producerProbe2.receiveMessage().sendNextTo ! TestConsumer.Job("msg-4")
       consumerControllerProbe.expectMessage(sequencedMessage(producerId, 4, producerController))
+
+      testKit.stop(producerController)
+    }
+
+    "chunk large messages" in {
+      nextId()
+      val consumerControllerProbe = createTestProbe[ConsumerController.Command[TestConsumer.Job]]()
+
+      val producerController =
+        spawn(
+          ProducerController[TestConsumer.Job](
+            producerId,
+            None,
+            ProducerController.Settings(system).withChunkLargeMessagesBytes(1)),
+          s"producerController-${idCount}").unsafeUpcast[ProducerControllerImpl.InternalCommand]
+      val producerProbe = createTestProbe[ProducerController.RequestNext[TestConsumer.Job]]()
+      producerController ! ProducerController.Start(producerProbe.ref)
+
+      producerController ! ProducerController.RegisterConsumer(consumerControllerProbe.ref)
+
+      producerProbe.receiveMessage().sendNextTo ! TestConsumer.Job("abc")
+      val seqMsg1 = consumerControllerProbe.expectMessageType[ConsumerController.SequencedMessage[TestConsumer.Job]]
+      seqMsg1.message.getClass should ===(classOf[ChunkedMessage])
+      seqMsg1.isFirstChunk should ===(true)
+      seqMsg1.isLastChunk should ===(false)
+      seqMsg1.seqNr should ===(1L)
+
+      producerController ! ProducerControllerImpl.Request(0L, 10L, true, false)
+
+      val seqMsg2 = consumerControllerProbe.expectMessageType[ConsumerController.SequencedMessage[TestConsumer.Job]]
+      seqMsg2.isFirstChunk should ===(false)
+      seqMsg2.isLastChunk should ===(false)
+      seqMsg2.seqNr should ===(2L)
+
+      val seqMsg3 = consumerControllerProbe.expectMessageType[ConsumerController.SequencedMessage[TestConsumer.Job]]
+      seqMsg3.isFirstChunk should ===(false)
+      seqMsg3.isLastChunk should ===(true)
+      seqMsg3.seqNr should ===(3L)
+
+      producerProbe.receiveMessage().sendNextTo ! TestConsumer.Job("d")
+      val seqMsg4 = consumerControllerProbe.expectMessageType[ConsumerController.SequencedMessage[TestConsumer.Job]]
+      seqMsg4.isFirstChunk should ===(true)
+      seqMsg4.isLastChunk should ===(true)
+      seqMsg4.seqNr should ===(4L)
 
       testKit.stop(producerController)
     }
