@@ -486,14 +486,15 @@ private class ConsumerControllerImpl[A](
           }
 
         case msg: SequencedMessage[A] =>
-          flightRecorder.consumerReceivedPreviousInProgress(seqMsg.producerId, seqMsg.seqNr, stashBuffer.size + 1)
-          if (msg.seqNr == seqMsg.seqNr && msg.producerController == seqMsg.producerController) {
-            flightRecorder.consumerDuplicate(msg.producerId, seqMsg.seqNr + 1, msg.seqNr)
+          flightRecorder.consumerReceivedPreviousInProgress(msg.producerId, msg.seqNr, stashBuffer.size + 1)
+          val expectedSeqNr = seqMsg.seqNr + stashBuffer.size + 1
+          if (msg.seqNr < expectedSeqNr && msg.producerController == seqMsg.producerController) {
+            flightRecorder.consumerDuplicate(msg.producerId, expectedSeqNr, msg.seqNr)
             context.log.debug("Received duplicate SequencedMessage seqNr [{}].", msg.seqNr)
           } else if (stashBuffer.isFull) {
             // possible that the stash is full if ProducerController resends unconfirmed (duplicates)
             // dropping them since they can be resent
-            flightRecorder.consumerStashFull(seqMsg.producerId, seqMsg.seqNr)
+            flightRecorder.consumerStashFull(msg.producerId, msg.seqNr)
             context.log.debug(
               "Received SequencedMessage seqNr [{}], discarding message because stash is full.",
               msg.seqNr)
