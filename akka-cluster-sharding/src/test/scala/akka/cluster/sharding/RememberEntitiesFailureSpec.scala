@@ -39,6 +39,8 @@ object RememberEntitiesFailureSpec {
       # quick backoffs
       akka.cluster.sharding.entity-restart-backoff = 1s
       akka.cluster.sharding.shard-failure-backoff = 1s
+      akka.cluster.sharding.coordinator-failure-backoff = 1s
+      akka.cluster.sharding.updating-state-timeout = 1s
     """)
 
   class EntityActor extends Actor with ActorLogging {
@@ -65,6 +67,7 @@ object RememberEntitiesFailureSpec {
   sealed trait Fail
   case object NoResponse extends Fail
   case object CrashStore extends Fail
+  case object StopStore extends Fail
 
   // outside store since we need to be able to set them before sharding initializes
   @volatile var failShardGetEntities = Map.empty[ShardId, Fail]
@@ -83,9 +86,8 @@ object RememberEntitiesFailureSpec {
     def props(shardId: ShardId): Props = Props(new FakeShardStoreActor(shardId))
 
     case class FailAddEntity(entityId: EntityId, whichWay: Fail)
-    case class DoNotFailAddEntity(entityId: EntityId)
     case class FailRemoveEntity(entityId: EntityId, whichWay: Fail)
-    case class DoNotFailRemoveEntity(entityId: EntityId)
+    case class ClearFail(entityId: EntityId)
   }
   class FakeShardStoreActor(shardId: ShardId) extends Actor with ActorLogging {
     import FakeShardStoreActor._
@@ -102,52 +104,71 @@ object RememberEntitiesFailureSpec {
           case None             => sender ! RememberEntitiesShardStore.RememberedEntities(Set.empty)
           case Some(NoResponse) => log.debug("Sending no response for GetEntities")
           case Some(CrashStore) => throw TestException("store crash on GetEntities")
+          case Some(StopStore)  => context.stop(self)
         }
       case RememberEntitiesShardStore.AddEntity(entityId) =>
         failAddEntity.get(entityId) match {
           case None             => sender ! RememberEntitiesShardStore.UpdateDone(entityId)
           case Some(NoResponse) => log.debug("Sending no response for AddEntity")
           case Some(CrashStore) => throw TestException("store crash on AddEntity")
+          case Some(StopStore)  => context.stop(self)
         }
       case RememberEntitiesShardStore.RemoveEntity(entityId) =>
         failRemoveEntity.get(entityId) match {
           case None             => sender ! RememberEntitiesShardStore.UpdateDone(entityId)
           case Some(NoResponse) => log.debug("Sending no response for RemoveEntity")
           case Some(CrashStore) => throw TestException("store crash on AddEntity")
+          case Some(StopStore)  => context.stop(self)
         }
       case FailAddEntity(id, whichWay) =>
         failAddEntity = failAddEntity.updated(id, whichWay)
         sender() ! Done
-      case DoNotFailAddEntity(id) =>
-        failAddEntity = failAddEntity - id
-        sender() ! Done
       case FailRemoveEntity(id, whichWay) =>
         failRemoveEntity = failRemoveEntity.updated(id, whichWay)
         sender() ! Done
-      case DoNotFailRemoveEntity(id) =>
+      case ClearFail(id) =>
+        failAddEntity = failAddEntity - id
         failRemoveEntity = failRemoveEntity - id
         sender() ! Done
-
     }
   }
 
   object FakeCoordinatorStoreActor {
     def props(): Props = Props(new FakeCoordinatorStoreActor)
 
+    case class FailAddShard(shardId: ShardId, wayToFail: Fail)
+    case class ClearFailShard(shardId: ShardId)
   }
   class FakeCoordinatorStoreActor extends Actor with ActorLogging {
+    import FakeCoordinatorStoreActor._
 
     context.system.eventStream.publish(CoordinatorStoreCreated(context.self))
+
+    private var failAddShard = Map.empty[ShardId, Fail]
 
     override def receive: Receive = {
       case RememberEntitiesCoordinatorStore.GetShards =>
         failCoordinatorGetShards match {
           case None             => sender() ! RememberEntitiesCoordinatorStore.RememberedShards(Set.empty)
           case Some(NoResponse) =>
-          case Some(CrashStore) =>
-            throw TestException("store crash on load")
+          case Some(CrashStore) => throw TestException("store crash on load")
+          case Some(StopStore)  => context.stop(self)
         }
       case RememberEntitiesCoordinatorStore.AddShard(shardId) =>
+        failAddShard.get(shardId) match {
+          case None             => sender() ! RememberEntitiesCoordinatorStore.UpdateDone(shardId)
+          case Some(NoResponse) =>
+          case Some(CrashStore) => throw TestException("store crash on add")
+          case Some(StopStore)  => context.stop(self)
+        }
+      case FailAddShard(shardId, wayToFail) =>
+        log.debug("Failing store of {} with {}", shardId, wayToFail)
+        failAddShard = failAddShard.updated(shardId, wayToFail)
+        sender() ! Done
+      case ClearFailShard(shardId) =>
+        log.debug("No longer failing store of {}", shardId)
+        failAddShard = failAddShard - shardId
+        sender() ! Done
     }
   }
 
@@ -169,7 +190,7 @@ class RememberEntitiesFailureSpec
 
   "Remember entities handling in sharding" must {
 
-    List(NoResponse, CrashStore).foreach { wayToFail: Fail =>
+    List(NoResponse, CrashStore, StopStore).foreach { wayToFail: Fail =>
       s"recover when initial remember entities load fails $wayToFail" in {
         log.debug("Getting entities for shard 1 will fail")
         failShardGetEntities = Map("1" -> wayToFail)
@@ -228,7 +249,7 @@ class RememberEntitiesFailureSpec
         probe.expectNoMessage()
 
         val stopFailingProbe = TestProbe()
-        shard1Store.tell(FakeShardStoreActor.DoNotFailAddEntity("11"), stopFailingProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.ClearFail("11"), stopFailingProbe.ref)
         stopFailingProbe.expectMsg(Done)
 
         // it takes a while - timeout hits and then backoff
@@ -264,7 +285,7 @@ class RememberEntitiesFailureSpec
         // FIXME restart without passivating is not saved and re-started again without storing the stop so this isn't testing anything
         sharding ! EntityEnvelope(1, "stop")
 
-        shard1Store.tell(FakeShardStoreActor.DoNotFailRemoveEntity("1"), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.ClearFail("1"), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         // it takes a while - timeout hits and then backoff
@@ -301,7 +322,7 @@ class RememberEntitiesFailureSpec
 
         sharding ! EntityEnvelope(1, "graceful-stop")
 
-        shard1Store.tell(FakeShardStoreActor.DoNotFailRemoveEntity("1"), storeProbe.ref)
+        shard1Store.tell(FakeShardStoreActor.ClearFail("1"), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         // it takes a while?
@@ -309,6 +330,41 @@ class RememberEntitiesFailureSpec
           sharding.tell(EntityEnvelope(1, "hello-2"), probe.ref)
           probe.expectMsg("hello-2")
         }, 5.seconds)
+        system.stop(sharding)
+      }
+
+      s"recover when coordinator storing shard start fails $wayToFail" in {
+        val storeProbe = TestProbe()
+        system.eventStream.subscribe(storeProbe.ref, classOf[CoordinatorStoreCreated])
+
+        val sharding = ClusterSharding(system).start(
+          s"storeStopGraceful-$wayToFail",
+          Props[EntityActor],
+          ClusterShardingSettings(system).withRememberEntities(true),
+          extractEntityId,
+          extractShardId,
+          new ShardCoordinator.LeastShardAllocationStrategy(rebalanceThreshold = 1, maxSimultaneousRebalance = 3),
+          "graceful-stop")
+
+        val probe = TestProbe()
+
+        // coordinator store is triggered by coordinator starting up
+        val coordinatorStore = storeProbe.expectMsgType[CoordinatorStoreCreated].store
+        coordinatorStore.tell(FakeCoordinatorStoreActor.FailAddShard("1", wayToFail), probe.ref)
+        probe.expectMsg(Done)
+
+        sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
+        probe.expectNoMessage(1.second) // because shard cannot start while store failing
+
+        // fail it when stopping
+        coordinatorStore.tell(FakeCoordinatorStoreActor.ClearFailShard("1"), storeProbe.ref)
+        storeProbe.expectMsg(Done)
+
+        probe.awaitAssert({
+          sharding.tell(EntityEnvelope(1, "hello-2"), probe.ref)
+          probe.expectMsg("hello-2") // should now work again
+        }, 5.seconds)
+
         system.stop(sharding)
       }
     }
