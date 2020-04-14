@@ -1147,7 +1147,6 @@ class DDataShardCoordinator(
     ({
       case g @ GetSuccess(CoordinatorStateKey, _) =>
         val reg = g.get(CoordinatorStateKey)
-        checkClockSkew(reg, "when get state")
         state = reg.value.withRememberEntities(settings.rememberEntities)
         log.debug("Received initial coordinator state [{}]", state)
         val newRemainingKeys = remainingKeys - CoordinatorStateKey
@@ -1221,14 +1220,10 @@ class DDataShardCoordinator(
   // which was scheduled by previous watchStateActors
   def waitingForStateInitialized: Receive = {
     case StateInitialized =>
-      log.debug("StateInitialized") // FIXME remove
-      update(ShardCoordinatorInitialized) { _ =>
-        log.debug("ShardCoordinatorInitialized completed") // FIXME remove
-        unstashGetShardHomeRequests()
-        unstashAll()
-        stateInitialized()
-        activate()
-      }
+      unstashGetShardHomeRequests()
+      unstashAll()
+      stateInitialized()
+      activate()
 
     case g: GetShardHome =>
       stashGetShardHomeRequest(sender(), g)
@@ -1383,20 +1378,8 @@ class DDataShardCoordinator(
       LWWRegister(selfUniqueAddress, initEmptyState),
       stateWriteConsistency,
       Some(evt)) { reg =>
-      checkClockSkew(reg, "when update state")
       reg.withValueOf(s)
     }
-  }
-
-  private def checkClockSkew(previousReg: LWWRegister[State], additionalMessage: String): Unit = {
-    val now = System.currentTimeMillis()
-    val diff = now - previousReg.timestamp
-    if (diff < 0) {
-      log.warning("Clock skew [{} ms] {}.", diff, additionalMessage) // FIXME better message if we keep this
-    } else {
-      log.debug("Clock diff [{} ms] {}.", diff, additionalMessage) // FIXME remove
-    }
-
   }
 
   def sendAllShardsUpdate(newShard: String) = {

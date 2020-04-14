@@ -24,10 +24,6 @@ object LWWRegister {
   private val _defaultClock: Clock[Any] = new Clock[Any] {
     override def apply(currentTimestamp: Long, value: Any): Long =
       math.max(System.currentTimeMillis(), currentTimestamp + 1)
-    // FIXME remove random
-//      math.max(
-//        System.currentTimeMillis() + java.util.concurrent.ThreadLocalRandom.current().nextInt(2000),
-//        currentTimestamp + 1)
   }
 
   /**

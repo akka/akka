@@ -12,6 +12,7 @@ import akka.serialization.jackson.CborSerializable
 import akka.testkit._
 import akka.util.ccompat._
 
+@ccompatUsedUntil213
 object ClusterShardingLeavingSpec {
   case class Ping(id: String) extends CborSerializable
 
@@ -44,24 +45,18 @@ object ClusterShardingLeavingSpec {
 abstract class ClusterShardingLeavingSpecConfig(mode: String)
     extends MultiNodeClusterShardingConfig(
       mode,
-      loglevel = "DEBUG",
-      additionalConfig =
-        """
+      loglevel = "INFO",
+      additionalConfig = """
         akka.cluster.sharding.rebalance-interval = 120 s
         akka.cluster.sharding.distributed-data.majority-min-cap = 1
         akka.cluster.sharding.coordinator-state.write-majority-plus = 1
         akka.cluster.sharding.coordinator-state.read-majority-plus = 1
-        # FIXME following is just some experiments
-        akka.cluster.sharding.distributed-data.gossip-interval = 120s
-        akka.cluster.sharding.distributed-data.delta-crdt.enabled = off #LWWRegister is not delta, but anyway
       """) {
   val first = role("first")
   val second = role("second")
   val third = role("third")
   val fourth = role("fourth")
   val fifth = role("fifth")
-  val sixth = role("sixth")
-  val seventh = role("seventh")
 
 }
 
@@ -79,16 +74,12 @@ class PersistentClusterShardingLeavingMultiJvmNode2 extends PersistentClusterSha
 class PersistentClusterShardingLeavingMultiJvmNode3 extends PersistentClusterShardingLeavingSpec
 class PersistentClusterShardingLeavingMultiJvmNode4 extends PersistentClusterShardingLeavingSpec
 class PersistentClusterShardingLeavingMultiJvmNode5 extends PersistentClusterShardingLeavingSpec
-class PersistentClusterShardingLeavingMultiJvmNode6 extends PersistentClusterShardingLeavingSpec
-class PersistentClusterShardingLeavingMultiJvmNode7 extends PersistentClusterShardingLeavingSpec
 
 class DDataClusterShardingLeavingMultiJvmNode1 extends DDataClusterShardingLeavingSpec
 class DDataClusterShardingLeavingMultiJvmNode2 extends DDataClusterShardingLeavingSpec
 class DDataClusterShardingLeavingMultiJvmNode3 extends DDataClusterShardingLeavingSpec
 class DDataClusterShardingLeavingMultiJvmNode4 extends DDataClusterShardingLeavingSpec
 class DDataClusterShardingLeavingMultiJvmNode5 extends DDataClusterShardingLeavingSpec
-class DDataClusterShardingLeavingMultiJvmNode6 extends DDataClusterShardingLeavingSpec
-class DDataClusterShardingLeavingMultiJvmNode7 extends DDataClusterShardingLeavingSpec
 
 abstract class ClusterShardingLeavingSpec(multiNodeConfig: ClusterShardingLeavingSpecConfig)
     extends MultiNodeClusterShardingSpec(multiNodeConfig)
@@ -117,8 +108,6 @@ abstract class ClusterShardingLeavingSpec(multiNodeConfig: ClusterShardingLeavin
       join(third, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
       join(fourth, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
       join(fifth, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
-      join(sixth, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
-      join(seventh, first, onJoinedRunOnFrom = startSharding(), assertNodeUp = false)
 
       // all Up, everywhere before continuing
       awaitAssert {
@@ -147,7 +136,7 @@ abstract class ClusterShardingLeavingSpec(multiNodeConfig: ClusterShardingLeavin
       system.actorSelection(node(first) / "user" / "shardLocations") ! GetLocations
       val Locations(originalLocations) = expectMsgType[Locations]
 
-      val numberOfNodesLeaving = 3
+      val numberOfNodesLeaving = 2
       val leavingRoles = roles.take(numberOfNodesLeaving)
       val leavingNodes = leavingRoles.map(address)
       val remainingRoles = roles.drop(numberOfNodesLeaving)
@@ -162,8 +151,7 @@ abstract class ClusterShardingLeavingSpec(multiNodeConfig: ClusterShardingLeavin
         watch(region)
         expectTerminated(region, 15.seconds)
       }
-      // FIXME more stress by not having the barrier here
-      // enterBarrier("stopped")
+      // more stress by not having the barrier here
 
       runOn(remainingRoles: _*) {
         within(15.seconds) {
