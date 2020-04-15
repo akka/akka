@@ -222,12 +222,12 @@ class RememberEntitiesFailureSpec
         }
       }
 
-      s"recover when storing a start event fails $wayToFail" in {
+      s"recover when shard storing a start event fails $wayToFail" in {
         val storeProbe = TestProbe()
         system.eventStream.subscribe(storeProbe.ref, classOf[ShardStoreCreated])
 
         val sharding = ClusterSharding(system).start(
-          s"storeStart-$wayToFail",
+          s"shardStoreStart-$wayToFail",
           Props[EntityActor],
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
@@ -236,20 +236,24 @@ class RememberEntitiesFailureSpec
         // trigger shard start and store creation
         val probe = TestProbe()
         sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
-        val shard1Store = storeProbe.expectMsgType[ShardStoreCreated].store
+        var shardStore = storeProbe.expectMsgType[ShardStoreCreated].store
         probe.expectMsg("hello-1")
 
         // hit shard with other entity that will fail
-        shard1Store.tell(FakeShardStoreActor.FailAddEntity("11", wayToFail), storeProbe.ref)
+        shardStore.tell(FakeShardStoreActor.FailAddEntity("11", wayToFail), storeProbe.ref)
         storeProbe.expectMsg(Done)
 
         sharding.tell(EntityEnvelope(11, "hello-11"), probe.ref)
 
         // do we get an answer here? shard crashes
         probe.expectNoMessage()
+        if (wayToFail == StopStore || wayToFail == CrashStore) {
+          // a new store should be started
+          shardStore = storeProbe.expectMsgType[ShardStoreCreated].store
+        }
 
         val stopFailingProbe = TestProbe()
-        shard1Store.tell(FakeShardStoreActor.ClearFail("11"), stopFailingProbe.ref)
+        shardStore.tell(FakeShardStoreActor.ClearFail("11"), stopFailingProbe.ref)
         stopFailingProbe.expectMsg(Done)
 
         // it takes a while - timeout hits and then backoff
@@ -265,7 +269,7 @@ class RememberEntitiesFailureSpec
         system.eventStream.subscribe(storeProbe.ref, classOf[ShardStoreCreated])
 
         val sharding = ClusterSharding(system).start(
-          s"storeStopAbrupt-$wayToFail",
+          s"shardStoreStopAbrupt-$wayToFail",
           Props[EntityActor],
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
@@ -301,7 +305,7 @@ class RememberEntitiesFailureSpec
         system.eventStream.subscribe(storeProbe.ref, classOf[ShardStoreCreated])
 
         val sharding = ClusterSharding(system).start(
-          s"storeStopGraceful-$wayToFail",
+          s"shardStoreStopGraceful-$wayToFail",
           Props[EntityActor],
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
@@ -338,7 +342,7 @@ class RememberEntitiesFailureSpec
         system.eventStream.subscribe(storeProbe.ref, classOf[CoordinatorStoreCreated])
 
         val sharding = ClusterSharding(system).start(
-          s"storeStopGraceful-$wayToFail",
+          s"coordinatorStoreStopGraceful-$wayToFail",
           Props[EntityActor],
           ClusterShardingSettings(system).withRememberEntities(true),
           extractEntityId,
@@ -349,12 +353,17 @@ class RememberEntitiesFailureSpec
         val probe = TestProbe()
 
         // coordinator store is triggered by coordinator starting up
-        val coordinatorStore = storeProbe.expectMsgType[CoordinatorStoreCreated].store
+        var coordinatorStore = storeProbe.expectMsgType[CoordinatorStoreCreated].store
         coordinatorStore.tell(FakeCoordinatorStoreActor.FailAddShard("1", wayToFail), probe.ref)
         probe.expectMsg(Done)
 
         sharding.tell(EntityEnvelope(1, "hello-1"), probe.ref)
         probe.expectNoMessage(1.second) // because shard cannot start while store failing
+
+        if (wayToFail == StopStore || wayToFail == CrashStore) {
+          // a new store should be started
+          coordinatorStore = storeProbe.expectMsgType[CoordinatorStoreCreated].store
+        }
 
         // fail it when stopping
         coordinatorStore.tell(FakeCoordinatorStoreActor.ClearFailShard("1"), storeProbe.ref)

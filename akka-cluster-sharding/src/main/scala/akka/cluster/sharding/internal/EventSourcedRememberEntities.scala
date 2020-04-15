@@ -30,11 +30,13 @@ import akka.persistence.SnapshotSelectionCriteria
 private[akka] final class EventSourcedRememberEntitiesProvider(typeName: String, settings: ClusterShardingSettings)
     extends RememberEntitiesProvider {
 
+  // this is backed by an actor using the same events as for state-store-mode=persistence
   override def shardStoreProps(shardId: ShardId): Props =
     EventSourcedRememberEntitiesStore.props(typeName, shardId, settings)
 
   // FIXME persistent state store deprecated but we are adding a remember entities store that is not deprecated
   // We need a new impl for this to allow ddata + persistent remember entities
+  // For now it is anyways not possible to configure state store and remember entities store separately so this is never used
   override def coordinatorStoreProps(): Props = ???
 }
 

@@ -752,10 +752,10 @@ private[akka] class ClusterShardingGuardian extends Actor {
         import settings.tuningParameters.coordinatorFailureBackoff
 
         val rep = replicator(settings)
-        // FIXME separate setting for which
         val rememberEntitiesStoreProvider: Option[RememberEntitiesProvider] =
           if (!settings.rememberEntities) None
           else
+            // FIXME separate setting for state and remember entities store
             Some(settings.stateStoreMode match {
               case ClusterShardingSettings.StateStoreModeDData =>
                 new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, rep)

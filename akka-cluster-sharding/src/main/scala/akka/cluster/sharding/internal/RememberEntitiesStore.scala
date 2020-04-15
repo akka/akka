@@ -69,8 +69,13 @@ private[akka] object RememberEntitiesCoordinatorStore {
   // SPI protocol for a remember entities coordinator store
   sealed trait Command
 
+  /**
+   * Sent once for every started shard, should result in a response of either
+   * UpdateDone or UpdateFailed
+   */
   final case class AddShard(entityId: ShardId) extends Command
   final case class UpdateDone(entityId: ShardId)
+  final case class UpdateFailed(entityId: ShardId)
 
   case object GetShards extends Command
   final case class RememberedShards(entities: Set[ShardId])

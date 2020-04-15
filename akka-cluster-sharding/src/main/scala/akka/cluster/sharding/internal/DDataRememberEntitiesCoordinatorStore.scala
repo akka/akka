@@ -88,14 +88,11 @@ private[akka] class DDataRememberEntitiesCoordinatorStore(
   }
 
   def addShard(newShard: ShardId, replyTo: ActorRef): Unit = {
-    val update = { () =>
-      replicator ! Replicator.Update(AllShardsKey, GSet.empty[String], writeMajority, Some(newShard))(_ + newShard)
-    }
-    update()
-    waitingForWrite(replyTo, retry = update)
+    replicator ! Replicator.Update(AllShardsKey, GSet.empty[String], writeMajority, Some(newShard))(_ + newShard)
+    context.become(waitingForWrite(replyTo))
   }
 
-  def waitingForWrite(replyTo: ActorRef, retry: () => Unit): Receive = {
+  def waitingForWrite(replyTo: ActorRef): Receive = {
     case Replicator.UpdateSuccess(AllShardsKey, Some(newShard: String)) =>
       log.debug("The coordinator shards state was successfully updated with {}", newShard)
       replyTo ! RememberEntitiesCoordinatorStore.UpdateDone(newShard)
@@ -106,8 +103,8 @@ private[akka] class DDataRememberEntitiesCoordinatorStore(
         "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis (retrying), adding shard={}",
         writeMajority.timeout.toMillis,
         newShard)
-      // repeat until UpdateSuccess
-      retry()
+      replyTo ! RememberEntitiesCoordinatorStore.UpdateFailed(newShard)
+      context.become(idle())
 
     case Replicator.ModifyFailure(key, error, cause, Some(newShard: String)) =>
       log.error(
@@ -116,6 +113,7 @@ private[akka] class DDataRememberEntitiesCoordinatorStore(
         newShard,
         key,
         error)
-      context.stop(self)
+      replyTo ! RememberEntitiesCoordinatorStore.UpdateFailed(newShard)
+      context.become(idle())
   }
 }
