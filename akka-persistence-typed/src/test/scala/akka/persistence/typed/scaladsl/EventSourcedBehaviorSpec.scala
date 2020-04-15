@@ -29,6 +29,7 @@ import akka.actor.typed.SupervisorStrategy
 import akka.actor.typed.Terminated
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
+import akka.persistence.Recovery
 import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
 import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.persistence.SelectedSnapshot
@@ -343,6 +344,32 @@ class EventSourcedBehaviorSpec
         c ! GetValue(probe.ref)
         probe.expectMessage(State(101, Vector(0, 1)))
       }
+    }
+
+    "accept custom Recovery strategy" in {
+      val pid = nextPid()
+      val probe = TestProbe[State]
+
+      def counterWithRecovery(recovery: Recovery) = Behaviors.setup[Command](counter(_, pid).withRecovery(recovery))
+
+      val counterSetup = spawn(counterWithRecovery(Recovery()))
+      counterSetup ! Increment
+      counterSetup ! Increment
+      counterSetup ! Increment
+      counterSetup ! GetValue(probe.ref)
+      probe.expectMessage(State(3, Vector(0, 1, 2)))
+
+      val counterDefault = spawn(counterWithRecovery(Recovery()))
+      counterDefault ! GetValue(probe.ref)
+      probe.expectMessage(State(3, Vector(0, 1, 2)))
+
+      val counterToSequenceNr = spawn(counterWithRecovery(Recovery().copy(toSequenceNr = 1L)))
+      counterToSequenceNr ! GetValue(probe.ref)
+      probe.expectMessage(State(1, Vector(0)))
+
+      val counterReplayMax = spawn(counterWithRecovery(Recovery().copy(replayMax = 2L)))
+      counterReplayMax ! GetValue(probe.ref)
+      probe.expectMessage(State(2, Vector(0, 1)))
     }
 
     /**

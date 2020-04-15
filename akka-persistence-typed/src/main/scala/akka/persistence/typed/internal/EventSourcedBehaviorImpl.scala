@@ -220,6 +220,8 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State] =
     copy(supervisionStrategy = backoffStrategy)
 
+  override def withRecovery(recovery: Recovery) : EventSourcedBehavior[Command, Event, State] =
+    copy(recovery = recovery)
 }
 
 /** Protocol used internally by the eventsourced behaviors. */

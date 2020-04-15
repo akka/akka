@@ -14,6 +14,7 @@ import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
+import akka.persistence.Recovery
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
@@ -46,9 +47,9 @@ object EventSourcedBehavior {
    * Create a `Behavior` for a persistent actor.
    *
    * @param persistenceId stable unique identifier for the event sourced behavior
-   * @param emtpyState the intial state for the entity before any events have been processed
+   * @param emptyState the intial state for the entity before any events have been processed
    * @param commandHandler map commands to effects e.g. persisting events, replying to commands
-   * @param evnetHandler compute the new state given the current state when an event has been persisted
+   * @param eventHandler compute the new state given the current state when an event has been persisted
    */
   def apply[Command, Event, State](
       persistenceId: PersistenceId,
@@ -208,4 +209,9 @@ object EventSourcedBehavior {
    * If not specified the actor will be stopped on failure.
    */
   def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Change the recovery strategy
+   */
+  def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
 }
