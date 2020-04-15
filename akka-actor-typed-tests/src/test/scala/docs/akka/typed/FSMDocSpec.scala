@@ -43,7 +43,7 @@ object FSMDocSpec {
     // initial state
     def apply(): Behavior[Event] = idle(Uninitialized)
 
-    private def idle(data: Data): Behavior[Event] = Behaviors.receiveMessage[Event] { message: Event =>
+    private def idle(data: Data): Behavior[Event] = Behaviors.receiveMessage[Event] { message =>
       (message, data) match {
         case (SetTarget(ref), Uninitialized) =>
           idle(Todo(ref, Vector.empty))

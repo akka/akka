@@ -411,7 +411,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                     "Teammates left: " + team.size + " stopLatch: " + stopLatch.getCount + " inhab:" + dispatcher.inhabitants)
 
                   import akka.util.ccompat.JavaConverters._
-                  team.asScala.toList.sortBy(_.self.path).foreach { cell: ActorCell =>
+                  team.asScala.toList.sortBy(_.self.path).foreach { (cell: ActorCell) =>
                     System.err.println(
                       " - " + cell.self.path + " " + cell.isTerminated + " " + cell.mailbox.currentStatus + " "
                       + cell.mailbox.numberOfMessages + " " + cell.mailbox.systemDrain(SystemMessageList.LNil).size)
