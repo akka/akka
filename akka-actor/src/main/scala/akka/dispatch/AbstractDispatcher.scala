@@ -75,7 +75,7 @@ private[akka] object MessageDispatcher {
     if (debug) {
       for {
         d <- actors.keys
-        a <- { println(d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
+        a <- { println("" + d + " inhabitants: " + d.inhabitants); actors.valueIterator(d) }
       } {
         val status = if (a.isTerminated) " (terminated)" else " (alive)"
         val messages = a match {
