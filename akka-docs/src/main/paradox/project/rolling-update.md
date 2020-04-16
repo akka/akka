@@ -82,7 +82,7 @@ In preparation of switching away from class based manifests to more efficient le
 has been prepared to accept those shorter forms but still emits the old long manifests.
 
 * 2.6.2 - shorter manifests accepted
-* 2.6.3 - shorter manifests emitted (not released yet)
+* 2.6.5 - shorter manifests emitted
 
-This means that a rolling upgrade will have to go through 2.6.2 and 2.6.3 when upgrading to 2.6.3 or higher or else
-cluster nodes will not be able to communicate during the rolling upgrade.
+This means that a rolling update will have to go through at least one of 2.6.2, 2.6.3 or 2.6.4 when upgrading to
+2.6.5 or higher or else cluster nodes will not be able to communicate during the rolling update.
