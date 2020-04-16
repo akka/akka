@@ -170,18 +170,6 @@ object ActorSystem {
 
   val Version: String = akka.Version.current // generated file
 
-  val EnvHome: Option[String] = System.getenv("AKKA_HOME") match {
-    case null | "" | "." => None
-    case value           => Some(value)
-  }
-
-  val SystemHome: Option[String] = System.getProperty("akka.home") match {
-    case null | "" => None
-    case value     => Some(value)
-  }
-
-  val GlobalHome: Option[String] = SystemHome.orElse(EnvHome)
-
   /**
    * Creates a new ActorSystem with the name "default",
    * obtains the current ClassLoader by first inspecting the current threads' getContextClassLoader,
