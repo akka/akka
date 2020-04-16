@@ -87,13 +87,18 @@ be able to replay events that were persisted using the old serialization scheme.
 an event-log from one serialization format to another one, however it may be a more involved process if you need
 to perform this on a live system.
 
-Binary serialization formats that we have seen work well for long-lived applications include the very flexible IDL based:
-[Google Protobuf](https://developers.google.com/protocol-buffers), [Apache Thrift](https://thrift.apache.org/) or [Apache Avro](https://avro.apache.org). Avro schema evolution is more "entire schema" based, instead of
-single fields focused like in protobuf or thrift, and usually requires using some kind of schema registry.
+@ref:[Serialization with Jackson](serialization-jackson.md) is a good choice in many cases and our
+recommendation if you don't have other preference. It also has support for
+@ref:[Schema Evolution](serialization-jackson.md#schema-evolution).
 
-Users who want their data to be human-readable directly in the write-side
-datastore may opt to use plain-old [JSON](https://json.org) as the storage format, though that comes at a cost of lacking support for schema
-evolution and relatively large marshalling latency.
+[Google Protocol Buffers](https://developers.google.com/protocol-buffers/) is good if you want
+more control over the schema evolution of your messages, but it requires more work to develop and
+maintain the mapping between serialized representation and domain representation.
+
+Binary serialization formats that we have seen work well for long-lived applications include the very flexible IDL based:
+[Google Protocol Buffers](https://developers.google.com/protocol-buffers), [Apache Thrift](https://thrift.apache.org/)
+or [Apache Avro](https://avro.apache.org). Avro schema evolution is more "entire schema" based, instead of
+single fields focused like in protobuf or thrift, and usually requires using some kind of schema registry.
 
 There are plenty excellent blog posts explaining the various trade-offs between popular serialization formats,
 one post we would like to highlight is the very well illustrated [Schema evolution in Avro, Protocol Buffers and Thrift](https://martin.kleppmann.com/2012/12/05/schema-evolution-in-avro-protocol-buffers-thrift.html)
@@ -143,9 +148,9 @@ However, once you move to production you should really *pick a different seriali
 
 @@@ warning
 
-Do not rely on Java serialization (which will be picked by Akka by default if you don't specify any serializers)
-for *serious* application development! It does not lean itself well to evolving schemas over long periods of time,
-and its performance is also not very high (it never was designed for high-throughput scenarios).
+Do not rely on Java serialization for *serious* application development! It does not lean itself well to evolving
+schemas over long periods of time, and its performance is also not very high (it never was designed for high-throughput
+scenarios).
 
 @@@
 
@@ -157,8 +162,7 @@ it to work with your event classes.
 
 @@@ note
 
-Read the @ref:[Akka Serialization](serialization.md) docs to learn more about defining custom serializers,
-to improve performance and maintainability of your system. Do not depend on Java serialization for production deployments.
+Read the @ref:[Akka Serialization](serialization.md) docs to learn more about defining custom serializers.
 
 @@@
 
@@ -199,6 +203,14 @@ some of the various options one might go about handling the described situation.
 a complete guide, so feel free to adapt these techniques depending on your serializer's capabilities
 and/or other domain specific limitations.
 
+@@@ note
+
+@ref:[Serialization with Jackson](serialization-jackson.md) has good support for
+@ref:[Schema Evolution](serialization-jackson.md#schema-evolution) and many of the scenarios described here
+can be solved with that Jackson transformation technique instead.
+
+@@@
+
 <a id="add-field"></a>
 ### Add fields
 
@@ -209,10 +221,8 @@ needs to have an associated code which indicates if it is a window or aisle seat
 **Solution:**
 Adding fields is the most common change you'll need to apply to your messages so make sure the serialization format
 you picked for your payloads can handle it apropriately, i.e. such changes should be *binary compatible*.
-This is achieved using the right serializer toolkit – we recommend something like [Google Protocol Buffers](https://developers.google.com/protocol-buffers/) or
-[Apache Thrift](https://thrift.apache.org/) however other tools may fit your needs just as well – picking a serializer backend is something
-you should research before picking one to run with. In the following examples we will be using protobuf, mostly because
-we are familiar with it, it does its job well and Akka is using it internally as well.
+This is achieved using the right serializer toolkit. In the following examples we will be using protobuf.
+See also @ref:[how to add fields with Jackson](serialization-jackson.md#add-field).
 
 While being able to read messages with missing fields is half of the solution, you also need to deal with the missing
 values somehow. This is usually modeled as some kind of default value, or by representing the field as an @scala[`Option[T]`]@java[`Optional<T>`]
@@ -286,8 +296,8 @@ which was set to `1` (because it was the initial schema), and once you change th
 and write an adapter which can perform the rename.
 
 This approach is popular when your serialization format is something like JSON, where renames can not be performed
-automatically by the serializer. You can do these kinds of "promotions" either manually (as shown in the example below)
-or using a library like @scala[[Stamina](https://github.com/scalapenos/stamina)]@java[[Stamina](https://github.com/javapenos/stamina)] which helps to create those `V1->V2->V3->...->Vn` promotion chains without much boilerplate.
+automatically by the serializer. See also @ref:[how to rename fields with Jackson](serialization-jackson.md#rename-field),
+which is using this kind of versioning approach.
 
 ![persistence-manual-rename.png](./images/persistence-manual-rename.png)
  
