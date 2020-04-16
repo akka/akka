@@ -7,8 +7,8 @@ package akka.persistence.query
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
-import akka.persistence.journal.{EventSeq, ReadEventAdapter}
-import com.typesafe.config.{Config, ConfigException, ConfigFactory}
+import akka.persistence.journal.{ EventSeq, ReadEventAdapter }
+import com.typesafe.config.{ Config, ConfigException, ConfigFactory }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -88,7 +88,7 @@ class PersistenceQuerySpec extends AnyWordSpecLike with Matchers with BeforeAndA
           PersistenceQuery
             .get(system)
             .readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "7", readJournalPluginConfig)
-        }.getCause shouldBe a [ConfigException.Missing]
+        }.getCause shouldBe a[ConfigException.Missing]
       }
     }
 

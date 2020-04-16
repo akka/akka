@@ -74,15 +74,19 @@ class DummyReadJournalProvider5(@unused sys: ExtendedActorSystem) extends DummyR
 class CustomDummyReadJournalProvider5(@unused sys: ExtendedActorSystem) extends DummyReadJournalProvider("custom")
 
 class DummyReadJournalProvider7(@unused sys: ExtendedActorSystem, conf: Config, @unused confPath: String)
-  extends DummyReadJournalProvider {
+    extends DummyReadJournalProvider {
 
   // This key is can't be found in the conf, and is required by our plugin
   val customValue: String = conf.getString("custom-key")
 
 }
 
-class DummyReadJournalProvider8(@unused sys: ExtendedActorSystem, @unused conf: Config, @unused confPath: String, mergedConf: Config)
-  extends DummyReadJournalProvider {
+class DummyReadJournalProvider8(
+    @unused sys: ExtendedActorSystem,
+    @unused conf: Config,
+    @unused confPath: String,
+    mergedConf: Config)
+    extends DummyReadJournalProvider {
 
   // This key is only found in the mergedConf, and is required by our plugin
   val customValue: String = mergedConf.getString("custom-key")
