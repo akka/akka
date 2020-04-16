@@ -7,8 +7,8 @@ package akka.persistence.query
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.ActorSystem
-import akka.persistence.journal.{ EventSeq, ReadEventAdapter }
-import com.typesafe.config.{ Config, ConfigFactory }
+import akka.persistence.journal.{EventSeq, ReadEventAdapter}
+import com.typesafe.config.{Config, ConfigException, ConfigFactory}
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
@@ -35,6 +35,13 @@ class PersistenceQuerySpec extends AnyWordSpecLike with Matchers with BeforeAndA
        |${DummyReadJournal.Identifier}6 {
        |  class = "${classOf[DummyReadJournalProvider].getCanonicalName}"
        |}
+       |${DummyReadJournal.Identifier}7 {
+       |  class = "${classOf[DummyReadJournalProvider7].getCanonicalName}"
+       |}
+       |${DummyReadJournal.Identifier}8 {
+       |  class = "${classOf[DummyReadJournalProvider8].getCanonicalName}"
+       |}
+       |custom-key = "custom-value"
      """.stripMargin
 
   "ReadJournal" must {
@@ -65,14 +72,23 @@ class PersistenceQuerySpec extends AnyWordSpecLike with Matchers with BeforeAndA
         PersistenceQuery
           .get(system)
           .readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "6", readJournalPluginConfig)
+        PersistenceQuery
+          .get(system)
+          .readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "8", readJournalPluginConfig)
       }
     }
 
     "throw if unable to find query journal by config key" in {
       withActorSystem() { system =>
+        val readJournalPluginConfig: Config = ConfigFactory.parseString(customReadJournalPluginConfig)
         intercept[IllegalArgumentException] {
           PersistenceQuery.get(system).readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "-unknown")
         }.getMessage should include("missing persistence plugin")
+        intercept[IllegalArgumentException] {
+          PersistenceQuery
+            .get(system)
+            .readJournalFor[DummyReadJournal](DummyReadJournal.Identifier + "7", readJournalPluginConfig)
+        }.getCause shouldBe a [ConfigException.Missing]
       }
     }
 
