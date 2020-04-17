@@ -14,7 +14,7 @@ import akka.cluster.sharding.ShardRegion.ShardId
  * INTERNAL API
  */
 @InternalApi
-private[akka] class DDataRememberEntitiesProvider(
+private[akka] final class DDataRememberEntitiesProvider(
     typeName: String,
     settings: ClusterShardingSettings,
     majorityMinCap: Int,
