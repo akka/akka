@@ -7,7 +7,6 @@ import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.Props
-import akka.actor.Stash
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ddata.GSet
@@ -34,7 +33,6 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
     replicator: ActorRef,
     majorityMinCap: Int)
     extends Actor
-    with Stash
     with ActorLogging {
 
   implicit val node: Cluster = Cluster(context.system)
@@ -103,11 +101,9 @@ private[akka] final class DDataRememberEntitiesCoordinatorStore(
 
   def onGotAllShards(shardIds: Set[ShardId]): Unit = {
     allShards = Some(shardIds)
-    coordinatorWaitingForShards match {
-      case Some(coordinator) =>
-        coordinator ! RememberEntitiesCoordinatorStore.RememberedShards(shardIds)
-        coordinatorWaitingForShards = None
-      case None =>
+    coordinatorWaitingForShards.foreach { coordinator =>
+      coordinator ! RememberEntitiesCoordinatorStore.RememberedShards(shardIds)
+      coordinatorWaitingForShards = None
     }
   }
 
