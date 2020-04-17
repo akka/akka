@@ -76,7 +76,9 @@ class CustomDummyReadJournalProvider5(@unused sys: ExtendedActorSystem) extends 
 class DummyReadJournalProvider7(@unused sys: ExtendedActorSystem, conf: Config, @unused confPath: String)
     extends DummyReadJournalProvider {
 
-  // This key is can't be found in the conf, and is required by our plugin
+  // The `conf` argument corresponds to the plugin configuration and consequently can't access to root configuration
+  // keys. The `custom-key` is a root configuration key and then the following statement will then fail and
+  // throw a `ConfigException.Missing`.
   val customValue: String = conf.getString("custom-key")
 
 }
@@ -88,7 +90,12 @@ class DummyReadJournalProvider8(
     mergedConf: Config)
     extends DummyReadJournalProvider {
 
-  // This key is only found in the mergedConf, and is required by our plugin
+  // In this provider, a `mergedConf` configuration is provided. It corresponds to the root custom configuration and
+  // allow extensions to potentially access to these custom configuration keys.
+  // A real use case would be something like:
+  // - the plugin `conf` has a key which references another configuration key
+  // - this referenced key is not part of the plugin configuration, nor to the actor system configuration, but can only
+  //   be found in this custom provided configuration.
   val customValue: String = mergedConf.getString("custom-key")
 
 }
