@@ -27,6 +27,8 @@ import scala.util.control.NonFatal
   override def initialAttributes: Attributes = DefaultAttributes.flatMapPrefix
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
+    val Attributes.NestedMaterializationCancellationPolicy(delayDownstreamCancellation) =
+      inheritedAttributes.mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
     val matPromise = Promise[M]
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
       val accumulated = collection.mutable.Buffer.empty[In]
@@ -90,7 +92,10 @@ import scala.util.control.NonFatal
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         subSink match {
-          case OptionVal.None    => downstreamCause = OptionVal.Some(cause)
+          case OptionVal.None if delayDownstreamCancellation => downstreamCause = OptionVal.Some(cause)
+          case OptionVal.None =>
+            matPromise.failure(new NeverMaterializedException(cause))
+            super.onDownstreamFinish(cause)
           case OptionVal.Some(s) => s.cancel(cause)
         }
       }
