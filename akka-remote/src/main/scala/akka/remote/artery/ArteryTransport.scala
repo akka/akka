@@ -16,15 +16,12 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Try
 import scala.util.control.NoStackTrace
-import scala.util.control.NonFatal
 
 import com.github.ghik.silencer.silent
 
 import akka.Done
 import akka.NotUsed
 import akka.actor._
-import akka.actor.Actor
-import akka.actor.Props
 import akka.annotation.InternalStableApi
 import akka.dispatch.Dispatchers
 import akka.event.Logging
@@ -50,7 +47,6 @@ import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.util.OptionVal
 import akka.util.WildcardIndex
-import akka.util.unused
 
 /**
  * INTERNAL API
@@ -247,79 +243,6 @@ private[remote] trait OutboundContext {
 
   def settings: ArterySettings
 
-}
-
-/**
- * INTERNAL API
- */
-private[remote] object FlushOnShutdown {
-  def props(
-      done: Promise[Done],
-      timeout: FiniteDuration,
-      inboundContext: InboundContext,
-      associations: Set[Association]): Props = {
-    require(associations.nonEmpty)
-    Props(new FlushOnShutdown(done, timeout, inboundContext, associations))
-  }
-
-  case object Timeout
-}
-
-/**
- * INTERNAL API
- */
-private[remote] class FlushOnShutdown(
-    done: Promise[Done],
-    timeout: FiniteDuration,
-    @unused inboundContext: InboundContext,
-    associations: Set[Association])
-    extends Actor {
-
-  var remaining = Map.empty[UniqueAddress, Int]
-
-  val timeoutTask = context.system.scheduler.scheduleOnce(timeout, self, FlushOnShutdown.Timeout)(context.dispatcher)
-
-  override def preStart(): Unit = {
-    try {
-      associations.foreach { a =>
-        val acksExpected = a.sendTerminationHint(self)
-        a.associationState.uniqueRemoteAddress() match {
-          case Some(address) => remaining += address -> acksExpected
-          case None          => // Ignore, handshake was not completed on this association
-        }
-      }
-      if (remaining.valuesIterator.sum == 0) {
-        done.trySuccess(Done)
-        context.stop(self)
-      }
-    } catch {
-      case NonFatal(e) =>
-        // sendTerminationHint may throw
-        done.tryFailure(e)
-        throw e
-    }
-  }
-
-  override def postStop(): Unit = {
-    timeoutTask.cancel()
-    done.trySuccess(Done)
-  }
-
-  def receive = {
-    case ActorSystemTerminatingAck(from) =>
-      // Just treat unexpected acks as systems from which zero acks are expected
-      val acksRemaining = remaining.getOrElse(from, 0)
-      if (acksRemaining <= 1) {
-        remaining -= from
-      } else {
-        remaining = remaining.updated(from, acksRemaining - 1)
-      }
-
-      if (remaining.isEmpty)
-        context.stop(self)
-    case FlushOnShutdown.Timeout =>
-      context.stop(self)
-  }
 }
 
 /**
@@ -679,7 +602,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
           val flushingPromise = Promise[Done]()
           system.systemActorOf(
             FlushOnShutdown
-              .props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, this, allAssociations)
+              .props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, allAssociations)
               .withDispatcher(Dispatchers.InternalDispatcherId),
             "remoteFlushOnShutdown")
           flushingPromise.future
@@ -925,10 +848,30 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     }
   }
 
+  // Checks for termination hint messages and sends an ACK for those (not processing them further)
+  // Purpose of this stage is flushing, the sender can wait for the ACKs up to try flushing
+  // pending messages.
+  val flushReplier: Flow[InboundEnvelope, InboundEnvelope, NotUsed] = {
+    Flow[InboundEnvelope].filter { envelope =>
+      envelope.message match {
+        case Flush =>
+          envelope.sender match {
+            case OptionVal.Some(snd) =>
+              snd.tell(FlushAck, ActorRef.noSender)
+            case OptionVal.None =>
+              log.error("Expected sender for Flush message")
+          }
+          false
+        case _ => true
+      }
+    }
+  }
+
   def inboundSink(bufferPool: EnvelopeBufferPool): Sink[InboundEnvelope, Future[Done]] =
     Flow[InboundEnvelope]
       .via(createDeserializer(bufferPool))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
+      .via(flushReplier)
       .via(terminationHintReplier(inControlStream = false))
       .via(new InboundHandshake(this, inControlStream = false))
       .via(new InboundQuarantineCheck(this))
@@ -948,6 +891,7 @@ private[remote] abstract class ArteryTransport(_system: ExtendedActorSystem, _pr
     Flow[InboundEnvelope]
       .via(createDeserializer(envelopeBufferPool))
       .via(if (settings.Advanced.TestMode) new InboundTestStage(this, testState) else Flow[InboundEnvelope])
+      .via(flushReplier)
       .via(terminationHintReplier(inControlStream = true))
       .via(new InboundHandshake(this, inControlStream = true))
       .via(new InboundQuarantineCheck(this))

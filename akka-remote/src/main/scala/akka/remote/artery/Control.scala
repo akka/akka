@@ -43,12 +43,22 @@ private[remote] final case class Quarantined(from: UniqueAddress, to: UniqueAddr
 /**
  * INTERNAL API
  */
-private[remote] case class ActorSystemTerminating(from: UniqueAddress) extends ControlMessage
+private[remote] final case class ActorSystemTerminating(from: UniqueAddress) extends ControlMessage
 
 /**
  * INTERNAL API
  */
-private[remote] case class ActorSystemTerminatingAck(from: UniqueAddress) extends ArteryMessage
+private[remote] final case class ActorSystemTerminatingAck(from: UniqueAddress) extends ArteryMessage
+
+/**
+ * INTERNAL API
+ */
+private[remote] case object Flush extends ControlMessage
+
+/**
+ * INTERNAL API
+ */
+private[remote] case object FlushAck extends ArteryMessage
 
 /**
  * INTERNAL API

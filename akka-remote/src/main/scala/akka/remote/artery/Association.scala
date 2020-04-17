@@ -6,6 +6,7 @@ package akka.remote.artery
 
 import java.net.ConnectException
 import java.util.Queue
+import java.util.UUID
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.LinkedBlockingQueue
 import java.util.concurrent.TimeUnit
@@ -14,6 +15,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import scala.concurrent.Future
+import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
@@ -27,6 +29,8 @@ import akka.actor.ActorSelectionMessage
 import akka.actor.Address
 import akka.actor.Cancellable
 import akka.actor.Dropped
+import akka.dispatch.Dispatchers
+import akka.dispatch.sysmsg.DeathWatchNotification
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.Logging
 import akka.remote.DaemonMsgCreate
@@ -352,6 +356,13 @@ private[remote] class Association(
       deadletters ! env
     }
 
+    def sendSystemMessage(outboundEnvelope: OutboundEnvelope): Unit = {
+      if (!controlQueue.offer(outboundEnvelope)) {
+        quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
+        dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
+      }
+    }
+
     val state = associationState
     val quarantined = state.isQuarantined()
     val messageIsClearSystemMessageDelivery = message.isInstanceOf[ClearSystemMessageDelivery]
@@ -368,11 +379,20 @@ private[remote] class Association(
       try {
         val outboundEnvelope = createOutboundEnvelope()
         message match {
-          case _: SystemMessage =>
-            if (!controlQueue.offer(outboundEnvelope)) {
-              quarantine(reason = s"Due to overflow of control queue, size [$controlQueueSize]")
-              dropped(ControlQueueIndex, controlQueueSize, outboundEnvelope)
+          case d: DeathWatchNotification if !d.addressTerminated =>
+            val flushingPromise = Promise[Done]()
+            // FIXME config for the timeout
+            transport.system.systemActorOf(
+              FlushBeforeDeathWatchNotification
+                .props(flushingPromise, settings.Advanced.ShutdownFlushTimeout, this)
+                .withDispatcher(Dispatchers.InternalDispatcherId),
+              s"flush-${UUID.randomUUID()}")
+            implicit val ec = materializer.executionContext
+            flushingPromise.future.onComplete { _ =>
+              sendSystemMessage(outboundEnvelope)
             }
+          case _: SystemMessage =>
+            sendSystemMessage(outboundEnvelope)
           case ActorSelectionMessage(_: PriorityMessage, _, _) | _: ControlMessage | _: ClearSystemMessageDelivery =>
             // ActorSelectionMessage with PriorityMessage is used by cluster and remote failure detector heartbeating
             if (!controlQueue.offer(outboundEnvelope)) {
@@ -447,9 +467,14 @@ private[remote] class Association(
     }
   }
 
-  def sendTerminationHint(replyTo: ActorRef): Int = {
+  def sendTerminationHint(replyTo: ActorRef): Int =
+    sendToAllQueues(ActorSystemTerminating(localAddress), replyTo)
+
+  def sendFlush(replyTo: ActorRef): Int =
+    sendToAllQueues(Flush, replyTo)
+
+  def sendToAllQueues(msg: ControlMessage, replyTo: ActorRef): Int = {
     if (!associationState.isQuarantined()) {
-      val msg = ActorSystemTerminating(localAddress)
       var sent = 0
       queues.iterator.filter(q => q.isEnabled && !q.isInstanceOf[LazyQueueWrapper]).foreach { queue =>
         try {
