@@ -52,6 +52,7 @@ abstract class JournalSpec(config: Config)
   private var receiverProbe: TestProbe = _
 
   override protected def supportsSerialization: CapabilityFlag = true
+  override protected def supportsDeletes: CapabilityFlag = true
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -186,57 +187,61 @@ abstract class JournalSpec(config: Config)
       journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, "non-existing-pid", receiverProbe.ref)
       receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 0L))
     }
-    "not replay permanently deleted messages (range deletion)" in {
-      val receiverProbe2 = TestProbe()
-      val cmd = DeleteMessagesTo(pid, 3, receiverProbe2.ref)
-      val sub = TestProbe()
 
-      subscribe[DeleteMessagesTo](sub.ref)
-      journal ! cmd
-      sub.expectMsg(cmd)
-      receiverProbe2.expectMsg(DeleteMessagesSuccess(cmd.toSequenceNr))
-
-      journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
-      List(4, 5).foreach { i =>
-        receiverProbe.expectMsg(replayedMessage(i))
-      }
-
-      receiverProbe2.expectNoMessage(200.millis)
-    }
-
-    "not reset highestSequenceNr after message deletion" in {
-      journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
-      (1 to 5).foreach { i =>
-        receiverProbe.expectMsg(replayedMessage(i))
-      }
-      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
-
-      journal ! DeleteMessagesTo(pid, 3L, receiverProbe.ref)
-      receiverProbe.expectMsg(DeleteMessagesSuccess(3L))
-
-      journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
-      (4 to 5).foreach { i =>
-        receiverProbe.expectMsg(replayedMessage(i))
-      }
-      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
-    }
-
-    "not reset highestSequenceNr after journal cleanup" in {
-      journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
-      (1 to 5).foreach { i =>
-        receiverProbe.expectMsg(replayedMessage(i))
-      }
-      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
-
-      journal ! DeleteMessagesTo(pid, Long.MaxValue, receiverProbe.ref)
-      receiverProbe.expectMsg(DeleteMessagesSuccess(Long.MaxValue))
-
-      journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
-      receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
-    }
   }
 
   "A Journal optionally".may {
+
+    optional(flag = supportsDeletes) {
+      "not replay permanently deleted messages (range deletion)" in {
+        val receiverProbe2 = TestProbe()
+        val cmd = DeleteMessagesTo(pid, 3, receiverProbe2.ref)
+        val sub = TestProbe()
+
+        subscribe[DeleteMessagesTo](sub.ref)
+        journal ! cmd
+        sub.expectMsg(cmd)
+        receiverProbe2.expectMsg(DeleteMessagesSuccess(cmd.toSequenceNr))
+
+        journal ! ReplayMessages(1, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+        List(4, 5).foreach { i =>
+          receiverProbe.expectMsg(replayedMessage(i))
+        }
+
+        receiverProbe2.expectNoMessage(200.millis)
+      }
+
+      "not reset highestSequenceNr after message deletion" in {
+        journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+        (1 to 5).foreach { i =>
+          receiverProbe.expectMsg(replayedMessage(i))
+        }
+        receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
+
+        journal ! DeleteMessagesTo(pid, 3L, receiverProbe.ref)
+        receiverProbe.expectMsg(DeleteMessagesSuccess(3L))
+
+        journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+        (4 to 5).foreach { i =>
+          receiverProbe.expectMsg(replayedMessage(i))
+        }
+        receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
+      }
+
+      "not reset highestSequenceNr after journal cleanup" in {
+        journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+        (1 to 5).foreach { i =>
+          receiverProbe.expectMsg(replayedMessage(i))
+        }
+        receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
+
+        journal ! DeleteMessagesTo(pid, Long.MaxValue, receiverProbe.ref)
+        receiverProbe.expectMsg(DeleteMessagesSuccess(Long.MaxValue))
+
+        journal ! ReplayMessages(0, Long.MaxValue, Long.MaxValue, pid, receiverProbe.ref)
+        receiverProbe.expectMsg(RecoverySuccess(highestSequenceNr = 5L))
+      }
+    }
 
     optional(flag = supportsRejectingNonSerializableObjects) {
       "reject non-serializable events" in EventFilter[java.io.NotSerializableException]().intercept {

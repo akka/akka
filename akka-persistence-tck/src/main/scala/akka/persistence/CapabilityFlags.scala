@@ -52,6 +52,11 @@ trait JournalCapabilityFlags extends CapabilityFlags {
    */
   protected def supportsSerialization: CapabilityFlag
 
+  /**
+   * When `true` enables tests which check if the journal supports deletes
+   */
+  protected def supportsDeletes: CapabilityFlag
+
 }
 //#journal-flags
 
