@@ -1086,6 +1086,7 @@ class PersistentShardCoordinator(
 private[akka] object DDataShardCoordinator {
   private case object RememberEntitiesStoreStopped
   private case class RememberEntitiesTimeout(shardId: ShardId)
+  private case object RememberEntitiesLoadTimeout
   private val RememberEntitiesTimeoutKey = "RememberEntityTimeout"
 }
 
@@ -1149,15 +1150,6 @@ private[akka] class DDataShardCoordinator(
   def waitingForInitialState(initialState: Option[State], initialShards: Option[Set[ShardId]]): Receive =
     ({
 
-      case RememberEntitiesCoordinatorStore.RememberedShards(shardIds) =>
-        log.debug("Received [{}] remembered shard ids", shardIds.size)
-        initialState match {
-          case Some(state) =>
-            onInitialState(state, shardIds)
-          case None =>
-            context.become(waitingForInitialState(None, Some(shardIds)))
-        }
-
       case g @ GetSuccess(CoordinatorStateKey, _) =>
         val existingState = g.get(CoordinatorStateKey).value.withRememberEntities(settings.rememberEntities)
         log.debug("Received initial coordinator state [{}]", existingState)
@@ -1185,12 +1177,26 @@ private[akka] class DDataShardCoordinator(
             context.become(waitingForInitialState(Some(initEmptyState), None))
         }
 
+      case RememberEntitiesCoordinatorStore.RememberedShards(shardIds) =>
+        log.debug("Received [{}] remembered shard ids", shardIds.size)
+        initialState match {
+          case Some(state) =>
+            onInitialState(state, shardIds)
+          case None =>
+            context.become(waitingForInitialState(None, Some(shardIds)))
+        }
+
+      case RememberEntitiesLoadTimeout =>
+        // repeat until successful
+        getAllRememberedShards()
+
       case ShardCoordinator.Internal.Terminate =>
         log.debug("Received termination message while waiting for state")
         context.stop(self)
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
   private def onInitialState(loadedState: State, rememberedShards: Set[ShardId]): Unit = {
+    timers.cancel(RememberEntitiesTimeoutKey)
     state = if (settings.rememberEntities && rememberedShards.nonEmpty) {
       val newUnallocatedShards = state.unallocatedShards.union(rememberedShards.diff(state.shards.keySet))
       loadedState.copy(unallocatedShards = newUnallocatedShards)
@@ -1222,7 +1228,7 @@ private[akka] class DDataShardCoordinator(
       context.stop(self)
 
     case RememberEntitiesStoreStopped =>
-      onRememberEntitiesStoreStopped
+      onRememberEntitiesStoreStopped()
 
     case _ => stash()
   }
@@ -1308,31 +1314,11 @@ private[akka] class DDataShardCoordinator(
 
     case RememberEntitiesCoordinatorStore.UpdateFailed(shard) =>
       require(shardId.contains(shard))
-      log.error(
-        "The ShardCoordinator was unable to update shards distributed state, {} ({})",
-        if (terminating) "terminating" else "retrying",
-        evt)
-      if (terminating) context.stop(self)
-      else {
-        // retry
-        rememberShardAllocated(shardId.get)
-      }
+      onRememberEntitiesUpdateFailed(shard)
 
     case RememberEntitiesTimeout(shard) =>
       require(shardId.contains(shard))
-      log.error(
-        "The ShardCoordinator was unable to update remembered shard [{}] within 'updating-state-timeout': {} millis, {} ({})",
-        shard,
-        settings.tuningParameters.updatingStateTimeout.toMillis,
-        if (terminating) "terminating" else "retrying",
-        evt)
-      if (terminating) context.stop(self)
-      else {
-        // retry until successful
-        rememberShardAllocated(shardId.get)
-      }
-
-      rememberShardAllocated(shard)
+      onRememberEntitiesUpdateFailed(shard)
 
     case RememberEntitiesStoreStopped =>
       onRememberEntitiesStoreStopped()
@@ -1399,6 +1385,10 @@ private[akka] class DDataShardCoordinator(
   }
 
   def getAllRememberedShards(): Unit = {
+    timers.startSingleTimer(
+      RememberEntitiesTimeoutKey,
+      RememberEntitiesLoadTimeout,
+      settings.tuningParameters.waitingForStateTimeout)
     rememberEntitiesStore.foreach(_ ! RememberEntitiesCoordinatorStore.GetShards)
   }
 
@@ -1426,6 +1416,19 @@ private[akka] class DDataShardCoordinator(
       case RememberEntitiesStoreStopped =>
         onRememberEntitiesStoreStopped()
     }
+
+  def onRememberEntitiesUpdateFailed(shardId: ShardId): Unit = {
+    log.error(
+      "The ShardCoordinator was unable to update remembered shard [{}] within 'updating-state-timeout': {} millis, {}",
+      shardId,
+      settings.tuningParameters.updatingStateTimeout.toMillis,
+      if (terminating) "terminating" else "retrying")
+    if (terminating) context.stop(self)
+    else {
+      // retry until successful
+      rememberShardAllocated(shardId)
+    }
+  }
 
   def onRememberEntitiesStoreStopped(): Unit = {
     // rely on backoff supervision of coordinator

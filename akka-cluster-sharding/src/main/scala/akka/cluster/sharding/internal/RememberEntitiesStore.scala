@@ -70,13 +70,18 @@ private[akka] object RememberEntitiesCoordinatorStore {
   sealed trait Command
 
   /**
-   * Sent once for every started shard, should result in a response of either
+   * Sent once for every started shard (but could be retried), should result in a response of either
    * UpdateDone or UpdateFailed
    */
   final case class AddShard(entityId: ShardId) extends Command
   final case class UpdateDone(entityId: ShardId)
   final case class UpdateFailed(entityId: ShardId)
 
+  /**
+   * Sent once when the coordinator starts (but could be retried), should result in a response of
+   * RememberedShards
+   */
   case object GetShards extends Command
   final case class RememberedShards(entities: Set[ShardId])
+  // No message for failed load since we eager lod the set of shards, may need to change in the future
 }

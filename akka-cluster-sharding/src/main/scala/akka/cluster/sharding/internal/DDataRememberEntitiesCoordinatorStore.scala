@@ -47,7 +47,10 @@ private[akka] class DDataRememberEntitiesCoordinatorStore(
   private var allShards = Set.empty[ShardId]
 
   // eager load of remembered shard ids
-  replicator ! Replicator.Get(AllShardsKey, readMajority)
+  def getAllShards(): Unit = {
+    replicator ! Replicator.Get(AllShardsKey, readMajority)
+  }
+  getAllShards()
 
   override def receive: Receive = waitingForRead()
 
@@ -66,7 +69,7 @@ private[akka] class DDataRememberEntitiesCoordinatorStore(
         "The ShardCoordinator was unable to get all shards state within 'waiting-for-state-timeout': {} millis (retrying)",
         readMajority.timeout.toMillis)
       // repeat until GetSuccess
-      context.stop(self)
+      getAllShards()
 
     case Replicator.NotFound(AllShardsKey, _) =>
       allShards = Set.empty
