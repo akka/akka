@@ -510,7 +510,18 @@ class FlowFutureFlowSpec extends StreamSpec {
         fSeq1.failed.futureValue should be(a[AbruptStageTerminationException])
         fSeq2.failed.futureValue should be(a[AbruptStageTerminationException])
       }
+    }
+  }
 
+  "NestedMaterializationCancellationPolicy" must {
+    "default to false" in assertAllStagesStopped {
+      val fl = Flow.fromMaterializer {
+        case (_, attributes) =>
+          val att = attributes.mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
+          att.delay should be(false)
+          Flow[Any]
+      }
+      Source.empty.via(fl).runWith(Sink.headOption).futureValue should be(empty)
     }
   }
 }
