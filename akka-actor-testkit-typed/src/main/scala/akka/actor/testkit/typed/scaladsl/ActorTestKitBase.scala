@@ -4,6 +4,9 @@
 
 package akka.actor.testkit.typed.scaladsl
 
+import akka.actor.DeadLetter
+import akka.actor.Dropped
+import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestKitUtils
 import akka.actor.typed.ActorRef
@@ -93,6 +96,21 @@ abstract class ActorTestKitBase(val testKit: ActorTestKit) {
    * See corresponding method on [[ActorTestKit]]
    */
   def createTestProbe[M](name: String): TestProbe[M] = testKit.createTestProbe(name)
+
+  /**
+   * See corresponding method on [[ActorTestKit]]
+   */
+  def createDroppedMessageProbe(): TestProbe[Dropped] = testKit.createDroppedMessageProbe()
+
+  /**
+   * See corresponding method on [[ActorTestKit]]
+   */
+  def createDeadLetterProbe(): TestProbe[DeadLetter] = testKit.createDeadLetterProbe()
+
+  /**
+   * See corresponding method on [[ActorTestKit]]
+   */
+  def createUnhandledMessageProbe(): TestProbe[UnhandledMessage] = testKit.createUnhandledMessageProbe()
 
   /**
    * Additional testing utilities for serialization.

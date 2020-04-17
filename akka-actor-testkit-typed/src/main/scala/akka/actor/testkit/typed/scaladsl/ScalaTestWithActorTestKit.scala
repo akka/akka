@@ -5,6 +5,7 @@
 package akka.actor.testkit.typed.scaladsl
 
 import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.typed.ActorSystem
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalatest.{ BeforeAndAfterAll, TestSuite }
@@ -40,6 +41,11 @@ abstract class ScalaTestWithActorTestKit(testKit: ActorTestKit)
    * The application.conf of your project is not used in this case.
    */
   def this() = this(ActorTestKit(ActorTestKitBase.testNameFromCallStack()))
+
+  /**
+   * Use a custom [[akka.actor.typed.ActorSystem]] for the actor system.
+   */
+  def this(system: ActorSystem[_]) = this(ActorTestKit(system))
 
   /**
    * Use a custom config for the actor system.

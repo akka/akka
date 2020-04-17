@@ -8,17 +8,14 @@ package scaladsl
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
-import akka.actor.DeadLetter
-import scala.concurrent.duration._
-
-import akka.actor.UnhandledMessage
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.eventstream.EventStream
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import scala.concurrent.duration._
 
 object AbstractStashSpec {
   sealed trait Command
@@ -627,8 +624,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
 
     "deal with unhandled the same way as normal unhandled" in {
       val probe = TestProbe[String]()
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      val unhandledProbe = createUnhandledMessageProbe()
 
       val ref = spawn(Behaviors.withStash[String](10) { stash =>
         stash.stash("unhandled")
@@ -680,7 +676,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
 
     "deal with stop" in {
       val probe = TestProbe[Any]
-      system.eventStream ! EventStream.Subscribe(probe.ref.narrow[DeadLetter])
+      val deadLetterProbe = createDeadLetterProbe()
 
       val ref = spawn(Behaviors.withStash[String](10) { stash =>
         stash.stash("one")
@@ -698,7 +694,7 @@ class UnstashingSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with
       })
       ref ! "unstash"
       probe.expectMessage("one")
-      probe.expectMessageType[DeadLetter].message should equal("two")
+      deadLetterProbe.receiveMessage().message should equal("two")
       probe.expectTerminated(ref)
     }
 

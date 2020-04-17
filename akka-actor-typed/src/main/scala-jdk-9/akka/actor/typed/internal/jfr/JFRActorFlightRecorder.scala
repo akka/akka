@@ -41,8 +41,8 @@ private[akka] final class JFRActorFlightRecorder(val system: ActorSystem[_]) ext
     new DeliveryProducerResentFirstUnconfirmed(producerId, seqNr).commit()
   override def producerReceived(producerId: String, currentSeqNr: Long): Unit =
     new DeliveryProducerReceived(producerId, currentSeqNr).commit()
-  override def producerReceivedRequest(producerId: String, requestedSeqNr: Long): Unit =
-    new DeliveryProducerReceivedRequest(producerId, requestedSeqNr).commit()
+  override def producerReceivedRequest(producerId: String, requestedSeqNr: Long, confirmedSeqNr: Long): Unit =
+    new DeliveryProducerReceivedRequest(producerId, requestedSeqNr, confirmedSeqNr).commit()
   override def producerReceivedResend(producerId: String, fromSeqNr: Long): Unit =
     new DeliveryProducerReceivedResend(producerId, fromSeqNr).commit()
 
@@ -54,10 +54,10 @@ private[akka] final class JFRActorFlightRecorder(val system: ActorSystem[_]) ext
     new DeliveryConsumerReceived(producerId, seqNr).commit()
   override def consumerReceivedPreviousInProgress(producerId: String, seqNr: Long, stashed: Int): Unit =
     new DeliveryConsumerReceivedPreviousInProgress(producerId, seqNr: Long, stashed).commit()
-  override def consumerDuplicate(pid: String, expectedSeqNr: Long, seqNr: Long): Unit =
-    new DeliveryConsumerDuplicate(pid, expectedSeqNr, seqNr).commit()
-  override def consumerMissing(pid: String, expectedSeqNr: Long, seqNr: Long): Unit =
-    new DeliveryConsumerMissing(pid, expectedSeqNr, seqNr).commit()
+  override def consumerDuplicate(producerId: String, expectedSeqNr: Long, seqNr: Long): Unit =
+    new DeliveryConsumerDuplicate(producerId, expectedSeqNr, seqNr).commit()
+  override def consumerMissing(producerId: String, expectedSeqNr: Long, seqNr: Long): Unit =
+    new DeliveryConsumerMissing(producerId, expectedSeqNr, seqNr).commit()
   override def consumerReceivedResend(seqNr: Long): Unit =
     new DeliveryConsumerReceivedResend(seqNr).commit()
   override def consumerSentRequest(producerId: String, requestedSeqNr: Long): Unit =
