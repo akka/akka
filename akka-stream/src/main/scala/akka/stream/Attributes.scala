@@ -442,6 +442,11 @@ object Attributes {
       strategy: CancellationStrategy.Strategy): CancellationStrategy.Strategy =
     CancellationStrategy.AfterDelay(delay, strategy)
 
+  case class NestedMaterializationCancellationPolicy(delay: Boolean) extends MandatoryAttribute
+  object NestedMaterializationCancellationPolicy {
+    val Default = NestedMaterializationCancellationPolicy(false)
+  }
+
   object LogLevels {
 
     /** Use to disable logging on certain operations when configuring [[Attributes#logLevels]] */

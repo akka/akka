@@ -744,6 +744,7 @@ final class ActorMaterializerSettings @InternalApi private (
       // for stream refs and io live with the respective stages
       Attributes.InputBuffer(initialInputBufferSize, maxInputBufferSize) ::
       Attributes.CancellationStrategy.Default :: // FIXME: make configurable, see https://github.com/akka/akka/issues/28000
+      Attributes.NestedMaterializationCancellationPolicy.Default ::
       ActorAttributes.Dispatcher(dispatcher) ::
       ActorAttributes.SupervisionStrategy(supervisionDecider) ::
       ActorAttributes.DebugLogging(debugLogging) ::
