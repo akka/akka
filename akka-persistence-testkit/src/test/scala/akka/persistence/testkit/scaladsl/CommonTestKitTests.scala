@@ -150,7 +150,7 @@ trait CommonTestKitTests extends ScalaDslUtils {
       aa ! B(666)
 
       expectNextPersisted(pid, B(666))
-      returnDefaultPolicy()
+      resetPolicy()
 
     }
 

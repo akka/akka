@@ -91,7 +91,7 @@ trait CommonSnapshotTests extends JavaDslUtils {
       expectMsgPF() { case SaveSnapshotSuccess(_) => }
       expectNextPersisted(pid, 777)
 
-      returnDefaultPolicy()
+      resetPolicy()
 
     }
 

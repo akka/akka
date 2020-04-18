@@ -143,7 +143,7 @@ sealed trait PolicyOps[U] {
 
   def setPolicy(policy: Policy): Unit = _processingPolicy.set(policy)
 
-  def returnDefaultPolicy(): Unit = setPolicy(DefaultPolicy)
+  def resetPolicy(): Unit = setPolicy(DefaultPolicy)
 
 }
 
