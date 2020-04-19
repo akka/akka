@@ -19,7 +19,7 @@ import com.typesafe.config.Config
 
 import akka.annotation.{ ApiMayChange, InternalApi }
 import akka.event.Logging
-import akka.util.{ ImmutableIntMap, OptionVal, ReentrantGuard }
+import akka.util.{ ImmutableIntMap, ReentrantGuard }
 
 import scala.annotation.{ switch, tailrec }
 import scala.collection.{ immutable, mutable }
@@ -43,10 +43,11 @@ private[affinity] object AffinityPool {
   final val Terminated = 5
 
   // Method handle to JDK9+ onSpinWait method
-  private val onSpinWaitMethodHandle =
-    try OptionVal.Some(MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(classOf[Void])))
+  final val noopMethodHandle =  MethodHandles.constant(classOf[AnyRef], null).asType(methodType(Void.TYPE))
+  final val onSpinWaitMethodHandle =
+    try MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(Void.TYPE))
     catch {
-      case NonFatal(_) => OptionVal.None
+      case NonFatal(_) => noopMethodHandle
     }
 
   type IdleState = Int
@@ -85,10 +86,7 @@ private[affinity] object AffinityPool {
           idling = true
           transitionTo(Spinning)
         case Spinning =>
-          onSpinWaitMethodHandle match {
-            case OptionVal.Some(m) => m.invokeExact()
-            case OptionVal.None    =>
-          }
+          onSpinWaitMethodHandle.invokeExact(): Unit
           turns += 1
           if (turns > maxSpins)
             transitionTo(Yielding)
