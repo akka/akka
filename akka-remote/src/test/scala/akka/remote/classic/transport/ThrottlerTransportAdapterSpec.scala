@@ -77,7 +77,7 @@ object ThrottlerTransportAdapterSpec {
 class ThrottlerTransportAdapterSpec extends AkkaSpec(configA) with ImplicitSender with DefaultTimeout {
 
   val systemB = ActorSystem("systemB", system.settings.config)
-  val remote = systemB.actorOf(Props[Echo], "echo")
+  val remote = systemB.actorOf(Props[Echo](), "echo")
 
   val rootB = RootActorPath(systemB.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress)
   val here = {

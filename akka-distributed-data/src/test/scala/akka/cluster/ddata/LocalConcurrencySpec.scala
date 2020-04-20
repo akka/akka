@@ -64,8 +64,8 @@ class LocalConcurrencySpec(_system: ActorSystem)
   "Updates from same node" must {
 
     "be possible to do from two actors" in {
-      val updater1 = system.actorOf(Props[Updater], "updater1")
-      val updater2 = system.actorOf(Props[Updater], "updater2")
+      val updater1 = system.actorOf(Props[Updater](), "updater1")
+      val updater2 = system.actorOf(Props[Updater](), "updater2")
 
       val numMessages = 100
       for (n <- 1 to numMessages) {

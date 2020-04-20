@@ -60,7 +60,7 @@ abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNod
 
     "allow restarted node to pass through gate" taggedAs LongRunningTest in {
 
-      system.actorOf(Props[Subject], "subject")
+      system.actorOf(Props[Subject](), "subject")
       enterBarrier("subject-started")
 
       runOn(first) {
@@ -120,7 +120,7 @@ abstract class RemoteNodeRestartGateSpec extends RemotingMultiNodeSpec(RemoteNod
         }
 
         // Now the other system will be able to pass, too
-        freshSystem.actorOf(Props[Subject], "subject")
+        freshSystem.actorOf(Props[Subject](), "subject")
 
         Await.ready(freshSystem.whenTerminated, 30.seconds)
       }

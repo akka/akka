@@ -73,7 +73,7 @@ abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
       var subject: ActorRef = system.deadLetters
 
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
       }
 
       enterBarrier("actors-started")

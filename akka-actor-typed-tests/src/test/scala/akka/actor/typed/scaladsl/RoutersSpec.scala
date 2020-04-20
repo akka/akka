@@ -210,8 +210,8 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val router = spawn(Behaviors.setup[String](context =>
         new GroupRouterImpl(context, serviceKey, false, new RoutingLogics.RoundRobinLogic[String], true)))
 
-      val reachableProbe = createTestProbe[String]
-      val unreachableProbe = createTestProbe[String]
+      val reachableProbe = createTestProbe[String]()
+      val unreachableProbe = createTestProbe[String]()
       router
         .unsafeUpcast[Any] ! Receptionist.Listing(serviceKey, Set(reachableProbe.ref), Set(unreachableProbe.ref), false)
       router ! "one"
@@ -225,7 +225,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val router = spawn(Behaviors.setup[String](context =>
         new GroupRouterImpl(context, serviceKey, false, new RoutingLogics.RoundRobinLogic[String], true)))
 
-      val unreachableProbe = createTestProbe[String]
+      val unreachableProbe = createTestProbe[String]()
       router.unsafeUpcast[Any] ! Receptionist.Listing(
         serviceKey,
         Set.empty[ActorRef[String]],

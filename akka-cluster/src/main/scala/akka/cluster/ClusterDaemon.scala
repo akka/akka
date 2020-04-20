@@ -268,7 +268,7 @@ private[cluster] final class ClusterCoreSupervisor(joinConfigCompatChecker: Join
 
   def createChildren(): Unit = {
     val publisher =
-      context.actorOf(Props[ClusterDomainEventPublisher].withDispatcher(context.props.dispatcher), name = "publisher")
+      context.actorOf(Props[ClusterDomainEventPublisher]().withDispatcher(context.props.dispatcher), name = "publisher")
     coreDaemon = Some(
       context.watch(context.actorOf(
         Props(classOf[ClusterCoreDaemon], publisher, joinConfigCompatChecker).withDispatcher(context.props.dispatcher),
@@ -476,7 +476,7 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
       case Welcome(from, gossip) =>
         welcome(from.address, from, gossip)
       case _: Tick =>
-        if (joinSeedNodesDeadline.exists(_.isOverdue))
+        if (joinSeedNodesDeadline.exists(_.isOverdue()))
           joinSeedNodesWasUnsuccessful()
     }: Actor.Receive).orElse(receiveExitingCompleted)
 
@@ -496,9 +496,9 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
         joinSeedNodes(newSeedNodes)
       case msg: SubscriptionMessage => publisher.forward(msg)
       case _: Tick =>
-        if (joinSeedNodesDeadline.exists(_.isOverdue))
+        if (joinSeedNodesDeadline.exists(_.isOverdue()))
           joinSeedNodesWasUnsuccessful()
-        else if (deadline.exists(_.isOverdue)) {
+        else if (deadline.exists(_.isOverdue())) {
           // join attempt failed, retry
           becomeUninitialized()
           if (seedNodes.nonEmpty) joinSeedNodes(seedNodes)
@@ -1082,10 +1082,10 @@ private[cluster] class ClusterCoreDaemon(publisher: ActorRef, joinConfigCompatCh
 
       if (statsEnabled) {
         gossipStats = gossipType match {
-          case Merge   => gossipStats.incrementMergeCount
-          case Same    => gossipStats.incrementSameCount
-          case Newer   => gossipStats.incrementNewerCount
-          case Older   => gossipStats.incrementOlderCount
+          case Merge   => gossipStats.incrementMergeCount()
+          case Same    => gossipStats.incrementSameCount()
+          case Newer   => gossipStats.incrementNewerCount()
+          case Older   => gossipStats.incrementOlderCount()
           case Ignored => gossipStats // included in receivedGossipCount
         }
       }

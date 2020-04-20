@@ -63,7 +63,7 @@ class TestLease(settings: LeaseSettings, system: ExtendedActorSystem) extends Le
 
   TestLeaseExt(system).setTestLease(settings.leaseName, this)
 
-  val initialPromise = Promise[Boolean]
+  val initialPromise = Promise[Boolean]()
 
   private val nextAcquireResult = new AtomicReference[Future[Boolean]](initialPromise.future)
   private val nextCheckLeaseResult = new AtomicReference[Boolean](false)

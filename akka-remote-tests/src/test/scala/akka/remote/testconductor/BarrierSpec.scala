@@ -564,7 +564,7 @@ class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
    */
   private def getBarrier(): ActorRef = {
     system.actorOf(Props(new Actor {
-      val barrier = context.actorOf(Props[BarrierCoordinator])
+      val barrier = context.actorOf(Props[BarrierCoordinator]())
       override def supervisorStrategy = OneForOneStrategy() {
         case x => testActor ! Failed(barrier, x); SupervisorStrategy.Restart
       }

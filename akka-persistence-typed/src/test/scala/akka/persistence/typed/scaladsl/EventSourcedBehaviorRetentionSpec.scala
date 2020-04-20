@@ -207,7 +207,7 @@ class EventSourcedBehaviorRetentionSpec
 
     "snapshot via predicate" in {
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[WrappedSignal]
+      val snapshotSignalProbe = TestProbe[WrappedSignal]()
       val alwaysSnapshot: Behavior[Command] =
         Behaviors.setup { ctx =>
           counter(ctx, pid, snapshotSignalProbe = Some(snapshotSignalProbe.ref)).snapshotWhen { (_, _, _) =>
@@ -237,7 +237,7 @@ class EventSourcedBehaviorRetentionSpec
 
     "check all events for snapshot in PersistAll" in {
       val pid = nextPid()
-      val snapshotSignalProbe = TestProbe[WrappedSignal]
+      val snapshotSignalProbe = TestProbe[WrappedSignal]()
       val snapshotAtTwo = Behaviors.setup[Command](ctx =>
         counter(ctx, pid, snapshotSignalProbe = Some(snapshotSignalProbe.ref)).snapshotWhen { (s, _, _) =>
           s.value == 2

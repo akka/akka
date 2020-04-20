@@ -25,7 +25,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec =>
         enableTcpReset()
         println("===>>> Reply with [TCP RST] for [" + duration + "]")
         Thread.sleep(duration.toMillis)
-        restoreIP
+        restoreIP()
       } catch {
         case e: Throwable =>
           dead.set(true)
@@ -40,7 +40,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec =>
         enableNetworkThrottling()
         println("===>>> Throttling network with [" + BytesPerSecond + ", " + DelayMillis + "] for [" + duration + "]")
         Thread.sleep(duration.toMillis)
-        restoreIP
+        restoreIP()
       } catch {
         case e: Throwable =>
           dead.set(true)
@@ -55,7 +55,7 @@ trait NetworkFailureSpec extends DefaultTimeout { self: AkkaSpec =>
         enableNetworkDrop()
         println("===>>> Blocking network [TCP DENY] for [" + duration + "]")
         Thread.sleep(duration.toMillis)
-        restoreIP
+        restoreIP()
       } catch {
         case e: Throwable =>
           dead.set(true)

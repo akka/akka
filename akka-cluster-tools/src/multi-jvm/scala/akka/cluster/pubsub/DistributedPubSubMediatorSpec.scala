@@ -344,17 +344,17 @@ class DistributedPubSubMediatorSpec
 
       //#start-subscribers
       runOn(first) {
-        system.actorOf(Props[Subscriber], "subscriber1")
+        system.actorOf(Props[Subscriber](), "subscriber1")
       }
       runOn(second) {
-        system.actorOf(Props[Subscriber], "subscriber2")
-        system.actorOf(Props[Subscriber], "subscriber3")
+        system.actorOf(Props[Subscriber](), "subscriber2")
+        system.actorOf(Props[Subscriber](), "subscriber3")
       }
       //#start-subscribers
 
       //#publish-message
       runOn(third) {
-        val publisher = system.actorOf(Props[Publisher], "publisher")
+        val publisher = system.actorOf(Props[Publisher](), "publisher")
         later()
         // after a while the subscriptions are replicated
         publisher ! "hello"
@@ -371,16 +371,16 @@ class DistributedPubSubMediatorSpec
 
       //#start-send-destinations
       runOn(first) {
-        system.actorOf(Props[Destination], "destination")
+        system.actorOf(Props[Destination](), "destination")
       }
       runOn(second) {
-        system.actorOf(Props[Destination], "destination")
+        system.actorOf(Props[Destination](), "destination")
       }
       //#start-send-destinations
 
       //#send-message
       runOn(third) {
-        val sender = system.actorOf(Props[Sender], "sender")
+        val sender = system.actorOf(Props[Sender](), "sender")
         later()
         // after a while the destinations are replicated
         sender ! "hello"

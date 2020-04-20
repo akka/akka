@@ -75,7 +75,7 @@ object Slf4jLoggerSpec {
 class Slf4jLoggerSpec extends AkkaSpec(Slf4jLoggerSpec.config) with BeforeAndAfterEach {
   import Slf4jLoggerSpec._
 
-  val producer = system.actorOf(Props[LogProducer], name = "logProducer")
+  val producer = system.actorOf(Props[LogProducer](), name = "logProducer")
 
   override def beforeEach(): Unit = {
     output.reset()

@@ -128,7 +128,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
     } catch handleException
   }
 
-  override def runOne(): Unit = run(selfInbox.receiveMessage())
+  override def runOne(): Unit = run(selfInbox().receiveMessage())
 
   override def signal(signal: Signal): Unit = {
     try {

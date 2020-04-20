@@ -41,7 +41,7 @@ class ReverseArrowSpec extends StreamSpec {
     }
 
     "work from Sink" in {
-      val sub = TestSubscriber.manualProbe[Int]
+      val sub = TestSubscriber.manualProbe[Int]()
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit b =>
           Sink.fromSubscriber(sub) <~ source

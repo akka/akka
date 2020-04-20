@@ -25,7 +25,7 @@ abstract class BaseTwoStreamsSetup extends AkkaSpec("""
 
   def failedPublisher[T]: Publisher[T] = TestPublisher.error[T](TestException)
 
-  def completedPublisher[T]: Publisher[T] = TestPublisher.empty[T]
+  def completedPublisher[T]: Publisher[T] = TestPublisher.empty[T]()
 
   def nonemptyPublisher[T](elems: immutable.Iterable[T]): Publisher[T] = Source(elems).runWith(Sink.asPublisher(false))
 

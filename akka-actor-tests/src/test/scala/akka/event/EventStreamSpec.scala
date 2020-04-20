@@ -85,7 +85,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         expectMsg(M(42))
         bus.unsubscribe(testActor)
         bus.publish(M(13))
-        expectNoMessage
+        expectNoMessage()
       }
     }
 
@@ -159,7 +159,7 @@ class EventStreamSpec extends AkkaSpec(EventStreamSpec.config) {
         bus.publish(a)
         expectMsg(b2)
         expectMsg(a)
-        expectNoMessage
+        expectNoMessage()
       }
     }
 

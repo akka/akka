@@ -67,14 +67,14 @@ abstract class MultiDcClusterShardingSpec
     "init sharding" in {
       val sharding = ClusterSharding(typedSystem)
       val shardRegion: ActorRef[ShardingEnvelope[Command]] = sharding.init(Entity(typeKey)(_ => MultiDcPinger()))
-      val probe = TestProbe[Pong]
+      val probe = TestProbe[Pong]()
       shardRegion ! ShardingEnvelope(entityId, Ping(probe.ref))
       probe.expectMessage(max = 15.seconds, Pong(cluster.selfMember.dataCenter))
       enterBarrier("sharding-initialized")
     }
 
     "be able to message via entity ref" in {
-      val probe = TestProbe[Pong]
+      val probe = TestProbe[Pong]()
       val entityRef = ClusterSharding(typedSystem).entityRefFor(typeKey, entityId)
       entityRef ! Ping(probe.ref)
       probe.expectMessage(Pong(cluster.selfMember.dataCenter))
@@ -94,7 +94,7 @@ abstract class MultiDcClusterShardingSpec
     runOn(first, second) {
       val proxy: ActorRef[ShardingEnvelope[Command]] = ClusterSharding(typedSystem).init(
         Entity(typeKey)(_ => MultiDcPinger()).withSettings(ClusterShardingSettings(typedSystem).withDataCenter("dc2")))
-      val probe = TestProbe[Pong]
+      val probe = TestProbe[Pong]()
       proxy ! ShardingEnvelope(entityId, Ping(probe.ref))
       probe.expectMessage(remainingOrDefault, Pong("dc2"))
     }
@@ -108,7 +108,7 @@ abstract class MultiDcClusterShardingSpec
       val proxy: ActorRef[ShardingEnvelope[Command]] =
         ClusterSharding(system).init(Entity(typeKey)(_ => MultiDcPinger()).withDataCenter("dc2"))
       //#proxy-dc
-      val probe = TestProbe[Pong]
+      val probe = TestProbe[Pong]()
       proxy ! ShardingEnvelope(entityId, Ping(probe.ref))
       probe.expectMessage(remainingOrDefault, Pong("dc2"))
     }
@@ -125,7 +125,7 @@ abstract class MultiDcClusterShardingSpec
       val entityRef = ClusterSharding(system).entityRefFor(typeKey, entityId, "dc2")
       //#proxy-dc-entityref
 
-      val probe = TestProbe[Pong]
+      val probe = TestProbe[Pong]()
       entityRef ! Ping(probe.ref)
       probe.expectMessage(remainingOrDefault, Pong("dc2"))
     }

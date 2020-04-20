@@ -190,31 +190,31 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
       req match { // exhaustive match
         case WriteMessages(messages, persistentActor, actorInstanceId) =>
           val atomicWriteCount = messages.count(_.isInstanceOf[AtomicWrite])
-          persistentActor ! WriteMessagesFailed(timeoutException, atomicWriteCount)
+          persistentActor ! WriteMessagesFailed(timeoutException(), atomicWriteCount)
           messages.foreach {
             case a: AtomicWrite =>
               a.payload.foreach { p =>
-                persistentActor ! WriteMessageFailure(p, timeoutException, actorInstanceId)
+                persistentActor ! WriteMessageFailure(p, timeoutException(), actorInstanceId)
               }
             case r: NonPersistentRepr =>
               persistentActor ! LoopMessageSuccess(r.payload, actorInstanceId)
           }
         case ReplayMessages(_, _, _, _, persistentActor) =>
-          persistentActor ! ReplayMessagesFailure(timeoutException)
+          persistentActor ! ReplayMessagesFailure(timeoutException())
         case DeleteMessagesTo(_, toSequenceNr, persistentActor) =>
-          persistentActor ! DeleteMessagesFailure(timeoutException, toSequenceNr)
+          persistentActor ! DeleteMessagesFailure(timeoutException(), toSequenceNr)
       }
 
     case req: SnapshotProtocol.Request =>
       req match { // exhaustive match
         case _: LoadSnapshot =>
-          sender() ! LoadSnapshotFailed(timeoutException)
+          sender() ! LoadSnapshotFailed(timeoutException())
         case SaveSnapshot(metadata, _) =>
-          sender() ! SaveSnapshotFailure(metadata, timeoutException)
+          sender() ! SaveSnapshotFailure(metadata, timeoutException())
         case DeleteSnapshot(metadata) =>
-          sender() ! DeleteSnapshotFailure(metadata, timeoutException)
+          sender() ! DeleteSnapshotFailure(metadata, timeoutException())
         case DeleteSnapshots(_, criteria) =>
-          sender() ! DeleteSnapshotsFailure(criteria, timeoutException)
+          sender() ! DeleteSnapshotsFailure(criteria, timeoutException())
       }
 
     case TargetLocation(address) =>

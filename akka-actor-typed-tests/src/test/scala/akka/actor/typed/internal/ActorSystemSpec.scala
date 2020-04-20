@@ -133,7 +133,7 @@ class ActorSystemSpec
 
     "have a working thread factory" in {
       withSystem("thread", Behaviors.empty[String]) { sys =>
-        val p = Promise[Int]
+        val p = Promise[Int]()
         sys.threadFactory
           .newThread(new Runnable {
             def run(): Unit = p.success(42)

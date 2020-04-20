@@ -152,7 +152,7 @@ private[remote] class Remoting(_system: ExtendedActorSystem, _provider: RemoteAc
 
   private implicit val ec: MessageDispatcher = system.dispatchers.lookup(Dispatcher)
 
-  val transportSupervisor = system.systemActorOf(configureDispatcher(Props[TransportSupervisor]), "transports")
+  val transportSupervisor = system.systemActorOf(configureDispatcher(Props[TransportSupervisor]()), "transports")
 
   override def localAddressForRemote(remote: Address): Address =
     Remoting.localAddressForRemote(transportMapping, remote)
@@ -460,17 +460,17 @@ private[remote] object EndpointManager {
 
     def prune(): Unit = {
       addressToWritable = addressToWritable.collect {
-        case entry @ (_, Gated(timeOfRelease)) if timeOfRelease.hasTimeLeft =>
+        case entry @ (_, Gated(timeOfRelease)) if timeOfRelease.hasTimeLeft() =>
           // Gated removed when no time left
           entry
-        case entry @ (_, Quarantined(_, timeOfRelease)) if timeOfRelease.hasTimeLeft =>
+        case entry @ (_, Quarantined(_, timeOfRelease)) if timeOfRelease.hasTimeLeft() =>
           // Quarantined removed when no time left
           entry
         case entry @ (_, _: Pass) => entry
       }
 
       addressToRefuseUid = addressToRefuseUid.collect {
-        case entry @ (_, (_, timeOfRelease)) if timeOfRelease.hasTimeLeft =>
+        case entry @ (_, (_, timeOfRelease)) if timeOfRelease.hasTimeLeft() =>
           // // Quarantined/refuseUid removed when no time left
           entry
       }

@@ -218,9 +218,9 @@ class ActorCreationPerfSpec
 
   "Actor creation with actorOf" must {
 
-    registerTests("Props[EmptyActor] with new Props", () => Props[EmptyActor])
+    registerTests("Props[EmptyActor] with new Props", () => Props[EmptyActor]())
 
-    val props1 = Props[EmptyActor]
+    val props1 = Props[EmptyActor]()
     registerTests("Props[EmptyActor] with same Props", () => props1)
 
     registerTests("Props(new EmptyActor) new", () => { Props(new EmptyActor) })

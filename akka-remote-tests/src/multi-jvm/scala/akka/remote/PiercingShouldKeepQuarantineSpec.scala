@@ -74,7 +74,7 @@ abstract class PiercingShouldKeepQuarantineSpec(multiNodeConfig: PiercingShouldK
       }
 
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
         enterBarrier("actors-started")
         enterBarrier("actor-identified")
         enterBarrier("quarantine-intact")

@@ -169,13 +169,13 @@ private[akka] class RemoteSystemDaemon(
               doCreateActor(message, props, deploy, path, supervisor)
             else {
               val ex =
-                new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass, remoteDeploymentWhitelist)
+                new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass(), remoteDeploymentWhitelist)
               log.error(
                 LogMarker.Security,
                 ex,
                 "Received command to create remote Actor, but class [{}] is not white-listed! " +
                 "Target path: [{}]",
-                props.actorClass,
+                props.actorClass(),
                 path)
             }
           case DaemonMsgCreate(props, deploy, path, supervisor) =>

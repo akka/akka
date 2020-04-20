@@ -391,7 +391,7 @@ import scala.util.control.NonFatal
 
       // SinkQueueWithCancel impl
       override def pull(): Future[Option[T]] = {
-        val p = Promise[Option[T]]
+        val p = Promise[Option[T]]()
         callback
           .invokeWithFeedback(Pull(p))
           .failed

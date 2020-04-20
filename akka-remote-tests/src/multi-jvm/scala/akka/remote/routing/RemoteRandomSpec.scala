@@ -74,7 +74,7 @@ class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig)
 
       runOn(fourth) {
         enterBarrier("start")
-        val actor = system.actorOf(RandomPool(nrOfInstances = 0).props(Props[SomeActor]), "service-hello")
+        val actor = system.actorOf(RandomPool(nrOfInstances = 0).props(Props[SomeActor]()), "service-hello")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         val connectionCount = 3

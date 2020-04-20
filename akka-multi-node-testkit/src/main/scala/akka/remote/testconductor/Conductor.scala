@@ -368,7 +368,7 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel)
       stop()
     case Event(ToClient(msg), _) =>
       log.warning("cannot send {} in state Initial", msg)
-      stay
+      stay()
     case Event(StateTimeout, _) =>
       log.info("closing channel to {} because of Hello timeout", getAddrString(channel))
       channel.close()
@@ -378,22 +378,22 @@ private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel)
   when(Ready) {
     case Event(d: Done, Some(s)) =>
       s ! d
-      stay.using(None)
+      stay().using(None)
     case Event(op: ServerOp, _) =>
       controller ! op
-      stay
+      stay()
     case Event(msg: NetworkOp, _) =>
       log.warning("client {} sent unsupported message {}", getAddrString(channel), msg)
       stop()
     case Event(ToClient(msg: UnconfirmedClientOp), _) =>
       channel.write(msg)
-      stay
+      stay()
     case Event(ToClient(msg), None) =>
       channel.write(msg)
-      stay.using(Some(sender()))
+      stay().using(Some(sender()))
     case Event(ToClient(msg), _) =>
       log.warning("cannot send {} while waiting for previous ACK", msg)
-      stay
+      stay()
   }
 
   initialize()
@@ -451,7 +451,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
     SupervisorStrategy.Restart
   }
 
-  val barrier = context.actorOf(Props[BarrierCoordinator], "barriers")
+  val barrier = context.actorOf(Props[BarrierCoordinator](), "barriers")
   var nodes = Map[RoleName, NodeInfo]()
 
   // map keeping unanswered queries for node addresses (enqueued upon GetAddress, serviced upon NodeInfo)
@@ -463,7 +463,7 @@ private[akka] class Controller(private var initialParticipants: Int, controllerP
       val (ip, port) = channel.getRemoteAddress match {
         case s: InetSocketAddress => (s.getAddress.getHostAddress, s.getPort)
       }
-      val name = ip + ":" + port + "-server" + generation.next
+      val name = ip + ":" + port + "-server" + generation.next()
       sender() ! context.actorOf(Props(classOf[ServerFSM], self, channel).withDeploy(Deploy.local), name)
     case c @ NodeInfo(name, address, fsm) =>
       barrier.forward(c)
@@ -593,13 +593,13 @@ private[akka] class BarrierCoordinator
   whenUnhandled {
     case Event(n: NodeInfo, d @ Data(clients, _, _, _)) =>
       if (clients.find(_.name == n.name).isDefined) throw new DuplicateNode(d, n)
-      stay.using(d.copy(clients = clients + n))
+      stay().using(d.copy(clients = clients + n))
     case Event(ClientDisconnected(name), d @ Data(clients, _, arrived, _)) =>
       if (arrived.isEmpty)
-        stay.using(d.copy(clients = clients.filterNot(_.name == name)))
+        stay().using(d.copy(clients = clients.filterNot(_.name == name)))
       else {
         clients.find(_.name == name) match {
-          case None    => stay
+          case None    => stay()
           case Some(c) => throw ClientLost(d.copy(clients = clients - c, arrived = arrived.filterNot(_ == c.fsm)), name)
         }
       }
@@ -608,17 +608,17 @@ private[akka] class BarrierCoordinator
   when(Idle) {
     case Event(EnterBarrier(name, timeout), d @ Data(clients, _, _, _)) =>
       if (failed)
-        stay.replying(ToClient(BarrierResult(name, false)))
+        stay().replying(ToClient(BarrierResult(name, false)))
       else if (clients.map(_.fsm) == Set(sender()))
-        stay.replying(ToClient(BarrierResult(name, true)))
+        stay().replying(ToClient(BarrierResult(name, true)))
       else if (clients.find(_.fsm == sender()).isEmpty)
-        stay.replying(ToClient(BarrierResult(name, false)))
+        stay().replying(ToClient(BarrierResult(name, false)))
       else {
         goto(Waiting).using(d.copy(barrier = name, arrived = sender() :: Nil, deadline = getDeadline(timeout)))
       }
     case Event(RemoveClient(name), d @ Data(clients, _, _, _)) =>
       if (clients.isEmpty) throw BarrierEmpty(d, "cannot remove " + name + ": no client to remove")
-      stay.using(d.copy(clients = clients.filterNot(_.name == name)))
+      stay().using(d.copy(clients = clients.filterNot(_.name == name)))
   }
 
   onTransition {
@@ -639,7 +639,7 @@ private[akka] class BarrierCoordinator
         handleBarrier(d.copy(arrived = together))
     case Event(RemoveClient(name), d @ Data(clients, _, arrived, _)) =>
       clients.find(_.name == name) match {
-        case None => stay
+        case None => stay()
         case Some(client) =>
           handleBarrier(d.copy(clients = clients - client, arrived = arrived.filterNot(_ == client.fsm)))
       }
@@ -660,7 +660,7 @@ private[akka] class BarrierCoordinator
       data.arrived.foreach(_ ! ToClient(BarrierResult(data.barrier, true)))
       goto(Idle).using(data.copy(barrier = "", arrived = Nil))
     } else {
-      stay.using(data)
+      stay().using(data)
     }
   }
 

@@ -30,7 +30,7 @@ class SimpleDnsCache extends Dns with PeriodicCacheCleanup with NoSerializationV
     new Cache[(String, RequestType), Resolved](
       immutable.SortedSet()(expiryEntryOrdering()),
       immutable.Map(),
-      () => clock))
+      () => clock()))
 
   private val nanoBase = System.nanoTime()
 

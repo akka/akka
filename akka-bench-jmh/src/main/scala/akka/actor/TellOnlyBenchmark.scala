@@ -61,7 +61,7 @@ class TellOnlyBenchmark {
 
   @Setup(Level.Iteration)
   def setupIteration(): Unit = {
-    actor = system.actorOf(Props[TellOnlyBenchmark.Echo].withDispatcher("dropping-dispatcher"))
+    actor = system.actorOf(Props[TellOnlyBenchmark.Echo]().withDispatcher("dropping-dispatcher"))
     probe = TestProbe()
     probe.watch(actor)
     probe.send(actor, message)

@@ -226,7 +226,7 @@ abstract class AeronStreamMaxThroughputSpec
   "Max throughput of Aeron Streams" must {
 
     "start upd port" in {
-      system.actorOf(Props[UdpPortActor], "updPort")
+      system.actorOf(Props[UdpPortActor](), "updPort")
       enterBarrier("udp-port-started")
     }
 

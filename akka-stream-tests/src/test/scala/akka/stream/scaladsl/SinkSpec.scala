@@ -22,7 +22,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   "A Sink" must {
     "be composable without importing modules" in {
-      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
+      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int]())
       val sink = Sink.fromGraph(GraphDSL.create() { implicit b =>
         val bcast = b.add(Broadcast[Int](3))
         for (i <- 0 to 2) bcast.out(i).filter(_ == i) ~> Sink.fromSubscriber(probes(i))
@@ -39,7 +39,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "be composable with importing 1 module" in {
-      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
+      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int]())
       val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0))) { implicit b => s0 =>
         val bcast = b.add(Broadcast[Int](3))
         bcast.out(0) ~> Flow[Int].filter(_ == 0) ~> s0.in
@@ -57,7 +57,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "be composable with importing 2 modules" in {
-      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
+      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int]())
       val sink =
         Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)))(List(_, _)) {
           implicit b => (s0, s1) =>
@@ -78,7 +78,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "be composable with importing 3 modules" in {
-      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
+      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int]())
       val sink = Sink.fromGraph(
         GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)), Sink.fromSubscriber(probes(2)))(
           List(_, _, _)) { implicit b => (s0, s1, s2) =>
@@ -120,7 +120,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       }
       probes.foreach { p =>
         p.expectNextN(List(1, 2))
-        p.expectComplete
+        p.expectComplete()
       }
     }
 
@@ -144,7 +144,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       }
       probes.foreach { p =>
         p.expectNextN(List(1, 2))
-        p.expectComplete
+        p.expectComplete()
       }
     }
 

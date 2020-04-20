@@ -266,12 +266,12 @@ class ClusterClientSpec extends MultiNodeSpec(ClusterClientSpec) with STMultiNod
 
       //#server
       runOn(host1) {
-        val serviceA = system.actorOf(Props[Service], "serviceA")
+        val serviceA = system.actorOf(Props[Service](), "serviceA")
         ClusterClientReceptionist(system).registerService(serviceA)
       }
 
       runOn(host2, host3) {
-        val serviceB = system.actorOf(Props[Service], "serviceB")
+        val serviceB = system.actorOf(Props[Service](), "serviceB")
         ClusterClientReceptionist(system).registerService(serviceB)
       }
       //#server

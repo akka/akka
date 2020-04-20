@@ -20,5 +20,5 @@ import com.typesafe.config.Config
  * @see [[akka.persistence.snapshot.SnapshotStoreSpec]]
  */
 class JavaSnapshotStoreSpec(config: Config) extends SnapshotStoreSpec(config) {
-  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on
+  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on()
 }

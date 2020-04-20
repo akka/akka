@@ -166,7 +166,7 @@ final class LmdbDurableStore(config: Config) extends Actor with ActorLogging {
     val valueBuffer = lmdb().valueBuffer
     if (valueBuffer.remaining < size) {
       DirectByteBufferPool.tryCleanDirectByteBuffer(valueBuffer)
-      _lmdb = OptionVal.Some(lmdb.copy(valueBuffer = ByteBuffer.allocateDirect(size * 2)))
+      _lmdb = OptionVal.Some(lmdb().copy(valueBuffer = ByteBuffer.allocateDirect(size * 2)))
     }
   }
 

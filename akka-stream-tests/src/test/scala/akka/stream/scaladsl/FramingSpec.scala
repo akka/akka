@@ -385,7 +385,7 @@ class FramingSpec extends StreamSpec {
 
       def computeFrameSize(@unused arr: Array[Byte], @unused l: Int): Int = 8
 
-      val bs = ByteString.newBuilder.putInt(0xFF010203).putInt(0x04050607).result
+      val bs = ByteString.newBuilder.putInt(0xFF010203).putInt(0x04050607).result()
 
       val res =
         Source

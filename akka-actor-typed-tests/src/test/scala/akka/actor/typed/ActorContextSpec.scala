@@ -520,7 +520,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
 
     "return the right context info" in {
       type Info = (ActorSystem[Nothing], ActorRef[String])
-      val probe = TestProbe[Info]
+      val probe = TestProbe[Info]()
       val actor = spawn(
         Behaviors
           .receivePartial[String] {

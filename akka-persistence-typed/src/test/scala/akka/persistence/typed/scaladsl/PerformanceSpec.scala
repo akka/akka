@@ -145,7 +145,7 @@ class PerformanceSpec extends ScalaTestWithActorTestKit(ConfigFactory.parseStrin
   }
 
   def stressEventSourcedPersistentActor(failAt: Option[Long]): Unit = {
-    val probe = TestProbe[Reply]
+    val probe = TestProbe[Reply]()
     val name = s"${this.getClass.getSimpleName}-${UUID.randomUUID().toString}"
     val persistentActor = spawn(eventSourcedTestPersistenceBehavior(name, probe), name)
     stressPersistentActor(persistentActor, probe, failAt, "persistent events")

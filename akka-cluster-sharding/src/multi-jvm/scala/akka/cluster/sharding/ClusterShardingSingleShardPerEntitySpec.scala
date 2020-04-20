@@ -45,7 +45,7 @@ abstract class ClusterShardingSingleShardPerEntitySpec
       startSharding(
         system,
         typeName = "Entity",
-        entityProps = Props[ShardedEntity],
+        entityProps = Props[ShardedEntity](),
         extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
         extractShardId = MultiNodeClusterShardingSpec.intExtractShardId))
   }

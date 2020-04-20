@@ -51,7 +51,7 @@ class AttemptSysMsgRedeliverySpec
     }
 
     "redeliver system message after inactivity" taggedAs LongRunningTest in {
-      system.actorOf(Props[Echo], "echo")
+      system.actorOf(Props[Echo](), "echo")
       enterBarrier("echo-started")
 
       system.actorSelection(node(first) / "user" / "echo") ! Identify(None)

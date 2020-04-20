@@ -60,7 +60,7 @@ object Player {
 
   }
 
-  def waiterProps = Props[Waiter]
+  def waiterProps = Props[Waiter]()
 }
 
 /**
@@ -191,7 +191,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
 
   when(Connecting, stateTimeout = settings.ConnectTimeout) {
     case Event(_: ClientOp, _) =>
-      stay.replying(Status.Failure(new IllegalStateException("not connected yet")))
+      stay().replying(Status.Failure(new IllegalStateException("not connected yet")))
     case Event(Connected(channel), _) =>
       channel.write(Hello(name.name, TestConductor().address))
       goto(AwaitDone).using(Data(Some(channel), None))
@@ -211,7 +211,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
       log.error("received {} instead of Done", msg)
       goto(Failed)
     case Event(_: ServerOp, _) =>
-      stay.replying(Status.Failure(new IllegalStateException("not connected yet")))
+      stay().replying(Status.Failure(new IllegalStateException("not connected yet")))
     case Event(StateTimeout, _) =>
       log.error("connect timeout to TestConductor")
       goto(Failed)
@@ -223,7 +223,7 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
       throw new ConnectionFailure("disconnect")
     case Event(ToServer(_: Done), Data(Some(channel), _)) =>
       channel.write(Done)
-      stay
+      stay()
     case Event(ToServer(msg), d @ Data(Some(channel), None)) =>
       channel.write(msg)
       val token = msg match {
@@ -231,10 +231,10 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
         case GetAddress(node)         => Some(node.name -> sender())
         case _                        => None
       }
-      stay.using(d.copy(runningOp = token))
+      stay().using(d.copy(runningOp = token))
     case Event(ToServer(op), Data(_, Some((token, _)))) =>
       log.error("cannot write {} while waiting for {}", op, token)
-      stay
+      stay()
     case Event(op: ClientOp, d @ Data(Some(channel @ _), runningOp)) =>
       op match {
         case BarrierResult(b, success) =>
@@ -249,13 +249,13 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
             case None =>
               log.warning("did not expect {}", op)
           }
-          stay.using(d.copy(runningOp = None))
+          stay().using(d.copy(runningOp = None))
         case AddressReply(_, address) =>
           runningOp match {
             case Some((_, requester)) => requester ! address
             case None                 => log.warning("did not expect {}", op)
           }
-          stay.using(d.copy(runningOp = None))
+          stay().using(d.copy(runningOp = None))
         case t: ThrottleMsg =>
           import context.dispatcher // FIXME is this the right EC for the future below?
           val mode =
@@ -278,10 +278,10 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
               throw new RuntimeException("Throttle was requested from the TestConductor, but no transport " +
               "adapters available that support throttling. Specify `testTransport(on = true)` in your MultiNodeConfig")
           }
-          stay
+          stay()
         case _: DisconnectMsg =>
           // FIXME: Currently ignoring, needs support from Remoting
-          stay
+          stay()
         case TerminateMsg(Left(false)) =>
           context.system.terminate()
           stop()
@@ -290,17 +290,17 @@ private[akka] class ClientFSM(name: RoleName, controllerAddr: InetSocketAddress)
           stop()
         case TerminateMsg(Right(exitValue)) =>
           System.exit(exitValue)
-          stay // needed because Java doesn’t have Nothing
-        case _: Done => stay //FIXME what should happen?
+          stay() // needed because Java doesn’t have Nothing
+        case _: Done => stay() //FIXME what should happen?
       }
   }
 
   when(Failed) {
     case Event(msg: ClientOp, _) =>
-      stay.replying(Status.Failure(new RuntimeException("cannot do " + msg + " while Failed")))
+      stay().replying(Status.Failure(new RuntimeException("cannot do " + msg + " while Failed")))
     case Event(msg: NetworkOp, _) =>
       log.warning("ignoring network message {} while Failed", msg)
-      stay
+      stay()
   }
 
   onTermination {

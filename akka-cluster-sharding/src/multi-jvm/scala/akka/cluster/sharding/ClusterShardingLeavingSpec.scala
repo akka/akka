@@ -76,7 +76,7 @@ abstract class ClusterShardingLeavingSpec(multiNodeConfig: ClusterShardingLeavin
     startSharding(
       system,
       typeName = "Entity",
-      entityProps = Props[Entity],
+      entityProps = Props[Entity](),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)
   }
@@ -98,7 +98,7 @@ abstract class ClusterShardingLeavingSpec(multiNodeConfig: ClusterShardingLeavin
 
     "initialize shards" in {
       runOn(first) {
-        val shardLocations = system.actorOf(Props[ShardLocations], "shardLocations")
+        val shardLocations = system.actorOf(Props[ShardLocations](), "shardLocations")
         val locations = (for (n <- 1 to 10) yield {
           val id = n.toString
           region ! Ping(id)

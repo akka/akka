@@ -49,7 +49,7 @@ abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmS
   def initialParticipants = 2
 
   runOn(master) {
-    system.actorOf(Props[SomeActor], "service-hello")
+    system.actorOf(Props[SomeActor](), "service-hello")
   }
 
   "Remoting" must {

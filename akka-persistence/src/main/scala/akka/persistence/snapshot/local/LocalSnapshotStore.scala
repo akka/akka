@@ -92,7 +92,7 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
   }
 
   private def snapshotFiles(metadata: SnapshotMetadata): immutable.Seq[File] = {
-    snapshotDir.listFiles(new SnapshotSeqNrFilenameFilter(metadata)).toVector
+    snapshotDir().listFiles(new SnapshotSeqNrFilenameFilter(metadata)).toVector
   }
 
   @scala.annotation.tailrec
@@ -144,13 +144,13 @@ private[persistence] class LocalSnapshotStore(config: Config) extends SnapshotSt
   /** Only by persistenceId and sequenceNr, timestamp is informational - accommodates for 2.13.x series files */
   protected def snapshotFileForWrite(metadata: SnapshotMetadata, extension: String = ""): File =
     new File(
-      snapshotDir,
+      snapshotDir(),
       s"snapshot-${URLEncoder.encode(metadata.persistenceId, UTF_8)}-${metadata.sequenceNr}-${metadata.timestamp}${extension}")
 
   private def snapshotMetadatas(
       persistenceId: String,
       criteria: SnapshotSelectionCriteria): immutable.Seq[SnapshotMetadata] = {
-    val files = snapshotDir.listFiles(new SnapshotFilenameFilter(persistenceId))
+    val files = snapshotDir().listFiles(new SnapshotFilenameFilter(persistenceId))
     if (files eq null) Nil // if the dir was removed
     else {
       files

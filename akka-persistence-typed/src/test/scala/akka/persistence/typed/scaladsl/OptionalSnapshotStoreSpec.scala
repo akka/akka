@@ -73,7 +73,7 @@ class OptionalSnapshotStoreSpec extends ScalaTestWithActorTestKit(s"""
     }
 
     "successfully save a snapshot when no default snapshot-store configured, yet PersistentActor picked one explicitly" in {
-      val stateProbe = TestProbe[State]
+      val stateProbe = TestProbe[State]()
       val persistentActor = spawn(persistentBehaviorWithSnapshotPlugin(stateProbe))
       persistentActor ! AnyCommand
       stateProbe.expectMessageType[State]

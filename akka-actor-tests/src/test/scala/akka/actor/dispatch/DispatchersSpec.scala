@@ -182,11 +182,11 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     }
 
     "include system name and dispatcher id in thread names for fork-join-executor" in {
-      assertMyDispatcherIsUsed(system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.mydispatcher")))
+      assertMyDispatcherIsUsed(system.actorOf(Props[ThreadNameEcho]().withDispatcher("myapp.mydispatcher")))
     }
 
     "include system name and dispatcher id in thread names for thread-pool-executor" in {
-      system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.thread-pool-dispatcher")) ! "what's the name?"
+      system.actorOf(Props[ThreadNameEcho]().withDispatcher("myapp.thread-pool-dispatcher")) ! "what's the name?"
       val Expected = R("(DispatchersSpec-myapp.thread-pool-dispatcher-[1-9][0-9]*)")
       expectMsgPF() {
         case Expected(_) =>
@@ -194,7 +194,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     }
 
     "include system name and dispatcher id in thread names for default-dispatcher" in {
-      system.actorOf(Props[ThreadNameEcho]) ! "what's the name?"
+      system.actorOf(Props[ThreadNameEcho]()) ! "what's the name?"
       val Expected = R("(DispatchersSpec-akka.actor.default-dispatcher-[1-9][0-9]*)")
       expectMsgPF() {
         case Expected(_) =>
@@ -202,7 +202,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     }
 
     "include system name and dispatcher id in thread names for pinned dispatcher" in {
-      system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.my-pinned-dispatcher")) ! "what's the name?"
+      system.actorOf(Props[ThreadNameEcho]().withDispatcher("myapp.my-pinned-dispatcher")) ! "what's the name?"
       val Expected = R("(DispatchersSpec-myapp.my-pinned-dispatcher-[1-9][0-9]*)")
       expectMsgPF() {
         case Expected(_) =>
@@ -210,7 +210,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     }
 
     "include system name and dispatcher id in thread names for balancing dispatcher" in {
-      system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.balancing-dispatcher")) ! "what's the name?"
+      system.actorOf(Props[ThreadNameEcho]().withDispatcher("myapp.balancing-dispatcher")) ! "what's the name?"
       val Expected = R("(DispatchersSpec-myapp.balancing-dispatcher-[1-9][0-9]*)")
       expectMsgPF() {
         case Expected(_) =>
@@ -218,16 +218,16 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     }
 
     "use dispatcher in deployment config" in {
-      assertMyDispatcherIsUsed(system.actorOf(Props[ThreadNameEcho], name = "echo1"))
+      assertMyDispatcherIsUsed(system.actorOf(Props[ThreadNameEcho](), name = "echo1"))
     }
 
     "use dispatcher in deployment config, trumps code" in {
       assertMyDispatcherIsUsed(
-        system.actorOf(Props[ThreadNameEcho].withDispatcher("myapp.my-pinned-dispatcher"), name = "echo2"))
+        system.actorOf(Props[ThreadNameEcho]().withDispatcher("myapp.my-pinned-dispatcher"), name = "echo2"))
     }
 
     "use pool-dispatcher router of deployment config" in {
-      val pool = system.actorOf(FromConfig.props(Props[ThreadNameEcho]), name = "pool1")
+      val pool = system.actorOf(FromConfig.props(Props[ThreadNameEcho]()), name = "pool1")
       pool ! Identify(None)
       val routee = expectMsgType[ActorIdentity].ref.get
       routee ! "what's the name?"
@@ -238,7 +238,7 @@ class DispatchersSpec extends AkkaSpec(DispatchersSpec.config) with ImplicitSend
     }
 
     "use balancing-pool router with special routees mailbox of deployment config" in {
-      system.actorOf(FromConfig.props(Props[ThreadNameEcho]), name = "balanced") ! "what's the name?"
+      system.actorOf(FromConfig.props(Props[ThreadNameEcho]()), name = "balanced") ! "what's the name?"
       val Expected = R("""(DispatchersSpec-BalancingPool-/balanced-[1-9][0-9]*)""")
       expectMsgPF() {
         case Expected(_) =>

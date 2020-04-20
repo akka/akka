@@ -131,7 +131,7 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
       runOn(second) {
         // Create a 'Parent' actor on the 'second' node
         // have it create a 'Hello' child (which will be on the 'first' node due to the deployment config):
-        system.actorOf(Props[Parent], "parent") ! ((Props[Hello], "hello"))
+        system.actorOf(Props[Parent](), "parent") ! ((Props[Hello](), "hello"))
         // The 'Hello' child will send "HelloParent" to the 'Parent', which will pass it to the 'echo' monitor:
         expectMsg(15.seconds, "HelloParent")
       }
@@ -189,7 +189,7 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
       runOn(second) {
         val p = TestProbe()(sys)
         sys.actorOf(echoProps(p.ref), "echo")
-        p.send(sys.actorOf(Props[Parent], "parent"), (Props[Hello], "hello"))
+        p.send(sys.actorOf(Props[Parent](), "parent"), (Props[Hello](), "hello"))
         p.expectMsg(15.seconds, "HelloParent")
       }
 

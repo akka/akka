@@ -26,7 +26,7 @@ hand checking:
 class ActorCreationBenchmark {
   implicit val system: ActorSystem = ActorSystem()
 
-  final val props = Props[MyActor]
+  final val props = Props[MyActor]()
 
   var i = 1
   def name = {

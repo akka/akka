@@ -191,7 +191,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     body(bsBuilder)
     body(vecBuilder)
 
-    bsBuilder.result == vecBuilder.result
+    bsBuilder.result() == vecBuilder.result()
   }
 
   def testShortDecoding(slice: ByteStringSlice, byteOrder: ByteOrder): Boolean = {
@@ -275,7 +275,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     for (i <- 0 until from) builder.putShort(data(i))(byteOrder)
     builder.putShorts(data, from, to - from)(byteOrder)
     for (i <- to until data.length) builder.putShort(data(i))(byteOrder)
-    reference.toSeq == builder.result
+    reference.toSeq == builder.result()
   }
 
   def testIntEncoding(slice: ArraySlice[Int], byteOrder: ByteOrder): Boolean = {
@@ -287,7 +287,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     for (i <- 0 until from) builder.putInt(data(i))(byteOrder)
     builder.putInts(data, from, to - from)(byteOrder)
     for (i <- to until data.length) builder.putInt(data(i))(byteOrder)
-    reference.toSeq == builder.result
+    reference.toSeq == builder.result()
   }
 
   def testLongEncoding(slice: ArraySlice[Long], byteOrder: ByteOrder): Boolean = {
@@ -299,7 +299,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     for (i <- 0 until from) builder.putLong(data(i))(byteOrder)
     builder.putLongs(data, from, to - from)(byteOrder)
     for (i <- to until data.length) builder.putLong(data(i))(byteOrder)
-    reference.toSeq == builder.result
+    reference.toSeq == builder.result()
   }
 
   def testLongPartEncoding(anb: ArrayNumBytes[Long], byteOrder: ByteOrder): Boolean = {
@@ -316,7 +316,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
         case (r, i) if byteOrder == ByteOrder.LITTLE_ENDIAN && i % elemSize < nBytes            => r
         case (r, i) if byteOrder == ByteOrder.BIG_ENDIAN && i % elemSize >= (elemSize - nBytes) => r
       })
-      .toSeq == builder.result
+      .toSeq == builder.result()
   }
 
   def testFloatEncoding(slice: ArraySlice[Float], byteOrder: ByteOrder): Boolean = {
@@ -328,7 +328,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     for (i <- 0 until from) builder.putFloat(data(i))(byteOrder)
     builder.putFloats(data, from, to - from)(byteOrder)
     for (i <- to until data.length) builder.putFloat(data(i))(byteOrder)
-    reference.toSeq == builder.result
+    reference.toSeq == builder.result()
   }
 
   def testDoubleEncoding(slice: ArraySlice[Double], byteOrder: ByteOrder): Boolean = {
@@ -340,7 +340,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
     for (i <- 0 until from) builder.putDouble(data(i))(byteOrder)
     builder.putDoubles(data, from, to - from)(byteOrder)
     for (i <- to until data.length) builder.putDouble(data(i))(byteOrder)
-    reference.toSeq == builder.result
+    reference.toSeq == builder.result()
   }
 
   "ByteString1" must {
@@ -1301,7 +1301,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
           for (i <- 0 until from) builder.putByte(data(i))
           builder.putBytes(data, from, to - from)
           for (i <- to until data.length) builder.putByte(data(i))
-          data.toSeq == builder.result
+          data.toSeq == builder.result()
         }
       }
 
@@ -1313,7 +1313,7 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
           for (i <- 0 until from) builder.asOutputStream.write(data(i).toInt)
           builder.asOutputStream.write(data, from, to - from)
           for (i <- to until data.length) builder.asOutputStream.write(data(i).toInt)
-          data.toSeq == builder.result
+          data.toSeq == builder.result()
         }
       }
     }

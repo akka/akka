@@ -27,7 +27,7 @@ import scala.util.control.NonFatal
   override val shape = SinkShape(in)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
-    val matPromise = Promise[M]
+    val matPromise = Promise[M]()
     (createStageLogic(matPromise), matPromise.future)
   }
 
@@ -63,7 +63,7 @@ import scala.util.control.NonFatal
   override val shape = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
-    val matPromise = Promise[M]
+    val matPromise = Promise[M]()
     (createStageLogic(matPromise), matPromise.future)
   }
 
@@ -106,7 +106,7 @@ import scala.util.control.NonFatal
   override val shape = SourceShape(out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
-    val matPromise = Promise[M]
+    val matPromise = Promise[M]()
     (createStageLogic(matPromise), matPromise.future)
   }
 

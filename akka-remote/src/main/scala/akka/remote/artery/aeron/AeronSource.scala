@@ -35,7 +35,7 @@ private[remote] object AeronSource {
       handler: MessageHandler,
       onMessage: AsyncCallback[EnvelopeBuffer]): () => Boolean = { () =>
     {
-      handler.reset
+      handler.reset()
       sub.poll(handler.fragmentsHandler, 1)
       val msg = handler.messageReceived
       handler.reset() // for GC
@@ -167,7 +167,7 @@ private[remote] class AeronSource(
       }
 
       override def channelEndpointStatus(): Future[Long] = {
-        val promise = Promise[Long]
+        val promise = Promise[Long]()
         getStatusCb.invoke(promise)
         promise.future
       }

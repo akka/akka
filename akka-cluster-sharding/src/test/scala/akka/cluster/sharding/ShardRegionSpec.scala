@@ -92,7 +92,7 @@ class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) {
   def startShard(sys: ActorSystem): ActorRef =
     ClusterSharding(sys).start(
       shardTypeName,
-      Props[EntityActor],
+      Props[EntityActor](),
       ClusterShardingSettings(system).withRememberEntities(true),
       extractEntityId,
       extractShardId)

@@ -119,7 +119,7 @@ class BackoffOnRestartSupervisorSpec extends AkkaSpec("""
         val supervisorChildSelection = system.actorSelection(supervisor.path / "*")
         supervisorChildSelection.tell("testmsg", probe.ref)
         probe.expectMsg("testmsg")
-        probe.expectNoMessage
+        probe.expectNoMessage()
       }
     }
 

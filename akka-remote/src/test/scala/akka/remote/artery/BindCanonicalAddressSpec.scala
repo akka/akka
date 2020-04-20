@@ -29,7 +29,7 @@ trait BindCanonicalAddressBehaviors {
 
       implicit val sys = ActorSystem("sys", config.withFallback(commonConfig))
 
-      getInternal should contain(getExternal)
+      getInternal should contain(getExternal())
       Await.result(sys.terminate(), Duration.Inf)
     }
 
@@ -46,13 +46,13 @@ trait BindCanonicalAddressBehaviors {
       getExternal should ===(address.toAkkaAddress("akka"))
       // May have selected the same random port - bind another in that case while the other still has the canonical port
       val internals =
-        if (getInternal.collect { case Address(_, _, _, Some(port)) => port }.toSeq.contains(address.getPort)) {
+        if (getInternal().collect { case Address(_, _, _, Some(port)) => port }.toSeq.contains(address.getPort)) {
           val sys2 = ActorSystem("sys", config.withFallback(commonConfig))
           val secondInternals = getInternal()(sys2)
           Await.result(sys2.terminate(), Duration.Inf)
           secondInternals
         } else {
-          getInternal
+          getInternal()
         }
       internals should not contain address.toAkkaAddress("akka")
       Await.result(sys.terminate(), Duration.Inf)
@@ -92,8 +92,8 @@ trait BindCanonicalAddressBehaviors {
 
       implicit val sys = ActorSystem("sys", config.withFallback(commonConfig))
 
-      getInternal.flatMap(_.port) should contain(getExternal.port.get)
-      getInternal.map(x => (x.host.get should include).regex("0.0.0.0".r)) // regexp dot is intentional to match IPv4 and 6 addresses
+      getInternal().flatMap(_.port) should contain(getExternal().port.get)
+      getInternal().map(x => (x.host.get should include).regex("0.0.0.0".r)) // regexp dot is intentional to match IPv4 and 6 addresses
 
       Await.result(sys.terminate(), Duration.Inf)
     }

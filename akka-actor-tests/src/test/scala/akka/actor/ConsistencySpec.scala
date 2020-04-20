@@ -60,7 +60,7 @@ class ConsistencySpec extends AkkaSpec(ConsistencySpec.config) {
   "The Akka actor model implementation" must {
     "provide memory consistency" in {
       val noOfActors = threads + 1
-      val props = Props[ConsistencyCheckingActor].withDispatcher("consistency-dispatcher")
+      val props = Props[ConsistencyCheckingActor]().withDispatcher("consistency-dispatcher")
       val actors = Vector.fill(noOfActors)(system.actorOf(props))
 
       for (i <- 0L until 10000L) {

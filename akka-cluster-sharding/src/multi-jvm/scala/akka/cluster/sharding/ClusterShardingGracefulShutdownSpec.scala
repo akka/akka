@@ -56,7 +56,7 @@ abstract class ClusterShardingGracefulShutdownSpec(multiNodeConfig: ClusterShard
     startSharding(
       system,
       typeName,
-      entityProps = Props[ShardedEntity],
+      entityProps = Props[ShardedEntity](),
       extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
       extractShardId = MultiNodeClusterShardingSpec.intExtractShardId,
       allocationStrategy =

@@ -93,7 +93,7 @@ class Slf4jLoggingFilterSpec extends AkkaSpec(Slf4jLoggingFilterSpec.config) wit
       val probe = TestProbe()
       system.eventStream.publish(SetTarget(probe.ref))
       probe.expectMsg("OK")
-      val debugLevelProducer = system.actorOf(Props[DebugLevelProducer], name = "debugLevelProducer")
+      val debugLevelProducer = system.actorOf(Props[DebugLevelProducer](), name = "debugLevelProducer")
       debugLevelProducer ! "test1"
       probe.expectMsgType[Warning].message should be("test1")
       probe.expectMsgType[Info].message should be("test1")
@@ -104,7 +104,7 @@ class Slf4jLoggingFilterSpec extends AkkaSpec(Slf4jLoggingFilterSpec.config) wit
       val probe = TestProbe()
       system.eventStream.publish(SetTarget(probe.ref))
       probe.expectMsg("OK")
-      val debugLevelProducer = system.actorOf(Props[WarningLevelProducer], name = "warningLevelProducer")
+      val debugLevelProducer = system.actorOf(Props[WarningLevelProducer](), name = "warningLevelProducer")
       debugLevelProducer ! "test2"
       probe.expectMsgType[Warning].message should be("test2")
       probe.expectNoMessage(500.millis)

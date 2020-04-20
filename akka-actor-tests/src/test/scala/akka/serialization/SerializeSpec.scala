@@ -284,7 +284,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   }
 
   "verify creators" in {
-    val a = system.actorOf(Props[FooActor])
+    val a = system.actorOf(Props[FooActor]())
     system.stop(a)
 
     val b = system.actorOf(Props(new FooAbstractActor))
@@ -307,7 +307,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   }
 
   "verify messages" in {
-    val a = system.actorOf(Props[FooActor])
+    val a = system.actorOf(Props[FooActor]())
     Await.result(a ? "pigdog", timeout.duration) should ===("pigdog")
 
     EventFilter[SerializationCheckFailedException](
@@ -319,7 +319,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   }
 
   "not verify akka messages" in {
-    val a = system.actorOf(Props[FooActor])
+    val a = system.actorOf(Props[FooActor]())
     EventFilter.warning(start = "ok", occurrences = 1).intercept {
       // ActorSystem is not possible to serialize, but ok since it starts with "akka."
       val message = system

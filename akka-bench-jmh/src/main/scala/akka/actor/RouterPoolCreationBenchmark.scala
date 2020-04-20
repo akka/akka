@@ -21,7 +21,7 @@ class RouterPoolCreationBenchmark {
   implicit val system: ActorSystem = ActorSystem()
   val probe = TestProbe()
 
-  Props[TestActors.EchoActor]
+  Props[TestActors.EchoActor]()
 
   @Param(Array("1000", "2000", "3000", "4000"))
   var size = 0

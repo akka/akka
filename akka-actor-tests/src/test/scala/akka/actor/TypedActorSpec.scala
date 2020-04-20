@@ -123,11 +123,11 @@ object TypedActorSpec {
 
     def pigdog = "Pigdog"
 
-    def futurePigdog(): Future[String] = Future.successful(pigdog)
+    def futurePigdog(): Future[String] = Future.successful(pigdog())
 
     def futurePigdog(delay: FiniteDuration): Future[String] = {
       Thread.sleep(delay.toMillis)
-      futurePigdog
+      futurePigdog()
     }
 
     def futurePigdog(delay: FiniteDuration, numbered: Int): Future[String] = {
@@ -140,16 +140,16 @@ object TypedActorSpec {
       foo.futurePigdog(500 millis).map(_.toUpperCase)
     }
 
-    def optionPigdog(): Option[String] = Some(pigdog)
+    def optionPigdog(): Option[String] = Some(pigdog())
 
     def optionPigdog(delay: FiniteDuration): Option[String] = {
       Thread.sleep(delay.toMillis)
-      Some(pigdog)
+      Some(pigdog())
     }
 
     def joptionPigdog(delay: FiniteDuration): JOption[String] = {
       Thread.sleep(delay.toMillis)
-      JOption.some(pigdog)
+      JOption.some(pigdog())
     }
 
     var internalNumber = 0
@@ -408,14 +408,14 @@ class TypedActorSpec
         t.failingPigdog()
         t.read() should ===(1) //Make sure state is not reset after failure
 
-        intercept[IllegalStateException] { Await.result(t.failingFuturePigdog, 2 seconds) }.getMessage should ===(
+        intercept[IllegalStateException] { Await.result(t.failingFuturePigdog(), 2 seconds) }.getMessage should ===(
           "expected")
         t.read() should ===(1) //Make sure state is not reset after failure
 
-        intercept[IllegalStateException] { t.failingJOptionPigdog }.getMessage should ===("expected")
+        intercept[IllegalStateException] { t.failingJOptionPigdog() }.getMessage should ===("expected")
         t.read() should ===(1) //Make sure state is not reset after failure
 
-        intercept[IllegalStateException] { t.failingOptionPigdog }.getMessage should ===("expected")
+        intercept[IllegalStateException] { t.failingOptionPigdog() }.getMessage should ===("expected")
 
         t.read() should ===(1) //Make sure state is not reset after failure
 
@@ -466,7 +466,7 @@ class TypedActorSpec
       val thais = for (_ <- 1 to 60) yield newFooBar("pooled-dispatcher", 6 seconds)
       val iterator = new CyclicIterator(thais)
 
-      val results = for (i <- 1 to 120) yield (i, iterator.next.futurePigdog(200 millis, i))
+      val results = for (i <- 1 to 120) yield (i, iterator.next().futurePigdog(200 millis, i))
 
       for ((i, r) <- results) Await.result(r, remaining) should ===("Pigdog" + i)
 

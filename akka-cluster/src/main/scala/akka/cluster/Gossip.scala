@@ -315,7 +315,7 @@ private[cluster] class GossipEnvelope private (
 
   private def deserialize(): Unit = {
     if ((g eq null) && (ser ne null)) {
-      if (serDeadline.hasTimeLeft)
+      if (serDeadline.hasTimeLeft())
         g = ser()
       else
         g = Gossip.empty

@@ -118,14 +118,14 @@ class BalancingSpec extends AkkaSpec("""
 
     "work with anonymous actor names" in {
       // the dispatcher-id must not contain invalid config key characters (e.g. $a)
-      system.actorOf(Props[Parent]) ! 1000
+      system.actorOf(Props[Parent]()) ! 1000
       expectMsgType[Int]
     }
 
     "work with encoded actor names" in {
       val encName = URLEncoder.encode("abcå6#$€xyz", "utf-8")
       // % is a valid config key character (e.g. %C3%A5)
-      system.actorOf(Props[Parent], encName) ! 1001
+      system.actorOf(Props[Parent](), encName) ! 1001
       expectMsgType[Int]
     }
 

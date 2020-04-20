@@ -82,7 +82,7 @@ class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollec
         // wait a while between each message to give the metrics a chance to change
         Thread.sleep(100)
         usedMemory = usedMemory ++ Array.fill(1024)(ThreadLocalRandom.current.nextInt(127).toByte)
-        val changes = collector.sample.metrics.flatMap { latest =>
+        val changes = collector.sample().metrics.flatMap { latest =>
           streamingDataSet.get(latest.name) match {
             case None => Some(latest)
             case Some(previous) =>

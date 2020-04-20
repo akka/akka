@@ -466,7 +466,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   /**
    * Produce change descriptor to stop this FSM actor including specified reason.
    */
-  final def stop(reason: Reason, stateData: D): State = stay.using(stateData).withStopReason(reason)
+  final def stop(reason: Reason, stateData: D): State = stay().using(stateData).withStopReason(reason)
 
   final class TransformHelper(func: StateFunction) {
     def using(andThen: PartialFunction[State, State]): StateFunction =
@@ -559,7 +559,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
     if (timers contains name) {
       timers(name).cancel()
     }
-    val timer = Timer(name, msg, mode, timerGen.next, this)(context)
+    val timer = Timer(name, msg, mode, timerGen.next(), this)(context)
     timer.schedule(self, timeout)
     timers(name) = timer
   }
@@ -728,7 +728,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
   private val handleEventDefault: StateFunction = {
     case Event(value, _) =>
       log.warning("unhandled event " + value + " in state " + stateName)
-      stay
+      stay()
   }
   private var handleEvent: StateFunction = handleEventDefault
 
@@ -821,7 +821,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
 
   private[akka] def makeTransition(nextState: State): Unit = {
     if (!stateFunctions.contains(nextState.stateName)) {
-      terminate(stay.withStopReason(Failure("Next state %s does not exist".format(nextState.stateName))))
+      terminate(stay().withStopReason(Failure("Next state %s does not exist".format(nextState.stateName))))
     } else {
       nextState.replies.reverse.foreach { r =>
         sender() ! r
@@ -862,7 +862,7 @@ trait FSM[S, D] extends Actor with Listeners with ActorLogging {
      * setting this instance’s state to terminated does no harm during restart
      * since the new instance will initialize fresh using startWith()
      */
-    terminate(stay.withStopReason(Shutdown))
+    terminate(stay().withStopReason(Shutdown))
     super.postStop()
   }
 

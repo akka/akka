@@ -75,7 +75,7 @@ abstract class BehaviorTestKit[T] {
   /**
    * The self reference of the actor living inside this testkit.
    */
-  def getRef(): ActorRef[T] = selfInbox.getRef()
+  def getRef(): ActorRef[T] = selfInbox().getRef()
 
   /**
    * Requests all the effects. The effects are consumed, subsequent calls will only

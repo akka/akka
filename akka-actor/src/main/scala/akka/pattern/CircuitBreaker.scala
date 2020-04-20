@@ -769,12 +769,12 @@ class CircuitBreaker(
         materialize(body).onComplete {
           case Success(result) =>
             p.trySuccess(result)
-            timeout.cancel
+            timeout.cancel()
           case Failure(ex) =>
             if (p.tryFailure(ex)) {
               notifyCallFailureListeners(start)
             }
-            timeout.cancel
+            timeout.cancel()
         }(parasitic)
         p.future
       }

@@ -46,7 +46,7 @@ class JavaLoggerSpec extends AkkaSpec(JavaLoggerSpec.config) {
     def close(): Unit = {}
   })
 
-  val producer = system.actorOf(Props[JavaLoggerSpec.LogProducer], name = "log")
+  val producer = system.actorOf(Props[JavaLoggerSpec.LogProducer](), name = "log")
 
   "JavaLogger" must {
 

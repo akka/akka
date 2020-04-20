@@ -35,7 +35,7 @@ object FSMTransitionSpec {
       case Event("tick", _) => goto(0)
     }
     whenUnhandled {
-      case Event("reply", _) => stay.replying("reply")
+      case Event("reply", _) => stay().replying("reply")
     }
     initialize()
     override def preRestart(reason: Throwable, msg: Option[Any]): Unit = { target ! "restarted" }

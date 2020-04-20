@@ -131,7 +131,7 @@ class ActorRefBackpressureSinkSpec extends StreamSpec {
       val sink = Sink
         .actorRefWithBackpressure(fw, initMessage, ackMessage, completeMessage, _ => failMessage)
         .withAttributes(inputBuffer(bufferSize, bufferSize))
-      val bufferFullProbe = Promise[akka.Done.type]
+      val bufferFullProbe = Promise[akka.Done.type]()
       Source(1 to streamElementCount)
         .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ => bufferFullProbe.trySuccess(akka.Done))))
         .to(sink)

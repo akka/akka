@@ -62,7 +62,7 @@ abstract class RemoteGatePiercingSpec extends RemotingMultiNodeSpec(RemoteGatePi
   "RemoteGatePiercing" must {
 
     "allow restarted node to pass through gate" taggedAs LongRunningTest in {
-      system.actorOf(Props[Subject], "subject")
+      system.actorOf(Props[Subject](), "subject")
       enterBarrier("actors-started")
 
       runOn(first) {

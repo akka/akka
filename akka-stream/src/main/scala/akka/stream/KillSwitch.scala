@@ -78,7 +78,7 @@ object KillSwitches {
     override def toString: String = "UniqueKillSwitchFlow"
 
     override def createLogicAndMaterializedValue(attr: Attributes) = {
-      val promise = Promise[Done]
+      val promise = Promise[Done]()
       val switch = new UniqueKillSwitch(promise)
 
       val logic = new KillableGraphStageLogic(promise.future, shape) with InHandler with OutHandler {
@@ -104,7 +104,7 @@ object KillSwitches {
     override def toString: String = "UniqueKillSwitchBidi"
 
     override def createLogicAndMaterializedValue(attr: Attributes) = {
-      val promise = Promise[Done]
+      val promise = Promise[Done]()
       val switch = new UniqueKillSwitch(promise)
 
       val logic = new KillableGraphStageLogic(promise.future, shape) {
@@ -159,7 +159,7 @@ trait KillSwitch {
 
 private[stream] final class TerminationSignal {
   final class Listener private[TerminationSignal] {
-    private[TerminationSignal] val promise = Promise[Done]
+    private[TerminationSignal] val promise = Promise[Done]()
     def future: Future[Done] = promise.future
     def unregister(): Unit = removeListener(this)
   }

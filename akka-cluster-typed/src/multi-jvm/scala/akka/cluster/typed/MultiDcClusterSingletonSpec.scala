@@ -65,7 +65,7 @@ abstract class MultiDcClusterSingletonSpec
       runOn(first) {
         val singleton = ClusterSingleton(typedSystem)
         val pinger = singleton.init(SingletonActor(MultiDcPinger(), "ping").withStopMessage(NoMore))
-        val probe = TestProbe[Pong]
+        val probe = TestProbe[Pong]()
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc1"))
         enterBarrier("singleton-up")
@@ -82,7 +82,7 @@ abstract class MultiDcClusterSingletonSpec
           SingletonActor(MultiDcPinger(), "ping")
             .withStopMessage(NoMore)
             .withSettings(ClusterSingletonSettings(typedSystem).withDataCenter("dc1")))
-        val probe = TestProbe[Pong]
+        val probe = TestProbe[Pong]()
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc1"))
       }
@@ -94,7 +94,7 @@ abstract class MultiDcClusterSingletonSpec
       runOn(second, third) {
         val singleton = ClusterSingleton(typedSystem)
         val pinger = singleton.init(SingletonActor(MultiDcPinger(), "ping").withStopMessage(NoMore))
-        val probe = TestProbe[Pong]
+        val probe = TestProbe[Pong]()
         pinger ! Ping(probe.ref)
         probe.expectMessage(Pong("dc2"))
       }

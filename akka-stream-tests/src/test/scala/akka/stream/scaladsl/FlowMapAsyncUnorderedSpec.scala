@@ -137,7 +137,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectError.getMessage should be("err1")
+      c.expectError().getMessage should be("err1")
       latch.countDown()
     }
 
@@ -180,7 +180,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
         .run()
       val sub = c.expectSubscription()
       sub.request(10)
-      c.expectError.getMessage should be("err2")
+      c.expectError().getMessage should be("err2")
       latch.countDown()
     }
 
@@ -339,7 +339,7 @@ class FlowMapAsyncUnorderedSpec extends StreamSpec {
       def deferred(): Future[Int] = {
         if (counter.incrementAndGet() > parallelism) Future.failed(new Exception("parallelism exceeded"))
         else {
-          val p = Promise[Int]
+          val p = Promise[Int]()
           queue.offer(p -> System.nanoTime())
           p.future
         }

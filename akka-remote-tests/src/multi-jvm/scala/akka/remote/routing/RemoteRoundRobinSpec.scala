@@ -91,7 +91,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
 
       runOn(fourth) {
         enterBarrier("start")
-        val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]), "service-hello")
+        val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]()), "service-hello")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         val connectionCount = 3
@@ -136,7 +136,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
         enterBarrier("start")
         val actor =
           system.actorOf(
-            RoundRobinPool(nrOfInstances = 1, resizer = Some(new TestResizer)).props(Props[SomeActor]),
+            RoundRobinPool(nrOfInstances = 1, resizer = Some(new TestResizer)).props(Props[SomeActor]()),
             "service-hello2")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
@@ -173,7 +173,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
     "send messages with actor selection to remote paths" in {
 
       runOn(first, second, third) {
-        system.actorOf(Props[SomeActor], name = "target-" + myself.name)
+        system.actorOf(Props[SomeActor](), name = "target-" + myself.name)
         enterBarrier("start", "end")
       }
 

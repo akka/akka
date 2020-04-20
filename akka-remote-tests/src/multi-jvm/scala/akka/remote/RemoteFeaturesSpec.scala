@@ -272,7 +272,7 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
     "send messages to remote paths" in {
 
       runOn(first, second, third) {
-        system.actorOf(Props[SomeActor], name = "target-" + myself.name)
+        system.actorOf(Props[SomeActor](), name = "target-" + myself.name)
         enterBarrier("start", "end")
       }
 
@@ -310,7 +310,7 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
 
       runOn(fourth) {
         enterBarrier("start")
-        val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]), "service-hello")
+        val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]()), "service-hello")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         for (_ <- 0 until iterationCount; _ <- 0 until workerInstances) {

@@ -75,7 +75,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
   "Remoting" must {
 
     "not leak actors" in {
-      system.actorOf(Props[EchoActor], "echo")
+      system.actorOf(Props[EchoActor](), "echo")
       val echoPath = RootActorPath(RARP(system).provider.getDefaultAddress) / "user" / "echo"
 
       val targets = List("/system/endpointManager", "/system/transports").map { path =>
@@ -120,7 +120,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
         try {
           val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
 
-          remoteSystem.actorOf(Props[StoppableActor], "stoppable")
+          remoteSystem.actorOf(Props[StoppableActor](), "stoppable")
 
           // the message from remote to local will cause inbound connection established
           val probe = TestProbe()(remoteSystem)
@@ -185,7 +185,7 @@ class ActorsLeakSpec extends AkkaSpec(ActorsLeakSpec.config) with ImplicitSender
         ActorSystem("remote", ConfigFactory.parseString("akka.remote.classic.netty.tcp.port = 0").withFallback(config))
       val remoteAddress = RARP(remoteSystem).provider.getDefaultAddress
 
-      remoteSystem.actorOf(Props[StoppableActor], "stoppable")
+      remoteSystem.actorOf(Props[StoppableActor](), "stoppable")
 
       try {
         val probe = TestProbe()(remoteSystem)

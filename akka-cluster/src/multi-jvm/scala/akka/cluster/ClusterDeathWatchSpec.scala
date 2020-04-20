@@ -91,10 +91,10 @@ abstract class ClusterDeathWatchSpec
           def receive = {
             case ActorIdentity(`path2`, Some(ref)) =>
               context.watch(ref)
-              watchEstablished.countDown
+              watchEstablished.countDown()
             case ActorIdentity(`path3`, Some(ref)) =>
               context.watch(ref)
-              watchEstablished.countDown
+              watchEstablished.countDown()
             case Terminated(actor) => testActor ! actor.path
           }
         }).withDeploy(Deploy.local), name = "observer1")
@@ -242,7 +242,7 @@ abstract class ClusterDeathWatchSpec
       enterBarrier("end-actor-created")
 
       runOn(fourth) {
-        val hello = system.actorOf(Props[Hello], "hello")
+        val hello = system.actorOf(Props[Hello](), "hello")
         hello.isInstanceOf[RemoteActorRef] should ===(true)
         hello.path.address should ===(address(first))
         watch(hello)

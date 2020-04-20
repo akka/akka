@@ -81,7 +81,7 @@ abstract class HandshakeRestartReceiverSpec
 
     "detect restarted receiver and initiate new handshake" in {
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
       }
       enterBarrier("subject-started")
 
@@ -124,7 +124,7 @@ abstract class HandshakeRestartReceiverSpec
           ConfigFactory.parseString(s"""
               akka.remote.artery.canonical.port = ${address.port.get}
               """).withFallback(system.settings.config))
-        freshSystem.actorOf(Props[Subject], "subject2")
+        freshSystem.actorOf(Props[Subject](), "subject2")
 
         Await.result(freshSystem.whenTerminated, 45.seconds)
       }

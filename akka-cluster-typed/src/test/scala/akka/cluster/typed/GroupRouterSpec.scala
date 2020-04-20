@@ -105,7 +105,7 @@ class GroupRouterSpec extends ScalaTestWithActorTestKit(GroupRouterSpec.config) 
     val node2 = Cluster(system2)
     node2.manager ! Join(node1.selfMember.address)
 
-    val statsPromise = Promise[(Seq[ActorRef[Ping.type]], Seq[ActorRef[Ping.type]])]
+    val statsPromise = Promise[(Seq[ActorRef[Ping.type]], Seq[ActorRef[Ping.type]])]()
     val cancelable = system.scheduler.scheduleAtFixedRate(200.millis, 200.millis)(() => {
       implicit val timeout = Timeout(3.seconds)
       val actorRefsInNode1 = system1.ask[Seq[ActorRef[Ping.type]]](ref => GetWorkers(ref)).futureValue

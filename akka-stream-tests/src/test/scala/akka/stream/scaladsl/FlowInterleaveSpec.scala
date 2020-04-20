@@ -228,7 +228,7 @@ class FlowInterleaveSpec extends BaseTwoStreamsSetup {
         .asSubscriber[Int]
         .interleaveMat(Source.asSubscriber[Int], 2)((_, _))
         .toMat(Sink.fromSubscriber(down))(Keep.left)
-        .run
+        .run()
 
       val downstream = down.expectSubscription()
       downstream.cancel()

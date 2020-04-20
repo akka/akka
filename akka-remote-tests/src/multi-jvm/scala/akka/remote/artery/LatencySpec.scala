@@ -341,7 +341,7 @@ abstract class LatencySpec extends RemotingMultiNodeSpec(LatencySpec) {
     "start echo" in {
       runOn(second) {
         // just echo back
-        system.actorOf(echoProps, "echo")
+        system.actorOf(echoProps(), "echo")
       }
       enterBarrier("echo-started")
     }

@@ -459,7 +459,7 @@ class AttributesSpec
     "make the attributes on Flow.fromGraph source behave the same as the stage itself" in {
       val attributes: Attributes =
         javadsl.Source
-          .empty[Any]
+          .empty[Any]()
           .viaMat(
             javadsl.Flow
               .fromGraph(new AttributesFlow(Attributes.name("original-name")))
@@ -481,7 +481,7 @@ class AttributesSpec
     "make the attributes on Sink.fromGraph source behave the same as the stage itself" in {
       val attributes: Attributes =
         javadsl.Source
-          .empty[Any]
+          .empty[Any]()
           .toMat(
             javadsl.Sink
               .fromGraph(new AttributesSink(Attributes.name("original-name")))

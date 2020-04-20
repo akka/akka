@@ -39,7 +39,7 @@ object Coroner {
   }
 
   private class WatchHandleImpl(startAndStopDuration: FiniteDuration) extends WatchHandle {
-    val cancelPromise = Promise[Boolean]
+    val cancelPromise = Promise[Boolean]()
     val startedLatch = new CountDownLatch(1)
     val finishedLatch = new CountDownLatch(1)
 

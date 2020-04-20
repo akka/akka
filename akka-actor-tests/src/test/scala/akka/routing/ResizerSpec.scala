@@ -100,7 +100,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       c1 should ===(2)
 
       val current =
-        Vector(ActorRefRoutee(system.actorOf(Props[TestActor])), ActorRefRoutee(system.actorOf(Props[TestActor])))
+        Vector(ActorRefRoutee(system.actorOf(Props[TestActor]())), ActorRefRoutee(system.actorOf(Props[TestActor]())))
       val c2 = resizer.capacity(current)
       c2 should ===(0)
     }
@@ -129,7 +129,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
       val latch = new TestLatch(3)
 
       val resizer = DefaultResizer(lowerBound = 2, upperBound = 3)
-      val router = system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(Props[TestActor]))
+      val router = system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(Props[TestActor]()))
 
       router ! latch
       router ! latch
@@ -144,7 +144,7 @@ class ResizerSpec extends AkkaSpec(ResizerSpec.config) with DefaultTimeout with 
     "be possible to define in configuration" in {
       val latch = new TestLatch(3)
 
-      val router = system.actorOf(FromConfig.props(Props[TestActor]), "router1")
+      val router = system.actorOf(FromConfig.props(Props[TestActor]()), "router1")
 
       router ! latch
       router ! latch

@@ -454,7 +454,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
    * itself.
    */
   class Master(settings: StressMultiJvmSpec.Settings, batchInterval: FiniteDuration, tree: Boolean) extends Actor {
-    val workers = context.actorOf(FromConfig.props(Props[Worker]), "workers")
+    val workers = context.actorOf(FromConfig.props(Props[Worker]()), "workers")
     val payload = Array.fill(settings.payloadSize)(ThreadLocalRandom.current.nextInt(127).toByte)
     val retryTimeout = 5.seconds.dilated(context.system)
     val idCounter = Iterator.from(0)
@@ -528,7 +528,7 @@ private[cluster] object StressMultiJvmSpec extends MultiNodeConfig {
 
     def resend(): Unit = {
       outstanding.values.foreach { jobState =>
-        if (jobState.deadline.isOverdue)
+        if (jobState.deadline.isOverdue())
           send(jobState.job)
       }
     }
@@ -785,7 +785,7 @@ abstract class StressSpec
 
   // always create one worker when the cluster is started
   lazy val createWorker: Unit =
-    system.actorOf(Props[Worker], "worker")
+    system.actorOf(Props[Worker](), "worker")
 
   def createResultAggregator(title: String, expectedResults: Int, includeInHistory: Boolean): Unit = {
     runOn(roles.head) {
@@ -809,12 +809,12 @@ abstract class StressSpec
   }
 
   lazy val clusterResultHistory =
-    if (settings.infolog) system.actorOf(Props[ClusterResultHistory], "resultHistory")
+    if (settings.infolog) system.actorOf(Props[ClusterResultHistory](), "resultHistory")
     else system.deadLetters
 
-  lazy val phiObserver = system.actorOf(Props[PhiObserver], "phiObserver")
+  lazy val phiObserver = system.actorOf(Props[PhiObserver](), "phiObserver")
 
-  lazy val statsObserver = system.actorOf(Props[StatsObserver], "statsObserver")
+  lazy val statsObserver = system.actorOf(Props[StatsObserver](), "statsObserver")
 
   def awaitClusterResult(): Unit = {
     runOn(roles.head) {
@@ -892,7 +892,7 @@ abstract class StressSpec
     val removeRole = roles(nbrUsedRoles - 1)
     val removeAddress = address(removeRole)
     runOn(removeRole) {
-      system.actorOf(Props[Watchee], "watchee")
+      system.actorOf(Props[Watchee](), "watchee")
       if (!shutdown) cluster.leave(myself)
     }
     enterBarrier("watchee-created-" + step)
@@ -1100,7 +1100,7 @@ abstract class StressSpec
   def exerciseSupervision(title: String, duration: FiniteDuration, oneIteration: Duration): Unit =
     within(duration + 10.seconds) {
       val rounds = (duration.toMillis / oneIteration.toMillis).max(1).toInt
-      val supervisor = system.actorOf(Props[Supervisor], "supervisor")
+      val supervisor = system.actorOf(Props[Supervisor](), "supervisor")
       for (_ <- 0 until rounds) {
         createResultAggregator(title, expectedResults = nbrUsedRoles, includeInHistory = false)
 
@@ -1108,7 +1108,7 @@ abstract class StressSpec
         runOn(masterRoles: _*) {
           reportResult {
             roles.take(nbrUsedRoles).foreach { r =>
-              supervisor ! Props[RemoteChild].withDeploy(Deploy(scope = RemoteScope(address(r))))
+              supervisor ! Props[RemoteChild]().withDeploy(Deploy(scope = RemoteScope(address(r))))
             }
             supervisor ! GetChildrenCount
             expectMsgType[ChildrenCount] should ===(ChildrenCount(nbrUsedRoles, 0))
@@ -1161,7 +1161,7 @@ abstract class StressSpec
 
     "log settings" taggedAs LongRunningTest in {
       if (infolog) {
-        log.info("StressSpec JVM:\n{}", jvmInfo)
+        log.info("StressSpec JVM:\n{}", jvmInfo())
         runOn(roles.head) {
           log.info("StressSpec settings:\n{}", settings)
         }
@@ -1369,7 +1369,7 @@ abstract class StressSpec
 
     "log jvm info" taggedAs LongRunningTest in {
       if (infolog) {
-        log.info("StressSpec JVM:\n{}", jvmInfo)
+        log.info("StressSpec JVM:\n{}", jvmInfo())
       }
       enterBarrier("after-" + step)
     }

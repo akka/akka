@@ -54,7 +54,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             override def close(): Unit = throw fail
           })
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .failed
         .futureValue
         .getCause shouldEqual fail
@@ -67,7 +67,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
           throw fail
         })
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .failed
         .futureValue
         .getCause shouldEqual fail
@@ -78,7 +78,7 @@ class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       StreamConverters
         .fromInputStream(() => () => throw fail)
         .toMat(Sink.ignore)(Keep.left)
-        .run
+        .run()
         .failed
         .futureValue
         .getCause shouldEqual fail

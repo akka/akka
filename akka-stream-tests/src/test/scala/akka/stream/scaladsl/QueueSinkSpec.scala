@@ -170,7 +170,7 @@ class QueueSinkSpec extends StreamSpec {
       val bufferSize = 16
       val streamElementCount = bufferSize + 4
       val sink = Sink.queue[Int]().withAttributes(inputBuffer(bufferSize, bufferSize))
-      val bufferFullProbe = Promise[akka.Done.type]
+      val bufferFullProbe = Promise[akka.Done.type]()
       val queue = Source(1 to streamElementCount)
         .alsoTo(Flow[Int].drop(bufferSize - 1).to(Sink.foreach(_ => bufferFullProbe.trySuccess(akka.Done))))
         .toMat(sink)(Keep.right)

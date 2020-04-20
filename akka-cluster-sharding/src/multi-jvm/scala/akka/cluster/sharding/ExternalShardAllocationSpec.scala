@@ -86,7 +86,7 @@ abstract class ExternalShardAllocationSpec
     lazy val shardRegion = startSharding(
       system,
       typeName = typeName,
-      entityProps = Props[GiveMeYourHome],
+      entityProps = Props[GiveMeYourHome](),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId,
       allocationStrategy = new ExternalShardAllocationStrategy(system, typeName))
