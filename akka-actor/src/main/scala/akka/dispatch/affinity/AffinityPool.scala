@@ -4,8 +4,6 @@
 
 package akka.dispatch.affinity
 
-import java.lang.invoke.MethodHandles
-import java.lang.invoke.MethodType.methodType
 import java.util.Collections
 import java.util.concurrent.TimeUnit.MICROSECONDS
 import java.util.concurrent._
@@ -23,7 +21,6 @@ import akka.util.{ ImmutableIntMap, ReentrantGuard }
 
 import scala.annotation.{ switch, tailrec }
 import scala.collection.{ immutable, mutable }
-import scala.util.control.NonFatal
 
 @InternalApi
 @ApiMayChange
@@ -41,14 +38,6 @@ private[affinity] object AffinityPool {
   final val ShutDown = 4
   // PoolState: all threads have been stopped, does not process tasks and does not accept new ones
   final val Terminated = 5
-
-  // Method handle to JDK9+ onSpinWait method
-  final val noopMethodHandle =  MethodHandles.constant(classOf[AnyRef], null).asType(methodType(Void.TYPE))
-  final val onSpinWaitMethodHandle =
-    try MethodHandles.lookup.findStatic(classOf[Thread], "onSpinWait", methodType(Void.TYPE))
-    catch {
-      case NonFatal(_) => noopMethodHandle
-    }
 
   type IdleState = Int
   // IdleState: Initial state
@@ -86,7 +75,7 @@ private[affinity] object AffinityPool {
           idling = true
           transitionTo(Spinning)
         case Spinning =>
-          onSpinWaitMethodHandle.invokeExact(): Unit
+          OnSpinWait.spinWait()
           turns += 1
           if (turns > maxSpins)
             transitionTo(Yielding)
