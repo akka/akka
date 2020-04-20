@@ -226,7 +226,7 @@ class RemotingSpec extends AkkaSpec(RemotingSpec.cfg) with ImplicitSender with D
     "support ask" in {
       Await.result(here ? "ping", timeout.duration) match {
         case ("pong", _: akka.pattern.PromiseActorRef) => // good
-        case m                                         => fail(m + " was not (pong, AskActorRef)")
+        case m                                         => fail("" + m + " was not (pong, AskActorRef)")
       }
     }
 

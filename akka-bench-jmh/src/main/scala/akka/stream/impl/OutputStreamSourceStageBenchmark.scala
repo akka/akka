@@ -24,7 +24,7 @@ object OutputStreamSourceStageBenchmark {
 @BenchmarkMode(Array(Mode.Throughput))
 class OutputStreamSourceStageBenchmark {
   import OutputStreamSourceStageBenchmark.WritesPerBench
-  implicit val system = ActorSystem("OutputStreamSourceStageBenchmark")
+  implicit val system: ActorSystem = ActorSystem("OutputStreamSourceStageBenchmark")
 
   private val bytes: Array[Byte] = Array.emptyByteArray
 

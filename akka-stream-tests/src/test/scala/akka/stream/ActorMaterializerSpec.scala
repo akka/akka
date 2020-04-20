@@ -34,7 +34,7 @@ object IndirectMaterializerCreation extends ExtensionId[IndirectMaterializerCrea
 @silent
 class IndirectMaterializerCreation(ex: ExtendedActorSystem) extends Extension {
   // extension instantiation blocked on materializer (which has Await.result inside)
-  implicit val mat = ActorMaterializer()(ex)
+  implicit val mat: ActorMaterializer = ActorMaterializer()(ex)
 
   def futureThing(n: Int): Future[Int] = {
     Source.single(n).runWith(Sink.head)
@@ -160,7 +160,7 @@ object ActorMaterializerSpec {
   class ActorWithMaterializer(p: TestProbe) extends Actor {
     private val settings: ActorMaterializerSettings =
       ActorMaterializerSettings(context.system).withDispatcher("akka.test.stream-dispatcher")
-    implicit val mat = ActorMaterializer(settings)(context)
+    implicit val mat: ActorMaterializer = ActorMaterializer(settings)(context)
 
     Source
       .repeat("hello")

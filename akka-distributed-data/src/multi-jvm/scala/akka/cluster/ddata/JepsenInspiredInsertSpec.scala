@@ -53,7 +53,7 @@ class JepsenInspiredInsertSpec
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val replicator = DistributedData(system).replicator
   val nodes = roles.drop(1) // controller not part of active nodes
   val nodeCount = nodes.size

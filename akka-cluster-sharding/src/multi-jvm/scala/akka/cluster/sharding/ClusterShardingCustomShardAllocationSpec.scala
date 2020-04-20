@@ -43,7 +43,7 @@ object ClusterShardingCustomShardAllocationSpec {
   }
 
   case class TestAllocationStrategy(ref: ActorRef) extends ShardAllocationStrategy {
-    implicit val timeout = Timeout(3.seconds)
+    implicit val timeout: Timeout = Timeout(3.seconds)
     override def allocateShard(
         requester: ActorRef,
         shardId: ShardRegion.ShardId,

@@ -20,6 +20,7 @@ import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
 import scala.concurrent.duration.Duration
+import scala.concurrent.ExecutionContextExecutor
 
 /**
  * INTERNAL API
@@ -62,10 +63,10 @@ private[io] final class AsyncDnsManager(
       ext.Settings.Dispatcher,
       ext.provider)
 
-  implicit val ec = context.dispatcher
+  implicit val ec: ExecutionContextExecutor = context.dispatcher
 
   val settings = new DnsSettings(system, resolverConfig)
-  implicit val timeout = Timeout(settings.ResolveTimeout)
+  implicit val timeout: Timeout = Timeout(settings.ResolveTimeout)
 
   private val resolver = {
     val props: Props = FromConfig.props(

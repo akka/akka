@@ -19,10 +19,11 @@ import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.util.control.NoStackTrace
+import scala.concurrent.ExecutionContextExecutor
 
 class FlowFoldAsyncSpec extends StreamSpec {
 
-  implicit def ec = system.dispatcher
+  implicit def ec: ExecutionContextExecutor = system.dispatcher
   val timeout = Timeout(3.seconds)
 
   "A FoldAsync" must {

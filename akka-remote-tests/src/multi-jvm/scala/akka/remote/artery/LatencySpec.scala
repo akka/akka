@@ -63,7 +63,7 @@ object LatencySpec extends MultiNodeConfig {
        }
        """)).withFallback(RemotingMultiNodeSpec.commonConfig))
 
-  final case object Reset extends CborSerializable
+  case object Reset extends CborSerializable
 
   def echoProps(): Props =
     Props(new Echo).withDispatcher(Dispatchers.InternalDispatcherId)

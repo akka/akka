@@ -22,6 +22,7 @@ import scala.collection.immutable
 import scala.concurrent.Await
 import scala.language.existentials
 import scala.util.control.{ NoStackTrace, NonFatal }
+import akka.util.Timeout
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log
@@ -198,7 +199,7 @@ trait LoggingBus extends ActorEventBus {
       logName: String): ActorRef = {
     val name = "log" + LogExt(system).id() + "-" + simpleName(clazz)
     val actor = system.systemActorOf(Props(clazz).withDispatcher(system.settings.LoggersDispatcher), name)
-    implicit def timeout = system.settings.LoggerStartTimeout
+    implicit def timeout: Timeout = system.settings.LoggerStartTimeout
     import akka.pattern.ask
     val response = try Await.result(actor ? InitializeLogger(this), timeout.duration)
     catch {

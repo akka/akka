@@ -265,7 +265,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
     if (shouldProcessMessage) {
       val next = dequeue()
       if (next ne null) {
-        if (Mailbox.debug) println(actor.self + " processing message " + next)
+        if (Mailbox.debug) println("" + actor.self + " processing message " + next)
         actor.invoke(next)
         if (Thread.interrupted())
           throw new InterruptedException("Interrupted while processing actor messages")
@@ -289,7 +289,7 @@ private[akka] abstract class Mailbox(val messageQueue: MessageQueue)
       val msg = messageList.head
       messageList = messageList.tail
       msg.unlink()
-      if (debug) println(actor.self + " processing system message " + msg + " with " + actor.childrenRefs)
+      if (debug) println("" + actor.self + " processing system message " + msg + " with " + actor.childrenRefs)
       // we know here that systemInvoke ensures that only "fatal" exceptions get rethrown
       actor.systemInvoke(msg)
       if (Thread.interrupted())
@@ -468,7 +468,7 @@ private[akka] trait DefaultSystemMessageQueue { self: Mailbox =>
   @tailrec
   final def systemEnqueue(receiver: ActorRef, message: SystemMessage): Unit = {
     assert(message.unlinked)
-    if (Mailbox.debug) println(receiver + " having enqueued " + message)
+    if (Mailbox.debug) println("" + receiver + " having enqueued " + message)
     val currentList = systemQueueGet
     if (currentList.head == NoMessage) {
       if (actor ne null) actor.dispatcher.mailboxes.deadLetterMailbox.systemEnqueue(receiver, message)

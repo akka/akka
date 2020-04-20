@@ -160,7 +160,7 @@ object ActorTransportAdapter {
       extends TransportOperation
       with DeadLetterSuppression
 
-  implicit val AskTimeout = Timeout(5.seconds)
+  implicit val AskTimeout: Timeout = Timeout(5.seconds)
 }
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")

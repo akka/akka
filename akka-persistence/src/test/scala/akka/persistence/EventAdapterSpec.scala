@@ -101,7 +101,7 @@ abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adap
 
   import EventAdapterSpec._
 
-  def this(journalName: String) {
+  def this(journalName: String) =
     this(
       "inmem",
       PersistenceSpec.config("inmem", "InmemPersistentTaggingSpec"),
@@ -150,7 +150,6 @@ abstract class EventAdapterSpec(journalName: String, journalConfig: Config, adap
          |  }
          |}
       """.stripMargin))
-  }
 
   def persister(name: String, journalId: String = journalName) =
     system.actorOf(Props(classOf[PersistAllIncomingActor], name, "akka.persistence.journal." + journalId))

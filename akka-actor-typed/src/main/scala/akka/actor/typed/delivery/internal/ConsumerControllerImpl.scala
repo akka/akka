@@ -73,7 +73,7 @@ import akka.annotation.InternalApi
   /** For commands defined in public ConsumerController */
   trait UnsealedInternalCommand extends InternalCommand
 
-  private final case object Retry extends InternalCommand
+  private case object Retry extends InternalCommand
 
   private final case class ConsumerTerminated(consumer: ActorRef[_]) extends InternalCommand
 

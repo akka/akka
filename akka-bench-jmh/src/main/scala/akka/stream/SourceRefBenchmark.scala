@@ -33,7 +33,7 @@ class SourceRefBenchmark {
         loglevel = "WARNING"
       }""".stripMargin).withFallback(ConfigFactory.load())
 
-  implicit val system = ActorSystem("test", config)
+  implicit val system: ActorSystem = ActorSystem("test", config)
 
   final val successMarker = Success(1)
   final val successFailure = Success(new Exception)

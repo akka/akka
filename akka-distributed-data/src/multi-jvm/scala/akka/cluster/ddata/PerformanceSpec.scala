@@ -69,7 +69,7 @@ class PerformanceSpec extends MultiNodeSpec(PerformanceSpec) with STMultiNodeSpe
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val replicator = DistributedData(system).replicator
   val timeout = 3.seconds.dilated
   val factor = 1 // use 3 here for serious tuning

@@ -17,6 +17,7 @@ import scala.annotation.varargs
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+import scala.concurrent.ExecutionContextExecutor
 
 /**
  * SnapshotAfter Extension Id and factory for creating SnapshotAfter extension
@@ -331,7 +332,7 @@ object PersistentFSM {
       extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler
-    private implicit val executionContext = context.dispatcher
+    private implicit val executionContext: ExecutionContextExecutor = context.dispatcher
 
     def schedule(actor: ActorRef, timeout: FiniteDuration): Unit = {
       val timerMsg = msg match {

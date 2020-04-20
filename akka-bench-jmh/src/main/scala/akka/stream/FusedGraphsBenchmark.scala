@@ -96,7 +96,7 @@ class IdentityStage extends GraphStage[FlowShape[MutableElement, MutableElement]
 class FusedGraphsBenchmark {
   import FusedGraphsBenchmark._
 
-  implicit val system = ActorSystem(
+  implicit val system: ActorSystem = ActorSystem(
     "test",
     ConfigFactory.parseString(s"""
       akka.stream.materializer.sync-processing-limit = ${Int.MaxValue}

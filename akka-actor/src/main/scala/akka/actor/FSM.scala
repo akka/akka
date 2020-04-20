@@ -13,6 +13,7 @@ import akka.routing.{ Deafen, Listen, Listeners }
 import akka.annotation.InternalApi
 import akka.util.{ unused, JavaDurationConverters }
 import com.github.ghik.silencer.silent
+import scala.concurrent.ExecutionContextExecutor
 
 object FSM {
 
@@ -121,7 +122,7 @@ object FSM {
       extends NoSerializationVerificationNeeded {
     private var ref: Option[Cancellable] = _
     private val scheduler = context.system.scheduler
-    private implicit val executionContext = context.dispatcher
+    private implicit val executionContext: ExecutionContextExecutor = context.dispatcher
 
     def schedule(actor: ActorRef, timeout: FiniteDuration): Unit = {
       val timerMsg = msg match {

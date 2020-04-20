@@ -22,6 +22,7 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NonFatal
+import scala.concurrent.ExecutionContextExecutor
 
 /**
  * INTERNAL API
@@ -36,10 +37,10 @@ private[io] final class AsyncDnsResolver(
 
   import AsyncDnsResolver._
 
-  implicit val ec = context.dispatcher
+  implicit val ec: ExecutionContextExecutor = context.dispatcher
 
   // For ask to DNS Client
-  implicit val timeout = Timeout(settings.ResolveTimeout)
+  implicit val timeout: Timeout = Timeout(settings.ResolveTimeout)
 
   val nameServers = settings.NameServers
 

@@ -69,7 +69,7 @@ class LotsOfDataBot extends Actor with ActorLogging {
   import LotsOfDataBot._
   import Replicator._
 
-  implicit val selfUniqueAddress = DistributedData(context.system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(context.system).selfUniqueAddress
   val replicator = DistributedData(context.system).replicator
 
   import context.dispatcher

@@ -1100,8 +1100,8 @@ class DDataShardCoordinator(
   private val readMajority = ReadMajority(settings.tuningParameters.waitingForStateTimeout, majorityMinCap)
   private val writeMajority = WriteMajority(settings.tuningParameters.updatingStateTimeout, majorityMinCap)
 
-  implicit val node = Cluster(context.system)
-  private implicit val selfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
+  implicit val node: Cluster = Cluster(context.system)
+  private implicit val selfUniqueAddress: SelfUniqueAddress = SelfUniqueAddress(node.selfUniqueAddress)
   val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
   val initEmptyState = State.empty.withRememberEntities(settings.rememberEntities)
 

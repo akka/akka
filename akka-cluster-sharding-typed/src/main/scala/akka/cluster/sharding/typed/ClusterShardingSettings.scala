@@ -104,8 +104,8 @@ object ClusterShardingSettings {
       else
         throw new IllegalArgumentException("Not recognized StateStoreMode, only 'ddata' is supported.")
   }
-  final case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
-  final case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
+  case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
+  case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
 
   // generated using kaze-class
   final class TuningParameters private (
@@ -127,7 +127,7 @@ object ClusterShardingSettings {
       val updatingStateTimeout: FiniteDuration,
       val waitingForStateTimeout: FiniteDuration) {
 
-    def this(classic: ClassicShardingSettings.TuningParameters) {
+    def this(classic: ClassicShardingSettings.TuningParameters) =
       this(
         bufferSize = classic.bufferSize,
         coordinatorFailureBackoff = classic.coordinatorFailureBackoff,
@@ -146,8 +146,6 @@ object ClusterShardingSettings {
         entityRecoveryStrategy = classic.entityRecoveryStrategy,
         entityRecoveryConstantRateStrategyFrequency = classic.entityRecoveryConstantRateStrategyFrequency,
         entityRecoveryConstantRateStrategyNumberOfEntities = classic.entityRecoveryConstantRateStrategyNumberOfEntities)
-
-    }
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",

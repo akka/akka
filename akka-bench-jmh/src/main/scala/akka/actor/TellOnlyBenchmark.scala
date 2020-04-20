@@ -97,7 +97,7 @@ object TellOnlyBenchmark {
 
   class Echo extends Actor {
     def receive = {
-      case s @ `stop` =>
+      case `stop` =>
         context.stop(self)
       case m => sender ! m
     }

@@ -48,7 +48,7 @@ class FlowMapBenchmark {
         }
       }""".stripMargin).withFallback(ConfigFactory.load())
 
-  implicit val system = ActorSystem("test", config)
+  implicit val system: ActorSystem = ActorSystem("test", config)
 
   @Param(Array("true", "false"))
   var UseGraphStageIdentity = false

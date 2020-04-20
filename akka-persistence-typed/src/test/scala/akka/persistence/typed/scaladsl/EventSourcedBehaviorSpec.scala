@@ -91,22 +91,22 @@ object EventSourcedBehaviorSpec {
     """)
 
   sealed trait Command extends CborSerializable
-  final case object Increment extends Command
-  final case object IncrementThenLogThenStop extends Command
-  final case object IncrementTwiceThenLogThenStop extends Command
+  case object Increment extends Command
+  case object IncrementThenLogThenStop extends Command
+  case object IncrementTwiceThenLogThenStop extends Command
   final case class IncrementWithPersistAll(nr: Int) extends Command
-  final case object IncrementLater extends Command
-  final case object IncrementAfterReceiveTimeout extends Command
-  final case object IncrementTwiceAndThenLog extends Command
+  case object IncrementLater extends Command
+  case object IncrementAfterReceiveTimeout extends Command
+  case object IncrementTwiceAndThenLog extends Command
   final case class IncrementWithConfirmation(replyTo: ActorRef[Done]) extends Command
-  final case object DoNothingAndThenLog extends Command
-  final case object EmptyEventsListAndThenLog extends Command
+  case object DoNothingAndThenLog extends Command
+  case object EmptyEventsListAndThenLog extends Command
   final case class GetValue(replyTo: ActorRef[State]) extends Command
-  final case object DelayFinished extends Command
+  case object DelayFinished extends Command
   private case object Timeout extends Command
-  final case object LogThenStop extends Command
-  final case object Fail extends Command
-  final case object StopIt extends Command
+  case object LogThenStop extends Command
+  case object Fail extends Command
+  case object StopIt extends Command
 
   sealed trait Event extends CborSerializable
   final case class Incremented(delta: Int) extends Event

@@ -125,7 +125,7 @@ class AttributesSpec
 
   val settings = ActorMaterializerSettings(system).withInputBuffer(initialSize = 2, maxSize = 16)
 
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   "an attributes instance" must {
 

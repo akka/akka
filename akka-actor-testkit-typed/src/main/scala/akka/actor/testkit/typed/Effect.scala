@@ -191,7 +191,7 @@ object Effect {
     def duration(): java.time.Duration = d.asJava
   }
 
-  final case object ReceiveTimeoutCancelled extends ReceiveTimeoutCancelled
+  case object ReceiveTimeoutCancelled extends ReceiveTimeoutCancelled
 
   sealed abstract class ReceiveTimeoutCancelled extends Effect
 

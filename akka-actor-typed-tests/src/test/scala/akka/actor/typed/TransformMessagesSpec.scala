@@ -16,6 +16,7 @@ import scala.concurrent.duration._
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor
 
 object TransformMessagesSpec {
 
@@ -35,7 +36,7 @@ object TransformMessagesSpec {
 
 class TransformMessagesSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 
-  implicit val classicSystem = system.toClassic
+  implicit val classicSystem: actor.ActorSystem = system.toClassic
 
   def intToString(probe: ActorRef[String]): Behavior[Int] = {
     Behaviors

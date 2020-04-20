@@ -276,7 +276,7 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
         }
         if (handle ne null) {
           try {
-            if (Mailbox.debug) println(mbox.actor.self + " processing message " + handle)
+            if (Mailbox.debug) println("" + mbox.actor.self + " processing message " + handle)
             mbox.actor.invoke(handle)
             intex = checkThreadInterruption(intex)
             true

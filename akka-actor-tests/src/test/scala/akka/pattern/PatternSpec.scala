@@ -10,6 +10,7 @@ import akka.testkit.{ AkkaSpec, TestLatch }
 import akka.actor.{ Actor, Props }
 import scala.concurrent.{ Await, Future, Promise }
 import scala.concurrent.duration._
+import scala.concurrent.ExecutionContextExecutor
 
 object PatternSpec {
   final case class Work(duration: Duration)
@@ -22,7 +23,7 @@ object PatternSpec {
 }
 
 class PatternSpec extends AkkaSpec {
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
   import PatternSpec._
 
   "pattern.gracefulStop" must {

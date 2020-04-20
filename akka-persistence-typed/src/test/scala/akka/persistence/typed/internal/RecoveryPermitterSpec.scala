@@ -22,6 +22,7 @@ import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.RecoveryCompleted
 import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.ActorSystem
 
 object RecoveryPermitterSpec {
 
@@ -76,7 +77,7 @@ class RecoveryPermitterSpec extends ScalaTestWithActorTestKit(s"""
 
   import RecoveryPermitterSpec._
 
-  implicit val classicSystem = system.toClassic
+  implicit val classicSystem: ActorSystem = system.toClassic
 
   private val permitter = Persistence(classicSystem).recoveryPermitter
 

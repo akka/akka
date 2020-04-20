@@ -34,7 +34,7 @@ class FileSourcesScaleBenchmark {
    * FileSourcesScaleBenchmark.flatMapMerge       2048  avgt   10  1.587 ± 0.118   s/op
    * FileSourcesScaleBenchmark.mapAsync           2048  avgt   10  0.899 ± 0.103   s/op
    */
-  implicit val system = ActorSystem("file-sources-benchmark")
+  implicit val system: ActorSystem = ActorSystem("file-sources-benchmark")
 
   val FILES_NUMBER = 40
   val files: Seq[Path] = {

@@ -42,7 +42,7 @@ class ReplicatorPruningSpec extends MultiNodeSpec(ReplicatorPruningSpec) with ST
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val maxPruningDissemination = 3.seconds
   val replicator = system.actorOf(
     Replicator.props(

@@ -337,7 +337,7 @@ object ClusterEvent {
    * This event is published when the cluster node is shutting down,
    * before the final [[MemberRemoved]] events are published.
    */
-  final case object ClusterShuttingDown extends ClusterDomainEvent
+  case object ClusterShuttingDown extends ClusterDomainEvent
 
   /**
    * Java API: get the singleton instance of `ClusterShuttingDown` event

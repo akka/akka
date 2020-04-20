@@ -44,7 +44,8 @@ abstract class SnapshotStoreSpec(config: Config)
     with MayVerb
     with OptionalTests
     with SnapshotStoreCapabilityFlags {
-  implicit lazy val system = ActorSystem("SnapshotStoreSpec", config.withFallback(SnapshotStoreSpec.config))
+  implicit lazy val system: ActorSystem =
+    ActorSystem("SnapshotStoreSpec", config.withFallback(SnapshotStoreSpec.config))
 
   private var senderProbe: TestProbe = _
   private var metadata: Seq[SnapshotMetadata] = Nil

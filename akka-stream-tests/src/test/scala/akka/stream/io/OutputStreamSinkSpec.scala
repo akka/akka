@@ -23,7 +23,7 @@ import scala.util.Success
 class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   "OutputStreamSink" must {
     "write bytes to void OutputStream" in assertAllStagesStopped {

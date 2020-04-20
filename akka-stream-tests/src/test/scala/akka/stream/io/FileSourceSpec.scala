@@ -35,7 +35,7 @@ object FileSourceSpec {
 class FileSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
 
   val fs = Jimfs.newFileSystem("FileSourceSpec", Configuration.unix())
 

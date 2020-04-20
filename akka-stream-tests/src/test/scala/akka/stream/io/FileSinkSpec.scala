@@ -29,7 +29,7 @@ import scala.util.Success
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {
 
   val settings = ActorMaterializerSettings(system).withDispatcher("akka.actor.default-dispatcher")
-  implicit val materializer = ActorMaterializer(settings)
+  implicit val materializer: ActorMaterializer = ActorMaterializer(settings)
   val fs = Jimfs.newFileSystem("FileSinkSpec", Configuration.unix())
 
   val TestLines = {

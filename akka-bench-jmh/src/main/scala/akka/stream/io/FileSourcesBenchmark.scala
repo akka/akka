@@ -31,7 +31,7 @@ import scala.concurrent.Promise
 @BenchmarkMode(Array(Mode.AverageTime))
 class FileSourcesBenchmark {
 
-  implicit val system = ActorSystem("file-sources-benchmark")
+  implicit val system: ActorSystem = ActorSystem("file-sources-benchmark")
 
   val file: Path = {
     val line = ByteString("x" * 2048 + "\n")

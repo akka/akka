@@ -184,7 +184,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     val cluster = Cluster(classicSystem)
     // don't use DistributedData.selfUniqueAddress here, because that will initialize extension, which
     // isn't used otherwise by the ClusterReceptionist
-    implicit val selfNodeAddress = SelfUniqueAddress(cluster.selfUniqueAddress)
+    implicit val selfNodeAddress: SelfUniqueAddress = SelfUniqueAddress(cluster.selfUniqueAddress)
 
     val replicator = ctx.actorOf(Replicator.props(settings.replicatorSettings), "replicator")
 

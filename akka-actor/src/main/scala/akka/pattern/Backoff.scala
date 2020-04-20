@@ -635,5 +635,5 @@ private final case class BackoffOptionsImpl(
 }
 
 private sealed trait BackoffType
-private final case object StopImpliesFailure extends BackoffType
-private final case object RestartImpliesFailure extends BackoffType
+private case object StopImpliesFailure extends BackoffType
+private case object RestartImpliesFailure extends BackoffType

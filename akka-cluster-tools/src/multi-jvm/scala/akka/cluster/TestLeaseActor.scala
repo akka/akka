@@ -35,7 +35,7 @@ object TestLeaseActor {
   final case class Release(owner: String) extends LeaseRequest
   final case class Create(leaseName: String, ownerName: String) extends JavaSerializable
 
-  final case object GetRequests extends JavaSerializable
+  case object GetRequests extends JavaSerializable
   final case class LeaseRequests(requests: List[LeaseRequest]) extends JavaSerializable
   final case class ActionRequest(request: LeaseRequest, result: Any) extends JavaSerializable // boolean of Failure
 }
@@ -102,7 +102,7 @@ class TestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSystem)
   log.info("lease created {}", settings)
   leaseActor ! Create(settings.leaseName, settings.ownerName)
 
-  private implicit val timeout = Timeout(100.seconds)
+  private implicit val timeout: Timeout = Timeout(100.seconds)
 
   override def acquire(): Future[Boolean] = {
     (leaseActor ? Acquire(settings.ownerName)).mapTo[Boolean]

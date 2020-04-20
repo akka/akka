@@ -9,6 +9,7 @@ import language.postfixOps
 import akka.testkit._
 import scala.concurrent.duration._
 import akka.pattern.{ ask, pipe }
+import scala.concurrent.ExecutionContextExecutor
 
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"
@@ -29,7 +30,7 @@ object ForwardActorSpec {
 
 class ForwardActorSpec extends AkkaSpec {
   import ForwardActorSpec._
-  implicit val ec = system.dispatcher
+  implicit val ec: ExecutionContextExecutor = system.dispatcher
   "A Forward Actor" must {
 
     "forward actor reference when invoking forward on tell" in {
