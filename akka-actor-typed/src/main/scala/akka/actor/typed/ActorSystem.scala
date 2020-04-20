@@ -191,6 +191,19 @@ abstract class ActorSystem[-T] extends ActorRef[T] with Extensions with ClassicA
 
 object ActorSystem {
 
+  // Need this so that in dotty, we can call `!` on an ActorSystem without importing:
+  // `import akka.actor.typed.ActorRef.ActorRefOps`
+  // @see [[akka.actor.typed.ActorRef.ActorRefOps]]
+  // @see [[akka.actor.typed.RecipientRef.RecipientRefOps]]
+  implicit final class ActorSystemOps[-T](val ref: ActorSystem[T]) extends AnyVal {
+
+    /**
+     * Send a message to the destination referenced by this referenced by this ActorSystem using *at-most-once*
+     * messaging semantics.
+     */
+    def !(msg: T): Unit = ref.tell(msg)
+  }
+
   /**
    * Scala API: Create an ActorSystem
    */

@@ -21,6 +21,7 @@ import akka.event.MarkerLoggingAdapter
 import akka.serialization.JavaSerializer
 import akka.serialization.Serialization
 import akka.util.OptionVal
+import language.implicitConversions
 
 object ActorRef {
 
@@ -30,6 +31,7 @@ object ActorRef {
    */
   final val noSender: ActorRef = Actor.noSender
 
+  @inline implicit def actorRef2Scala(ref: ActorRef): ScalaActorRef = ref.asInstanceOf[ScalaActorRef]
 }
 
 /**

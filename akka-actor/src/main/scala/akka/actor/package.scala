@@ -7,6 +7,8 @@ package akka
 import language.implicitConversions
 
 package object actor {
-  @inline implicit final def actorRef2Scala(ref: ActorRef): ScalaActorRef = ref.asInstanceOf[ScalaActorRef]
-  @inline implicit final def scala2ActorRef(ref: ScalaActorRef): ActorRef = ref.asInstanceOf[ActorRef]
+  @deprecated("Use akka.actor.ActorRef.actorRef2Scala instead", "2.6.5")
+  @inline def actorRef2Scala(ref: ActorRef): ScalaActorRef = ref.asInstanceOf[ScalaActorRef]
+
+  @inline implicit def scala2ActorRef(ref: ScalaActorRef): ActorRef = ref.asInstanceOf[ActorRef]
 }
