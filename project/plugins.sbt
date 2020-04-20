@@ -10,7 +10,8 @@ addSbtPlugin("com.typesafe.sbt" % "sbt-multi-jvm" % "0.4.0")
 
 addSbtPlugin("com.lightbend.sbt" % "sbt-java-formatter" % "0.5.0")
 addSbtPlugin("org.scalameta" % "sbt-scalafmt" % "2.0.6")
-addSbtPlugin("ch.epfl.scala" % "sbt-scalafix" % "0.9.14")
+// TODO revert to ch.epfl.scala:sbt-scalafix after scalacenter/scalafix#1098 is fixed and published
+addSbtPlugin("com.sandinh" % "sbt-scalafix" % "0.9.14.2")
 // sbt-osgi 0.9.5 is available but breaks including jdk9-only classes
 addSbtPlugin("com.typesafe.sbt" % "sbt-osgi" % "0.9.4")
 addSbtPlugin("com.typesafe" % "sbt-mima-plugin" % "0.7.0")

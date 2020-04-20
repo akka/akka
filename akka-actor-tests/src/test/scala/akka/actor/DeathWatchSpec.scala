@@ -44,7 +44,7 @@ object DeathWatchSpec {
         context.become {
           case Terminated(`currentKid`) =>
             testActor ! "GREEN"
-            context unbecome
+            context.unbecome()
         }
     }
   }
