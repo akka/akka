@@ -1,0 +1,12 @@
+# https://github.com/akka/akka/pull/28837#discussion_r400007356
+# @SerialVersionUID has no effect on traits
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.Creator.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.function.Procedure*.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.function.Function*.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.function.Effect.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.function.Predicate.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.japi.function.Creator.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.actor.SelectionPathElement.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.actor.ActorPath.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.routing.RouterConfig.serialVersionUID")
+ProblemFilters.exclude[MissingFieldProblem]("akka.routing.RouterManagementMesssage.serialVersionUID")
