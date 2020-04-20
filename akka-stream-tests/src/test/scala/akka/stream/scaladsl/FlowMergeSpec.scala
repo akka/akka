@@ -106,7 +106,11 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
       val up2 = TestPublisher.probe[Int]()
       val down = TestSubscriber.probe[Int]()
 
-      Source.fromPublisher(up1).merge(Source.fromPublisher(up2), eagerComplete = true).to(Sink.fromSubscriber(down)).run()
+      Source
+        .fromPublisher(up1)
+        .merge(Source.fromPublisher(up2), eagerComplete = true)
+        .to(Sink.fromSubscriber(down))
+        .run()
 
       up1.ensureSubscription()
       up2.ensureSubscription()

@@ -87,7 +87,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         }
       }
       val router =
-        system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(routeeProps = Props[TestActor]()))
+        system.actorOf(
+          RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(routeeProps = Props[TestActor]()))
       watch(router)
       Await.ready(latch, remainingOrDefault)
       router ! GetRoutees
