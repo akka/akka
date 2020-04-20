@@ -431,7 +431,7 @@ class PersistenceTestKit(system: ActorSystem) {
   /**
    * Returns default policy if it was changed by [[PersistenceTestKit.withPolicy()]].
    */
-  def returnDefaultPolicy(): Unit = scalaTestkit.returnDefaultPolicy()
+  def resetPolicy(): Unit = scalaTestkit.resetPolicy()
 
 }
 

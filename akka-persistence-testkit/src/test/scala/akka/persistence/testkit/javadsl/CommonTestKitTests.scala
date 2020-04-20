@@ -134,7 +134,7 @@ trait CommonTestKitTests extends JavaDslUtils {
 
       expectNextPersisted(pid, B(666))
 
-      returnDefaultPolicy()
+      resetPolicy()
 
     }
 

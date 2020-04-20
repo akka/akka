@@ -258,7 +258,7 @@ class SnapshotTestKit(system: ActorSystem) {
   /**
    * Returns default policy if it was changed by [[SnapshotTestKit.withPolicy()]].
    */
-  def returnDefaultPolicy(): Unit = scalaTestkit.returnDefaultPolicy()
+  def resetPolicy(): Unit = scalaTestkit.resetPolicy()
 
 }
 

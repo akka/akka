@@ -109,7 +109,7 @@ private[testkit] trait PolicyOpsTestKit[P] extends {
   /**
    * Returns default policy if it was changed by [[PolicyOpsTestKit.this.withPolicy()]].
    */
-  def returnDefaultPolicy(): Unit = storage.returnDefaultPolicy()
+  def resetPolicy(): Unit = storage.resetPolicy()
 
 }
 

@@ -128,7 +128,7 @@ class PersistenceTestKitSampleSpecWithPolicy
 
   override def beforeEach(): Unit = {
     persistenceTestKit.clearAll()
-    persistenceTestKit.returnDefaultPolicy()
+    persistenceTestKit.resetPolicy()
   }
 
   "Testkit policy" should {
