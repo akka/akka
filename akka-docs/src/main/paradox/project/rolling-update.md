@@ -86,3 +86,32 @@ has been prepared to accept those shorter forms but still emits the old long man
 
 This means that a rolling update will have to go through at least one of 2.6.2, 2.6.3 or 2.6.4 when upgrading to
 2.6.5 or higher or else cluster nodes will not be able to communicate during the rolling update.
+
+### 2.6.5 JacksonCborSerializer
+
+Issue: [#28918](https://github.com/akka/akka/issues/28918). JacksonCborSerializer was using plain JSON format
+instead of CBOR.
+
+If you have `jackson-cbor` in your `serialization-bindings` a rolling upgrade will have to go through 2.6.5 when
+upgrading to 2.6.5 or higher.
+
+In Akka 2.6.5 the `jackson-cbor` binding will still serialize to JSON format to support rolling update from 2.6.4.
+It also adds a new binding to be able to deserialize CBOR format when rolling update from 2.6.5 to 2.6.6.
+In Akka 2.6.6 the `jackson-cbor` binding will serialize to CBOR and that can be deserialized by 2.6.5. Old
+data, such as persistent events, can still be deserialized.
+
+You can start using CBOR format already with Akka 2.6.5 without waiting for the 2.6.6 release. First, perform
+a rolling update to Akka 2.6.5 using default configuration. Then change the configuration to:
+
+```
+akka.actor {
+  serializers {
+    jackson-cbor = "akka.serialization.jackson.JacksonCborSerializer"
+  }
+  serialization-identifiers {
+    jackson-cbor = 33
+  }
+}
+```
+
+Perform a second rolling update with the new configuration.
