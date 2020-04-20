@@ -1,0 +1,65 @@
+name: dotty
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        # jdk 11 is blocked by #9200
+        java: [ adopt@1.8, adopt@1.14, graalvm@ ]
+        scala: [ 0.24.0 ]
+    name: build on ${{ matrix.java }}
+    steps:
+      - uses: actions/checkout@v2
+      - name: Cache Ivy
+        uses: actions/cache@v1
+        with:
+          path: ~/.ivy2/cache
+          key: ${{ runner.os }}-ivy-${{ hashFiles('*.sbt') }}-${{ hashFiles('project/*.*') }}
+          restore-keys: ${{ runner.os }}-ivy-
+      - name: Cache Sbt
+        uses: actions/cache@v1
+        with:
+          path: ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('*.sbt') }}-${{ hashFiles('project/*.*') }}
+          restore-keys: ${{ runner.os }}-sbt-
+      - name: Cache Coursier
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/coursier
+          key: ${{ runner.os }}-coursier-${{ hashFiles('*.sbt') }}-${{ hashFiles('project/*.*') }}
+          restore-keys: ${{ runner.os }}-coursier-
+      - uses: olafurpg/setup-scala@v7
+        with:
+          java-version: ${{ matrix.java }}
+      # akka build on jdk > 8 require JDK 8 installation
+      - name: setup jdk8
+        if: matrix.java != 'adopt@1.8'
+        run: jabba install adopt@~1.8.0-0
+      # dotty ready modules:
+      #  + akka-actor/compile (no test code)
+      #  + akka-actor-typed/{compile, CompileJdk9/compile} (no test code)
+      #  + akka-protobuf (pure java, no test code)
+      #  + akka-protobuf-v3 (pure java, no test code)
+      #  + {the following projects}/test
+      # All other modules (dependsOn akka-stream) are blocked by #9346
+      - name: build
+        run: |
+          sbt -Dakka.build.scalaVersion=${{ matrix.scala }} "
+            ;akka-actor/compile
+            ;akka-actor-typed/compile
+            ;akka-actor-typed/CompileJdk9:compile
+            ;akka-protobuf/compile
+            ;akka-protobuf-v3/compile
+            ;akka-slf4j/test
+            ;akka-testkit/test
+            ;akka-actor-testkit-typed/test
+            ;akka-actor-tests/test
+            ;akka-actor-typed-tests/test
+            ;akka-pki/test
+          "
