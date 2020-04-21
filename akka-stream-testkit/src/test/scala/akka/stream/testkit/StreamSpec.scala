@@ -10,22 +10,23 @@ import akka.stream.snapshot.{ MaterializerState, StreamSnapshotImpl }
 import akka.testkit.{ AkkaSpec, TestProbe }
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.Failed
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
+import akka.testkit.TestKitUtils
 
 abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {
   def this(config: Config) =
     this(
       ActorSystem(
-        AkkaSpec.testNameFromCallStack(classOf[StreamSpec]),
+        TestKitUtils.testNameFromCallStack(classOf[StreamSpec], "".r),
         ConfigFactory.load(config.withFallback(AkkaSpec.testConf))))
 
   def this(s: String) = this(ConfigFactory.parseString(s))
 
   def this(configMap: Map[String, _]) = this(AkkaSpec.mapToConfig(configMap))
 
-  def this() = this(ActorSystem(AkkaSpec.testNameFromCallStack(classOf[StreamSpec]), AkkaSpec.testConf))
+  def this() = this(ActorSystem(TestKitUtils.testNameFromCallStack(classOf[StreamSpec], "".r), AkkaSpec.testConf))
 
   override def withFixture(test: NoArgTest) = {
     super.withFixture(test) match {
