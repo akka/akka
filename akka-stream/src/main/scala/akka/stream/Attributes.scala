@@ -12,6 +12,8 @@ import scala.annotation.tailrec
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.{ classTag, ClassTag }
+import akka.japi.function
+import java.time.Duration
 
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
@@ -19,8 +21,13 @@ import akka.annotation.InternalApi
 import akka.event.Logging
 import akka.japi.function
 import akka.stream.impl.TraversalBuilder
-import akka.util.{ ByteString, OptionVal }
 import akka.util.JavaDurationConverters._
+import akka.util.JavaDurationConverters._
+
+import scala.compat.java8.OptionConverters._
+import akka.util.{ ByteString, OptionVal }
+
+import scala.concurrent.duration.FiniteDuration
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]
@@ -492,7 +499,7 @@ object Attributes {
    */
   def name(name: String): Attributes =
     if (name == null || name.isEmpty) none
-    else Attributes(Name(URLEncoder.encode(name, ByteString.UTF_8)))
+    else Attributes(Name(name))
 
   /**
    * Each asynchronous piece of a materialized stream topology is executed by one Actor
