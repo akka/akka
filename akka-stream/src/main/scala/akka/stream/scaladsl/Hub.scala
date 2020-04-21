@@ -11,6 +11,7 @@ import akka.NotUsed
 import akka.dispatch.AbstractNodeQueue
 import akka.stream._
 import akka.stream.stage._
+
 import scala.annotation.tailrec
 import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
@@ -21,7 +22,6 @@ import java.util.concurrent.atomic.AtomicReferenceArray
 import scala.collection.immutable
 import scala.collection.mutable.LongMap
 import scala.collection.immutable.Queue
-
 import akka.annotation.InternalApi
 import akka.annotation.DoNotInherit
 import akka.stream.Attributes.LogLevels
@@ -309,6 +309,35 @@ private[akka] class MergeHub[T](perProducerBufferSize: Int)
 object BroadcastHub {
 
   /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] val defaultBufferSize = 256
+
+  /**
+   * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
+   * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
+   * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
+   * broadcast elements from the original [[Sink]].
+   *
+   * Every new materialization of the [[Sink]] results in a new, independent hub, which materializes to its own
+   * [[Source]] for consuming the [[Sink]] of that materialization.
+   *
+   * If the original [[Sink]] is failed, then the failure is immediately propagated to all of its materialized
+   * [[Source]]s (possibly jumping over already buffered elements). If the original [[Sink]] is completed, then
+   * all corresponding [[Source]]s are completed. Both failure and normal completion is "remembered" and later
+   * materializations of the [[Source]] will see the same (failure or completion) state. [[Source]]s that are
+   * cancelled are simply removed from the dynamic set of consumers.
+   *
+   * @param startAfterNrOfConsumers Elements are buffered until this number of consumers have been connected.
+   *   This is only used initially when the operator is starting up, i.e. it is not honored when consumers have
+   *   been removed (canceled).
+   * @param bufferSize Total number of elements that can be buffered. If this buffer is full, the producer
+   *   is backpressured.
+   */
+  def sink[T](startAfterNrOfConsumers: Int, bufferSize: Int = defaultBufferSize): Sink[T, Source[T, NotUsed]] =
+    Sink.fromGraph(new BroadcastHub[T](bufferSize, startAfterNrOfConsumers))
+
+  /**
    * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
    * of consumers. After the [[Sink]] returned by this method is materialized, it returns a [[Source]] as materialized
    * value. This [[Source]] can be materialized an arbitrary number of times and each materialization will receive the
@@ -327,7 +356,7 @@ object BroadcastHub {
    *                   concurrent consumers can be in terms of element. If this buffer is full, the producer
    *                   is backpressured. Must be a power of two and less than 4096.
    */
-  def sink[T](bufferSize: Int): Sink[T, Source[T, NotUsed]] = Sink.fromGraph(new BroadcastHub[T](bufferSize))
+  def sink[T](bufferSize: Int): Sink[T, Source[T, NotUsed]] = Sink.fromGraph(new BroadcastHub[T](0, bufferSize))
 
   /**
    * Creates a [[Sink]] that receives elements from its upstream producer and broadcasts them to a dynamic set
@@ -345,18 +374,21 @@ object BroadcastHub {
    * cancelled are simply removed from the dynamic set of consumers.
    *
    */
-  def sink[T]: Sink[T, Source[T, NotUsed]] = sink(bufferSize = 256)
-
+  def sink[T]: Sink[T, Source[T, NotUsed]] = sink(startAfterNrOfConsumers = 0, bufferSize = 256)
 }
 
 /**
  * INTERNAL API
  */
-private[akka] class BroadcastHub[T](bufferSize: Int)
+private[akka] class BroadcastHub[T](bufferSize: Int, startAfterNrOfConsumers: Int)
     extends GraphStageWithMaterializedValue[SinkShape[T], Source[T, NotUsed]] {
   require(bufferSize > 0, "Buffer size must be positive")
   require(bufferSize < 4096, "Buffer size larger then 4095 is not allowed")
   require((bufferSize & bufferSize - 1) == 0, "Buffer size must be a power of two")
+
+  def this(bufferSize: Int) {
+    this(bufferSize, 0)
+  }
 
   private val Mask = bufferSize - 1
   private val WheelMask = (bufferSize * 2) - 1
@@ -388,6 +420,9 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
     private[this] val callbackPromise: Promise[AsyncCallback[HubEvent]] = Promise()
     private[this] val noRegistrationsState = Open(callbackPromise.future, Nil)
     val state = new AtomicReference[HubState](noRegistrationsState)
+
+    private var initialized = false
+    private var pending = Vector.empty[T]
 
     // Start from values that will almost immediately overflow. This has no effect on performance, any starting
     // number will do, however, this protects from regressions as these values *almost surely* overflow and fail
@@ -435,6 +470,9 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
             val startFrom = head
             activeConsumers += 1
             addConsumer(consumer, startFrom)
+
+            if (activeConsumers >= startAfterNrOfConsumers)
+              initialized = true
             // in case the consumer is already stopped we need to undo registration
             implicit val ec = materializer.executionContext
             consumer.callback.invokeWithFeedback(Initialize(startFrom)).failed.foreach {
@@ -442,6 +480,11 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
                 callbackPromise.future.foreach(callback =>
                   callback.invoke(UnRegister(consumer.id, startFrom, startFrom)))
               case _ => ()
+            }
+
+            if (initialized && pending.nonEmpty) {
+              pending.foreach(publish)
+              pending = Vector.empty[T]
             }
           }
 
@@ -460,13 +503,17 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
               head = finalOffset
               if (!hasBeenPulled(in)) pull(in)
             }
-          } else checkUnblock(previousOffset)
+          } else {
+            tryPull()
+            checkUnblock(previousOffset)
+          }
 
         case Advance(id, previousOffset) =>
           val newOffset = previousOffset + DemandThreshold
           // Move the consumer from its last known offset to its new one. Check if we are unblocked.
           val consumer = findAndRemoveConsumer(id, previousOffset)
           addConsumer(consumer, newOffset)
+          tryPull()
           checkUnblock(previousOffset)
         case NeedWakeup(id, previousOffset, currentOffset) =>
           // Move the consumer from its last known offset to its new one. Check if we are unblocked.
@@ -474,7 +521,11 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
           addConsumer(consumer, currentOffset)
 
           // Also check if the consumer is now unblocked since we published an element since it went asleep.
-          if (currentOffset != tail) consumer.callback.invoke(Wakeup)
+          if (currentOffset != tail) {
+            consumer.callback.invoke(Wakeup)
+          } else {
+            tryPull()
+          }
           checkUnblock(previousOffset)
       }
     }
@@ -482,7 +533,12 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
     // Producer API
     // We are full if the distance between the slowest (known) consumer and the fastest (known) consumer is
     // the buffer size. We must wait until the slowest either advances, or cancels.
-    private def isFull: Boolean = tail - head == bufferSize
+    private def isFull: Boolean = tail - head + pending.size >= bufferSize
+
+    private def tryPull(): Unit = {
+      if (initialized && !isClosed(in) && !hasBeenPulled(in) && !isFull)
+        pull(in)
+    }
 
     override def onUpstreamFailure(ex: Throwable): Unit = {
       val failMessage = HubCompleted(Some(ex))
@@ -592,12 +648,17 @@ private[akka] class BroadcastHub[T](bufferSize: Int)
     }
 
     private def publish(elem: T): Unit = {
-      val idx = tail & Mask
-      val wheelSlot = tail & WheelMask
-      queue(idx) = elem.asInstanceOf[AnyRef]
-      // Publish the new tail before calling the wakeup
-      tail = tail + 1
-      wakeupIdx(wheelSlot)
+      if (!initialized || activeConsumers == 0) {
+        // will be published when first consumers are registered
+        pending :+= elem
+      } else {
+        val idx = tail & Mask
+        val wheelSlot = tail & WheelMask
+        queue(idx) = elem.asInstanceOf[AnyRef]
+        // Publish the new tail before calling the wakeup
+        tail = tail + 1
+        wakeupIdx(wheelSlot)
+      }
     }
 
     // Consumer API
