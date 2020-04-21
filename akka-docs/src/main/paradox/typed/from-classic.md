@@ -251,8 +251,8 @@ Links to reference documentation:
 
 ## Stopping
 
-Classic actors can be stopped with the `stop` method of `ActorContext` or `ActorSystem`. In Typed an actor is
-stopping itself by returning `Behaviors.stopped`. There is also a `stop` method in the `ActorContext` but it
+Classic actors can be stopped with the `stop` method of `ActorContext` or `ActorSystem`. In Typed an actor stops 
+itself by returning `Behaviors.stopped`. There is also a `stop` method in the `ActorContext` but it
 can only be used for stopping direct child actors and not any arbitrary actor.
 
 `PoisonPill` is not supported in Typed. Instead, if you need to request an actor to stop you should
