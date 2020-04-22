@@ -4,7 +4,7 @@
 
 import akka.ProjectFileIgnoreSupport
 import com.lightbend.sbt.JavaFormatterPlugin
-import sbt.{AutoPlugin, PluginTrigger, Plugins}
+import sbt.{ AutoPlugin, PluginTrigger, Plugins }
 
 object JavaFormatter extends AutoPlugin {
 
@@ -15,6 +15,8 @@ object JavaFormatter extends AutoPlugin {
   private val ignoreConfigFileName: String = ".sbt-java-formatter.conf"
   private val descriptor: String = "sbt-java-formatter"
 
+  private val formatOnCompile = !sys.props.contains("akka.no.discipline")
+
   import JavaFormatterPlugin.autoImport._
   import sbt.Keys._
   import sbt._
@@ -23,9 +25,10 @@ object JavaFormatter extends AutoPlugin {
   override def projectSettings: Seq[Def.Setting[_]] = Seq(
     //below is for sbt java formatter
     (excludeFilter in javafmt) := {
-      val ignoreSupport = new ProjectFileIgnoreSupport((baseDirectory in ThisBuild).value / ignoreConfigFileName, descriptor)
+      val ignoreSupport =
+        new ProjectFileIgnoreSupport((baseDirectory in ThisBuild).value / ignoreConfigFileName, descriptor)
       val simpleFileFilter = new SimpleFileFilter(file => ignoreSupport.isIgnoredByFileOrPackages(file))
       simpleFileFilter || (excludeFilter in javafmt).value
-    }
-  )
+    },
+    javafmtOnCompile := formatOnCompile)
 }
