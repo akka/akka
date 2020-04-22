@@ -18,6 +18,10 @@ import akka.cluster.ddata.SelfUniqueAddress
 import akka.cluster.sharding.ClusterShardingSettings
 import akka.cluster.sharding.ShardRegion.ShardId
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 private[akka] object DDataRememberEntitiesCoordinatorStore {
   def props(typeName: String, settings: ClusterShardingSettings, replicator: ActorRef, majorityMinCap: Int): Props =
     Props(new DDataRememberEntitiesCoordinatorStore(typeName, settings, replicator, majorityMinCap))

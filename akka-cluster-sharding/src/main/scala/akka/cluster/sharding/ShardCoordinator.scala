@@ -1146,7 +1146,7 @@ private[akka] class DDataShardCoordinator(
       else Some(Set.empty))
 
   // This state will drop all other messages since they will be retried
-  // Note remember entities query retries forever in store rather than here
+  // Note remembered entities query retries forever in store rather than here
   def waitingForInitialState(initialState: Option[State], initialShards: Option[Set[ShardId]]): Receive =
     ({
 
@@ -1233,7 +1233,8 @@ private[akka] class DDataShardCoordinator(
     case _ => stash()
   }
 
-  // this state will stash all messages until it receives UpdateSuccess
+  // this state will stash all messages until it receives UpdateSuccess and a successful remember shard started
+  // if remember entities is enabled
   def waitingForUpdate[E <: DomainEvent](
       evt: E,
       shardId: Option[ShardId],
@@ -1298,11 +1299,13 @@ private[akka] class DDataShardCoordinator(
     case RememberEntitiesCoordinatorStore.UpdateDone(shard) =>
       require(shardId.contains(shard))
       if (!waitingForStateWrite) {
-        log.debug("The ShardCoordinator saw remember shard start successfuly written {}", evt)
+        log.debug("The ShardCoordinator saw remember shard start successfully written {}", evt)
         if (shardId.isDefined) timers.cancel(RememberEntitiesTimeoutKey)
         unbecomeAfterUpdate(evt, afterUpdateCallback)
       } else {
-        log.debug("The ShardCoordinator saw remember shard start successfuly written {}, waiting for state update", evt)
+        log.debug(
+          "The ShardCoordinator saw remember shard start successfully written {}, waiting for state update",
+          evt)
         context.become(
           waitingForUpdate(
             evt,
@@ -1407,7 +1410,6 @@ private[akka] class DDataShardCoordinator(
     timers.startSingleTimer(
       RememberEntitiesTimeoutKey,
       RememberEntitiesTimeout(newShard),
-      // FIXME more reasonable timeout here?
       settings.tuningParameters.updatingStateTimeout)
   }
 

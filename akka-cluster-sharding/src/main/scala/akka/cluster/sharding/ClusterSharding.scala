@@ -755,7 +755,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
         val rememberEntitiesStoreProvider: Option[RememberEntitiesProvider] =
           if (!settings.rememberEntities) None
           else
-            // FIXME separate setting for state and remember entities store
+            // FIXME separate setting for state and remember entities store https://github.com/akka/akka/issues/28961
             Some(settings.stateStoreMode match {
               case ClusterShardingSettings.StateStoreModeDData =>
                 new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, rep)
