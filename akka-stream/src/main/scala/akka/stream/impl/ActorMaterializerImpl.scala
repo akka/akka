@@ -7,25 +7,22 @@ package akka.stream.impl
 import java.util.concurrent.atomic.AtomicBoolean
 
 import akka.actor._
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
-import akka.dispatch.Dispatchers
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.dispatch.{ Dispatchers, ExecutionContexts }
 import akka.event.LoggingAdapter
+import akka.pattern.RetrySupport
 import akka.pattern.ask
 import akka.pattern.pipe
-import akka.pattern.retry
 import akka.stream._
-import akka.stream.impl.fusing.ActorGraphInterpreter
-import akka.stream.impl.fusing.GraphInterpreterShell
+import akka.stream.impl.fusing.{ ActorGraphInterpreter, GraphInterpreterShell }
 import akka.stream.snapshot.StreamSnapshot
-import akka.util.OptionVal
-import akka.util.Timeout
+import akka.util.{ OptionVal, Timeout }
 import com.github.ghik.silencer.silent
 
 import scala.collection.immutable
 import scala.concurrent.duration._
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.Future
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future }
+import scala.util.{ Failure, Success }
 
 /**
  * ExtendedActorMaterializer used by subtypes which delegates in-island wiring to [[akka.stream.impl.PhaseIsland]]s
@@ -235,7 +232,7 @@ private[akka] class SubFusingActorMaterializerImpl(
     case GetChildren =>
       sender() ! Children(context.children.toSet)
     case GetChildrenSnapshots =>
-      takeSnapshotsOfChildren().map(ChildrenSnapshots.apply _).pipeTo(sender())
+      takeSnapshotsOfChildren().map(ChildrenSnapshots.apply)(ExecutionContexts.parasitic).pipeTo(sender())
 
     case StopChildren =>
       context.children.foreach(context.stop)
@@ -244,17 +241,31 @@ private[akka] class SubFusingActorMaterializerImpl(
 
   def takeSnapshotsOfChildren(): Future[immutable.Seq[StreamSnapshot]] = {
     // Arbitrary timeout but should always be quick, the failure scenario is that
-    // the child/stream stopped, and we do retry below
-    implicit val timeout: Timeout = 1.second
-    def takeSnapshot() = {
-      val futureSnapshots =
-        context.children.toList.map(child => (child ? ActorGraphInterpreter.Snapshot).mapTo[StreamSnapshot])
-      Future.sequence(futureSnapshots)
-    }
-
+    // the child/stream stopped, and we do retry below.
     // If the timeout hits it is likely because one of the streams stopped between looking at the list
     // of children and asking it for a snapshot. We retry the entire snapshot in that case
-    retry(() => takeSnapshot(), 3)
+    val children = context.children.toList
+    def takeSnapshot(): Future[List[StreamSnapshot]] = {
+      implicit val ec: ExecutionContext = ExecutionContexts.parasitic
+      val futureSnapshots = children.map(child => {
+        val futureSnapshotOfChild = RetrySupport.retry(() => {
+          implicit val timeout: Timeout = 1.second
+          (child ? ActorGraphInterpreter.Snapshot).mapTo[StreamSnapshot]
+        }, 3)
+        futureSnapshotOfChild.transform {
+          case Success(snapshot)  => Success((child, Success(snapshot)))
+          case Failure(exception) => Success((child, Failure(exception)))
+        }
+      })
+      Future
+        .sequence(futureSnapshots)
+        .map(_.foldLeft(List.newBuilder[StreamSnapshot]) {
+          case (builder, (_, Success(snapshot))) => builder += snapshot
+          case (builder, (child, Failure(exception))) =>
+            if (child.isTerminated) builder else throw exception
+        }.result())
+    }
+    takeSnapshot()
   }
 
   override def postStop(): Unit = haveShutDown.set(true)
