@@ -14,7 +14,6 @@ import akka.actor.typed.internal.InterceptorImpl
 import akka.actor.typed.internal.LoggerClass
 import akka.actor.typed.scaladsl.ActorContext
 import akka.annotation.DoNotInherit
-import akka.persistence.Recovery
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
@@ -158,6 +157,8 @@ object EventSourcedBehavior {
    *
    * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
+   *
+   * Overrides previously set [[EventSourcedBehavior.withRecovery]]
    */
   def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State]
 
@@ -211,7 +212,9 @@ object EventSourcedBehavior {
   def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State]
 
   /**
-   * Change the recovery strategy
+   * Change the recovery strategy.
+   *
+   * Overrides previously set [[EventSourcedBehavior.withSnapshotSelectionCriteria]]
    */
   def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
 }
