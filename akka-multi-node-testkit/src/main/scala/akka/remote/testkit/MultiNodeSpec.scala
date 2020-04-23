@@ -245,15 +245,6 @@ object MultiNodeSpec {
     ConfigFactory.parseMap(map.asJava)
   }
 
-  private def getCallerName(clazz: Class[_]): String = {
-    val pattern = s"(akka\\.remote\\.testkit\\.MultiNodeSpec.*|akka\\.remote\\.RemotingMultiNodeSpec)"
-    val s = Thread.currentThread.getStackTrace.map(_.getClassName).drop(1).dropWhile(_.matches(pattern))
-    val reduced = s.lastIndexWhere(_ == clazz.getName) match {
-      case -1 => s
-      case z  => s.drop(z + 1)
-    }
-    reduced.head.replaceFirst(""".*\.""", "").replaceAll("[^a-zA-Z_0-9]", "_")
-  }
 }
 
 /**
@@ -284,7 +275,7 @@ abstract class MultiNodeSpec(
 
   def this(config: MultiNodeConfig) =
     this(config, {
-      val name = MultiNodeSpec.getCallerName(classOf[MultiNodeSpec])
+      val name = TestKitUtils.testNameFromCallStack(classOf[MultiNodeSpec], "".r)
       config =>
         try {
           ActorSystem(name, config)
