@@ -33,6 +33,15 @@ object ClusterShardingSettings {
    * the default configuration `akka.cluster.sharding`.
    */
   def apply(config: Config): ClusterShardingSettings = {
+
+    def configMajorityPlus(p: String): Int = {
+      import akka.util.Helpers.toRootLowerCase
+      toRootLowerCase(config.getString(p)) match {
+        case "all" => Int.MaxValue
+        case _     => config.getInt(p)
+      }
+    }
+
     val tuningParameters = new TuningParameters(
       coordinatorFailureBackoff = config.getDuration("coordinator-failure-backoff", MILLISECONDS).millis,
       retryInterval = config.getDuration("retry-interval", MILLISECONDS).millis,
@@ -53,7 +62,9 @@ object ClusterShardingSettings {
       entityRecoveryConstantRateStrategyFrequency =
         config.getDuration("entity-recovery-constant-rate-strategy.frequency", MILLISECONDS).millis,
       entityRecoveryConstantRateStrategyNumberOfEntities =
-        config.getInt("entity-recovery-constant-rate-strategy.number-of-entities"))
+        config.getInt("entity-recovery-constant-rate-strategy.number-of-entities"),
+      coordinatorStateWriteMajorityPlus = configMajorityPlus("coordinator-state.write-majority-plus"),
+      coordinatorStateReadMajorityPlus = configMajorityPlus("coordinator-state.read-majority-plus"))
 
     val coordinatorSingletonSettings = ClusterSingletonManagerSettings(config.getConfig("coordinator-singleton"))
 
@@ -114,13 +125,60 @@ object ClusterShardingSettings {
       val updatingStateTimeout: FiniteDuration,
       val entityRecoveryStrategy: String,
       val entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
-      val entityRecoveryConstantRateStrategyNumberOfEntities: Int) {
+      val entityRecoveryConstantRateStrategyNumberOfEntities: Int,
+      val coordinatorStateWriteMajorityPlus: Int,
+      val coordinatorStateReadMajorityPlus: Int) {
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
       s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
 
     // included for binary compatibility
+    @deprecated(
+      "Use the ClusterShardingSettings factory methods or the constructor including " +
+      "coordinatorStateWriteMajorityPlus and coordinatorStateReadMajorityPlus instead",
+      since = "2.6.5")
+    def this(
+        coordinatorFailureBackoff: FiniteDuration,
+        retryInterval: FiniteDuration,
+        bufferSize: Int,
+        handOffTimeout: FiniteDuration,
+        shardStartTimeout: FiniteDuration,
+        shardFailureBackoff: FiniteDuration,
+        entityRestartBackoff: FiniteDuration,
+        rebalanceInterval: FiniteDuration,
+        snapshotAfter: Int,
+        keepNrOfBatches: Int,
+        leastShardAllocationRebalanceThreshold: Int,
+        leastShardAllocationMaxSimultaneousRebalance: Int,
+        waitingForStateTimeout: FiniteDuration,
+        updatingStateTimeout: FiniteDuration,
+        entityRecoveryStrategy: String,
+        entityRecoveryConstantRateStrategyFrequency: FiniteDuration,
+        entityRecoveryConstantRateStrategyNumberOfEntities: Int) =
+      this(
+        coordinatorFailureBackoff,
+        retryInterval,
+        bufferSize,
+        handOffTimeout,
+        shardStartTimeout,
+        shardFailureBackoff,
+        entityRestartBackoff,
+        rebalanceInterval,
+        snapshotAfter,
+        keepNrOfBatches,
+        leastShardAllocationRebalanceThreshold,
+        leastShardAllocationMaxSimultaneousRebalance,
+        waitingForStateTimeout,
+        updatingStateTimeout,
+        entityRecoveryStrategy,
+        entityRecoveryConstantRateStrategyFrequency,
+        entityRecoveryConstantRateStrategyNumberOfEntities,
+        coordinatorStateWriteMajorityPlus = 5,
+        coordinatorStateReadMajorityPlus = 5)
+
+    // included for binary compatibility
+    @deprecated("Use the ClusterShardingSettings factory methods or the full constructor instead", since = "2.6.5")
     def this(
         coordinatorFailureBackoff: FiniteDuration,
         retryInterval: FiniteDuration,
@@ -159,6 +217,7 @@ object ClusterShardingSettings {
     }
 
     // included for binary compatibility
+    @deprecated("Use the ClusterShardingSettings factory methods or the full constructor instead", since = "2.6.5")
     def this(
         coordinatorFailureBackoff: FiniteDuration,
         retryInterval: FiniteDuration,
