@@ -133,6 +133,11 @@ object ClusterShardingSettings {
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
       s"Unknown 'entity-recovery-strategy' [$entityRecoveryStrategy], valid values are 'all' or 'constant'")
 
+    // included for binary compatibility
+    @deprecated(
+      "Use the ClusterShardingSettings factory methods or the constructor including " +
+      "coordinatorStateWriteMajorityPlus and coordinatorStateReadMajorityPlus instead",
+      since = "2.6.5")
     def this(
         coordinatorFailureBackoff: FiniteDuration,
         retryInterval: FiniteDuration,
@@ -173,6 +178,7 @@ object ClusterShardingSettings {
         coordinatorStateReadMajorityPlus = 5)
 
     // included for binary compatibility
+    @deprecated("Use the ClusterShardingSettings factory methods or the full constructor instead", since = "2.6.5")
     def this(
         coordinatorFailureBackoff: FiniteDuration,
         retryInterval: FiniteDuration,
@@ -211,6 +217,7 @@ object ClusterShardingSettings {
     }
 
     // included for binary compatibility
+    @deprecated("Use the ClusterShardingSettings factory methods or the full constructor instead", since = "2.6.5")
     def this(
         coordinatorFailureBackoff: FiniteDuration,
         retryInterval: FiniteDuration,
