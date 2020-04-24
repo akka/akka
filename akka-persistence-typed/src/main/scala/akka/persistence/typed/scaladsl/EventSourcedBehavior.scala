@@ -157,9 +157,8 @@ object EventSourcedBehavior {
    *
    * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
-   *
-   * Overrides previously set [[EventSourcedBehavior.withRecovery]]
    */
+  @deprecated("use withRecovery(Recovery.withSnapshotSelectionCriteria(...))", "2.6.5")
   def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State]
 
   /**
@@ -213,8 +212,7 @@ object EventSourcedBehavior {
 
   /**
    * Change the recovery strategy.
-   *
-   * Overrides previously set [[EventSourcedBehavior.withSnapshotSelectionCriteria]]
+   * By default, snapshots and events are recovered.
    */
   def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
 }

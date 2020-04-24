@@ -5,7 +5,8 @@
 package akka.persistence.typed.javadsl
 
 import akka.annotation.InternalApi
-import akka.persistence.typed.internal.{ DefaultRecovery, DisabledRecovery }
+import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.typed.internal.{ DefaultRecovery, DisabledRecovery, RecoveryWithSnapshotSelectionCriteria }
 
 /**
  * Strategy for recovery of snapshots and events.
@@ -33,5 +34,17 @@ object Recovery {
    * Neither snapshots nor events are recovered
    */
   val disabled: Recovery = DisabledRecovery
+
+  /**
+   * Changes the snapshot selection criteria used for the recovery.
+   *
+   * By default the most recent snapshot is used, and the remaining state updates are recovered by replaying events
+   * from the sequence number up until which the snapshot reached.
+   *
+   * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
+   * performed by replaying all events -- which may take a long time.
+   */
+  def withSnapshotSelectionCriteria(snapshotSelectionCriteria: SnapshotSelectionCriteria) =
+    RecoveryWithSnapshotSelectionCriteria(snapshotSelectionCriteria)
 
 }

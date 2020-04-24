@@ -123,9 +123,8 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
    *
    * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
-   *
-   * Can't be combined with [[EventSourcedBehavior.recovery]]
    */
+  @deprecated("override recovery instead", "2.6.5")
   def snapshotSelectionCriteria: SnapshotSelectionCriteria = SnapshotSelectionCriteria.latest
 
   /**
@@ -150,13 +149,11 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
   /**
    * Criteria for retention/deletion of snapshots and events.
    * By default, retention is disabled and snapshots are not saved and deleted automatically.
-   *
-   * Can't be combined with [[EventSourcedBehavior.snapshotSelectionCriteria]]
    */
   def retentionCriteria: RetentionCriteria = RetentionCriteria.disabled
 
   /**
-   * Strategy for recovery of snapshots and events.
+   * Override to change the strategy for recovery of snapshots and events.
    * By default, snapshots and events are recovered.
    */
   def recovery: Recovery = Recovery.default
@@ -204,7 +201,7 @@ abstract class EventSourcedBehavior[Command, Event, State] private[akka] (
       .snapshotAdapter(snapshotAdapter())
       .withJournalPluginId(journalPluginId)
       .withSnapshotPluginId(snapshotPluginId)
-      .withSnapshotSelectionCriteria(snapshotSelectionCriteria)
+      .withRecovery(recovery.asScala)
 
     val handler = signalHandler()
     val behaviorWithSignalHandler =
