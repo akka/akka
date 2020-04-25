@@ -5,8 +5,8 @@
 package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
-import java.util.function.Supplier
 import java.util.{ List => JList }
+import java.util.function.Supplier
 
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.TestKitSettings

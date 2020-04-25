@@ -4,7 +4,6 @@
 
 package akka.cluster.metrics
 
-import language.postfixOps
 import java.lang.management.ManagementFactory
 
 import scala.concurrent.Await
@@ -12,19 +11,21 @@ import scala.concurrent.duration._
 
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.MultiNodeClusterSpec
-import akka.pattern.ask
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.routing.GetRoutees
-import akka.routing.FromConfig
-import akka.testkit.{ DefaultTimeout, ImplicitSender, LongRunningTest }
-import akka.routing.ActorRefRoutee
-import akka.routing.Routees
 import akka.cluster.routing.ClusterRouterPool
 import akka.cluster.routing.ClusterRouterPoolSettings
+import akka.pattern.ask
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.routing.ActorRefRoutee
+import akka.routing.FromConfig
+import akka.routing.GetRoutees
+import akka.routing.Routees
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.{ DefaultTimeout, ImplicitSender, LongRunningTest }
 import akka.util.unused
 
 object AdaptiveLoadBalancingRouterConfig extends MultiNodeConfig {

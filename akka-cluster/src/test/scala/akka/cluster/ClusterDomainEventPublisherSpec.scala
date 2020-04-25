@@ -5,19 +5,21 @@
 package akka.cluster
 
 import scala.collection.immutable.SortedSet
+
 import org.scalatest.BeforeAndAfterEach
+
+import akka.actor.ActorRef
 import akka.actor.Address
 import akka.actor.PoisonPill
 import akka.actor.Props
-import akka.cluster.MemberStatus._
-import akka.cluster.InternalClusterAction._
 import akka.cluster.ClusterEvent._
+import akka.cluster.ClusterSettings.DefaultDataCenter
+import akka.cluster.InternalClusterAction._
+import akka.cluster.MemberStatus._
+import akka.remote.RARP
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
-import akka.actor.ActorRef
-import akka.remote.RARP
 import akka.testkit.TestProbe
-import akka.cluster.ClusterSettings.DefaultDataCenter
 
 object ClusterDomainEventPublisherSpec {
   val config = """

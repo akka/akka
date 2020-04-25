@@ -7,17 +7,18 @@ package akka.stream.io
 import java.io.{ ByteArrayInputStream, InputStream }
 import java.util.concurrent.CountDownLatch
 
+import scala.util.Success
+
+import com.github.ghik.silencer.silent
+
 import akka.Done
+import akka.stream.{ AbruptStageTerminationException, ActorMaterializer, ActorMaterializerSettings, IOResult }
 import akka.stream.scaladsl.{ Keep, Sink, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-import akka.stream.{ AbruptStageTerminationException, ActorMaterializer, ActorMaterializerSettings, IOResult }
 import akka.util.ByteString
-
-import scala.util.Success
-import com.github.ghik.silencer.silent
 
 @silent
 class InputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {

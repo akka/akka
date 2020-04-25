@@ -6,6 +6,13 @@ package akka.persistence.snapshot.local
 
 import java.io._
 import java.net.{ URLDecoder, URLEncoder }
+import java.nio.file.Files
+
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.util._
+
+import com.typesafe.config.Config
 
 import akka.actor.ActorLogging
 import akka.persistence._
@@ -14,12 +21,6 @@ import akka.persistence.snapshot._
 import akka.serialization.SerializationExtension
 import akka.util.ByteString.UTF_8
 import akka.util.ccompat._
-import com.typesafe.config.Config
-
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.util._
-import java.nio.file.Files
 
 /**
  * INTERNAL API

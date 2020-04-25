@@ -4,17 +4,18 @@
 
 package akka.remote.artery
 
-import com.typesafe.config.ConfigFactory
-import akka.actor.{ ActorSystem, Address }
-import akka.remote.classic.transport.netty.NettyTransportSpec._
+import java.net.InetAddress
 
 import scala.concurrent.Await
-
 import scala.concurrent.duration.Duration
-import akka.testkit.SocketUtil
-import java.net.InetAddress
+
+import com.typesafe.config.ConfigFactory
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.{ ActorSystem, Address }
+import akka.remote.classic.transport.netty.NettyTransportSpec._
+import akka.testkit.SocketUtil
 
 trait BindCanonicalAddressBehaviors {
   this: AnyWordSpec with Matchers =>

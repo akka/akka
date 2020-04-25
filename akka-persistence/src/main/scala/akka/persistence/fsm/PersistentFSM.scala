@@ -4,20 +4,21 @@
 
 package akka.persistence.fsm
 
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.persistence.fsm.PersistentFSM.FSMState
-import akka.persistence.serialization.Message
-import akka.persistence.{ PersistentActor, RecoveryCompleted, SnapshotOffer }
-import akka.util.JavaDurationConverters
+import scala.annotation.varargs
+import scala.collection.immutable
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
+
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
-import scala.annotation.varargs
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
-import scala.concurrent.ExecutionContextExecutor
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.persistence.{ PersistentActor, RecoveryCompleted, SnapshotOffer }
+import akka.persistence.fsm.PersistentFSM.FSMState
+import akka.persistence.serialization.Message
+import akka.util.JavaDurationConverters
 
 /**
  * SnapshotAfter Extension Id and factory for creating SnapshotAfter extension

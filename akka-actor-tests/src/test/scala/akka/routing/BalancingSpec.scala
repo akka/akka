@@ -4,14 +4,17 @@
 
 package akka.routing
 
+import java.net.URLEncoder
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.actor.{ Actor, Props }
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestLatch }
-import akka.actor.ActorRef
+
 import org.scalatest.BeforeAndAfterEach
-import java.net.URLEncoder
+
+import akka.actor.{ Actor, Props }
+import akka.actor.ActorRef
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestLatch }
 
 object BalancingSpec {
   val counter = new AtomicInteger(1)

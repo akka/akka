@@ -4,6 +4,11 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent._
+import scala.concurrent.duration._
+
+import org.scalatest.exceptions.TestFailedException
+
 import akka.NotUsed
 import akka.stream._
 import akka.stream.impl.TraversalBuilder
@@ -18,10 +23,6 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.TestLatch
 import akka.util.OptionVal
-import org.scalatest.exceptions.TestFailedException
-
-import scala.concurrent._
-import scala.concurrent.duration._
 
 class FlowFlattenMergeSpec extends StreamSpec {
   import system.dispatcher

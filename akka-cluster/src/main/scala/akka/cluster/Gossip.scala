@@ -5,11 +5,12 @@
 package akka.cluster
 
 import scala.collection.immutable
+import scala.concurrent.duration.Deadline
+
 import ClusterSettings.DataCenter
 import MemberStatus._
-import akka.annotation.InternalApi
 
-import scala.concurrent.duration.Deadline
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

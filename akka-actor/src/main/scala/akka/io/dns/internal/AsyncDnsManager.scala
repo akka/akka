@@ -7,20 +7,21 @@ package akka.io.dns.internal
 import java.net.InetSocketAddress
 import java.util.concurrent.TimeUnit
 
-import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }
-import akka.annotation.InternalApi
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.io.PeriodicCacheCleanup
-import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, DnsSettings }
-import akka.io.dns.internal.AsyncDnsManager.CacheCleanup
-import akka.io.{ Dns, DnsExt, DnsProvider }
-import akka.routing.FromConfig
-import akka.util.Timeout
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration.Duration
+
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 
-import scala.concurrent.duration.Duration
-import scala.concurrent.ExecutionContextExecutor
+import akka.actor.{ Actor, ActorLogging, ActorRefFactory, Deploy, ExtendedActorSystem, Props, Timers }
+import akka.annotation.InternalApi
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.io.{ Dns, DnsExt, DnsProvider }
+import akka.io.PeriodicCacheCleanup
+import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, DnsSettings }
+import akka.io.dns.internal.AsyncDnsManager.CacheCleanup
+import akka.routing.FromConfig
+import akka.util.Timeout
 
 /**
  * INTERNAL API

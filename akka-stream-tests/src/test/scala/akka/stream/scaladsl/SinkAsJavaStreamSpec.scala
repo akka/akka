@@ -10,8 +10,8 @@ import akka.stream._
 import akka.stream.impl.PhasedFusingActorMaterializer
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.util.ByteString

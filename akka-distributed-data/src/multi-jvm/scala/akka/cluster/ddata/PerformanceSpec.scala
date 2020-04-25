@@ -6,6 +6,9 @@ package akka.cluster.ddata
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Deploy
@@ -15,7 +18,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 object PerformanceSpec extends MultiNodeConfig {
   val n1 = role("n1")

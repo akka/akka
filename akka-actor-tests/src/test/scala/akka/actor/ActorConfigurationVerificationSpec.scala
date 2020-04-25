@@ -4,15 +4,16 @@
 
 package akka.actor
 
-import language.postfixOps
+import scala.concurrent.duration._
 
+import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+
+import akka.ConfigurationException
+import akka.routing._
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
-import scala.concurrent.duration._
-import akka.routing._
-import org.scalatest.BeforeAndAfterEach
-import akka.ConfigurationException
 
 object ActorConfigurationVerificationSpec {
 

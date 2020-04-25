@@ -4,11 +4,12 @@
 
 package akka.pattern
 
-import akka.testkit._
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+
+import akka.testkit._
 
 class CircuitBreakerMTSpec extends AkkaSpec {
   implicit val ec: ExecutionContextExecutor = system.dispatcher

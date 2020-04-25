@@ -4,21 +4,26 @@
 
 package akka.cluster
 
-import language.postfixOps
+import java.lang.management.ManagementFactory
+import java.util.concurrent.ThreadLocalRandom
+
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
 
-import org.scalatest.BeforeAndAfterEach
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+
 import akka.actor.Actor
+import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
 import akka.actor.Deploy
+import akka.actor.Identify
 import akka.actor.OneForOneStrategy
 import akka.actor.Props
 import akka.actor.RootActorPath
@@ -29,20 +34,16 @@ import akka.cluster.ClusterEvent.CurrentInternalStats
 import akka.cluster.ClusterEvent.MemberEvent
 import akka.remote.DefaultFailureDetectorRegistry
 import akka.remote.PhiAccrualFailureDetector
+import akka.remote.RARP
 import akka.remote.RemoteScope
+import akka.remote.artery.ArterySettings.AeronUpd
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.routing.FromConfig
 import akka.testkit._
 import akka.testkit.TestEvent._
-import akka.actor.Identify
-import akka.actor.ActorIdentity
 import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
-import java.lang.management.ManagementFactory
-
-import akka.remote.RARP
-import akka.remote.artery.ArterySettings.AeronUpd
 
 /**
  * This test is intended to be used as long running stress test

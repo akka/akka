@@ -4,17 +4,16 @@
 
 package akka.remote.testconductor
 
+import java.net.{ ConnectException, InetSocketAddress }
 import java.util.concurrent.TimeoutException
-
-import akka.actor._
-import akka.remote.testconductor.RemoteConnection.getAddrString
 
 import scala.collection.immutable
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 import scala.reflect.classTag
-import akka.util.Timeout
+import scala.util.control.NoStackTrace
+import scala.util.control.NonFatal
+
 import org.jboss.netty.channel.{
   Channel,
   ChannelHandlerContext,
@@ -24,23 +23,23 @@ import org.jboss.netty.channel.{
   SimpleChannelUpstreamHandler,
   WriteCompletionEvent
 }
-import akka.pattern.{ ask, AskTimeoutException }
-import akka.event.{ Logging, LoggingAdapter }
-import java.net.{ ConnectException, InetSocketAddress }
 
-import akka.remote.transport.ThrottlerTransportAdapter.{ Blackhole, SetThrottle, TokenBucket, Unthrottled }
+import akka.actor._
 import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.event.{ Logging, LoggingAdapter }
+import akka.pattern.{ ask, AskTimeoutException }
+import akka.remote.testconductor.RemoteConnection.getAddrString
+import akka.remote.transport.ThrottlerTransportAdapter.{ Blackhole, SetThrottle, TokenBucket, Unthrottled }
+import akka.util.Timeout
 import akka.util.ccompat._
-
-import scala.util.control.NonFatal
 
 @ccompatUsedUntil213
 object Player {
 
   final class Waiter extends Actor with RequiresMessageQueue[UnboundedMessageQueueSemantics] {
 
-    import FSM._
     import ClientFSM._
+    import FSM._
 
     var waiting: ActorRef = _
 

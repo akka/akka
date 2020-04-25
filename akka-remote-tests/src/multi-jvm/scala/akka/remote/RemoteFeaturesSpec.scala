@@ -6,6 +6,8 @@ package akka.remote
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.ActorSystemImpl
@@ -27,7 +29,6 @@ import akka.routing.RoundRobinGroup
 import akka.routing.RoundRobinPool
 import akka.routing.RoutedActorRef
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 
 class RemotingFeaturesConfig(val useUnsafe: Boolean, artery: Boolean) extends MultiNodeConfig {
 
@@ -229,8 +230,9 @@ abstract class RemotingFeaturesSpec(val multiNodeConfig: RemotingFeaturesConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
 
   import RemoteWatcher._
-  import akka.remote.routing.RemoteRoundRobinSpec._
   import multiNodeConfig._
+
+  import akka.remote.routing.RemoteRoundRobinSpec._
 
   override def initialParticipants: Int = roles.size
 

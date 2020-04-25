@@ -4,6 +4,8 @@
 
 package akka.remote.serialization
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -21,7 +23,6 @@ import akka.serialization.SerializationExtension
 import akka.testkit.AkkaSpec
 import akka.testkit.JavaSerializable
 import akka.util.unused
-import com.typesafe.config.ConfigFactory
 
 object DaemonMsgCreateSerializerAllowJavaSerializationSpec {
 

@@ -6,13 +6,14 @@ package akka.cluster.ddata
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.cluster.Cluster
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 object ReplicatorChaosSpec extends MultiNodeConfig {
   val first = role("first")
@@ -38,8 +39,8 @@ class ReplicatorChaosSpecMultiJvmNode4 extends ReplicatorChaosSpec
 class ReplicatorChaosSpecMultiJvmNode5 extends ReplicatorChaosSpec
 
 class ReplicatorChaosSpec extends MultiNodeSpec(ReplicatorChaosSpec) with STMultiNodeSpec with ImplicitSender {
-  import ReplicatorChaosSpec._
   import Replicator._
+  import ReplicatorChaosSpec._
 
   override def initialParticipants = roles.size
 

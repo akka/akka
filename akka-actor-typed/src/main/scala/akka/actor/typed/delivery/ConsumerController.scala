@@ -8,6 +8,8 @@ import java.time.{ Duration => JavaDuration }
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.Config
+
 import akka.actor.DeadLetterSuppression
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -21,7 +23,6 @@ import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 /**
  * `ConsumerController` and [[ProducerController]] or [[WorkPullingProducerController]] are used

@@ -4,10 +4,11 @@
 
 package akka.remote.artery
 
-import akka.testkit._
-import akka.actor._
 import com.typesafe.config._
+
+import akka.actor._
 import akka.remote.RARP
+import akka.testkit._
 
 object RemoteDeploymentSpec {
   class Echo1 extends Actor {

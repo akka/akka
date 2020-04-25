@@ -4,11 +4,9 @@
 
 package akka.pattern
 
-import akka.actor.ActorSystem
-import akka.testkit._
-
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
@@ -16,7 +14,9 @@ import scala.language.postfixOps
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
-import scala.concurrent.ExecutionContextExecutor
+
+import akka.actor.ActorSystem
+import akka.testkit._
 
 object CircuitBreakerSpec {
 

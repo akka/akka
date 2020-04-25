@@ -6,12 +6,14 @@ package akka.actor.dispatch
 
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
-import akka.testkit._
-import akka.actor.{ Actor, Props }
-import akka.testkit.AkkaSpec
-import org.scalatest.BeforeAndAfterEach
 import scala.concurrent.Await
+
+import org.scalatest.BeforeAndAfterEach
+
+import akka.actor.{ Actor, Props }
 import akka.pattern.ask
+import akka.testkit._
+import akka.testkit.AkkaSpec
 
 object PinnedActorSpec {
   val config = """

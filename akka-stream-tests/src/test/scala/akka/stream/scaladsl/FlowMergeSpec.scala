@@ -4,9 +4,10 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit._
 import org.reactivestreams.Publisher
+
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowMergeSpec extends BaseTwoStreamsSetup {
 
@@ -130,8 +131,8 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
 
     "works in number example for merge sorted" in {
       //#merge-sorted
-      import akka.stream.scaladsl.Source
       import akka.stream.scaladsl.Sink
+      import akka.stream.scaladsl.Source
 
       val sourceA = Source(List(1, 3, 5, 7))
       val sourceB = Source(List(2, 4, 6, 8))
@@ -148,8 +149,8 @@ class FlowMergeSpec extends BaseTwoStreamsSetup {
 
     "works in number example for merge" in {
       //#merge
-      import akka.stream.scaladsl.Source
       import akka.stream.scaladsl.Sink
+      import akka.stream.scaladsl.Source
 
       val sourceA = Source(List(1, 2, 3, 4))
       val sourceB = Source(List(10, 20, 30, 40))

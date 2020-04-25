@@ -4,12 +4,12 @@
 
 package akka.testkit
 
-import scala.collection.immutable
-import scala.util.Random
 import java.net.{ DatagramSocket, InetSocketAddress, NetworkInterface, StandardProtocolFamily }
 import java.nio.channels.DatagramChannel
 import java.nio.channels.ServerSocketChannel
 
+import scala.collection.immutable
+import scala.util.Random
 import scala.util.control.NonFatal
 
 /**

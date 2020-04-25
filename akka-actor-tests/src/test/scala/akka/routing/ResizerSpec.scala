@@ -4,15 +4,16 @@
 
 package akka.routing
 
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import language.postfixOps
-import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
-import akka.testkit._
-import akka.testkit.TestEvent._
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import language.postfixOps
+
+import akka.actor.{ Actor, ActorRef, ActorSystem, Props }
 import akka.pattern.ask
+import akka.testkit._
+import akka.testkit.TestEvent._
 
 object ResizerSpec {
 

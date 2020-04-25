@@ -7,23 +7,24 @@ package akka.cluster.protobuf
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
 import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 
-import akka.actor.{ Address, ExtendedActorSystem }
-import akka.cluster._
-import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
-import akka.serialization._
-import akka.protobufv3.internal.{ ByteString, MessageLite }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.util.ccompat.JavaConverters._
 import scala.concurrent.duration.Deadline
-import akka.annotation.InternalApi
-import akka.cluster.InternalClusterAction._
-import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
-import akka.routing.Pool
-import akka.util.ccompat._
+
 import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory, ConfigRenderOptions }
+
+import akka.actor.{ Address, ExtendedActorSystem }
+import akka.annotation.InternalApi
+import akka.cluster._
+import akka.cluster.InternalClusterAction._
+import akka.cluster.protobuf.msg.{ ClusterMessages => cm }
+import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
+import akka.protobufv3.internal.{ ByteString, MessageLite }
+import akka.routing.Pool
+import akka.serialization._
+import akka.util.ccompat._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API

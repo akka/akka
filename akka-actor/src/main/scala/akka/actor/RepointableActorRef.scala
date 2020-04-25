@@ -9,14 +9,15 @@ import java.util.concurrent.locks.ReentrantLock
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import akka.actor.dungeon.ChildrenContainer
-import akka.event.Logging.Warning
-import akka.util.{ unused, Unsafe }
-import akka.dispatch._
-import akka.dispatch.sysmsg._
+import scala.util.control.NonFatal
+
 import com.github.ghik.silencer.silent
 
-import scala.util.control.NonFatal
+import akka.actor.dungeon.ChildrenContainer
+import akka.dispatch._
+import akka.dispatch.sysmsg._
+import akka.event.Logging.Warning
+import akka.util.{ unused, Unsafe }
 
 /**
  * This actor ref starts out with some dummy cell (by default just enqueuing

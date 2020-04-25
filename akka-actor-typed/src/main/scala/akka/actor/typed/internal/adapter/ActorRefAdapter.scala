@@ -6,9 +6,9 @@ package akka.actor.typed
 package internal
 package adapter
 
+import akka.{ actor => classic }
 import akka.actor.ActorRefProvider
 import akka.actor.InvalidMessageException
-import akka.{ actor => classic }
 import akka.annotation.InternalApi
 import akka.dispatch.sysmsg
 

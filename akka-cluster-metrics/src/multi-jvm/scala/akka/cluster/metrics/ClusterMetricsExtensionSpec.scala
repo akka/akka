@@ -4,13 +4,15 @@
 
 package akka.cluster.metrics
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
+import scala.language.postfixOps
+
 import com.typesafe.config.ConfigFactory
+
+import akka.cluster.MemberStatus
+import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.cluster.MultiNodeClusterSpec
-import akka.cluster.MemberStatus
 
 trait ClusterMetricsCommonConfig extends MultiNodeConfig {
   import ConfigFactory._

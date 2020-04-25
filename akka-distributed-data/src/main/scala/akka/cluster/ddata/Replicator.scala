@@ -5,66 +5,60 @@
 package akka.cluster.ddata
 
 import java.security.MessageDigest
+import java.util.Optional
+import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.TimeUnit
+import java.util.function.{ Function => JFunction }
 
+import scala.annotation.varargs
 import scala.collection.immutable
+import scala.collection.immutable.TreeSet
 import scala.collection.mutable
 import scala.concurrent.duration._
 import scala.concurrent.duration.FiniteDuration
-import java.util.concurrent.ThreadLocalRandom
-
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NoStackTrace
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
 
 import akka.actor.Actor
+import akka.actor.ActorInitializationException
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.ActorSelection
 import akka.actor.ActorSystem
 import akka.actor.Address
-import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.Cancellable
+import akka.actor.DeadLetterSuppression
 import akka.actor.Deploy
+import akka.actor.ExtendedActorSystem
+import akka.actor.NoSerializationVerificationNeeded
+import akka.actor.OneForOneStrategy
 import akka.actor.Props
 import akka.actor.ReceiveTimeout
+import akka.actor.SupervisorStrategy
 import akka.actor.Terminated
+import akka.annotation.InternalApi
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterEvent.InitialStateAsEvents
 import akka.cluster.Member
+import akka.cluster.MemberStatus
 import akka.cluster.UniqueAddress
+import akka.cluster.ddata.DurableStore._
+import akka.cluster.ddata.Key.KeyId
+import akka.cluster.ddata.Key.KeyR
+import akka.dispatch.Dispatchers
+import akka.event.Logging
 import akka.serialization.SerializationExtension
 import akka.util.ByteString
-import com.typesafe.config.Config
-import java.util.function.{ Function => JFunction }
-
-import akka.dispatch.Dispatchers
-import akka.actor.DeadLetterSuppression
-import akka.cluster.ddata.Key.KeyR
-import java.util.Optional
-
-import akka.cluster.ddata.DurableStore._
-import akka.actor.ExtendedActorSystem
-import akka.actor.SupervisorStrategy
-import akka.actor.OneForOneStrategy
-import akka.actor.ActorInitializationException
-import java.util.concurrent.TimeUnit
-
 import akka.util.Helpers.toRootLowerCase
-import akka.actor.Cancellable
-import scala.util.control.NonFatal
-
-import akka.cluster.ddata.Key.KeyId
-import akka.annotation.InternalApi
-import scala.collection.immutable.TreeSet
-
-import akka.cluster.MemberStatus
-import scala.annotation.varargs
-
-import akka.event.Logging
 import akka.util.JavaDurationConverters._
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
 
 @ccompatUsedUntil213
 object ReplicatorSettings {
@@ -1301,10 +1295,10 @@ object Replicator {
  */
 final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLogging {
 
+  import PruningState._
   import Replicator._
   import Replicator.Internal._
   import Replicator.Internal.DeltaPropagation.NoDeltaPlaceholder
-  import PruningState._
   import settings._
 
   val cluster = Cluster(context.system)
@@ -2460,9 +2454,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     extends ReadWriteAggregator
     with ActorLogging {
 
+  import ReadWriteAggregator._
   import Replicator._
   import Replicator.Internal._
-  import ReadWriteAggregator._
 
   override def timeout: FiniteDuration = consistency.timeout
 
@@ -2605,9 +2599,9 @@ final class Replicator(settings: ReplicatorSettings) extends Actor with ActorLog
     extends ReadWriteAggregator
     with ActorLogging {
 
+  import ReadWriteAggregator._
   import Replicator._
   import Replicator.Internal._
-  import ReadWriteAggregator._
 
   override def timeout: FiniteDuration = consistency.timeout
 

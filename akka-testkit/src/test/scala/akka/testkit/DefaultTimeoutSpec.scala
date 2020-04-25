@@ -5,9 +5,10 @@
 package akka.testkit
 
 import org.scalatest.BeforeAndAfterAll
-import akka.actor.ActorSystem
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.ActorSystem
 
 class DefaultTimeoutSpec extends AnyWordSpec with Matchers with BeforeAndAfterAll with TestKitBase with DefaultTimeout {
 

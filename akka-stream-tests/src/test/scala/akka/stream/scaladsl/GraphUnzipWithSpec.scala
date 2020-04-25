@@ -4,21 +4,22 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import org.reactivestreams.Publisher
+
+import akka.Done
+import akka.NotUsed
 import akka.stream._
+import akka.stream.testkit._
 import akka.stream.testkit.TestSubscriber.Probe
 import akka.stream.testkit.Utils.TE
-import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.EventFilter
 import akka.testkit.TestProbe
 import akka.util.unused
-import akka.Done
-import akka.NotUsed
-import org.reactivestreams.Publisher
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class GraphUnzipWithSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

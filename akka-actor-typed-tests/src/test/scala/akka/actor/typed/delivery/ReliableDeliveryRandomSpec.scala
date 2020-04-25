@@ -9,6 +9,8 @@ import java.util.concurrent.atomic.AtomicReference
 import scala.concurrent.duration._
 import scala.util.Random
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.Behavior
@@ -17,7 +19,6 @@ import akka.actor.typed.TypedActorContext
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ReliableDeliveryRandomSpec {
   object RandomFlakyNetwork {

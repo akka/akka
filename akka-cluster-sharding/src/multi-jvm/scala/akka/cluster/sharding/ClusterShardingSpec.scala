@@ -4,6 +4,11 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
@@ -14,12 +19,8 @@ import akka.pattern.BackoffOpts
 import akka.persistence.{ Persistence, PersistentActor }
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testconductor.RoleName
-import akka.testkit.TestEvent.Mute
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
-import scala.language.postfixOps
+import akka.testkit.TestEvent.Mute
 
 object ClusterShardingSpec {
   //#counter-actor

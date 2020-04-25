@@ -6,25 +6,25 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.Done
-import akka.stream.ActorAttributes
-import akka.stream.Materializer
-import akka.stream.Supervision
-import akka.stream.impl.StreamSupervisor.Children
-import akka.stream.impl.PhasedFusingActorMaterializer
-import akka.stream.impl.StreamSupervisor
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestSubscriber
-import akka.testkit.TestLatch
-import akka.testkit.TestProbe
-
-import scala.concurrent.duration._
 import scala.concurrent.Await
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import akka.Done
+import akka.stream.ActorAttributes
+import akka.stream.Materializer
+import akka.stream.Supervision
+import akka.stream.impl.PhasedFusingActorMaterializer
+import akka.stream.impl.StreamSupervisor
+import akka.stream.impl.StreamSupervisor.Children
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestLatch
+import akka.testkit.TestProbe
 
 object UnfoldResourceAsyncSourceSpec {
 

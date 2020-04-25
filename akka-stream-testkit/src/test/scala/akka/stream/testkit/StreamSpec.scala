@@ -4,15 +4,16 @@
 
 package akka.stream.testkit
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import org.scalatest.Failed
+
 import akka.actor.{ ActorRef, ActorSystem }
 import akka.stream.impl.StreamSupervisor
 import akka.stream.snapshot.{ MaterializerState, StreamSnapshotImpl }
 import akka.testkit.{ AkkaSpec, TestProbe }
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.Failed
-import scala.concurrent.Future
-import scala.concurrent.duration._
-
 import akka.testkit.TestKitUtils
 
 abstract class StreamSpec(_system: ActorSystem) extends AkkaSpec(_system) {

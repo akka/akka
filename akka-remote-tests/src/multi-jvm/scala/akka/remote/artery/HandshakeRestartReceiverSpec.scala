@@ -9,6 +9,8 @@ import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.remote.AddressUidExtension
 import akka.remote.RARP
@@ -17,7 +19,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 object HandshakeRestartReceiverSpec extends MultiNodeConfig {
   val first = role("first")

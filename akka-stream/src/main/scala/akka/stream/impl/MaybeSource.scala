@@ -4,15 +4,15 @@
 
 package akka.stream.impl
 
-import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler }
-import akka.stream._
-import akka.util.OptionVal
-
 import scala.concurrent.Promise
 import scala.util.Try
+
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.stream._
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, OutHandler }
+import akka.util.OptionVal
 
 /**
  * INTERNAL API

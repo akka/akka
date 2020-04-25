@@ -4,16 +4,17 @@
 
 package akka.event
 
-import language.postfixOps
-
-import org.scalatest.BeforeAndAfterAll
-import scala.concurrent.duration._
-import akka.testkit._
-import org.scalatest.wordspec.AnyWordSpec
-import com.typesafe.config.ConfigFactory
-import akka.util.ccompat.JavaConverters._
-import akka.actor._
 import scala.annotation.tailrec
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import language.postfixOps
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor._
+import akka.testkit._
+import akka.util.ccompat.JavaConverters._
 
 object LoggingReceiveSpec {
   class TestLogActor extends Actor {

@@ -6,14 +6,14 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom.{ current => random }
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+
 import akka.stream.ThrottleMode
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TimingTest
 import akka.util.ConstantFun
-
-import scala.collection.immutable
-import scala.concurrent.duration._
 
 class FlowGroupedWithinSpec extends StreamSpec with ScriptedTest {
 

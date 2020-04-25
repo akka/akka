@@ -4,13 +4,13 @@
 
 package akka.actor
 
-import akka.actor.Deploy.{ NoDispatcherGiven, NoMailboxGiven }
-import akka.dispatch._
-import akka.routing._
-
 import scala.annotation.varargs
 import scala.collection.immutable
 import scala.reflect.ClassTag
+
+import akka.actor.Deploy.{ NoDispatcherGiven, NoMailboxGiven }
+import akka.dispatch._
+import akka.routing._
 
 /**
  * Factory for Props instances.

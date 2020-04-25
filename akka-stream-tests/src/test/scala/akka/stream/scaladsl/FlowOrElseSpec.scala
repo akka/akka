@@ -4,13 +4,13 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestSubscriber
-import akka.testkit.AkkaSpec
-
 import scala.collection.immutable.Seq
 import scala.concurrent.duration._
+
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils.TE
+import akka.testkit.AkkaSpec
 
 class FlowOrElseSpec extends AkkaSpec {
 

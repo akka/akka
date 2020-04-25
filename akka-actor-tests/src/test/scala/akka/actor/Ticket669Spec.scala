@@ -4,16 +4,17 @@
 
 package akka.actor
 
-import language.postfixOps
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
+import language.postfixOps
 import org.scalatest.BeforeAndAfterAll
+
+import akka.pattern.ask
 import akka.testkit.{ filterEvents, EventFilter }
 import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
 import akka.testkit.DefaultTimeout
-import scala.concurrent.Await
-import akka.pattern.ask
-import scala.concurrent.duration._
+import akka.testkit.ImplicitSender
 
 class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender with DefaultTimeout {
   import Ticket669Spec._

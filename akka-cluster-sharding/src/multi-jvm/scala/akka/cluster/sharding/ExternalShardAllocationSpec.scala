@@ -4,15 +4,16 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.actor.{ Actor, ActorLogging, Address, Props }
 import akka.cluster.Cluster
 import akka.cluster.sharding.ExternalShardAllocationSpec.GiveMeYourHome.{ Get, Home }
 import akka.cluster.sharding.external.{ ExternalShardAllocation, ExternalShardAllocationStrategy }
 import akka.serialization.jackson.CborSerializable
 import akka.testkit.{ ImplicitSender, TestProbe }
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.concurrent.duration._
 
 object ExternalShardAllocationSpecConfig
     extends MultiNodeClusterShardingConfig(additionalConfig = """
@@ -68,8 +69,8 @@ abstract class ExternalShardAllocationSpec
     with ImplicitSender
     with ScalaFutures {
 
-  import ExternalShardAllocationSpec.GiveMeYourHome._
   import ExternalShardAllocationSpec._
+  import ExternalShardAllocationSpec.GiveMeYourHome._
   import ExternalShardAllocationSpecConfig._
 
   override implicit val patienceConfig: PatienceConfig = PatienceConfig(5.second)

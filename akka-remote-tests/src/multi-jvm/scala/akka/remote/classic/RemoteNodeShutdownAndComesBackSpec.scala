@@ -4,17 +4,18 @@
 
 package akka.remote.classic
 
-import akka.actor.{ ActorIdentity, Identify, _ }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, ForceDisassociate }
-import akka.remote.{ RARP, RemotingMultiNodeSpec }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ ActorIdentity, Identify, _ }
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.ThrottlerTransportAdapter.{ Direction, ForceDisassociate }
+import akka.testkit._
 
 object RemoteNodeShutdownAndComesBackSpec extends MultiNodeConfig {
   val first = role("first")

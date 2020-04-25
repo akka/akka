@@ -4,26 +4,23 @@
 
 package akka.stream
 
-import java.util.Optional
-
-import akka.event.Logging
-
-import scala.annotation.tailrec
-import scala.reflect.{ classTag, ClassTag }
-import akka.japi.function
 import java.net.URLEncoder
 import java.time.Duration
+import java.util.Optional
+
+import scala.annotation.tailrec
+import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.{ classTag, ClassTag }
 
 import akka.annotation.ApiMayChange
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.event.Logging
+import akka.japi.function
 import akka.stream.impl.TraversalBuilder
-import akka.util.JavaDurationConverters._
-
-import scala.compat.java8.OptionConverters._
 import akka.util.{ ByteString, OptionVal }
-
-import scala.concurrent.duration.FiniteDuration
+import akka.util.JavaDurationConverters._
 
 /**
  * Holds attributes which can be used to alter [[akka.stream.scaladsl.Flow]] / [[akka.stream.javadsl.Flow]]

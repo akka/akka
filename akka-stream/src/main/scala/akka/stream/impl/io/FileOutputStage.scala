@@ -8,8 +8,11 @@ import java.nio.channels.FileChannel
 import java.nio.file.{ OpenOption, Path }
 
 import scala.collection.immutable
+import scala.concurrent.{ Future, Promise }
+import scala.util.Success
+import scala.util.control.NonFatal
+
 import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.{
   AbruptStageTerminationException,
   Attributes,
@@ -18,13 +21,10 @@ import akka.stream.{
   Inlet,
   SinkShape
 }
+import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.stage.{ GraphStageLogic, GraphStageWithMaterializedValue, InHandler }
 import akka.util.ByteString
 import akka.util.ccompat.JavaConverters._
-
-import scala.concurrent.{ Future, Promise }
-import scala.util.Success
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API

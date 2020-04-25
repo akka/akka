@@ -6,6 +6,8 @@ package akka.cluster.sharding.typed.delivery
 
 import java.util.function.{ Function => JFunction }
 
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -13,7 +15,6 @@ import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.cluster.sharding.typed.delivery.internal.ShardingConsumerControllerImpl
-import com.typesafe.config.Config
 
 /**
  * `ShardingConsumerController` is used together with [[ShardingProducerController]]. See the description

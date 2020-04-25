@@ -4,12 +4,13 @@
 
 package akka.stream.scaladsl
 
+import com.github.ghik.silencer.silent
+import org.reactivestreams.Subscriber
+
+import akka.stream._
 import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.testkit._
-import akka.stream._
-import com.github.ghik.silencer.silent
-import org.reactivestreams.Subscriber
 
 object GraphFlowSpec {
   val source1 = Source(0 to 3)

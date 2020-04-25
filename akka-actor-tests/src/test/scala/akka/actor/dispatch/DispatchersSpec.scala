@@ -4,17 +4,19 @@
 
 package akka.actor.dispatch
 
-import scala.reflect.ClassTag
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import akka.ConfigurationException
-import akka.actor._
-import akka.dispatch._
-import akka.testkit.{ AkkaSpec, ImplicitSender }
-import akka.routing.FromConfig
 import java.util.concurrent.ConcurrentLinkedQueue
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.reflect.ClassTag
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
+import akka.ConfigurationException
+import akka.actor._
+import akka.dispatch._
+import akka.routing.FromConfig
+import akka.testkit.{ AkkaSpec, ImplicitSender }
 import akka.util.unused
 
 object DispatchersSpec {

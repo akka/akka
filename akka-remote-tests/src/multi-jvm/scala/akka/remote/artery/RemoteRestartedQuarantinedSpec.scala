@@ -4,16 +4,17 @@
 
 package akka.remote.artery
 
-import akka.actor.{ ActorIdentity, Identify, _ }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ ActorIdentity, Identify, _ }
+import akka.remote.{ AddressUidExtension, RARP, RemotingMultiNodeSpec }
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.testkit._
 
 object RemoteRestartedQuarantinedSpec extends MultiNodeConfig {
   val first = role("first")

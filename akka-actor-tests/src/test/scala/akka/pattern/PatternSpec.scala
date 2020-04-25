@@ -4,13 +4,14 @@
 
 package akka.pattern
 
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+
 import language.postfixOps
 
-import akka.testkit.{ AkkaSpec, TestLatch }
 import akka.actor.{ Actor, Props }
-import scala.concurrent.{ Await, Future, Promise }
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContextExecutor
+import akka.testkit.{ AkkaSpec, TestLatch }
 
 object PatternSpec {
   final case class Work(duration: Duration)

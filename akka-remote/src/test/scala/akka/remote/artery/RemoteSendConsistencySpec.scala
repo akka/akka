@@ -4,12 +4,13 @@
 
 package akka.remote.artery
 
-import akka.actor.{ Actor, ActorIdentity, ActorRef, Deploy, Identify, PoisonPill, Props, RootActorPath }
-import akka.testkit.{ ImplicitSender, TestActors, TestProbe }
+import scala.concurrent.duration._
+
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import scala.concurrent.duration._
+import akka.actor.{ Actor, ActorIdentity, ActorRef, Deploy, Identify, PoisonPill, Props, RootActorPath }
 import akka.actor.ActorSelection
+import akka.testkit.{ ImplicitSender, TestActors, TestProbe }
 
 class ArteryUpdSendConsistencyWithOneLaneSpec
     extends AbstractRemoteSendConsistencySpec(ConfigFactory.parseString("""

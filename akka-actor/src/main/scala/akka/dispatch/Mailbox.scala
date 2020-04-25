@@ -4,22 +4,23 @@
 
 package akka.dispatch
 
+import java.util.{ Comparator, Deque, PriorityQueue, Queue }
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.locks.ReentrantLock
-import java.util.{ Comparator, Deque, PriorityQueue, Queue }
+
+import scala.annotation.tailrec
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
 
 import akka.actor.{ ActorCell, ActorRef, ActorSystem, DeadLetter, InternalActorRef }
 import akka.annotation.InternalStableApi
 import akka.dispatch.sysmsg._
 import akka.event.Logging.Error
-import akka.util.Helpers.ConfigOps
 import akka.util.{ BoundedBlockingQueue, StablePriorityBlockingQueue, StablePriorityQueue, Unsafe }
-import com.typesafe.config.Config
-
-import scala.annotation.tailrec
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.util.control.NonFatal
+import akka.util.Helpers.ConfigOps
 
 /**
  * INTERNAL API

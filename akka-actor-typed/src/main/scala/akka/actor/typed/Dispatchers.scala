@@ -4,9 +4,9 @@
 
 package akka.actor.typed
 
-import akka.annotation.InternalApi
-
 import scala.concurrent.ExecutionContextExecutor
+
+import akka.annotation.InternalApi
 
 object Dispatchers {
 

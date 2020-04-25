@@ -8,6 +8,12 @@ import java.net.InetSocketAddress
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicLong }
 
+import scala.collection.immutable
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import com.github.ghik.silencer.silent
+
 import akka.{ Done, NotUsed }
 import akka.actor.{ ActorRef, Terminated }
 import akka.annotation.InternalApi
@@ -18,16 +24,11 @@ import akka.io.Tcp._
 import akka.stream._
 import akka.stream.impl.ReactiveStreamsCompliance
 import akka.stream.impl.fusing.GraphStages.detacher
+import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp }
 import akka.stream.scaladsl.Tcp.{ OutgoingConnection, ServerBinding }
 import akka.stream.scaladsl.TcpAttributes
-import akka.stream.scaladsl.{ BidiFlow, Flow, TcpIdleTimeoutException, Tcp => StreamTcp }
 import akka.stream.stage._
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
-
-import scala.collection.immutable
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.concurrent.{ Future, Promise }
 
 /**
  * INTERNAL API

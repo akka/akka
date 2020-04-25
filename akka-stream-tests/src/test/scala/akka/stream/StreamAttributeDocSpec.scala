@@ -4,6 +4,8 @@
 
 package akka.stream
 
+import scala.concurrent.Future
+
 import akka.Done
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.RunnableGraph
@@ -11,8 +13,6 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.TcpAttributes
 import akka.stream.testkit.StreamSpec
-
-import scala.concurrent.Future
 
 class StreamAttributeDocSpec extends StreamSpec("my-stream-dispatcher = \"akka.test.stream-dispatcher\"") {
 

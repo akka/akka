@@ -7,17 +7,18 @@ package akka.persistence
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorCell, DeadLetter, StashOverflowException }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.Envelope
 import akka.event.{ Logging, LoggingAdapter }
 import akka.util.Helpers.ConfigOps
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
-
-import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
-import scala.util.control.NonFatal
 
 /** INTERNAL API */
 @InternalApi

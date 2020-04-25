@@ -6,7 +6,9 @@ package akka.stream.impl
 
 import scala.annotation.tailrec
 import scala.util.control.NoStackTrace
+
 import ResizableMultiReaderRingBuffer._
+
 import akka.annotation.InternalApi
 
 /**

@@ -4,19 +4,21 @@
 
 package akka.cluster.metrics
 
-import akka.actor.ActorSystem
-import akka.actor.ExtendedActorSystem
-import akka.event.Logging
-import akka.ConfigurationException
-import akka.actor.Address
-import java.lang.management.MemoryMXBean
-import java.lang.management.ManagementFactory
-import java.lang.management.OperatingSystemMXBean
-import java.lang.management.MemoryUsage
-import java.lang.System.{ currentTimeMillis => newTimestamp }
-import akka.cluster.Cluster
 import java.io.Closeable
+import java.lang.System.{ currentTimeMillis => newTimestamp }
+import java.lang.management.ManagementFactory
+import java.lang.management.MemoryMXBean
+import java.lang.management.MemoryUsage
+import java.lang.management.OperatingSystemMXBean
+
 import org.hyperic.sigar.SigarProxy
+
+import akka.ConfigurationException
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.ExtendedActorSystem
+import akka.cluster.Cluster
+import akka.event.Logging
 
 /**
  * Metrics sampler.

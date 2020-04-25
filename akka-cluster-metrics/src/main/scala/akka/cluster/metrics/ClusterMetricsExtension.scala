@@ -4,21 +4,22 @@
 
 package akka.cluster.metrics
 
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.SupervisorStrategy
-import akka.event.LoggingAdapter
-import akka.event.Logging
+import scala.collection.immutable
+
 import com.typesafe.config.Config
 
-import scala.collection.immutable
-import akka.actor.Props
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
 import akka.actor.Deploy
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
-import akka.actor.ActorSystem
-import akka.actor.ActorRef
-import akka.actor.ClassicActorSystemProvider
+import akka.actor.Props
+import akka.actor.SupervisorStrategy
+import akka.event.Logging
+import akka.event.LoggingAdapter
 
 /**
  * Cluster metrics extension.

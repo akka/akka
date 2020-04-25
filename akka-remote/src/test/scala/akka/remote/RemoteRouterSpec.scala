@@ -5,11 +5,13 @@
 package akka.remote
 
 import scala.collection.immutable
-import akka.testkit._
-import akka.routing._
+
+import com.typesafe.config._
+
 import akka.actor._
 import akka.remote.routing._
-import com.typesafe.config._
+import akka.routing._
+import akka.testkit._
 import akka.testkit.TestActors.echoActorProps
 
 object RemoteRouterSpec {

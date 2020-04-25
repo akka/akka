@@ -9,29 +9,30 @@ import java.util.Optional
 import java.util.concurrent._
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.actor.dungeon.ChildrenContainer
-import akka.actor.setup.{ ActorSystemSetup, Setup }
-import akka.annotation.InternalApi
-import akka.ConfigurationException
-import akka.annotation.DoNotInherit
-import akka.dispatch._
-import akka.event._
-import akka.japi.Util.immutableSeq
-import akka.util.Helpers.toRootLowerCase
-import akka.util._
-import com.typesafe.config.{ Config, ConfigFactory }
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters
 import scala.compat.java8.OptionConverters._
-import scala.concurrent.duration.Duration
-import scala.concurrent.blocking
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, Future, Promise }
-import scala.util.control.{ ControlThrowable, NonFatal }
+import scala.concurrent.blocking
+import scala.concurrent.duration.Duration
 import scala.util.{ Failure, Success, Try }
+import scala.util.control.{ ControlThrowable, NonFatal }
 
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.ConfigurationException
+import akka.actor.dungeon.ChildrenContainer
+import akka.actor.setup.{ ActorSystemSetup, Setup }
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.dispatch._
+import akka.event._
 import akka.event.Logging.DefaultLogger
+import akka.japi.Util.immutableSeq
 import akka.serialization.SerializationExtension
+import akka.util._
+import akka.util.Helpers.toRootLowerCase
 
 object BootstrapSetup {
 
@@ -388,8 +389,9 @@ object ActorSystem {
       cfg
     }
 
-    import akka.util.Helpers.ConfigOps
     import config._
+
+    import akka.util.Helpers.ConfigOps
 
     final val ConfigVersion: String = getString("akka.version")
 

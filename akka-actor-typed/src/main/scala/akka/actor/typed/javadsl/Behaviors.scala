@@ -7,6 +7,8 @@ package akka.actor.typed.javadsl
 import java.util.Collections
 import java.util.function.{ Supplier, Function => JFunction }
 
+import scala.reflect.ClassTag
+
 import akka.actor.typed._
 import akka.actor.typed.internal.{
   BehaviorImpl,
@@ -17,10 +19,8 @@ import akka.actor.typed.internal.{
 }
 import akka.japi.function.{ Effect, Function2 => JapiFunction2 }
 import akka.japi.pf.PFBuilder
-import akka.util.unused
 import akka.util.ccompat.JavaConverters._
-
-import scala.reflect.ClassTag
+import akka.util.unused
 
 /**
  * Factories for [[akka.actor.typed.Behavior]].

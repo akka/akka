@@ -4,9 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.{ Done, NotUsed }
 import akka.stream.{
   AbruptStageTerminationException,
   AbruptTerminationException,
@@ -14,7 +12,9 @@ import akka.stream.{
   NeverMaterializedException,
   SubscriptionWithCancelException
 }
-import akka.{ Done, NotUsed }
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 class FlowFlatMapPrefixSpec extends StreamSpec {
   def src10(i: Int = 0) = Source(i until (i + 10))

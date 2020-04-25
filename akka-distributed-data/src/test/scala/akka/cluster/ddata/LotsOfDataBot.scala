@@ -8,11 +8,12 @@ import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorSystem
 import akka.actor.Props
-import com.typesafe.config.ConfigFactory
 
 /**
  * This "sample" simulates lots of data entries, and can be used for

@@ -4,12 +4,13 @@
 
 package akka.actor.typed.delivery
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.delivery.ConsumerController.DeliverThenStop
 import akka.actor.typed.delivery.internal.ConsumerControllerImpl
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class ConsumerControllerSpec
     extends ScalaTestWithActorTestKit("""

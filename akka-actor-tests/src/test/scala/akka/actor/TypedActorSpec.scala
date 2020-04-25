@@ -4,8 +4,17 @@
 
 package akka.actor
 
-import java.util.concurrent.atomic.AtomicReference
 import java.util.concurrent.{ CountDownLatch, TimeUnit, TimeoutException }
+import java.util.concurrent.atomic.AtomicReference
+
+import scala.annotation.tailrec
+import scala.collection.immutable
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.github.ghik.silencer.silent
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
 
 import akka.actor.TypedActor._
 import akka.japi.{ Option => JOption }
@@ -14,14 +23,6 @@ import akka.routing.RoundRobinGroup
 import akka.serialization.{ JavaSerializer, SerializerWithStringManifest }
 import akka.testkit.{ filterEvents, AkkaSpec, DefaultTimeout, EventFilter, TimingTest }
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-
-import scala.annotation.tailrec
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
-import scala.language.postfixOps
 
 object TypedActorSpec {
 

@@ -4,6 +4,12 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
 import akka.pattern.pipe
 import akka.stream.AbruptTerminationException
 import akka.stream.Attributes.inputBuffer
@@ -12,11 +18,6 @@ import akka.stream.StreamDetachedException
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
-import scala.concurrent.Await
-import scala.concurrent.Promise
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
-import scala.concurrent.ExecutionContextExecutor
 
 class QueueSinkSpec extends StreamSpec {
   implicit val ec: ExecutionContextExecutor = system.dispatcher

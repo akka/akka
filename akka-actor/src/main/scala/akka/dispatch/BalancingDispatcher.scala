@@ -4,15 +4,17 @@
 
 package akka.dispatch
 
-import akka.actor.ActorCell
-import akka.dispatch.sysmsg._
-import scala.annotation.tailrec
-import scala.concurrent.duration.Duration
-import akka.util.Helpers
 import java.util.{ Comparator, Iterator }
 import java.util.concurrent.ConcurrentSkipListSet
-import akka.actor.ActorSystemImpl
+
+import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.ActorCell
+import akka.actor.ActorSystemImpl
+import akka.dispatch.sysmsg._
+import akka.util.Helpers
 
 /**
  * INTERNAL API: Use `BalancingPool` instead of this dispatcher directly.

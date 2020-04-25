@@ -4,14 +4,14 @@
 
 package akka.stream.scaladsl
 
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import akka.NotUsed
 import akka.stream._
 import akka.stream.testkit._
-
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Future
 
 object GraphOpsIntegrationSpec {
   import GraphDSL.Implicits._

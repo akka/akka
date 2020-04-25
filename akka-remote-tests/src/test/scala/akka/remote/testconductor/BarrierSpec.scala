@@ -4,12 +4,14 @@
 
 package akka.remote.testconductor
 
+import java.net.{ InetAddress, InetSocketAddress }
+
+import scala.concurrent.duration._
+
 import language.postfixOps
 
 import akka.actor._
 import akka.testkit.{ AkkaSpec, EventFilter, ImplicitSender, TestProbe, TimingTest }
-import scala.concurrent.duration._
-import java.net.{ InetAddress, InetSocketAddress }
 
 object BarrierSpec {
   final case class Failed(ref: ActorRef, thr: Throwable)
@@ -23,9 +25,9 @@ object BarrierSpec {
 
 class BarrierSpec extends AkkaSpec(BarrierSpec.config) with ImplicitSender {
 
+  import BarrierCoordinator._
   import BarrierSpec._
   import Controller._
-  import BarrierCoordinator._
 
   val A = RoleName("a")
   val B = RoleName("b")

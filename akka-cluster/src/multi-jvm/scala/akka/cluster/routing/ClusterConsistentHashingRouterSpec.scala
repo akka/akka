@@ -5,7 +5,9 @@
 package akka.cluster.routing
 
 import scala.concurrent.Await
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -14,14 +16,14 @@ import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
-import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
-import akka.routing.GetRoutees
-import akka.routing.FromConfig
-import akka.testkit._
 import akka.routing.ActorRefRoutee
 import akka.routing.ConsistentHashingPool
+import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
+import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
+import akka.routing.FromConfig
+import akka.routing.GetRoutees
 import akka.routing.Routees
+import akka.testkit._
 
 object ClusterConsistentHashingRouterMultiJvmSpec extends MultiNodeConfig {
 

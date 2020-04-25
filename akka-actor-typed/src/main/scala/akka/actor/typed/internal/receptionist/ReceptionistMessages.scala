@@ -5,8 +5,8 @@
 package akka.actor.typed.internal.receptionist
 
 import akka.actor.typed.ActorRef
-import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.{ Receptionist, ServiceKey }
+import akka.actor.typed.receptionist.Receptionist.Command
 import akka.annotation.InternalApi
 import akka.util.ccompat.JavaConverters._
 

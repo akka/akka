@@ -16,8 +16,34 @@ import java.util.UUID
 import java.util.logging.FileHandler
 
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.StreamReadFeature
+import com.fasterxml.jackson.core.StreamWriteFeature
+import com.fasterxml.jackson.core.`type`.TypeReference
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.MapperFeature
+import com.fasterxml.jackson.databind.Module
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.exc.InvalidTypeIdException
+import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.databind.node.IntNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -31,31 +57,6 @@ import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.testkit.TestActors
 import akka.testkit.TestKit
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.core.JsonFactory
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.Module
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.exc.InvalidTypeIdException
-import com.fasterxml.jackson.databind.node.IntNode
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.StreamReadFeature
-import com.fasterxml.jackson.core.StreamWriteFeature
-import com.fasterxml.jackson.core.`type`.TypeReference
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
-import com.github.ghik.silencer.silent
 
 object ScalaTestMessages {
   trait TestMessage

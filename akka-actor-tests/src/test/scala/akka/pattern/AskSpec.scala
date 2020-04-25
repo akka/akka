@@ -4,15 +4,16 @@
 
 package akka.pattern
 
-import akka.actor._
-import akka.testkit.{ AkkaSpec, TestProbe }
-import akka.util.Timeout
-import com.github.ghik.silencer.silent
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Failure
+
+import com.github.ghik.silencer.silent
 import language.postfixOps
+
+import akka.actor._
+import akka.testkit.{ AkkaSpec, TestProbe }
+import akka.util.Timeout
 
 @silent
 class AskSpec extends AkkaSpec {

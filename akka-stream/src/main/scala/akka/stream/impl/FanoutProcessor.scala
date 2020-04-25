@@ -4,6 +4,8 @@
 
 package akka.stream.impl
 
+import org.reactivestreams.Subscriber
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Deploy
@@ -12,7 +14,6 @@ import akka.annotation.InternalApi
 import akka.stream.ActorAttributes.StreamSubscriptionTimeout
 import akka.stream.Attributes
 import akka.stream.StreamSubscriptionTimeoutTerminationMode
-import org.reactivestreams.Subscriber
 import akka.util.OptionVal
 
 /**

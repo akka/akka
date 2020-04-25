@@ -4,14 +4,14 @@
 
 package akka.stream
 
-import akka.{ Done, NotUsed }
-import akka.stream.stage._
+import java.util.concurrent.atomic.AtomicReference
 
-import scala.concurrent.{ Future, Promise }
 import scala.collection.concurrent.TrieMap
+import scala.concurrent.{ Future, Promise }
 import scala.util.{ Failure, Success, Try }
 
-import java.util.concurrent.atomic.AtomicReference
+import akka.{ Done, NotUsed }
+import akka.stream.stage._
 
 /**
  * Creates shared or single kill switches which can be used to control completion of graphs from the outside.

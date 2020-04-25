@@ -4,24 +4,24 @@
 
 package akka.dispatch
 
-import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
-import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
-
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
 import java.lang.{ Iterable => JIterable }
 import java.util.{ LinkedList => JLinkedList }
 import java.util.concurrent.{ Callable, Executor, ExecutorService }
-
-import scala.util.{ Failure, Success, Try }
-import java.util.concurrent.CompletionStage
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
+
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService, Future, Promise }
+import scala.runtime.{ AbstractPartialFunction, BoxedUnit }
+import scala.util.{ Failure, Success, Try }
+
+import com.github.ghik.silencer.silent
 
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
 import akka.compat
 import akka.dispatch.internal.SameThreadExecutionContext
+import akka.japi.{ Procedure, Function => JFunc, Option => JOption }
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 /**
  * ExecutionContexts is the Java API for ExecutionContexts

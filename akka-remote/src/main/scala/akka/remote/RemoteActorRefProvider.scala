@@ -9,12 +9,14 @@ import scala.util.Failure
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
+import com.github.ghik.silencer.silent
+
 import akka.ConfigurationException
 import akka.Done
+import akka.actor._
 import akka.actor.SystemGuardian.RegisterTerminationHook
 import akka.actor.SystemGuardian.TerminationHook
 import akka.actor.SystemGuardian.TerminationHookDone
-import akka.actor._
 import akka.annotation.InternalApi
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
@@ -36,7 +38,6 @@ import akka.serialization.Serialization
 import akka.util.ErrorMessages
 import akka.util.OptionVal
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API

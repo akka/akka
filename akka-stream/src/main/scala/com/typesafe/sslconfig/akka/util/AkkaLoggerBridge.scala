@@ -4,10 +4,11 @@
 
 package com.typesafe.sslconfig.akka.util
 
+import com.typesafe.sslconfig.util.{ LoggerFactory, NoDepsLogger }
+
 import akka.actor.ActorSystem
 import akka.event.{ DummyClassForStringSources, EventStream }
 import akka.event.Logging._
-import com.typesafe.sslconfig.util.{ LoggerFactory, NoDepsLogger }
 
 final class AkkaLoggerFactory(system: ActorSystem) extends LoggerFactory {
   override def apply(clazz: Class[_]): NoDepsLogger = new AkkaLoggerBridge(system.eventStream, clazz)

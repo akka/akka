@@ -4,17 +4,18 @@
 
 package akka.routing
 
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 import language.postfixOps
 
-import akka.actor._
-import scala.collection.immutable
-import akka.testkit._
-import scala.concurrent.duration._
-import scala.concurrent.Await
 import akka.ConfigurationException
-import com.typesafe.config.ConfigFactory
+import akka.actor._
 import akka.pattern.{ ask, pipe }
-import scala.concurrent.ExecutionContextExecutor
+import akka.testkit._
 
 object RoutingSpec {
 

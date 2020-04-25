@@ -4,18 +4,19 @@
 
 package akka.remote.transport
 
-import akka.actor._
-import akka.pattern.{ ask, gracefulStop, pipe }
-import akka.remote.Remoting.RegisterTransportActor
-import akka.remote.transport.Transport._
-import akka.remote.RARP
-import akka.util.Timeout
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.{ ExecutionContext, Future, Promise }
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.remote.transport.AssociationHandle.DisassociateInfo
+import scala.concurrent.duration._
+
+import akka.actor._
 import akka.actor.DeadLetterSuppression
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.pattern.{ ask, gracefulStop, pipe }
+import akka.remote.RARP
+import akka.remote.Remoting.RegisterTransportActor
+import akka.remote.transport.AssociationHandle.DisassociateInfo
+import akka.remote.transport.Transport._
+import akka.util.Timeout
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 trait TransportAdapterProvider {

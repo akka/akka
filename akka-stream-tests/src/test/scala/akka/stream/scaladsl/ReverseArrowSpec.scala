@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
-import akka.stream._
-import akka.stream.testkit._
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.stream._
+import akka.stream.testkit._
 
 class ReverseArrowSpec extends StreamSpec {
   import GraphDSL.Implicits._

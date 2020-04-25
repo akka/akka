@@ -7,15 +7,16 @@ package akka.remote.classic.transport.netty
 import java.net.{ InetAddress, InetSocketAddress }
 import java.nio.channels.ServerSocketChannel
 
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.{ ActorSystem, Address, ExtendedActorSystem }
 import akka.remote.BoundAddressesExtension
 import akka.testkit.SocketUtil
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 object NettyTransportSpec {
   val commonConfig = ConfigFactory.parseString("""

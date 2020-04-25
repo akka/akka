@@ -8,23 +8,23 @@ import java.io.IOException
 import java.lang.management.ManagementFactory
 import java.util.concurrent.TimeoutException
 
-import akka.stream.Attributes.inputBuffer
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.duration.Duration.Zero
+import scala.util.Random
+
 import akka.stream._
+import akka.stream.Attributes.inputBuffer
 import akka.stream.impl.io.OutputStreamSourceStage
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.StreamConverters
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.util.ByteString
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration.Duration.Zero
-import scala.concurrent.duration._
-import scala.util.Random
 
 class OutputStreamSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 

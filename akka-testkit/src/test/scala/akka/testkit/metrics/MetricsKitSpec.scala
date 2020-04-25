@@ -4,8 +4,8 @@
 
 package akka.testkit.metrics
 
-import org.scalatest._
 import com.typesafe.config.ConfigFactory
+import org.scalatest._
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 

@@ -4,15 +4,16 @@
 
 package akka.actor.typed
 
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.testkit.typed.TestKitSettings
-import akka.actor.testkit.typed.scaladsl._
 import scala.util.control.NoStackTrace
 
-import akka.actor.ActorInitializationException
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
+
+import akka.actor.ActorInitializationException
+import akka.actor.testkit.typed.TestKitSettings
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.typed.scaladsl.Behaviors
 
 object DeferredSpec {
   sealed trait Command

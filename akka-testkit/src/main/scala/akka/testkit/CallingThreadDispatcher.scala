@@ -4,12 +4,18 @@
 
 package akka.testkit
 
+import java.lang.ref.WeakReference
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+
+import scala.annotation.tailrec
+import scala.concurrent.duration._
+import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
 import language.postfixOps
 
-import java.lang.ref.WeakReference
-import java.util.concurrent.locks.ReentrantLock
-import scala.annotation.tailrec
-import com.typesafe.config.Config
 import akka.actor.{
   ActorCell,
   ActorInitializationException,
@@ -31,11 +37,7 @@ import akka.dispatch.{
   TaskInvocation
 }
 import akka.dispatch.sysmsg.{ Resume, Suspend, SystemMessage }
-import scala.concurrent.duration._
 import akka.util.Switch
-import scala.concurrent.duration.Duration
-import scala.util.control.NonFatal
-import java.util.concurrent.TimeUnit
 
 /*
  * Locking rules:

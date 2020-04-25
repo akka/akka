@@ -4,11 +4,13 @@
 
 package akka.cluster.metrics
 
-import scala.concurrent.duration._
-import akka.testkit.{ AkkaSpec, LongRunningTest }
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.concurrent.duration._
+
 import com.github.ghik.silencer.silent
+
+import akka.testkit.{ AkkaSpec, LongRunningTest }
 
 @silent
 class EWMASpec extends AkkaSpec(MetricsConfig.defaultEnabled) with MetricsCollectorFactory {

@@ -8,6 +8,12 @@ import java.lang.reflect.ParameterizedType
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.tailrec
+import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, ActorSystem, DeadLetter, Deploy, DynamicAccess, Props }
 import akka.dispatch.sysmsg.{
@@ -19,11 +25,6 @@ import akka.dispatch.sysmsg.{
 import akka.event.EventStream
 import akka.event.Logging.Warning
 import akka.util.Reflect
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.util.control.NonFatal
-import scala.annotation.tailrec
-import scala.concurrent.duration.Duration
 
 object Mailboxes {
   final val DefaultMailboxId = "akka.actor.default-mailbox"

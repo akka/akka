@@ -4,18 +4,19 @@
 
 package akka.persistence.testkit.scaladsl
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId }
-import akka.actor.typed.{ ActorSystem => TypedActorSystem }
-import akka.annotation.ApiMayChange
-import akka.persistence.testkit._
-import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
-import akka.persistence.{ Persistence, PersistentRepr, SnapshotMetadata }
-import akka.testkit.TestProbe
-import com.typesafe.config.Config
-
 import scala.collection.immutable
 import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
+
+import com.typesafe.config.Config
+
+import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId }
+import akka.actor.typed.{ ActorSystem => TypedActorSystem }
+import akka.annotation.ApiMayChange
+import akka.persistence.{ Persistence, PersistentRepr, SnapshotMetadata }
+import akka.persistence.testkit._
+import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
+import akka.testkit.TestProbe
 
 private[testkit] trait CommonTestKitOps[S, P] extends ClearOps with PolicyOpsTestKit[P] {
   this: HasStorage[P, S] =>

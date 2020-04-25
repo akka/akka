@@ -4,15 +4,15 @@
 
 package akka.remote
 
-import akka.testkit.AkkaSpec
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.Deploy
+import akka.actor.ExtendedActorSystem
 import akka.actor.Props
 import akka.event.Logging
-import akka.testkit.TestProbe
-import akka.actor.Deploy
 import akka.event.Logging.Info
-import akka.actor.ExtendedActorSystem
+import akka.testkit.AkkaSpec
+import akka.testkit.TestProbe
 
 object LogSourceSpec {
   class Reporter extends Actor with ActorLogging {

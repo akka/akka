@@ -8,20 +8,20 @@ package adapter
 
 import java.lang.reflect.InvocationTargetException
 
-import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
-import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
-import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
-import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
-import akka.actor.ActorInitializationException
-import akka.actor.ActorRefWithCell
-import akka.annotation.InternalApi
-import akka.util.OptionVal
-import akka.{ actor => classic }
-
 import scala.annotation.switch
 import scala.annotation.tailrec
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
+
+import akka.{ actor => classic }
+import akka.actor.ActorInitializationException
+import akka.actor.ActorRefWithCell
+import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
+import akka.actor.typed.internal.BehaviorImpl.StoppedBehavior
+import akka.actor.typed.internal.TimerSchedulerImpl.TimerMsg
+import akka.actor.typed.internal.adapter.ActorAdapter.TypedActorFailedException
+import akka.annotation.InternalApi
+import akka.util.OptionVal
 
 /**
  * INTERNAL API

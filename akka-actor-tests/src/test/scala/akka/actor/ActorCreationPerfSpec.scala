@@ -4,15 +4,16 @@
 
 package akka.actor
 
+import scala.concurrent.duration._
 import scala.language.postfixOps
 
-import akka.testkit.{ AkkaSpec, ImplicitSender, PerformanceTest }
-import scala.concurrent.duration._
-import akka.testkit.metrics._
-import org.scalatest.BeforeAndAfterAll
-import akka.testkit.metrics.HeapMemoryUsage
-import com.codahale.metrics.{ Histogram }
+import com.codahale.metrics.Histogram
 import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+
+import akka.testkit.{ AkkaSpec, ImplicitSender, PerformanceTest }
+import akka.testkit.metrics._
+import akka.testkit.metrics.HeapMemoryUsage
 
 object ActorCreationPerfSpec {
 

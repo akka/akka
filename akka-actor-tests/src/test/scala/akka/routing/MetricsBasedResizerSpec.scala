@@ -6,18 +6,18 @@ package akka.routing
 
 import java.time.LocalDateTime
 
-import akka.actor._
-import akka.testkit._
-import akka.testkit.TestEvent._
-
-import OptimalSizeExploringResizer._
-import MetricsBasedResizerSpec._
-import akka.util.Timeout
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.{ Random, Try }
+
+import MetricsBasedResizerSpec._
+import OptimalSizeExploringResizer._
+
+import akka.actor._
 import akka.pattern.ask
+import akka.testkit._
+import akka.testkit.TestEvent._
+import akka.util.Timeout
 
 object MetricsBasedResizerSpec {
 

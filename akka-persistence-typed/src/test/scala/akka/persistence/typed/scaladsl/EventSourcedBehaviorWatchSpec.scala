@@ -6,11 +6,14 @@ package akka.persistence.typed.scaladsl
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.persistence.Recovery
+import akka.persistence.typed.{ NoOpEventAdapter, PersistenceId, RecoveryCompleted }
 import akka.persistence.typed.internal.{
   BehaviorSetup,
   EventSourcedSettings,
@@ -19,10 +22,8 @@ import akka.persistence.typed.internal.{
   StashState
 }
 import akka.persistence.typed.internal.EventSourcedBehaviorImpl.WriterIdentity
-import akka.persistence.typed.{ NoOpEventAdapter, PersistenceId, RecoveryCompleted }
 import akka.serialization.jackson.CborSerializable
 import akka.util.ConstantFun
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorWatchSpec {
   sealed trait Command extends CborSerializable

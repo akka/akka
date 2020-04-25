@@ -4,10 +4,11 @@
 
 package akka.actor
 
-import akka.testkit._
-import scala.concurrent.duration._
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import akka.pattern.ask
+import akka.testkit._
 
 object ActorSelectionSpec {
 

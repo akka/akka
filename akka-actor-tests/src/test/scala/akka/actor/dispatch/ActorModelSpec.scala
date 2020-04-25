@@ -4,25 +4,26 @@
 
 package akka.actor.dispatch
 
-import language.postfixOps
 import java.rmi.RemoteException
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.{ AtomicInteger, AtomicLong }
 
-import org.scalatest.Assertions._
+import scala.annotation.tailrec
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
+import language.postfixOps
+import org.scalatest.Assertions._
+
 import akka.actor._
-import akka.dispatch.sysmsg.SystemMessageList
 import akka.dispatch._
+import akka.dispatch.sysmsg.SystemMessageList
 import akka.event.Logging.Error
 import akka.pattern.ask
 import akka.testkit._
 import akka.util.Switch
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
-import scala.annotation.tailrec
 
 object ActorModelSpec {
 

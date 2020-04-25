@@ -4,9 +4,10 @@
 
 package akka.actor.testkit.typed.internal
 
-import akka.annotation.InternalApi
 import org.slf4j.LoggerFactory
 import org.slf4j.event.Level
+
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

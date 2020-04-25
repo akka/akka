@@ -4,12 +4,12 @@
 
 package akka.pattern
 
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.control.NonFatal
+
 import akka.actor.Scheduler
 import akka.util.ConstantFun
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.control.NonFatal
 
 /**
  * This trait provides the retry utility function

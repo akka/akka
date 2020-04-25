@@ -7,23 +7,23 @@ package akka.remote.classic
 import java.io.NotSerializableException
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.actor._
-import akka.event.AddressTerminatedTopic
-import akka.pattern.ask
-import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListener }
-import akka.remote.transport.Transport.InvalidAssociationException
-import akka.remote.transport._
-import akka.remote._
-import akka.testkit.SocketUtil.temporaryServerAddress
-import akka.testkit._
-import akka.util.ByteString
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.util.control.NonFatal
+
 import com.github.ghik.silencer.silent
 import com.typesafe.config._
 
-import scala.concurrent.{ Await, Future }
-import scala.concurrent.duration._
-
-import scala.util.control.NonFatal
+import akka.actor._
+import akka.event.AddressTerminatedTopic
+import akka.pattern.ask
+import akka.remote._
+import akka.remote.transport._
+import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListener }
+import akka.remote.transport.Transport.InvalidAssociationException
+import akka.testkit._
+import akka.testkit.SocketUtil.temporaryServerAddress
+import akka.util.ByteString
 
 object RemotingSpec {
 

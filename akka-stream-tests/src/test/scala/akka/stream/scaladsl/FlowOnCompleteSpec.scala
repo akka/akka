@@ -4,16 +4,16 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+import scala.util.control.NoStackTrace
+
 import akka.Done
 import akka.stream.Materializer
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
-
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
-import scala.util.control.NoStackTrace
 
 class FlowOnCompleteSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

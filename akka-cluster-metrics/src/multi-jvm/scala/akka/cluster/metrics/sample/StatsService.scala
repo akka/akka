@@ -4,11 +4,11 @@
 
 package akka.cluster.metrics.sample
 
+import scala.concurrent.duration._
+
 import akka.actor.{ Actor, ActorRef, Props, ReceiveTimeout }
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
 import akka.routing.FromConfig
-
-import scala.concurrent.duration._
 
 //#service
 class StatsService extends Actor {

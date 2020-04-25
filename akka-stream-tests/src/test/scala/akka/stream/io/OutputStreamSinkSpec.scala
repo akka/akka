@@ -6,18 +6,19 @@ package akka.stream.io
 
 import java.io.OutputStream
 
+import scala.util.Success
+
+import com.github.ghik.silencer.silent
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.Done
+import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, IOOperationIncompleteException }
 import akka.stream.scaladsl.{ Source, StreamConverters }
 import akka.stream.testkit._
 import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.{ ActorMaterializer, ActorMaterializerSettings, IOOperationIncompleteException }
 import akka.testkit.TestProbe
 import akka.util.ByteString
-import org.scalatest.concurrent.ScalaFutures
-import com.github.ghik.silencer.silent
-
-import scala.util.Success
 
 @silent
 class OutputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {

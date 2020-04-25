@@ -5,22 +5,23 @@
 package akka.actor.dungeon
 
 import scala.annotation.tailrec
-import akka.AkkaException
-import akka.dispatch.{ Envelope, Mailbox }
-import akka.dispatch.sysmsg._
-import akka.event.Logging.Error
-import akka.util.Unsafe
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.serialization.{ DisabledJavaSerializer, SerializationExtension, Serializers }
-
 import scala.util.control.{ NoStackTrace, NonFatal }
 import scala.util.control.Exception.Catcher
+
+import com.github.ghik.silencer.silent
+
+import akka.AkkaException
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.dispatch.{ Envelope, Mailbox }
 import akka.dispatch.MailboxType
 import akka.dispatch.ProducesMessageQueue
 import akka.dispatch.UnboundedMailbox
+import akka.dispatch.sysmsg._
+import akka.event.Logging.Error
+import akka.serialization.{ DisabledJavaSerializer, SerializationExtension, Serializers }
 import akka.serialization.Serialization
-import com.github.ghik.silencer.silent
+import akka.util.Unsafe
 
 @SerialVersionUID(1L)
 final case class SerializationCheckFailedException private (msg: Object, cause: Throwable)

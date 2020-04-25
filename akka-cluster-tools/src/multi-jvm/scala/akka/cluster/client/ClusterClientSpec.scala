@@ -4,10 +4,13 @@
 
 package akka.cluster.client
 
-import language.postfixOps
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import com.github.ghik.silencer.silent
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.{
   Actor,
   ActorPath,
@@ -21,18 +24,15 @@ import akka.actor.{
 import akka.cluster.Cluster
 import akka.cluster.client.ClusterClientSpec.TestClientListener.LatestContactPoints
 import akka.cluster.client.ClusterClientSpec.TestReceptionistListener.LatestClusterClients
+import akka.cluster.pubsub._
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
-import akka.testkit._
-import akka.cluster.pubsub._
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
+import akka.testkit._
 import akka.util.Timeout
 import akka.util.unused
-import scala.concurrent.Await
-
-import com.github.ghik.silencer.silent
 
 object ClusterClientSpec extends MultiNodeConfig {
   val client = role("client")

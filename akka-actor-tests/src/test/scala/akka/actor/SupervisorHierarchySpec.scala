@@ -4,31 +4,31 @@
 
 package akka.actor
 
-import language.postfixOps
+import java.lang.System.identityHashCode
+import java.lang.ref.WeakReference
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.Random
 import scala.util.control.NoStackTrace
-import com.typesafe.config.{ Config, ConfigFactory }
+
 import SupervisorStrategy.{ Directive, Restart, Resume, Stop }
+import com.github.ghik.silencer.silent
+import com.typesafe.config.{ Config, ConfigFactory }
+import language.postfixOps
+
 import akka.actor.SupervisorStrategy.seqThrowable2Decider
 import akka.dispatch.{ Dispatcher, DispatcherConfigurator, DispatcherPrerequisites, MessageDispatcher }
+import akka.event.Logging
 import akka.pattern.ask
 import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender }
 import akka.testkit.{ filterEvents, filterException, TestDuration, TestLatch }
-import akka.testkit.TestEvent.Mute
-import java.util.concurrent.ConcurrentHashMap
-import java.lang.ref.WeakReference
-
-import akka.event.Logging
-import java.util.concurrent.atomic.AtomicInteger
-import java.lang.System.identityHashCode
-
-import akka.util.Helpers.ConfigOps
 import akka.testkit.LongRunningTest
-import com.github.ghik.silencer.silent
+import akka.testkit.TestEvent.Mute
+import akka.util.Helpers.ConfigOps
 
 object SupervisorHierarchySpec {
 

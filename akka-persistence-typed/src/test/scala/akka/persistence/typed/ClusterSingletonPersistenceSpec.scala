@@ -4,19 +4,20 @@
 
 package akka.persistence.typed
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
+import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.cluster.typed.ClusterSingleton
 import akka.cluster.typed.SingletonActor
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-import akka.actor
-import akka.actor.typed.ActorSystem
 
 object ClusterSingletonPersistenceSpec {
   val config = ConfigFactory.parseString("""
@@ -57,6 +58,7 @@ class ClusterSingletonPersistenceSpec
     with AnyWordSpecLike
     with LogCapturing {
   import ClusterSingletonPersistenceSpec._
+
   import akka.actor.typed.scaladsl.adapter._
 
   implicit val s: ActorSystem[Nothing] = system

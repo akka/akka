@@ -4,22 +4,23 @@
 
 package akka.stream.scaladsl
 
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSource
-import akka.testkit.TestProbe
-import akka.Done
-import akka.NotUsed
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-import org.reactivestreams.Subscription
-import org.scalatest.Assertion
-
 import scala.concurrent.Future
 import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.xml.Node
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+import org.reactivestreams.Subscription
+import org.scalatest.Assertion
+
+import akka.Done
+import akka.NotUsed
+import akka.stream._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSource
+import akka.testkit.TestProbe
 
 class CoupledTerminationFlowSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

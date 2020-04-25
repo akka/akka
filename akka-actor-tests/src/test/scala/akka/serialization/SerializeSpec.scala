@@ -4,26 +4,24 @@
 
 package akka.serialization
 
-import language.postfixOps
-
-import akka.testkit.{ AkkaSpec, EventFilter }
-import akka.actor._
 import java.io._
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 import scala.concurrent.Await
-
-import akka.util.{ unused, Timeout }
 import scala.concurrent.duration._
 
-import com.typesafe.config._
-import akka.pattern.ask
-import java.nio.ByteOrder
-import java.nio.ByteBuffer
-
-import akka.actor.dungeon.SerializationCheckFailedException
-import com.github.ghik.silencer.silent
-import test.akka.serialization.NoVerification
 import SerializationTests._
+import com.github.ghik.silencer.silent
+import com.typesafe.config._
+import language.postfixOps
+import test.akka.serialization.NoVerification
+
+import akka.actor._
+import akka.actor.dungeon.SerializationCheckFailedException
+import akka.pattern.ask
+import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.util.{ unused, Timeout }
 import akka.util.ByteString
 
 object SerializationTests {

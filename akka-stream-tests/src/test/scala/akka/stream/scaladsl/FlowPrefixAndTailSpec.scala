@@ -4,15 +4,16 @@
 
 package akka.stream.scaladsl
 
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import com.github.ghik.silencer.silent
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import com.github.ghik.silencer.silent
+
+import akka.stream._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowPrefixAndTailSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

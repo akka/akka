@@ -4,11 +4,11 @@
 
 package akka.persistence
 
-import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
-import akka.persistence.serialization.Message
 import scala.collection.immutable
 
+import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
 import akka.annotation.DoNotInherit
+import akka.persistence.serialization.Message
 import akka.util.HashCode
 
 /**

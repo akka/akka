@@ -4,16 +4,18 @@
 
 package akka.actor.dispatch
 
-import language.postfixOps
-
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 import java.util.concurrent.atomic.AtomicBoolean
-import akka.testkit.AkkaSpec
-import akka.actor.{ Actor, Props }
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.testkit.DefaultTimeout
+
+import language.postfixOps
+
+import akka.actor.{ Actor, Props }
 import akka.pattern.ask
+import akka.testkit.AkkaSpec
+import akka.testkit.DefaultTimeout
 
 object DispatcherActorSpec {
   val config = """

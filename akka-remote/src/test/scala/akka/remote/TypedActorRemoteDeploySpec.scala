@@ -7,12 +7,12 @@ package akka.remote
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
+import TypedActorRemoteDeploySpec._
+import com.github.ghik.silencer.silent
+import com.typesafe.config._
+
 import akka.actor.{ ActorSystem, Deploy, TypedActor, TypedProps }
 import akka.testkit.AkkaSpec
-import TypedActorRemoteDeploySpec._
-
-import com.typesafe.config._
-import com.github.ghik.silencer.silent
 
 object TypedActorRemoteDeploySpec {
   val conf = ConfigFactory.parseString("""

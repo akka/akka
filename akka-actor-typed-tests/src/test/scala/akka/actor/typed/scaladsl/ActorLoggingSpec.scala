@@ -7,14 +7,21 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.atomic.AtomicReference
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.LoggerFactory
+import org.slf4j.MDC
+import org.slf4j.helpers.BasicMarkerFactory
+
 import akka.actor.ActorPath
+import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.testkit.typed.LoggingEvent
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.ActorTags
 import akka.actor.typed.Behavior
 import akka.actor.typed.internal.ActorMdc
@@ -23,12 +30,6 @@ import akka.event.DefaultLoggingFilter
 import akka.event.Logging.DefaultLogger
 import akka.event.slf4j.Slf4jLogger
 import akka.event.slf4j.Slf4jLoggingFilter
-import com.typesafe.config.ConfigFactory
-import org.slf4j.LoggerFactory
-import org.slf4j.MDC
-import org.slf4j.helpers.BasicMarkerFactory
-import org.scalatest.wordspec.AnyWordSpecLike
-import akka.actor.ActorSystem
 
 class SomeClass
 
@@ -279,9 +280,9 @@ class ActorLoggingSpec extends ScalaTestWithActorTestKit("""
   }
 
   "SLF4J Settings" must {
-    import akka.actor.typed.scaladsl.adapter._
-    import akka.actor.ExtendedActorSystem
     import akka.actor.{ ActorSystem => ClassicActorSystem }
+    import akka.actor.ExtendedActorSystem
+    import akka.actor.typed.scaladsl.adapter._
 
     "by default be amended to use Slf4jLogger" in {
       system.settings.config.getStringList("akka.loggers").size() should ===(1)

@@ -6,16 +6,17 @@ package akka.dispatch
 
 import java.util.concurrent.{ ConcurrentHashMap, ThreadFactory }
 
-import com.typesafe.config.{ Config, ConfigFactory, ConfigValueType }
-import akka.actor.{ ActorSystem, DynamicAccess, Scheduler }
-import akka.event.Logging.Warning
-import akka.event.{ EventStream, LoggingAdapter }
-import akka.ConfigurationException
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.util.Helpers.ConfigOps
-import com.github.ghik.silencer.silent
-
 import scala.concurrent.ExecutionContext
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.{ Config, ConfigFactory, ConfigValueType }
+
+import akka.ConfigurationException
+import akka.actor.{ ActorSystem, DynamicAccess, Scheduler }
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.event.{ EventStream, LoggingAdapter }
+import akka.event.Logging.Warning
+import akka.util.Helpers.ConfigOps
 
 /**
  * DispatcherPrerequisites represents useful contextual pieces when constructing a MessageDispatcher

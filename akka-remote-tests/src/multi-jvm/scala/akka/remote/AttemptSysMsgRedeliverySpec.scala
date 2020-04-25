@@ -5,16 +5,18 @@
 package akka.remote
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import testkit.MultiNodeConfig
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.Identify
+import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import testkit.MultiNodeConfig
-import akka.actor.PoisonPill
-import com.typesafe.config.ConfigFactory
 
 class AttemptSysMsgRedeliveryMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
@@ -55,8 +57,8 @@ object AttemptSysMsgRedeliverySpec {
 
 abstract class AttemptSysMsgRedeliverySpec(multiNodeConfig: AttemptSysMsgRedeliveryMultiJvmSpec)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import AttemptSysMsgRedeliverySpec._
+  import multiNodeConfig._
 
   def initialParticipants = roles.size
 

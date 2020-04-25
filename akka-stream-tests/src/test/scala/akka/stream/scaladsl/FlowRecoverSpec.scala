@@ -4,12 +4,12 @@
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit.EventFilter
-
-import scala.util.control.NoStackTrace
 
 class FlowRecoverSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 1

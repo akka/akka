@@ -6,17 +6,18 @@ package akka.pattern
 
 import java.util.concurrent.TimeoutException
 
+import scala.annotation.tailrec
+import scala.concurrent.{ Future, Promise }
+import scala.language.implicitConversions
+import scala.util.{ Failure, Success }
+
+import com.github.ghik.silencer.silent
+
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.dispatch.ExecutionContexts
 import akka.dispatch.sysmsg._
 import akka.util.{ Timeout, Unsafe }
-import com.github.ghik.silencer.silent
-
-import scala.annotation.tailrec
-import scala.concurrent.{ Future, Promise }
-import scala.language.implicitConversions
-import scala.util.{ Failure, Success }
 
 /**
  * This is what is used to complete a Future that is returned from an ask/? call,

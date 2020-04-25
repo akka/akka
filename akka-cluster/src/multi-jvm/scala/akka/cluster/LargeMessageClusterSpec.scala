@@ -6,6 +6,8 @@ package akka.cluster
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
 import akka.actor.ExtendedActorSystem
@@ -19,7 +21,6 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.SerializerWithStringManifest
 import akka.testkit._
 import akka.util.unused
-import com.typesafe.config.ConfigFactory
 
 object LargeMessageClusterMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")

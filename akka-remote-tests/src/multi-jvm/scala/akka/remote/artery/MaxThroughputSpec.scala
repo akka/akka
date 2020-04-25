@@ -8,17 +8,18 @@ import java.nio.ByteBuffer
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit.NANOSECONDS
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
+import akka.remote.{ RARP, RemoteActorRefProvider, RemotingMultiNodeSpec }
 import akka.remote.artery.compress.CompressionProtocol.Events.ReceivedActorRefCompressionTable
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, PerfFlamesSupport }
-import akka.remote.{ RARP, RemoteActorRefProvider, RemotingMultiNodeSpec }
-import akka.serialization.jackson.CborSerializable
 import akka.serialization.{ ByteBufferSerializer, SerializerWithStringManifest }
+import akka.serialization.jackson.CborSerializable
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object MaxThroughputSpec extends MultiNodeConfig {
   val first = role("first")

@@ -4,8 +4,8 @@
 
 package akka.coordination.lease.javadsl
 
-import akka.actor.ClassicActorSystemProvider
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.ClassicActorSystemProvider
 import akka.coordination.lease.internal.LeaseAdapter
 import akka.coordination.lease.internal.LeaseAdapterToScala
 import akka.coordination.lease.scaladsl.{ LeaseProvider => ScalaLeaseProvider }

@@ -4,10 +4,12 @@
 
 package akka.actor
 
-import scala.concurrent.duration._
 import java.util.concurrent.TimeUnit
-import org.openjdk.jmh.annotations._
+
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
 
 /*
 regex checking:

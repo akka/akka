@@ -4,8 +4,8 @@
 
 package akka.stream
 
-import scala.collection.immutable
 import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
 
 object UniformFanOutShape {
   def apply[I, O](inlet: Inlet[I], outlets: Outlet[O]*): UniformFanOutShape[I, O] =

@@ -4,13 +4,13 @@
 
 package akka.persistence.typed.internal
 
-import akka.actor.typed.Behavior
 import akka.actor.Dropped
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.typed.scaladsl.StashOverflowException
+import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.StashBuffer
+import akka.actor.typed.scaladsl.StashOverflowException
+import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 import akka.util.ConstantFun
 

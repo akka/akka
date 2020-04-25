@@ -4,13 +4,16 @@
 
 package akka.actor
 
+import java.util.concurrent.TimeUnit
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
+
 import akka.routing.RoundRobinPool
 import akka.testkit.TestActors
 import akka.testkit.TestProbe
-import org.openjdk.jmh.annotations._
-import java.util.concurrent.TimeUnit
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.SingleShotTime))

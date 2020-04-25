@@ -4,6 +4,11 @@
 
 package akka.actor.typed
 
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -11,10 +16,6 @@ import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
 
 object ActorSpecMessages {
 

@@ -9,21 +9,22 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionStage
 import java.util.function.BiFunction
 
-import akka.actor.{ ActorRef, ClassicActorSystemProvider, Status }
-import akka.dispatch.ExecutionContexts
-import akka._
-import akka.japi.function
-import akka.japi.function.Creator
-import akka.stream.impl.LinearTraversalBuilder
-import akka.stream.{ javadsl, scaladsl, _ }
-import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.util.Try
+
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import akka._
+import akka.actor.{ ActorRef, ClassicActorSystemProvider, Status }
+import akka.dispatch.ExecutionContexts
+import akka.japi.function
+import akka.japi.function.Creator
+import akka.stream.{ javadsl, scaladsl, _ }
+import akka.stream.impl.LinearTraversalBuilder
 
 /** Java API */
 object Sink {

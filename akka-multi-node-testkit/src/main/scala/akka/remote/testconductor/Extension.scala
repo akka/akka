@@ -4,12 +4,13 @@
 
 package akka.remote.testconductor
 
-import akka.actor.ClassicActorSystemProvider
+import com.typesafe.config.Config
+
 import akka.actor.{ ActorContext, ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.ClassicActorSystemProvider
+import akka.dispatch.ThreadPoolConfig
 import akka.remote.RemoteActorRefProvider
 import akka.util.Timeout
-import com.typesafe.config.Config
-import akka.dispatch.ThreadPoolConfig
 
 /**
  * Access to the [[akka.remote.testconductor.TestConductorExt]] extension:

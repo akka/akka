@@ -4,11 +4,12 @@
 
 package akka.actor
 
+import scala.concurrent.duration._
+
 import language.postfixOps
 
+import akka.dispatch.ThreadPoolConfig
 import akka.testkit.AkkaSpec
-import akka.dispatch.{ ThreadPoolConfig }
-import scala.concurrent.duration._
 
 object ConsistencySpec {
   val minThreads = 1

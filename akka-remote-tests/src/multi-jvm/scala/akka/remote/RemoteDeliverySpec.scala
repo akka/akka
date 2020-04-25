@@ -4,17 +4,18 @@
 
 package akka.remote
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
+import scala.language.postfixOps
 
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
+import akka.actor.ActorIdentity
 import akka.actor.ActorRef
+import akka.actor.Identify
 import akka.actor.Props
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
-import akka.actor.ActorIdentity
-import akka.actor.Identify
 import akka.serialization.jackson.CborSerializable
 
 class RemoteDeliveryConfig(artery: Boolean) extends MultiNodeConfig {
@@ -47,8 +48,8 @@ object RemoteDeliverySpec {
 
 abstract class RemoteDeliverySpec(multiNodeConfig: RemoteDeliveryConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import RemoteDeliverySpec._
+  import multiNodeConfig._
 
   override def initialParticipants = roles.size
 

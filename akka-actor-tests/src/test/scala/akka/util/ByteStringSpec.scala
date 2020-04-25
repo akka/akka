@@ -10,16 +10,17 @@ import java.lang.Float.floatToRawIntBits
 import java.nio.{ ByteBuffer, ByteOrder }
 import java.nio.ByteOrder.{ BIG_ENDIAN, LITTLE_ENDIAN }
 
-import akka.util.ByteString.{ ByteString1, ByteString1C, ByteStrings }
+import scala.collection.mutable.Builder
+
 import com.github.ghik.silencer.silent
 import org.apache.commons.codec.binary.Hex.encodeHex
-import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.{ Arbitrary, Gen }
+import org.scalacheck.Arbitrary.arbitrary
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 import org.scalatestplus.scalacheck.Checkers
 
-import scala.collection.mutable.Builder
+import akka.util.ByteString.{ ByteString1, ByteString1C, ByteStrings }
 
 class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
 

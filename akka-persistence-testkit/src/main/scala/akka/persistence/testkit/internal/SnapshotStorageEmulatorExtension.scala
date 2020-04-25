@@ -6,8 +6,8 @@ package akka.persistence.testkit.internal
 
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
 import akka.annotation.InternalApi
-import akka.persistence.testkit.scaladsl.SnapshotTestKit
 import akka.persistence.testkit.SnapshotStorage
+import akka.persistence.testkit.scaladsl.SnapshotTestKit
 
 /**
  * INTERNAL API

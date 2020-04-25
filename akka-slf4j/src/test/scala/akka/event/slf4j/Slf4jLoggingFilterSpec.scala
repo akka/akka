@@ -4,19 +4,21 @@
 
 package akka.event.slf4j
 
-import akka.testkit.AkkaSpec
-import akka.actor.{ Actor, ActorLogging, Props }
 import scala.concurrent.duration._
-import akka.event.Logging
+
 import org.scalatest.BeforeAndAfterEach
+
+import akka.actor.{ Actor, ActorLogging, Props }
 import akka.actor.ActorRef
-import akka.event.Logging.InitializeLogger
-import akka.event.Logging.LoggerInitialized
-import akka.event.Logging.LogEvent
-import akka.testkit.TestProbe
-import akka.event.Logging.Warning
-import akka.event.Logging.Info
+import akka.event.Logging
 import akka.event.Logging.Debug
+import akka.event.Logging.Info
+import akka.event.Logging.InitializeLogger
+import akka.event.Logging.LogEvent
+import akka.event.Logging.LoggerInitialized
+import akka.event.Logging.Warning
+import akka.testkit.AkkaSpec
+import akka.testkit.TestProbe
 
 object Slf4jLoggingFilterSpec {
 

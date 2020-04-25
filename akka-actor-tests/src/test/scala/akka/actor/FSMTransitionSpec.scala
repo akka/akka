@@ -4,10 +4,10 @@
 
 package akka.actor
 
-import akka.testkit._
-
 import scala.concurrent.duration._
 import scala.language.postfixOps
+
+import akka.testkit._
 
 object FSMTransitionSpec {
 

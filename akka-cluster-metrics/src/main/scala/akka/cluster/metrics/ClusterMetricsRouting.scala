@@ -5,13 +5,15 @@
 package akka.cluster.metrics
 
 import java.util.Arrays
+import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicReference
 
 import scala.annotation.tailrec
 import scala.collection.immutable
-import java.util.concurrent.ThreadLocalRandom
 
+import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
+
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -20,11 +22,10 @@ import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.Props
 import akka.actor.SupervisorStrategy
 import akka.cluster.Cluster
+import akka.cluster.routing.ClusterRouterSettingsBase
 import akka.dispatch.Dispatchers
 import akka.japi.Util.immutableSeq
 import akka.routing._
-import akka.cluster.routing.ClusterRouterSettingsBase
-import com.github.ghik.silencer.silent
 
 /**
  * Load balancing of messages to cluster nodes based on cluster metric data.

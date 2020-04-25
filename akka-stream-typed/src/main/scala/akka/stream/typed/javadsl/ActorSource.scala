@@ -8,8 +8,8 @@ import java.util.function.Predicate
 
 import akka.actor.typed._
 import akka.japi.JavaPartialFunction
-import akka.stream.javadsl._
 import akka.stream.{ CompletionStrategy, OverflowStrategy }
+import akka.stream.javadsl._
 
 /**
  * Collection of Sources aimed at integrating with typed Actors.

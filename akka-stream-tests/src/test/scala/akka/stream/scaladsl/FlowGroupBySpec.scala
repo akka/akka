@@ -7,29 +7,30 @@ package akka.stream.scaladsl
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.tailrec
+import scala.collection.mutable
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import org.reactivestreams.Publisher
+import org.scalatest.concurrent.PatienceConfiguration.Timeout
+
+import akka.Done
+import akka.NotUsed
 import akka.actor.ActorSystem
+import akka.stream._
 import akka.stream.Attributes._
 import akka.stream.Supervision.resumingDecider
-import akka.stream._
 import akka.stream.impl.SinkModule
 import akka.stream.impl.fusing.GroupBy
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestLatch
 import akka.util.ByteString
-import akka.Done
-import akka.NotUsed
-import org.reactivestreams.Publisher
-import org.scalatest.concurrent.PatienceConfiguration.Timeout
-
-import scala.annotation.tailrec
-import scala.collection.mutable
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Promise
 
 object FlowGroupBySpec {
 

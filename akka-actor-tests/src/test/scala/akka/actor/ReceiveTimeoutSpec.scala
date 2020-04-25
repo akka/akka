@@ -4,15 +4,16 @@
 
 package akka.actor
 
-import language.postfixOps
-import akka.testkit._
-
-import scala.concurrent.duration._
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Await
-import java.util.concurrent.TimeoutException
-import java.util.concurrent.atomic.AtomicBoolean
+import scala.concurrent.duration._
+
+import language.postfixOps
+
+import akka.testkit._
 
 object ReceiveTimeoutSpec {
   case object Tick

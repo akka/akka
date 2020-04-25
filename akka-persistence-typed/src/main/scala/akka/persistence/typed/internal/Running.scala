@@ -6,6 +6,7 @@ package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
 import scala.collection.immutable
+
 import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -25,17 +26,17 @@ import akka.persistence.SaveSnapshotFailure
 import akka.persistence.SaveSnapshotSuccess
 import akka.persistence.SnapshotProtocol
 import akka.persistence.journal.Tagged
-import akka.persistence.typed.DeleteSnapshotsCompleted
-import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeleteEventsCompleted
 import akka.persistence.typed.DeleteEventsFailed
+import akka.persistence.typed.DeleteSnapshotsCompleted
+import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventRejectedException
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
-import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.SnapshotMetadata
 import akka.persistence.typed.SnapshotSelectionCriteria
+import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.Effect
 import akka.util.unused
 
@@ -91,9 +92,9 @@ private[akka] object Running {
     extends JournalInteractions[C, E, S]
     with SnapshotInteractions[C, E, S]
     with StashManagement[C, E, S] {
+  import BehaviorSetup._
   import InternalProtocol._
   import Running.RunningState
-  import BehaviorSetup._
 
   final class HandlingCommands(state: RunningState[S])
       extends AbstractBehavior[InternalProtocol](setup.context)

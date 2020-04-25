@@ -4,11 +4,12 @@
 
 package akka.actor
 
-import akka.testkit.{ AkkaSpec, TestProbe }
+import scala.util.control.NoStackTrace
+
 import akka.actor.SupervisorStrategy.{ Restart, Stop }
 import akka.dispatch.sysmsg.SystemMessage
 import akka.event.EventStream
-import scala.util.control.NoStackTrace
+import akka.testkit.{ AkkaSpec, TestProbe }
 
 object UidClashTest {
 

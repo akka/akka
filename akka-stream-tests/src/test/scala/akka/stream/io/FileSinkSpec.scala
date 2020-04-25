@@ -4,26 +4,27 @@
 
 package akka.stream.io
 
-import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
 import java.nio.file._
+import java.nio.file.StandardOpenOption.{ CREATE, WRITE }
+
+import scala.collection.mutable.ListBuffer
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.util.Success
+
+import com.github.ghik.silencer.silent
+import com.google.common.jimfs.{ Configuration, Jimfs }
+import org.scalatest.concurrent.ScalaFutures
 
 import akka.dispatch.ExecutionContexts
 import akka.stream._
 import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
 import akka.stream.impl.StreamSupervisor.Children
 import akka.stream.scaladsl.{ FileIO, Keep, Sink, Source }
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.util.ByteString
-import com.github.ghik.silencer.silent
-import com.google.common.jimfs.{ Configuration, Jimfs }
-import org.scalatest.concurrent.ScalaFutures
-
-import scala.collection.mutable.ListBuffer
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
-import scala.util.Success
 
 @silent
 class FileSinkSpec extends StreamSpec(UnboundedMailboxConfig) with ScalaFutures {

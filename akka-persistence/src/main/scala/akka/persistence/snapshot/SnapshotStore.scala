@@ -5,13 +5,13 @@
 package akka.persistence.snapshot
 
 import scala.concurrent.ExecutionContext
-import scala.concurrent.duration._
 import scala.concurrent.Future
+import scala.concurrent.duration._
 
 import akka.actor._
+import akka.pattern.CircuitBreaker
 import akka.pattern.pipe
 import akka.persistence._
-import akka.pattern.CircuitBreaker
 
 /**
  * Abstract snapshot store.

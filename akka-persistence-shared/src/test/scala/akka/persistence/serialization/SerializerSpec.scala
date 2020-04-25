@@ -6,16 +6,19 @@ package akka.persistence.serialization
 
 import java.io.NotSerializableException
 import java.util.UUID
+
+import scala.concurrent.Await
+import scala.concurrent.duration.Duration
+
+import com.typesafe.config._
+import org.apache.commons.codec.binary.Hex.{ decodeHex, encodeHex }
+
 import akka.actor._
-import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot, UnconfirmedDelivery }
 import akka.persistence._
+import akka.persistence.AtLeastOnceDelivery.{ AtLeastOnceDeliverySnapshot, UnconfirmedDelivery }
 import akka.serialization._
 import akka.testkit._
 import akka.util.ByteString.UTF_8
-import com.typesafe.config._
-import org.apache.commons.codec.binary.Hex.{ decodeHex, encodeHex }
-import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 
 object SerializerSpecConfigs {
   val customSerializers =

@@ -4,35 +4,37 @@
 
 package akka.cluster.ddata.protobuf
 
-import scala.concurrent.duration._
+import java.io.NotSerializableException
 import java.util.concurrent.TimeUnit
-import akka.util.ccompat.JavaConverters._
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.Address
 import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
 import akka.cluster.Member
 import akka.cluster.UniqueAddress
+import akka.cluster.ddata.DurableStore.DurableDataEnvelope
+import akka.cluster.ddata.Key.KeyR
 import akka.cluster.ddata.PruningState
+import akka.cluster.ddata.PruningState.PruningPerformed
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
+import akka.cluster.ddata.VersionVector
 import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
+import akka.protobufv3.internal.ByteString
+import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
-import akka.serialization.BaseSerializer
 import akka.util.{ ByteString => AkkaByteString }
-import akka.protobufv3.internal.ByteString
-import akka.cluster.ddata.Key.KeyR
-import java.util.concurrent.atomic.AtomicInteger
-import scala.annotation.tailrec
-import scala.concurrent.duration.FiniteDuration
-import akka.cluster.ddata.DurableStore.DurableDataEnvelope
-import java.io.NotSerializableException
-import akka.actor.Address
-import akka.cluster.ddata.VersionVector
-import akka.annotation.InternalApi
-import akka.cluster.ddata.PruningState.PruningPerformed
 import akka.util.ccompat._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API

@@ -6,15 +6,16 @@ package akka.persistence.query
 
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.ActorSystem
-import akka.persistence.journal.{ EventSeq, ReadEventAdapter }
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import com.typesafe.config.{ Config, ConfigFactory }
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.actor.ActorSystem
+import akka.persistence.journal.{ EventSeq, ReadEventAdapter }
 
 class PersistenceQuerySpec extends AnyWordSpecLike with Matchers with BeforeAndAfterAll {
 

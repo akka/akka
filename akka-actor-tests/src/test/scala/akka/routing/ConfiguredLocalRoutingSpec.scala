@@ -4,23 +4,25 @@
 
 package akka.routing
 
-import language.postfixOps
+import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import scala.collection.immutable
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+import language.postfixOps
+
 import akka.ConfigurationException
 import akka.actor.{ Actor, ActorRef, Deploy, Props }
-import akka.actor.UnstartedCell
-import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
-import akka.pattern.gracefulStop
-import com.typesafe.config.Config
-import akka.actor.ActorSystem
-import akka.testkit.TestProbe
-import akka.testkit.TestProbe
-import akka.actor.ExtendedActorSystem
-import akka.testkit.TestActors.echoActorProps
 import akka.actor.ActorPath
-import com.github.ghik.silencer.silent
+import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
+import akka.actor.UnstartedCell
+import akka.pattern.gracefulStop
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender }
+import akka.testkit.TestActors.echoActorProps
+import akka.testkit.TestProbe
+import akka.testkit.TestProbe
 
 object ConfiguredLocalRoutingSpec {
   val config = """

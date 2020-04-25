@@ -7,6 +7,9 @@ package akka.cluster
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -21,8 +24,6 @@ import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.serialization.jackson.CborSerializable
 import akka.testkit._
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
 
 object SurviveNetworkInstabilityMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")

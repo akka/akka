@@ -4,15 +4,16 @@
 
 package akka.remote.artery
 
-import akka.actor._
-import akka.remote.routing._
-import akka.remote.{ RARP, RemoteScope }
-import akka.routing._
-import akka.testkit.TestActors.echoActorProps
-import akka.testkit._
+import scala.collection.immutable
+
 import com.typesafe.config._
 
-import scala.collection.immutable
+import akka.actor._
+import akka.remote.{ RARP, RemoteScope }
+import akka.remote.routing._
+import akka.routing._
+import akka.testkit._
+import akka.testkit.TestActors.echoActorProps
 
 object RemoteRouterSpec {
   class Parent extends Actor {

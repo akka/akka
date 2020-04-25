@@ -4,21 +4,23 @@
 
 package akka.remote.serialization
 
-import akka.actor._
-import akka.remote.{ RemoteScope, RemoteWatcher }
-import akka.serialization.SerializationExtension
-import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
-import scala.util.control.NoStackTrace
-import scala.concurrent.duration._
-import java.util.Optional
 import java.io.NotSerializableException
+import java.util.Optional
 import java.util.concurrent.TimeoutException
 
-import akka.pattern.AskTimeoutException
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import com.typesafe.config.ConfigFactory
+
 import akka.{ Done, NotUsed }
+import akka.actor._
+import akka.pattern.AskTimeoutException
+import akka.remote.{ RemoteScope, RemoteWatcher }
 import akka.remote.routing.RemoteRouterConfig
 import akka.routing._
+import akka.serialization.SerializationExtension
+import akka.testkit.AkkaSpec
 import akka.testkit.JavaSerializable
 
 object MiscMessageSerializerSpec {

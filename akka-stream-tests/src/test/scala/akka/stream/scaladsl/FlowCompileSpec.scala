@@ -4,13 +4,14 @@
 
 package akka.stream.scaladsl
 
-import akka.NotUsed
-import akka.stream.testkit.StreamSpec
+import scala.collection.immutable.Seq
+import scala.concurrent.Future
+
 import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 
-import scala.collection.immutable.Seq
-import scala.concurrent.Future
+import akka.NotUsed
+import akka.stream.testkit.StreamSpec
 
 @silent // unused vars are used in shouldNot compile tests
 class FlowCompileSpec extends StreamSpec {
