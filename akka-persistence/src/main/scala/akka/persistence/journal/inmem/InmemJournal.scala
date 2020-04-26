@@ -41,7 +41,10 @@ object InmemJournal {
  *
  * In-memory journal for testing purposes only.
  */
-@InternalApi private[persistence] class InmemJournal(cfg: Config) extends AsyncWriteJournal with InmemMessages {
+@InternalApi private[persistence] class InmemJournal(cfg: Config)
+    extends AsyncWriteJournal
+    with InmemMessages
+    with InmemIdempotencyKeys {
 
   def this() = this(ConfigFactory.empty())
 
@@ -60,6 +63,7 @@ object InmemJournal {
       for (w <- messages; p <- w.payload) {
         verifySerialization(p.payload)
         add(p)
+        w.idempotenceKey.foreach(addKey(w.persistenceId, _))
         eventStream.publish(InmemJournal.Write(p.payload, p.persistenceId, p.sequenceNr))
       }
       Future.successful(Nil) // all good
@@ -102,6 +106,15 @@ object InmemJournal {
       serialization.deserialize(bytes, serializer.identifier, manifest).get
     }
   }
+
+  override def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] = {
+    Future.successful(keys.get(persistenceId).exists(_.contains(key)))
+  }
+
+  override def asyncWriteIdempotencyKey(persistenceId: String, key: String): Future[Unit] = {
+    addKey(persistenceId, key)
+    Future.successful(())
+  }
 }
 
 /**
@@ -143,4 +156,18 @@ object InmemJournal {
 
   private def safeLongToInt(l: Long): Int =
     if (Int.MaxValue < l) Int.MaxValue else l.toInt
+}
+
+/**
+ * INTERNAL API.
+ */
+@InternalApi private[persistence] trait InmemIdempotencyKeys {
+  // persistenceId -> idempotency key
+  var keys = Map.empty[String, Set[String]]
+
+  def addKey(pid: String, k: String): Unit =
+    keys = keys + (keys.get(pid) match {
+        case Some(ks) => pid -> (ks + k)
+        case None     => pid -> Set(k)
+      })
 }

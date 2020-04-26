@@ -20,7 +20,7 @@ import akka.util.Helpers.toRootLowerCase
 /**
  * Abstract journal, optimized for asynchronous, non-blocking writes.
  */
-trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
+trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery with AsyncIdempotency {
   import AsyncWriteJournal._
   import JournalProtocol._
 
@@ -194,6 +194,34 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery {
           .pipeTo(persistentActor)
           .onComplete { _ =>
             if (publish) eventStream.publish(d)
+          }
+
+      case ci @ CheckIdempotencyKeyExists(persistenceId, idempotencyKey, persistentActor) =>
+        breaker
+          .withCircuitBreaker(asyncCheckIdempotencyKeyExists(persistenceId, idempotencyKey))
+          .map { exists =>
+            IdempotencyCheckSuccess(exists)
+          }
+          .recover {
+            case e => IdempotencyCheckFailure(e)
+          }
+          .pipeTo(persistentActor)
+          .onComplete { _ =>
+            if (publish) eventStream.publish(ci)
+          }
+
+      case wi @ WriteIdempotencyKey(persistenceId, idempotencyKey, persistentActor) =>
+        breaker
+          .withCircuitBreaker(asyncWriteIdempotencyKey(persistenceId, idempotencyKey))
+          .map { _ =>
+            WriteIdempotencyKeySuccess
+          }
+          .recover {
+            case e => WriteIdempotencyKeyFailure(e)
+          }
+          .pipeTo(persistentActor)
+          .onComplete { _ =>
+            if (publish) eventStream.publish(wi)
           }
     }
   }

@@ -112,7 +112,7 @@ class PersistentActorJournalProtocolSpec extends AkkaSpec(config) with ImplicitS
       w.persistentActor should ===(subject)
       w.messages.size should ===(msgs.size)
       w.messages.zip(msgs).foreach {
-        case (AtomicWrite(writes), msg) =>
+        case (AtomicWrite(writes, _), msg) =>
           writes.size should ===(msg.msg.size)
           writes.zip(msg.msg).foreach {
             case (PersistentRepr(evt, _), m) =>
@@ -127,7 +127,7 @@ class PersistentActorJournalProtocolSpec extends AkkaSpec(config) with ImplicitS
   def confirm(w: WriteMessages): Unit = {
     journal.send(w.persistentActor, WriteMessagesSuccessful)
     w.messages.foreach {
-      case AtomicWrite(msgs) =>
+      case AtomicWrite(msgs, _) =>
         msgs.foreach(msg => w.persistentActor.tell(WriteMessageSuccess(msg, w.actorInstanceId), msg.sender))
       case NonPersistentRepr(msg, sender) => w.persistentActor.tell(msg, sender)
     }

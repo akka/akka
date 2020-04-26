@@ -151,6 +151,7 @@ private[akka] object PersistenceMdc {
   val RunningCmds       = "running-cmd"
   val PersistingEvents  = "persist-evt"
   val StoringSnapshot   = "storing-snap"
+  val CheckingIdempotency = "checking-idempotency"
   // format: ON
 
   val PersistencePhaseKey = "persistencePhase"

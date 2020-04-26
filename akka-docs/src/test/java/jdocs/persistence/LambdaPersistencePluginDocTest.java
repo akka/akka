@@ -30,6 +30,7 @@ import java.util.Optional;
 
 import akka.persistence.japi.journal.JavaJournalSpec;
 import akka.persistence.japi.snapshot.JavaSnapshotStoreSpec;
+import scala.runtime.BoxedUnit;
 
 public class LambdaPersistencePluginDocTest {
 
@@ -128,6 +129,16 @@ public class LambdaPersistencePluginDocTest {
     public Future<Long> doAsyncReadHighestSequenceNr(String persistenceId, long fromSequenceNr) {
       return null;
     }
+
+      @Override
+      public Future<Object> asyncCheckIdempotencyKeyExists(String persistenceId, String key) {
+          return null;
+      }
+
+      @Override
+      public Future<BoxedUnit> asyncWriteIdempotencyKey(String persistenceId, String key) {
+          return null;
+      }
   }
 
   static Object o2 =

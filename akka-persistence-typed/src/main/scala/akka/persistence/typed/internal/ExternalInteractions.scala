@@ -31,10 +31,11 @@ private[akka] trait JournalInteractions[C, E, S] {
 
   protected def internalPersist(
       ctx: ActorContext[_],
-      cmd: Any,
+      cmd: C,
       state: Running.RunningState[S],
       event: EventOrTagged,
-      eventAdapterManifest: String): Running.RunningState[S] = {
+      eventAdapterManifest: String,
+      idempotenceKey: Option[String]): Running.RunningState[S] = {
 
     val newState = state.nextSequenceNr()
 
@@ -48,7 +49,7 @@ private[akka] trait JournalInteractions[C, E, S] {
 
     onWriteInitiated(ctx, cmd, repr)
 
-    val write = AtomicWrite(repr) :: Nil
+    val write = AtomicWrite(repr, idempotenceKey) :: Nil
     setup.journal
       .tell(JournalProtocol.WriteMessages(write, setup.selfClassic, setup.writerIdentity.instanceId), setup.selfClassic)
 
@@ -65,7 +66,8 @@ private[akka] trait JournalInteractions[C, E, S] {
       ctx: ActorContext[_],
       cmd: Any,
       state: Running.RunningState[S],
-      events: immutable.Seq[(EventOrTagged, String)]): Running.RunningState[S] = {
+      events: immutable.Seq[(EventOrTagged, String)],
+      idempotenceKey: Option[String]): Running.RunningState[S] = {
     if (events.nonEmpty) {
       var newState = state
 
@@ -82,7 +84,7 @@ private[akka] trait JournalInteractions[C, E, S] {
       }
 
       onWritesInitiated(ctx, cmd, writes)
-      val write = AtomicWrite(writes)
+      val write = AtomicWrite(writes, idempotenceKey)
 
       setup.journal.tell(
         JournalProtocol.WriteMessages(write :: Nil, setup.selfClassic, setup.writerIdentity.instanceId),
@@ -147,6 +149,16 @@ private[akka] trait JournalInteractions[C, E, S] {
             s"toSequenceNr [$toSequenceNr] must be less than or equal to lastSequenceNr [$lastSequenceNr]"),
           toSequenceNr)
     }
+
+  protected def internalCheckIdempotencyKeyExists(idempotencyKey: String): Unit = {
+    val self = setup.selfClassic
+    setup.journal.tell(JournalProtocol.CheckIdempotencyKeyExists(setup.persistenceId.id, idempotencyKey, self), self)
+  }
+
+  protected def internalWriteIdempotencyKey(idempotencyKey: String): Unit = {
+    val self = setup.selfClassic
+    setup.journal.tell(JournalProtocol.WriteIdempotencyKey(setup.persistenceId.id, idempotencyKey, self), self)
+  }
 }
 
 /** INTERNAL API */

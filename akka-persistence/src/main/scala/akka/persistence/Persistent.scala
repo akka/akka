@@ -33,10 +33,16 @@ private[persistence] final case class NonPersistentRepr(payload: Any, sender: Ac
 }
 
 object AtomicWrite {
-  def apply(event: PersistentRepr): AtomicWrite = apply(List(event))
+  def apply(event: PersistentRepr): AtomicWrite = apply(List(event), None)
+
+  def apply(event: PersistentRepr, idempotenceKey: Option[String]): AtomicWrite = apply(List(event), idempotenceKey)
+
+  def apply(payload: immutable.Seq[PersistentRepr]): AtomicWrite = apply(payload, None)
 }
 
-final case class AtomicWrite(payload: immutable.Seq[PersistentRepr]) extends PersistentEnvelope with Message {
+final case class AtomicWrite(payload: immutable.Seq[PersistentRepr], idempotenceKey: Option[String])
+    extends PersistentEnvelope
+    with Message {
   require(payload.nonEmpty, "payload of AtomicWrite must not be empty!")
   private var _highestSequenceNr: Long = payload.head.sequenceNr
 
