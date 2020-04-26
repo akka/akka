@@ -32,6 +32,8 @@ class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
     else context.system.settings.config.getConfig("akka.persistence.journal.leveldb-shared.store")
 
   def receive = receiveCompactionInternal.orElse {
+    case WriteMessages(messages) if messages.flatMap(_.idempotenceKey).nonEmpty =>
+      throw new RuntimeException("Idempotency key writes not implemented")
     case WriteMessages(messages) =>
       // TODO it would be nice to DRY this with AsyncWriteJournal, but this is using
       //      AsyncWriteProxy message protocol
@@ -84,11 +86,9 @@ class SharedLeveldbStore(cfg: Config) extends LeveldbStore {
         .pipeTo(replyTo)
 
     case CheckIdempotencyKeyExists(_, _) =>
-      //TODO implement idempotency key check
-      ???
+      throw new RuntimeException("Idempotency key check not implemented")
 
     case WriteIdempotencyKey(_, _) =>
-      //TODO implement idempotency key write
-      ???
+      throw new RuntimeException("Idempotency key write not implemented")
   }
 }

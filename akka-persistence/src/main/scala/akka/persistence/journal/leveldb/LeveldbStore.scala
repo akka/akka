@@ -73,44 +73,47 @@ private[persistence] trait LeveldbStore
 
   import Key._
 
-  //TODO implement idempotency key storage
   def asyncWriteMessages(messages: immutable.Seq[AtomicWrite]): Future[immutable.Seq[Try[Unit]]] = {
-    var persistenceIds = Set.empty[String]
-    var allTags = Set.empty[String]
+    if (messages.flatMap(_.idempotenceKey).nonEmpty) {
+      Future.failed(new RuntimeException("Idempotency key writes not implemented for LevelDB Journal"))
+    } else {
+      var persistenceIds = Set.empty[String]
+      var allTags = Set.empty[String]
 
-    val result = Future.fromTry(Try {
-      withBatch(batch =>
-        messages.map {
-          a =>
-            Try {
-              a.payload.foreach { p =>
-                val (p2, tags) = p.payload match {
-                  case Tagged(payload, tags) =>
-                    (p.withPayload(payload), tags)
-                  case _ => (p, Set.empty[String])
+      val result = Future.fromTry(Try {
+        withBatch(batch =>
+          messages.map {
+            a =>
+              Try {
+                a.payload.foreach { p =>
+                  val (p2, tags) = p.payload match {
+                    case Tagged(payload, tags) =>
+                      (p.withPayload(payload), tags)
+                    case _ => (p, Set.empty[String])
+                  }
+                  if (tags.nonEmpty && hasTagSubscribers)
+                    allTags = allTags.union(tags)
+
+                  require(
+                    !p2.persistenceId.startsWith(tagPersistenceIdPrefix),
+                    s"persistenceId [${p.persistenceId}] must not start with $tagPersistenceIdPrefix")
+                  addToMessageBatch(p2, tags, batch)
                 }
-                if (tags.nonEmpty && hasTagSubscribers)
-                  allTags = allTags.union(tags)
-
-                require(
-                  !p2.persistenceId.startsWith(tagPersistenceIdPrefix),
-                  s"persistenceId [${p.persistenceId}] must not start with $tagPersistenceIdPrefix")
-                addToMessageBatch(p2, tags, batch)
+                if (hasPersistenceIdSubscribers)
+                  persistenceIds += a.persistenceId
               }
-              if (hasPersistenceIdSubscribers)
-                persistenceIds += a.persistenceId
-            }
-        })
-    })
+          })
+      })
 
-    if (hasPersistenceIdSubscribers) {
-      persistenceIds.foreach { pid =>
-        notifyPersistenceIdChange(pid)
+      if (hasPersistenceIdSubscribers) {
+        persistenceIds.foreach { pid =>
+          notifyPersistenceIdChange(pid)
+        }
       }
+      if (hasTagSubscribers && allTags.nonEmpty)
+        allTags.foreach(notifyTagChange)
+      result
     }
-    if (hasTagSubscribers && allTags.nonEmpty)
-      allTags.foreach(notifyTagChange)
-    result
   }
 
   def asyncDeleteMessagesTo(persistenceId: String, toSequenceNr: Long): Future[Unit] =
@@ -140,11 +143,19 @@ private[persistence] trait LeveldbStore
       case NonFatal(e) => Future.failed(e)
     }
 
-  //TODO implement idempotency key check
-  def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] = ???
+  def asyncCheckIdempotencyKeyExists(persistenceId: String, key: String): Future[Boolean] = {
+    Future.failed(
+      new RuntimeException(
+        s"Idempotency key check not implemented for LevelDB Journal, " +
+        s"persistenceId [${persistenceId}], idempotencyKey [$key]"))
+  }
 
-  //TODO implement idempotency key check
-  def asyncWriteIdempotencyKey(persistenceId: String, key: String): Future[Unit] = ???
+  def asyncWriteIdempotencyKey(persistenceId: String, key: String): Future[Unit] = {
+    Future.failed(
+      new RuntimeException(
+        s"Idempotency key write not implemented for LevelDB Journal, " +
+        s"persistenceId [${persistenceId}], idempotencyKey [$key]"))
+  }
 
   def leveldbSnapshot(): ReadOptions = leveldbReadOptions.snapshot(leveldb.getSnapshot)
 

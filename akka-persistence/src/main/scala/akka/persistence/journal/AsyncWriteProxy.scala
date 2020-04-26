@@ -12,6 +12,7 @@ import scala.util.Try
 import akka.AkkaException
 import akka.actor._
 import akka.pattern.ask
+import akka.persistence.JournalProtocol.Response
 import akka.persistence._
 import akka.util._
 
@@ -154,6 +155,7 @@ private[persistence] object AsyncWriteTarget {
   @SerialVersionUID(1L)
   case class IdempotencyCheckFailure(cause: Throwable)
 
+  @SerialVersionUID(1L)
   final case class WriteIdempotencyKey(persistenceId: String, idempotencyKey: String)
 
   @SerialVersionUID(1L)

@@ -151,16 +151,16 @@ private[persistence] object JournalProtocol {
 
   final case class IdempotencyCheckFailure(cause: Throwable) extends Response with DeadLetterSuppression
 
-  //TODO consider adding idempotency key check rejection, for example if journal explicitly doesn't support it
+  final case class IdempotencyCheckRejected(cause: Throwable) extends Response with DeadLetterSuppression
 
   final case class WriteIdempotencyKey(persistenceId: String, idempotencyKey: String, persistentActor: ActorRef)
       extends Request
 
-  case object WriteIdempotencyKeySuccess extends Response
+  final case object WriteIdempotencyKeySuccess extends Response with DeadLetterSuppression
 
-  final case class WriteIdempotencyKeyFailure(cause: Throwable) extends Response
+  final case class WriteIdempotencyKeyFailure(cause: Throwable) extends Response with DeadLetterSuppression
 
-  //TODO consider adding idempotency key write rejection, for example if journal explicitly doesn't support it
+  final case class WriteIdempotencyKeyRejected(cause: Throwable) extends Response with DeadLetterSuppression
 }
 
 /**
