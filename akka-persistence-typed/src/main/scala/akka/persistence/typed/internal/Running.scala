@@ -5,7 +5,7 @@
 package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
-import scala.collection.{ immutable, mutable, SortedMap }
+import scala.collection.{ immutable }
 import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -42,8 +42,6 @@ import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.{ Effect, IdempotenceFailure, IdempotentCommand }
 import akka.util.unused
 
-import scala.collection.immutable.SortedSet
-
 /**
  * INTERNAL API
  *
@@ -73,7 +71,7 @@ private[akka] object Running {
       seqNr: Long,
       state: State,
       receivedPoisonPill: Boolean,
-      idempotenceKeyCache: immutable.Vector[String]) {
+      private val idempotenceKeyCache: immutable.Vector[String]) {
 
     def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
@@ -86,14 +84,26 @@ private[akka] object Running {
       copy(state = updated)
     }
 
+    def checkIdempotenceKeyCache(idempotenceKey: String, maxCacheSize: Long): Boolean = {
+      if (maxCacheSize == 0) {
+        false
+      } else {
+        idempotenceKeyCache.contains(idempotenceKey)
+      }
+    }
+
     def addIdempotenceKeyToCache(idempotenceKey: String, maxCacheSize: Long): RunningState[State] = {
-      copy(idempotenceKeyCache = idempotenceKeyCache.drop {
-          if (idempotenceKeyCache.size == maxCacheSize) {
-            1
-          } else {
-            0
-          }
-        } :+ idempotenceKey)
+      if (maxCacheSize == 0 || idempotenceKeyCache.contains(idempotenceKey)) {
+        this
+      } else {
+        copy(idempotenceKeyCache = idempotenceKeyCache.drop {
+            if (idempotenceKeyCache.size == maxCacheSize) {
+              1
+            } else {
+              0
+            }
+          } :+ idempotenceKey)
+      }
     }
   }
 
@@ -143,8 +153,13 @@ private[akka] object Running {
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       cmd match {
         case ic: IdempotentCommand =>
-          internalCheckIdempotencyKeyExists(ic.idempotencyKey)
-          new CheckingIdempotenceKey(state, ic.asInstanceOf[C with IdempotentCommand], ic.idempotencyKey) // TODO can we avoid the cast?
+          if (state.checkIdempotenceKeyCache(ic.idempotencyKey, setup.idempotenceKeyCacheSize)) {
+            ic.replyTo ! IdempotenceFailure
+            Behaviors.same
+          } else {
+            internalCheckIdempotencyKeyExists(ic.idempotencyKey)
+            new CheckingIdempotenceKey(state, ic.asInstanceOf[C with IdempotentCommand], ic.idempotencyKey) // TODO can we avoid the cast?
+          }
         case _ =>
           val effect = setup.commandHandler(state.state, cmd)
           applyEffects(cmd, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
@@ -529,7 +544,6 @@ private[akka] object Running {
     }
 
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
-      //TODO consider keeping a cache of recently checked keys
       response match {
         case IdempotencyCheckSuccess(false) =>
           val effect = setup.commandHandler(state.state, pendingCommand).asInstanceOf[EffectImpl[E, S]] // TODO can we avoid the cast?
@@ -558,7 +572,8 @@ private[akka] object Running {
           }
         case IdempotencyCheckSuccess(true) =>
           pendingCommand.replyTo ! IdempotenceFailure
-          tryUnstashOne(new HandlingCommands(state))
+          val newState = state.addIdempotenceKeyToCache(idempotencyKey, setup.idempotenceKeyCacheSize)
+          tryUnstashOne(new HandlingCommands(newState))
         case IdempotencyCheckFailure(cause) =>
           val msg = "Exception while checking for idempotency key existence. " +
             s"PersistenceId [${setup.persistenceId.id}]. ${cause.getMessage}"
@@ -600,7 +615,6 @@ private[akka] object Running {
     }
 
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
-      //TODO consider keeping a cache of recently checked keys
       response match {
         case WriteIdempotencyKeySuccess(idempotenceKey, _) =>
           val newState = state.addIdempotenceKeyToCache(idempotenceKey, setup.idempotenceKeyCacheSize)

@@ -15,6 +15,8 @@ import akka.persistence.typed.PersistenceId
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
+import scala.concurrent.duration._
+
 object EventSourcedBehaviorIdempotenceCacheSpec {
 
   private val conf = ConfigFactory.parseString(s"""
@@ -61,7 +63,7 @@ object EventSourcedBehaviorIdempotenceCacheSpec {
         eventHandler = (state, event) => {
           state + event
         })
-      .idempotenceKeyCacheSize(2)
+      .idempotenceKeyCacheSize(1)
 }
 
 class EventSourcedBehaviorIdempotenceCacheSpec
@@ -74,6 +76,49 @@ class EventSourcedBehaviorIdempotenceCacheSpec
   private def nextPid(): PersistenceId = PersistenceId.ofUniqueId(s"c${pidCounter.incrementAndGet()})")
 
   "side-effecting idempotent command" should {
-    "cache idempotency key after write" in {}
+    "cache idempotency keys" in {
+      val eventProbe = createTestProbe[InmemJournal.Operation]()
+      system.eventStream ! EventStream.Subscribe(eventProbe.ref)
+
+      val probe = TestProbe[IdempotenceReply]
+
+      val persistenceId = nextPid
+      val c = spawn(idempotentState(persistenceId))
+
+      def withIdempotencyKey(idempotenceKey: String) = {
+        c ! SideEffect(idempotenceKey, probe.ref)
+        eventProbe.expectMessage(InmemJournal.CheckIdempotenceKeyExists(persistenceId.id, idempotenceKey))
+        eventProbe.expectMessageType[InmemJournal.Write]
+        eventProbe.expectMessage(InmemJournal.WriteIdempotenceKey(persistenceId.id, idempotenceKey))
+        c ! SideEffect(idempotenceKey, probe.ref)
+        eventProbe.expectNoMessage(3.seconds)
+      }
+
+      withIdempotencyKey(UUID.randomUUID().toString)
+      withIdempotencyKey(UUID.randomUUID().toString)
+    }
+  }
+
+  "not side-effecting idempotent command" should {
+    "cache idempotency keys" in {
+      val eventProbe = createTestProbe[InmemJournal.Operation]()
+      system.eventStream ! EventStream.Subscribe(eventProbe.ref)
+
+      val probe = TestProbe[IdempotenceReply]
+
+      val persistenceId = nextPid
+      val c = spawn(idempotentState(persistenceId))
+
+      def withIdempotencyKey(idempotenceKey: String) = {
+        c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
+        eventProbe.expectMessage(InmemJournal.CheckIdempotenceKeyExists(persistenceId.id, idempotenceKey))
+        eventProbe.expectMessage(InmemJournal.WriteIdempotenceKey(persistenceId.id, idempotenceKey))
+        c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
+        eventProbe.expectNoMessage(3.seconds)
+      }
+
+      withIdempotencyKey(UUID.randomUUID().toString)
+      withIdempotencyKey(UUID.randomUUID().toString)
+    }
   }
 }
