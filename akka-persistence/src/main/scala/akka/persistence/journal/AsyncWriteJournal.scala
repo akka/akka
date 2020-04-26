@@ -63,7 +63,17 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery w
     {
       case WriteMessages(messages, persistentActor, actorInstanceId) =>
         val cctr = resequencerCounter
-        resequencerCounter += messages.foldLeft(1)((acc, m) => acc + m.size)
+        resequencerCounter += messages.foldLeft(1) {
+          case (acc, m) =>
+            acc + m.size + (
+              m match {
+                case aw: AtomicWrite =>
+                  aw.idempotenceKey.map(_ => 1).getOrElse(0)
+                case _ =>
+                  0
+              }
+            )
+        }
 
         val atomicWriteCount = messages.count(_.isInstanceOf[AtomicWrite])
         val prepared = Try(preparePersistentBatch(messages))
@@ -100,11 +110,31 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery w
               case a: AtomicWrite =>
                 resultsIter.next() match {
                   case Success(_) =>
+                    a.idempotenceKey.foreach { k =>
+                      resequencer ! Desequenced(
+                        WriteIdempotencyKeySuccess(k, actorInstanceId),
+                        n,
+                        persistentActor,
+                        a.sender)
+                      n += 1
+
+//                      persistentActor ! WriteIdempotencyKeySuccess(k, actorInstanceId)
+                    }
                     a.payload.foreach { p =>
                       resequencer ! Desequenced(WriteMessageSuccess(p, actorInstanceId), n, persistentActor, p.sender)
                       n += 1
                     }
                   case Failure(e) =>
+                    a.idempotenceKey.foreach { k =>
+                      resequencer ! Desequenced(
+                        WriteIdempotencyKeyRejected(k, e, actorInstanceId),
+                        n,
+                        persistentActor,
+                        a.sender)
+                      n += 1
+
+//                      persistentActor ! WriteIdempotencyKeyRejected(k, e, actorInstanceId)
+                    }
                     a.payload.foreach { p =>
                       resequencer ! Desequenced(
                         WriteMessageRejected(p, e, actorInstanceId),
@@ -125,6 +155,16 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery w
             var n = cctr + 1
             messages.foreach {
               case a: AtomicWrite =>
+                a.idempotenceKey.foreach { k =>
+                  resequencer ! Desequenced(
+                    WriteIdempotencyKeyFailure(k, e, actorInstanceId),
+                    n,
+                    persistentActor,
+                    a.sender)
+                  n += 1
+
+//                  persistentActor ! WriteIdempotencyKeyFailure(k, e, actorInstanceId)
+                }
                 a.payload.foreach { p =>
                   resequencer ! Desequenced(WriteMessageFailure(p, e, actorInstanceId), n, persistentActor, p.sender)
                   n += 1
@@ -210,14 +250,14 @@ trait AsyncWriteJournal extends Actor with WriteJournalBase with AsyncRecovery w
             if (publish) eventStream.publish(ci)
           }
 
-      case wi @ WriteIdempotencyKey(persistenceId, idempotencyKey, persistentActor) =>
+      case wi @ WriteIdempotencyKey(persistenceId, idempotencyKey, persistentActor, actorInstanceId) =>
         breaker
           .withCircuitBreaker(asyncWriteIdempotencyKey(persistenceId, idempotencyKey))
           .map { _ =>
-            WriteIdempotencyKeySuccess
+            WriteIdempotencyKeySuccess(idempotencyKey, actorInstanceId)
           }
           .recover {
-            case e => WriteIdempotencyKeyFailure(e)
+            case e => WriteIdempotencyKeyFailure(idempotencyKey, e, actorInstanceId)
           }
           .pipeTo(persistentActor)
           .onComplete { _ =>

@@ -197,6 +197,9 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
               a.payload.foreach { p =>
                 persistentActor ! WriteMessageFailure(p, timeoutException(), actorInstanceId)
               }
+              a.idempotenceKey.foreach { k =>
+                persistentActor ! WriteIdempotencyKeyFailure(k, timeoutException, actorInstanceId)
+              }
             case r: NonPersistentRepr =>
               persistentActor ! LoopMessageSuccess(r.payload, actorInstanceId)
           }
@@ -206,8 +209,8 @@ final class PersistencePluginProxy(config: Config) extends Actor with Stash with
           persistentActor ! DeleteMessagesFailure(timeoutException(), toSequenceNr)
         case CheckIdempotencyKeyExists(_, _, persistentActor) =>
           persistentActor ! IdempotencyCheckFailure(timeoutException)
-        case WriteIdempotencyKey(_, _, persistentActor) =>
-          persistentActor ! IdempotencyCheckFailure(timeoutException)
+        case WriteIdempotencyKey(_, key, persistentActor, actorInstanceId) =>
+          persistentActor ! WriteIdempotencyKeyFailure(key, timeoutException, actorInstanceId)
       }
 
     case req: SnapshotProtocol.Request =>

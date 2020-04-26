@@ -177,6 +177,8 @@ object EventSourcedBehavior {
    */
   def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State]
 
+  def idempotenceKeyCacheSize(size: Long): EventSourcedBehavior[Command, Event, State]
+
   /**
    * Criteria for retention/deletion of snapshots and events.
    * By default, retention is disabled and snapshots are not saved and deleted automatically.

@@ -5,8 +5,7 @@
 package akka.persistence.typed.internal
 
 import scala.annotation.tailrec
-import scala.collection.immutable
-
+import scala.collection.{ immutable, mutable, SortedMap }
 import akka.actor.UnhandledMessage
 import akka.actor.typed.Behavior
 import akka.actor.typed.Signal
@@ -43,6 +42,8 @@ import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.persistence.typed.scaladsl.{ Effect, IdempotenceFailure, IdempotentCommand }
 import akka.util.unused
 
+import scala.collection.immutable.SortedSet
+
 /**
  * INTERNAL API
  *
@@ -68,7 +69,11 @@ private[akka] object Running {
     def currentSequenceNumber: Long
   }
 
-  final case class RunningState[State](seqNr: Long, state: State, receivedPoisonPill: Boolean) {
+  final case class RunningState[State](
+      seqNr: Long,
+      state: State,
+      receivedPoisonPill: Boolean,
+      idempotenceKeyCache: immutable.Vector[String]) {
 
     def nextSequenceNr(): RunningState[State] =
       copy(seqNr = seqNr + 1)
@@ -79,6 +84,16 @@ private[akka] object Running {
     def applyEvent[C, E](setup: BehaviorSetup[C, E, State], event: E): RunningState[State] = {
       val updated = setup.eventHandler(state, event)
       copy(state = updated)
+    }
+
+    def addIdempotenceKeyToCache(idempotenceKey: String, maxCacheSize: Long): RunningState[State] = {
+      copy(idempotenceKeyCache = idempotenceKeyCache.drop {
+          if (idempotenceKeyCache.size == maxCacheSize) {
+            1
+          } else {
+            0
+          }
+        } :+ idempotenceKey)
     }
   }
 
@@ -270,6 +285,7 @@ private[akka] object Running {
       with WithSeqNrAccessible {
 
     private var eventCounter = 0
+    private var writtenIdempotenceKey = Option.empty[String]
 
     override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
       msg match {
@@ -311,6 +327,8 @@ private[akka] object Running {
           onWriteDone(setup.context, p)
           this
         } else {
+          writtenIdempotenceKey.foreach(key =>
+            state = state.addIdempotenceKeyToCache(key, setup.idempotenceKeyCacheSize))
           visibleState = state
           if (shouldSnapshotAfterPersist == NoSnapshot || state.state == null) {
             val newState = applySideEffects(sideEffects, state)
@@ -350,6 +368,21 @@ private[akka] object Running {
         case WriteMessagesFailed(_, _) =>
           // ignore
           this // it will be stopped by the first WriteMessageFailure message; not applying side effects
+
+        case WriteIdempotencyKeySuccess(key, id) =>
+          if (id == setup.writerIdentity.instanceId) {
+            // apply to state once messages are written successfully
+            writtenIdempotenceKey = Some(key)
+          }
+          this
+
+        case WriteIdempotencyKeyRejected(_, _, _) =>
+          // handled with messages rejection
+          this
+
+        case WriteIdempotencyKeyFailure(_, _, _) =>
+          // handled with messages failure
+          this
 
         case _ =>
           onDeleteEventsJournalResponse(response, visibleState.state)
@@ -569,15 +602,16 @@ private[akka] object Running {
     final def onJournalResponse(response: Response): Behavior[InternalProtocol] = {
       //TODO consider keeping a cache of recently checked keys
       response match {
-        case WriteIdempotencyKeySuccess =>
-          val effect = setup.commandHandler(state.state, pendingCommand)
-          val running = new HandlingCommands(state)
-          running.applyEffects(pendingCommand, state, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
-        case WriteIdempotencyKeyFailure(cause) =>
+        case WriteIdempotencyKeySuccess(idempotenceKey, _) =>
+          val newState = state.addIdempotenceKeyToCache(idempotenceKey, setup.idempotenceKeyCacheSize)
+          val effect = setup.commandHandler(newState.state, pendingCommand)
+          val running = new HandlingCommands(newState)
+          running.applyEffects(pendingCommand, newState, effect.asInstanceOf[EffectImpl[E, S]]) // TODO can we avoid the cast?
+        case WriteIdempotencyKeyFailure(_, cause, _) =>
           val msg = "Exception while writing idempotency key. " +
             s"PersistenceId [${setup.persistenceId.id}]. ${cause.getMessage}"
           throw new JournalFailureException(msg, cause)
-        case WriteIdempotencyKeyRejected(cause) =>
+        case WriteIdempotencyKeyRejected(_, cause, _) =>
           throw new IdempotencyKeyWriteRejectedException(setup.persistenceId, idempotencyKey, cause)
         case _ =>
           onDeleteEventsJournalResponse(response, state.state)

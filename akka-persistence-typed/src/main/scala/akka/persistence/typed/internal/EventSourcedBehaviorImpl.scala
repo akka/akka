@@ -84,6 +84,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
     eventAdapter: EventAdapter[Event, Any] = NoOpEventAdapter.instance[Event],
     snapshotAdapter: SnapshotAdapter[State] = NoOpSnapshotAdapter.instance[State],
     snapshotWhen: (State, Event, Long) => Boolean = ConstantFun.scalaAnyThreeToFalse,
+    idempotenceKeyCacheSize: Long = 0L,
     recovery: Recovery = Recovery(),
     retention: RetentionCriteria = RetentionCriteria.disabled,
     supervisionStrategy: SupervisorStrategy = SupervisorStrategy.stop,
@@ -146,6 +147,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
             eventAdapter,
             snapshotAdapter,
             snapshotWhen,
+            idempotenceKeyCacheSize,
             recovery,
             retention,
             holdingRecoveryPermit = false,
@@ -217,6 +219,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
 
   override def snapshotWhen(predicate: (State, Event, Long) => Boolean): EventSourcedBehavior[Command, Event, State] =
     copy(snapshotWhen = predicate)
+
+  override def idempotenceKeyCacheSize(size: Long): EventSourcedBehavior[Command, Event, State] =
+    copy(idempotenceKeyCacheSize = size)
 
   override def withRetention(criteria: RetentionCriteria): EventSourcedBehavior[Command, Event, State] =
     copy(retention = criteria)

@@ -237,7 +237,9 @@ private[akka] final class ReplayingEvents[C, E, S](
         Behaviors.stopped
       else {
         val running =
-          Running[C, E, S](setup, Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill))
+          Running[C, E, S](
+            setup,
+            Running.RunningState[S](state.seqNr, state.state, state.receivedPoisonPill, Vector.empty))
 
         tryUnstashOne(running)
       }

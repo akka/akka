@@ -20,12 +20,12 @@ object EventSourcedBehaviorIdempotenceSpec {
       akka.persistence.journal.inmem.test-serialization = on
     """)
 
-  sealed trait Command
-  case class SideEffect(override val idempotencyKey: String, override val replyTo: ActorRef[IdempotenceReply])
+  private sealed trait Command
+  private case class SideEffect(override val idempotencyKey: String, override val replyTo: ActorRef[IdempotenceReply])
       extends Command
       with IdempotentCommand
 
-  object NoSideEffect {
+  private object NoSideEffect {
     case class WriteAlways(override val idempotencyKey: String, override val replyTo: ActorRef[IdempotenceReply])
         extends Command
         with IdempotentCommand
@@ -39,9 +39,9 @@ object EventSourcedBehaviorIdempotenceSpec {
     }
   }
 
-  case object AllGood extends IdempotenceReply
+  private case object AllGood extends IdempotenceReply
 
-  def idempotentState(persistenceId: PersistenceId): EventSourcedBehavior[Command, Int, Int] =
+  private def idempotentState(persistenceId: PersistenceId): EventSourcedBehavior[Command, Int, Int] =
     EventSourcedBehavior.withEnforcedReplies[Command, Int, Int](
       persistenceId,
       emptyState = 0,

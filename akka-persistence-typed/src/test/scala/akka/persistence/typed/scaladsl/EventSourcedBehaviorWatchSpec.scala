@@ -62,6 +62,7 @@ class EventSourcedBehaviorWatchSpec
       NoOpEventAdapter.instance[String],
       NoOpSnapshotAdapter.instance[String],
       snapshotWhen = ConstantFun.scalaAnyThreeToFalse,
+      idempotenceKeyCacheSize = 0,
       ClassicRecovery(),
       RetentionCriteria.disabled,
       holdingRecoveryPermit = false,
