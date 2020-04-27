@@ -142,13 +142,9 @@ object UnidocRoot extends AutoPlugin {
         val releaseVersion = if (isSnapshot.value) "snapshot" else version.value
         (Compile / unidoc).value match {
           case Seq(japi, api) =>
-            Seq(
-              (japi -> s"www/japi/akka/$releaseVersion"),
-              (api -> s"www/api/akka/$releaseVersion")
-            )
+            Seq((japi -> s"www/japi/akka/$releaseVersion"), (api -> s"www/api/akka/$releaseVersion"))
         }
-      }
-    ))
+      }))
     .getOrElse(Nil)
 
   override lazy val projectSettings = {
@@ -190,6 +186,6 @@ object BootstrapGenjavadoc extends AutoPlugin {
   override lazy val projectSettings = UnidocRoot.CliOptions.genjavadocEnabled
     .ifTrue(Seq(
       unidocGenjavadocVersion := "0.16",
-      scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=true", "-P:genjavadoc:suppressSynthetic=false")))
+      scalacOptions in Compile ++= Seq("-P:genjavadoc:fabricateParams=false", "-P:genjavadoc:suppressSynthetic=false")))
     .getOrElse(Nil)
 }
