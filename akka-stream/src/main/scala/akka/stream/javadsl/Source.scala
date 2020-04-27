@@ -1626,7 +1626,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def zipMat[T, M, M2](
       that: Graph[SourceShape[T], M],
       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
-    this.viaMat(Flow.create[Out].zipMat(that, Keep.right[NotUsed, M]), matF)
+    this.viaMat(Flow.create[Out]().zipMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
    * Combine the elements of current flow and the given [[Source]] into a stream of tuples.
@@ -1689,7 +1689,7 @@ final class Source[Out, Mat](delegate: scaladsl.Source[Out, Mat]) extends Graph[
   def zipLatestMat[T, M, M2](
       that: Graph[SourceShape[T], M],
       matF: function.Function2[Mat, M, M2]): javadsl.Source[Out @uncheckedVariance Pair T, M2] =
-    this.viaMat(Flow.create[Out].zipLatestMat(that, Keep.right[NotUsed, M]), matF)
+    this.viaMat(Flow.create[Out]().zipLatestMat(that, Keep.right[NotUsed, M]), matF)
 
   /**
    * Put together the elements of current [[Source]] and the given one

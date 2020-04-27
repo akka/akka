@@ -87,7 +87,7 @@ class EventSourcedBehaviorReplySpec
 
     "persist an event thenReply" in {
       val c = spawn(counter(nextPid()))
-      val probe = TestProbe[Done]
+      val probe = TestProbe[Done]()
       c ! IncrementWithConfirmation(probe.ref)
       probe.expectMessage(Done)
 
@@ -99,17 +99,17 @@ class EventSourcedBehaviorReplySpec
 
     "persist an event thenReply later" in {
       val c = spawn(counter(nextPid()))
-      val probe = TestProbe[Done]
+      val probe = TestProbe[Done]()
       c ! IncrementReplyLater(probe.ref)
       probe.expectMessage(Done)
     }
 
     "reply to query command" in {
       val c = spawn(counter(nextPid()))
-      val updateProbe = TestProbe[Done]
+      val updateProbe = TestProbe[Done]()
       c ! IncrementWithConfirmation(updateProbe.ref)
 
-      val queryProbe = TestProbe[State]
+      val queryProbe = TestProbe[State]()
       c ! GetValue(queryProbe.ref)
       queryProbe.expectMessage(State(1, Vector(0)))
     }

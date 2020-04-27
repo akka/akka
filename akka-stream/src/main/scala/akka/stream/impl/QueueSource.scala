@@ -40,7 +40,7 @@ import scala.concurrent.{ Future, Promise }
   override val shape: SourceShape[T] = SourceShape.of(out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes) = {
-    val completion = Promise[Done]
+    val completion = Promise[Done]()
     val name = inheritedAttributes.nameOrDefault(getClass.toString)
 
     val stageLogic = new GraphStageLogic(shape) with OutHandler with SourceQueueWithComplete[T] with StageLogging {
@@ -209,7 +209,7 @@ import scala.concurrent.{ Future, Promise }
 
       override def watchCompletion() = completion.future
       override def offer(element: T): Future[QueueOfferResult] = {
-        val p = Promise[QueueOfferResult]
+        val p = Promise[QueueOfferResult]()
         callback
           .invokeWithFeedback(Offer(element, p))
           .onComplete {

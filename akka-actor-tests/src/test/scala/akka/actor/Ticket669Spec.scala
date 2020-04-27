@@ -28,7 +28,7 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
       filterEvents(EventFilter[Exception]("test", occurrences = 1)) {
         val supervisor =
           system.actorOf(Props(new Supervisor(AllForOneStrategy(5, 10 seconds)(List(classOf[Exception])))))
-        val supervised = Await.result((supervisor ? Props[Supervised]).mapTo[ActorRef], timeout.duration)
+        val supervised = Await.result((supervisor ? Props[Supervised]()).mapTo[ActorRef], timeout.duration)
 
         supervised.!("test")(testActor)
         expectMsg("failure1")
@@ -40,7 +40,7 @@ class Ticket669Spec extends AkkaSpec with BeforeAndAfterAll with ImplicitSender 
       filterEvents(EventFilter[Exception]("test", occurrences = 1)) {
         val supervisor =
           system.actorOf(Props(new Supervisor(AllForOneStrategy(maxNrOfRetries = 0)(List(classOf[Exception])))))
-        val supervised = Await.result((supervisor ? Props[Supervised]).mapTo[ActorRef], timeout.duration)
+        val supervised = Await.result((supervisor ? Props[Supervised]()).mapTo[ActorRef], timeout.duration)
 
         supervised.!("test")(testActor)
         expectMsg("failure2")

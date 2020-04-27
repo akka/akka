@@ -132,7 +132,7 @@ class IndexSpec extends AkkaSpec with Matchers with DefaultTimeout {
         case 3 => readTask()
       }
 
-      val tasks = List.fill(nrOfTasks)(executeRandomTask)
+      val tasks = List.fill(nrOfTasks)(executeRandomTask())
 
       tasks.foreach(Await.result(_, timeout.duration))
     }

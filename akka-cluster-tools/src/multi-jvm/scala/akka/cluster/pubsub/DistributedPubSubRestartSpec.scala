@@ -161,7 +161,7 @@ class DistributedPubSubRestartSpec
           newMediator.tell(Internal.DeltaCount, probe.ref)
           probe.expectMsg(0L)
 
-          newSystem.actorOf(Props[Shutdown], "shutdown")
+          newSystem.actorOf(Props[Shutdown](), "shutdown")
           Await.ready(newSystem.whenTerminated, 20.seconds)
         } finally newSystem.terminate()
       }

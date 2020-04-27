@@ -73,7 +73,7 @@ object NettyFutureBridge {
 
   def apply(nettyFuture: ChannelGroupFuture): Future[ChannelGroup] = {
     import akka.util.ccompat.JavaConverters._
-    val p = Promise[ChannelGroup]
+    val p = Promise[ChannelGroup]()
     nettyFuture.addListener(new ChannelGroupFutureListener {
       def operationComplete(future: ChannelGroupFuture): Unit =
         p.complete(

@@ -106,7 +106,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           tombstones.foldLeft(tombstones) {
             case (acc, (actorRef, entries)) =>
               val entriesToKeep = entries.filter {
-                case (_, deadline) => deadline.hasTimeLeft
+                case (_, deadline) => deadline.hasTimeLeft()
               }
               if (entriesToKeep.size == entries.size) acc
               else if (entriesToKeep.isEmpty) acc - actorRef

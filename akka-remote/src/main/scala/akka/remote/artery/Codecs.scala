@@ -304,7 +304,7 @@ private[remote] object Decoder {
      * External call from ChangeInboundCompression materialized value
      */
     override def currentCompressionOriginUids: Future[Set[Long]] = {
-      val p = Promise[Set[Long]]
+      val p = Promise[Set[Long]]()
       currentCompressionOriginUidsCb.invoke(p)
       p.future
     }

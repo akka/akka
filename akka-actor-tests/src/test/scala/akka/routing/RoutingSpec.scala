@@ -56,7 +56,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
   "routers in general" must {
 
     "evict terminated routees" in {
-      val router = system.actorOf(RoundRobinPool(2).props(routeeProps = Props[Echo]))
+      val router = system.actorOf(RoundRobinPool(2).props(routeeProps = Props[Echo]()))
       router ! ""
       router ! ""
       val c1, c2 = expectMsgType[ActorRef]
@@ -87,7 +87,8 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         }
       }
       val router =
-        system.actorOf(RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(routeeProps = Props[TestActor]))
+        system.actorOf(
+          RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(routeeProps = Props[TestActor]()))
       watch(router)
       Await.ready(latch, remainingOrDefault)
       router ! GetRoutees
@@ -99,7 +100,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
 
     "use configured nr-of-instances when FromConfig" in {
-      val router = system.actorOf(FromConfig.props(routeeProps = Props[TestActor]), "router1")
+      val router = system.actorOf(FromConfig.props(routeeProps = Props[TestActor]()), "router1")
       router ! GetRoutees
       expectMsgType[Routees].routees.size should ===(3)
       watch(router)
@@ -108,7 +109,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
     }
 
     "use configured nr-of-instances when router is specified" in {
-      val router = system.actorOf(RoundRobinPool(nrOfInstances = 2).props(routeeProps = Props[TestActor]), "router2")
+      val router = system.actorOf(RoundRobinPool(nrOfInstances = 2).props(routeeProps = Props[TestActor]()), "router2")
       router ! GetRoutees
       expectMsgType[Routees].routees.size should ===(3)
       system.stop(router)
@@ -125,7 +126,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       }
       val router =
         system.actorOf(
-          RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(routeeProps = Props[TestActor]),
+          RoundRobinPool(nrOfInstances = 0, resizer = Some(resizer)).props(routeeProps = Props[TestActor]()),
           "router3")
       Await.ready(latch, remainingOrDefault)
       router ! GetRoutees
@@ -141,7 +142,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         //#custom-strategy
       }
       val router =
-        system.actorOf(RoundRobinPool(1, supervisorStrategy = escalator).props(routeeProps = Props[TestActor]))
+        system.actorOf(RoundRobinPool(1, supervisorStrategy = escalator).props(routeeProps = Props[TestActor]()))
       //#supervision
       router ! GetRoutees
       EventFilter[ActorKilledException](occurrences = 1).intercept {
@@ -150,7 +151,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
       expectMsgType[ActorKilledException]
 
       val router2 =
-        system.actorOf(RoundRobinPool(1).withSupervisorStrategy(escalator).props(routeeProps = Props[TestActor]))
+        system.actorOf(RoundRobinPool(1).withSupervisorStrategy(escalator).props(routeeProps = Props[TestActor]()))
       router2 ! GetRoutees
       EventFilter[ActorKilledException](occurrences = 1).intercept {
         expectMsgType[Routees].routees.head.send(Kill, testActor)
@@ -163,7 +164,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
         case e => testActor ! e; SupervisorStrategy.Escalate
       }
       val router =
-        system.actorOf(FromConfig.withSupervisorStrategy(escalator).props(routeeProps = Props[TestActor]), "router1")
+        system.actorOf(FromConfig.withSupervisorStrategy(escalator).props(routeeProps = Props[TestActor]()), "router1")
       router ! GetRoutees
       EventFilter[ActorKilledException](occurrences = 1).intercept {
         expectMsgType[Routees].routees.head.send(Kill, testActor)
@@ -227,7 +228,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
   "router FromConfig" must {
     "throw suitable exception when not configured" in {
       val e = intercept[ConfigurationException] {
-        system.actorOf(FromConfig.props(routeeProps = Props[TestActor]), "routerNotDefined")
+        system.actorOf(FromConfig.props(routeeProps = Props[TestActor]()), "routerNotDefined")
       }
       e.getMessage should include("routerNotDefined")
     }
@@ -239,7 +240,7 @@ class RoutingSpec extends AkkaSpec(RoutingSpec.config) with DefaultTimeout with 
           .parseString("akka.actor.deployment./routed.router=round-robin-pool")
           .withFallback(system.settings.config))
       try {
-        sys.actorOf(FromConfig.props(routeeProps = Props[TestActor]), "routed")
+        sys.actorOf(FromConfig.props(routeeProps = Props[TestActor]()), "routed")
       } finally {
         shutdown(sys)
       }

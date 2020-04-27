@@ -76,7 +76,7 @@ class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
     }
     ClusterSharding(system).start(
       typeName = typeName,
-      entityProps = Props[EchoActor],
+      entityProps = Props[EchoActor](),
       settings = ClusterShardingSettings(system).withRememberEntities(rememberEntities),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)

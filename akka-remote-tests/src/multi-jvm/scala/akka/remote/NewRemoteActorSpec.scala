@@ -70,7 +70,7 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef" in {
 
       runOn(master) {
-        val actor = system.actorOf(Props[SomeActor], "service-hello")
+        val actor = system.actorOf(Props[SomeActor](), "service-hello")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
         actor.path.address should ===(node(slave).address)
 
@@ -100,7 +100,7 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
     "be locally instantiated on a remote node and be able to communicate through its RemoteActorRef (with deployOnAll)" in {
 
       runOn(master) {
-        val actor = system.actorOf(Props[SomeActor], "service-hello2")
+        val actor = system.actorOf(Props[SomeActor](), "service-hello2")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
         actor.path.address should ===(node(slave).address)
 
@@ -114,7 +114,7 @@ abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
 
     "be able to shutdown system when using remote deployed actor" in within(20 seconds) {
       runOn(master) {
-        val actor = system.actorOf(Props[SomeActor], "service-hello3")
+        val actor = system.actorOf(Props[SomeActor](), "service-hello3")
         actor.isInstanceOf[RemoteActorRef] should ===(true)
         actor.path.address should ===(node(slave).address)
         // This watch is in race with the shutdown of the watched system. This race should remain, as the test should

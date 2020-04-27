@@ -101,7 +101,7 @@ class ClusterDomainEventPublisherSpec
     system.eventStream.subscribe(memberSubscriber.ref, classOf[LeaderChanged])
     system.eventStream.subscribe(memberSubscriber.ref, ClusterShuttingDown.getClass)
 
-    publisher = system.actorOf(Props[ClusterDomainEventPublisher])
+    publisher = system.actorOf(Props[ClusterDomainEventPublisher]())
     publisher ! PublishChanges(state0)
     memberSubscriber.expectMsg(MemberUp(aUp))
     memberSubscriber.expectMsg(LeaderChanged(Some(aUp.address)))

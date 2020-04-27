@@ -121,11 +121,11 @@ abstract class SurviveNetworkInstabilitySpec
     awaitAssert(clusterView.unreachableMembers.map(_.address) should ===(expected))
   }
 
-  system.actorOf(Props[Echo], "echo")
+  system.actorOf(Props[Echo](), "echo")
 
   def assertCanTalk(alive: RoleName*): Unit = {
     runOn(alive: _*) {
-      awaitAllReachable
+      awaitAllReachable()
     }
     enterBarrier("reachable-ok")
 
@@ -284,7 +284,7 @@ abstract class SurviveNetworkInstabilitySpec
       val others = Vector(first, third, fourth, fifth, sixth, seventh)
 
       runOn(third) {
-        system.actorOf(Props[Watcher], "watcher")
+        system.actorOf(Props[Watcher](), "watcher")
 
         // undelivered system messages in RemoteChild on third should trigger QuarantinedEvent
         system.eventStream.subscribe(testActor, quarantinedEventClass)
@@ -292,7 +292,7 @@ abstract class SurviveNetworkInstabilitySpec
       enterBarrier("watcher-created")
 
       runOn(second) {
-        val refs = Vector.fill(sysMsgBufferSize + 1)(system.actorOf(Props[Echo])).toSet
+        val refs = Vector.fill(sysMsgBufferSize + 1)(system.actorOf(Props[Echo]())).toSet
         system.actorSelection(node(third) / "user" / "watcher") ! Targets(refs)
         expectMsg(TargetsRegistered)
       }

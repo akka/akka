@@ -57,7 +57,7 @@ object LotsOfDataBot {
       // Create an Akka system
       val system = ActorSystem("ClusterSystem", config)
       // Create an actor that handles cluster domain events
-      system.actorOf(Props[LotsOfDataBot], name = "dataBot")
+      system.actorOf(Props[LotsOfDataBot](), name = "dataBot")
     }
   }
 

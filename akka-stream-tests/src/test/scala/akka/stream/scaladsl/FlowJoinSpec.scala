@@ -92,7 +92,7 @@ class FlowJoinSpec extends StreamSpec("""
 
       val flow = Flow.fromGraph(GraphDSL.create(TestSink.probe[(String, String)]) { implicit b => sink =>
         import GraphDSL.Implicits._
-        val zip = b.add(Zip[String, String])
+        val zip = b.add(Zip[String, String]())
         val broadcast = b.add(Broadcast[(String, String)](2))
         source ~> zip.in0
         zip.out ~> broadcast.in

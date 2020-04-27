@@ -710,7 +710,7 @@ final class CoordinatedShutdown private[akka] (
                 val deadline = Deadline.now + timeout
                 val timeoutFut = try {
                   after(timeout, system.scheduler) {
-                    if (phaseName == CoordinatedShutdown.PhaseActorSystemTerminate && deadline.hasTimeLeft) {
+                    if (phaseName == CoordinatedShutdown.PhaseActorSystemTerminate && deadline.hasTimeLeft()) {
                       // too early, i.e. triggered by system termination
                       result
                     } else if (result.isCompleted)

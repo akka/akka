@@ -45,7 +45,7 @@ class PersistentActorWithAtLeastOnceDeliveryBenchmark {
 
     storageLocations.foreach(FileUtils.deleteDirectory)
 
-    destinationActor = system.actorOf(Props[DestinationActor], "destination")
+    destinationActor = system.actorOf(Props[DestinationActor](), "destination")
 
     noPersistPersistentActorWithAtLeastOnceDelivery = system.actorOf(
       Props(classOf[NoPersistPersistentActorWithAtLeastOnceDelivery], dataCount, probe.ref, destinationActor.path),

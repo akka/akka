@@ -53,7 +53,7 @@ import scala.concurrent.{ Future, Promise }
 
   // TODO: Timeout on bind
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes, eagerMaterialzer: Materializer) = {
-    val bindingPromise = Promise[ServerBinding]
+    val bindingPromise = Promise[ServerBinding]()
 
     val logic = new TimerGraphStageLogic(shape) with StageLogging {
       implicit def self: ActorRef = stageActor.ref
@@ -521,7 +521,7 @@ private[stream] object ConnectionSourceStage {
       case _                 => None
     }
 
-    val localAddressPromise = Promise[InetSocketAddress]
+    val localAddressPromise = Promise[InetSocketAddress]()
     val logic = new TcpStreamLogic(
       shape,
       Outbound(

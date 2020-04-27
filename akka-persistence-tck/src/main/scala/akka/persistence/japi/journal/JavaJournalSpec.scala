@@ -21,7 +21,7 @@ import com.typesafe.config.Config
  * @param config configures the Journal plugin to be tested
  */
 class JavaJournalSpec(config: Config) extends JournalSpec(config) {
-  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.on
+  override protected def supportsRejectingNonSerializableObjects: CapabilityFlag = CapabilityFlag.on()
 
-  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on
+  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on()
 }

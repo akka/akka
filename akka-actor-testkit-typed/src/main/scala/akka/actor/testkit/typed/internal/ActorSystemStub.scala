@@ -90,7 +90,7 @@ import org.slf4j.LoggerFactory
 
   override def scheduler: Scheduler = throw new UnsupportedOperationException("no scheduler")
 
-  private val terminationPromise = Promise[Done]
+  private val terminationPromise = Promise[Done]()
   override def terminate(): Unit = terminationPromise.trySuccess(Done)
   override def whenTerminated: Future[Done] = terminationPromise.future
   override def getWhenTerminated: CompletionStage[Done] = FutureConverters.toJava(whenTerminated)

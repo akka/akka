@@ -128,7 +128,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
       }
 
       "skip error values and handle stage completion after future get resolved" in {
-        val promises = Promise[Int].success(1) :: Promise[Int] :: Nil
+        val promises = Promise[Int]().success(1) :: Promise[Int]() :: Nil
         val (pub, sub) = whenEventualFuture(promises, 0, decider = Supervision.restartingDecider)
         pub.sendNext(0)
         sub.expectNext(0, 1)
@@ -139,7 +139,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
       }
 
       "skip error values and handle stage completion before future get resolved" in {
-        val promises = Promise[Int].success(1) :: Promise[Int] :: Nil
+        val promises = Promise[Int]().success(1) :: Promise[Int]() :: Nil
         val (pub, sub) = whenEventualFuture(promises, 0, decider = Supervision.restartingDecider)
         pub.sendNext(0)
         sub.expectNext(0, 1)
@@ -162,7 +162,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
       }
 
       "skip error values and handle stage completion after future get resolved" in {
-        val promises = Promise[Int].success(1) :: Promise[Int] :: Nil
+        val promises = Promise[Int]().success(1) :: Promise[Int]() :: Nil
         val (pub, sub) = whenEventualFuture(promises, 0, decider = Supervision.resumingDecider)
         pub.sendNext(0)
         sub.expectNext(0, 1)
@@ -173,7 +173,7 @@ class FlowScanAsyncSpec extends StreamSpec with Matchers {
       }
 
       "skip error values and handle stage completion before future get resolved" in {
-        val promises = Promise[Int].success(1) :: Promise[Int] :: Nil
+        val promises = Promise[Int]().success(1) :: Promise[Int]() :: Nil
         val (pub, sub) = whenEventualFuture(promises, 0, decider = Supervision.resumingDecider)
         pub.sendNext(0)
         sub.expectNext(0, 1)

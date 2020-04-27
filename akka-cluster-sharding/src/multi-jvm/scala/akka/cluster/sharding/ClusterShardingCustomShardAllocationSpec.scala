@@ -113,7 +113,7 @@ abstract class ClusterShardingCustomShardAllocationSpec(multiNodeConfig: Cluster
 
   lazy val region = ClusterSharding(system).shardRegion("Entity")
 
-  lazy val allocator = system.actorOf(Props[Allocator], "allocator")
+  lazy val allocator = system.actorOf(Props[Allocator](), "allocator")
 
   s"Cluster sharding ($mode) with custom allocation strategy" must {
 

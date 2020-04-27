@@ -46,7 +46,7 @@ object RemoteWatcherSpec {
 
   class TestRemoteWatcher(heartbeatExpectedResponseAfter: FiniteDuration)
       extends RemoteWatcher(
-        createFailureDetector,
+        createFailureDetector(),
         heartbeatInterval = TurnOff,
         unreachableReaperInterval = TurnOff,
         heartbeatExpectedResponseAfter = heartbeatExpectedResponseAfter) {
@@ -115,13 +115,13 @@ class RemoteWatcherSpec extends AkkaSpec("""
   "A RemoteWatcher" must {
 
     "have correct interaction when watching" in {
-      val monitorA = system.actorOf(Props[TestRemoteWatcher], "monitor1")
+      val monitorA = system.actorOf(Props[TestRemoteWatcher](), "monitor1")
       val monitorB = createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor1")
 
-      val a1 = system.actorOf(Props[MyActor], "a1").asInstanceOf[InternalActorRef]
-      val a2 = system.actorOf(Props[MyActor], "a2").asInstanceOf[InternalActorRef]
-      val b1 = createRemoteActor(Props[MyActor], "b1")
-      val b2 = createRemoteActor(Props[MyActor], "b2")
+      val a1 = system.actorOf(Props[MyActor](), "a1").asInstanceOf[InternalActorRef]
+      val a2 = system.actorOf(Props[MyActor](), "a2").asInstanceOf[InternalActorRef]
+      val b1 = createRemoteActor(Props[MyActor](), "b1")
+      val b2 = createRemoteActor(Props[MyActor](), "b2")
 
       monitorA ! WatchRemote(b1, a1)
       monitorA ! WatchRemote(b2, a1)
@@ -179,11 +179,11 @@ class RemoteWatcherSpec extends AkkaSpec("""
       system.eventStream.subscribe(p.ref, classOf[TestRemoteWatcher.AddressTerm])
       system.eventStream.subscribe(q.ref, classOf[TestRemoteWatcher.Quarantined])
 
-      val monitorA = system.actorOf(Props[TestRemoteWatcher], "monitor4")
+      val monitorA = system.actorOf(Props[TestRemoteWatcher](), "monitor4")
       val monitorB = createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor4")
 
-      val a = system.actorOf(Props[MyActor], "a4").asInstanceOf[InternalActorRef]
-      val b = createRemoteActor(Props[MyActor], "b4")
+      val a = system.actorOf(Props[MyActor](), "a4").asInstanceOf[InternalActorRef]
+      val b = createRemoteActor(Props[MyActor](), "b4")
 
       monitorA ! WatchRemote(b, a)
 
@@ -220,8 +220,8 @@ class RemoteWatcherSpec extends AkkaSpec("""
       val monitorA = system.actorOf(Props(classOf[TestRemoteWatcher], heartbeatExpectedResponseAfter), "monitor5")
       createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor5")
 
-      val a = system.actorOf(Props[MyActor], "a5").asInstanceOf[InternalActorRef]
-      val b = createRemoteActor(Props[MyActor], "b5")
+      val a = system.actorOf(Props[MyActor](), "a5").asInstanceOf[InternalActorRef]
+      val b = createRemoteActor(Props[MyActor](), "b5")
 
       monitorA ! WatchRemote(b, a)
 
@@ -251,11 +251,11 @@ class RemoteWatcherSpec extends AkkaSpec("""
       system.eventStream.subscribe(p.ref, classOf[TestRemoteWatcher.AddressTerm])
       system.eventStream.subscribe(q.ref, classOf[TestRemoteWatcher.Quarantined])
 
-      val monitorA = system.actorOf(Props[TestRemoteWatcher], "monitor6")
+      val monitorA = system.actorOf(Props[TestRemoteWatcher](), "monitor6")
       val monitorB = createRemoteActor(Props(classOf[TestActorProxy], testActor), "monitor6")
 
-      val a = system.actorOf(Props[MyActor], "a6").asInstanceOf[InternalActorRef]
-      val b = createRemoteActor(Props[MyActor], "b6")
+      val a = system.actorOf(Props[MyActor](), "a6").asInstanceOf[InternalActorRef]
+      val b = createRemoteActor(Props[MyActor](), "b6")
 
       monitorA ! WatchRemote(b, a)
 
@@ -287,7 +287,7 @@ class RemoteWatcherSpec extends AkkaSpec("""
       expectNoMessage(2 seconds)
 
       // assume that connection comes up again, or remote system is restarted
-      val c = createRemoteActor(Props[MyActor], "c6")
+      val c = createRemoteActor(Props[MyActor](), "c6")
 
       monitorA ! WatchRemote(c, a)
 

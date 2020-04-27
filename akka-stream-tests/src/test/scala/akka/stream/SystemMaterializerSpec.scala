@@ -38,7 +38,7 @@ class SystemMaterializerEagerStartupSpec extends StreamSpec {
   "The SystemMaterializer" must {
 
     "be eagerly started on system startup" in {
-      system.hasExtension(SystemMaterializer.lookup) should ===(true)
+      system.hasExtension(SystemMaterializer.lookup()) should ===(true)
     }
   }
 

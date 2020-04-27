@@ -235,7 +235,7 @@ class LoggerSpec extends AnyWordSpec with Matchers {
         system.eventStream.publish(SetTarget(probe.ref, qualifier = 1))
         probe.expectMsg("OK")
 
-        val ref = system.actorOf(Props[ActorWithMDC])
+        val ref = system.actorOf(Props[ActorWithMDC]())
 
         ref ! "Processing new Request"
         probe.expectMsgPF(max = 3.seconds) {

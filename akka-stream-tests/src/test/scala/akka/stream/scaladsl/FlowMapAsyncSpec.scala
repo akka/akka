@@ -457,7 +457,7 @@ class FlowMapAsyncSpec extends StreamSpec {
       def deferred(): Future[Int] = {
         if (counter.incrementAndGet() > parallelism) Future.failed(new Exception("parallelism exceeded"))
         else {
-          val p = Promise[Int]
+          val p = Promise[Int]()
           queue.offer(p -> System.nanoTime())
           p.future
         }

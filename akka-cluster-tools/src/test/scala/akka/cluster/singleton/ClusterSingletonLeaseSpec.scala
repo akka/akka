@@ -121,7 +121,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
       } // allow singleton manager to create the lease
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
       singletonProbe.expectNoMessage(shortDuration)
-      val nextResponse = Promise[Boolean]
+      val nextResponse = Promise[Boolean]()
       testLease.setNextAcquireResult(nextResponse.future)
       testLease.initialPromise.complete(Success(false))
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
@@ -155,7 +155,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
       } // allow singleton manager to create the lease
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
       singletonProbe.expectNoMessage(shortDuration)
-      val nextResponse = Promise[Boolean]
+      val nextResponse = Promise[Boolean]()
       testLease.setNextAcquireResult(nextResponse.future)
       testLease.initialPromise.failure(TestException("no lease for you"))
       testLease.probe.expectMsg(AcquireReq(leaseOwner))

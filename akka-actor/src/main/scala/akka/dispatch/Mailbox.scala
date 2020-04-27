@@ -510,10 +510,10 @@ trait QueueBasedMessageQueue extends MessageQueue with MultipleConsumerSemantics
   def hasMessages = !queue.isEmpty
   def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
     if (hasMessages) {
-      var envelope = dequeue
+      var envelope = dequeue()
       while (envelope ne null) {
         deadLetters.enqueue(owner, envelope)
-        envelope = dequeue
+        envelope = dequeue()
       }
     }
   }

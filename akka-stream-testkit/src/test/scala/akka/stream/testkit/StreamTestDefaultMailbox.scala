@@ -29,7 +29,7 @@ private[akka] final case class StreamTestDefaultMailbox()
   final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = {
     owner match {
       case Some(r: ActorRefWithCell) =>
-        val actorClass = r.underlying.props.actorClass
+        val actorClass = r.underlying.props.actorClass()
         assert(
           actorClass != classOf[Actor],
           s"Don't use anonymous actor classes, actor class for $r was [${actorClass.getName}]")

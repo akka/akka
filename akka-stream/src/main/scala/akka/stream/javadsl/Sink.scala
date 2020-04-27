@@ -424,7 +424,7 @@ object Sink {
    * case the materialized future value is failed with a [[akka.stream.NeverMaterializedException]].
    */
   def lazySink[T, M](create: Creator[Sink[T, M]]): Sink[T, CompletionStage[M]] =
-    lazyCompletionStageSink(() => CompletableFuture.completedFuture(create.create))
+    lazyCompletionStageSink(() => CompletableFuture.completedFuture(create.create()))
 
   /**
    * Defers invoking the `create` function to create a future sink until there is a first element passed from upstream.

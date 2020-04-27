@@ -130,7 +130,7 @@ class CoupledTerminationFlowSpec extends StreamSpec("""
 
       val flow = Flow.fromSinkAndSourceCoupledMat(sink, source)(Keep.right)
 
-      val (source1, source2) = TestSource.probe[Int].viaMat(flow)(Keep.both).toMat(Sink.ignore)(Keep.left).run
+      val (source1, source2) = TestSource.probe[Int].viaMat(flow)(Keep.both).toMat(Sink.ignore)(Keep.left).run()
 
       source1.sendComplete()
       source2.expectCancellation()

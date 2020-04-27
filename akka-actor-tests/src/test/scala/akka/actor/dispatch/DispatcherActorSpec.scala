@@ -59,14 +59,14 @@ class DispatcherActorSpec extends AkkaSpec(DispatcherActorSpec.config) with Defa
   "A Dispatcher and an Actor" must {
 
     "support tell" in {
-      val actor = system.actorOf(Props[OneWayTestActor].withDispatcher("test-dispatcher"))
+      val actor = system.actorOf(Props[OneWayTestActor]().withDispatcher("test-dispatcher"))
       actor ! "OneWay"
       assert(OneWayTestActor.oneWay.await(1, TimeUnit.SECONDS))
       system.stop(actor)
     }
 
     "support ask/reply" in {
-      val actor = system.actorOf(Props[TestActor].withDispatcher("test-dispatcher"))
+      val actor = system.actorOf(Props[TestActor]().withDispatcher("test-dispatcher"))
       assert("World" === Await.result(actor ? "Hello", timeout.duration))
       system.stop(actor)
     }

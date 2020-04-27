@@ -244,12 +244,12 @@ class LazyFlowSpec extends StreamSpec("""
 
     "complete when there was no elements in the stream" in assertAllStagesStopped {
       def flowMaker() = flowF
-      val probe = Source.empty.via(Flow.lazyInitAsync(() => flowMaker)).runWith(TestSink.probe[Int])
+      val probe = Source.empty.via(Flow.lazyInitAsync(() => flowMaker())).runWith(TestSink.probe[Int])
       probe.request(1).expectComplete()
     }
 
     "complete normally when upstream completes BEFORE the stage has switched to the inner flow" in assertAllStagesStopped {
-      val promise = Promise[Flow[Int, Int, NotUsed]]
+      val promise = Promise[Flow[Int, Int, NotUsed]]()
       val (pub, sub) = TestSource
         .probe[Int]
         .viaMat(Flow.lazyInitAsync(() => promise.future))(Keep.left)

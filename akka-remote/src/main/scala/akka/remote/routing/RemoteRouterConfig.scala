@@ -53,7 +53,7 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
     val deploy = Deploy(
       config = ConfigFactory.empty(),
       routerConfig = routeeProps.routerConfig,
-      scope = RemoteScope(nodeAddressIter.next))
+      scope = RemoteScope(nodeAddressIter.next()))
 
     // attachChild means that the provider will treat this call as if possibly done out of the wrong
     // context and use RepointableActorRef instead of LocalActorRef. Seems like a slightly sub-optimal

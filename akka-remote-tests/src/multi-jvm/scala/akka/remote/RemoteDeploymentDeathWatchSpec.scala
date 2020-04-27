@@ -82,7 +82,7 @@ abstract class RemoteDeploymentDeathWatchSpec(multiNodeConfig: RemoteDeploymentD
     "be able to shutdown when remote node crash" taggedAs LongRunningTest in within(20 seconds) {
       runOn(second) {
         // remote deployment to third
-        val hello = system.actorOf(Props[Hello], "hello")
+        val hello = system.actorOf(Props[Hello](), "hello")
         hello.path.address should ===(node(third).address)
         enterBarrier("hello-deployed")
 

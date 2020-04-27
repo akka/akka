@@ -48,7 +48,7 @@ abstract class JoinInProgressSpec extends MultiNodeSpec(JoinInProgressMultiJvmSp
 
       runOn(first) {
         val until = Deadline.now + 5.seconds
-        while (!until.isOverdue) {
+        while (!until.isOverdue()) {
           Thread.sleep(200)
           cluster.failureDetector.isAvailable(second) should ===(true)
         }

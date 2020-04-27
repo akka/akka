@@ -19,7 +19,7 @@ object ActorSelectionSpec {
   final case class GetSender(to: ActorRef) extends Query
   final case class Forward(path: String, msg: Any) extends Query
 
-  val p = Props[Node]
+  val p = Props[Node]()
 
   class Node extends Actor {
     def receive = {

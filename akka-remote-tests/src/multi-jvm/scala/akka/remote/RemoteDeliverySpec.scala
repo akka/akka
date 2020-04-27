@@ -60,7 +60,7 @@ abstract class RemoteDeliverySpec(multiNodeConfig: RemoteDeliveryConfig)
   "Remote message delivery" must {
 
     "not drop messages under normal circumstances" in {
-      system.actorOf(Props[Postman], "postman-" + myself.name)
+      system.actorOf(Props[Postman](), "postman-" + myself.name)
       enterBarrier("actors-started")
 
       runOn(first) {

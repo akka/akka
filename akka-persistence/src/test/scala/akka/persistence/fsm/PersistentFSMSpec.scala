@@ -464,7 +464,7 @@ object PersistentFSMSpec {
     startWith(LookingAround, EmptyShoppingCart)
 
     when(LookingAround) {
-      case Event("stay", _) => stay
+      case Event("stay", _) => stay()
       case Event(_, _)      => goto(LookingAround)
     }
 
@@ -493,12 +493,12 @@ object PersistentFSMSpec {
       case Event(AddItem(item), _) =>
         goto(Shopping).applying(ItemAdded(item)).forMax(1 seconds)
       case Event(GetCurrentCart, data) =>
-        stay.replying(data)
+        stay().replying(data)
     }
 
     when(Shopping) {
       case Event(AddItem(item), _) =>
-        stay.applying(ItemAdded(item)).forMax(1 seconds)
+        stay().applying(ItemAdded(item)).forMax(1 seconds)
       case Event(Buy, _) =>
         //#customer-andthen-example
         goto(Paid).applying(OrderExecuted).andThen {
@@ -512,14 +512,14 @@ object PersistentFSMSpec {
       //#customer-andthen-example
       case Event(Leave, _) =>
         //#customer-snapshot-example
-        stop.applying(OrderDiscarded).andThen {
+        stop().applying(OrderDiscarded).andThen {
           case _ =>
             reportActor ! ShoppingCardDiscarded
             saveStateSnapshot()
         }
       //#customer-snapshot-example
       case Event(GetCurrentCart, data) =>
-        stay.replying(data)
+        stay().replying(data)
       case Event(StateTimeout, _) =>
         goto(Inactive).forMax(2 seconds)
     }
@@ -528,7 +528,7 @@ object PersistentFSMSpec {
       case Event(AddItem(item), _) =>
         goto(Shopping).applying(ItemAdded(item)).forMax(1 seconds)
       case Event(StateTimeout, _) =>
-        stop.applying(OrderDiscarded).andThen {
+        stop().applying(OrderDiscarded).andThen {
           case _ => reportActor ! ShoppingCardDiscarded
         }
     }
@@ -536,7 +536,7 @@ object PersistentFSMSpec {
     when(Paid) {
       case Event(Leave, _) => stop()
       case Event(GetCurrentCart, data) =>
-        stay.replying(data)
+        stay().replying(data)
     }
     //#customer-fsm-body
 
@@ -633,7 +633,7 @@ object PersistentFSMSpec {
 
     when(PersistSingleAtOnce) {
       case Event(i: Int, _) =>
-        stay.applying(IntAdded(i))
+        stay().applying(IntAdded(i))
       case Event("4x", _) =>
         goto(Persist4xAtOnce)
       case Event(SaveSnapshotSuccess(metadata), _) =>
@@ -643,7 +643,7 @@ object PersistentFSMSpec {
 
     when(Persist4xAtOnce) {
       case Event(i: Int, _) =>
-        stay.applying(IntAdded(i), IntAdded(i), IntAdded(i), IntAdded(i))
+        stay().applying(IntAdded(i), IntAdded(i), IntAdded(i), IntAdded(i))
       case Event(SaveSnapshotSuccess(metadata), _) =>
         probe ! s"SeqNo=${metadata.sequenceNr}, StateData=${stateData}"
         stay()

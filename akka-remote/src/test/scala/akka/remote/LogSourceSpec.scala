@@ -31,7 +31,7 @@ class LogSourceSpec extends AkkaSpec("""
 
   import LogSourceSpec._
 
-  val reporter = system.actorOf(Props[Reporter], "reporter")
+  val reporter = system.actorOf(Props[Reporter](), "reporter")
   val logProbe = TestProbe()
   system.eventStream.subscribe(system.actorOf(Props(new Actor {
     def receive = {

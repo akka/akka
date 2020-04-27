@@ -108,7 +108,7 @@ object TimerSpec {
         startTimerWithFixedDelay("T", Tick(bumpCount + 1), interval)
       else
         startSingleTimer("T", Tick(bumpCount + 1), interval)
-      stay.using(bumpCount + 1)
+      stay().using(bumpCount + 1)
     }
 
     def autoReceive(): State = {
@@ -116,7 +116,7 @@ object TimerSpec {
         startTimerWithFixedDelay("A", PoisonPill, interval)
       else
         startSingleTimer("A", PoisonPill, interval)
-      stay
+      stay()
     }
 
     {
@@ -131,7 +131,7 @@ object TimerSpec {
     when(TheState) {
       case Event(Tick(n), _) =>
         monitor ! Tock(n)
-        stay
+        stay()
       case Event(Bump, bumpCount) =>
         bump(bumpCount)
       case Event(SlowThenBump(latch), bumpCount) =>
@@ -141,7 +141,7 @@ object TimerSpec {
         stop()
       case Event(Cancel, _) =>
         cancelTimer("T")
-        stay
+        stay()
       case Event(Throw(e), _) =>
         throw e
       case Event(SlowThenThrow(latch, e), _) =>

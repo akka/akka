@@ -110,7 +110,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               maxInstancesPerNode = 2,
               allowLocalRoutees = false,
-              useRoles = roles)).props(Props[SomeActor]),
+              useRoles = roles)).props(Props[SomeActor]()),
           "router-2")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -143,7 +143,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               routeesPaths = List("/user/foo", "/user/bar"),
               allowLocalRoutees = false,
-              useRoles = roles)).props,
+              useRoles = roles)).props(),
           "router-2b")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -176,7 +176,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               maxInstancesPerNode = 2,
               allowLocalRoutees = true,
-              useRoles = roles)).props(Props[SomeActor]),
+              useRoles = roles)).props(Props[SomeActor]()),
           "router-3")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -209,7 +209,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               routeesPaths = List("/user/foo", "/user/bar"),
               allowLocalRoutees = true,
-              useRoles = roles)).props,
+              useRoles = roles)).props(),
           "router-3b")
 
         awaitAssert(currentRoutees(router).size should ===(4))
@@ -242,7 +242,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               maxInstancesPerNode = 2,
               allowLocalRoutees = true,
-              useRoles = roles)).props(Props[SomeActor]),
+              useRoles = roles)).props(Props[SomeActor]()),
           "router-4")
 
         awaitAssert(currentRoutees(router).size should ===(2))
@@ -275,7 +275,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               routeesPaths = List("/user/foo", "/user/bar"),
               allowLocalRoutees = true,
-              useRoles = roles)).props,
+              useRoles = roles)).props(),
           "router-4b")
 
         awaitAssert(currentRoutees(router).size should ===(2))
@@ -308,7 +308,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               maxInstancesPerNode = 2,
               allowLocalRoutees = true,
-              useRoles = roles)).props(Props[SomeActor]),
+              useRoles = roles)).props(Props[SomeActor]()),
           "router-5")
 
         awaitAssert(currentRoutees(router).size should ===(6))
@@ -341,7 +341,7 @@ abstract class UseRoleIgnoredSpec
               totalInstances = 6,
               routeesPaths = List("/user/foo", "/user/bar"),
               allowLocalRoutees = true,
-              useRoles = roles)).props,
+              useRoles = roles)).props(),
           "router-5b")
 
         awaitAssert(currentRoutees(router).size should ===(6))

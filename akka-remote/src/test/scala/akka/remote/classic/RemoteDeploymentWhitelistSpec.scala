@@ -149,7 +149,7 @@ class RemoteDeploymentWhitelistSpec
   "RemoteDeployment Whitelist" must {
 
     "allow deploying Echo actor (included in whitelist)" in {
-      val r = system.actorOf(Props[EchoWhitelisted], "blub")
+      val r = system.actorOf(Props[EchoWhitelisted](), "blub")
       r.path.toString should ===(
         s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/blub")
       r ! 42
@@ -165,7 +165,7 @@ class RemoteDeploymentWhitelistSpec
     }
 
     "not deploy actor not listed in whitelist" in {
-      val r = system.actorOf(Props[EchoNotWhitelisted], "danger-mouse")
+      val r = system.actorOf(Props[EchoNotWhitelisted](), "danger-mouse")
       r.path.toString should ===(
         s"akka.test://remote-sys@localhost:12346/remote/akka.test/${getClass.getSimpleName}@localhost:12345/user/danger-mouse")
       r ! 42

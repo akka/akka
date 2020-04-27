@@ -104,7 +104,7 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
 
       runOn(second) {
         val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
         enterBarrier("actors-started")
 
         enterBarrier("actor-identified")
@@ -117,7 +117,7 @@ abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePie
           akka.remote.classic.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))
-        freshSystem.actorOf(Props[Subject], "subject")
+        freshSystem.actorOf(Props[Subject](), "subject")
 
         Await.ready(freshSystem.whenTerminated, 30.seconds)
       }

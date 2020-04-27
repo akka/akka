@@ -76,7 +76,7 @@ object UidClashTest {
         Stop
       case _ => Restart
     }
-    val theRestartedOne = context.actorOf(Props[RestartedActor], "theRestartedOne")
+    val theRestartedOne = context.actorOf(Props[RestartedActor](), "theRestartedOne")
 
     def receive = {
       case PleaseRestart   => theRestartedOne ! PleaseRestart

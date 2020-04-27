@@ -330,7 +330,7 @@ class MessageSerializerRemotingSpec extends AkkaSpec(remote.withFallback(customS
   val serialization = SerializationExtension(system)
 
   override protected def atStartup(): Unit = {
-    remoteSystem.actorOf(Props[RemoteActor], "remote")
+    remoteSystem.actorOf(Props[RemoteActor](), "remote")
   }
 
   override def afterTermination(): Unit = {

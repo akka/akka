@@ -52,7 +52,7 @@ abstract class ClusterConsistentHashingGroupSpec
 
   "A cluster router with a consistent hashing group" must {
     "start cluster with 3 nodes" taggedAs LongRunningTest in {
-      system.actorOf(Props[Destination], "dest")
+      system.actorOf(Props[Destination](), "dest")
       awaitClusterUp(first, second, third)
       enterBarrier("after-1")
     }

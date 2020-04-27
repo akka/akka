@@ -59,7 +59,7 @@ class ConsistentHashingRouterSpec
   import ConsistentHashingRouterSpec._
   implicit val ec: ExecutionContextExecutor = system.dispatcher
 
-  val router1 = system.actorOf(FromConfig.props(Props[Echo]), "router1")
+  val router1 = system.actorOf(FromConfig.props(Props[Echo]()), "router1")
 
   "consistent hashing router" must {
     "create routees from configuration" in {
@@ -90,7 +90,7 @@ class ConsistentHashingRouterSpec
       }
       val router2 =
         system.actorOf(
-          ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).props(Props[Echo]),
+          ConsistentHashingPool(nrOfInstances = 1, hashMapping = hashMapping).props(Props[Echo]()),
           "router2")
 
       router2 ! Msg2("a", "A")

@@ -55,14 +55,14 @@ class FlowIntersperseSpec extends StreamSpec("""
     }
 
     "complete the stage when the Source has been completed" in {
-      val (p1, p2) = TestSource.probe[String].intersperse(",").toMat(TestSink.probe[String])(Keep.both).run
+      val (p1, p2) = TestSource.probe[String].intersperse(",").toMat(TestSink.probe[String])(Keep.both).run()
       p2.request(10)
       p1.sendNext("a").sendNext("b").sendComplete()
       p2.expectNext("a").expectNext(",").expectNext("b").expectComplete()
     }
 
     "complete the stage when the Sink has been cancelled" in {
-      val (p1, p2) = TestSource.probe[String].intersperse(",").toMat(TestSink.probe[String])(Keep.both).run
+      val (p1, p2) = TestSource.probe[String].intersperse(",").toMat(TestSink.probe[String])(Keep.both).run()
       p2.request(10)
       p1.sendNext("a").sendNext("b")
       p2.expectNext("a").expectNext(",").cancel()

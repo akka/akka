@@ -204,7 +204,7 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
 
     Persistence(system)
     runOn(startOn) {
-      system.actorOf(Props[SharedLeveldbStore], "store")
+      system.actorOf(Props[SharedLeveldbStore](), "store")
     }
     enterBarrier("persistence-started")
 

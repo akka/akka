@@ -333,7 +333,7 @@ class ClusterSingletonManagerSpec
 
       runOn(controller) {
         // watch that it is not terminated, which would indicate misbehavior
-        watch(system.actorOf(Props[PointToPointChannel], "queue"))
+        watch(system.actorOf(Props[PointToPointChannel](), "queue"))
       }
       enterBarrier("queue-started")
 

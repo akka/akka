@@ -156,7 +156,7 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
 
     "be able to run plain flow" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.asPublisher(false))
-      val s = TestSubscriber.manualProbe[Int]
+      val s = TestSubscriber.manualProbe[Int]()
       val flow = Flow[Int].map(_ * 2)
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit builder =>

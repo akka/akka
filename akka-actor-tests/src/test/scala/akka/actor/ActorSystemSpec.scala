@@ -31,7 +31,7 @@ object ActorSystemSpec {
       case n: Int =>
         master = sender()
         terminaters = Set() ++ (for (_ <- 1 to n) yield {
-            val man = context.watch(context.system.actorOf(Props[Terminater]))
+            val man = context.watch(context.system.actorOf(Props[Terminater]()))
             man ! "run"
             man
           })
@@ -142,7 +142,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
       try {
         val probe = TestProbe()(sys)
-        val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
+        val a = sys.actorOf(Props[ActorSystemSpec.Terminater]())
         probe.watch(a)
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
@@ -166,7 +166,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
         ActorSystem("LogDeadLetters", ConfigFactory.parseString("akka.loglevel=INFO").withFallback(AkkaSpec.testConf))
       try {
         val probe = TestProbe()(sys)
-        val a = sys.actorOf(Props[ActorSystemSpec.Terminater])
+        val a = sys.actorOf(Props[ActorSystemSpec.Terminater]())
         probe.watch(a)
         a.tell("run", probe.ref)
         probe.expectTerminated(a)
@@ -264,7 +264,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
     "reliably create waves of actors" in {
       import system.dispatcher
       implicit val timeout: Timeout = Timeout((20 seconds).dilated)
-      val waves = for (_ <- 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]) ? 50000
+      val waves = for (_ <- 1 to 3) yield system.actorOf(Props[ActorSystemSpec.Waves]()) ? 50000
       Await.result(Future.sequence(waves), timeout.duration + 5.seconds) should ===(Vector("done", "done", "done"))
     }
 
@@ -281,7 +281,7 @@ class ActorSystemSpec extends AkkaSpec(ActorSystemSpec.config) with ImplicitSend
       var created = Vector.empty[ActorRef]
       while (!system.whenTerminated.isCompleted) {
         try {
-          val t = system.actorOf(Props[ActorSystemSpec.Terminater])
+          val t = system.actorOf(Props[ActorSystemSpec.Terminater]())
           failing should not be true // because once failing => always failing (it’s due to shutdown)
           created :+= t
           if (created.size % 1000 == 0) Thread.sleep(50) // in case of unfair thread scheduling

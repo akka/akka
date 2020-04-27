@@ -60,7 +60,7 @@ abstract class MessageLoggingSpec(config: Config) extends AkkaSpec(config) with 
 
   "Message logging" must {
     "not be on if debug logging not enabled" in {
-      remoteSystem.actorOf(Props[BadActor], "bad")
+      remoteSystem.actorOf(Props[BadActor](), "bad")
       val as = system.actorSelection(RootActorPath(remoteAddress) / "user" / "bad")
       as ! Identify("bad")
       val ref = expectMsgType[ActorIdentity].ref.get

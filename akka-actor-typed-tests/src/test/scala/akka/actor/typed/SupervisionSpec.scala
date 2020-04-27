@@ -1274,7 +1274,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     }
 
     "not allow AbstractBehavior without setup" in {
-      val contextProbe = createTestProbe[ActorContext[String]]
+      val contextProbe = createTestProbe[ActorContext[String]]()
       spawn(Behaviors.setup[String] { context =>
         contextProbe.ref ! context
         Behaviors.empty
@@ -1298,7 +1298,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     }
 
     "detect AbstractBehavior with wrong ActorContext" in {
-      val contextProbe = createTestProbe[ActorContext[String]]
+      val contextProbe = createTestProbe[ActorContext[String]]()
       spawn(Behaviors.setup[String] { context =>
         contextProbe.ref ! context
         Behaviors.empty

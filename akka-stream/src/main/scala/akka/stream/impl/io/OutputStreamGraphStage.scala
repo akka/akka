@@ -29,7 +29,7 @@ private[akka] final class OutputStreamGraphStage(factory: () => OutputStream, au
   override protected def initialAttributes: Attributes = DefaultAttributes.outputStreamSink
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[IOResult]) = {
-    val mat = Promise[IOResult]
+    val mat = Promise[IOResult]()
     val logic = new GraphStageLogicWithLogging(shape) with InHandler {
       var outputStream: OutputStream = _
       var bytesWritten: Long = 0L

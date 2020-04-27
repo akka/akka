@@ -195,7 +195,7 @@ private class RestartSupervisor[T, Thr <: Throwable: ClassTag](initial: Behavior
 
   private def deadlineHasTimeLeft: Boolean = deadline match {
     case OptionVal.None    => true
-    case OptionVal.Some(d) => d.hasTimeLeft
+    case OptionVal.Some(d) => d.hasTimeLeft()
   }
 
   override def aroundSignal(ctx: TypedActorContext[Any], signal: Signal, target: SignalTarget[T]): Behavior[T] = {

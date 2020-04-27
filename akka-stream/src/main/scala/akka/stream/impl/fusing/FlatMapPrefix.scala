@@ -27,7 +27,7 @@ import scala.util.control.NonFatal
   override def initialAttributes: Attributes = DefaultAttributes.flatMapPrefix
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
-    val matPromise = Promise[M]
+    val matPromise = Promise[M]()
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
       val accumulated = collection.mutable.Buffer.empty[In]
 

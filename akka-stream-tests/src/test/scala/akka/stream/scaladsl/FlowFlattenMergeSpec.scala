@@ -27,7 +27,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
   import system.dispatcher
 
   def src10(i: Int) = Source(i until (i + 10))
-  def blocked = Source.future(Promise[Int].future)
+  def blocked = Source.future(Promise[Int]().future)
 
   val toSeq = Flow[Int].grouped(1000).toMat(Sink.head)(Keep.right)
   val toSet = toSeq.mapMaterializedValue(_.map(_.toSet))
@@ -107,7 +107,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
     "cancel substreams when failing from main stream" in assertAllStagesStopped {
       val p1, p2 = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
-      val p = Promise[Source[Int, NotUsed]]
+      val p = Promise[Source[Int, NotUsed]]()
       (Source(List(Source.fromPublisher(p1), Source.fromPublisher(p2))) ++ Source.future(p.future))
         .flatMapMerge(5, identity)
         .runWith(Sink.head)
@@ -121,7 +121,7 @@ class FlowFlattenMergeSpec extends StreamSpec {
     "cancel substreams when failing from substream" in assertAllStagesStopped {
       val p1, p2 = TestPublisher.probe[Int]()
       val ex = new Exception("buh")
-      val p = Promise[Int]
+      val p = Promise[Int]()
       Source(List(Source.fromPublisher(p1), Source.fromPublisher(p2), Source.future(p.future)))
         .flatMapMerge(5, identity)
         .runWith(Sink.head)

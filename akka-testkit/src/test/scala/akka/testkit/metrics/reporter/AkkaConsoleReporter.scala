@@ -116,7 +116,7 @@ class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output
   private def printKnownOpsInTimespanCounter(counter: KnownOpsInTimespanTimer): Unit = {
     import concurrent.duration._
     import akka.util.PrettyDuration._
-    output.print("               ops = %d%n".format(counter.getCount))
+    output.print("               ops = %d%n".format(counter.getCount()))
     output.print("              time = %s%n".format(counter.elapsedTime.nanos.pretty))
     output.print("             ops/s = %2.2f%n".format(counter.opsPerSecond))
     output.print("               avg = %s%n".format(counter.avgDuration.nanos.pretty))
@@ -140,7 +140,7 @@ class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output
   }
 
   private def printAveragingGauge(gauge: AveragingGauge): Unit = {
-    output.print("                avg = %2.2f%n".format(gauge.getValue))
+    output.print("                avg = %2.2f%n".format(gauge.getValue()))
   }
 
   private def printWithBanner(s: String, c: Char): Unit = {

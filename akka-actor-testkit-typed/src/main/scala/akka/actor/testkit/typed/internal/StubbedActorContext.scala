@@ -147,7 +147,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     new FunctionRef[U](p, (message, _) => {
       val m = f(message);
       if (m != null) {
-        selfInbox.ref ! m; i.selfInbox.ref ! message
+        selfInbox.ref ! m; i.selfInbox().ref ! message
       }
     })
   }

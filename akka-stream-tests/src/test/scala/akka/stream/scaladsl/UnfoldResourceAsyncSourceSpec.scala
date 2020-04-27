@@ -80,7 +80,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       val probe = TestSubscriber.probe[Int]()
       Source
-        .unfoldResourceAsync[Int, ResourceDummy[Int]](resource.create _, _.read, _.close)
+        .unfoldResourceAsync[Int, ResourceDummy[Int]](resource.create _, _.read, _.close())
         .runWith(Sink.fromSubscriber(probe))
 
       probe.request(1)
@@ -106,7 +106,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
       val resource = new ResourceDummy[Int](1 :: Nil, firstReadFuture = firstRead.future)
 
       Source
-        .unfoldResourceAsync[Int, ResourceDummy[Int]](resource.create _, _.read, _.close)
+        .unfoldResourceAsync[Int, ResourceDummy[Int]](resource.create _, _.read, _.close())
         .runWith(Sink.fromSubscriber(probe))
 
       probe.request(1L)
@@ -216,7 +216,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             if (!failed) {
               failed = true
               throw TE("read-error")
-            } else if (reader.hasNext) Future.successful(Some(reader.next))
+            } else if (reader.hasNext) Future.successful(Some(reader.next()))
             else Future.successful(None),
           _ => Future.successful(Done))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
@@ -241,7 +241,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
             if (!failed) {
               failed = true
               Future.failed(TE("read-error"))
-            } else if (reader.hasNext) Future.successful(Some(reader.next))
+            } else if (reader.hasNext) Future.successful(Some(reader.next()))
             else Future.successful(None),
           _ => Future.successful(Done))
         .withAttributes(ActorAttributes.supervisionStrategy(Supervision.restartingDecider))
@@ -319,7 +319,7 @@ class UnfoldResourceAsyncSourceSpec extends StreamSpec(UnboundedMailboxConfig) {
 
       Source
         .unfoldResourceAsync[String, Unit](
-          () => Promise[Unit].future, // never complete
+          () => Promise[Unit]().future, // never complete
           _ => ???,
           _ => ???)
         .runWith(Sink.ignore)

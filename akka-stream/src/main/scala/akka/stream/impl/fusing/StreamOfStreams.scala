@@ -221,7 +221,7 @@ import scala.util.control.NonFatal
     override def onUpstreamFinish(): Unit = {
       if (!prefixComplete) {
         // This handles the unpulled out case as well
-        emit(out, (builder.result, Source.empty), () => completeStage())
+        emit(out, (builder.result(), Source.empty), () => completeStage())
       } else {
         if (!tailSource.isClosed) tailSource.complete()
         completeStage()
@@ -413,7 +413,7 @@ import scala.util.control.NonFatal
 
         override def onPull(): Unit = {
           cancelTimer(key)
-          if (firstPush) {
+          if (firstPush()) {
             firstPushCounter -= 1
             push(firstElement)
             firstElement = null.asInstanceOf[T]

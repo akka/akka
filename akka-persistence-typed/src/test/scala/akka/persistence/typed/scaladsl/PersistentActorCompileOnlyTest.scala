@@ -290,7 +290,7 @@ object PersistentActorCompileOnlyTest {
 
     private val commandHandler: CommandHandler[Command, Event, State] = CommandHandler.command {
       case Enough =>
-        Effect.persist(Done).thenRun((_: State) => println("yay")).thenStop
+        Effect.persist(Done).thenRun((_: State) => println("yay")).thenStop()
     }
 
     private val eventHandler: (State, Event) => State = {

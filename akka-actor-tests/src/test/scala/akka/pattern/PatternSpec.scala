@@ -29,19 +29,19 @@ class PatternSpec extends AkkaSpec {
   "pattern.gracefulStop" must {
 
     "provide Future for stopping an actor" in {
-      val target = system.actorOf(Props[TargetActor])
+      val target = system.actorOf(Props[TargetActor]())
       val result = gracefulStop(target, 5 seconds)
       Await.result(result, 6 seconds) should ===(true)
     }
 
     "complete Future when actor already terminated" in {
-      val target = system.actorOf(Props[TargetActor])
+      val target = system.actorOf(Props[TargetActor]())
       Await.ready(gracefulStop(target, 5 seconds), 6 seconds)
       Await.ready(gracefulStop(target, 1 millis), 1 second)
     }
 
     "complete Future with AskTimeoutException when actor not terminated within timeout" in {
-      val target = system.actorOf(Props[TargetActor])
+      val target = system.actorOf(Props[TargetActor]())
       val latch = TestLatch()
       target ! ((latch, remainingOrDefault))
       intercept[AskTimeoutException] { Await.result(gracefulStop(target, 500 millis), remainingOrDefault) }

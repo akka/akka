@@ -63,7 +63,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
     "properly reset system message buffer state when new system with same Address comes up" taggedAs LongRunningTest in {
       runOn(first) {
         val secondAddress = node(second).address
-        system.actorOf(Props[Subject], "subject1")
+        system.actorOf(Props[Subject](), "subject1")
         enterBarrier("actors-started")
 
         val subject = identify(second, "subject")
@@ -127,8 +127,8 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
 
       runOn(second) {
         val address = system.asInstanceOf[ExtendedActorSystem].provider.getDefaultAddress
-        system.actorOf(Props[Subject], "subject")
-        system.actorOf(Props[Subject], "sysmsgBarrier")
+        system.actorOf(Props[Subject](), "subject")
+        system.actorOf(Props[Subject](), "sysmsgBarrier")
         enterBarrier("actors-started")
 
         enterBarrier("watch-established")
@@ -141,7 +141,7 @@ abstract class RemoteNodeShutdownAndComesBackSpec extends RemotingMultiNodeSpec(
           akka.remote.classic.netty.tcp.port = ${address.port.get}
           akka.remote.artery.canonical.port = ${address.port.get}
           """).withFallback(system.settings.config))
-        freshSystem.actorOf(Props[Subject], "subject")
+        freshSystem.actorOf(Props[Subject](), "subject")
 
         Await.ready(freshSystem.whenTerminated, 30.seconds)
       }

@@ -101,7 +101,7 @@ class TimerPersistentActorSpec extends PersistenceSpec(ConfigFactory.parseString
     }
 
     "reject wrong order of traits, PersistentActor with Timer" in {
-      val pa = system.actorOf(Props[WrongOrder])
+      val pa = system.actorOf(Props[WrongOrder]())
       watch(pa)
       expectTerminated(pa)
     }

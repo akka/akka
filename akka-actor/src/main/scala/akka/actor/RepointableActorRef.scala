@@ -149,7 +149,7 @@ private[akka] class RepointableActorRef(
 
   def getChild(name: Iterator[String]): InternalActorRef =
     if (name.hasNext) {
-      name.next match {
+      name.next() match {
         case ".." => getParent.getChild(name)
         case ""   => getChild(name)
         case other =>

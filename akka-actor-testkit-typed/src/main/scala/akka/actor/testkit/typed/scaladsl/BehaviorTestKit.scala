@@ -72,7 +72,7 @@ trait BehaviorTestKit[T] {
   /**
    * The self reference of the actor living inside this testkit.
    */
-  def ref: ActorRef[T] = selfInbox.ref
+  def ref: ActorRef[T] = selfInbox().ref
 
   /**
    * Requests all the effects. The effects are consumed, subsequent calls will only

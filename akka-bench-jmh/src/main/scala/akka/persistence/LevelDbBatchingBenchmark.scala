@@ -52,7 +52,7 @@ class LevelDbBatchingBenchmark {
     SharedLeveldbJournal.setStore(store, sys)
 
     probe = TestProbe()(sys)
-    store = sys.actorOf(Props[SharedLeveldbStore], "store")
+    store = sys.actorOf(Props[SharedLeveldbStore](), "store")
   }
 
   @TearDown(Level.Trial)

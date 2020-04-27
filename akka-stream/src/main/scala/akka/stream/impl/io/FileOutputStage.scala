@@ -38,7 +38,7 @@ private[akka] final class FileOutputStage(path: Path, startPosition: Long, openO
   override def initialAttributes: Attributes = DefaultAttributes.fileSink
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[IOResult]) = {
-    val mat = Promise[IOResult]
+    val mat = Promise[IOResult]()
     val logic = new GraphStageLogic(shape) with InHandler {
       private var chan: FileChannel = _
       private var bytesWritten: Long = 0

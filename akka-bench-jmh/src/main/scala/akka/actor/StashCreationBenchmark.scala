@@ -18,7 +18,7 @@ object StashCreationBenchmark {
     }
   }
 
-  val props = Props[StashingActor]
+  val props = Props[StashingActor]()
 }
 
 @State(Scope.Benchmark)

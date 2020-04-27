@@ -123,7 +123,7 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
       }
 
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
         enterBarrier("actors-started")
       }
 
@@ -155,7 +155,7 @@ abstract class TransportFailSpec extends RemotingMultiNodeSpec(TransportFailConf
       }
 
       runOn(second) {
-        val subject2 = system.actorOf(Props[Subject], "subject2")
+        val subject2 = system.actorOf(Props[Subject](), "subject2")
         enterBarrier("actors-started2")
         enterBarrier("watch-established2")
         subject2 ! PoisonPill

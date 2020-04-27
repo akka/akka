@@ -66,7 +66,7 @@ abstract class ClusterShardingRegistrationCoordinatedShutdownSpec
       startSharding(
         system,
         typeName = "Entity",
-        entityProps = Props[ShardedEntity],
+        entityProps = Props[ShardedEntity](),
         extractEntityId = MultiNodeClusterShardingSpec.intExtractEntityId,
         extractShardId = MultiNodeClusterShardingSpec.intExtractShardId)
 

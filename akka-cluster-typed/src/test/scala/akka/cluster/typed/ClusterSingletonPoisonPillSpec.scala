@@ -38,7 +38,7 @@ class ClusterSingletonPoisonPillSpec
   "A typed cluster singleton" must {
 
     "support using PoisonPill to stop" in {
-      val probe = TestProbe[ActorRef[Any]]
+      val probe = TestProbe[ActorRef[Any]]()
       val singleton =
         ClusterSingleton(system).init(SingletonActor(ClusterSingletonPoisonPillSpec.sneakyBehavior, "sneaky"))
       singleton ! GetSelf(probe.ref)

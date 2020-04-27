@@ -257,7 +257,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
   import ActorModelSpec._
 
-  def newTestActor(dispatcher: String) = system.actorOf(Props[DispatcherActor].withDispatcher(dispatcher))
+  def newTestActor(dispatcher: String) = system.actorOf(Props[DispatcherActor]().withDispatcher(dispatcher))
 
   def awaitStarted(ref: ActorRef): Unit = {
     awaitCond(ref match {
@@ -352,7 +352,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
       val a = newTestActor(dispatcher.id).asInstanceOf[InternalActorRef]
       awaitStarted(a)
       val done = new CountDownLatch(1)
-      a.suspend
+      a.suspend()
       a ! CountDown(done)
       assertNoCountDown(done, 1000, "Should not process messages while suspended")
       assertRefDefaultZero(a)(registers = 1, msgsReceived = 1, suspensions = 1)
@@ -373,7 +373,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
 
     "handle waves of actors" in {
       val dispatcher = interceptedDispatcher()
-      val props = Props[DispatcherActor].withDispatcher(dispatcher.id)
+      val props = Props[DispatcherActor]().withDispatcher(dispatcher.id)
 
       def flood(num: Int): Unit = {
         val cachedMessage = CountDownNStop(new CountDownLatch(num))
@@ -417,7 +417,7 @@ abstract class ActorModelSpec(config: String) extends AkkaSpec(config) with Defa
                   }
 
                   System.err.println("Mailbox: " + mq.numberOfMessages + " " + mq.hasMessages)
-                  Iterator.continually(mq.dequeue).takeWhile(_ ne null).foreach(System.err.println)
+                  Iterator.continually(mq.dequeue()).takeWhile(_ ne null).foreach(System.err.println)
                 case _ =>
               }
 

@@ -39,7 +39,7 @@ private[akka] class LoggerMailbox(@unused owner: ActorRef, system: ActorSystem)
   override def cleanUp(owner: ActorRef, deadLetters: MessageQueue): Unit = {
     if (hasMessages) {
       val logLevel = system.eventStream.logLevel
-      var envelope = dequeue
+      var envelope = dequeue()
       // Drain all remaining messages to the StandardOutLogger.
       // cleanUp is called after switching out the mailbox, which is why
       // this kind of look works without a limit.
@@ -54,7 +54,7 @@ private[akka] class LoggerMailbox(@unused owner: ActorRef, system: ActorSystem)
             case _ => // skip
           }
 
-        envelope = dequeue
+        envelope = dequeue()
       }
     }
     super.cleanUp(owner, deadLetters)

@@ -77,7 +77,7 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
           val nv = v.filter(_.get ne null)
           if (nv.isEmpty) m else m += (k -> nv)
       }
-      .result
+      .result()
   }
 
   protected[akka] def registerQueue(mbox: CallingThreadMailbox, q: MessageQueue): Unit = synchronized {
@@ -236,7 +236,7 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
     }
   }
 
-  protected[akka] override def executeTask(invocation: TaskInvocation): Unit = { invocation.run }
+  protected[akka] override def executeTask(invocation: TaskInvocation): Unit = { invocation.run() }
 
   /*
    * This method must be called with this thread's queue.
