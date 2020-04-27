@@ -6,12 +6,12 @@ package akka.actor
 
 import java.util.concurrent.ConcurrentHashMap
 
-import akka.annotation.InternalApi
-
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.util.control.NonFatal
+
 import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.AddressTerminatedTopic

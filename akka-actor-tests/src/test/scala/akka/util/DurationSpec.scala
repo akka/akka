@@ -4,9 +4,9 @@
 
 package akka.util
 
-import language.postfixOps
-
 import scala.concurrent.duration._
+
+import language.postfixOps
 
 import akka.testkit.AkkaSpec
 

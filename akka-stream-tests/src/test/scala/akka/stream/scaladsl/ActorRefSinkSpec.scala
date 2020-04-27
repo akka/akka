@@ -4,13 +4,13 @@
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
-
-import scala.util.control.NoStackTrace
 
 object ActorRefSinkSpec {
   case class Fw(ref: ActorRef) extends Actor {

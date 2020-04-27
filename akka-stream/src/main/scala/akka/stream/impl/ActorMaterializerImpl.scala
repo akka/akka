@@ -6,6 +6,13 @@ package akka.stream.impl
 
 import java.util.concurrent.atomic.AtomicBoolean
 
+import scala.collection.immutable
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+
 import akka.actor._
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
@@ -20,12 +27,6 @@ import akka.stream.impl.fusing.GraphInterpreterShell
 import akka.stream.snapshot.StreamSnapshot
 import akka.util.OptionVal
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
-
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContextExecutor
-import scala.concurrent.Future
 
 /**
  * ExtendedActorMaterializer used by subtypes which delegates in-island wiring to [[akka.stream.impl.PhaseIsland]]s
@@ -225,7 +226,7 @@ private[akka] class SubFusingActorMaterializerImpl(
  */
 @InternalApi private[akka] class StreamSupervisor(haveShutDown: AtomicBoolean) extends Actor {
   import akka.stream.impl.StreamSupervisor._
-  implicit val ec = context.dispatcher
+  implicit val ec: ExecutionContextExecutor = context.dispatcher
   override def supervisorStrategy: SupervisorStrategy = SupervisorStrategy.stoppingStrategy
 
   def receive: Receive = {

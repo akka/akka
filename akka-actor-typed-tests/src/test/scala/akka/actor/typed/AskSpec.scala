@@ -4,6 +4,14 @@
 
 package akka.actor.typed
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.Future
+import scala.concurrent.TimeoutException
+import scala.concurrent.duration._
+import scala.util.Success
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
@@ -13,13 +21,6 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.Behaviors._
 import akka.util.Timeout
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.concurrent.ExecutionContext
-import scala.concurrent.TimeoutException
-import scala.util.Success
 
 object AskSpec {
   sealed trait Msg
@@ -125,8 +126,9 @@ class AskSpec extends ScalaTestWithActorTestKit("""
 
         val legacyActor = classicSystem.actorOf(akka.actor.Props(new LegacyActor))
 
-        import akka.actor.typed.scaladsl.adapter._
         import scaladsl.AskPattern._
+
+        import akka.actor.typed.scaladsl.adapter._
         implicit val timeout: Timeout = 3.seconds
         val typedLegacy: ActorRef[AnyRef] = legacyActor
         (typedLegacy.ask(Ping)).failed.futureValue should ===(ex)

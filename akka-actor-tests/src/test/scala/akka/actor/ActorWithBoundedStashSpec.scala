@@ -4,17 +4,18 @@
 
 package akka.actor
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
 import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+
+import akka.actor.ActorSystem.Settings
+import akka.dispatch.BoundedDequeBasedMailbox
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
-import akka.dispatch.BoundedDequeBasedMailbox
-
-import scala.concurrent.duration._
-import akka.actor.ActorSystem.Settings
 import akka.util.unused
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.BeforeAndAfterEach
 
 object ActorWithBoundedStashSpec {
 
@@ -135,22 +136,22 @@ class ActorWithBoundedStashSpec
   "An Actor with Stash" must {
 
     "end up in DeadLetters in case of a capacity violation when configured via dispatcher" in {
-      val stasher = system.actorOf(Props[StashingActor].withDispatcher(dispatcherId1))
+      val stasher = system.actorOf(Props[StashingActor]().withDispatcher(dispatcherId1))
       testDeadLetters(stasher)
     }
 
     "end up in DeadLetters in case of a capacity violation when configured via mailbox" in {
-      val stasher = system.actorOf(Props[StashingActor].withMailbox(mailboxId1))
+      val stasher = system.actorOf(Props[StashingActor]().withMailbox(mailboxId1))
       testDeadLetters(stasher)
     }
 
     "throw a StashOverflowException in case of a stash capacity violation when configured via dispatcher" in {
-      val stasher = system.actorOf(Props[StashingActorWithOverflow].withDispatcher(dispatcherId2))
+      val stasher = system.actorOf(Props[StashingActorWithOverflow]().withDispatcher(dispatcherId2))
       testStashOverflowException(stasher)
     }
 
     "throw a StashOverflowException in case of a stash capacity violation when configured via mailbox" in {
-      val stasher = system.actorOf(Props[StashingActorWithOverflow].withMailbox(mailboxId2))
+      val stasher = system.actorOf(Props[StashingActorWithOverflow]().withMailbox(mailboxId2))
       testStashOverflowException(stasher)
     }
   }

@@ -6,6 +6,9 @@ package akka.remote.routing
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorCell
 import akka.actor.ActorContext
 import akka.actor.ActorSystem
@@ -22,8 +25,6 @@ import akka.routing.Routee
 import akka.routing.Router
 import akka.routing.RouterActor
 import akka.routing.RouterConfig
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined
@@ -53,7 +54,7 @@ final case class RemoteRouterConfig(local: Pool, nodes: Iterable[Address]) exten
     val deploy = Deploy(
       config = ConfigFactory.empty(),
       routerConfig = routeeProps.routerConfig,
-      scope = RemoteScope(nodeAddressIter.next))
+      scope = RemoteScope(nodeAddressIter.next()))
 
     // attachChild means that the provider will treat this call as if possibly done out of the wrong
     // context and use RepointableActorRef instead of LocalActorRef. Seems like a slightly sub-optimal

@@ -4,14 +4,15 @@
 
 package akka.stream.impl
 
-import akka.NotUsed
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.stream._
-import akka.stream.impl.StreamLayout.AtomicModule
+import scala.annotation.unchecked.uncheckedVariance
+
 import org.reactivestreams._
 
-import scala.annotation.unchecked.uncheckedVariance
+import akka.NotUsed
+import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.event.Logging
+import akka.stream._
+import akka.stream.impl.StreamLayout.AtomicModule
 
 /**
  * INTERNAL API

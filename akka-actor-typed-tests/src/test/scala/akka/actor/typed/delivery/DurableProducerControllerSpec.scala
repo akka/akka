@@ -8,12 +8,13 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import DurableProducerQueue.MessageSent
 import ProducerController.MessageWithConfirmation
-import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.delivery.internal.ProducerControllerImpl
 
 class DurableProducerControllerSpec
     extends ScalaTestWithActorTestKit("""
@@ -21,8 +22,8 @@ class DurableProducerControllerSpec
   """)
     with AnyWordSpecLike
     with LogCapturing {
-  import TestConsumer.sequencedMessage
   import DurableProducerQueue.NoQualifier
+  import TestConsumer.sequencedMessage
   import TestDurableProducerQueue.TestTimestamp
 
   private var idCount = 0

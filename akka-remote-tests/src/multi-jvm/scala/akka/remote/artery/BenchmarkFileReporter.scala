@@ -11,9 +11,9 @@ import java.time.LocalDateTime
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 
-import akka.actor.ActorSystem
-
 import scala.util.Try
+
+import akka.actor.ActorSystem
 
 /**
  * Simple to file logger for benchmark results. Will log relevant settings first to make sure

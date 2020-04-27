@@ -6,16 +6,17 @@ package akka.stream.javadsl
 
 import java.util.Optional
 import java.util.function.{ Consumer, Supplier }
+
+import scala.compat.java8.OptionConverters
+import scala.util.Try
+
+import com.typesafe.sslconfig.akka.AkkaSSLConfig
 import javax.net.ssl.{ SSLContext, SSLEngine, SSLSession }
 
 import akka.{ japi, NotUsed }
 import akka.stream._
 import akka.stream.TLSProtocol._
 import akka.util.ByteString
-import com.typesafe.sslconfig.akka.AkkaSSLConfig
-
-import scala.compat.java8.OptionConverters
-import scala.util.Try
 
 /**
  * Stream cipher support based upon JSSE.

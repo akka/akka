@@ -4,11 +4,12 @@
 
 package akka.stream.javadsl
 
-import akka.NotUsed
-import akka.japi.function.Creator
+import scala.concurrent.duration.FiniteDuration
+
 import com.github.ghik.silencer.silent
 
-import scala.concurrent.duration.FiniteDuration
+import akka.NotUsed
+import akka.japi.function.Creator
 
 /**
  * A RestartFlow wraps a [[Flow]] that gets restarted when it completes or fails.

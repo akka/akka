@@ -5,8 +5,9 @@
 package akka.cluster
 
 import java.security.MessageDigest
-import scala.collection.immutable.TreeMap
+
 import scala.annotation.tailrec
+import scala.collection.immutable.TreeMap
 
 /**
  * VectorClock module with helper classes and methods.

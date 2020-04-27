@@ -4,17 +4,17 @@
 
 package akka.persistence.testkit.javadsl
 
-import akka.actor.ActorSystem
-import akka.persistence.testkit.scaladsl.{ SnapshotTestKit => ScalaTestKit }
-import akka.persistence.testkit.{ ExpectedFailure, SnapshotMeta, SnapshotOperation, SnapshotStorage }
-import akka.util.JavaDurationConverters._
-import akka.util.ccompat.JavaConverters._
 import java.time.Duration
 import java.util.{ List => JList }
 import java.util.{ function => jf }
 
+import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.japi.Pair
+import akka.persistence.testkit.{ ExpectedFailure, SnapshotMeta, SnapshotOperation, SnapshotStorage }
+import akka.persistence.testkit.scaladsl.{ SnapshotTestKit => ScalaTestKit }
+import akka.util.JavaDurationConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Class for testing persisted snapshots in persistent actors.
@@ -258,7 +258,7 @@ class SnapshotTestKit(system: ActorSystem) {
   /**
    * Returns default policy if it was changed by [[SnapshotTestKit.withPolicy()]].
    */
-  def returnDefaultPolicy(): Unit = scalaTestkit.returnDefaultPolicy()
+  def resetPolicy(): Unit = scalaTestkit.resetPolicy()
 
 }
 

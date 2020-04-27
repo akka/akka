@@ -4,9 +4,10 @@
 
 package akka.stream.tck
 
-import akka.stream.scaladsl._
 import org.reactivestreams.Subscriber
 import org.testng.SkipException
+
+import akka.stream.scaladsl._
 
 class CancelledSinkSubscriberTest extends AkkaSubscriberBlackboxVerification[Int] {
 

@@ -5,12 +5,13 @@
 package akka.cluster
 
 import scala.concurrent.duration._
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import akka.actor.Address
-import akka.actor.Props
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
+import akka.actor.Address
+import akka.actor.Props
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
 
 object StartupWithOneThreadSpec {
   val config = """

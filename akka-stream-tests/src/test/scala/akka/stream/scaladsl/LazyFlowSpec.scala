@@ -4,7 +4,14 @@
 
 package akka.stream.scaladsl
 
-import akka.{ Done, NotUsed }
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+
+import akka.NotUsed
 import akka.stream.AbruptStageTerminationException
 import akka.stream.Materializer
 import akka.stream.NeverMaterializedException
@@ -15,12 +22,6 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestProbe
-import com.github.ghik.silencer.silent
-
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
 
 @silent("deprecated") // tests deprecated API as well
 class LazyFlowSpec extends StreamSpec("""
@@ -176,7 +177,7 @@ class LazyFlowSpec extends StreamSpec("""
 
       firstElementArrived.future.map { _ =>
         flowPromise.success(Flow[Int].map(_.toString))
-      }
+    }
 
       result.futureValue shouldBe List("1")
     }
@@ -269,12 +270,12 @@ class LazyFlowSpec extends StreamSpec("""
 
     "complete when there was no elements in the stream" in assertAllStagesStopped {
       def flowMaker() = flowF
-      val probe = Source.empty.via(Flow.lazyInitAsync(() => flowMaker)).runWith(TestSink.probe[Int])
+      val probe = Source.empty.via(Flow.lazyInitAsync(() => flowMaker())).runWith(TestSink.probe[Int])
       probe.request(1).expectComplete()
     }
 
     "complete normally when upstream completes BEFORE the stage has switched to the inner flow" in assertAllStagesStopped {
-      val promise = Promise[Flow[Int, Int, NotUsed]]
+      val promise = Promise[Flow[Int, Int, NotUsed]]()
       val (pub, sub) = TestSource
         .probe[Int]
         .viaMat(Flow.lazyInitAsync(() => promise.future))(Keep.left)

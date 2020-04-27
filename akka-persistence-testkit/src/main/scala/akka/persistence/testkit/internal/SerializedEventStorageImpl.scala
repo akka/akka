@@ -4,13 +4,13 @@
 
 package akka.persistence.testkit.internal
 
+import scala.util.Try
+
 import akka.actor.{ ActorSystem, ExtendedActorSystem }
 import akka.annotation.InternalApi
 import akka.persistence.PersistentRepr
 import akka.persistence.testkit.EventStorage
 import akka.serialization.{ Serialization, SerializationExtension }
-
-import scala.util.Try
 
 /**
  * INTERNAL API

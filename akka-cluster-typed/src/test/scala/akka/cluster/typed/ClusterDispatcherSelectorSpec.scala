@@ -4,8 +4,9 @@
 
 package akka.cluster.typed
 
-import akka.actor.typed.scaladsl.DispatcherSelectorSpec
 import com.typesafe.config.ConfigFactory
+
+import akka.actor.typed.scaladsl.DispatcherSelectorSpec
 
 class ClusterDispatcherSelectorSpec
     extends DispatcherSelectorSpec(ConfigFactory.parseString("""

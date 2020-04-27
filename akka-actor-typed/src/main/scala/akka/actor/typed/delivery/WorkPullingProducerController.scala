@@ -6,9 +6,11 @@ package akka.actor.typed.delivery
 
 import java.util.Optional
 
-import scala.reflect.ClassTag
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
+
+import com.typesafe.config.Config
 
 import akka.Done
 import akka.actor.typed.ActorRef
@@ -19,7 +21,6 @@ import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 /**
  * Work pulling is a pattern where several worker actors pull tasks in their own pace from

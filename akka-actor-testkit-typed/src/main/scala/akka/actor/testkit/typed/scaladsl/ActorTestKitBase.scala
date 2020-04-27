@@ -4,6 +4,9 @@
 
 package akka.actor.testkit.typed.scaladsl
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.DeadLetter
 import akka.actor.Dropped
 import akka.actor.UnhandledMessage
@@ -14,8 +17,6 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.util.Timeout
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 object ActorTestKitBase {
   def testNameFromCallStack(): String = TestKitUtils.testNameFromCallStack(classOf[ActorTestKitBase])

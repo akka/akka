@@ -4,16 +4,16 @@
 
 package akka.cluster
 
+import InternalClusterAction._
+import MemberStatus._
+import com.typesafe.config.ConfigFactory
 import language.implicitConversions
 
-import com.typesafe.config.ConfigFactory
+import akka.actor.Address
+import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.actor.Address
-import akka.remote.testconductor.RoleName
-import MemberStatus._
-import InternalClusterAction._
 
 object TransitionMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")

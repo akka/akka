@@ -4,10 +4,12 @@
 
 package akka.testkit
 
-import scala.concurrent.duration.Duration
 import java.util.concurrent.{ CyclicBarrier, TimeUnit, TimeoutException }
-import akka.actor.ActorSystem
+
+import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.ActorSystem
 
 class TestBarrierTimeoutException(message: String) extends RuntimeException(message)
 

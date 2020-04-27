@@ -5,16 +5,17 @@
 package akka.actor.typed.scaladsl
 
 import scala.concurrent.Future
-import scala.util.control.NoStackTrace
+import scala.concurrent.Promise
 import scala.util.{ Failure, Success }
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
-import akka.actor.typed.Props
+import scala.util.control.NoStackTrace
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.Promise
+import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.typed.Props
 
 object ActorContextPipeToSelfSpec {
   val config = ConfigFactory.parseString("""

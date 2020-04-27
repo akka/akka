@@ -7,17 +7,19 @@ package akka.actor.typed.scaladsl
 import java.util.concurrent.TimeoutException
 
 import scala.concurrent.Future
+
+import com.github.ghik.silencer.silent
+
 import akka.actor.{ Address, RootActorPath }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
+import akka.actor.typed.RecipientRef
 import akka.actor.typed.Scheduler
 import akka.actor.typed.internal.{ adapter => adapt }
+import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.InternalApi
 import akka.pattern.PromiseActorRef
 import akka.util.Timeout
-import akka.actor.typed.RecipientRef
-import akka.actor.typed.internal.InternalRecipientRef
-import com.github.ghik.silencer.silent
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.

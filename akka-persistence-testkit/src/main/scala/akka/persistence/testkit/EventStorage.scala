@@ -4,15 +4,16 @@
 
 package akka.persistence.testkit
 
+import java.util.{ List => JList }
+
+import scala.collection.immutable
+import scala.util.{ Failure, Success, Try }
+
 import akka.annotation.InternalApi
 import akka.persistence.PersistentRepr
 import akka.persistence.testkit.ProcessingPolicy.DefaultPolicies
 import akka.persistence.testkit.internal.TestKitStorage
 import akka.util.ccompat.JavaConverters._
-import java.util.{ List => JList }
-
-import scala.collection.immutable
-import scala.util.{ Failure, Success, Try }
 
 /**
  * INTERNAL API

@@ -5,26 +5,26 @@
 package akka.stream.testkit
 
 import java.util.concurrent.ThreadLocalRandom
+import java.util.concurrent.ThreadLocalRandom
+
+import scala.annotation.tailrec
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+import org.reactivestreams.Publisher
+import org.scalatest.matchers.should.Matchers
 
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.stream.ActorMaterializerSettings
 import akka.stream.Materializer
 import akka.stream.SystemMaterializer
+import akka.stream.SystemMaterializer
 import akka.stream.scaladsl.Flow
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.TestPublisher._
 import akka.stream.testkit.TestSubscriber._
-import org.reactivestreams.Publisher
-
-import scala.annotation.tailrec
-import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-
-import akka.stream.SystemMaterializer
-import com.github.ghik.silencer.silent
-import org.scalatest.matchers.should.Matchers
 
 trait ScriptedTest extends Matchers {
 

@@ -4,14 +4,16 @@
 
 package akka.persistence.journal.chaos
 
+import java.util.concurrent.ThreadLocalRandom
+
 import scala.collection.immutable
 import scala.concurrent.Future
-import java.util.concurrent.ThreadLocalRandom
+import scala.util.Try
+import scala.util.control.NonFatal
+
 import akka.persistence._
 import akka.persistence.journal.AsyncWriteJournal
 import akka.persistence.journal.inmem.InmemMessages
-import scala.util.Try
-import scala.util.control.NonFatal
 
 class WriteFailedException(ps: Seq[PersistentRepr])
     extends TestException(s"write failed for payloads = [${ps.map(_.payload)}]")

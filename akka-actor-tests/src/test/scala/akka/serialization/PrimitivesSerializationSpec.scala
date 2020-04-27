@@ -9,9 +9,10 @@ import java.nio.ByteOrder
 
 import scala.util.Random
 
+import com.typesafe.config.ConfigFactory
+
 import akka.testkit.AkkaSpec
 import akka.util.ByteString
-import com.typesafe.config.ConfigFactory
 
 object PrimitivesSerializationSpec {
   val serializationTestOverrides = ""

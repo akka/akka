@@ -4,15 +4,16 @@
 
 package akka.actor.typed
 
+import org.scalatest.concurrent.ScalaFutures
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.ActorPath
 import akka.actor.ActorRefProvider
 import akka.actor.ActorSystemImpl
 import akka.actor.MinimalActorRef
 import akka.actor.RootActorPath
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.concurrent.ScalaFutures
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class ActorRefResolverSpec extends AnyWordSpec with ScalaFutures with Matchers {
   "ActorRefResolver" should {

@@ -4,9 +4,21 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.implicitNotFound
+import scala.annotation.unchecked.uncheckedVariance
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
+
+import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
+
+import akka.Done
+import akka.NotUsed
+import akka.actor.ActorRef
+import akka.annotation.DoNotInherit
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
-import akka.Done
 import akka.stream.impl.{
   fusing,
   LinearTraversalBuilder,
@@ -18,21 +30,9 @@ import akka.stream.impl.{
   TraversalBuilder
 }
 import akka.stream.impl.fusing._
+import akka.stream.impl.fusing.FlattenMerge
 import akka.stream.stage._
 import akka.util.{ ConstantFun, Timeout }
-import org.reactivestreams.{ Processor, Publisher, Subscriber, Subscription }
-
-import scala.annotation.unchecked.uncheckedVariance
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
-import akka.stream.impl.fusing.FlattenMerge
-import akka.NotUsed
-import akka.actor.ActorRef
-import akka.annotation.DoNotInherit
-
-import scala.annotation.implicitNotFound
-import scala.reflect.ClassTag
 
 /**
  * A `Flow` is a set of stream processing steps that has one open input and one open output.
@@ -761,8 +761,9 @@ final case class RunnableGraph[+Mat](override val traversalBuilder: TraversalBui
  */
 @DoNotInherit
 trait FlowOps[+Out, +Mat] {
-  import akka.stream.impl.Stages._
   import GraphDSL.Implicits._
+
+  import akka.stream.impl.Stages._
 
   type Repr[+O] <: FlowOps[O, Mat] {
     type Repr[+OO] = FlowOps.this.Repr[OO]

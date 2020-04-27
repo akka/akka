@@ -12,6 +12,9 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -20,8 +23,6 @@ import akka.actor.typed.delivery.ProducerController.MessageWithConfirmation
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations._
 
 object Producer {
   trait Command
@@ -82,13 +83,15 @@ object Consumer {
 
   def apply(consumerController: ActorRef[ConsumerController.Command[Command]]): Behavior[Command] = {
     Behaviors.setup { context =>
+      val traceEnabled = context.log.isTraceEnabled
       val deliveryAdapter =
         context.messageAdapter[ConsumerController.Delivery[Command]](WrappedDelivery(_))
       consumerController ! ConsumerController.Start(deliveryAdapter)
 
       Behaviors.receiveMessagePartial {
         case WrappedDelivery(d @ ConsumerController.Delivery(_, confirmTo)) =>
-          context.log.trace("Processed {}", d.seqNr)
+          if (traceEnabled)
+            context.log.trace("Processed {}", d.seqNr)
           confirmTo ! ConsumerController.Confirmed
           Behaviors.same
       }
@@ -204,7 +207,7 @@ class ReliableDeliveryBenchmark {
 
   implicit var system: ActorSystem[Guardian.Command] = _
 
-  implicit val askTimeout = akka.util.Timeout(timeout)
+  implicit val askTimeout: akka.util.Timeout = akka.util.Timeout(timeout)
 
   @Setup(Level.Trial)
   def setup(): Unit = {

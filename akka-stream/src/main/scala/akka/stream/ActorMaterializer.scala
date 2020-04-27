@@ -6,6 +6,13 @@ package akka.stream
 
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorContext
 import akka.actor.ActorRef
 import akka.actor.ActorRefFactory
@@ -18,12 +25,6 @@ import akka.japi.function
 import akka.stream.impl._
 import akka.stream.stage.GraphStageLogic
 import akka.util.Helpers.toRootLowerCase
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 object ActorMaterializer {
 

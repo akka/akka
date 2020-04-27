@@ -4,11 +4,12 @@
 
 package akka.cluster
 
-import akka.testkit.{ AkkaSpec, LongRunningTest }
+import scala.collection.{ immutable => im }
+import scala.concurrent.duration._
+
 import com.typesafe.config.{ Config, ConfigFactory }
 
-import scala.concurrent.duration._
-import scala.collection.{ immutable => im }
+import akka.testkit.{ AkkaSpec, LongRunningTest }
 
 object JoinConfigCompatCheckerSpec {
 

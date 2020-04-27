@@ -7,15 +7,16 @@ package akka.cluster
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.actor.ClassicActorSystemProvider
+import scala.concurrent.{ Future, Promise }
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.ClassicActorSystemProvider
 import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.scaladsl.Lease
 import akka.event.Logging
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.{ Future, Promise }
 import akka.util.ccompat.JavaConverters._
 
 object TestLeaseExt extends ExtensionId[TestLeaseExt] with ExtensionIdProvider {
@@ -63,7 +64,7 @@ class TestLease(settings: LeaseSettings, system: ExtendedActorSystem) extends Le
 
   TestLeaseExt(system).setTestLease(settings.leaseName, this)
 
-  val initialPromise = Promise[Boolean]
+  val initialPromise = Promise[Boolean]()
 
   private val nextAcquireResult = new AtomicReference[Future[Boolean]](initialPromise.future)
   private val nextCheckLeaseResult = new AtomicReference[Boolean](false)

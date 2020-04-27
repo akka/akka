@@ -5,30 +5,28 @@
 package akka.cluster.sharding.protobuf
 
 import java.io.{ ByteArrayInputStream, ByteArrayOutputStream }
+import java.io.NotSerializableException
 import java.util.zip.GZIPInputStream
 import java.util.zip.GZIPOutputStream
 
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.concurrent.duration._
 
-import akka.util.ccompat.JavaConverters._
-import scala.collection.immutable
-
 import akka.actor.ActorRef
+import akka.actor.Address
 import akka.actor.ExtendedActorSystem
 import akka.cluster.sharding.Shard
 import akka.cluster.sharding.ShardCoordinator
+import akka.cluster.sharding.ShardRegion._
 import akka.cluster.sharding.protobuf.msg.{ ClusterShardingMessages => sm }
+import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
+import akka.protobufv3.internal.MessageLite
 import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
-import akka.protobufv3.internal.MessageLite
 import akka.util.ccompat._
-import java.io.NotSerializableException
-
-import akka.actor.Address
-import akka.cluster.sharding.ShardRegion._
-import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API: Protobuf serializer of ClusterSharding messages.
@@ -37,10 +35,10 @@ import akka.cluster.sharding.protobuf.msg.ClusterShardingMessages
 private[akka] class ClusterShardingMessageSerializer(val system: ExtendedActorSystem)
     extends SerializerWithStringManifest
     with BaseSerializer {
-  import ShardCoordinator.Internal._
   import Shard.{ CurrentShardState, GetCurrentShardState }
   import Shard.{ GetShardStats, ShardStats }
   import Shard.{ State => EntityState, EntityStarted, EntityStopped }
+  import ShardCoordinator.Internal._
 
   private final val BufferSize = 1024 * 4
 

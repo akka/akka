@@ -6,24 +6,24 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 
-import akka.Done
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.cluster.ClusterEvent._
-import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.sharding.Shard.ShardStats
-import akka.cluster.{ Cluster, ClusterSettings, Member, MemberStatus }
-import akka.event.Logging
-import akka.pattern.{ ask, pipe }
-import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.runtime.AbstractFunction1
 import scala.util.{ Failure, Success }
+
+import akka.Done
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.cluster.{ Cluster, ClusterSettings, Member, MemberStatus }
+import akka.cluster.ClusterEvent._
+import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.sharding.Shard.ShardStats
+import akka.event.Logging
+import akka.pattern.{ ask, pipe }
+import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -203,7 +203,7 @@ object ShardRegion {
    * the `ShardRegion` and then the `ShardRegion` actor will be stopped. You can `watch`
    * it to know when it is completed.
    */
-  @SerialVersionUID(1L) final case object GracefulShutdown extends ShardRegionCommand
+  @SerialVersionUID(1L) case object GracefulShutdown extends ShardRegionCommand
 
   /**
    * We must be sure that a shard is initialized before to start send messages to it.
@@ -226,7 +226,7 @@ object ShardRegion {
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    */
-  @SerialVersionUID(1L) final case object GetCurrentRegions extends ShardRegionQuery with ClusterShardingSerializable
+  @SerialVersionUID(1L) case object GetCurrentRegions extends ShardRegionQuery with ClusterShardingSerializable
 
   /**
    * Java API:

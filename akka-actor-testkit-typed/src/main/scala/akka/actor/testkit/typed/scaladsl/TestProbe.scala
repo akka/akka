@@ -7,6 +7,7 @@ package akka.actor.testkit.typed.scaladsl
 import scala.collection.immutable
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
+
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.internal.TestProbeImpl

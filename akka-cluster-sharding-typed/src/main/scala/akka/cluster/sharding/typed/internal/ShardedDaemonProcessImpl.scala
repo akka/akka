@@ -6,6 +6,10 @@ package akka.cluster.sharding.typed.internal
 
 import java.util.Optional
 
+import scala.compat.java8.OptionConverters._
+import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -15,11 +19,11 @@ import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardRegion.EntityId
 import akka.cluster.sharding.typed.ClusterShardingSettings
 import akka.cluster.sharding.typed.ClusterShardingSettings.StateStoreModeDData
+import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.ShardingMessageExtractor
-import akka.cluster.sharding.typed.scaladsl
 import akka.cluster.sharding.typed.javadsl
-import akka.cluster.sharding.typed.ShardedDaemonProcessSettings
+import akka.cluster.sharding.typed.scaladsl
 import akka.cluster.sharding.typed.scaladsl.ClusterSharding
 import akka.cluster.sharding.typed.scaladsl.Entity
 import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
@@ -27,10 +31,6 @@ import akka.cluster.sharding.typed.scaladsl.StartEntity
 import akka.cluster.typed.Cluster
 import akka.japi.function
 import akka.util.PrettyDuration
-
-import scala.compat.java8.OptionConverters._
-import scala.concurrent.duration.Duration
-import scala.reflect.ClassTag
 
 /**
  * INTERNAL API

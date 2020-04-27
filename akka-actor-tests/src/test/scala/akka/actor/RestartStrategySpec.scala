@@ -4,19 +4,20 @@
 
 package akka.actor
 
-import language.postfixOps
 import java.lang.Thread.sleep
 
 import scala.concurrent.Await
-import akka.testkit.TestEvent._
-import akka.testkit.EventFilter
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+import language.postfixOps
+
+import akka.pattern.ask
 import akka.testkit.AkkaSpec
 import akka.testkit.DefaultTimeout
+import akka.testkit.EventFilter
+import akka.testkit.TestEvent._
 import akka.testkit.TestLatch
-
-import scala.concurrent.duration._
-import akka.pattern.ask
-import com.github.ghik.silencer.silent
 
 @silent
 class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
@@ -116,7 +117,7 @@ class RestartStrategySpec extends AkkaSpec with DefaultTimeout {
 
         def receive = {
           case Ping =>
-            if (!pingLatch.isOpen) pingLatch.open else secondPingLatch.open
+            if (!pingLatch.isOpen) pingLatch.open() else secondPingLatch.open()
           case Crash => throw new Exception("Crashing...")
         }
         override def postRestart(reason: Throwable) = {

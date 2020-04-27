@@ -4,8 +4,8 @@
 
 package akka.dispatch
 
-import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.actor.{ Actor, Props }
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 
 object ControlAwareDispatcherSpec {
   val config = """

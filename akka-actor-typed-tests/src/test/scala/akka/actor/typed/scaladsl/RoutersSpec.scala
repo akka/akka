@@ -5,6 +5,9 @@
 package akka.actor.typed.scaladsl
 import java.util.concurrent.atomic.AtomicInteger
 
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ActorSystem
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
@@ -16,8 +19,6 @@ import akka.actor.typed.internal.routing.RoutingLogics
 import akka.actor.typed.receptionist.Receptionist
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.adapter._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class RoutersSpec extends ScalaTestWithActorTestKit("""
     akka.loglevel=debug
@@ -210,8 +211,8 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val router = spawn(Behaviors.setup[String](context =>
         new GroupRouterImpl(context, serviceKey, false, new RoutingLogics.RoundRobinLogic[String], true)))
 
-      val reachableProbe = createTestProbe[String]
-      val unreachableProbe = createTestProbe[String]
+      val reachableProbe = createTestProbe[String]()
+      val unreachableProbe = createTestProbe[String]()
       router
         .unsafeUpcast[Any] ! Receptionist.Listing(serviceKey, Set(reachableProbe.ref), Set(unreachableProbe.ref), false)
       router ! "one"
@@ -225,7 +226,7 @@ class RoutersSpec extends ScalaTestWithActorTestKit("""
       val router = spawn(Behaviors.setup[String](context =>
         new GroupRouterImpl(context, serviceKey, false, new RoutingLogics.RoundRobinLogic[String], true)))
 
-      val unreachableProbe = createTestProbe[String]
+      val unreachableProbe = createTestProbe[String]()
       router.unsafeUpcast[Any] ! Receptionist.Listing(
         serviceKey,
         Set.empty[ActorRef[String]],

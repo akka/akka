@@ -4,22 +4,22 @@
 
 package akka.cluster
 
-import language.postfixOps
 import scala.collection.immutable
 import scala.collection.immutable.{ SortedSet, VectorBuilder }
-import akka.actor.{ Actor, ActorRef, Address }
-import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.ClusterEvent._
-import akka.cluster.MemberStatus._
-import akka.event.EventStream
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.actor.DeadLetterSuppression
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.util.ccompat._
-
 import scala.runtime.AbstractFunction5
 
 import com.github.ghik.silencer.silent
+import language.postfixOps
+
+import akka.actor.{ Actor, ActorRef, Address }
+import akka.actor.DeadLetterSuppression
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.cluster.ClusterEvent._
+import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.MemberStatus._
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.event.EventStream
+import akka.util.ccompat._
 
 /**
  * Domain events published to the event bus.
@@ -337,7 +337,7 @@ object ClusterEvent {
    * This event is published when the cluster node is shutting down,
    * before the final [[MemberRemoved]] events are published.
    */
-  final case object ClusterShuttingDown extends ClusterDomainEvent
+  case object ClusterShuttingDown extends ClusterDomainEvent
 
   /**
    * Java API: get the singleton instance of `ClusterShuttingDown` event

@@ -4,11 +4,13 @@
 
 package akka.cluster.metrics
 
-import language.postfixOps
-import akka.testkit.AkkaSpec
-import akka.dispatch.Dispatchers
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
+import akka.dispatch.Dispatchers
+import akka.testkit.AkkaSpec
 
 class ClusterMetricsSettingsSpec extends AkkaSpec {
 

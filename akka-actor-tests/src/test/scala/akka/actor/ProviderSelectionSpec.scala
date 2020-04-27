@@ -4,11 +4,12 @@
 
 package akka.actor
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorSystem.Settings
 import akka.actor.ActorSystem.findClassLoader
 import akka.actor.setup.ActorSystemSetup
 import akka.testkit.AbstractSpec
-import com.typesafe.config.ConfigFactory
 
 class ProviderSelectionSpec extends AbstractSpec {
   import ProviderSelection.{ ClusterActorRefProvider, RemoteActorRefProvider }

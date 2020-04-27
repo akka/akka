@@ -6,13 +6,14 @@ package akka.actor
 
 import java.util.concurrent.atomic.AtomicReference
 
-import akka.routing._
-import akka.util.WildcardIndex
-import com.github.ghik.silencer.silent
-import com.typesafe.config._
 import scala.annotation.tailrec
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config._
+
 import akka.annotation.InternalApi
+import akka.routing._
+import akka.util.WildcardIndex
 
 object Deploy {
   final val NoDispatcherGiven = ""

@@ -36,7 +36,7 @@ public class PersistenceTestKitPolicySampleTest extends AbstractJavaTest {
   @Before
   public void beforeEach() {
     persistenceTestKit.clearAll();
-    persistenceTestKit.returnDefaultPolicy();
+    persistenceTestKit.resetPolicy();
   }
 
   @Test

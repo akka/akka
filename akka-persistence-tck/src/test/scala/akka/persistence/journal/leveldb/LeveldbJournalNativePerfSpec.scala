@@ -4,9 +4,9 @@
 
 package akka.persistence.journal.leveldb
 
-import akka.persistence.journal.JournalPerfSpec
 import akka.persistence.PersistenceSpec
 import akka.persistence.PluginCleanup
+import akka.persistence.journal.JournalPerfSpec
 
 class LeveldbJournalNativePerfSpec
     extends JournalPerfSpec(

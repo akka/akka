@@ -8,15 +8,15 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.Consumer
 
-import akka.annotation.InternalApi
-import akka.coordination.lease.LeaseSettings
-import akka.coordination.lease.scaladsl.{ Lease => ScalaLease }
-import akka.coordination.lease.javadsl.{ Lease => JavaLease }
-
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
+
+import akka.annotation.InternalApi
+import akka.coordination.lease.LeaseSettings
+import akka.coordination.lease.javadsl.{ Lease => JavaLease }
+import akka.coordination.lease.scaladsl.{ Lease => ScalaLease }
 
 /**
  * INTERNAL API

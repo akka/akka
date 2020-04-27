@@ -17,6 +17,9 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
 
+import com.github.ghik.silencer.silent
+import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
+
 import akka.Done
 import akka.NotUsed
 import akka.actor.ActorRef
@@ -53,8 +56,6 @@ import akka.util.PrettyDuration._
 import akka.util.Unsafe
 import akka.util.WildcardIndex
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
-import org.agrona.concurrent.ManyToOneConcurrentArrayQueue
 
 /**
  * INTERNAL API

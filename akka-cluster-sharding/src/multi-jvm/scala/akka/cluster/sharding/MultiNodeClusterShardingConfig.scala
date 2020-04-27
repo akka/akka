@@ -6,10 +6,11 @@ package akka.cluster.sharding
 
 import java.lang.reflect.Modifier
 
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.cluster.MultiNodeClusterSpec
 import akka.persistence.journal.leveldb.SharedLeveldbJournal
 import akka.remote.testkit.MultiNodeConfig
-import com.typesafe.config.{ Config, ConfigFactory }
 
 object MultiNodeClusterShardingConfig {
 

@@ -4,12 +4,18 @@
 
 package akka.testkit
 
+import java.lang.ref.WeakReference
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.locks.ReentrantLock
+
+import scala.annotation.tailrec
+import scala.concurrent.duration._
+import scala.concurrent.duration.Duration
+import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
 import language.postfixOps
 
-import java.lang.ref.WeakReference
-import java.util.concurrent.locks.ReentrantLock
-import scala.annotation.tailrec
-import com.typesafe.config.Config
 import akka.actor.{
   ActorCell,
   ActorInitializationException,
@@ -31,11 +37,7 @@ import akka.dispatch.{
   TaskInvocation
 }
 import akka.dispatch.sysmsg.{ Resume, Suspend, SystemMessage }
-import scala.concurrent.duration._
 import akka.util.Switch
-import scala.concurrent.duration.Duration
-import scala.util.control.NonFatal
-import java.util.concurrent.TimeUnit
 
 /*
  * Locking rules:
@@ -77,7 +79,7 @@ private[testkit] class CallingThreadDispatcherQueues extends Extension {
           val nv = v.filter(_.get ne null)
           if (nv.isEmpty) m else m += (k -> nv)
       }
-      .result
+      .result()
   }
 
   protected[akka] def registerQueue(mbox: CallingThreadMailbox, q: MessageQueue): Unit = synchronized {
@@ -236,7 +238,7 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
     }
   }
 
-  protected[akka] override def executeTask(invocation: TaskInvocation): Unit = { invocation.run }
+  protected[akka] override def executeTask(invocation: TaskInvocation): Unit = { invocation.run() }
 
   /*
    * This method must be called with this thread's queue.
@@ -276,7 +278,7 @@ class CallingThreadDispatcher(_configurator: MessageDispatcherConfigurator) exte
         }
         if (handle ne null) {
           try {
-            if (Mailbox.debug) println(mbox.actor.self + " processing message " + handle)
+            if (Mailbox.debug) println("" + mbox.actor.self + " processing message " + handle)
             mbox.actor.invoke(handle)
             intex = checkThreadInterruption(intex)
             true

@@ -4,13 +4,13 @@
 
 package akka.stream.scaladsl
 
+import scala.util.control.NoStackTrace
+
 import akka.stream.ActorAttributes._
 import akka.stream.Supervision._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
-
-import scala.util.control.NoStackTrace
 
 class FlowTakeWhileSpec extends StreamSpec {
 

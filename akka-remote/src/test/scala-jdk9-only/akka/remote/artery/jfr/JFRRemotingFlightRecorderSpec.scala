@@ -4,12 +4,13 @@
 
 package akka.remote.artery.jfr
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorSystem
 import akka.remote.artery.NoOpRemotingFlightRecorder
 import akka.remote.artery.RemotingFlightRecorder
 import akka.testkit.AkkaSpec
 import akka.testkit.TestKit
-import com.typesafe.config.ConfigFactory
 
 class JFRRemotingFlightRecorderSpec extends AkkaSpec {
 

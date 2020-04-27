@@ -4,10 +4,10 @@
 
 package akka.cluster
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.ConfigurationException
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Props }
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

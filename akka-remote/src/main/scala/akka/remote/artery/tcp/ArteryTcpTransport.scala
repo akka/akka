@@ -72,8 +72,8 @@ private[remote] class ArteryTcpTransport(
     _provider: RemoteActorRefProvider,
     tlsEnabled: Boolean)
     extends ArteryTransport(_system, _provider) {
-  import ArteryTransport._
   import ArteryTcpTransport._
+  import ArteryTransport._
 
   override type LifeCycle = NotUsed
 

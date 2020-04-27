@@ -1334,7 +1334,7 @@ final class ByteStringBuilder extends Builder[Byte, ByteString] {
     if (_length == 0) ByteString.empty
     else {
       clearTemp()
-      val bytestrings = _builder.result
+      val bytestrings = _builder.result()
       if (bytestrings.size == 1)
         bytestrings.head
       else

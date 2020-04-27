@@ -6,8 +6,8 @@ package akka.stream.impl
 
 import akka.actor.{ ActorRef, PoisonPill }
 import akka.annotation.InternalApi
-import akka.stream.OverflowStrategies._
 import akka.stream._
+import akka.stream.OverflowStrategies._
 import akka.stream.stage._
 import akka.util.OptionVal
 

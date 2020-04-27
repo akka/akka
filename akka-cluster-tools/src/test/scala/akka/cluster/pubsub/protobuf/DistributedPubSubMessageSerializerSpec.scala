@@ -4,12 +4,13 @@
 
 package akka.cluster.pubsub.protobuf
 
+import scala.collection.immutable.TreeMap
+
 import akka.actor.{ Address, ExtendedActorSystem }
-import akka.testkit.AkkaSpec
+import akka.actor.Props
 import akka.cluster.pubsub.DistributedPubSubMediator._
 import akka.cluster.pubsub.DistributedPubSubMediator.Internal._
-import akka.actor.Props
-import scala.collection.immutable.TreeMap
+import akka.testkit.AkkaSpec
 
 class DistributedPubSubMessageSerializerSpec extends AkkaSpec {
 

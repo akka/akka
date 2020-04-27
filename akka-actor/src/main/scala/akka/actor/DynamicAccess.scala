@@ -4,11 +4,11 @@
 
 package akka.actor
 
-import akka.annotation.DoNotInherit
-
 import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.Try
+
+import akka.annotation.DoNotInherit
 
 /**
  * The DynamicAccess implementation is the class which is used for

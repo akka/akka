@@ -6,6 +6,14 @@ package akka.actor.testkit.typed.scaladsl
 
 import java.util.concurrent.TimeoutException
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.slf4j.LoggerFactory
+
 import akka.actor.DeadLetter
 import akka.actor.DeadLetterSuppression
 import akka.actor.Dropped
@@ -23,13 +31,6 @@ import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
 import akka.util.Timeout
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.slf4j.LoggerFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
 
 object ActorTestKit {
 

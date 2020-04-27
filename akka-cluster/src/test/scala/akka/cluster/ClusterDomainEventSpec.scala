@@ -4,16 +4,17 @@
 
 package akka.cluster
 
-import akka.actor.Address
-
 import scala.collection.immutable.SortedSet
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
 
+import akka.actor.Address
+
 class ClusterDomainEventSpec extends AnyWordSpec with Matchers {
 
-  import MemberStatus._
   import ClusterEvent._
+  import MemberStatus._
 
   val aRoles = Set("AA", "AB")
   val aJoining = TestMember(Address("akka", "sys", "a", 2552), Joining, aRoles)

@@ -6,6 +6,8 @@ package akka.actor.testkit.typed.javadsl
 
 import java.time.Duration
 
+import com.typesafe.config.Config
+
 import akka.actor.DeadLetter
 import akka.actor.Dropped
 import akka.actor.UnhandledMessage
@@ -19,7 +21,6 @@ import akka.actor.typed.Props
 import akka.actor.typed.Scheduler
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
-import com.typesafe.config.Config
 
 object ActorTestKit {
 

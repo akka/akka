@@ -10,26 +10,27 @@ import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicBoolean
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.ActorInitializationException
-import akka.actor.Dropped
-import akka.actor.testkit.typed._
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
-import akka.actor.testkit.typed.scaladsl._
-import akka.actor.typed.SupervisorStrategy.Resume
-import akka.actor.typed.scaladsl.AbstractBehavior
-import akka.actor.typed.scaladsl.ActorContext
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.Behaviors._
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
-import org.scalatest.wordspec.AnyWordSpecLike
-import org.slf4j.event.Level
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NoStackTrace
+
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.event.Level
+
+import akka.actor.ActorInitializationException
+import akka.actor.Dropped
+import akka.actor.testkit.typed._
+import akka.actor.testkit.typed.scaladsl._
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.typed.SupervisorStrategy.Resume
+import akka.actor.typed.scaladsl.AbstractBehavior
+import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.Behaviors._
 
 object SupervisionSpec {
 
@@ -1274,7 +1275,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     }
 
     "not allow AbstractBehavior without setup" in {
-      val contextProbe = createTestProbe[ActorContext[String]]
+      val contextProbe = createTestProbe[ActorContext[String]]()
       spawn(Behaviors.setup[String] { context =>
         contextProbe.ref ! context
         Behaviors.empty
@@ -1298,7 +1299,7 @@ class SupervisionSpec extends ScalaTestWithActorTestKit("""
     }
 
     "detect AbstractBehavior with wrong ActorContext" in {
-      val contextProbe = createTestProbe[ActorContext[String]]
+      val contextProbe = createTestProbe[ActorContext[String]]()
       spawn(Behaviors.setup[String] { context =>
         contextProbe.ref ! context
         Behaviors.empty

@@ -5,6 +5,7 @@
 package akka.remote
 
 import scala.collection.immutable._
+
 import akka.AkkaException
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")

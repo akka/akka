@@ -4,11 +4,12 @@
 
 package akka.actor.testkit.typed.internal
 
-import akka.actor.testkit.typed.LoggingEvent
-import akka.annotation.InternalApi
 import ch.qos.logback.classic.spi.ILoggingEvent
 import ch.qos.logback.classic.spi.ThrowableProxy
 import ch.qos.logback.core.AppenderBase
+
+import akka.actor.testkit.typed.LoggingEvent
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API
