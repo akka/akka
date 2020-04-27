@@ -4,14 +4,13 @@ Log elements flowing through the stream as well as completion and erroring.
 
 @ref[Simple operators](../index.md#simple-operators)
 
+@@@div { .group-scala }
+
 ## Signature
 
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #logWithMarker }
 
-Scala
-:   @@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #logWithMarker }
-
-Java
-:   @@snip [FlowLogWithMarkerTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/FlowLogWithMarkerTest.java) { #signature }
+@@@
 
 ## Description
 

@@ -9,6 +9,7 @@ Defer the creation of a `Sink` until materialization and access `Materializer` a
 ## Signature
 
 @@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #fromMaterializer }
+
 @@@
 
 ## Description

@@ -4,13 +4,13 @@ Stream the result of a function as long as it returns a @scala[`Some`] @java[non
 
 @ref[Source operators](../index.md#source-operators)
 
+@@@div { .group-scala }
+
 ## Signature
 
-Scala
-:   @@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfold }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #unfold }
 
-Java
-:   @@snip [SourceUnfoldTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/SourceUnfoldTest.java) { #signature }
+@@@
 
 ## Description
 

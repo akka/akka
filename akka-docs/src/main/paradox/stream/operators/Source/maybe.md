@@ -4,13 +4,13 @@ Create a source that emits once the materialized @scala[`Promise`] @java[`Comple
 
 @ref[Source operators](../index.md#source-operators)
 
+@@@div { .group-scala }
+
 ## Signature
 
-Scala
- :   @@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #maybe }
+@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #maybe }
 
-Java
-:   @@snip [SourceDocExamples.java](/akka-docs/src/test/java/jdocs/stream/operators/SourceDocExamples.java) { #maybe-signature }
+@@@
 
 ## Description
 

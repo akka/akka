@@ -4,17 +4,13 @@ Wrap the given @apidoc[Flow] and retry individual elements in that stream with a
 
 @ref[Error handling](../index.md#error-handling)
 
+@@@div { .group-scala }
+
 ## Signature
 
-Scala
-:   @@signature [RetryFlow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/RetryFlow.scala) { #withBackoff }
+@@signature [RetryFlow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/RetryFlow.scala) { #withBackoff }
 
-Java
-:   @@snip [RetryFlowTest.java](/akka-stream-tests/src/test/java/akka/stream/javadsl/RetryFlowTest.java) { #withBackoff-signature }
-
-## API documentation
-
-@apidoc[RetryFlow$]
+@@@
 
 ## Description
 
