@@ -13,9 +13,12 @@ object MergeLatest extends App {
   val prices = Source(List(100, 101, 99, 103))
   val quantity = Source(List(1, 3, 4, 2))
 
-  prices.mergeLatest(quantity).map {
-    case price :: quantity :: Nil => price * quantity
-  }.runForeach(println)
+  prices
+    .mergeLatest(quantity)
+    .map {
+      case price :: quantity :: Nil => price * quantity
+    }
+    .runForeach(println)
 
   // prints something like:
   // 100
