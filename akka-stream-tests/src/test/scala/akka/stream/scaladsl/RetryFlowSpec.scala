@@ -63,7 +63,7 @@ class RetryFlowSpec extends StreamSpec("""
 
     "send elements through" in {
       val sink =
-        Source(List(13, 17, 19, 23, 27))
+        Source(List(13, 17, 19, 23, 26))
           .via(
             RetryFlow.withBackoff(10.millis, 5.second, 0d, maxRetries = 3, failEvenValuesFlow)(incrementFailedValues))
           .runWith(Sink.seq)
