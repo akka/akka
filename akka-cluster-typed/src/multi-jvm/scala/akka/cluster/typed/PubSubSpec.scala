@@ -4,6 +4,8 @@
 
 package akka.cluster.typed
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.internal.pubsub.TopicImpl
@@ -14,7 +16,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
 
 object PubSubSpecConfig extends MultiNodeConfig {
   val first: RoleName = role("first")

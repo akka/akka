@@ -4,16 +4,16 @@
 
 package akka.actor
 
-import akka.actor.Props.EmptyActor
+import scala.concurrent.Await
+import scala.concurrent.duration._
 
+import com.github.ghik.silencer.silent
 import language.postfixOps
+
+import akka.actor.Props.EmptyActor
 import akka.dispatch.sysmsg.{ DeathWatchNotification, Failed }
 import akka.pattern.ask
 import akka.testkit._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
-import scala.concurrent.Await
 
 class LocalDeathWatchSpec extends AkkaSpec with ImplicitSender with DefaultTimeout with DeathWatchSpec
 

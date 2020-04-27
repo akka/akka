@@ -4,10 +4,12 @@
 
 package akka.stream.testkit
 
+import scala.util.control.NoStackTrace
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorRef
 import akka.actor.ActorRefWithCell
-import com.typesafe.config.ConfigFactory
-import scala.util.control.NoStackTrace
 
 object Utils {
 

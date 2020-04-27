@@ -4,6 +4,10 @@
 
 package akka.actor.typed.scaladsl
 
+import scala.concurrent.Promise
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -13,9 +17,6 @@ import akka.actor.typed.MessageAdaptionFailure
 import akka.actor.typed.PreRestart
 import akka.actor.typed.Signal
 import akka.actor.typed.Terminated
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.Promise
 
 object AdaptationFailureSpec {
 

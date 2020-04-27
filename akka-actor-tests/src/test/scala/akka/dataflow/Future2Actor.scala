@@ -4,17 +4,18 @@
 
 package akka.dataflow
 
+import scala.concurrent.Await
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.ExecutionException
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import language.postfixOps
 
 import akka.actor.{ Actor, Props }
 import akka.actor.ActorRef
-import scala.concurrent.Future
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import akka.testkit.{ AkkaSpec, DefaultTimeout }
 import akka.pattern.{ ask, pipe }
-import scala.concurrent.ExecutionException
-import scala.concurrent.ExecutionContextExecutor
+import akka.testkit.{ AkkaSpec, DefaultTimeout }
 
 class Future2ActorSpec extends AkkaSpec with DefaultTimeout {
   implicit val ec: ExecutionContextExecutor = system.dispatcher

@@ -7,6 +7,10 @@ package akka.cluster.ddata
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.CancelAfterFailure
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -16,8 +20,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import org.scalatest.CancelAfterFailure
 
 final case class DurableDataSpecConfig(writeBehind: Boolean) extends MultiNodeConfig {
   val first = role("first")

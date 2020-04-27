@@ -4,14 +4,15 @@
 
 package akka.remote.classic
 
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config._
+
 import akka.actor._
 import akka.remote.EndpointException
 import akka.remote.transport._
 import akka.testkit._
-import com.typesafe.config._
-import scala.concurrent.duration._
-
-import com.github.ghik.silencer.silent
 
 // relies on test transport
 object RemoteDeploymentWhitelistSpec {

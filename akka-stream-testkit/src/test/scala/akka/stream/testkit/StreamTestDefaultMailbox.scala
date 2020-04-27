@@ -4,15 +4,16 @@
 
 package akka.stream.testkit
 
-import akka.dispatch.ProducesMessageQueue
-import akka.dispatch.UnboundedMailbox
-import akka.dispatch.MessageQueue
 import com.typesafe.config.Config
-import akka.actor.ActorSystem
-import akka.dispatch.MailboxType
+
+import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorRefWithCell
-import akka.actor.Actor
+import akka.actor.ActorSystem
+import akka.dispatch.MailboxType
+import akka.dispatch.MessageQueue
+import akka.dispatch.ProducesMessageQueue
+import akka.dispatch.UnboundedMailbox
 import akka.stream.impl.MaterializerGuardian
 
 /**

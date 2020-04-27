@@ -4,17 +4,18 @@
 
 package akka.dispatch
 
-import language.postfixOps
 import java.util.concurrent.{ BlockingQueue, ConcurrentLinkedQueue }
-
-import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
-import com.typesafe.config.{ Config, ConfigFactory }
-import akka.actor._
-import akka.testkit.{ AkkaSpec, EventFilter }
-import akka.util.unused
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
+import language.postfixOps
+import org.scalatest.{ BeforeAndAfterAll, BeforeAndAfterEach }
+
+import akka.actor._
+import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.util.unused
 
 abstract class MailboxSpec extends AkkaSpec with BeforeAndAfterAll with BeforeAndAfterEach {
   def name: String

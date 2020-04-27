@@ -4,9 +4,10 @@
 
 package akka.persistence.japi.snapshot
 
+import com.typesafe.config.Config
+
 import akka.persistence.CapabilityFlag
 import akka.persistence.snapshot.SnapshotStoreSpec
-import com.typesafe.config.Config
 
 /**
  * JAVA API

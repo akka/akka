@@ -4,19 +4,20 @@
 
 package akka.persistence.journal.leveldb
 
-import akka.actor._
-import akka.persistence.Persistence
-import akka.persistence.journal._
-import akka.util.Timeout
-import akka.util.Helpers.ConfigOps
-import akka.persistence.PersistentRepr
 import scala.concurrent.Future
 
-import akka.persistence.JournalProtocol.RecoverySuccess
-import akka.persistence.JournalProtocol.ReplayMessagesFailure
-import akka.pattern.pipe
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+
+import akka.actor._
+import akka.pattern.pipe
+import akka.persistence.JournalProtocol.RecoverySuccess
+import akka.persistence.JournalProtocol.ReplayMessagesFailure
+import akka.persistence.Persistence
+import akka.persistence.PersistentRepr
+import akka.persistence.journal._
+import akka.util.Helpers.ConfigOps
+import akka.util.Timeout
 
 /**
  * INTERNAL API.

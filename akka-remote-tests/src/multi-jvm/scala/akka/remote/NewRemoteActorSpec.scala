@@ -4,17 +4,17 @@
 
 package akka.remote
 
-import akka.actor.Terminated
+import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
 import language.postfixOps
+import testkit.MultiNodeConfig
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
+import akka.actor.Terminated
 import akka.util.unused
-import testkit.MultiNodeConfig
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 class NewRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
@@ -58,8 +58,8 @@ object NewRemoteActorSpec {
 
 abstract class NewRemoteActorSpec(multiNodeConfig: NewRemoteActorMultiJvmSpec)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import NewRemoteActorSpec._
+  import multiNodeConfig._
 
   def initialParticipants = roles.size
 

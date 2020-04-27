@@ -4,22 +4,24 @@
 
 package akka.cluster.pubsub
 
-import language.postfixOps
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.Actor
+import akka.actor.ActorLogging
 import akka.actor.ActorRef
 import akka.actor.PoisonPill
 import akka.actor.Props
 import akka.cluster.Cluster
+import akka.cluster.pubsub.DistributedPubSubMediator.Internal.Delta
+import akka.cluster.pubsub.DistributedPubSubMediator.Internal.Status
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.STMultiNodeSpec
 import akka.testkit._
-import akka.actor.ActorLogging
-import akka.cluster.pubsub.DistributedPubSubMediator.Internal.Status
-import akka.cluster.pubsub.DistributedPubSubMediator.Internal.Delta
 
 object DistributedPubSubMediatorSpec extends MultiNodeConfig {
   val first = role("first")
@@ -46,8 +48,8 @@ object DistributedPubSubMediatorSpec extends MultiNodeConfig {
   }
 
   class TestChatUser(mediator: ActorRef, testActor: ActorRef) extends Actor {
-    import TestChatUser._
     import DistributedPubSubMediator._
+    import TestChatUser._
 
     def receive = {
       case Whisper(path, msg)        => mediator ! Send(path, msg, localAffinity = true)
@@ -129,9 +131,9 @@ class DistributedPubSubMediatorSpec
     extends MultiNodeSpec(DistributedPubSubMediatorSpec)
     with STMultiNodeSpec
     with ImplicitSender {
+  import DistributedPubSubMediator._
   import DistributedPubSubMediatorSpec._
   import DistributedPubSubMediatorSpec.TestChatUser._
-  import DistributedPubSubMediator._
 
   override def initialParticipants = roles.size
 

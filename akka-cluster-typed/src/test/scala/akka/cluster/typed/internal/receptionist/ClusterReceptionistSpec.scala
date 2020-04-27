@@ -9,6 +9,10 @@ import java.util.concurrent.ThreadLocalRandom
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.RootActorPath
 import akka.actor.testkit.typed.FishingOutcome
 import akka.actor.testkit.typed.scaladsl.ActorTestKit
@@ -26,9 +30,6 @@ import akka.cluster.typed.Join
 import akka.cluster.typed.JoinSeedNodes
 import akka.cluster.typed.Leave
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 object ClusterReceptionistSpec {
   val config = ConfigFactory.parseString(s"""

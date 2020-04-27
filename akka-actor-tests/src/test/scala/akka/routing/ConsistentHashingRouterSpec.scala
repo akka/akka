@@ -5,16 +5,17 @@
 package akka.routing
 
 import scala.concurrent.Await
+import scala.concurrent.ExecutionContextExecutor
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Props
 import akka.pattern.ask
+import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
 import akka.routing.ConsistentHashingRouter.ConsistentHashableEnvelope
-import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
-import akka.testkit.AkkaSpec
 import akka.testkit._
-import scala.concurrent.ExecutionContextExecutor
+import akka.testkit.AkkaSpec
 
 object ConsistentHashingRouterSpec {
 

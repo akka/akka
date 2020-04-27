@@ -4,9 +4,10 @@
 
 package akka.persistence.japi.journal
 
+import com.typesafe.config.Config
+
 import akka.persistence.CapabilityFlag
 import akka.persistence.journal.JournalSpec
-import com.typesafe.config.Config
 
 /**
  * JAVA API

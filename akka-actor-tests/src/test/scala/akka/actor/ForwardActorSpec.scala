@@ -4,12 +4,13 @@
 
 package akka.actor
 
+import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+
 import language.postfixOps
 
-import akka.testkit._
-import scala.concurrent.duration._
 import akka.pattern.{ ask, pipe }
-import scala.concurrent.ExecutionContextExecutor
+import akka.testkit._
 
 object ForwardActorSpec {
   val ExpectedMessage = "FOO"

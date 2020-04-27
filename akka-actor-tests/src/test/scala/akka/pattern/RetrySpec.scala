@@ -4,13 +4,13 @@
 
 package akka.pattern
 
-import akka.actor.Scheduler
-
-import language.postfixOps
-import akka.testkit.AkkaSpec
-
 import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
 import scala.concurrent.duration._
+
+import language.postfixOps
+
+import akka.actor.Scheduler
+import akka.testkit.AkkaSpec
 
 class RetrySpec extends AkkaSpec with RetrySupport {
   implicit val ec: ExecutionContextExecutor = system.dispatcher

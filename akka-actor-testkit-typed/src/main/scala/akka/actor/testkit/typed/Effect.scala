@@ -4,13 +4,13 @@
 
 package akka.actor.testkit.typed
 
+import scala.compat.java8.FunctionConverters._
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.typed.{ ActorRef, Behavior, Props }
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.util.JavaDurationConverters._
 import akka.util.unused
-
-import scala.compat.java8.FunctionConverters._
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * All tracked effects for the [[akka.actor.testkit.typed.scaladsl.BehaviorTestKit]] and

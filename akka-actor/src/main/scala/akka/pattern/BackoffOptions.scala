@@ -4,12 +4,12 @@
 
 package akka.pattern
 
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
 import akka.actor.{ OneForOneStrategy, Props, SupervisorStrategy }
 import akka.annotation.DoNotInherit
 import akka.pattern.internal.{ BackoffOnRestartSupervisor, BackoffOnStopSupervisor }
 import akka.util.JavaDurationConverters._
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * Backoff options allow to specify a number of properties for backoff supervisors.

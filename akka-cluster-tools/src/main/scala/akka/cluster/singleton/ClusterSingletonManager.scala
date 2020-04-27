@@ -10,6 +10,8 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.control.NonFatal
 
+import com.typesafe.config.Config
+
 import akka.AkkaException
 import akka.Done
 import akka.actor.Actor
@@ -26,8 +28,8 @@ import akka.actor.Props
 import akka.actor.Terminated
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalStableApi
-import akka.cluster.ClusterEvent._
 import akka.cluster._
+import akka.cluster.ClusterEvent._
 import akka.coordination.lease.LeaseUsageSettings
 import akka.coordination.lease.scaladsl.Lease
 import akka.coordination.lease.scaladsl.LeaseProvider
@@ -38,7 +40,6 @@ import akka.pattern.ask
 import akka.pattern.pipe
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
-import com.typesafe.config.Config
 
 object ClusterSingletonManagerSettings {
 
@@ -482,8 +483,8 @@ class ClusterSingletonManager(singletonProps: Props, terminationMessage: Any, se
     extends Actor
     with FSM[ClusterSingletonManager.State, ClusterSingletonManager.Data] {
 
-  import ClusterSingletonManager.Internal.OldestChangedBuffer._
   import ClusterSingletonManager.Internal._
+  import ClusterSingletonManager.Internal.OldestChangedBuffer._
   import settings._
 
   val cluster = Cluster(context.system)

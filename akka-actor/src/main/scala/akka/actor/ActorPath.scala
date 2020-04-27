@@ -3,13 +3,15 @@
  */
 
 package akka.actor
+import java.lang.{ StringBuilder => JStringBuilder }
+import java.net.MalformedURLException
+
 import scala.annotation.{ switch, tailrec }
 import scala.collection.immutable
-import akka.japi.Util.immutableSeq
-import java.net.MalformedURLException
-import java.lang.{ StringBuilder => JStringBuilder }
 
 import com.github.ghik.silencer.silent
+
+import akka.japi.Util.immutableSeq
 
 /**
  * Java API

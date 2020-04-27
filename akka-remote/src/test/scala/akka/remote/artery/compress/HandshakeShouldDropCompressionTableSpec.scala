@@ -4,18 +4,19 @@
 
 package akka.remote.artery.compress
 
-import akka.actor.{ ActorIdentity, ActorSystem, Identify }
-import akka.pattern.ask
-import akka.remote.RARP
-import akka.remote.artery.compress.CompressionProtocol.Events.{ Event, ReceivedActorRefCompressionTable }
-import akka.remote.artery.{ ArteryMultiNodeSpec, ArterySpecSupport, ArteryTransport }
-import akka.testkit._
-import akka.util.Timeout
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfter
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.actor.{ ActorIdentity, ActorSystem, Identify }
+import akka.pattern.ask
+import akka.remote.RARP
+import akka.remote.artery.{ ArteryMultiNodeSpec, ArterySpecSupport, ArteryTransport }
+import akka.remote.artery.compress.CompressionProtocol.Events.{ Event, ReceivedActorRefCompressionTable }
+import akka.testkit._
+import akka.util.Timeout
 
 object HandshakeShouldDropCompressionTableSpec {
   val commonConfig = ConfigFactory.parseString(s"""

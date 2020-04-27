@@ -4,14 +4,14 @@
 
 package akka.stream.impl
 
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NonFatal
+
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.scaladsl.{ Keep, Source }
 import akka.stream.stage._
-
-import scala.concurrent.{ Future, Promise }
-import scala.util.control.NonFatal
 
 /**
  * INTERNAL API

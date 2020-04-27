@@ -4,14 +4,15 @@
 
 package akka.cluster.typed
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.{ MemberStatus, MultiNodeClusterSpec }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object MultiDcClusterSingletonSpecConfig extends MultiNodeConfig {
   val first: RoleName = role("first")
@@ -41,8 +42,8 @@ abstract class MultiDcClusterSingletonSpec
     extends MultiNodeSpec(MultiDcClusterSingletonSpecConfig)
     with MultiNodeTypedClusterSpec {
 
-  import MultiDcPinger._
   import MultiDcClusterSingletonSpecConfig._
+  import MultiDcPinger._
 
   "A cluster with multiple data centers" must {
     "be able to form" in {

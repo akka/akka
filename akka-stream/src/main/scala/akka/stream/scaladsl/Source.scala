@@ -6,25 +6,25 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.CompletionStage
 
-import akka.actor.{ ActorRef, Cancellable }
-import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.fusing.GraphStages
-import akka.stream.impl.fusing.GraphStages._
-import akka.stream.impl.{ PublisherSource, _ }
-import akka.stream.{ Outlet, SourceShape, _ }
-import akka.util.ConstantFun
-import akka.{ Done, NotUsed }
-import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.{ Future, Promise }
-import akka.stream.stage.GraphStageWithMaterializedValue
-
 import scala.compat.java8.FutureConverters._
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration.FiniteDuration
+
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import akka.{ Done, NotUsed }
+import akka.actor.{ ActorRef, Cancellable }
+import akka.annotation.InternalApi
+import akka.stream.{ Outlet, SourceShape, _ }
+import akka.stream.impl.{ PublisherSource, _ }
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.impl.fusing.GraphStages._
+import akka.stream.stage.GraphStageWithMaterializedValue
+import akka.util.ConstantFun
 
 /**
  * A `Source` is a set of stream processing steps that has one open output. It can comprise

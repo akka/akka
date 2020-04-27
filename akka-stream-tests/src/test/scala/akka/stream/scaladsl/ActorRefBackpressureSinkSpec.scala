@@ -4,16 +4,16 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.stream.Attributes.inputBuffer
 import akka.stream.Materializer
 import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestProbe
-
-import scala.concurrent.Promise
-import scala.concurrent.duration._
 
 object ActorRefBackpressureSinkSpec {
   val initMessage = "start"

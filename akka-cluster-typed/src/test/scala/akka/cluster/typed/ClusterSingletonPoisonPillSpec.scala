@@ -4,17 +4,18 @@
 
 package akka.cluster.typed
 
+import scala.concurrent.duration._
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.TestKitSettings
 import akka.actor.testkit.typed.scaladsl.{ ScalaTestWithActorTestKit, TestProbe }
-import akka.actor.typed.internal.PoisonPill
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.typed.{ ActorRef, Behavior }
+import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.typed.ClusterSingletonPoisonPillSpec.GetSelf
-import scala.concurrent.duration._
-
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ClusterSingletonPoisonPillSpec {
 

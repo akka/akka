@@ -4,16 +4,17 @@
 
 package akka.cluster.singleton
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, Address, Identify, PoisonPill, Props }
+import akka.cluster._
 import akka.cluster.MemberStatus.Up
 import akka.cluster.TestLeaseActor._
 import akka.cluster.singleton.ClusterSingletonManagerLeaseSpec.ImportantSingleton.Response
-import akka.cluster._
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object ClusterSingletonManagerLeaseSpec extends MultiNodeConfig {
   val controller = role("controller")
@@ -76,8 +77,8 @@ class ClusterSingletonManagerLeaseSpec
     with ImplicitSender
     with MultiNodeClusterSpec {
 
-  import ClusterSingletonManagerLeaseSpec.ImportantSingleton._
   import ClusterSingletonManagerLeaseSpec._
+  import ClusterSingletonManagerLeaseSpec.ImportantSingleton._
 
   override def initialParticipants = roles.size
 

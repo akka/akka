@@ -6,13 +6,13 @@ package akka.actor.typed.internal
 
 import java.util.concurrent.{ ConcurrentHashMap, CountDownLatch }
 
-import akka.annotation.InternalApi
-import akka.actor.typed.{ ActorSystem, Extension, ExtensionId, Extensions }
 import scala.annotation.tailrec
 import scala.util.{ Failure, Success, Try }
-import akka.util.ccompat.JavaConverters._
 
+import akka.actor.typed.{ ActorSystem, Extension, ExtensionId, Extensions }
 import akka.actor.typed.ExtensionSetup
+import akka.annotation.InternalApi
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API

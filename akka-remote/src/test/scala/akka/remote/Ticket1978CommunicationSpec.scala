@@ -8,20 +8,21 @@ import java.io.ByteArrayOutputStream
 import java.security.NoSuchAlgorithmException
 import java.util.zip.GZIPOutputStream
 
-import akka.actor._
-import akka.event.NoMarkerLogging
-import akka.pattern.ask
-import akka.remote.Configuration.{ getCipherConfig, CipherConfig }
-import akka.remote.transport.netty.SSLSettings
-import akka.testkit._
-import akka.util.Timeout
-import com.typesafe.config._
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 import scala.reflect.classTag
 
-import akka.remote.transport.netty.ConfigSSLEngineProvider
 import com.github.ghik.silencer.silent
+import com.typesafe.config._
+
+import akka.actor._
+import akka.event.NoMarkerLogging
+import akka.pattern.ask
+import akka.remote.Configuration.{ getCipherConfig, CipherConfig }
+import akka.remote.transport.netty.ConfigSSLEngineProvider
+import akka.remote.transport.netty.SSLSettings
+import akka.testkit._
+import akka.util.Timeout
 
 @silent("deprecated")
 object Configuration {

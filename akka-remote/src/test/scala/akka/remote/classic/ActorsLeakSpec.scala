@@ -6,18 +6,19 @@ package akka.remote.classic
 
 import java.util.concurrent.TimeoutException
 
-import akka.actor._
-import akka.actor.dungeon.ChildrenContainer
-import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociate
-import akka.remote.{ AddressUidExtension, RARP }
-import akka.testkit.TestActors.EchoActor
-import akka.testkit._
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
+import akka.actor._
+import akka.actor.dungeon.ChildrenContainer
+import akka.remote.{ AddressUidExtension, RARP }
+import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociate
+import akka.testkit._
+import akka.testkit.TestActors.EchoActor
 
 object ActorsLeakSpec {
 

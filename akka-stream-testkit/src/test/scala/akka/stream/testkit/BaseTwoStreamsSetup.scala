@@ -4,13 +4,14 @@
 
 package akka.stream.testkit
 
+import scala.collection.immutable
+import scala.util.control.NoStackTrace
+
+import org.reactivestreams.Publisher
+
 import akka.stream.scaladsl._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.AkkaSpec
-import org.reactivestreams.Publisher
-
-import scala.collection.immutable
-import scala.util.control.NoStackTrace
 
 abstract class BaseTwoStreamsSetup extends AkkaSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

@@ -7,12 +7,13 @@ package akka.cluster.singleton
 import scala.concurrent.duration._
 
 import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorLogging, Address, PoisonPill, Props }
 import akka.cluster.Cluster
-import akka.testkit.ImplicitSender
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.cluster.ClusterSettings
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec, STMultiNodeSpec }
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.ImplicitSender
 
 object MultiDcSingletonManagerSpec extends MultiNodeConfig {
   val controller = role("controller")

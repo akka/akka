@@ -6,6 +6,13 @@ package akka.cluster.routing
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.annotation.{ tailrec, varargs }
+import scala.collection.immutable
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ClusterEvent._
@@ -24,12 +31,6 @@ import akka.routing.RouterActor
 import akka.routing.RouterConfig
 import akka.routing.RouterPoolActor
 import akka.routing.RoutingLogic
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-
-import scala.annotation.{ tailrec, varargs }
-import scala.collection.immutable
 import akka.util.ccompat.JavaConverters._
 
 object ClusterRouterGroupSettings {

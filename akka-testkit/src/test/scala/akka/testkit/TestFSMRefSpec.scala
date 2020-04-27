@@ -4,10 +4,11 @@
 
 package akka.testkit
 
+import scala.concurrent.duration._
+
 import language.postfixOps
 
 import akka.actor._
-import scala.concurrent.duration._
 
 class TestFSMRefSpec extends AkkaSpec {
 

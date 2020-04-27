@@ -4,27 +4,28 @@
 
 package akka.actor
 
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
+import java.io.ObjectStreamException
+import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method, Proxy }
+import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.{ AtomicReference => AtomVar }
+
 import scala.collection.immutable
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
-import scala.concurrent.{ Await, Future }
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.NonFatal
 
+import com.github.ghik.silencer.silent
+
+import akka.dispatch._
 import akka.japi.{ Creator, Option => JOption }
 import akka.japi.Util.{ immutableSeq, immutableSingletonSeq }
 import akka.pattern.AskTimeoutException
-import akka.util.Timeout
-import akka.util.Reflect.instantiator
 import akka.serialization.{ JavaSerializer, SerializationExtension, Serializers }
-import akka.dispatch._
-import java.util.concurrent.atomic.{ AtomicReference => AtomVar }
-import java.util.concurrent.TimeoutException
-import java.io.ObjectStreamException
-import java.lang.reflect.{ InvocationHandler, InvocationTargetException, Method, Proxy }
-
-import com.github.ghik.silencer.silent
-import scala.concurrent.ExecutionContextExecutor
+import akka.util.Reflect.instantiator
+import akka.util.Timeout
 
 /**
  * A TypedActorFactory is something that can created TypedActor instances.
@@ -688,6 +689,7 @@ class TypedActorExtension(val system: ExtendedActorSystem) extends TypedActorFac
   protected def typedActor = this
 
   import system.settings
+
   import akka.util.Helpers.ConfigOps
 
   /**

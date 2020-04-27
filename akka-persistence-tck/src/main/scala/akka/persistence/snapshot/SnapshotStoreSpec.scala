@@ -4,15 +4,16 @@
 
 package akka.persistence.snapshot
 
-import akka.persistence.scalatest.{ MayVerb, OptionalTests }
-
 import scala.collection.immutable.Seq
+
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.persistence._
 import akka.persistence.SnapshotProtocol._
+import akka.persistence.scalatest.{ MayVerb, OptionalTests }
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.Config
 
 object SnapshotStoreSpec {
   val config: Config = ConfigFactory.parseString(s"""

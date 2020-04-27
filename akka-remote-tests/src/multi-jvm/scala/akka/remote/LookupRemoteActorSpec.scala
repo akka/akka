@@ -4,15 +4,16 @@
 
 package akka.remote
 
+import com.typesafe.config.ConfigFactory
+import testkit.MultiNodeConfig
+
 import akka.actor.Actor
+import akka.actor.ActorIdentity
 import akka.actor.ActorRef
+import akka.actor.Identify
 import akka.actor.Props
 import akka.pattern.ask
-import testkit.MultiNodeConfig
 import akka.testkit._
-import akka.actor.Identify
-import akka.actor.ActorIdentity
-import com.typesafe.config.ConfigFactory
 
 class LookupRemoteActorMultiJvmSpec(artery: Boolean) extends MultiNodeConfig {
 
@@ -43,8 +44,8 @@ object LookupRemoteActorSpec {
 
 abstract class LookupRemoteActorSpec(multiNodeConfig: LookupRemoteActorMultiJvmSpec)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import LookupRemoteActorSpec._
+  import multiNodeConfig._
 
   def initialParticipants = 2
 

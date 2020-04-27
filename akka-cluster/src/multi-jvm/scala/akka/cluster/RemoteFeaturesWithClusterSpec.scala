@@ -4,6 +4,9 @@
 
 package akka.cluster
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.concurrent.ScalaFutures
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.AddressFromURIString
@@ -17,8 +20,6 @@ import akka.remote.RemoteWatcher.Heartbeat
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit.ImplicitSender
-import com.typesafe.config.ConfigFactory
-import org.scalatest.concurrent.ScalaFutures
 
 class ClusterRemoteFeaturesConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")

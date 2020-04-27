@@ -7,10 +7,11 @@ package akka.remote.artery
 import scala.concurrent.duration._
 import scala.language.postfixOps
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.remote._
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 object RemoteWatcherSpec {
 

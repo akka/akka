@@ -8,7 +8,8 @@ import java.time.{ Duration => JavaDuration }
 
 import scala.concurrent.duration._
 
-import akka.util.JavaDurationConverters._
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.SupervisorStrategy
@@ -21,7 +22,7 @@ import akka.persistence.typed.delivery.EventSourcedProducerQueue.CleanupTick
 import akka.persistence.typed.scaladsl.Effect
 import akka.persistence.typed.scaladsl.EventSourcedBehavior
 import akka.persistence.typed.scaladsl.RetentionCriteria
-import com.typesafe.config.Config
+import akka.util.JavaDurationConverters._
 
 /**
  * [[DurableProducerQueue]] that can be used with [[akka.actor.typed.delivery.ProducerController]]

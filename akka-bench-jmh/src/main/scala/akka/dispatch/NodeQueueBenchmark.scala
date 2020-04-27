@@ -4,12 +4,15 @@
 
 package akka.dispatch
 
-import akka.actor._
-import org.openjdk.jmh.annotations._
-import com.typesafe.config.ConfigFactory
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
+import akka.actor._
 import akka.testkit.TestProbe
 
 object NodeQueueBenchmark {

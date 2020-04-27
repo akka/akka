@@ -6,19 +6,20 @@ package akka.io
 
 import java.util.concurrent.atomic.AtomicReference
 
+import scala.annotation.tailrec
+import scala.collection.immutable
+
+import com.github.ghik.silencer.silent
+
 import akka.actor.NoSerializationVerificationNeeded
 import akka.annotation.InternalApi
+import akka.io.dns.{ AAAARecord, ARecord }
 import akka.io.dns.CachePolicy.CachePolicy
 import akka.io.dns.CachePolicy.Forever
 import akka.io.dns.CachePolicy.Never
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol
 import akka.io.dns.DnsProtocol.{ Ip, RequestType, Resolved }
-import akka.io.dns.{ AAAARecord, ARecord }
-import com.github.ghik.silencer.silent
-
-import scala.annotation.tailrec
-import scala.collection.immutable
 
 private[io] trait PeriodicCacheCleanup {
   def cleanup(): Unit

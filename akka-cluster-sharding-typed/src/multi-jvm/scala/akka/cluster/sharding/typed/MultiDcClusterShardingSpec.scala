@@ -5,17 +5,19 @@
 package akka.cluster.sharding.typed
 
 import scala.concurrent.duration._
-import akka.actor.typed.ActorRef
-import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
-import akka.cluster.sharding.typed.scaladsl.ClusterSharding
-import akka.cluster.sharding.typed.scaladsl.Entity
-import akka.cluster.typed.{ MultiDcPinger, MultiNodeTypedClusterSpec }
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.cluster.MultiNodeClusterSpec
-import akka.util.Timeout
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
+
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.ActorRef
+import akka.cluster.MultiNodeClusterSpec
+import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.cluster.typed.{ MultiDcPinger, MultiNodeTypedClusterSpec }
+import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
+import akka.util.Timeout
 
 object MultiDcClusterShardingSpecConfig extends MultiNodeConfig {
   val first = role("first")

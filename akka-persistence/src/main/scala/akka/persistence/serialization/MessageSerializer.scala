@@ -4,23 +4,24 @@
 
 package akka.persistence.serialization
 
-import akka.actor.{ ActorPath, ExtendedActorSystem }
-import akka.persistence.AtLeastOnceDelivery._
-import akka.persistence._
-import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEvent }
-import akka.persistence.serialization.{ MessageFormats => mf }
-import akka.serialization._
-import akka.protobufv3.internal.ByteString
+import java.io.NotSerializableException
+
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
 import scala.concurrent.duration
-import akka.actor.Actor
-import akka.util.ccompat._
-
 import scala.concurrent.duration.Duration
-import java.io.NotSerializableException
 
 import com.github.ghik.silencer.silent
+
+import akka.actor.{ ActorPath, ExtendedActorSystem }
+import akka.actor.Actor
+import akka.persistence._
+import akka.persistence.AtLeastOnceDelivery._
+import akka.persistence.fsm.PersistentFSM.{ PersistentFSMSnapshot, StateChangeEvent }
+import akka.persistence.serialization.{ MessageFormats => mf }
+import akka.protobufv3.internal.ByteString
+import akka.serialization._
+import akka.util.ccompat._
 
 /**
  * Marker trait for all protobuf-serializable messages in `akka.persistence`.

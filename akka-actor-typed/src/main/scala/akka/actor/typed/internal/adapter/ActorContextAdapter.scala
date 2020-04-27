@@ -6,11 +6,11 @@ package akka.actor.typed
 package internal
 package adapter
 
-import akka.annotation.InternalApi
-
-import akka.{ actor => classic }
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration._
+
+import akka.{ actor => classic }
+import akka.annotation.InternalApi
 
 @InternalApi
 private[akka] object ActorContextAdapter {

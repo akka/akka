@@ -4,12 +4,12 @@
 
 package akka.pattern.internal
 
-import akka.actor.SupervisorStrategy.{ Directive, Escalate }
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.{ Actor, ActorLogging, OneForOneStrategy, Props, SupervisorStrategy, Terminated }
+import akka.actor.SupervisorStrategy.{ Directive, Escalate }
 import akka.annotation.InternalApi
 import akka.pattern.{ BackoffReset, BackoffSupervisor, HandleBackoff }
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

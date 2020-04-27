@@ -7,7 +7,9 @@ package akka.testkit.metrics.reporter
 import java.io.PrintStream
 import java.util
 import java.util.concurrent.TimeUnit
+
 import com.codahale.metrics._
+
 import akka.testkit.metrics._
 
 /**
@@ -115,6 +117,7 @@ class AkkaConsoleReporter(registry: AkkaMetricRegistry, verbose: Boolean, output
 
   private def printKnownOpsInTimespanCounter(counter: KnownOpsInTimespanTimer): Unit = {
     import concurrent.duration._
+
     import akka.util.PrettyDuration._
     output.print("               ops = %d%n".format(counter.getCount()))
     output.print("              time = %s%n".format(counter.elapsedTime.nanos.pretty))

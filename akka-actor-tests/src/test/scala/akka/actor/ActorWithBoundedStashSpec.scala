@@ -4,17 +4,18 @@
 
 package akka.actor
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory }
 import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+
+import akka.actor.ActorSystem.Settings
+import akka.dispatch.BoundedDequeBasedMailbox
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
-import akka.dispatch.BoundedDequeBasedMailbox
-
-import scala.concurrent.duration._
-import akka.actor.ActorSystem.Settings
 import akka.util.unused
-import com.typesafe.config.{ Config, ConfigFactory }
-import org.scalatest.BeforeAndAfterEach
 
 object ActorWithBoundedStashSpec {
 

@@ -6,16 +6,17 @@ package akka.io.dns
 
 import java.net.InetAddress
 
-import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
-import akka.io.{ Dns, IO }
+import scala.concurrent.duration._
+
 import CachePolicy.Ttl
+
+import akka.io.{ Dns, IO }
+import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
 import akka.pattern.ask
+import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.testkit.SocketUtil.Both
 import akka.testkit.WithLogCapturing
-import akka.testkit.{ AkkaSpec, SocketUtil }
 import akka.util.Timeout
-
-import scala.concurrent.duration._
 
 /*
 These tests rely on a DNS server with 2 zones configured, foo.test and bar.example.

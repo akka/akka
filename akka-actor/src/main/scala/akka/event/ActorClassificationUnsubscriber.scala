@@ -4,10 +4,10 @@
 
 package akka.event
 
-import akka.actor._
-import akka.event.Logging.simpleName
 import java.util.concurrent.atomic.AtomicInteger
 
+import akka.actor._
+import akka.event.Logging.simpleName
 import akka.util.unused
 
 /**

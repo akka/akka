@@ -4,14 +4,14 @@
 
 package akka.actor
 
-import language.postfixOps
-import akka.testkit._
-
-import scala.concurrent.duration._
-import akka.event._
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
+import akka.event._
+import akka.testkit._
 import akka.util.{ unused, Timeout }
 
 object FSMActorSpec {

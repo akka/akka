@@ -4,37 +4,37 @@
 
 package akka.remote
 
+import java.net.URLEncoder
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.TimeoutException
+
+import scala.collection.immutable
+import scala.collection.immutable.{ HashMap, Seq }
+import scala.concurrent.{ Await, Future, Promise }
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success }
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+
 import akka.Done
-import akka.actor.SupervisorStrategy._
 import akka.actor._
+import akka.actor.ActorInitializationException
+import akka.actor.SupervisorStrategy._
+import akka.annotation.InternalStableApi
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.MessageDispatcher
 import akka.event.{ Logging, LoggingAdapter }
 import akka.pattern.{ ask, gracefulStop, pipe }
 import akka.remote.EndpointManager._
 import akka.remote.Remoting.TransportSupervisor
-import akka.remote.transport.Transport.{ ActorAssociationEventListener, AssociationEventListener, InboundAssociation }
 import akka.remote.transport._
-import com.typesafe.config.Config
-import java.net.URLEncoder
-import java.util.concurrent.TimeoutException
-
-import scala.collection.immutable.{ HashMap, Seq }
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future, Promise }
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success }
 import akka.remote.transport.AkkaPduCodec.Message
-import java.util.concurrent.ConcurrentHashMap
-
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.remote.transport.Transport.{ ActorAssociationEventListener, AssociationEventListener, InboundAssociation }
 import akka.util.ByteString.UTF_8
 import akka.util.OptionVal
-
-import scala.collection.immutable
-import akka.actor.ActorInitializationException
-import akka.annotation.InternalStableApi
 import akka.util.ccompat._
-import com.github.ghik.silencer.silent
-import akka.dispatch.MessageDispatcher
 
 /**
  * INTERNAL API

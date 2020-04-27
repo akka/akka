@@ -4,17 +4,18 @@
 
 package akka.cluster.metrics
 
-import akka.cluster.metrics.StandardMetrics._
+import java.lang.System.{ currentTimeMillis => newTimestamp }
 
 import scala.util.Failure
-import akka.actor.Address
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import java.lang.System.{ currentTimeMillis => newTimestamp }
 
 import com.github.ghik.silencer.silent
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.Address
+import akka.cluster.metrics.StandardMetrics._
+import akka.testkit.AkkaSpec
+import akka.testkit.ImplicitSender
 
 @silent
 class MetricNumericConverterSpec extends AnyWordSpec with Matchers with MetricNumericConverter {

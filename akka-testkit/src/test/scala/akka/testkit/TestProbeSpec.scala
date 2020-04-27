@@ -4,17 +4,17 @@
 
 package akka.testkit
 
-import language.postfixOps
-import akka.actor._
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
-import akka.pattern.ask
-
 import scala.util.Try
-import java.util.concurrent.atomic.AtomicInteger
 
+import language.postfixOps
 import org.scalatest.concurrent.Eventually
+
+import akka.actor._
+import akka.pattern.ask
 
 class TestProbeSpec extends AkkaSpec with DefaultTimeout with Eventually {
 

@@ -4,17 +4,17 @@
 
 package akka.stream.impl
 
+import scala.collection.immutable.Map.Map1
+import scala.language.existentials
+
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.stream._
 import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream.impl.TraversalBuilder.{ AnyFunction1, AnyFunction2 }
-import akka.stream.scaladsl.Keep
-import akka.util.OptionVal
-
-import scala.language.existentials
-import scala.collection.immutable.Map.Map1
 import akka.stream.impl.fusing.GraphStageModule
 import akka.stream.impl.fusing.GraphStages.SingleSource
+import akka.stream.scaladsl.Keep
+import akka.util.OptionVal
 import akka.util.unused
 
 /**

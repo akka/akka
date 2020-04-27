@@ -4,16 +4,18 @@
 
 package akka.actor
 
+import java.lang.IllegalStateException
+
+import scala.concurrent.Await
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
 import language.postfixOps
 
-import akka.testkit._
-import akka.util.Timeout
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import java.lang.IllegalStateException
-import scala.concurrent.Promise
 import akka.pattern.ask
 import akka.serialization.JavaSerializer
+import akka.testkit._
+import akka.util.Timeout
 
 object ActorRefSpec {
 

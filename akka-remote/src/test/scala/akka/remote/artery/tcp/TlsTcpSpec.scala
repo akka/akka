@@ -11,21 +11,21 @@ import java.util.zip.GZIPOutputStream
 
 import scala.concurrent.duration._
 
-import akka.actor.ActorRef
-import akka.actor.ActorPath
-import akka.actor.ActorIdentity
-import akka.actor.ExtendedActorSystem
-import akka.actor.Identify
-import akka.actor.RootActorPath
-import akka.actor.setup.ActorSystemSetup
-import akka.testkit.ImplicitSender
-import akka.testkit.TestActors
-import akka.testkit.TestProbe
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import javax.net.ssl.SSLEngine
 
+import akka.actor.ActorIdentity
+import akka.actor.ActorPath
+import akka.actor.ActorRef
+import akka.actor.ExtendedActorSystem
+import akka.actor.Identify
+import akka.actor.RootActorPath
+import akka.actor.setup.ActorSystemSetup
 import akka.testkit.EventFilter
+import akka.testkit.ImplicitSender
+import akka.testkit.TestActors
+import akka.testkit.TestProbe
 
 class TlsTcpWithDefaultConfigSpec extends TlsTcpSpec(ConfigFactory.empty())
 

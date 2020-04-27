@@ -4,12 +4,13 @@
 
 package akka.actor.typed.internal.jfr
 
-import akka.annotation.InternalApi
 import jdk.jfr.Category
 import jdk.jfr.Enabled
 import jdk.jfr.Event
 import jdk.jfr.Label
 import jdk.jfr.StackTrace
+
+import akka.annotation.InternalApi
 
 // requires jdk9+ to compile
 // for editing these in IntelliJ, open module settings, change JDK dependency to 11 for only this module

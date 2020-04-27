@@ -7,34 +7,20 @@ package akka.remote.transport.netty
 import java.net.InetAddress
 import java.net.InetSocketAddress
 import java.net.SocketAddress
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.CancellationException
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.Executors
+import java.util.concurrent.atomic.AtomicInteger
 
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.ExecutionContext
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.blocking
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Try
 import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-import akka.actor.ActorSystem
-import akka.actor.Address
-import akka.actor.ExtendedActorSystem
-import akka.dispatch.ThreadPoolConfig
-import akka.event.Logging
-import akka.remote.RARP
-import akka.remote.transport.AssociationHandle.HandleEventListener
-import akka.remote.transport.Transport._
-import akka.remote.transport.AssociationHandle
-import akka.remote.transport.Transport
-import akka.util.Helpers
-import akka.util.Helpers.Requiring
-import akka.util.OptionVal
-import akka.ConfigurationException
-import akka.OnlyCauseStackTrace
+
 import com.github.ghik.silencer.silent
 import com.typesafe.config.Config
 import org.jboss.netty.bootstrap.Bootstrap
@@ -55,6 +41,22 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender
 import org.jboss.netty.handler.ssl.SslHandler
 import org.jboss.netty.util.HashedWheelTimer
+
+import akka.ConfigurationException
+import akka.OnlyCauseStackTrace
+import akka.actor.ActorSystem
+import akka.actor.Address
+import akka.actor.ExtendedActorSystem
+import akka.dispatch.ThreadPoolConfig
+import akka.event.Logging
+import akka.remote.RARP
+import akka.remote.transport.AssociationHandle
+import akka.remote.transport.AssociationHandle.HandleEventListener
+import akka.remote.transport.Transport
+import akka.remote.transport.Transport._
+import akka.util.Helpers
+import akka.util.Helpers.Requiring
+import akka.util.OptionVal
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 object NettyFutureBridge {
@@ -111,8 +113,9 @@ class NettyTransportExceptionNoStack(msg: String, cause: Throwable)
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class NettyTransportSettings(config: Config) {
 
-  import akka.util.Helpers.ConfigOps
   import config._
+
+  import akka.util.Helpers.ConfigOps
 
   val EnableSsl: Boolean = getBoolean("enable-ssl")
 

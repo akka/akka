@@ -4,8 +4,27 @@
 
 package akka.remote.testconductor
 
-import language.postfixOps
+import java.net.InetSocketAddress
+import java.util.concurrent.ConcurrentHashMap
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.reflect.classTag
+import scala.util.control.NoStackTrace
+
+import RemoteConnection.getAddrString
+import language.postfixOps
+import org.jboss.netty.channel.{
+  Channel,
+  ChannelHandlerContext,
+  ChannelStateEvent,
+  MessageEvent,
+  SimpleChannelUpstreamHandler
+}
+
+import akka.AkkaException
+import akka.ConfigurationException
 import akka.actor.{
   Actor,
   ActorRef,
@@ -19,28 +38,11 @@ import akka.actor.{
   Status,
   SupervisorStrategy
 }
-import akka.AkkaException
-import akka.ConfigurationException
-import akka.event.LoggingReceive
 import akka.event.{ Logging, LoggingAdapter }
+import akka.event.LoggingReceive
 import akka.pattern.ask
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.util.Timeout
-import java.net.InetSocketAddress
-import java.util.concurrent.ConcurrentHashMap
-import org.jboss.netty.channel.{
-  Channel,
-  ChannelHandlerContext,
-  ChannelStateEvent,
-  MessageEvent,
-  SimpleChannelUpstreamHandler
-}
-import RemoteConnection.getAddrString
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.concurrent.Future
-import scala.reflect.classTag
-import scala.util.control.NoStackTrace
 
 /**
  * The conductor is the one orchestrating the test: it governs the
@@ -337,8 +339,8 @@ private[akka] object ServerFSM {
 private[akka] class ServerFSM(val controller: ActorRef, val channel: Channel)
     extends Actor
     with LoggingFSM[ServerFSM.State, Option[ActorRef]] {
-  import ServerFSM._
   import Controller._
+  import ServerFSM._
 
   var roleName: RoleName = null
 
@@ -420,8 +422,8 @@ private[akka] object Controller {
  * INTERNAL API.
  */
 private[akka] class Controller(private var initialParticipants: Int, controllerPort: InetSocketAddress) extends Actor {
-  import Controller._
   import BarrierCoordinator._
+  import Controller._
 
   val settings = TestConductor().Settings
   val connection = RemoteConnection(

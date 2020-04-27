@@ -4,14 +4,15 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
-import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
-import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
-import akka.annotation.{ ApiMayChange, DoNotInherit }
 import java.util.concurrent.ThreadLocalRandom
 
 import scala.collection.immutable
 import scala.reflect.ClassTag
+
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
+import akka.actor.typed.{ ActorRef, Behavior, Signal, TypedActorContext }
+import akka.annotation.{ ApiMayChange, DoNotInherit }
 
 @ApiMayChange
 object BehaviorTestKit {

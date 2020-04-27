@@ -13,8 +13,8 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.internal.BehaviorImpl.DeferredBehavior
 import akka.actor.typed.javadsl.ActorContext
 import akka.annotation.InternalApi
-import akka.persistence.typed.EventAdapter
 import akka.persistence.typed._
+import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.internal._
 import akka.util.unused
 

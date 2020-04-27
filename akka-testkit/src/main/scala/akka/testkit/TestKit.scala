@@ -5,23 +5,25 @@
 package akka.testkit
 
 import java.util.concurrent._
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicInteger
 
-import scala.language.postfixOps
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.reflect.ClassTag
 import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+
 import akka.actor._
-import akka.util.{ BoxedType, Timeout }
-import akka.actor.IllegalActorStateException
 import akka.actor.DeadLetter
+import akka.actor.IllegalActorStateException
 import akka.actor.Terminated
 import akka.annotation.InternalApi
-import com.github.ghik.silencer.silent
+import akka.util.{ BoxedType, Timeout }
 
 object TestActor {
   type Ignore = Option[PartialFunction[Any, Boolean]]

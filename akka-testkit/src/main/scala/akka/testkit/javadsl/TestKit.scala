@@ -4,19 +4,19 @@
 
 package akka.testkit.javadsl
 
-import java.util.function.{ Supplier, Function => JFunction }
 import java.util.{ List => JList }
+import java.util.function.{ Supplier, Function => JFunction }
+
+import scala.annotation.varargs
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 
 import akka.actor._
 import akka.annotation.InternalApi
 import akka.testkit.{ TestActor, TestDuration, TestProbe }
 import akka.util.JavaDurationConverters._
-
-import scala.annotation.varargs
 import akka.util.ccompat.JavaConverters._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
 
 /**
  * Java API: Test kit for testing actors. Inheriting from this class enables

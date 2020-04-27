@@ -4,14 +4,16 @@
 
 package akka.remote
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+
 import akka.actor._
+import akka.remote.testconductor.RoleName
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
-import akka.remote.testconductor.RoleName
-import scala.concurrent.Await
 
 class RemoteQuarantinePiercingConfig(artery: Boolean) extends MultiNodeConfig {
   val first = role("first")
@@ -49,8 +51,8 @@ object RemoteQuarantinePiercingSpec {
 
 abstract class RemoteQuarantinePiercingSpec(multiNodeConfig: RemoteQuarantinePiercingConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig) {
-  import multiNodeConfig._
   import RemoteQuarantinePiercingSpec._
+  import multiNodeConfig._
 
   override def initialParticipants = roles.size
 

@@ -4,13 +4,14 @@
 
 package akka.actor.typed.pubsub
 
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.typed.internal.pubsub.TopicImpl
+import scala.concurrent.duration._
+
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.duration._
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.internal.pubsub.TopicImpl
 
 class LocalPubSubSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 

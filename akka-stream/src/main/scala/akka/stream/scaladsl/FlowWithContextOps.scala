@@ -4,14 +4,15 @@
 
 package akka.stream.scaladsl
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.concurrent.Future
-import scala.annotation.unchecked.uncheckedVariance
+
 import akka.NotUsed
 import akka.dispatch.ExecutionContexts
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.stream._
 import akka.util.ConstantFun
-import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 
 /**
  * Shared stream operations for [[FlowWithContext]] and [[SourceWithContext]] that automatically propagate a context

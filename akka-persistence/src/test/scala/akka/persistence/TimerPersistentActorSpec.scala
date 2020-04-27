@@ -8,10 +8,11 @@ import scala.concurrent.duration._
 import scala.runtime.BoxedUnit
 import scala.runtime.BoxedUnit
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.japi.Procedure
 import akka.testkit.{ EventFilter, ImplicitSender }
-import com.typesafe.config.ConfigFactory
 import akka.testkit.TestEvent.Mute
 
 object TimerPersistentActorSpec {

@@ -1,4 +1,4 @@
-import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ParadoxSupport, ScalafixIgnoreFilePlugin }
+import akka.{AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ParadoxSupport, ScalafixIgnoreFilePlugin}
 
 enablePlugins(
   UnidocRoot,
@@ -11,13 +11,18 @@ enablePlugins(
 disablePlugins(MimaPlugin)
 addCommandAlias(
   name = "fixall",
-  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile;reload")
+  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll;test:compile;multi-jvm:compile;reload")
+
+addCommandAlias(
+  name = "sortImports",
+  value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;multi-jvm:scalafix SortImports;" +
+    "CompileJdk9:scalafix SortImports;TestJdk9:scalafix SortImports;scalafmtAll;test:compile;multi-jvm:compile;reload")
 
 import akka.AkkaBuild._
-import akka.{ AkkaBuild, Dependencies, GitHub, OSGi, Protobuf, SigarLoader, VersionGenerator }
+import akka.{AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator}
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
-import sbt.Keys.{ initialCommands, parallelExecution }
+import sbt.Keys.{initialCommands, parallelExecution}
 import spray.boilerplate.BoilerplatePlugin
 
 initialize := {

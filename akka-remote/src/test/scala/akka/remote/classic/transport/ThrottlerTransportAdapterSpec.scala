@@ -4,17 +4,18 @@
 
 package akka.remote.classic.transport
 
-import akka.actor._
-import akka.remote.classic.transport.ThrottlerTransportAdapterSpec._
-import akka.remote.transport.ThrottlerTransportAdapter._
-import akka.remote.transport.{ TestTransport, ThrottlerTransportAdapter }
-import akka.remote.{ EndpointException, RemoteActorRefProvider }
-import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender, TestEvent, TimingTest }
-import com.typesafe.config.{ Config, ConfigFactory }
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import com.github.ghik.silencer.silent
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.actor._
+import akka.remote.{ EndpointException, RemoteActorRefProvider }
+import akka.remote.classic.transport.ThrottlerTransportAdapterSpec._
+import akka.remote.transport.{ TestTransport, ThrottlerTransportAdapter }
+import akka.remote.transport.ThrottlerTransportAdapter._
+import akka.testkit.{ AkkaSpec, DefaultTimeout, EventFilter, ImplicitSender, TestEvent, TimingTest }
 
 object ThrottlerTransportAdapterSpec {
   val configA: Config =

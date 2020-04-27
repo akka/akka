@@ -6,23 +6,23 @@ package akka.io.dns.internal
 
 import java.net.{ Inet4Address, Inet6Address, InetAddress, InetSocketAddress }
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
-import akka.annotation.InternalApi
-import akka.io.SimpleDnsCache
-import akka.io.dns.CachePolicy.{ Never, Ttl }
-import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
-import akka.io.dns.internal.DnsClient._
-import akka.io.dns._
-import akka.pattern.AskTimeoutException
-import akka.pattern.{ ask, pipe }
-import akka.util.{ Helpers, Timeout }
-import akka.util.PrettyDuration._
-
 import scala.collection.immutable
+import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NonFatal
-import scala.concurrent.ExecutionContextExecutor
+
+import akka.actor.{ Actor, ActorLogging, ActorRef, ActorRefFactory }
+import akka.annotation.InternalApi
+import akka.io.SimpleDnsCache
+import akka.io.dns._
+import akka.io.dns.CachePolicy.{ Never, Ttl }
+import akka.io.dns.DnsProtocol.{ Ip, RequestType, Srv }
+import akka.io.dns.internal.DnsClient._
+import akka.pattern.{ ask, pipe }
+import akka.pattern.AskTimeoutException
+import akka.util.{ Helpers, Timeout }
+import akka.util.PrettyDuration._
 
 /**
  * INTERNAL API

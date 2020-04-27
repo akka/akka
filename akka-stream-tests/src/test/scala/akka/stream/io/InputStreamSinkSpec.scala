@@ -9,8 +9,13 @@ import java.io.InputStream
 import java.util.concurrent.ThreadLocalRandom
 import java.util.concurrent.TimeoutException
 
-import akka.stream.Attributes.inputBuffer
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
 import akka.stream._
+import akka.stream.Attributes.inputBuffer
 import akka.stream.impl.PhasedFusingActorMaterializer
 import akka.stream.impl.StreamSupervisor
 import akka.stream.impl.StreamSupervisor.Children
@@ -18,17 +23,12 @@ import akka.stream.impl.io.InputStreamSinkStage
 import akka.stream.scaladsl.Keep
 import akka.stream.scaladsl.Source
 import akka.stream.scaladsl.StreamConverters
-import akka.stream.testkit.Utils._
 import akka.stream.testkit._
+import akka.stream.testkit.Utils._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestProbe
 import akka.util.ByteString
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class InputStreamSinkSpec extends StreamSpec(UnboundedMailboxConfig) {
   import system.dispatcher

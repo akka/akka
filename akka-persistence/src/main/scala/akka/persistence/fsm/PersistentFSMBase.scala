@@ -4,15 +4,16 @@
 
 package akka.persistence.fsm
 
+import scala.collection.mutable
+import scala.concurrent.duration.FiniteDuration
+
+import language.implicitConversions
+
 import akka.actor._
 import akka.japi.pf.{ FSMTransitionHandlerBuilder, UnitMatch, UnitPFBuilder }
-import language.implicitConversions
-import scala.collection.mutable
-
 import akka.routing.{ Deafen, Listen, Listeners }
-import akka.util.unused
 import akka.util.JavaDurationConverters._
-import scala.concurrent.duration.FiniteDuration
+import akka.util.unused
 
 /**
  * Finite State Machine actor trait. Use as follows:
@@ -720,11 +721,13 @@ object AbstractPersistentFSMBase {
  */
 @deprecated("Use EventSourcedBehavior", "2.6.0")
 abstract class AbstractPersistentFSMBase[S, D, E] extends PersistentFSMBase[S, D, E] {
+  import java.util.{ List => JList }
+
+  import PersistentFSM._
+
+  import akka.japi.pf.FI._
   import akka.persistence.fsm.japi.pf.FSMStateFunctionBuilder
   import akka.persistence.fsm.japi.pf.FSMStopBuilder
-  import akka.japi.pf.FI._
-  import java.util.{ List => JList }
-  import PersistentFSM._
 
   /**
    * Returns this AbstractActor's ActorContext

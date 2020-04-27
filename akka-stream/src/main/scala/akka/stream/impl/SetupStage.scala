@@ -4,6 +4,10 @@
 
 package akka.stream.impl
 
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.util.control.NonFatal
+
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.scaladsl.Flow
@@ -14,10 +18,6 @@ import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
 import akka.stream.stage.OutHandler
-
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.util.control.NonFatal
 
 /** Internal Api */
 @InternalApi private[stream] final class SetupSinkStage[T, M](factory: (Materializer, Attributes) => Sink[T, M])

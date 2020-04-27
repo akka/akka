@@ -6,6 +6,9 @@ package akka.remote.routing
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorCell
 import akka.actor.ActorContext
 import akka.actor.ActorSystem
@@ -22,8 +25,6 @@ import akka.routing.Routee
 import akka.routing.Router
 import akka.routing.RouterActor
 import akka.routing.RouterConfig
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
 
 /**
  * [[akka.routing.RouterConfig]] implementation for remote deployment on defined

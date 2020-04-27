@@ -4,13 +4,14 @@
 
 package akka.remote.classic
 
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.github.ghik.silencer.silent
+
 import akka.actor._
 import akka.remote._
 import akka.testkit._
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object RemoteWatcherSpec {
 

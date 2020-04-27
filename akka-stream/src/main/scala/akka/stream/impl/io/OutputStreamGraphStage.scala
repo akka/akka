@@ -6,14 +6,14 @@ package akka.stream.impl.io
 
 import java.io.OutputStream
 
-import akka.annotation.InternalApi
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, InHandler }
-import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Inlet, SinkShape }
-import akka.util.ByteString
-
 import scala.concurrent.{ Future, Promise }
 import scala.util.control.NonFatal
+
+import akka.annotation.InternalApi
+import akka.stream.{ Attributes, IOOperationIncompleteException, IOResult, Inlet, SinkShape }
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.stage.{ GraphStageLogic, GraphStageLogicWithLogging, GraphStageWithMaterializedValue, InHandler }
+import akka.util.ByteString
 
 /**
  * INTERNAL API

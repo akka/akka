@@ -4,13 +4,14 @@
 
 package akka.actor.typed.delivery
 
+import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
+
+import ConsumerController.SequencedMessage
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
-import ConsumerController.SequencedMessage
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors

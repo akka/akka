@@ -4,6 +4,9 @@
 
 package akka.stream.testkit
 
+import com.github.ghik.silencer.silent
+import org.reactivestreams.Publisher
+
 import akka.NotUsed
 import akka.actor.ActorRefFactory
 import akka.actor.ActorSystem
@@ -11,8 +14,6 @@ import akka.stream.ActorMaterializer
 import akka.stream.ActorMaterializerSettings
 import akka.stream.Materializer
 import akka.stream.scaladsl._
-import com.github.ghik.silencer.silent
-import org.reactivestreams.Publisher
 
 class ChainSetup[In, Out, M](
     stream: Flow[In, In, NotUsed] => Flow[In, Out, M],

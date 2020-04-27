@@ -4,11 +4,12 @@
 
 package akka.persistence.japi.journal
 
-import akka.persistence.CapabilityFlag
-import akka.persistence.journal.JournalPerfSpec
 import com.typesafe.config.Config
 import org.scalactic.source.Position
 import org.scalatest.Informer
+
+import akka.persistence.CapabilityFlag
+import akka.persistence.journal.JournalPerfSpec
 
 /**
  * JAVA API

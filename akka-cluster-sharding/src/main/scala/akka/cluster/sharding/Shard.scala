@@ -184,9 +184,10 @@ private[akka] class Shard(
   import ShardRegion.Passivate
   import ShardRegion.ShardInitialized
   import ShardRegion.handOffStopperProps
+  import settings.tuningParameters._
+
   import akka.cluster.sharding.ShardCoordinator.Internal.CoordinatorMessage
   import akka.cluster.sharding.ShardRegion.ShardRegionCommand
-  import settings.tuningParameters._
 
   var state = State.Empty
   var idByRef = Map.empty[ActorRef, EntityId]
@@ -582,6 +583,7 @@ private[akka] trait RememberingShard {
   import Shard._
   import ShardRegion.EntityId
   import ShardRegion.Msg
+
   import akka.pattern.pipe
 
   protected val settings: ClusterShardingSettings
@@ -1009,6 +1011,7 @@ final class ConstantRateEntityRecoveryStrategy(
 
   import ShardRegion.EntityId
   import actorSystem.dispatcher
+
   import akka.pattern.after
 
   override def recoverEntities(entities: Set[EntityId]): Set[Future[Set[EntityId]]] =

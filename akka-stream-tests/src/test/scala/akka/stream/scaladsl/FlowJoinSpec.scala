@@ -4,14 +4,15 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.scaladsl._
-import akka.stream.FlowShape
-import akka.stream.OverflowStrategy
+import scala.collection.immutable
+
 import org.scalatest.time._
 
-import scala.collection.immutable
+import akka.stream.FlowShape
+import akka.stream.OverflowStrategy
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl._
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 class FlowJoinSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

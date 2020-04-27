@@ -6,24 +6,25 @@ package akka.persistence.query.journal.leveldb.scaladsl
 
 import java.net.URLEncoder
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+
 import akka.NotUsed
 import akka.actor.ExtendedActorSystem
 import akka.event.Logging
-import akka.persistence.query.journal.leveldb.AllPersistenceIdsStage
-import akka.persistence.query.journal.leveldb.EventsByPersistenceIdStage
-import akka.persistence.query.journal.leveldb.EventsByTagStage
-import akka.persistence.query.scaladsl.ReadJournal
-import akka.persistence.query.scaladsl._
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.NoOffset
 import akka.persistence.query.Offset
 import akka.persistence.query.Sequence
+import akka.persistence.query.journal.leveldb.AllPersistenceIdsStage
+import akka.persistence.query.journal.leveldb.EventsByPersistenceIdStage
+import akka.persistence.query.journal.leveldb.EventsByTagStage
+import akka.persistence.query.scaladsl._
+import akka.persistence.query.scaladsl.ReadJournal
 import akka.stream.scaladsl.Source
 import akka.util.ByteString
 import akka.util.unused
-import com.typesafe.config.Config
-
-import scala.concurrent.duration._
 
 /**
  * Scala API [[akka.persistence.query.scaladsl.ReadJournal]] implementation for LevelDB.

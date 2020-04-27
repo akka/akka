@@ -4,9 +4,9 @@
 
 package akka.actor.typed.delivery
 
+import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
 import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
 
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior

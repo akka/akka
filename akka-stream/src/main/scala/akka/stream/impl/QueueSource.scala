@@ -4,13 +4,14 @@
 
 package akka.stream.impl
 
+import scala.concurrent.{ Future, Promise }
+
 import akka.Done
 import akka.annotation.InternalApi
-import akka.stream.OverflowStrategies._
 import akka.stream._
-import akka.stream.stage._
+import akka.stream.OverflowStrategies._
 import akka.stream.scaladsl.SourceQueueWithComplete
-import scala.concurrent.{ Future, Promise }
+import akka.stream.stage._
 
 /**
  * INTERNAL API

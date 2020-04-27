@@ -4,8 +4,16 @@
 
 package akka.dispatch
 
-import java.util.concurrent._
 import java.{ util => ju }
+import java.util.concurrent._
+
+import scala.annotation.tailrec
+import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
 
 import akka.actor._
 import akka.annotation.InternalStableApi
@@ -14,13 +22,6 @@ import akka.dispatch.sysmsg._
 import akka.event.EventStream
 import akka.event.Logging.{ Debug, Error, LogEventException }
 import akka.util.{ unused, Index, Unsafe }
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-
-import scala.annotation.tailrec
-import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor }
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.util.control.NonFatal
 
 final case class Envelope private (val message: Any, val sender: ActorRef)
 

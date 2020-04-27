@@ -5,6 +5,7 @@
 package akka
 
 import java.io.Serializable
+
 import akka.annotation.DoNotInherit
 
 /**

@@ -6,17 +6,18 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.{ CompletionStage, TimeUnit }
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
+import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem
 import akka.dispatch.Dispatchers
-import akka.{ Done, NotUsed }
-import akka.stream.Attributes._
 import akka.stream._
+import akka.stream.Attributes._
 import akka.stream.javadsl
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.testkit.TestKit
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
 
 object AttributesSpec {
 

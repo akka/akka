@@ -4,11 +4,12 @@
 
 package akka.event
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
 import language.postfixOps
 
-import scala.concurrent.duration._
 import akka.actor._
-import com.typesafe.config.ConfigFactory
 import akka.testkit.{ AkkaSpec, TestProbe }
 
 object EventStreamSpec {

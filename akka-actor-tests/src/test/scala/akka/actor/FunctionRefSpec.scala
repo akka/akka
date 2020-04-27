@@ -4,10 +4,10 @@
 
 package akka.actor
 
-import akka.testkit.AkkaSpec
-import akka.testkit.ImplicitSender
-import akka.testkit.EventFilter
 import akka.actor.dungeon.SerializationCheckFailedException
+import akka.testkit.AkkaSpec
+import akka.testkit.EventFilter
+import akka.testkit.ImplicitSender
 
 object FunctionRefSpec {
 

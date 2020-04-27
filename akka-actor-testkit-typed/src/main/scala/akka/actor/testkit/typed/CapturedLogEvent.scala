@@ -6,12 +6,13 @@ package akka.actor.testkit.typed
 
 import java.util.Optional
 
-import akka.annotation.InternalApi
-import akka.util.OptionVal
 import scala.compat.java8.OptionConverters._
 
 import org.slf4j.Marker
 import org.slf4j.event.Level
+
+import akka.annotation.InternalApi
+import akka.util.OptionVal
 
 /**
  * Representation of a Log Event issued by a [[akka.actor.typed.Behavior]]

@@ -4,8 +4,8 @@
 
 package akka.util
 
-import akka.util.ManifestInfo.Version
 import akka.testkit.AkkaSpec
+import akka.util.ManifestInfo.Version
 
 class ManifestInfoSpec extends AkkaSpec {
   "ManifestInfo" should {

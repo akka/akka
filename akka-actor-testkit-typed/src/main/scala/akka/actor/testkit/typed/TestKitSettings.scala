@@ -4,14 +4,15 @@
 
 package akka.actor.testkit.typed
 
-import com.typesafe.config.Config
 import scala.concurrent.duration.{ Duration, FiniteDuration }
 
-import akka.util.JavaDurationConverters._
-import akka.util.Timeout
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
+import akka.util.JavaDurationConverters._
+import akka.util.Timeout
 
 object TestKitSettings {
 

@@ -4,13 +4,14 @@
 
 package akka.actor
 
-import com.typesafe.config.ConfigFactory
-import akka.testkit._
-import akka.dispatch._
-
 import scala.concurrent.duration.{ Duration, FiniteDuration }
-import akka.ConfigurationException
+
 import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
+import akka.ConfigurationException
+import akka.dispatch._
+import akka.testkit._
 import akka.util.Helpers.ConfigOps
 import akka.util.unused
 

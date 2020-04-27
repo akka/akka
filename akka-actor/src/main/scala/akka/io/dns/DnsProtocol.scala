@@ -10,11 +10,11 @@ import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util
 
+import scala.collection.{ immutable => im }
+
 import akka.actor.NoSerializationVerificationNeeded
 import akka.io.IpVersionSelector
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
-
-import scala.collection.{ immutable => im }
 import akka.util.ccompat.JavaConverters._
 
 /**

@@ -4,19 +4,20 @@
 
 package akka.remote
 
-import akka.remote.testkit.MultiNodeConfig
-import akka.actor.Actor
-import akka.actor.ActorRef
-import akka.actor.Props
-import akka.remote.transport.ThrottlerTransportAdapter.Direction._
-import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorLogging
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.actor.Identify
+import akka.actor.Props
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.ThrottlerTransportAdapter.Direction._
 import akka.testkit.TestProbe
 
 class RemoteReDeploymentConfig(artery: Boolean) extends MultiNodeConfig {
@@ -118,8 +119,8 @@ abstract class RemoteReDeploymentMultiJvmSpec(multiNodeConfig: RemoteReDeploymen
 
   def initialParticipants = roles.size
 
-  import multiNodeConfig._
   import RemoteReDeploymentMultiJvmSpec._
+  import multiNodeConfig._
 
   "A remote deployment target system" must {
 

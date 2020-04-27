@@ -8,6 +8,10 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.ActorRef
@@ -19,9 +23,6 @@ import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.testkit._
 import akka.util.unused
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 object TransportFailConfig extends MultiNodeConfig {
   val first = role("first")

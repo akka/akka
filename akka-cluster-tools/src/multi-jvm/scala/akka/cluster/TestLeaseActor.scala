@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -19,9 +20,9 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.Props
 import akka.cluster.TestLeaseActor.{ Acquire, Create, Release }
-import akka.event.Logging
 import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.scaladsl.Lease
+import akka.event.Logging
 import akka.pattern.ask
 import akka.testkit.JavaSerializable
 import akka.util.Timeout

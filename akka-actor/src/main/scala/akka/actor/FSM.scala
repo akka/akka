@@ -4,16 +4,18 @@
 
 package akka.actor
 
-import language.implicitConversions
-import scala.concurrent.duration.Duration
 import scala.collection.mutable
-import scala.concurrent.duration.FiniteDuration
-import scala.concurrent.duration._
-import akka.routing.{ Deafen, Listen, Listeners }
-import akka.annotation.InternalApi
-import akka.util.{ unused, JavaDurationConverters }
-import com.github.ghik.silencer.silent
 import scala.concurrent.ExecutionContextExecutor
+import scala.concurrent.duration._
+import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
+
+import com.github.ghik.silencer.silent
+import language.implicitConversions
+
+import akka.annotation.InternalApi
+import akka.routing.{ Deafen, Listen, Listeners }
+import akka.util.{ unused, JavaDurationConverters }
 
 object FSM {
 

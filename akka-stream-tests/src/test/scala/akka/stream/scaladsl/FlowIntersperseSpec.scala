@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-
-import scala.concurrent.duration._
 
 class FlowIntersperseSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

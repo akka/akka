@@ -5,6 +5,9 @@
 package akka.cluster.sharding.typed
 
 import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
@@ -12,7 +15,6 @@ import akka.cluster.sharding.{ ClusterShardingSettings => ClassicShardingSetting
 import akka.cluster.singleton.{ ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.ClusterSingletonManagerSettings
-import com.typesafe.config.Config
 import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {

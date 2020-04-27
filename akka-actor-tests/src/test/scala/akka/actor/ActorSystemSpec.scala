@@ -4,22 +4,23 @@
 
 package akka.actor
 
-import java.util.concurrent.atomic.AtomicInteger
 import java.util.concurrent.{ ConcurrentLinkedQueue, RejectedExecutionException }
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.{ Config, ConfigFactory }
 
 import akka.actor.setup.ActorSystemSetup
 import akka.dispatch._
 import akka.japi.Util.immutableSeq
 import akka.pattern.ask
 import akka.testkit.{ TestKit, _ }
-import akka.util.Helpers.ConfigOps
 import akka.util.{ Switch, Timeout }
-import com.github.ghik.silencer.silent
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.concurrent.duration._
-import scala.concurrent.{ Await, Future }
-import scala.language.postfixOps
+import akka.util.Helpers.ConfigOps
 
 object ActorSystemSpec {
 

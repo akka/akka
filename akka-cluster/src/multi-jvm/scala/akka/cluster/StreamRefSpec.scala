@@ -4,6 +4,13 @@
 
 package akka.cluster
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Failure
+import scala.util.Success
+
+import com.typesafe.config.ConfigFactory
+
 import akka.Done
 import akka.actor.{ Actor, ActorIdentity, ActorLogging, ActorRef, Identify, Props }
 import akka.remote.testkit.MultiNodeConfig
@@ -21,12 +28,6 @@ import akka.stream.scaladsl.StreamRefs
 import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.scaladsl.TestSink
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Failure
-import scala.util.Success
 import akka.util.JavaDurationConverters._
 
 object StreamRefSpec extends MultiNodeConfig {

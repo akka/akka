@@ -7,13 +7,13 @@ package akka.pattern
 import java.util.Optional
 import java.util.concurrent.ThreadLocalRandom
 
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+import scala.util.Try
+
 import akka.actor.{ ActorRef, DeadLetterSuppression, OneForOneStrategy, Props, SupervisorStrategy }
 import akka.annotation.InternalApi
 import akka.pattern.internal.BackoffOnStopSupervisor
 import akka.util.JavaDurationConverters._
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-import scala.util.Try
 
 object BackoffSupervisor {
 

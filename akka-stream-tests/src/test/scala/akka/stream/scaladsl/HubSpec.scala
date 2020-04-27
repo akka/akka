@@ -4,20 +4,20 @@
 
 package akka.stream.scaladsl
 
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import akka.stream.KillSwitches
+import akka.stream.ThrottleMode
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
 import akka.stream.testkit.Utils.TE
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestSubscriber
-import akka.stream.KillSwitches
-import akka.stream.ThrottleMode
 import akka.testkit.EventFilter
-
-import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 class HubSpec extends StreamSpec {
 

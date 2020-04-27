@@ -8,9 +8,9 @@ import akka.actor.typed.Behavior
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors }
 import akka.annotation.{ InternalApi, InternalStableApi }
+import akka.persistence._
 import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
-import akka.persistence._
 import akka.persistence.typed.RecoveryFailed
 import akka.util.unused
 

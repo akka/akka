@@ -6,11 +6,12 @@ package akka.actor.typed
 
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 import org.openjdk.jmh.annotations._
 
-import scala.concurrent.Await
-import scala.concurrent.duration._
 import akka.actor.typed.scaladsl.AskPattern._
 
 object TypedActorBenchmark {

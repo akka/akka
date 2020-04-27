@@ -47,8 +47,9 @@ object PersistenceInit {
       extSystem.systemActorOf(
         PersistenceInitImpl.props(journalPluginId, snapshotPluginId, persistenceId),
         persistenceId)
-    import akka.pattern.ask
     import extSystem.dispatcher
+
+    import akka.pattern.ask
     implicit val askTimeout: Timeout = timeout
     (ref ? "start").map(_ => Done)
   }

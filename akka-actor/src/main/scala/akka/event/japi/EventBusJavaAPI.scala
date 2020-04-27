@@ -4,8 +4,8 @@
 
 package akka.event.japi
 
-import akka.util.Subclassification
 import akka.actor.{ ActorRef, ActorSystem }
+import akka.util.Subclassification
 
 /**
  * Java API: See documentation for [[akka.event.EventBus]]

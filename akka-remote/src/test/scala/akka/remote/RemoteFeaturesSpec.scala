@@ -6,6 +6,10 @@ package akka.remote
 
 import scala.concurrent.duration._
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorIdentity
 import akka.actor.AddressFromURIString
@@ -22,9 +26,6 @@ import akka.remote.artery.RemoteDeploymentSpec
 import akka.testkit.EventFilter
 import akka.testkit.ImplicitSender
 import akka.testkit.TestProbe
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
 
 object RemoteFeaturesSpec {
 

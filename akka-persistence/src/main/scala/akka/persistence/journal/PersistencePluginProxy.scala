@@ -7,6 +7,10 @@ package akka.persistence.journal
 import java.net.URISyntaxException
 import java.util.concurrent.TimeoutException
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+
 import akka.actor._
 import akka.persistence.{
   AtomicWrite,
@@ -20,9 +24,6 @@ import akka.persistence.{
   SnapshotProtocol
 }
 import akka.util.Helpers.Requiring
-import com.typesafe.config.Config
-
-import scala.concurrent.duration._
 
 object PersistencePluginProxy {
   final case class TargetLocation(address: Address)
@@ -72,8 +73,8 @@ object PersistencePluginProxyExtension
 }
 
 final class PersistencePluginProxy(config: Config) extends Actor with Stash with ActorLogging {
-  import PersistencePluginProxy._
   import JournalProtocol._
+  import PersistencePluginProxy._
   import SnapshotProtocol._
 
   private val pluginId = self.path.name

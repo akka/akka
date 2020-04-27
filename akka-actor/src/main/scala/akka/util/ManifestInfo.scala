@@ -4,11 +4,14 @@
 
 package akka.util
 
-import scala.collection.immutable
 import java.io.IOException
 import java.util.Arrays
 import java.util.jar.Attributes
 import java.util.jar.Manifest
+
+import scala.collection.immutable
+
+import com.github.ghik.silencer.silent
 
 import akka.actor.ActorSystem
 import akka.actor.ClassicActorSystemProvider
@@ -17,7 +20,6 @@ import akka.actor.Extension
 import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.event.Logging
-import com.github.ghik.silencer.silent
 
 /**
  * Akka extension that extracts [[ManifestInfo.Version]] information from META-INF/MANIFEST.MF in jar files

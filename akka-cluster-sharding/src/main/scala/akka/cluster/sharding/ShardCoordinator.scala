@@ -9,28 +9,29 @@ import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
 
+import com.github.ghik.silencer.silent
+
 import akka.actor._
 import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
 import akka.cluster.Cluster
-import akka.cluster.ClusterEvent._
-import akka.cluster.ddata.LWWRegister
-import akka.cluster.ddata.LWWRegisterKey
-import akka.cluster.ddata.Replicator._
-import akka.dispatch.ExecutionContexts
-import akka.pattern.{ pipe, AskTimeoutException }
-import akka.persistence._
 import akka.cluster.ClusterEvent
+import akka.cluster.ClusterEvent._
 import akka.cluster.ddata.GSet
 import akka.cluster.ddata.GSetKey
 import akka.cluster.ddata.Key
+import akka.cluster.ddata.LWWRegister
+import akka.cluster.ddata.LWWRegisterKey
 import akka.cluster.ddata.ReplicatedData
+import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.dispatch.ExecutionContexts
 import akka.event.BusLogging
 import akka.event.Logging
+import akka.pattern.{ pipe, AskTimeoutException }
+import akka.persistence._
 import akka.util.PrettyDuration._
 import akka.util.Timeout
-import com.github.ghik.silencer.silent
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -1105,6 +1106,7 @@ class DDataShardCoordinator(
     extends ShardCoordinator(settings, allocationStrategy)
     with Stash {
   import ShardCoordinator.Internal._
+
   import akka.cluster.ddata.Replicator.Update
 
   private val stateReadConsistency = settings.tuningParameters.coordinatorStateReadMajorityPlus match {

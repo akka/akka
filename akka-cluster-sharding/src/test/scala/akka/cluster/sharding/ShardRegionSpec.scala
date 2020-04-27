@@ -6,13 +6,14 @@ package akka.cluster.sharding
 
 import java.io.File
 
-import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props }
-import akka.cluster.ClusterEvent.CurrentClusterState
-import akka.cluster.{ Cluster, MemberStatus }
-import akka.testkit.TestEvent.Mute
-import akka.testkit.{ AkkaSpec, DeadLettersFilter, TestProbe }
 import com.typesafe.config.ConfigFactory
 import org.apache.commons.io.FileUtils
+
+import akka.actor.{ Actor, ActorLogging, ActorRef, ActorSystem, PoisonPill, Props }
+import akka.cluster.{ Cluster, MemberStatus }
+import akka.cluster.ClusterEvent.CurrentClusterState
+import akka.testkit.{ AkkaSpec, DeadLettersFilter, TestProbe }
+import akka.testkit.TestEvent.Mute
 
 object ShardRegionSpec {
   val host = "127.0.0.1"
@@ -59,8 +60,9 @@ object ShardRegionSpec {
 }
 class ShardRegionSpec extends AkkaSpec(ShardRegionSpec.config) {
 
-  import ShardRegionSpec._
   import scala.concurrent.duration._
+
+  import ShardRegionSpec._
 
   val storageLocation = List(
     new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)

@@ -4,12 +4,14 @@
 
 package akka.cluster.metrics
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
+import scala.language.postfixOps
 import scala.util.Try
-import akka.testkit._
-import akka.cluster.metrics.StandardMetrics._
+
 import com.github.ghik.silencer.silent
+
+import akka.cluster.metrics.StandardMetrics._
+import akka.testkit._
 
 @silent
 class MetricsCollectorSpec

@@ -4,11 +4,12 @@
 
 package akka.actor.testkit.typed.javadsl
 
-import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
+import java.util.concurrent.ThreadLocalRandom
+
 import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.internal.BehaviorTestKitImpl
 import akka.actor.typed.{ ActorRef, Behavior, Signal }
 import akka.annotation.{ ApiMayChange, DoNotInherit }
-import java.util.concurrent.ThreadLocalRandom
 
 object BehaviorTestKit {
   import akka.actor.testkit.typed.scaladsl.TestInbox.address

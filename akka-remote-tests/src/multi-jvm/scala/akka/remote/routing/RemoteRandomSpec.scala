@@ -5,6 +5,9 @@
 package akka.remote.routing
 
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.Address
@@ -16,7 +19,6 @@ import akka.routing.Broadcast
 import akka.routing.RandomPool
 import akka.routing.RoutedActorRef
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 
 class RemoteRandomConfig(artery: Boolean) extends MultiNodeConfig {
 
@@ -60,8 +62,8 @@ object RemoteRandomSpec {
 class RemoteRandomSpec(multiNodeConfig: RemoteRandomConfig)
     extends RemotingMultiNodeSpec(multiNodeConfig)
     with DefaultTimeout {
-  import multiNodeConfig._
   import RemoteRandomSpec._
+  import multiNodeConfig._
 
   def initialParticipants = roles.size
 

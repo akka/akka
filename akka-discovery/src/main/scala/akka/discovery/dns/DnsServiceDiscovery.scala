@@ -6,31 +6,29 @@ package akka.discovery.dns
 
 import java.net.InetAddress
 
-import akka.actor.ActorRef
-
-import scala.concurrent.duration._
-import akka.actor.ExtendedActorSystem
-import akka.annotation.InternalApi
-import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
-import akka.event.Logging
-import akka.io.{ Dns, IO }
-import akka.pattern.ask
-
-import scala.concurrent.Future
-import scala.concurrent.duration.FiniteDuration
-import akka.discovery._
-import akka.io.SimpleDnsCache
-import akka.io.dns.DnsProtocol.{ Ip, Srv }
-import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, SRVRecord }
-
 import scala.collection.{ immutable => im }
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
 import scala.util.Failure
 import scala.util.Success
+
+import akka.actor.ActorRef
+import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
+import akka.discovery._
+import akka.discovery.ServiceDiscovery.{ Resolved, ResolvedTarget }
+import akka.dispatch.MessageDispatcher
+import akka.event.Logging
+import akka.io.{ Dns, IO }
+import akka.io.SimpleDnsCache
+import akka.io.dns.{ AAAARecord, ARecord, DnsProtocol, SRVRecord }
+import akka.io.dns.DnsProtocol.{ Ip, Srv }
 import akka.io.dns.internal.AsyncDnsManager
 import akka.pattern.AskTimeoutException
+import akka.pattern.ask
 import akka.util.OptionVal
 import akka.util.Timeout
-import akka.dispatch.MessageDispatcher
 
 /**
  * INTERNAL API
@@ -71,7 +69,6 @@ private object DnsServiceDiscovery {
 private[akka] class DnsServiceDiscovery(system: ExtendedActorSystem) extends ServiceDiscovery {
 
   import DnsServiceDiscovery._
-
   import ServiceDiscovery._
 
   private val log = Logging(system, getClass)

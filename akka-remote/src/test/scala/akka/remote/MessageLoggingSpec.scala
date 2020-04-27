@@ -4,11 +4,12 @@
 
 package akka.remote
 
-import akka.actor.{ Actor, ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Props, RootActorPath }
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit }
-import com.typesafe.config.{ Config, ConfigFactory }
 import MessageLoggingSpec._
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.actor.{ Actor, ActorIdentity, ActorSystem, ExtendedActorSystem, Identify, Props, RootActorPath }
 import akka.serialization.jackson.CborSerializable
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestKit }
 
 object MessageLoggingSpec {
   def config(artery: Boolean) = ConfigFactory.parseString(s"""

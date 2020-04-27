@@ -4,6 +4,12 @@
 
 package akka.cluster.routing
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
@@ -13,14 +19,9 @@ import akka.routing.GetRoutees
 import akka.routing.RoundRobinGroup
 import akka.routing.RoundRobinPool
 import akka.routing.Routees
+import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.ImplicitSender
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
 object UseRoleIgnoredMultiJvmSpec extends MultiNodeConfig {
 

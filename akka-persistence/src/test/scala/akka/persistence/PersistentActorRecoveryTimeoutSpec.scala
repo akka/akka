@@ -4,13 +4,14 @@
 
 package akka.persistence
 
-import akka.actor.Status.Failure
-import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
-import akka.persistence.journal.SteppingInmemJournal
-import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
+import akka.actor.{ Actor, ActorLogging, ActorRef, Props }
+import akka.actor.Status.Failure
+import akka.persistence.journal.SteppingInmemJournal
+import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
 
 object PersistentActorRecoveryTimeoutSpec {
   val journalId = "persistent-actor-recovery-timeout-spec"

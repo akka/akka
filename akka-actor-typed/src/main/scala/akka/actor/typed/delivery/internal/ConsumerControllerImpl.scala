@@ -18,8 +18,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.StashBuffer
 import akka.actor.typed.scaladsl.TimerScheduler
-import akka.util.ConstantFun.scalaIdentityFunction
 import akka.annotation.InternalApi
+import akka.util.ConstantFun.scalaIdentityFunction
 
 /**
  * INTERNAL API

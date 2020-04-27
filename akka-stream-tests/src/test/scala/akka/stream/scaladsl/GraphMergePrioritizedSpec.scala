@@ -4,11 +4,12 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration._
+
 import akka.NotUsed
-import akka.stream.testkit.TestSubscriber.ManualProbe
 import akka.stream.{ ClosedShape, Inlet, Outlet }
 import akka.stream.testkit.{ TestSubscriber, TwoStreamsSetup }
-import scala.concurrent.duration._
+import akka.stream.testkit.TestSubscriber.ManualProbe
 
 class GraphMergePrioritizedSpec extends TwoStreamsSetup {
   import GraphDSL.Implicits._

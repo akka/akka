@@ -4,6 +4,13 @@
 
 package akka.stream.scaladsl
 
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.Promise
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+
 import akka.NotUsed
 import akka.stream.AbruptStageTerminationException
 import akka.stream.Materializer
@@ -15,12 +22,6 @@ import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.stream.testkit.scaladsl.TestSink
 import akka.stream.testkit.scaladsl.TestSource
 import akka.testkit.TestProbe
-import com.github.ghik.silencer.silent
-
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.Promise
-import scala.concurrent.duration._
 
 @silent("deprecated") // tests deprecated API as well
 class LazyFlowSpec extends StreamSpec("""

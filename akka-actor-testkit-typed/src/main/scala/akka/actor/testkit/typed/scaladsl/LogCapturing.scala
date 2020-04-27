@@ -6,11 +6,12 @@ package akka.actor.testkit.typed.scaladsl
 
 import scala.util.control.NonFatal
 
-import akka.actor.testkit.typed.internal.CapturingAppender
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Outcome
 import org.scalatest.TestSuite
 import org.slf4j.LoggerFactory
+
+import akka.actor.testkit.typed.internal.CapturingAppender
 
 /**
  * Mixin this trait to a ScalaTest test to make log lines appear only when the test failed.

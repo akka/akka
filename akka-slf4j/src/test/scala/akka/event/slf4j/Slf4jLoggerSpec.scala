@@ -4,17 +4,18 @@
 
 package akka.event.slf4j
 
-import language.postfixOps
-import akka.testkit.AkkaSpec
-import akka.actor.{ Actor, DiagnosticActorLogging, Props }
-
-import scala.concurrent.duration._
-import akka.event.{ LogMarker, Logging }
-import ch.qos.logback.core.OutputStreamAppender
 import java.io.ByteArrayOutputStream
 
+import scala.concurrent.duration._
+
+import ch.qos.logback.core.OutputStreamAppender
+import language.postfixOps
 import org.scalatest.BeforeAndAfterEach
 import org.slf4j.{ Marker, MarkerFactory }
+
+import akka.actor.{ Actor, DiagnosticActorLogging, Props }
+import akka.event.{ LogMarker, Logging }
+import akka.testkit.AkkaSpec
 
 object Slf4jLoggerSpec {
 

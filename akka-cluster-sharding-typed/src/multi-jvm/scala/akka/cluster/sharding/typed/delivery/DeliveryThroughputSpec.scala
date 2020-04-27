@@ -9,6 +9,8 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ActorIdentity
 import akka.actor.Identify
 import akka.actor.testkit.typed.scaladsl.TestProbe
@@ -35,7 +37,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.testkit.PerfFlamesSupport
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.ConfigFactory
 
 object DeliveryThroughputSpec extends MultiNodeConfig {
   val first = role("first")

@@ -4,18 +4,18 @@
 
 package akka.actor
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
 import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+import org.scalatestplus.junit.JUnitSuiteLike
+
+import akka.pattern.ask
 import akka.testkit._
 import akka.testkit.DefaultTimeout
 import akka.testkit.TestEvent._
-
-import scala.concurrent.Await
-import akka.pattern.ask
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.duration._
-import org.scalatest.BeforeAndAfterEach
-import org.scalatestplus.junit.JUnitSuiteLike
 
 object ActorWithStashSpec {
 

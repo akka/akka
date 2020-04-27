@@ -4,14 +4,14 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import akka.stream.AbruptTerminationException
 import akka.stream.Materializer
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 class HeadSinkSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

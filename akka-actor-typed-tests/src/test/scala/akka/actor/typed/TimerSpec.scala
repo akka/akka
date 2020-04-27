@@ -8,17 +8,18 @@ import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.DeadLetter
 import akka.actor.testkit.typed.TestException
-import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl._
+import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.TimerScheduler
 import akka.testkit.TimingTest
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class TimerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 

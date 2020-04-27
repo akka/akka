@@ -4,15 +4,16 @@
 
 package akka.testkit
 
-import akka.actor._
 import java.util.concurrent.atomic.AtomicLong
-
-import akka.dispatch._
 
 import scala.concurrent.Await
 import scala.reflect.ClassTag
-import akka.pattern.ask
+
 import com.github.ghik.silencer.silent
+
+import akka.actor._
+import akka.dispatch._
+import akka.pattern.ask
 
 /**
  * This special ActorRef is exclusively for use during unit testing in a single-threaded environment. Therefore, it

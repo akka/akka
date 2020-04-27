@@ -6,16 +6,18 @@ package akka.dispatch
 
 import java.util.concurrent.{ Executor, ExecutorService, Executors }
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.{ ExecutionContext, ExecutionContextExecutor, ExecutionContextExecutorService }
 import scala.concurrent.{ blocking, Await, Future, Promise }
 import scala.concurrent.duration._
-import akka.testkit.{ AkkaSpec, DefaultTimeout, TestLatch }
-import akka.util.SerializedSuspendableExecutionContext
-import akka.testkit.TestActorRef
-import akka.actor.Props
+
 import akka.actor.Actor
-import akka.testkit.TestProbe
+import akka.actor.Props
+import akka.testkit.{ AkkaSpec, DefaultTimeout, TestLatch }
 import akka.testkit.CallingThreadDispatcher
+import akka.testkit.TestActorRef
+import akka.testkit.TestProbe
+import akka.util.SerializedSuspendableExecutionContext
 
 class ExecutionContextSpec extends AkkaSpec with DefaultTimeout {
 

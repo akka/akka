@@ -4,13 +4,14 @@
 
 package akka.event
 
-import akka.dispatch.MessageQueue
-import akka.dispatch.MailboxType
-import akka.dispatch.UnboundedMailbox
 import com.typesafe.config.Config
-import akka.actor.ActorSystem
+
 import akka.actor.ActorRef
+import akka.actor.ActorSystem
+import akka.dispatch.MailboxType
+import akka.dispatch.MessageQueue
 import akka.dispatch.ProducesMessageQueue
+import akka.dispatch.UnboundedMailbox
 import akka.event.Logging.LogEvent
 import akka.util.unused
 

@@ -6,7 +6,6 @@ package akka.actor.dungeon
 
 import akka.actor.Actor
 import akka.actor.Props
-
 import akka.testkit._
 
 object DispatchSpec {

@@ -4,16 +4,15 @@
 
 package akka.actor.testkit.typed.internal
 
-import scala.util.control.Exception.Catcher
-
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
-import akka.annotation.InternalApi
 import scala.concurrent.{ Await, TimeoutException }
 import scala.concurrent.duration.Duration
+import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Props }
 import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
+import akka.annotation.InternalApi
 
 /**
  * INTERNAL API

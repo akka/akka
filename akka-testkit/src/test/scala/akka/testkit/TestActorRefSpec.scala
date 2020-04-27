@@ -4,14 +4,16 @@
 
 package akka.testkit
 
-import language.{ postfixOps }
-import org.scalatest.{ BeforeAndAfterEach }
-import akka.actor._
-import akka.event.Logging.Warning
 import scala.concurrent.{ Await, Promise }
 import scala.concurrent.duration._
-import akka.pattern.ask
+
+import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+
+import akka.actor._
 import akka.dispatch.Dispatcher
+import akka.event.Logging.Warning
+import akka.pattern.ask
 
 /**
  * Test whether TestActorRef behaves as an ActorRef should, besides its own spec.

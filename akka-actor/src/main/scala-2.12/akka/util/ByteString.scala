@@ -5,18 +5,18 @@
 package akka.util
 
 import java.io.{ ObjectInputStream, ObjectOutputStream }
-import java.nio.{ ByteBuffer, ByteOrder }
 import java.lang.{ Iterable => JIterable }
+import java.nio.{ ByteBuffer, ByteOrder }
+import java.nio.charset.{ Charset, StandardCharsets }
 import java.util.Base64
 
 import scala.annotation.{ tailrec, varargs }
 import scala.collection.IndexedSeqOptimized
-import scala.collection.mutable.{ Builder, WrappedArray }
+import scala.collection.generic.CanBuildFrom
 import scala.collection.immutable
 import scala.collection.immutable.{ IndexedSeq, VectorBuilder }
-import scala.collection.generic.CanBuildFrom
+import scala.collection.mutable.{ Builder, WrappedArray }
 import scala.reflect.ClassTag
-import java.nio.charset.{ Charset, StandardCharsets }
 
 object ByteString {
 

@@ -4,15 +4,15 @@
 
 package akka.cluster.routing
 
+import scala.concurrent.Await
+
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.cluster.MultiNodeClusterSpec
 import akka.pattern.ask
 import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.routing.{ Broadcast, ConsistentHashingGroup, GetRoutees, Routees }
+import akka.routing.ConsistentHashingRouter.ConsistentHashMapping
 import akka.testkit._
-
-import scala.concurrent.Await
 
 object ClusterConsistentHashingGroupMultiJvmSpec extends MultiNodeConfig {
 
