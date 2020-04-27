@@ -92,8 +92,6 @@ object Dependencies {
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
 
-    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion
-
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
 
     object Docs {
@@ -161,6 +159,8 @@ object Dependencies {
       val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "optional;provided;test" // ApacheV2
 
       val logback = Compile.logback % "optional;provided;test" // EPL 1.0
+
+      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "optional;provided"
 
     }
 
