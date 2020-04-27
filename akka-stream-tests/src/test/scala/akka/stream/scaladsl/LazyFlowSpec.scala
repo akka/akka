@@ -8,10 +8,8 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.Promise
 import scala.concurrent.duration._
-
 import com.github.ghik.silencer.silent
-
-import akka.NotUsed
+import akka.{ Done, NotUsed }
 import akka.stream.AbruptStageTerminationException
 import akka.stream.Materializer
 import akka.stream.NeverMaterializedException
@@ -177,7 +175,7 @@ class LazyFlowSpec extends StreamSpec("""
 
       firstElementArrived.future.map { _ =>
         flowPromise.success(Flow[Int].map(_.toString))
-    }
+      }
 
       result.futureValue shouldBe List("1")
     }

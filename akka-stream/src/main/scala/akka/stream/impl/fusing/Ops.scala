@@ -9,7 +9,7 @@ import java.util.concurrent.TimeUnit.NANOSECONDS
 import scala.annotation.tailrec
 import scala.collection.immutable
 import scala.collection.immutable.VectorBuilder
-import scala.concurrent.{ Future, Promise }
+import scala.concurrent.Future
 import scala.concurrent.duration.{ FiniteDuration, _ }
 import scala.util.{ Failure, Success, Try }
 import scala.util.control.{ NoStackTrace, NonFatal }
