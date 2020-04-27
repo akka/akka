@@ -243,7 +243,7 @@ object Dependencies {
         Provided.levelDB,
         Provided.levelDBNative)
 
-  val persistenceTestKit = l ++= Seq(Test.scalatest)
+  val persistenceTestKit = l ++= Seq(Test.scalatest, Test.logback)
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 

@@ -281,6 +281,7 @@ lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
   .dependsOn(
     persistenceTyped % "compile->compile;provided->provided;test->test",
     testkit % "compile->compile;test->test",
+    actorTestkitTyped,
     persistenceTck % "test")
   .settings(Dependencies.persistenceTestKit)
   .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
@@ -450,6 +451,7 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",
+    persistenceTestkit % "test->test",
     remote % "compile->CompileJdk9;test->test",
     remoteTests % "test->test",
     remoteTests % "test->test;multi-jvm->multi-jvm",

@@ -8,6 +8,7 @@ import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.typed
+import akka.actor.typed.ActorRef
 import akka.actor.typed.BackoffSupervisorStrategy
 import akka.actor.typed.Behavior
 import akka.actor.typed.BehaviorInterceptor
@@ -55,6 +56,17 @@ private[akka] object EventSourcedBehaviorImpl {
     }
   }
   final case class WriterIdentity(instanceId: Int, writerUuid: String)
+
+  /**
+   * Used by EventSourcedBehaviorTestKit to retrieve the `persistenceId`.
+   */
+  final case class GetPersistenceId(replyTo: ActorRef[PersistenceId]) extends Signal
+
+  /**
+   * Used by EventSourcedBehaviorTestKit to retrieve the state.
+   * Can't be a Signal because those are not stashed.
+   */
+  final case class GetState[State](replyTo: ActorRef[State]) extends InternalProtocol
 
 }
 
@@ -112,6 +124,7 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
         ctx.log.debug("Events successfully deleted to sequence number [{}].", toSequenceNr)
       case (_, DeleteEventsFailed(toSequenceNr, failure)) =>
         ctx.log.warn2("Failed to delete events to sequence number [{}] due to: {}", toSequenceNr, failure.getMessage)
+      case (_, EventSourcedBehaviorImpl.GetPersistenceId(replyTo)) => replyTo ! persistenceId
     }
 
     // do this once, even if the actor is restarted
