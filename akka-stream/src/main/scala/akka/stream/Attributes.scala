@@ -439,10 +439,45 @@ object Attributes {
       strategy: CancellationStrategy.Strategy): CancellationStrategy.Strategy =
     CancellationStrategy.AfterDelay(delay, strategy)
 
-  case class NestedMaterializationCancellationPolicy(delay: Boolean) extends MandatoryAttribute
+  /**
+   * Nested materialization cancellation strategy provides a way to configure the cancellation behavior of stages that materialize a nested flow at some stage.
+   *
+   * When cancelled before materializing their nested flows, these stages can either immediately cancel (default behaviour) without materializing the nested flow
+   * or wait for the nested materialization and then propagate the cancellation signal.
+   *
+   * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] (and derivations such as [[akka.stream.scaladsl.Flow.lazyFutureFlow]]).
+   * These operators either delay the nested flow's materialization or wait for a future to complete before doing so,
+   * in this period of time they may receive a downstream cancellation signal. When this happens these operators will behave according to
+   * this [[Attribute]]: when set to true they will 'stash' the signal and later deliver it to the materialized nested flow
+   * , otherwise these stages will immediately cancel without materializing the nested flow.
+   */
+  @ApiMayChange
+  case class NestedMaterializationCancellationPolicy(propagateToNestedMaterialization: Boolean)
+      extends MandatoryAttribute
+
+  @ApiMayChange
   object NestedMaterializationCancellationPolicy {
     val Default = NestedMaterializationCancellationPolicy(false)
   }
+
+  /**
+   * Java API
+   *
+   * Nested materialization cancellation strategy provides a way to configure the cancellation behavior of stages that materialize a nested flow at some stage.
+   *
+   * When cancelled before materializing their nested flows, these stages can either immediately cancel (default behaviour) without materializing the nested flow
+   * or wait for the nested materialization and then propagate the cancellation signal.
+   *
+   * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] (and derivations such as [[akka.stream.scaladsl.Flow.lazyFutureFlow]]).
+   * These operators either delay the nested flow's materialization or wait for a future to complete before doing so,
+   * in this period of time they may receive a downstream cancellation signal. When this happens these operators will behave according to
+   * this [[Attribute]]: when set to true they will 'stash' the signal and later deliver it to the materialized nested flow
+   * , otherwise these stages will immediately cancel without materializing the nested flow.
+   */
+  @ApiMayChange
+  def nestedMaterializationCancellationPolicy(
+      propagateToNestedMaterialization: Boolean): NestedMaterializationCancellationPolicy =
+    NestedMaterializationCancellationPolicy(propagateToNestedMaterialization)
 
   object LogLevels {
 

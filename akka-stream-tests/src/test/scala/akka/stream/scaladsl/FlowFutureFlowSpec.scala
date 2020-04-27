@@ -518,7 +518,7 @@ class FlowFutureFlowSpec extends StreamSpec {
       val fl = Flow.fromMaterializer {
         case (_, attributes) =>
           val att = attributes.mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
-          att.delay should be(false)
+          att.propagateToNestedMaterialization should be(false)
           Flow[Any]
       }
       Source.empty.via(fl).runWith(Sink.headOption).futureValue should be(empty)

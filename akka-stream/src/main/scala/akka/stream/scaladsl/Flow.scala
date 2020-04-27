@@ -620,6 +620,10 @@ object Flow {
    *
    * The materialized future value is completed with the materialized value of the future flow or failed with a
    * [[NeverMaterializedException]] if upstream fails or downstream cancels before the future has completed.
+   *
+   * The operator's default behaviour in case of downstream cancellation before nested flow materialization (future completion) is to cancel immediately.
+   * This behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy]] attribute to true,
+   * this will delay downstream cancellation until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    */
   def futureFlow[I, O, M](flow: Future[Flow[I, O, M]]): Flow[I, O, Future[M]] =
     Flow.fromGraph(new FutureFlow(flow))
@@ -1963,7 +1967,9 @@ trait FlowOps[+Out, +Mat] {
    *  the resulting flow will be materialized and signalled for upstream completion, it can then complete or continue to emit elements at its own discretion.
    *
    * '''Cancels when''' the materialized flow cancels.
-   *  Notice that when downstream cancels prior to prefix completion, the cancellation cause is stashed until prefix completion (or upstream completion) and then handed to the materialized flow.
+   *  When downstream cancels before materialization of the nested flow, the operator's default behaviour is to cancel immediately,
+   *  this behaviour can be controlled by setting the [[akka.stream.Attributes.NestedMaterializationCancellationPolicy]] attribute to the flow.
+   *  When this attribute is configured to true, downstream cancellation is delayed until nested flow's materialization which is then immediately cancelled (with the original cancellation cause).
    *
    *  @param n the number of elements to accumulate before materializing the downstream flow.
    *  @param f a function that produces the downstream flow based on the upstream's prefix.

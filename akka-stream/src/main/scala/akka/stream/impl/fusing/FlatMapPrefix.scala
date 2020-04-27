@@ -27,7 +27,7 @@ import akka.util.OptionVal
   override def initialAttributes: Attributes = DefaultAttributes.flatMapPrefix
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
-    val Attributes.NestedMaterializationCancellationPolicy(delayDownstreamCancellation) =
+    val Attributes.NestedMaterializationCancellationPolicy(propagateToNestedMaterialization) =
       inheritedAttributes.mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
     val matPromise = Promise[M]
     val logic = new GraphStageLogic(shape) with InHandler with OutHandler {
@@ -92,7 +92,7 @@ import akka.util.OptionVal
 
       override def onDownstreamFinish(cause: Throwable): Unit = {
         subSink match {
-          case OptionVal.None if delayDownstreamCancellation => downstreamCause = OptionVal.Some(cause)
+          case OptionVal.None if propagateToNestedMaterialization => downstreamCause = OptionVal.Some(cause)
           case OptionVal.None =>
             matPromise.failure(new NeverMaterializedException(cause))
             super.onDownstreamFinish(cause)

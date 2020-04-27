@@ -21,7 +21,7 @@ import scala.util.{ Failure, Success, Try }
   override val shape: FlowShape[In, Out] = FlowShape(in, out)
 
   override def createLogicAndMaterializedValue(inheritedAttributes: Attributes): (GraphStageLogic, Future[M]) = {
-    val Attributes.NestedMaterializationCancellationPolicy(delayDownstreamCancellation) =
+    val Attributes.NestedMaterializationCancellationPolicy(propagateToNestedMaterialization) =
       inheritedAttributes.mandatoryAttribute[Attributes.NestedMaterializationCancellationPolicy]
     val innerMatValue = Promise[M]
     val logic = new GraphStageLogic(shape) {
@@ -64,7 +64,7 @@ import scala.util.{ Failure, Success, Try }
 
         var downstreamCause = OptionVal.none[Throwable]
         override def onDownstreamFinish(cause: Throwable): Unit =
-          if (delayDownstreamCancellation) {
+          if (propagateToNestedMaterialization) {
             downstreamCause = OptionVal.Some(cause)
           } else {
             innerMatValue.failure(new NeverMaterializedException(cause))
