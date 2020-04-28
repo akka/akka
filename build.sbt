@@ -80,7 +80,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
-  .enablePlugins(DeployRsync)
+  .enablePlugins(PublishRsyncPlugin)
   .settings(rootSettings: _*)
   .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
@@ -209,7 +209,7 @@ lazy val docs = akkaModule("akka-docs")
   .settings(javacOptions += "-parameters") // for Jackson
   .enablePlugins(
     AkkaParadoxPlugin,
-    DeployRsync,
+    PublishRsyncPlugin,
     NoPublish,
     ParadoxBrowse,
     ScaladocNoVerificationOfDiagrams,
