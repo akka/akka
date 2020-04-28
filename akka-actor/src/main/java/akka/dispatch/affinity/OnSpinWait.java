@@ -8,13 +8,18 @@ import akka.util.Unsafe;
 import java.lang.invoke.MethodHandle;
 import java.lang.invoke.MethodHandles;
 import scala.util.control.NonFatal;
+import akka.annotation.InternalApi;
 import static java.lang.invoke.MethodType.methodType;
 
+/**
+ * INTERNAL API
+ */
+@InternalApi
 final class OnSpinWait {
     private final static MethodHandle handle;
 
     public final static void spinWait() throws Throwable {
-        handle.invokeExact();
+        handle.invoke(); // Will be inlined as an invokeExact since the callsite matches the MH definition of () -> void
     }
 
     static {
