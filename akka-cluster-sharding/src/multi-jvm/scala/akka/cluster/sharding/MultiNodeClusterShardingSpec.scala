@@ -94,6 +94,8 @@ abstract class MultiNodeClusterShardingSpec(val config: MultiNodeClusterSharding
   protected lazy val storageLocations = List(
     new File(system.settings.config.getString("akka.cluster.sharding.distributed-data.durable.lmdb.dir")).getParentFile)
 
+  override def expectedTestDuration = 120.seconds
+
   override protected def atStartup(): Unit = {
     storageLocations.foreach(dir => if (dir.exists) FileUtils.deleteQuietly(dir))
     enterBarrier("startup")
