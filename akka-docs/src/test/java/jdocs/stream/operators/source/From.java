@@ -8,6 +8,7 @@ import akka.actor.ActorSystem;
 import akka.stream.javadsl.Source;
 
 import java.util.Arrays;
+import java.util.stream.IntStream;
 
 public class From {
 
@@ -22,5 +23,16 @@ public class From {
     // 2
     // 3
     // #from-iterator
+  }
+
+  void fromJavaStreamSample() {
+    // #from-javaStream
+    Source.fromJavaStream(() -> IntStream.rangeClosed(1, 3))
+        .runForeach(System.out::println, system);
+    // could print
+    // 1
+    // 2
+    // 3
+    // #from-javaStream
   }
 }
