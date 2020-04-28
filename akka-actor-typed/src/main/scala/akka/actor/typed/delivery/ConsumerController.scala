@@ -162,7 +162,8 @@ object ConsumerController {
     def apply(config: Config): Settings = {
       new Settings(
         flowControlWindow = config.getInt("flow-control-window"),
-        resendInterval = config.getDuration("resend-interval").asScala,
+        resendIntervalMin = config.getDuration("resend-interval-min").asScala,
+        resendIntervalMax = config.getDuration("resend-interval-max").asScala,
         onlyFlowControl = config.getBoolean("only-flow-control"))
     }
 
@@ -183,7 +184,8 @@ object ConsumerController {
 
   final class Settings private (
       val flowControlWindow: Int,
-      val resendInterval: FiniteDuration,
+      val resendIntervalMin: FiniteDuration,
+      val resendIntervalMax: FiniteDuration,
       val onlyFlowControl: Boolean) {
 
     def withFlowControlWindow(newFlowControlWindow: Int): Settings =
@@ -192,20 +194,32 @@ object ConsumerController {
     /**
      * Scala API
      */
-    def withResendInterval(newResendInterval: FiniteDuration): Settings =
-      copy(resendInterval = newResendInterval)
+    def withResendIntervalMin(newResendIntervalMin: FiniteDuration): Settings =
+      copy(resendIntervalMin = newResendIntervalMin)
+
+    /**
+     * Scala API
+     */
+    def withResendIntervalMax(newResendIntervalMax: FiniteDuration): Settings =
+      copy(resendIntervalMax = newResendIntervalMax)
 
     /**
      * Java API
      */
-    def withResendInterval(newResendInterval: JavaDuration): Settings =
-      copy(resendInterval = newResendInterval.asScala)
+    def withResendIntervalMin(newResendIntervalMin: JavaDuration): Settings =
+      copy(resendIntervalMin = newResendIntervalMin.asScala)
 
     /**
      * Java API
      */
-    def getResendInterval(): JavaDuration =
-      resendInterval.asJava
+    def withResendIntervalMax(newResendIntervalMax: JavaDuration): Settings =
+      copy(resendIntervalMax = newResendIntervalMax.asScala)
+
+    /**
+     * Java API
+     */
+    def getResendIntervalMax(): JavaDuration =
+      resendIntervalMax.asJava
 
     def withOnlyFlowControl(newOnlyFlowControl: Boolean): Settings =
       copy(onlyFlowControl = newOnlyFlowControl)
@@ -215,12 +229,13 @@ object ConsumerController {
      */
     private def copy(
         flowControlWindow: Int = flowControlWindow,
-        resendInterval: FiniteDuration = resendInterval,
+        resendIntervalMin: FiniteDuration = resendIntervalMin,
+        resendIntervalMax: FiniteDuration = resendIntervalMax,
         onlyFlowControl: Boolean = onlyFlowControl) =
-      new Settings(flowControlWindow, resendInterval, onlyFlowControl)
+      new Settings(flowControlWindow, resendIntervalMin, resendIntervalMax, onlyFlowControl)
 
     override def toString: String =
-      s"Settings($flowControlWindow, $resendInterval, $onlyFlowControl)"
+      s"Settings($flowControlWindow, $resendIntervalMin, $onlyFlowControl)"
   }
 
   def apply[A](): Behavior[Command[A]] =
