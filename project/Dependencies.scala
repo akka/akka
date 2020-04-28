@@ -26,7 +26,7 @@ object Dependencies {
   val logbackVersion = "1.2.3"
 
   val scala212Version = "2.12.11"
-  val scala213Version = "2.13.1"
+  val scala213Version = "2.13.2"
 
   val reactiveStreamsVersion = "1.0.3"
 
