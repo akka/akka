@@ -9,9 +9,7 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import akka.actor.testkit.typed.scaladsl.{ LogCapturing, ScalaTestWithActorTestKit, TestProbe }
 import akka.actor.typed.ActorRef
-import akka.actor.typed.eventstream.EventStream
-import akka.persistence.journal.inmem.InmemJournal
-import akka.persistence.typed.PersistenceId
+import akka.persistence.typed.{ CheckIdempotencyKeyExistsSucceeded, PersistenceId, WriteIdempotencyKeySucceeded }
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -45,7 +43,10 @@ object EventSourcedBehaviorIdempotenceCacheSpec {
 
   case object AllGood extends IdempotenceReply
 
-  def idempotentState(persistenceId: PersistenceId): EventSourcedBehavior[Command, Int, Int] =
+  def idempotentState(
+      persistenceId: PersistenceId,
+      checks: ActorRef[String],
+      writes: ActorRef[String]): EventSourcedBehavior[Command, Int, Int] =
     EventSourcedBehavior
       .withEnforcedReplies[Command, Int, Int](
         persistenceId,
@@ -63,6 +64,12 @@ object EventSourcedBehaviorIdempotenceCacheSpec {
         eventHandler = (state, event) => {
           state + event
         })
+      .receiveSignal {
+        case (_, CheckIdempotencyKeyExistsSucceeded(idempotencyKey, exists)) =>
+          checks ! s"$idempotencyKey ${if (exists) "exists" else "not exists"}"
+        case (_, WriteIdempotencyKeySucceeded(idempotencyKey)) =>
+          writes ! s"$idempotencyKey written"
+      }
       .idempotenceKeyCacheSize(1)
 }
 
@@ -77,48 +84,41 @@ class EventSourcedBehaviorIdempotenceCacheSpec
 
   "side-effecting idempotent command" should {
     "cache idempotency keys" in {
-      val eventProbe = createTestProbe[InmemJournal.Operation]()
-      system.eventStream ! EventStream.Subscribe(eventProbe.ref)
+      val checksProbe = createTestProbe[String]()
+      val writesProbe = createTestProbe[String]()
 
       val probe = TestProbe[IdempotenceReply]
 
       val persistenceId = nextPid
-      val c = spawn(idempotentState(persistenceId))
+      val idempotenceKey = UUID.randomUUID().toString
 
-      def withIdempotencyKey(idempotenceKey: String) = {
-        c ! SideEffect(idempotenceKey, probe.ref)
-        eventProbe.expectMessage(InmemJournal.CheckIdempotenceKeyExists(persistenceId.id, idempotenceKey))
-        eventProbe.expectMessageType[InmemJournal.Write]
-        eventProbe.expectMessage(InmemJournal.WriteIdempotenceKey(persistenceId.id, idempotenceKey))
-        c ! SideEffect(idempotenceKey, probe.ref)
-        eventProbe.expectNoMessage(3.seconds)
-      }
+      val c = spawn(idempotentState(persistenceId, checksProbe.ref, writesProbe.ref))
 
-      withIdempotencyKey(UUID.randomUUID().toString)
-      withIdempotencyKey(UUID.randomUUID().toString)
+      c ! SideEffect(idempotenceKey, probe.ref)
+      checksProbe.expectMessage(s"$idempotenceKey not exists")
+      writesProbe.expectMessage(s"$idempotenceKey written")
+      c ! SideEffect(idempotenceKey, probe.ref)
+      checksProbe.expectNoMessage(3.seconds)
     }
   }
 
   "not side-effecting idempotent command" should {
     "cache idempotency keys" in {
-      val eventProbe = createTestProbe[InmemJournal.Operation]()
-      system.eventStream ! EventStream.Subscribe(eventProbe.ref)
+      val checksProbe = createTestProbe[String]()
+      val writesProbe = createTestProbe[String]()
 
       val probe = TestProbe[IdempotenceReply]
 
       val persistenceId = nextPid
-      val c = spawn(idempotentState(persistenceId))
+      val idempotenceKey = UUID.randomUUID().toString
 
-      def withIdempotencyKey(idempotenceKey: String) = {
-        c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
-        eventProbe.expectMessage(InmemJournal.CheckIdempotenceKeyExists(persistenceId.id, idempotenceKey))
-        eventProbe.expectMessage(InmemJournal.WriteIdempotenceKey(persistenceId.id, idempotenceKey))
-        c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
-        eventProbe.expectNoMessage(3.seconds)
-      }
+      val c = spawn(idempotentState(persistenceId, checksProbe.ref, writesProbe.ref))
 
-      withIdempotencyKey(UUID.randomUUID().toString)
-      withIdempotencyKey(UUID.randomUUID().toString)
+      c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
+      checksProbe.expectMessage(s"$idempotenceKey not exists")
+      writesProbe.expectMessage(s"$idempotenceKey written")
+      c ! NoSideEffect.WriteAlways(idempotenceKey, probe.ref)
+      checksProbe.expectNoMessage(3.seconds)
     }
   }
 }

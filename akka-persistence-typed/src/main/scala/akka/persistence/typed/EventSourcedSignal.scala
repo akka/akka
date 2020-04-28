@@ -144,3 +144,45 @@ object DeletionTarget {
     def getSnapshotSelection(): SnapshotSelectionCriteria = selection
   }
 }
+
+final case class WriteIdempotencyKeySucceeded(idempotencyKey: String) extends EventSourcedSignal {
+
+  /**
+   * Java API
+   */
+  def getIdempotencyKey(): String = idempotencyKey
+}
+
+final case class WriteIdempotencyKeyFailed(idempotencyKey: String, failure: Throwable) extends EventSourcedSignal {
+
+  /**
+   * Java API
+   */
+  def getIdempotencyKey(): String = idempotencyKey
+
+  def getFailure(): Throwable = failure
+}
+
+final case class CheckIdempotencyKeyExistsSucceeded(idempotencyKey: String, exists: Boolean)
+    extends EventSourcedSignal {
+
+  /**
+   * Java API
+   */
+  def getIdempotencyKey(): String = idempotencyKey
+
+  def getExists(): Boolean = exists
+}
+
+final case class CheckIdempotencyKeyExistsFailed(idempotencyKey: String, failure: Throwable)
+    extends EventSourcedSignal {
+
+  /**
+   * Java API
+   */
+  def getIdempotencyKey(): String = idempotencyKey
+
+  def getFailure(): Throwable = failure
+}
+
+//TODO consider adding signals for idempotency key cache interactions
