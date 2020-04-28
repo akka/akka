@@ -32,6 +32,7 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
 import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.persistence.SelectedSnapshot
+import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.PersistenceQuery
@@ -343,6 +344,73 @@ class EventSourcedBehaviorSpec
         c ! GetValue(probe.ref)
         probe.expectMessage(State(101, Vector(0, 1)))
       }
+    }
+
+    "adhere default and disabled Recovery strategies" in {
+      val pid = nextPid()
+      val probe = TestProbe[State]
+
+      def counterWithRecoveryStrategy(recoveryStrategy: Recovery) =
+        Behaviors.setup[Command](counter(_, pid).withRecovery(recoveryStrategy))
+
+      val counterSetup = spawn(counterWithRecoveryStrategy(Recovery.default))
+      counterSetup ! Increment
+      counterSetup ! Increment
+      counterSetup ! Increment
+      counterSetup ! GetValue(probe.ref)
+      probe.expectMessage(State(3, Vector(0, 1, 2)))
+
+      val counterDefaultRecoveryStrategy = spawn(counterWithRecoveryStrategy(Recovery.default))
+      counterSetup ! Increment
+      counterDefaultRecoveryStrategy ! GetValue(probe.ref)
+      probe.expectMessage(State(4, Vector(0, 1, 2, 3)))
+
+      val counterDisabledRecoveryStrategy = spawn(counterWithRecoveryStrategy(Recovery.disabled))
+      counterDisabledRecoveryStrategy ! Increment
+      counterDisabledRecoveryStrategy ! Increment
+      counterDisabledRecoveryStrategy ! GetValue(probe.ref)
+      probe.expectMessage(State(2, Vector(0, 1)))
+    }
+
+    "adhere Recovery strategy with SnapshotSelectionCriteria" in {
+      val pid = nextPid()
+      val eventProbe = TestProbe[(State, Event)]
+      val commandProbe = TestProbe[State]
+      val snapshotProbe = TestProbe[Try[SnapshotMetadata]]
+
+      def counterWithSnapshotSelectionCriteria(recoveryStrategy: Recovery) =
+        Behaviors.setup[Command](
+          counterWithProbe(_, pid, eventProbe.ref, snapshotProbe.ref).withRecovery(recoveryStrategy).snapshotWhen {
+            case (_, _, _) => true
+          })
+
+      val counterSetup = spawn(counterWithSnapshotSelectionCriteria(Recovery.default))
+      counterSetup ! Increment
+      counterSetup ! Increment
+      counterSetup ! Increment
+      eventProbe.receiveMessages(3)
+      snapshotProbe.receiveMessages(3)
+      counterSetup ! GetValue(commandProbe.ref)
+      commandProbe.expectMessage(State(3, Vector(0, 1, 2)))
+
+      val counterWithSnapshotSelectionCriteriaNone = spawn(
+        counterWithSnapshotSelectionCriteria(Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.none)))
+      // replay all events, no snapshot
+      eventProbe.expectMessage(State(0, Vector.empty) -> Incremented(1))
+      eventProbe.expectMessage(State(1, Vector(0)) -> Incremented(1))
+      eventProbe.expectMessage(State(2, Vector(0, 1)) -> Incremented(1))
+      counterWithSnapshotSelectionCriteriaNone ! Increment
+      eventProbe.expectMessage(State(3, Vector(0, 1, 2)) -> Incremented(1))
+      counterWithSnapshotSelectionCriteriaNone ! GetValue(commandProbe.ref)
+      commandProbe.expectMessage(State(4, Vector(0, 1, 2, 3)))
+
+      val counterWithSnapshotSelectionCriteriaLatest = spawn(
+        counterWithSnapshotSelectionCriteria(Recovery.withSnapshotSelectionCriteria(SnapshotSelectionCriteria.latest)))
+      // replay no events, only latest snapshot
+      eventProbe.expectNoMessage()
+      counterWithSnapshotSelectionCriteriaLatest ! Increment
+      counterWithSnapshotSelectionCriteriaLatest ! GetValue(commandProbe.ref)
+      commandProbe.expectMessage(State(5, Vector(0, 1, 2, 3, 4)))
     }
 
     /**

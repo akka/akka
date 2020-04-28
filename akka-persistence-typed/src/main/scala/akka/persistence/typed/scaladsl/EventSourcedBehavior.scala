@@ -46,9 +46,9 @@ object EventSourcedBehavior {
    * Create a `Behavior` for a persistent actor.
    *
    * @param persistenceId stable unique identifier for the event sourced behavior
-   * @param emtpyState the intial state for the entity before any events have been processed
+   * @param emptyState the intial state for the entity before any events have been processed
    * @param commandHandler map commands to effects e.g. persisting events, replying to commands
-   * @param evnetHandler compute the new state given the current state when an event has been persisted
+   * @param eventHandler compute the new state given the current state when an event has been persisted
    */
   def apply[Command, Event, State](
       persistenceId: PersistenceId,
@@ -158,6 +158,7 @@ object EventSourcedBehavior {
    * You may configure the behavior to skip replaying snapshots completely, in which case the recovery will be
    * performed by replaying all events -- which may take a long time.
    */
+  @deprecated("use withRecovery(Recovery.withSnapshotSelectionCriteria(...))", "2.6.5")
   def withSnapshotSelectionCriteria(selection: SnapshotSelectionCriteria): EventSourcedBehavior[Command, Event, State]
 
   /**
@@ -208,4 +209,10 @@ object EventSourcedBehavior {
    * If not specified the actor will be stopped on failure.
    */
   def onPersistFailure(backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State]
+
+  /**
+   * Change the recovery strategy.
+   * By default, snapshots and events are recovered.
+   */
+  def withRecovery(recovery: Recovery): EventSourcedBehavior[Command, Event, State]
 }

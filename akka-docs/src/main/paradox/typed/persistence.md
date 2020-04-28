@@ -516,6 +516,20 @@ akka.persistence.journal.leveldb.replay-filter {
 }
 ```
 
+### Disable recovery
+
+You can also completely disable the recovery of events and snapshots:
+
+Scala
+:  @@snip [BasicPersistentBehaviorCompileOnly.scala](/akka-persistence-typed/src/test/scala/docs/akka/persistence/typed/BasicPersistentBehaviorCompileOnly.scala) { #recovery-disabled }
+
+Java
+:  @@snip [BasicPersistentBehaviorTest.java](/akka-persistence-typed/src/test/java/jdocs/akka/persistence/typed/BasicPersistentBehaviorTest.java) { #recovery-disabled }
+
+Please refer to @ref[snapshots](persistence-snapshot.md#snapshots) if you need to disable only the snapshot recovery, or you need to select specific snapshots.
+
+In any case, the highest sequence number will always be recovered so you can keep persisting new events without corrupting your event log.
+
 ## Tagging
 
 Persistence allows you to use event tags without using an @ref[`EventAdapter`](../persistence.md#event-adapters):

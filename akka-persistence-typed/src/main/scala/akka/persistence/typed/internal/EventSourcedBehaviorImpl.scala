@@ -30,6 +30,7 @@ import akka.persistence.typed.DeleteSnapshotsFailed
 import akka.persistence.typed.DeletionTarget
 import akka.persistence.typed.EventAdapter
 import akka.persistence.typed.NoOpEventAdapter
+import akka.persistence.typed.scaladsl.{ Recovery => TypedRecovery }
 import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotCompleted
@@ -220,6 +221,9 @@ private[akka] final case class EventSourcedBehaviorImpl[Command, Event, State](
       backoffStrategy: BackoffSupervisorStrategy): EventSourcedBehavior[Command, Event, State] =
     copy(supervisionStrategy = backoffStrategy)
 
+  override def withRecovery(recovery: TypedRecovery): EventSourcedBehavior[Command, Event, State] = {
+    copy(recovery = recovery.toClassic)
+  }
 }
 
 /** Protocol used internally by the eventsourced behaviors. */
