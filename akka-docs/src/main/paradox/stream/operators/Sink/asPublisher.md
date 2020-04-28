@@ -1,4 +1,4 @@
-# asPublisher
+# Sink.asPublisher
 
 Integration with Reactive Streams, materializes into a `org.reactivestreams.Publisher`.
 

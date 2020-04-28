@@ -1,4 +1,4 @@
-# maybe
+# Source.maybe
 
 Create a source that emits once the materialized @scala[`Promise`] @java[`CompletableFuture`] is completed with a value.
 

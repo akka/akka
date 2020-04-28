@@ -1,4 +1,4 @@
-# foreachAsync
+# Sink.foreachAsync
 
 Invoke a given procedure asynchronously for each element received.
 

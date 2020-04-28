@@ -1,4 +1,4 @@
-# futureSource
+# Source.futureSource
 
 Streams the elements of the given future source once it successfully completes.
 

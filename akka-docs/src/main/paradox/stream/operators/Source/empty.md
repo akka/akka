@@ -1,4 +1,4 @@
-# empty
+# Source.empty
 
 Complete right away without ever emitting any elements.
 

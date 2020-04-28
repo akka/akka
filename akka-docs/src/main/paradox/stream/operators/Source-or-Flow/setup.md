@@ -1,4 +1,4 @@
-# Source/Flow.setup
+# setup
 
 Defer the creation of a `Source/Flow` until materialization and access `Materializer` and `Attributes`
 

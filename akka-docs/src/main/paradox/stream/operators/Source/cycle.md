@@ -1,4 +1,4 @@
-# cycle
+# Source.cycle
 
 Stream iterator in cycled manner.
 

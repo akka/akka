@@ -1,4 +1,4 @@
-# completionStage
+# Source.completionStage
 
 Send the single value of the `CompletionStage` when it completes and there is demand.
 

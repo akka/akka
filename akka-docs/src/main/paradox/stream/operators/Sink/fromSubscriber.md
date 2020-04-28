@@ -1,4 +1,4 @@
-# fromSubscriber
+# Sink.fromSubscriber
 
 Integration with Reactive Streams, wraps a `org.reactivestreams.Subscriber` as a sink.
 

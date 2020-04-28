@@ -1,4 +1,4 @@
-# lazily
+# Source.lazily
 
 Deprecated by @ref:[`Source.lazySource`](lazySource.md).
 

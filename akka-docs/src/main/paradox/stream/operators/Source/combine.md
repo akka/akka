@@ -1,4 +1,4 @@
-# combine
+# Source.combine
 
 Combine several sources, using a given strategy such as merge or concat, into one source.
 

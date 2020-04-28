@@ -1,4 +1,4 @@
-# cancelled
+# Sink.cancelled
 
 Immediately cancel the stream
 
