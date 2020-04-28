@@ -4,13 +4,10 @@ Defers creation of a single element source until there is demand.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #lazySingle }
+@apidoc[Source.lazySingle](Source$) { scala="#lazySingle[T](create:()=&gt;T):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#lazySingle(akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 

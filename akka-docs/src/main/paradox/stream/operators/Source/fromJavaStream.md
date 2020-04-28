@@ -4,13 +4,10 @@ Stream the values from a Java 8 `Stream`, requesting the next value when there i
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromJavaStream }
+@apidoc[StreamConverters.fromJavaStream](StreamConverters$) { scala="#fromJavaStream[T,S&lt;:java.util.stream.BaseStream[T,S]](stream:()=&gt;java.util.stream.BaseStream[T,S]):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#fromJavaStream(akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 

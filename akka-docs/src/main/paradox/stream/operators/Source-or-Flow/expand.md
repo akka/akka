@@ -4,13 +4,11 @@ Like `extrapolate`, but does not have the `initial` argument, and the `Iterator`
 
 @ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #expand }
+@apidoc[Source.expand](Source) { scala="#expand[U](expander:Out=&gt;Iterator[U]):FlowOps.this.Repr[U]" java="#expand(akka.japi.function.Function)" }
+@apidoc[Flow.expand](Flow) { scala="#expand[U](expander:Out=&gt;Iterator[U]):FlowOps.this.Repr[U]" java="#expand(akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 

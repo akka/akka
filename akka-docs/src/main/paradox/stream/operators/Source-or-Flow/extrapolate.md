@@ -4,13 +4,11 @@ Allow for a faster downstream by expanding the last emitted element to an `Itera
 
 @ref[Backpressure aware operators](../index.md#backpressure-aware-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #extrapolate }
+@apidoc[Source.extrapolate](Source) { scala="#extrapolate[U&gt;:Out](extrapolator:U=&gt;Iterator[U],initial:Option[U]):FlowOps.this.Repr[U]" java="#extrapolate(akka.japi.function.Function,java.lang.Object)" }
+@apidoc[Flow.extrapolate](Flow) { scala="#extrapolate[U&gt;:Out](extrapolator:U=&gt;Iterator[U],initial:Option[U]):FlowOps.this.Repr[U]" java="#extrapolate(akka.japi.function.Function,java.lang.Object)" }
 
-@@@
 
 ## Description
 

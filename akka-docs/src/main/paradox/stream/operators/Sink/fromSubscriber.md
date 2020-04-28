@@ -4,13 +4,10 @@ Integration with Reactive Streams, wraps a `org.reactivestreams.Subscriber` as a
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #fromSubscriber }
+@apidoc[Sink.fromSubscriber](Sink$) { scala="#fromSubscriber[T](subscriber:org.reactivestreams.Subscriber[T]):akka.stream.scaladsl.Sink[T,akka.NotUsed]" java="#fromSubscriber(org.reactivestreams.Subscriber)" }
 
-@@@
 
 ## Description
 

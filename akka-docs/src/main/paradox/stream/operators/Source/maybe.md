@@ -4,13 +4,10 @@ Create a source that emits once the materialized @scala[`Promise`] @java[`Comple
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #maybe }
+@apidoc[Source.maybe](Source$) { scala="#maybe[T]:akka.stream.scaladsl.Source[T,scala.concurrent.Promise[Option[T]]]" java="#maybe()" }
 
-@@@
 
 ## Description
 

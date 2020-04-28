@@ -4,13 +4,11 @@ End the current substream whenever a predicate returns `true`, starting a new su
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #splitAfter }
+@apidoc[Source.splitAfter](Source) { scala="#splitAfter(substreamCancelStrategy:akka.stream.SubstreamCancelStrategy)(p:Out=&gt;Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#splitAfter(akka.stream.SubstreamCancelStrategy,akka.japi.function.Predicate)" }
+@apidoc[Flow.splitAfter](Flow) { scala="#splitAfter(substreamCancelStrategy:akka.stream.SubstreamCancelStrategy)(p:Out=&gt;Boolean):akka.stream.scaladsl.SubFlow[Out,Mat,FlowOps.this.Repr,FlowOps.this.Closed]" java="#splitAfter(akka.stream.SubstreamCancelStrategy,akka.japi.function.Predicate)" }
 
-@@@
 
 ## Description
 

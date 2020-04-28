@@ -4,13 +4,11 @@ Pass `n` incoming elements downstream and then complete
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #take }
+@apidoc[Source.take](Source) { scala="#take(n:Long):FlowOps.this.Repr[Out]" java="#take(long)" }
+@apidoc[Flow.take](Flow) { scala="#take(n:Long):FlowOps.this.Repr[Out]" java="#take(long)" }
 
-@@@
 
 ## Description
 

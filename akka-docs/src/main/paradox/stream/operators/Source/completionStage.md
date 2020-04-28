@@ -4,13 +4,10 @@ Send the single value of the `CompletionStage` when it completes and there is de
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-java }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #completionStage }
+@apidoc[Source.completionStage](Source$) { scala="#completionStage[T](completionStage:java.util.concurrent.CompletionStage[T]):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#completionStage(java.util.concurrent.CompletionStage)" }
 
-@@@
 
 ## Description
 

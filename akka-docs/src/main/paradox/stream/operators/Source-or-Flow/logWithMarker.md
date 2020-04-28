@@ -4,13 +4,11 @@ Log elements flowing through the stream as well as completion and erroring.
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #logWithMarker }
+@apidoc[Source.logWithMarker](Source) { scala="#logWithMarker(name:String,marker:Out=&gt;akka.event.LogMarker,extract:Out=&gt;Any)(implicitlog:akka.event.MarkerLoggingAdapter):FlowOps.this.Repr[Out]" java="#logWithMarker(java.lang.String,akka.japi.function.Function)" }
+@apidoc[Flow.logWithMarker](Flow) { scala="#logWithMarker(name:String,marker:Out=&gt;akka.event.LogMarker,extract:Out=&gt;Any)(implicitlog:akka.event.MarkerLoggingAdapter):FlowOps.this.Repr[Out]" java="#logWithMarker(java.lang.String,akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 
