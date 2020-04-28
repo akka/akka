@@ -31,6 +31,10 @@ import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.ReplicatorSettings
+import akka.cluster.sharding.internal.CustomStateStoreModeProvider
+import akka.cluster.sharding.internal.DDataRememberEntitiesProvider
+import akka.cluster.sharding.internal.EventSourcedRememberEntitiesProvider
+import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.cluster.singleton.ClusterSingletonManager
 import akka.event.Logging
 import akka.pattern.BackoffOpts
@@ -717,7 +721,6 @@ private[akka] class ClusterShardingGuardian extends Actor {
 
   private def replicator(settings: ClusterShardingSettings): ActorRef = {
     if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModeDData ||
-        // FIXME for now coordinator still uses the replicator
         settings.stateStoreMode == ClusterShardingSettings.StateStoreModeCustom) {
       // one Replicator per role
       replicatorByRole.get(settings.role) match {
@@ -749,6 +752,19 @@ private[akka] class ClusterShardingGuardian extends Actor {
         import settings.tuningParameters.coordinatorFailureBackoff
 
         val rep = replicator(settings)
+        val rememberEntitiesStoreProvider: Option[RememberEntitiesProvider] =
+          if (!settings.rememberEntities) None
+          else
+            // FIXME separate setting for state and remember entities store https://github.com/akka/akka/issues/28961
+            Some(settings.stateStoreMode match {
+              case ClusterShardingSettings.StateStoreModeDData =>
+                new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, rep)
+              case ClusterShardingSettings.StateStoreModePersistence =>
+                new EventSourcedRememberEntitiesProvider(typeName, settings)
+              case ClusterShardingSettings.StateStoreModeCustom =>
+                new CustomStateStoreModeProvider(typeName, context.system, settings)
+            })
+
         val encName = URLEncoder.encode(typeName, ByteString.UTF_8)
         val cName = coordinatorSingletonManagerName(encName)
         val cPath = coordinatorPath(encName)
@@ -758,7 +774,8 @@ private[akka] class ClusterShardingGuardian extends Actor {
               if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
                 ShardCoordinator.props(typeName, settings, allocationStrategy)
               else
-                ShardCoordinator.props(typeName, settings, allocationStrategy, rep, majorityMinCap)
+                ShardCoordinator
+                  .props(typeName, settings, allocationStrategy, rep, majorityMinCap, rememberEntitiesStoreProvider)
             val singletonProps =
               BackoffOpts
                 .onStop(
@@ -788,8 +805,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 extractEntityId = extractEntityId,
                 extractShardId = extractShardId,
                 handOffStopMessage = handOffStopMessage,
-                replicator = rep,
-                majorityMinCap)
+                rememberEntitiesStoreProvider)
               .withDispatcher(context.props.dispatcher),
             name = encName)
         }
@@ -820,9 +836,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
                 settings = settings,
                 coordinatorPath = cPath,
                 extractEntityId = extractEntityId,
-                extractShardId = extractShardId,
-                replicator = context.system.deadLetters,
-                majorityMinCap)
+                extractShardId = extractShardId)
               .withDispatcher(context.props.dispatcher),
             name = actorName)
         }

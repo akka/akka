@@ -37,23 +37,7 @@ import scala.concurrent.ExecutionContext
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class DDataRememberEntitiesShardStoreProvider(
-    typeName: String,
-    settings: ClusterShardingSettings,
-    replicator: ActorRef,
-    majorityMinCap: Int)
-    extends RememberEntitiesShardStoreProvider {
-
-  override def shardStoreProps(shardId: ShardId): Props =
-    DDataRememberEntitiesStore.props(shardId, typeName, settings, replicator, majorityMinCap)
-
-}
-
-/**
- * INTERNAL API
- */
-@InternalApi
-private[akka] object DDataRememberEntitiesStore {
+private[akka] object DDataRememberEntitiesShardStore {
 
   def props(
       shardId: ShardId,
@@ -61,7 +45,7 @@ private[akka] object DDataRememberEntitiesStore {
       settings: ClusterShardingSettings,
       replicator: ActorRef,
       majorityMinCap: Int): Props =
-    Props(new DDataRememberEntitiesStore(shardId, typeName, settings, replicator, majorityMinCap))
+    Props(new DDataRememberEntitiesShardStore(shardId, typeName, settings, replicator, majorityMinCap))
 
   // The default maximum-frame-size is 256 KiB with Artery.
   // When using entity identifiers with 36 character strings (e.g. UUID.randomUUID).
@@ -80,7 +64,7 @@ private[akka] object DDataRememberEntitiesStore {
  * INTERNAL API
  */
 @InternalApi
-private[akka] final class DDataRememberEntitiesStore(
+private[akka] final class DDataRememberEntitiesShardStore(
     shardId: ShardId,
     typeName: String,
     settings: ClusterShardingSettings,
@@ -89,7 +73,7 @@ private[akka] final class DDataRememberEntitiesStore(
     extends Actor
     with ActorLogging {
 
-  import DDataRememberEntitiesStore._
+  import DDataRememberEntitiesShardStore._
 
   implicit val ec: ExecutionContext = context.dispatcher
   implicit val node: Cluster = Cluster(context.system)

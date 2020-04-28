@@ -8,7 +8,6 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
-
 import akka.actor._
 import akka.actor.DeadLetterSuppression
 import akka.annotation.InternalApi
@@ -21,11 +20,10 @@ import akka.dispatch.ExecutionContexts
 import akka.pattern.{ pipe, AskTimeoutException }
 import akka.persistence._
 import akka.cluster.ClusterEvent
-import akka.cluster.ddata.GSet
-import akka.cluster.ddata.GSetKey
-import akka.cluster.ddata.Key
-import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.cluster.sharding.ShardRegion.ShardId
+import akka.cluster.sharding.internal.RememberEntitiesCoordinatorStore
+import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.event.BusLogging
 import akka.event.Logging
 import akka.util.PrettyDuration._
@@ -59,7 +57,8 @@ object ShardCoordinator {
       settings: ClusterShardingSettings,
       allocationStrategy: ShardAllocationStrategy,
       replicator: ActorRef,
-      majorityMinCap: Int): Props =
+      majorityMinCap: Int,
+      rememberEntitiesStoreProvider: Option[RememberEntitiesProvider]): Props =
     Props(
       new DDataShardCoordinator(
         typeName: String,
@@ -67,7 +66,7 @@ object ShardCoordinator {
         allocationStrategy,
         replicator,
         majorityMinCap,
-        settings.rememberEntities)).withDeploy(Deploy.local)
+        rememberEntitiesStoreProvider)).withDeploy(Deploy.local)
 
   /**
    * Interface of the pluggable shard allocation and rebalancing logic used by the [[ShardCoordinator]].
@@ -1081,19 +1080,35 @@ class PersistentShardCoordinator(
 }
 
 /**
+ * INTERNAL API
+ */
+@InternalApi
+private[akka] object DDataShardCoordinator {
+  private case object RememberEntitiesStoreStopped
+  private case class RememberEntitiesTimeout(shardId: ShardId)
+  private case object RememberEntitiesLoadTimeout
+  private val RememberEntitiesTimeoutKey = "RememberEntityTimeout"
+}
+
+/**
+ * INTERNAL API
  * Singleton coordinator (with state based on ddata) that decides where to allocate shards.
  *
  * @see [[ClusterSharding$ ClusterSharding extension]]
  */
-class DDataShardCoordinator(
+@InternalApi
+private[akka] class DDataShardCoordinator(
     override val typeName: String,
     settings: ClusterShardingSettings,
     allocationStrategy: ShardCoordinator.ShardAllocationStrategy,
     replicator: ActorRef,
     majorityMinCap: Int,
-    rememberEntities: Boolean)
+    rememberEntitiesStoreProvider: Option[RememberEntitiesProvider])
     extends ShardCoordinator(settings, allocationStrategy)
-    with Stash {
+    with Stash
+    with Timers {
+
+  import DDataShardCoordinator._
   import ShardCoordinator.Internal._
   import akka.cluster.ddata.Replicator.Update
 
@@ -1105,36 +1120,45 @@ class DDataShardCoordinator(
   val CoordinatorStateKey = LWWRegisterKey[State](s"${typeName}CoordinatorState")
   val initEmptyState = State.empty.withRememberEntities(settings.rememberEntities)
 
-  val AllShardsKey = GSetKey[String](s"shard-${typeName}-all")
-  val allKeys: Set[Key[ReplicatedData]] =
-    if (rememberEntities) Set(CoordinatorStateKey, AllShardsKey) else Set(CoordinatorStateKey)
-
-  var shards = Set.empty[String]
   var terminating = false
   var getShardHomeRequests: Set[(ActorRef, GetShardHome)] = Set.empty
 
-  if (rememberEntities)
-    replicator ! Subscribe(AllShardsKey, self)
+  val rememberEntitiesStore =
+    rememberEntitiesStoreProvider.map { provider =>
+      log.debug("Starting remember entities store from provider {}", provider)
+      context.watchWith(
+        context.actorOf(provider.coordinatorStoreProps(), "RememberEntitiesStore"),
+        RememberEntitiesStoreStopped)
+    }
+  val rememberEntities = rememberEntitiesStore.isDefined
 
   node.subscribe(self, ClusterEvent.InitialStateAsEvents, ClusterShuttingDown.getClass)
 
   // get state from ddata replicator, repeat until GetSuccess
   getCoordinatorState()
-  getAllShards()
+  if (settings.rememberEntities)
+    getAllRememberedShards()
 
-  override def receive: Receive = waitingForState(allKeys)
+  override def receive: Receive =
+    waitingForInitialState(
+      None,
+      if (rememberEntities) None
+      else Some(Set.empty))
 
   // This state will drop all other messages since they will be retried
-  def waitingForState(remainingKeys: Set[Key[ReplicatedData]]): Receive =
+  // Note remembered entities query retries forever in store rather than here
+  def waitingForInitialState(initialState: Option[State], initialShards: Option[Set[ShardId]]): Receive =
     ({
+
       case g @ GetSuccess(CoordinatorStateKey, _) =>
-        state = g.get(CoordinatorStateKey).value.withRememberEntities(settings.rememberEntities)
-        log.debug("Received initial coordinator state [{}]", state)
-        val newRemainingKeys = remainingKeys - CoordinatorStateKey
-        if (newRemainingKeys.isEmpty)
-          becomeWaitingForStateInitialized()
-        else
-          context.become(waitingForState(newRemainingKeys))
+        val existingState = g.get(CoordinatorStateKey).value.withRememberEntities(settings.rememberEntities)
+        log.debug("Received initial coordinator state [{}]", existingState)
+        initialShards match {
+          case Some(shards) =>
+            onInitialState(existingState, shards)
+          case None =>
+            context.become(waitingForInitialState(Some(existingState), None))
+        }
 
       case GetFailure(CoordinatorStateKey, _) =>
         log.error(
@@ -1144,42 +1168,39 @@ class DDataShardCoordinator(
         getCoordinatorState()
 
       case NotFound(CoordinatorStateKey, _) =>
-        val newRemainingKeys = remainingKeys - CoordinatorStateKey
-        if (newRemainingKeys.isEmpty)
-          becomeWaitingForStateInitialized()
-        else
-          context.become(waitingForState(newRemainingKeys))
+        log.debug("Initial coordinator unknown using empty state")
+        initialShards match {
+          case Some(shards) =>
+            // this.state is empty initially
+            onInitialState(this.state, shards)
+          case None =>
+            context.become(waitingForInitialState(Some(initEmptyState), None))
+        }
 
-      case g @ GetSuccess(AllShardsKey, _) =>
-        shards = g.get(AllShardsKey).elements
-        val newUnallocatedShards = state.unallocatedShards.union(shards.diff(state.shards.keySet))
-        state = state.copy(unallocatedShards = newUnallocatedShards)
-        val newRemainingKeys = remainingKeys - AllShardsKey
-        if (newRemainingKeys.isEmpty)
-          becomeWaitingForStateInitialized()
-        else
-          context.become(waitingForState(newRemainingKeys))
+      case RememberEntitiesCoordinatorStore.RememberedShards(shardIds) =>
+        log.debug("Received [{}] remembered shard ids", shardIds.size)
+        initialState match {
+          case Some(state) =>
+            onInitialState(state, shardIds)
+          case None =>
+            context.become(waitingForInitialState(None, Some(shardIds)))
+        }
 
-      case GetFailure(AllShardsKey, _) =>
-        log.error(
-          "The ShardCoordinator was unable to get all shards state within 'waiting-for-state-timeout': {} millis (retrying)",
-          readMajority.timeout.toMillis)
-        // repeat until GetSuccess
-        getAllShards()
-
-      case NotFound(AllShardsKey, _) =>
-        val newRemainingKeys = remainingKeys - AllShardsKey
-        if (newRemainingKeys.isEmpty)
-          becomeWaitingForStateInitialized()
-        else
-          context.become(waitingForState(newRemainingKeys))
+      case RememberEntitiesLoadTimeout =>
+        // repeat until successful
+        getAllRememberedShards()
 
       case ShardCoordinator.Internal.Terminate =>
         log.debug("Received termination message while waiting for state")
         context.stop(self)
     }: Receive).orElse[Any, Unit](receiveTerminated)
 
-  private def becomeWaitingForStateInitialized(): Unit = {
+  private def onInitialState(loadedState: State, rememberedShards: Set[ShardId]): Unit = {
+    timers.cancel(RememberEntitiesTimeoutKey)
+    state = if (settings.rememberEntities && rememberedShards.nonEmpty) {
+      val newUnallocatedShards = state.unallocatedShards.union(rememberedShards.diff(state.shards.keySet))
+      loadedState.copy(unallocatedShards = newUnallocatedShards)
+    } else loadedState
     if (state.isEmpty) {
       // empty state, activate immediately
       activate()
@@ -1206,21 +1227,36 @@ class DDataShardCoordinator(
       log.debug("Received termination message while waiting for state initialized")
       context.stop(self)
 
+    case RememberEntitiesStoreStopped =>
+      onRememberEntitiesStoreStopped()
+
     case _ => stash()
   }
 
-  // this state will stash all messages until it receives UpdateSuccess
+  // this state will stash all messages until it receives UpdateSuccess and a successful remember shard started
+  // if remember entities is enabled
   def waitingForUpdate[E <: DomainEvent](
       evt: E,
-      afterUpdateCallback: E => Unit,
-      remainingKeys: Set[Key[ReplicatedData]]): Receive = {
+      shardId: Option[ShardId],
+      waitingForStateWrite: Boolean,
+      waitingForRememberShard: Boolean,
+      afterUpdateCallback: E => Unit): Receive = {
+
     case UpdateSuccess(CoordinatorStateKey, Some(`evt`)) =>
-      log.debug("The coordinator state was successfully updated with {}", evt)
-      val newRemainingKeys = remainingKeys - CoordinatorStateKey
-      if (newRemainingKeys.isEmpty)
+      if (!waitingForRememberShard) {
+        log.debug("The coordinator state was successfully updated with {}", evt)
+        if (shardId.isDefined) timers.cancel(RememberEntitiesTimeoutKey)
         unbecomeAfterUpdate(evt, afterUpdateCallback)
-      else
-        context.become(waitingForUpdate(evt, afterUpdateCallback, newRemainingKeys))
+      } else {
+        log.debug("The coordinator state was successfully updated with {}, waiting for remember shard update", evt)
+        context.become(
+          waitingForUpdate(
+            evt,
+            shardId,
+            waitingForStateWrite = false,
+            waitingForRememberShard = true,
+            afterUpdateCallback = afterUpdateCallback))
+      }
 
     case UpdateTimeout(CoordinatorStateKey, Some(`evt`)) =>
       log.error(
@@ -1234,27 +1270,6 @@ class DDataShardCoordinator(
       } else {
         // repeat until UpdateSuccess
         sendCoordinatorStateUpdate(evt)
-      }
-
-    case UpdateSuccess(AllShardsKey, Some(newShard: String)) =>
-      log.debug("The coordinator shards state was successfully updated with {}", newShard)
-      val newRemainingKeys = remainingKeys - AllShardsKey
-      if (newRemainingKeys.isEmpty)
-        unbecomeAfterUpdate(evt, afterUpdateCallback)
-      else
-        context.become(waitingForUpdate(evt, afterUpdateCallback, newRemainingKeys))
-
-    case UpdateTimeout(AllShardsKey, Some(newShard: String)) =>
-      log.error(
-        "The ShardCoordinator was unable to update shards distributed state within 'updating-state-timeout': {} millis ({}), event={}",
-        writeMajority.timeout.toMillis,
-        if (terminating) "terminating" else "retrying",
-        evt)
-      if (terminating) {
-        context.stop(self)
-      } else {
-        // repeat until UpdateSuccess
-        sendAllShardsUpdate(newShard)
       }
 
     case ModifyFailure(key, error, cause, _) =>
@@ -1277,9 +1292,39 @@ class DDataShardCoordinator(
         stashGetShardHomeRequest(sender(), g) // must wait for update that is in progress
 
     case ShardCoordinator.Internal.Terminate =>
-      log.debug("Received termination message while waiting for update")
+      log.debug("The ShardCoordinator received termination message while waiting for update")
       terminating = true
       stash()
+
+    case RememberEntitiesCoordinatorStore.UpdateDone(shard) =>
+      require(shardId.contains(shard))
+      if (!waitingForStateWrite) {
+        log.debug("The ShardCoordinator saw remember shard start successfully written {}", evt)
+        if (shardId.isDefined) timers.cancel(RememberEntitiesTimeoutKey)
+        unbecomeAfterUpdate(evt, afterUpdateCallback)
+      } else {
+        log.debug(
+          "The ShardCoordinator saw remember shard start successfully written {}, waiting for state update",
+          evt)
+        context.become(
+          waitingForUpdate(
+            evt,
+            shardId,
+            waitingForStateWrite = true,
+            waitingForRememberShard = false,
+            afterUpdateCallback = afterUpdateCallback))
+      }
+
+    case RememberEntitiesCoordinatorStore.UpdateFailed(shard) =>
+      require(shardId.contains(shard))
+      onRememberEntitiesUpdateFailed(shard)
+
+    case RememberEntitiesTimeout(shard) =>
+      require(shardId.contains(shard))
+      onRememberEntitiesUpdateFailed(shard)
+
+    case RememberEntitiesStoreStopped =>
+      onRememberEntitiesStoreStopped()
 
     case _ => stash()
   }
@@ -1313,35 +1358,41 @@ class DDataShardCoordinator(
     log.info("ShardCoordinator was moved to the active state {}", state)
   }
 
-  override def active: Receive =
-    if (rememberEntities) {
-      ({
-        case chg @ Changed(AllShardsKey) =>
-          shards = chg.get(AllShardsKey).elements
-      }: Receive).orElse[Any, Unit](super.active)
-    } else
-      super.active
-
   def update[E <: DomainEvent](evt: E)(f: E => Unit): Unit = {
     sendCoordinatorStateUpdate(evt)
-    evt match {
-      case s: ShardHomeAllocated if rememberEntities && !shards(s.shard) =>
-        sendAllShardsUpdate(s.shard)
-        context.become(waitingForUpdate(evt, f, allKeys), discardOld = false)
-      case _ =>
-        // no update of shards, already known
-        context.become(waitingForUpdate(evt, f, Set(CoordinatorStateKey)), discardOld = false)
-    }
+    val waitingReceive =
+      evt match {
+        case s: ShardHomeAllocated if rememberEntities && !state.shards.contains(s.shard) =>
+          rememberShardAllocated(s.shard)
+          waitingForUpdate(
+            evt,
+            shardId = Some(s.shard),
+            waitingForStateWrite = true,
+            waitingForRememberShard = true,
+            afterUpdateCallback = f)
 
+        case _ =>
+          // no update of shards, already known
+          waitingForUpdate(
+            evt,
+            shardId = None,
+            waitingForStateWrite = true,
+            waitingForRememberShard = false,
+            afterUpdateCallback = f)
+      }
+    context.become(waitingReceive, discardOld = false)
   }
 
   def getCoordinatorState(): Unit = {
     replicator ! Get(CoordinatorStateKey, readMajority)
   }
 
-  def getAllShards(): Unit = {
-    if (rememberEntities)
-      replicator ! Get(AllShardsKey, readMajority)
+  def getAllRememberedShards(): Unit = {
+    timers.startSingleTimer(
+      RememberEntitiesTimeoutKey,
+      RememberEntitiesLoadTimeout,
+      settings.tuningParameters.waitingForStateTimeout)
+    rememberEntitiesStore.foreach(_ ! RememberEntitiesCoordinatorStore.GetShards)
   }
 
   def sendCoordinatorStateUpdate(evt: DomainEvent) = {
@@ -1353,8 +1404,38 @@ class DDataShardCoordinator(
     }
   }
 
-  def sendAllShardsUpdate(newShard: String) = {
-    replicator ! Update(AllShardsKey, GSet.empty[String], writeMajority, Some(newShard))(_ + newShard)
+  def rememberShardAllocated(newShard: String) = {
+    log.debug("Remembering shard allocation [{}]", newShard)
+    rememberEntitiesStore.foreach(_ ! RememberEntitiesCoordinatorStore.AddShard(newShard))
+    timers.startSingleTimer(
+      RememberEntitiesTimeoutKey,
+      RememberEntitiesTimeout(newShard),
+      settings.tuningParameters.updatingStateTimeout)
+  }
+
+  override def receiveTerminated: Receive =
+    super.receiveTerminated.orElse {
+      case RememberEntitiesStoreStopped =>
+        onRememberEntitiesStoreStopped()
+    }
+
+  def onRememberEntitiesUpdateFailed(shardId: ShardId): Unit = {
+    log.error(
+      "The ShardCoordinator was unable to update remembered shard [{}] within 'updating-state-timeout': {} millis, {}",
+      shardId,
+      settings.tuningParameters.updatingStateTimeout.toMillis,
+      if (terminating) "terminating" else "retrying")
+    if (terminating) context.stop(self)
+    else {
+      // retry until successful
+      rememberShardAllocated(shardId)
+    }
+  }
+
+  def onRememberEntitiesStoreStopped(): Unit = {
+    // rely on backoff supervision of coordinator
+    log.error("The ShardCoordinator stopping because the remember entities store stopped")
+    context.stop(self)
   }
 
 }

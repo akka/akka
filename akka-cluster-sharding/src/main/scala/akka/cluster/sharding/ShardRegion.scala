@@ -16,10 +16,7 @@ import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.Member
 import akka.cluster.MemberStatus
 import akka.cluster.sharding.Shard.ShardStats
-import akka.cluster.sharding.internal.CustomStateStoreModeProvider
-import akka.cluster.sharding.internal.DDataRememberEntitiesShardStoreProvider
-import akka.cluster.sharding.internal.EventSourcedRememberEntitiesStoreProvider
-import akka.cluster.sharding.internal.RememberEntitiesShardStoreProvider
+import akka.cluster.sharding.internal.RememberEntitiesProvider
 import akka.event.Logging
 import akka.pattern.ask
 import akka.pattern.pipe
@@ -54,8 +51,7 @@ object ShardRegion {
       extractEntityId: ShardRegion.ExtractEntityId,
       extractShardId: ShardRegion.ExtractShardId,
       handOffStopMessage: Any,
-      replicator: ActorRef,
-      majorityMinCap: Int): Props =
+      rememberEntitiesProvider: Option[RememberEntitiesProvider]): Props =
     Props(
       new ShardRegion(
         typeName,
@@ -66,8 +62,7 @@ object ShardRegion {
         extractEntityId,
         extractShardId,
         handOffStopMessage,
-        replicator,
-        majorityMinCap)).withDeploy(Deploy.local)
+        rememberEntitiesProvider)).withDeploy(Deploy.local)
 
   /**
    * INTERNAL API
@@ -80,9 +75,7 @@ object ShardRegion {
       settings: ClusterShardingSettings,
       coordinatorPath: String,
       extractEntityId: ShardRegion.ExtractEntityId,
-      extractShardId: ShardRegion.ExtractShardId,
-      replicator: ActorRef,
-      majorityMinCap: Int): Props =
+      extractShardId: ShardRegion.ExtractShardId): Props =
     Props(
       new ShardRegion(
         typeName,
@@ -93,8 +86,7 @@ object ShardRegion {
         extractEntityId,
         extractShardId,
         PoisonPill,
-        replicator,
-        majorityMinCap)).withDeploy(Deploy.local)
+        None)).withDeploy(Deploy.local)
 
   /**
    * Marker type of entity identifier (`String`).
@@ -533,8 +525,7 @@ private[akka] class ShardRegion(
     extractEntityId: ShardRegion.ExtractEntityId,
     extractShardId: ShardRegion.ExtractShardId,
     handOffStopMessage: Any,
-    replicator: ActorRef,
-    majorityMinCap: Int)
+    rememberEntitiesProvider: Option[RememberEntitiesProvider])
     extends Actor
     with Timers {
 
@@ -569,19 +560,6 @@ private[akka] class ShardRegion(
   var retryCount = 0
   val initRegistrationDelay: FiniteDuration = 100.millis.max(retryInterval / 2 / 2 / 2)
   var nextRegistrationDelay: FiniteDuration = initRegistrationDelay
-
-  val shardRememberEntitiesStoreProvider: Option[RememberEntitiesShardStoreProvider] =
-    if (!settings.rememberEntities) None
-    else
-      // this construction will move upwards when we get to refactoring the coordinator
-      Some(settings.stateStoreMode match {
-        case ClusterShardingSettings.StateStoreModeDData =>
-          new DDataRememberEntitiesShardStoreProvider(typeName, settings, replicator, majorityMinCap)
-        case ClusterShardingSettings.StateStoreModePersistence =>
-          new EventSourcedRememberEntitiesStoreProvider(typeName, settings)
-        case ClusterShardingSettings.StateStoreModeCustom =>
-          new CustomStateStoreModeProvider(typeName, context.system, settings)
-      })
 
   // for CoordinatedShutdown
   val gracefulShutdownProgress = Promise[Done]()
@@ -1139,7 +1117,7 @@ private[akka] class ShardRegion(
                     extractEntityId,
                     extractShardId,
                     handOffStopMessage,
-                    shardRememberEntitiesStoreProvider)
+                    rememberEntitiesProvider)
                   .withDispatcher(context.props.dispatcher),
                 name))
             shardsByRef = shardsByRef.updated(shard, id)

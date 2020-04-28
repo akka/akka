@@ -19,7 +19,7 @@ private[akka] final class CustomStateStoreModeProvider(
     typeName: String,
     system: ActorSystem,
     settings: ClusterShardingSettings)
-    extends RememberEntitiesShardStoreProvider {
+    extends RememberEntitiesProvider {
 
   private val log = Logging(system, getClass)
   log.warning("Using custom remember entities store for [{}], not intended for production use.", typeName)
@@ -29,7 +29,7 @@ private[akka] final class CustomStateStoreModeProvider(
     val store = system
       .asInstanceOf[ExtendedActorSystem]
       .dynamicAccess
-      .createInstanceFor[RememberEntitiesShardStoreProvider](
+      .createInstanceFor[RememberEntitiesProvider](
         customClassName,
         Vector((classOf[ClusterShardingSettings], settings), (classOf[String], typeName)))
     log.debug("Will use custom remember entities store provider [{}]", store)
@@ -42,4 +42,5 @@ private[akka] final class CustomStateStoreModeProvider(
 
   override def shardStoreProps(shardId: ShardId): Props = customStore.shardStoreProps(shardId)
 
+  override def coordinatorStoreProps(): Props = customStore.coordinatorStoreProps()
 }
