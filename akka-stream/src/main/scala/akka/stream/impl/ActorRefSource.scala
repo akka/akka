@@ -4,14 +4,12 @@
 
 package akka.stream.impl
 
-import java.net.URLEncoder
-
 import akka.actor.{ ActorRef, PoisonPill }
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.OverflowStrategies._
 import akka.stream.stage._
-import akka.util.{ ByteString, OptionVal }
+import akka.util.OptionVal
 
 private object ActorRefSource {
   private sealed trait ActorRefStage { def ref: ActorRef }
@@ -51,11 +49,7 @@ private object ActorRefSource {
         }
       private var isCompleting: Boolean = false
 
-      override protected def stageActorName: String =
-        inheritedAttributes
-          .get[Attributes.Name]
-          .map(name => URLEncoder.encode(name.n, ByteString.UTF_8))
-          .getOrElse(super.stageActorName)
+      override protected def stageActorName: String = inheritedAttributes.nameForActorRef(super.stageActorName)
 
       private val name = inheritedAttributes.nameOrDefault(getClass.toString)
       override val ref: ActorRef = getEagerStageActor(eagerMaterializer, poisonPillCompatibility = true) {

@@ -706,7 +706,7 @@ private final case class SavedIslandData(
     logic.stageId = logics.size() - 1
     fullIslandName match {
       case OptionVal.Some(_) => // already set
-      case OptionVal.None    => fullIslandName = OptionVal.Some(islandName + "-" + logic.attributes.nameOrDefault())
+      case OptionVal.None    => fullIslandName = OptionVal.Some(islandName + "-" + logic.attributes.nameForActorRef())
     }
     matAndLogic
   }
