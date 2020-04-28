@@ -19,19 +19,19 @@ class ClusterShardingStateSpec
     with AnyWordSpecLike
     with LogCapturing {
 
-  val sharding = ClusterSharding(system)
+  private val sharding = ClusterSharding(system)
 
-  val shardExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
+  private val shardExtractor = ShardingMessageExtractor.noEnvelope[IdTestProtocol](10, IdStopPlz()) {
     case IdReplyPlz(id, _)  => id
     case IdWhoAreYou(id, _) => id
     case other              => throw new IllegalArgumentException(s"Unexpected message $other")
   }
 
-  val cluster = Cluster(system)
+  private val cluster = Cluster(system)
 
   val typeKey: EntityTypeKey[IdTestProtocol] = ClusterShardingSpec.typeKeyWithoutEnvelopes
 
-  "Cluster Sharding" must {
+  "Cluster Sharding CurrentShardRegionState query" must {
     "allow querying of the shard region state" in {
       val probe = TestProbe[CurrentShardRegionState]()
       cluster.manager ! Join(cluster.selfMember.address)

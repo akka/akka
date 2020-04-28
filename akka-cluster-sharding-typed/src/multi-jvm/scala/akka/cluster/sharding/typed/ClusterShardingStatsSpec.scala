@@ -4,17 +4,22 @@
 
 package akka.cluster.sharding.typed
 
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.{ ActorRef, Behavior }
-import akka.cluster.MultiNodeClusterSpec
-import akka.cluster.sharding.ShardRegion.ClusterShardingStats
-import akka.cluster.sharding.typed.scaladsl.{ ClusterSharding, Entity, EntityTypeKey }
-import akka.cluster.typed.MultiNodeTypedClusterSpec
-import akka.remote.testkit.{ MultiNodeConfig, MultiNodeSpec }
-import akka.serialization.jackson.CborSerializable
 import com.typesafe.config.ConfigFactory
 import org.scalatest.concurrent.ScalaFutures
+
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.ActorRef
+import akka.actor.typed.Behavior
+import akka.actor.typed.scaladsl.Behaviors
+import akka.cluster.MultiNodeClusterSpec
+import akka.cluster.sharding.ShardRegion.ClusterShardingStats
+import akka.cluster.sharding.typed.scaladsl.ClusterSharding
+import akka.cluster.sharding.typed.scaladsl.Entity
+import akka.cluster.sharding.typed.scaladsl.EntityTypeKey
+import akka.cluster.typed.MultiNodeTypedClusterSpec
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.testkit.MultiNodeSpec
+import akka.serialization.jackson.CborSerializable
 
 object ClusterShardingStatsSpecConfig extends MultiNodeConfig {
 
@@ -57,15 +62,11 @@ abstract class ClusterShardingStatsSpec
   import ClusterShardingStatsSpecConfig._
   import Pinger._
 
-  val typeKey = EntityTypeKey[Command]("ping")
+  private val typeKey = EntityTypeKey[Command]("ping")
 
-  val entityId = "ping-1"
-
-  val sharding = ClusterSharding(typedSystem)
-
-  val settings = ClusterShardingSettings(typedSystem)
-
-  val queryTimeout = settings.shardRegionQueryTimeout * roles.size.toLong //numeric widening y'all
+  private val sharding = ClusterSharding(typedSystem)
+  private val settings = ClusterShardingSettings(typedSystem)
+  private val queryTimeout = settings.shardRegionQueryTimeout * roles.size.toLong //numeric widening y'all
 
   "Cluster sharding stats" must {
     "form cluster" in {
@@ -73,25 +74,30 @@ abstract class ClusterShardingStatsSpec
     }
 
     "get shard stats" in {
-
       sharding.init(Entity(typeKey)(_ => Pinger()))
       enterBarrier("sharding started")
 
-      import akka.actor.typed.scaladsl.adapter._
-      val entityRef = ClusterSharding(system.toTyped).entityRefFor(typeKey, entityId)
-      val pongProbe = TestProbe[Pong]
+      runOn(first) {
+        val pongProbe = TestProbe[Pong]()
 
-      entityRef ! Ping(1, pongProbe.ref)
-      pongProbe.expectMessageType[Pong]
+        val entityRef1 = ClusterSharding(typedSystem).entityRefFor(typeKey, "ping-1")
+        entityRef1 ! Ping(1, pongProbe.ref)
+        pongProbe.receiveMessage()
+
+        val entityRef2 = ClusterSharding(typedSystem).entityRefFor(typeKey, "ping-2")
+        entityRef2 ! Ping(2, pongProbe.ref)
+        pongProbe.receiveMessage()
+      }
       enterBarrier("sharding-initialized")
 
       runOn(first, second, third) {
         val replyToProbe = TestProbe[ClusterShardingStats]()
-        sharding.shardState ! GetClusterShardingStats(queryTimeout, replyToProbe.ref)
+        sharding.shardState ! GetClusterShardingStats(typeKey, queryTimeout, replyToProbe.ref)
 
-        val stats = replyToProbe.expectMessageType[ClusterShardingStats](queryTimeout)
+        val stats = replyToProbe.receiveMessage(queryTimeout)
         stats.regions.size shouldEqual 3
-        stats.regions.values.flatMap(_.stats.values).sum shouldEqual 1
+        stats.regions.values.flatMap(_.stats.values).sum shouldEqual 2
+        stats.regions.values.forall(_.failed.isEmpty) shouldBe true
       }
       enterBarrier("done")
 

@@ -374,6 +374,36 @@ rebalanced to other nodes.
 See @ref:[How To Startup when Cluster Size Reached](cluster.md#how-to-startup-when-a-cluster-size-is-reached)
 for more information about `min-nr-of-members`.
 
+## Inspecting cluster sharding state
+
+Two requests to inspect the cluster state are available:
+
+@apidoc[akka.cluster.sharding.typed.GetShardRegionState] which will reply with a 
+@apidoc[ShardRegion.CurrentShardRegionState] that contains the identifiers of the shards running in
+a Region and what entities are alive for each of them.
+
+Scala
+:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #get-shard-region-state }
+
+Java
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #get-shard-region-state }
+
+@apidoc[akka.cluster.sharding.typed.GetClusterShardingStats] which will query all the regions in the cluster and reply with a
+@apidoc[ShardRegion.ClusterShardingStats] containing the identifiers of the shards running in each region and a count
+of entities that are alive in each shard.
+
+Scala
+:  @@snip [ShardingCompileOnlySpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/ShardingCompileOnlySpec.scala) { #get-cluster-sharding-stats }
+
+Java
+:  @@snip [ShardingCompileOnlyTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/ShardingCompileOnlyTest.java) { #get-cluster-sharding-stats }
+
+If any shard queries failed, for example due to timeout if a shard was too busy to reply within the configured `akka.cluster.sharding.shard-region-query-timeout`, 
+`ShardRegion.CurrentShardRegionState` and `ShardRegion.ClusterShardingStats` will also include the set of shard identifiers by region that failed.
+
+The purpose of these messages is testing and monitoring, they are not provided to give access to
+directly sending messages to the individual entities.
+
 ## Lease
 
 A @ref[lease](../coordination.md) can be used as an additional safety measure to ensure a shard 
