@@ -34,7 +34,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
       replyOption: Option[Reply])
       extends CommandResultWithReply[Command, Event, State, Reply] {
 
-    override def isNoEvents: Boolean = events.isEmpty
+    override def hasNoEvents: Boolean = events.isEmpty
 
     override def event: Event = {
       if (events.nonEmpty) events.head else throw new AssertionError("No events")
@@ -74,6 +74,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
     actorTestKit: ActorTestKit,
     behavior: Behavior[Command])
     extends EventSourcedBehaviorTestKit[Command, Event, State] {
+
   import EventSourcedBehaviorTestKitImpl._
 
   private def system: ActorSystem[_] = actorTestKit.system

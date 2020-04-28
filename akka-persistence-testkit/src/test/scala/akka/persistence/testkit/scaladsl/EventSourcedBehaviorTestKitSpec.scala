@@ -170,7 +170,7 @@ class EventSourcedBehaviorTestKitSpec
 
       eventSourcedTestKit.runCommand(TestCounter.Increment)
       val result = eventSourcedTestKit.runCommand[TestCounter.State](TestCounter.GetValue(_))
-      result.isNoEvents should ===(true)
+      result.hasNoEvents should ===(true)
       intercept[AssertionError] {
         result.event
       }
