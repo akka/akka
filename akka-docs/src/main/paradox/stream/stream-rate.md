@@ -234,7 +234,7 @@ Scala
 Java
 :   @@snip [RateTransformationDocTest.java](/akka-docs/src/test/java/jdocs/stream/RateTransformationDocTest.java) { #extrapolate-seed }
 
-`extrapolate` and `expand` also allow to produce metainformation based on demand signalled from the downstream. 
+`extrapolate` and `expand` also allow to produce meta-information based on demand signalled from the downstream. 
 Leveraging this, here is a flow that tracks and reports a drift between a fast consumer and a slow producer. 
 
 Scala
@@ -260,3 +260,5 @@ This makes `expand` able to transform or even filter out (by providing an empty 
  
 Regardless, since we provide a non-empty `Iterator` in both examples, this means that the
 output of this flow is going to report a drift of zero if the producer is fast enough - or a larger drift otherwise.
+
+See also @ref:[`extrapolate`](operators/Source-or-Flow/extrapolate.md) and @ref:[`expand`](operators/Source-or-Flow/expand.md) for more information and examples.
