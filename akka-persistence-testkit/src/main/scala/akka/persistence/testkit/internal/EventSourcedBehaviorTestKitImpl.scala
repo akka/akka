@@ -151,7 +151,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
       replyProbe.stop()
     }
 
-    if (serializationSettings.verifyCommands)
+    if (serializationSettings.enabled && serializationSettings.verifyCommands)
       verifySerializationAndThrow(reply, "Reply")
 
     CommandResultImpl[Command, Event, State, R](result.command, result.events, result.state, Some(reply))
