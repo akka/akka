@@ -4,6 +4,8 @@
 
 package akka.persistence.testkit.scaladsl
 
+import java.io.NotSerializableException
+
 import org.scalatest.wordspec.AnyWordSpecLike
 
 import akka.Done
@@ -48,6 +50,11 @@ object EventSourcedBehaviorTestKitSpec {
 
     case object NotSerializableCommand extends Command
 
+    final case class IncrementWithNotSerializableReply(replyTo: ActorRef[NotSerializableReply.type])
+        extends Command
+        with CborSerializable
+    object NotSerializableReply
+
     def apply(persistenceId: PersistenceId): Behavior[Command] =
       apply(persistenceId, RealState(0, Vector.empty))
 
@@ -78,6 +85,9 @@ object EventSourcedBehaviorTestKitSpec {
 
             case IncrementWithNotSerializableState =>
               Effect.persist(IncrementedWithNotSerializableState(1)).thenNoReply()
+
+            case IncrementWithNotSerializableReply(replyTo) =>
+              Effect.persist(Incremented(1)).thenReply(replyTo)(_ => NotSerializableReply)
 
             case NotSerializableCommand =>
               Effect.noReply
@@ -218,6 +228,16 @@ class EventSourcedBehaviorTestKitSpec
       }
       (exc.getMessage should include).regex("Command.*isn't serializable")
       exc.getCause.getClass should ===(classOf[DisabledJavaSerializer.JavaSerializationException])
+    }
+
+    "detect non-serializable reply" in {
+      val eventSourcedTestKit = createTestKit()
+
+      val exc = intercept[IllegalArgumentException] {
+        eventSourcedTestKit.runCommand(TestCounter.IncrementWithNotSerializableReply(_))
+      }
+      (exc.getMessage should include).regex("Reply.*isn't serializable")
+      exc.getCause.getClass should ===(classOf[NotSerializableException])
     }
 
     "support test of replay" in {
