@@ -4,13 +4,9 @@ Fold over emitted element with a function, where each invocation will get the ne
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #fold }
-
-@@@
+@apidoc[Sink.fold](Sink$) { scala="#fold[U,T](zero:U)(f:(U,T)=&gt;U):akka.stream.scaladsl.Sink[T,scala.concurrent.Future[U]]" java="#fold(java.lang.Object,akka.japi.function.Function2)" }
 
 ## Description
 

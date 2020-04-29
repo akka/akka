@@ -4,13 +4,10 @@ Deprecated by @ref:[`Source.completionStage`](completionStage.md).
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #fromCompletionStage }
+@apidoc[Source.fromCompletionStage](Source$) { scala="#fromCompletionStage[T](future:java.util.concurrent.CompletionStage[T]):akka.stream.scaladsl.Source[T,akka.NotUsed]" java="#fromCompletionStage(java.util.concurrent.CompletionStage)" }
 
-@@@
 
 ## Description
 

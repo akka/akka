@@ -15,6 +15,7 @@ The `setup` operator has been deprecated, use @ref:[fromMaterializer](./fromMate
 ## Signature
 
 @@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #setup }
+
 @@@
 
 ## Description

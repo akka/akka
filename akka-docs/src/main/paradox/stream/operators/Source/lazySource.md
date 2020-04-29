@@ -4,13 +4,10 @@ Defers creation and materialization of a `Source` until there is demand.
 
 @ref[Source operators](../index.md#source-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Source.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Source.scala) { #lazySource }
+@apidoc[Source.lazySource](Source$) { scala="#lazySource[T,M](create:()=&gt;akka.stream.scaladsl.Source[T,M]):akka.stream.scaladsl.Source[T,scala.concurrent.Future[M]]" java="#lazySource(akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 

@@ -4,13 +4,10 @@ Immediately cancel the stream
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #cancelled }
+@apidoc[Sink.cancelled](Sink$) { scala="#cancelled[T]:akka.stream.scaladsl.Sink[T,akka.NotUsed]" java="#cancelled()" }
 
-@@@
 
 ## Description
 

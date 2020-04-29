@@ -4,13 +4,10 @@ Defers creation and materialization of a `Flow` until there is a first element.
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #lazyFlow }
+@apidoc[Flow.lazyFlow](Flow$) { scala="#lazyFlow[I,O,M](create:()=&gt;akka.stream.scaladsl.Flow[I,O,M]):akka.stream.scaladsl.Flow[I,O,scala.concurrent.Future[M]]" java="#lazyFlow(akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 

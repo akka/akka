@@ -4,13 +4,10 @@ Just like `fold` but receives a function that results in a @scala[`Future`] @jav
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #foldAsync }
-
-@@@
+@apidoc[Source.foldAsync](Source) { scala="#foldAsync[T](zero:T)(f:(T,Out)=&gt;scala.concurrent.Future[T]):FlowOps.this.Repr[T]" java="#foldAsync(java.lang.Object,akka.japi.function.Function2)" }
+@apidoc[Flow.foldAsync](Flow) { scala="#foldAsync[T](zero:T)(f:(T,Out)=&gt;scala.concurrent.Future[T]):FlowOps.this.Repr[T]" java="#foldAsync(java.lang.Object,akka.japi.function.Function2)" }
 
 ## Description
 

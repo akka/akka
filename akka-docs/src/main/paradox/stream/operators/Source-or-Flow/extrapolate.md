@@ -6,8 +6,8 @@ Allow for a faster downstream by expanding the last emitted element to an `Itera
 
 ## Signature
 
-@apidoc[Flow.extrapolate](Flow) { scala="#extrapolate%5BU%3E:Out](extrapolator:U=%3EIterator[U],initial:Option[U]):FlowOps.this.Repr[U]" java="#extrapolate(akka.japi.function.Function)" }
-
+@apidoc[Source.extrapolate](Source) { scala="#extrapolate[U&gt;:Out](extrapolator:U=&gt;Iterator[U],initial:Option[U]):FlowOps.this.Repr[U]" java="#extrapolate(akka.japi.function.Function,java.lang.Object)" }
+@apidoc[Flow.extrapolate](Flow) { scala="#extrapolate[U&gt;:Out](extrapolator:U=&gt;Iterator[U],initial:Option[U]):FlowOps.this.Repr[U]" java="#extrapolate(akka.japi.function.Function,java.lang.Object)" }
 
 ## Description
 
