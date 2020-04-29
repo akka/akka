@@ -23,7 +23,7 @@ import akka.util.ccompat.JavaConverters._
  * Testing of [[akka.persistence.typed.javadsl.EventSourcedBehavior]] implementations.
  * It supports running one command at a time and you can assert that the synchronously returned result is as expected.
  * The result contains the events emitted by the command and the new state after applying the events.
- * It also has support for verifying the reply to an command.
+ * It also has support for verifying the reply to a command.
  *
  * Serialization of commands, events and state are verified automatically.
  */
@@ -87,10 +87,31 @@ object EventSourcedBehaviorTestKit {
     }
   }
 
+  /**
+   * Factory method to create a new EventSourcedBehaviorTestKit.
+   */
   def create[Command, Event, State](
       system: ActorSystem[_],
       behavior: Behavior[Command]): EventSourcedBehaviorTestKit[Command, Event, State] =
-    new EventSourcedBehaviorTestKit(scaladsl.EventSourcedBehaviorTestKit(system, behavior))
+    create(system, behavior, enabledSerializationSettings)
+
+  /**
+   * Factory method to create a new EventSourcedBehaviorTestKit with custom [[SerializationSettings]].
+   *
+   * Note that `equals` must be implemented in the commands, events and state if `verifyEquality` is enabled.
+   */
+  def create[Command, Event, State](
+      system: ActorSystem[_],
+      behavior: Behavior[Command],
+      serializationSettings: SerializationSettings): EventSourcedBehaviorTestKit[Command, Event, State] = {
+    val scaladslSettings = new scaladsl.EventSourcedBehaviorTestKit.SerializationSettings(
+      enabled = serializationSettings.enabled,
+      verifyEquality = serializationSettings.verifyEquality,
+      verifyCommands = serializationSettings.verifyCommands,
+      verifyEvents = serializationSettings.verifyEvents,
+      verifyState = serializationSettings.verifyState)
+    new EventSourcedBehaviorTestKit(scaladsl.EventSourcedBehaviorTestKit(system, behavior, scaladslSettings))
+  }
 
   /**
    * The result of running a command.
@@ -187,23 +208,6 @@ final class EventSourcedBehaviorTestKit[Command, Event, State](
   import EventSourcedBehaviorTestKit._
 
   private val _persistenceTestKit = new PersistenceTestKit(delegate.persistenceTestKit)
-
-  /**
-   * Customization of which serialization checks that are performed.
-   * By default serialization of commands, events and state are verified, but equality of the
-   * serialization roundtrip is not checked. `equals` must be implemented (or using `case class`) in the
-   * commands, events and state if `verifyEquality` is enabled.
-   */
-  def setSerializationSettings(settings: SerializationSettings): EventSourcedBehaviorTestKit[Command, Event, State] = {
-    delegate.setSerializationSettings(
-      new scaladsl.EventSourcedBehaviorTestKit.SerializationSettings(
-        enabled = settings.enabled,
-        verifyEquality = settings.verifyEquality,
-        verifyCommands = settings.verifyCommands,
-        verifyEvents = settings.verifyEvents,
-        verifyState = settings.verifyState))
-    this
-  }
 
   /**
    * Run one command through the behavior. The returned result contains emitted events and the state

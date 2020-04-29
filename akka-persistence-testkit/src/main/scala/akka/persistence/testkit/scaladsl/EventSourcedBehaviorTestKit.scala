@@ -23,7 +23,7 @@ import akka.persistence.testkit.internal.EventSourcedBehaviorTestKitImpl
  * Testing of [[akka.persistence.typed.scaladsl.EventSourcedBehavior]] implementations.
  * It supports running one command at a time and you can assert that the synchronously returned result is as expected.
  * The result contains the events emitted by the command and the new state after applying the events.
- * It also has support for verifying the reply to an command.
+ * It also has support for verifying the reply to a command.
  *
  * Serialization of commands, events and state are verified automatically.
  */
@@ -91,10 +91,25 @@ object EventSourcedBehaviorTestKit {
     }
   }
 
+  /**
+   * Factory method to create a new EventSourcedBehaviorTestKit.
+   */
   def apply[Command, Event, State](
       system: ActorSystem[_],
       behavior: Behavior[Command]): EventSourcedBehaviorTestKit[Command, Event, State] =
-    new EventSourcedBehaviorTestKitImpl(ActorTestKit(system), behavior)
+    apply(system, behavior, SerializationSettings.enabled)
+
+  /**
+   * Factory method to create a new EventSourcedBehaviorTestKit with custom [[SerializationSettings]].
+   *
+   * Note that `equals` must be implemented (or using `case class`) in the commands, events and state if
+   * `verifyEquality` is enabled.
+   */
+  def apply[Command, Event, State](
+      system: ActorSystem[_],
+      behavior: Behavior[Command],
+      serializationSettings: SerializationSettings): EventSourcedBehaviorTestKit[Command, Event, State] =
+    new EventSourcedBehaviorTestKitImpl(ActorTestKit(system), behavior, serializationSettings)
 
   /**
    * The result of running a command.
@@ -176,14 +191,6 @@ object EventSourcedBehaviorTestKit {
 @DoNotInherit trait EventSourcedBehaviorTestKit[Command, Event, State] {
 
   import EventSourcedBehaviorTestKit._
-
-  /**
-   * Customization of which serialization checks that are performed.
-   * By default serialization of commands, events and state are verified, but equality of the
-   * serialization roundtrip is not checked. `equals` must be implemented (or using `case class`) in the
-   * commands, events and state if `verifyEquality` is enabled.
-   */
-  def setSerializationSettings(settings: SerializationSettings): EventSourcedBehaviorTestKit[Command, Event, State]
 
   /**
    * Run one command through the behavior. The returned result contains emitted events and the state

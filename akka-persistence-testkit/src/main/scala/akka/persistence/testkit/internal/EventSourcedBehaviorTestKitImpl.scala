@@ -16,6 +16,7 @@ import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.annotation.InternalApi
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit
+import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.CommandResult
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.CommandResultWithReply
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.RestartResult
 import akka.persistence.testkit.scaladsl.EventSourcedBehaviorTestKit.SerializationSettings
@@ -72,7 +73,8 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
  */
 @InternalApi private[akka] class EventSourcedBehaviorTestKitImpl[Command, Event, State](
     actorTestKit: ActorTestKit,
-    behavior: Behavior[Command])
+    behavior: Behavior[Command],
+    serializationSettings: SerializationSettings)
     extends EventSourcedBehaviorTestKit[Command, Event, State] {
 
   import EventSourcedBehaviorTestKitImpl._
@@ -96,17 +98,11 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
   }
   private val serializationTestKit = new SerializationTestKit(system)
 
-  private var serializationSettings: SerializationSettings = SerializationSettings.enabled
   private var emptyStateVerified = false
 
   persistenceTestKit.clearByPersistenceId(persistenceId.id)
 
-  def setSerializationSettings(settings: SerializationSettings): EventSourcedBehaviorTestKit[Command, Event, State] = {
-    serializationSettings = settings
-    this
-  }
-
-  override def runCommand(command: Command): CommandResultImpl[Command, Event, State, Nothing] = {
+  override def runCommand(command: Command): CommandResult[Command, Event, State] = {
     if (serializationSettings.enabled && serializationSettings.verifyCommands)
       verifySerializationAndThrow(command, "Command")
 
@@ -141,7 +137,7 @@ import akka.persistence.typed.internal.EventSourcedBehaviorImpl
     CommandResultImpl[Command, Event, State, Nothing](command, newEvents, newState, None)
   }
 
-  override def runCommand[R](creator: ActorRef[R] => Command): CommandResultImpl[Command, Event, State, R] = {
+  override def runCommand[R](creator: ActorRef[R] => Command): CommandResultWithReply[Command, Event, State, R] = {
     val replyProbe = actorTestKit.createTestProbe[R]()
     val command = creator(replyProbe.ref)
     val result = runCommand(command)

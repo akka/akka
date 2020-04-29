@@ -23,7 +23,7 @@ To use Akka Persistence TestKit, add the module to your project:
 Unit testing of `EventSourcedBehavior` can be done with the @apidoc[EventSourcedBehaviorTestKit]. It supports running
 one command at a time and you can assert that the synchronously returned result is as expected. The result contains the
 events emitted by the command and the new state after applying the events. It also has support for verifying the reply
-to an command.
+to a command.
 
 You need to configure the `ActorSystem` with the `EventSourcedBehaviorTestKit.config`. The configuration enables
 the in-memory journal and snapshot storage.
@@ -43,9 +43,10 @@ Java
 :  @@snip [AccountExampleDocTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleDocTest.java) { #test }  
 
 Serialization of commands, events and state are verified automatically. The serialization checks can be
-customized with the `eventSourcedTestKit.setSerializationSettings`. By default, the serialization roundtrip
-is checked but the equality of the result of the serialization is not checked. `equals` must be implemented
-@scala[(or using `case class`)] in the commands, events and state if `verifyEquality` is enabled.
+customized with the `SerializationSettings` when creating the `EventSourcedBehaviorTestKit`. By default,
+the serialization roundtrip is checked but the equality of the result of the serialization is not checked.
+`equals` must be implemented @scala[(or using `case class`)] in the commands, events and state if `verifyEquality`
+is enabled.
 
 To test recovery the `restart` method of the `EventSourcedBehaviorTestKit` can be used. It will restart the
 behavior, which will then recover from stored snapshot and events from previous commands. It's also possible
