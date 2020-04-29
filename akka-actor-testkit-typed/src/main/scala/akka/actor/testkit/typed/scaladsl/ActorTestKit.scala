@@ -5,6 +5,7 @@
 package akka.actor.testkit.typed.scaladsl
 
 import java.util.concurrent.TimeoutException
+import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
@@ -34,6 +35,8 @@ import akka.util.Timeout
 
 object ActorTestKit {
 
+  private val testKitGuardianCounter = new AtomicInteger(0)
+
   /**
    * Create a testkit named from the ActorTestKit class.
    *
@@ -62,7 +65,12 @@ object ActorTestKit {
    * using default configuration from the reference.conf resources that ship with the Akka libraries.
    */
   def apply(system: ActorSystem[_]): ActorTestKit = {
-    val testKitGuardian = system.systemActorOf(ActorTestKitGuardian.testKitGuardian, "test")
+    val name = testKitGuardianCounter.incrementAndGet() match {
+      case 1 => "test"
+      case n => s"test-$n"
+    }
+    val testKitGuardian =
+      system.systemActorOf(ActorTestKitGuardian.testKitGuardian, name)
     new ActorTestKit(system, testKitGuardian, settings = None)
   }
 

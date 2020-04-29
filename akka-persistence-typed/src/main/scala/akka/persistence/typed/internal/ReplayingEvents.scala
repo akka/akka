@@ -20,6 +20,7 @@ import akka.persistence.typed.EventsSeq
 import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.SingleEventSeq
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.util.OptionVal
@@ -87,11 +88,12 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
-      case JournalResponse(r)      => onJournalResponse(r)
-      case SnapshotterResponse(r)  => onSnapshotterResponse(r)
-      case RecoveryTickEvent(snap) => onRecoveryTick(snap)
-      case cmd: IncomingCommand[C] => onCommand(cmd)
-      case RecoveryPermitGranted   => Behaviors.unhandled // should not happen, we already have the permit
+      case JournalResponse(r)          => onJournalResponse(r)
+      case SnapshotterResponse(r)      => onSnapshotterResponse(r)
+      case RecoveryTickEvent(snap)     => onRecoveryTick(snap)
+      case cmd: IncomingCommand[C]     => onCommand(cmd)
+      case get: GetState[S @unchecked] => stashInternal(get)
+      case RecoveryPermitGranted       => Behaviors.unhandled // should not happen, we already have the permit
     }
   }
 
@@ -162,7 +164,6 @@ private[akka] final class ReplayingEvents[C, E, S](
       Behaviors.unhandled
     } else {
       stashInternal(cmd)
-      Behaviors.same
     }
   }
 

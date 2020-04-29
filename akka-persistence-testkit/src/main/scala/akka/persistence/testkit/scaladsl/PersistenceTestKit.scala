@@ -10,12 +10,19 @@ import scala.util.Try
 
 import com.typesafe.config.Config
 
-import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId }
+import akka.actor.ActorSystem
+import akka.actor.ClassicActorSystemProvider
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
+import akka.actor.ExtensionId
 import akka.actor.typed.{ ActorSystem => TypedActorSystem }
 import akka.annotation.ApiMayChange
-import akka.persistence.{ Persistence, PersistentRepr, SnapshotMetadata }
+import akka.persistence.Persistence
+import akka.persistence.PersistentRepr
+import akka.persistence.SnapshotMetadata
 import akka.persistence.testkit._
-import akka.persistence.testkit.internal.{ InMemStorageExtension, SnapshotStorageEmulatorExtension }
+import akka.persistence.testkit.internal.InMemStorageExtension
+import akka.persistence.testkit.internal.SnapshotStorageEmulatorExtension
 import akka.testkit.TestProbe
 
 private[testkit] trait CommonTestKitOps[S, P] extends ClearOps with PolicyOpsTestKit[P] {
@@ -293,7 +300,7 @@ private[testkit] trait PersistenceTestKitOps[S, P]
   /**
    * Persist `snapshots` into storage in order.
    */
-  def persistForRecovery(persistenceId: String, snapshots: immutable.Seq[Any]): Unit
+  def persistForRecovery(persistenceId: String, events: immutable.Seq[Any]): Unit
 
   /**
    * Retrieve all snapshots saved in storage by persistence id.
@@ -480,9 +487,9 @@ class PersistenceTestKit(system: ActorSystem)
   override def failNextNDeletes(persistenceId: String, n: Int, cause: Throwable): Unit =
     failNextNOpsCond((pid, op) => pid == persistenceId && op.isInstanceOf[DeleteEvents], n, cause)
 
-  def persistForRecovery(persistenceId: String, snapshots: immutable.Seq[Any]): Unit = {
-    storage.addAny(persistenceId, snapshots)
-    addToIndex(persistenceId, snapshots.size)
+  def persistForRecovery(persistenceId: String, events: immutable.Seq[Any]): Unit = {
+    storage.addAny(persistenceId, events)
+    addToIndex(persistenceId, events.size)
   }
 
   def persistedInStorage(persistenceId: String): immutable.Seq[Any] =
@@ -494,9 +501,7 @@ class PersistenceTestKit(system: ActorSystem)
 @ApiMayChange
 object PersistenceTestKit {
 
-  def apply(system: ActorSystem): PersistenceTestKit = new PersistenceTestKit(system)
-
-  def apply(system: TypedActorSystem[_]): PersistenceTestKit = apply(system.classicSystem)
+  def apply(system: ClassicActorSystemProvider): PersistenceTestKit = new PersistenceTestKit(system.classicSystem)
 
   object Settings extends ExtensionId[Settings] {
 

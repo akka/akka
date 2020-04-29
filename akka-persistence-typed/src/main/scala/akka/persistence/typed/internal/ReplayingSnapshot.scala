@@ -12,6 +12,7 @@ import akka.persistence._
 import akka.persistence.SnapshotProtocol.LoadSnapshotFailed
 import akka.persistence.SnapshotProtocol.LoadSnapshotResult
 import akka.persistence.typed.RecoveryFailed
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.util.unused
 
 /**
@@ -66,7 +67,8 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
               Behaviors.unhandled
             } else
               onCommand(cmd)
-          case RecoveryPermitGranted => Behaviors.unhandled // should not happen, we already have the permit
+          case get: GetState[S @unchecked] => stashInternal(get)
+          case RecoveryPermitGranted       => Behaviors.unhandled // should not happen, we already have the permit
         }
         .receiveSignal(returnPermitOnStop.orElse {
           case (_, PoisonPill) =>
@@ -118,7 +120,6 @@ private[akka] class ReplayingSnapshot[C, E, S](override val setup: BehaviorSetup
   def onCommand(cmd: IncomingCommand[C]): Behavior[InternalProtocol] = {
     // during recovery, stash all incoming commands
     stashInternal(cmd)
-    Behaviors.same
   }
 
   def onJournalResponse(response: JournalProtocol.Response): Behavior[InternalProtocol] = {

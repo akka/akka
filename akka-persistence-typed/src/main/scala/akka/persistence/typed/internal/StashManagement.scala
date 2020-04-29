@@ -7,6 +7,7 @@ package akka.persistence.typed.internal
 import akka.actor.Dropped
 import akka.actor.typed.Behavior
 import akka.actor.typed.scaladsl.ActorContext
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.StashBuffer
 import akka.actor.typed.scaladsl.StashOverflowException
@@ -29,8 +30,10 @@ private[akka] trait StashManagement[C, E, S] {
   /**
    * Stash a command to the internal stash buffer, which is used while waiting for persist to be completed.
    */
-  protected def stashInternal(msg: InternalProtocol): Unit =
+  protected def stashInternal(msg: InternalProtocol): Behavior[InternalProtocol] = {
     stash(msg, stashState.internalStashBuffer)
+    Behaviors.same
+  }
 
   /**
    * Stash a command to the user stash buffer, which is used when `Stash` effect is used.
