@@ -4,15 +4,11 @@
 
 package akka.actor.dungeon
 
-import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import scala.util.control.Exception._
-import scala.util.control.NonFatal
-
-import akka.actor.{ Actor, ActorCell, ActorInterruptedException, ActorRef, InternalActorRef }
+import akka.actor.{ ActorCell, ActorInterruptedException, ActorRef, InternalActorRef }
 import akka.actor.ActorRefScope
 import akka.actor.PostRestartException
 import akka.actor.PreRestartException
+import akka.annotation.InternalApi
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.Logging
@@ -22,10 +18,6 @@ import scala.collection.immutable
 import scala.concurrent.duration.Duration
 import scala.util.control.Exception._
 import scala.util.control.NonFatal
-
-import akka.actor.ActorRefScope
-import akka.annotation.InternalApi
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -119,7 +111,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
         }
       }
       assert(mailbox.isSuspended, "mailbox must be suspended during restart, status=" + mailbox.currentStatus)
-      if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause, failedActor)
+      if (!setChildrenTerminationReason(ChildrenContainer.Recreation(cause))) finishRecreate(cause)
     } else {
       // need to keep that suspend counter balanced
       faultResume(causedByFailure = null)
@@ -275,8 +267,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
     }
   }
 
-  @silent
-  private def finishRecreate(cause: Throwable, failedActor: Actor): Unit = {
+  private def finishRecreate(cause: Throwable): Unit = {
     // need to keep a snapshot of the surviving children before the new actor instance creates new ones
     val survivors = children
 
@@ -346,7 +337,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
      * then we are continuing the previously suspended recreate/create/terminate action
      */
     status match {
-      case Some(ChildrenContainer.Recreation(cause)) => finishRecreate(cause, actor)
+      case Some(ChildrenContainer.Recreation(cause)) => finishRecreate(cause)
       case Some(ChildrenContainer.Creation())        => finishCreate()
       case Some(ChildrenContainer.Termination)       => finishTerminate()
       case _                                         =>
