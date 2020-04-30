@@ -4,13 +4,10 @@ Apply a partial function to each incoming element, if the partial function is de
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #collect }
-
-@@@
+@apidoc[Source.collect](Source) { scala="#collect[T](pf:PartialFunction[Out,T]):FlowOps.this.Repr[T]" java="#collect(scala.PartialFunction)" }
+@apidoc[Flow.collect](Flow) { scala="#collect[T](pf:PartialFunction[Out,T]):FlowOps.this.Repr[T]" java="#collect(scala.PartialFunction)" }
 
 ## Description
 

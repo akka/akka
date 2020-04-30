@@ -4,13 +4,9 @@ Wrap the given @apidoc[Flow] and retry individual elements in that stream with a
 
 @ref[Error handling](../index.md#error-handling)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [RetryFlow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/RetryFlow.scala) { #withBackoff }
-
-@@@
+@apidoc[RetryFlow.withBackoff](RetryFlow$) { scala="#withBackoff[In,Out,Mat](minBackoff:scala.concurrent.duration.FiniteDuration,maxBackoff:scala.concurrent.duration.FiniteDuration,randomFactor:Double,maxRetries:Int,flow:akka.stream.scaladsl.Flow[In,Out,Mat])(decideRetry:(In,Out)=&gt;Option[In]):akka.stream.scaladsl.Flow[In,Out,Mat]" java="#withBackoff(java.time.Duration,java.time.Duration,double,int,akka.stream.javadsl.Flow,akka.japi.function.Function2)" }
 
 ## Description
 
