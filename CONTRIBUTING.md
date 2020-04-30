@@ -169,6 +169,33 @@ akka-cluster/scalafmtAll
 akka-persistence/scalafmtAll
 ```
 
+To format the Java source code:
+```
+sbt
+project akka-actor
+javafmtAll
+```
+
+To keep the *import*s sorted with:
+
+```
+sbt
+project akka-actor
+sortImports
+```
+
+To verify code style with:
+```
+sbt 
+verifyCodeStyle
+```
+
+To apply code style with:
+```
+sbt
+applyCodeStyle
+```
+
 ### Do not use `-optimize` Scala compiler flag
 
 Akka has not been compiled or tested with `-optimize` Scala compiler flag. (In sbt, you can specify compiler options in the `scalacOptions` key.)
@@ -429,6 +456,8 @@ IntelliJ will then use the same settings and version as defined in `.scalafmt.co
 not needed to use `sbt scalafmtAll` when editing with IntelliJ.
 
 PR validation includes checking that the Scala sources are formatted and will fail if they are not.
+
+It's recommended to run `sbt +sortImports` to keep the *import*s sorted.
 
 ### Java style
 
