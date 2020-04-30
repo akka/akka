@@ -25,7 +25,7 @@ import scala.util.control.NonFatal
 @InternalApi private[akka] object FaultHandling {
   sealed trait FailedInfo
   private case object NoFailedInfo extends FailedInfo
-  private final case class FailedRef(ref: ActorRef, fatally: Boolean) extends FailedInfo
+  private final case class FailedRef(ref: ActorRef) extends FailedInfo
   private case object FailedFatally extends FailedInfo
 }
 
@@ -57,35 +57,23 @@ private[akka] trait FaultHandling { this: ActorCell =>
    */
   private var _failed: FailedInfo = NoFailedInfo
   private def isFailed: Boolean = _failed.isInstanceOf[FailedRef]
-  private def setFailed(perpetrator: ActorRef): Unit = {
-    _failed = _failed match {
-      case FailedRef(_, fatally) => FailedRef(perpetrator, fatally)
-      case FailedFatally         => FailedRef(perpetrator, fatally = true)
-      case _                     => FailedRef(perpetrator, fatally = false)
-    }
-  }
-  private def clearFailed(): Unit = {
-    _failed = _failed match {
-      case FailedRef(_, false) => NoFailedInfo
-      case FailedRef(_, true)  => FailedFatally
-      case other               => other
-    }
+  private def isFailedFatally: Boolean = _failed match {
+    case FailedFatally => true
+    case _             => false
   }
   private def perpetrator: ActorRef = _failed match {
-    case FailedRef(ref, _) => ref
-    case _                 => null
+    case FailedRef(ref) => ref
+    case _              => null
   }
-  protected def setFailedFatally(): Unit = {
-    _failed = _failed match {
-      case FailedRef(ref, _) => FailedRef(ref, fatally = true)
-      case _                 => FailedFatally
-    }
+  private def setFailed(perpetrator: ActorRef): Unit = _failed = _failed match {
+    case FailedFatally => FailedFatally
+    case _             => FailedRef(perpetrator)
   }
-  private def isFailedFatally: Boolean = _failed match {
-    case FailedFatally         => true
-    case FailedRef(_, fatally) => fatally
-    case _                     => false
+  private def clearFailed(): Unit = _failed = _failed match {
+    case FailedRef(_) => NoFailedInfo
+    case other        => other
   }
+  protected def setFailedFatally(): Unit = _failed = FailedFatally
 
   /**
    * Do re-create the actor in response to a failure.
