@@ -57,10 +57,7 @@ private[akka] trait FaultHandling { this: ActorCell =>
    */
   private var _failed: FailedInfo = NoFailedInfo
   private def isFailed: Boolean = _failed.isInstanceOf[FailedRef]
-  private def isFailedFatally: Boolean = _failed match {
-    case FailedFatally => true
-    case _             => false
-  }
+  private def isFailedFatally: Boolean = _failed eq FailedFatally
   private def perpetrator: ActorRef = _failed match {
     case FailedRef(ref) => ref
     case _              => null
