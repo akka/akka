@@ -32,7 +32,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.{ SnapshotMetadata => ClassicSnapshotMetadata }
 import akka.persistence.{ SnapshotSelectionCriteria => ClassicSnapshotSelectionCriteria }
 import akka.persistence.SelectedSnapshot
-import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.PersistenceQuery
@@ -44,6 +43,7 @@ import akka.persistence.typed.RecoveryCompleted
 import akka.persistence.typed.SnapshotCompleted
 import akka.persistence.typed.SnapshotFailed
 import akka.persistence.typed.SnapshotMetadata
+import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.serialization.jackson.CborSerializable
 import akka.stream.scaladsl.Sink
 

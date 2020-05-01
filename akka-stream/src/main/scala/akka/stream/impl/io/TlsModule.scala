@@ -4,9 +4,9 @@
 
 package akka.stream.impl.io
 
-import scala.util.Try
-
 import javax.net.ssl.{ SSLEngine, SSLSession }
+
+import scala.util.Try
 
 import akka.NotUsed
 import akka.actor.ActorSystem

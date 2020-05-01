@@ -4,10 +4,10 @@
 
 package akka.stream
 
+import javax.net.ssl._
+
 import scala.annotation.varargs
 import scala.collection.immutable
-
-import javax.net.ssl._
 
 import akka.util.ByteString
 

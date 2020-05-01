@@ -10,6 +10,9 @@ import java.util.Optional
 import java.util.concurrent.CompletionStage
 import java.util.function.{ Function => JFunction }
 import java.util.function.Supplier
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
 
 import scala.compat.java8.FutureConverters._
 import scala.compat.java8.OptionConverters._
@@ -18,9 +21,6 @@ import scala.util.Failure
 import scala.util.Success
 
 import com.github.ghik.silencer.silent
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLSession
 
 import akka.{ Done, NotUsed }
 import akka.actor.ActorSystem

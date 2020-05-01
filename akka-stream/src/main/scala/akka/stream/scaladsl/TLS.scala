@@ -5,12 +5,12 @@
 package akka.stream.scaladsl
 
 import java.util.Collections
+import javax.net.ssl.{ SNIHostName, SSLContext, SSLEngine, SSLSession }
+import javax.net.ssl.SSLParameters
 
 import scala.util.{ Failure, Success, Try }
 
 import com.typesafe.sslconfig.akka.AkkaSSLConfig
-import javax.net.ssl.{ SNIHostName, SSLContext, SSLEngine, SSLSession }
-import javax.net.ssl.SSLParameters
 
 import akka.NotUsed
 import akka.actor.ActorSystem
@@ -229,7 +229,6 @@ object TLSPlacebo {
 
 import java.security.Principal
 import java.security.cert.Certificate
-
 import javax.net.ssl.{ SSLPeerUnverifiedException, SSLSession }
 
 /** Allows access to an SSLSession with Scala types */

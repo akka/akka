@@ -4,8 +4,9 @@
 
 package com.typesafe.sslconfig.akka
 
-import com.typesafe.sslconfig.ssl.SSLConfigSettings
 import javax.net.ssl.{ SSLContext, SSLEngine }
+
+import com.typesafe.sslconfig.ssl.SSLConfigSettings
 
 /**
  * Gives the chance to configure the SSLContext before it is going to be used.
