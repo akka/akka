@@ -35,7 +35,7 @@ smaller ones, and allows state to be maintained inside it in a safe way.
 
 As a first motivating example, we will build a new `Source` that will emit numbers from 1 until it is
 cancelled. To start, we need to define the "interface" of our operator, which is called *shape* in Akka Streams terminology
-(this is explained in more detail in the section @ref:[Modularity, Composition and Hierarchy](stream-composition.md)). This is how this looks like:
+(this is explained in more detail in the section @ref:[Modularity, Composition and Hierarchy](stream-composition.md)). This is how it looks:
 
 Scala
 :   @@snip [GraphStageDocSpec.scala](/akka-docs/src/test/scala/docs/stream/GraphStageDocSpec.scala) { #boilerplate-example }
