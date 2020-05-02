@@ -513,6 +513,13 @@ object Source {
     fromGraph(new FutureSource[T](futureElement))
 
   /**
+   * Never emits any elements, never completes and never fails.
+   * This stream could be useful in tests.
+   */
+  def never[T]: Source[T, NotUsed] =
+    future(Future.never)
+
+  /**
    * Emits a single value when the given `CompletionStage` is successfully completed and then completes the stream.
    * If the `CompletionStage` is completed with a failure the stream is failed.
    *
