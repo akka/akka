@@ -95,7 +95,7 @@ import akka.util.OptionVal
           case OptionVal.None if propagateToNestedMaterialization => downstreamCause = OptionVal.Some(cause)
           case OptionVal.None =>
             matPromise.failure(new NeverMaterializedException(cause))
-            super.onDownstreamFinish(cause)
+            cancelStage(cause)
           case OptionVal.Some(s) => s.cancel(cause)
         }
       }
