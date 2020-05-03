@@ -11,16 +11,14 @@ import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
 import scala.annotation.tailrec
 import scala.util.{ Failure, Success }
 import scala.util.control.NonFatal
-
 import com.fasterxml.jackson.databind.ObjectMapper
 import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
 import net.jpountz.lz4.LZ4Factory
-
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.event.{ LogMarker, Logging }
-import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
+import akka.serialization.{ BaseSerializer, ByteBufferSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.util.Helpers.toRootLowerCase
 import akka.util.OptionVal
 
@@ -171,7 +169,8 @@ import akka.util.OptionVal
     val system: ExtendedActorSystem,
     val bindingName: String,
     val objectMapper: ObjectMapper)
-    extends SerializerWithStringManifest {
+    extends SerializerWithStringManifest
+    with ByteBufferSerializer {
   import JacksonSerializer._
 
   // TODO issue #27107: it should be possible to implement ByteBufferSerializer as well, using Jackson's
@@ -288,6 +287,10 @@ import akka.util.OptionVal
     result
   }
 
+  override def toBinary(obj: AnyRef, buf: ByteBuffer): Unit = {
+    buf.put(toBinary(obj))
+  }
+
   private def logToBinaryDuration(obj: AnyRef, startTime: Long, bytes: Array[Byte], result: Array[Byte]) = {
     if (isDebugEnabled) {
       val durationMicros = (System.nanoTime - startTime) / 1000
@@ -308,7 +311,12 @@ import akka.util.OptionVal
   }
 
   override def fromBinary(bytes: Array[Byte], manifest: String): AnyRef = {
+    fromBinary(ByteBuffer.wrap(bytes), manifest)
+  }
+
+  override def fromBinary(buf: ByteBuffer, manifest: String): AnyRef = {
     checkAllowedSerializationBindings()
+    val bytes = buf.array()
     val startTime = if (isDebugEnabled) System.nanoTime else 0L
 
     val (fromVersion, manifestClassName) = parseManifest(manifest)

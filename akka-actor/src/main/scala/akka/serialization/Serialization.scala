@@ -149,7 +149,7 @@ class Serialization(val system: ExtendedActorSystem) extends Extension {
   @InternalApi private[akka] def serializationInformation: Serialization.Information =
     system.provider.serializationInformation
 
-  private def withTransportInformation[T](f: () => T): T = {
+  private[akka] def withTransportInformation[T](f: () => T): T = {
     val oldInfo = Serialization.currentTransportInformation.value
     try {
       if (oldInfo eq null)

@@ -4,6 +4,7 @@
 
 package akka.serialization.jackson
 
+import java.nio.ByteBuffer
 import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.time.Instant
@@ -691,6 +692,13 @@ abstract class JacksonSerializerSpec(serializerName: String)
 
     val deserialized = deserializeFromBinary(blob, serializerId, manifest, sys)
     deserialized should ===(obj)
+
+    val buffer = ByteBuffer.allocate(blob.size)
+    serialization(sys).withTransportInformation { () =>
+      serializer.toBinary(obj, buffer)
+    }
+    val deserializedFromBuffer = serialization(sys).deserializeByteBuffer(buffer, serializerId, manifest)
+    deserializedFromBuffer should ===(obj)
   }
 
   def serializeToBinary(obj: AnyRef, sys: ActorSystem = system): Array[Byte] =
