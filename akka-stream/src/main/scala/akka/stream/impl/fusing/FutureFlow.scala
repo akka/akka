@@ -68,7 +68,7 @@ import scala.util.{ Failure, Success, Try }
             downstreamCause = OptionVal.Some(cause)
           } else {
             innerMatValue.failure(new NeverMaterializedException(cause))
-            super.onDownstreamFinish(cause)
+            cancelStage(cause)
           }
 
         def onFuture(futureRes: Try[Flow[In, Out, M]]) = futureRes match {
