@@ -443,7 +443,7 @@ object Attributes {
    * Nested materialization cancellation strategy provides a way to configure the cancellation behavior of stages that materialize a nested flow at some stage.
    *
    * When cancelled before materializing their nested flows, these stages can either immediately cancel (default behaviour) without materializing the nested flow
-   * or wait for the nested materialization and then propagate the cancellation signal.
+   * or wait for the nested flow to materialize and then propagate the cancellation signal through it.
    *
    * This applies to [[akka.stream.scaladsl.FlowOps.flatMapPrefix]], [[akka.stream.scaladsl.Flow.futureFlow]] (and derivations such as [[akka.stream.scaladsl.Flow.lazyFutureFlow]]).
    * These operators either delay the nested flow's materialization or wait for a future to complete before doing so,
