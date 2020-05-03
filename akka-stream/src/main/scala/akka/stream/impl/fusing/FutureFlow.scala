@@ -118,11 +118,7 @@ import scala.util.{ Failure, Success, Try }
               case OptionVal.Some(cause) =>
                 subSink.cancel(cause)
               case OptionVal.None =>
-                //todo: should this be invoked before and independently of checking downstreamCause?
-                // in most case if downstream pulls and then closes, the pull is 'lost'. is it possible for some flows to actually care about this? (non-eager broadcast?)
-                if (isAvailable(out)) {
-                  subSink.pull()
-                }
+                if (isAvailable(out)) subSink.pull()
             }
           case Failure(ex) =>
             innerMatValue.failure(new NeverMaterializedException(ex))
