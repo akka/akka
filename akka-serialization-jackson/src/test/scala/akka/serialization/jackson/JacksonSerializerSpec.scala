@@ -508,6 +508,39 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       val bytes = serializeToBinary(msg)
       JacksonSerializer.isGZipped(bytes) should ===(false)
     }
+
+    "compress large payload with lz4" in withSystem("""
+        akka.serialization.jackson.jackson-json.compression {
+          algorithm = lz4
+          compress-larger-than = 32 KiB
+        }
+      """) { sys =>
+      val conf = JacksonObjectMapperProvider.configForBinding("jackson-json", sys.settings.config)
+      val compressLargerThan = conf.getBytes("compression.compress-larger-than")
+      def check(msg: AnyRef, compressed: Boolean): Unit = {
+        val bytes = serializeToBinary(msg, sys)
+        JacksonSerializer.isLZ4(bytes) should ===(compressed)
+        checkSerialization(msg, sys)
+      }
+      check(SimpleCommand("0" * (compressLargerThan + 1).toInt), true)
+    }
+
+    "compress small payload with lz4" in withSystem("""
+        akka.serialization.jackson.jackson-json.compression {
+          algorithm = lz4
+          compress-larger-than = 32 KiB
+        }
+      """) { sys =>
+      val conf = JacksonObjectMapperProvider.configForBinding("jackson-json", sys.settings.config)
+      val compressLargerThan = conf.getBytes("compression.compress-larger-than")
+      def check(msg: AnyRef, compressed: Boolean): Unit = {
+        val bytes = serializeToBinary(msg, sys)
+        JacksonSerializer.isLZ4(bytes) should ===(compressed)
+        checkSerialization(msg, sys)
+      }
+      check(SimpleCommand("Bob"), false)
+      check(new SimpleCommandNotCaseClass("Bob"), false)
+    }
   }
 
   "JacksonJsonSerializer without type in manifest" should {
