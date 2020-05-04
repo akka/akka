@@ -4,13 +4,15 @@
 
 package akka.cluster.metrics
 
-import scala.language.postfixOps
 import scala.concurrent.duration._
+import scala.language.postfixOps
+
 import com.typesafe.config.ConfigFactory
+
+import akka.cluster.MemberStatus
+import akka.cluster.MultiNodeClusterSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
-import akka.cluster.MultiNodeClusterSpec
-import akka.cluster.MemberStatus
 
 trait ClusterMetricsCommonConfig extends MultiNodeConfig {
   import ConfigFactory._
@@ -111,7 +113,7 @@ abstract class ClusterMetricsEnabledSpec
       //awaitAssert(clusterView.clusterMetrics.size should ===(roles.size))
       awaitAssert(metricsView.clusterMetrics.size should ===(roles.size))
       val collector = MetricsCollector(cluster.system)
-      collector.sample.metrics.size should be > (3)
+      collector.sample().metrics.size should be > (3)
       enterBarrier("after")
     }
     "reflect the correct number of node metrics in cluster view" in within(30 seconds) {
@@ -132,7 +134,7 @@ abstract class ClusterMetricsEnabledSpec
 
 class ClusterMetricsDisabledMultiJvmNode1 extends ClusterMetricsDisabledSpec
 class ClusterMetricsDisabledMultiJvmNode2 extends ClusterMetricsDisabledSpec
-class ClusterMetricsDisabledMultiJvmNodv3 extends ClusterMetricsDisabledSpec
+class ClusterMetricsDisabledMultiJvmNode3 extends ClusterMetricsDisabledSpec
 class ClusterMetricsDisabledMultiJvmNode4 extends ClusterMetricsDisabledSpec
 class ClusterMetricsDisabledMultiJvmNode5 extends ClusterMetricsDisabledSpec
 
@@ -150,7 +152,7 @@ abstract class ClusterMetricsDisabledSpec
       //clusterView.clusterMetrics.size should ===(0)
       metricsView.clusterMetrics.size should ===(0)
       ClusterMetricsExtension(system).subscribe(testActor)
-      expectNoMessage
+      expectNoMessage()
       // TODO ensure same contract
       //clusterView.clusterMetrics.size should ===(0)
       metricsView.clusterMetrics.size should ===(0)

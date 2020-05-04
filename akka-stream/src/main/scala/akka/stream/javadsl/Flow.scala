@@ -4,13 +4,23 @@
 
 package akka.stream.javadsl
 
-import java.util.concurrent.CompletionStage
-import java.util.function.BiFunction
-import java.util.function.Supplier
 import java.util.Comparator
 import java.util.Optional
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionStage
+import java.util.function.BiFunction
+import java.util.function.Supplier
 
+import scala.annotation.unchecked.uncheckedVariance
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
+
+import com.github.ghik.silencer.silent
+import org.reactivestreams.Processor
+
+import akka.Done
+import akka.NotUsed
 import akka.actor.ActorRef
 import akka.actor.ClassicActorSystemProvider
 import akka.dispatch.ExecutionContexts
@@ -18,22 +28,13 @@ import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.Pair
 import akka.japi.Util
 import akka.japi.function
+import akka.japi.function.Creator
 import akka.stream._
 import akka.stream.impl.fusing.LazyFlow
-import akka.util.JavaDurationConverters._
-import akka.util.unused
 import akka.util.ConstantFun
+import akka.util.JavaDurationConverters._
 import akka.util.Timeout
-import akka.Done
-import akka.NotUsed
-import akka.japi.function.Creator
-import com.github.ghik.silencer.silent
-import org.reactivestreams.Processor
-
-import scala.annotation.unchecked.uncheckedVariance
-import scala.compat.java8.FutureConverters._
-import scala.concurrent.duration.FiniteDuration
-import scala.reflect.ClassTag
+import akka.util.unused
 
 object Flow {
 
@@ -263,8 +264,7 @@ object Flow {
       fallback: function.Creator[M]): Flow[I, O, M] = {
     import scala.compat.java8.FutureConverters._
     val sflow = scaladsl.Flow
-      .fromGraph(new LazyFlow[I, O, M](t =>
-        flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext)))
+      .fromGraph(new LazyFlow[I, O, M](t => flowFactory.apply(t).toScala.map(_.asScala)(ExecutionContexts.parasitic)))
       .mapMaterializedValue(_ => fallback.create())
     new Flow(sflow)
   }
@@ -291,13 +291,9 @@ object Flow {
     import scala.compat.java8.FutureConverters._
 
     val sflow = scaladsl.Flow
-      .lazyInitAsync(() => flowFactory.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
-      .mapMaterializedValue(
-        fut =>
-          fut
-            .map(_.fold[Optional[M]](Optional.empty())(m => Optional.ofNullable(m)))(
-              ExecutionContexts.sameThreadExecutionContext)
-            .toJava)
+      .lazyInitAsync(() => flowFactory.create().toScala.map(_.asScala)(ExecutionContexts.parasitic))
+      .mapMaterializedValue(fut =>
+        fut.map(_.fold[Optional[M]](Optional.empty())(m => Optional.ofNullable(m)))(ExecutionContexts.parasitic).toJava)
     new Flow(sflow)
   }
 
@@ -353,8 +349,7 @@ object Flow {
   def lazyCompletionStageFlow[I, O, M](
       create: Creator[CompletionStage[Flow[I, O, M]]]): Flow[I, O, CompletionStage[M]] =
     scaladsl.Flow
-      .lazyFutureFlow[I, O, M](() =>
-        create.create().toScala.map(_.asScala)(ExecutionContexts.sameThreadExecutionContext))
+      .lazyFutureFlow[I, O, M](() => create.create().toScala.map(_.asScala)(ExecutionContexts.parasitic))
       .mapMaterializedValue(_.toJava)
       .asJava
 

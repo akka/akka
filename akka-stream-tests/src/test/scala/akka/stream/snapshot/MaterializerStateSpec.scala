@@ -4,6 +4,8 @@
 
 package akka.stream.snapshot
 
+import scala.concurrent.Promise
+
 import akka.stream.FlowShape
 import akka.stream.Materializer
 import akka.stream.scaladsl.Flow
@@ -15,8 +17,6 @@ import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
-
-import scala.concurrent.Promise
 
 class MaterializerStateSpec extends StreamSpec {
 

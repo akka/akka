@@ -440,11 +440,12 @@ See @ref:[Cluster Sharding](cluster-sharding.md).
 See @ref:[Distributed Data](distributed-data.md).
 
 @@include[cluster.md](../includes/cluster.md) { #cluster-pubsub } 
-Classic Pub Sub can be used by leveraging the `.toClassic` adapters.
-See @ref:[Distributed Publish Subscribe in Cluster](distributed-pub-sub.md). The API is @github[#26338](#26338).
 
 @@include[cluster.md](../includes/cluster.md) { #cluster-multidc }
 See @ref:[Cluster Multi-DC](cluster-dc.md).
+
+@@include[cluster.md](../includes/cluster.md) { #reliable-delivery }
+See @ref:[Reliable Delivery](reliable-delivery.md)
 
 ## Example project
 

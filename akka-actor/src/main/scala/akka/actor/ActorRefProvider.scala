@@ -4,23 +4,23 @@
 
 package akka.actor
 
-import akka.dispatch.sysmsg._
-import akka.dispatch.{ Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.routing._
-import akka.event._
-import akka.util.Helpers
-import akka.util.Collections.EmptyImmutableSeq
-import scala.util.control.NonFatal
 import java.util.concurrent.atomic.AtomicLong
 
-import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
 import scala.annotation.implicitNotFound
+import scala.concurrent.{ ExecutionContextExecutor, Future, Promise }
+import scala.util.control.NonFatal
 
 import akka.ConfigurationException
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
+import akka.dispatch.{ Mailboxes, RequiresMessageQueue, UnboundedMessageQueueSemantics }
 import akka.dispatch.Dispatchers
+import akka.dispatch.sysmsg._
+import akka.event._
+import akka.routing._
 import akka.serialization.Serialization
+import akka.util.Collections.EmptyImmutableSeq
+import akka.util.Helpers
 import akka.util.OptionVal
 
 /**
@@ -57,6 +57,9 @@ import akka.util.OptionVal
    * Dead letter destination for this provider.
    */
   def deadLetters: ActorRef
+
+  /** INTERNAL API */
+  @InternalApi private[akka] def ignoreRef: ActorRef
 
   /**
    * The root path for all actors within this actor system, not including any remote address information.
@@ -390,6 +393,8 @@ private[akka] class LocalActorRefProvider private[akka] (
     _deadLetters
       .getOrElse((p: ActorPath) => new DeadLetterActorRef(this, p, eventStream))
       .apply(rootPath / "deadLetters")
+
+  override val ignoreRef: ActorRef = new IgnoreActorRef(this)
 
   private[this] final val terminationPromise: Promise[Terminated] = Promise[Terminated]()
 

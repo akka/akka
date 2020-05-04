@@ -7,12 +7,12 @@ package akka.remote
 import scala.concurrent.{ Await, Future }
 import scala.concurrent.duration._
 
+import TypedActorRemoteDeploySpec._
+import com.github.ghik.silencer.silent
+import com.typesafe.config._
+
 import akka.actor.{ ActorSystem, Deploy, TypedActor, TypedProps }
 import akka.testkit.AkkaSpec
-import TypedActorRemoteDeploySpec._
-
-import com.typesafe.config._
-import com.github.ghik.silencer.silent
 
 object TypedActorRemoteDeploySpec {
   val conf = ConfigFactory.parseString("""
@@ -47,7 +47,7 @@ class TypedActorRemoteDeploySpec extends AkkaSpec(conf) {
   def verify[T](f: RemoteNameService => Future[T], expected: T) = {
     val ts = TypedActor(system)
     val echoService: RemoteNameService =
-      ts.typedActorOf(TypedProps[RemoteNameServiceImpl].withDeploy(Deploy(scope = RemoteScope(remoteAddress))))
+      ts.typedActorOf(TypedProps[RemoteNameServiceImpl]().withDeploy(Deploy(scope = RemoteScope(remoteAddress))))
     Await.result(f(echoService), 3.seconds) should ===(expected)
     val actor = ts.getActorRefFor(echoService)
     system.stop(actor)

@@ -4,8 +4,8 @@
 
 package akka.stream.typed.javadsl
 
-import akka.actor.typed._
 import akka.NotUsed
+import akka.actor.typed._
 import akka.stream.javadsl._
 import akka.stream.typed
 

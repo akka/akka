@@ -4,6 +4,17 @@
 
 package akka.stream.javadsl
 
+import java.util.Comparator
+import java.util.concurrent.CompletionStage
+import java.util.function.Supplier
+
+import scala.annotation.unchecked.uncheckedVariance
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.duration.FiniteDuration
+import scala.reflect.ClassTag
+
+import com.github.ghik.silencer.silent
+
 import akka.NotUsed
 import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
 import akka.japi.{ function, Pair, Util }
@@ -11,17 +22,6 @@ import akka.stream._
 import akka.util.ConstantFun
 import akka.util.JavaDurationConverters._
 import akka.util.ccompat.JavaConverters._
-
-import scala.annotation.unchecked.uncheckedVariance
-import scala.concurrent.duration.FiniteDuration
-import java.util.Comparator
-import java.util.concurrent.CompletionStage
-import java.util.function.Supplier
-
-import com.github.ghik.silencer.silent
-
-import scala.compat.java8.FutureConverters._
-import scala.reflect.ClassTag
 
 /**
  * * Upcast a stream of elements to a stream of supertypes of that element. Useful in combination with

@@ -14,6 +14,11 @@ import scala.annotation.tailrec
 import scala.util.Failure
 import scala.util.Success
 import scala.util.control.NonFatal
+
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
+import com.fasterxml.jackson.dataformat.cbor.CBORFactory
+
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
 import akka.event.LogMarker
@@ -22,9 +27,6 @@ import akka.serialization.BaseSerializer
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
 import akka.util.Helpers.toRootLowerCase
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory
 
 /**
  * INTERNAL API

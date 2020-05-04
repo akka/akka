@@ -4,14 +4,15 @@
 
 package akka.pattern
 
-import akka.actor._
-import akka.testkit._
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
 import com.github.ghik.silencer.silent
 import org.scalatest.concurrent.Eventually
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
+import akka.actor._
+import akka.testkit._
 
 object BackoffSupervisorSpec {
 

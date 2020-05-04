@@ -4,20 +4,27 @@
 
 package akka.remote.artery
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.actor.ActorSystem
 import akka.remote.RARP
 import akka.remote.RemoteTransportException
 import akka.testkit.SocketUtil
 import akka.testkit.TestKit
-import com.typesafe.config.ConfigFactory
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class ArteryFailedToBindSpec extends AnyWordSpec with Matchers {
 
   "an ActorSystem" must {
     "not start if port is taken" in {
-      val port = SocketUtil.temporaryLocalPort(true)
+
+      // this test is tweaked in Jenkins CI by passing -Dakka.remote.artery.transport
+      // therefore we must decide whether to use UDP or not based on the runtime config
+      val arterySettings = ArterySettings(ConfigFactory.load().getConfig("akka.remote.artery"))
+      val useUdp = arterySettings.Transport == ArterySettings.AeronUpd
+      val port = SocketUtil.temporaryLocalPort(useUdp)
+
       val config = ConfigFactory.parseString(s"""
            |akka {
            |  actor {

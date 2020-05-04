@@ -4,8 +4,8 @@
 
 package akka.remote
 
-import akka.testkit._
 import akka.remote.transport.netty.SSLSettings
+import akka.testkit._
 
 class Ticket1978ConfigSpec extends AkkaSpec("""
     akka.remote.classic.netty.ssl.security {

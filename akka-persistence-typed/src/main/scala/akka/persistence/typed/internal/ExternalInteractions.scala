@@ -16,11 +16,9 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.annotation.InternalApi
 import akka.annotation.InternalStableApi
-
+import akka.persistence._
 import akka.persistence.JournalProtocol.ReplayMessages
 import akka.persistence.SnapshotProtocol.LoadSnapshot
-import akka.persistence._
-
 import akka.util.unused
 
 /** INTERNAL API */

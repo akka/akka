@@ -7,9 +7,11 @@ package akka.io
 import java.nio.channels.SocketChannel
 
 import scala.collection.immutable
+
+import com.github.ghik.silencer.silent
+
 import akka.actor.ActorRef
 import akka.io.Inet.SocketOption
-import com.github.ghik.silencer.silent
 
 /**
  * An actor handling the connection state machine for an incoming, already connected

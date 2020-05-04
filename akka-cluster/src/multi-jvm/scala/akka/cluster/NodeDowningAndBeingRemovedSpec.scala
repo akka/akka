@@ -4,11 +4,13 @@
 
 package akka.cluster
 
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import scala.concurrent.duration._
 
 object NodeDowningAndBeingRemovedMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")

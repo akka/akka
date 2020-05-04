@@ -4,11 +4,12 @@
 
 package akka.stream.impl
 
+import scala.util.control.NonFatal
+
+import org.reactivestreams.{ Subscriber, Subscription }
+
 import akka.annotation.InternalApi
 import akka.stream.SubscriptionWithCancelException
-
-import scala.util.control.NonFatal
-import org.reactivestreams.{ Subscriber, Subscription }
 
 /**
  * INTERNAL API

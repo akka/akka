@@ -4,11 +4,13 @@
 
 package akka.cluster.metrics
 
-import com.typesafe.config.Config
-import scala.concurrent.duration.FiniteDuration
-import akka.util.Helpers.Requiring
-import akka.util.Helpers.ConfigOps
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
+
+import akka.util.Helpers.ConfigOps
+import akka.util.Helpers.Requiring
 
 /**
  * Metrics extension settings. Documented in: `src/main/resources/reference.conf`.

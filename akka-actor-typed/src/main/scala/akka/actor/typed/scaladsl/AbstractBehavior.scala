@@ -5,6 +5,7 @@
 package akka.actor.typed.scaladsl
 
 import akka.actor.typed.{ Behavior, ExtensibleBehavior, Signal, TypedActorContext }
+import akka.actor.typed.MessageAdaptionFailure
 
 /**
  * An actor `Behavior` can be implemented by extending this class and implement the
@@ -85,6 +86,9 @@ abstract class AbstractBehavior[T](protected val context: ActorContext[T]) exten
   @throws(classOf[Exception])
   override final def receiveSignal(ctx: TypedActorContext[T], msg: Signal): Behavior[T] = {
     checkRightContext(ctx)
-    onSignal.applyOrElse(msg, { case _ => Behaviors.unhandled }: PartialFunction[Signal, Behavior[T]])
+    onSignal.applyOrElse(msg, {
+      case MessageAdaptionFailure(ex) => throw ex
+      case _                          => Behaviors.unhandled
+    }: PartialFunction[Signal, Behavior[T]])
   }
 }

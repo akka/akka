@@ -8,23 +8,23 @@ package scaladsl
 import scala.concurrent.Future
 import scala.reflect.ClassTag
 
-import akka.util.Timeout
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Extension
 import akka.actor.typed.ExtensionId
 import akka.actor.typed.ExtensionSetup
-import akka.actor.typed.RecipientRef
 import akka.actor.typed.Props
+import akka.actor.typed.RecipientRef
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
+import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
 import akka.cluster.sharding.typed.internal.ClusterShardingImpl
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
-import akka.cluster.sharding.ShardRegion.{ StartEntity => ClassicStartEntity }
+import akka.util.Timeout
 
 object ClusterSharding extends ExtensionId[ClusterSharding] {
 

@@ -4,10 +4,11 @@
 
 package akka.persistence.query
 
-import akka.NotUsed
-import akka.stream.scaladsl.Source
 import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.NotUsed
 import akka.actor.ExtendedActorSystem
+import akka.stream.scaladsl.Source
 import akka.util.unused
 
 /**

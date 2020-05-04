@@ -6,6 +6,9 @@ package akka.cluster.sharding.external.internal
 
 import java.util.concurrent.CompletionStage
 
+import scala.compat.java8.FutureConverters._
+import scala.concurrent.Future
+
 import akka.Done
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -29,14 +32,12 @@ import akka.cluster.sharding.external.ClientTimeoutException
 import akka.cluster.sharding.external.ExternalShardAllocationStrategy
 import akka.cluster.sharding.external.ExternalShardAllocationStrategy.ShardLocation
 import akka.cluster.sharding.external.ShardLocations
+import akka.dispatch.MessageDispatcher
 import akka.event.Logging
-import akka.util.Timeout
-import akka.util.PrettyDuration._
 import akka.pattern.ask
-
-import scala.concurrent.Future
-import scala.compat.java8.FutureConverters._
 import akka.util.JavaDurationConverters._
+import akka.util.PrettyDuration._
+import akka.util.Timeout
 
 /**
  * INTERNAL API
@@ -55,8 +56,8 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
     system.settings.config
       .getDuration("akka.cluster.sharding.external-shard-allocation-strategy.client-timeout")
       .asScala
-  private implicit val askTimeout = Timeout(timeout * 2)
-  private implicit val ec = system.dispatchers.internalDispatcher
+  private implicit val askTimeout: Timeout = Timeout(timeout * 2)
+  private implicit val ec: MessageDispatcher = system.dispatchers.internalDispatcher
 
   private val Key = ExternalShardAllocationStrategy.ddataKey(typeName)
 

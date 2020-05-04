@@ -4,6 +4,8 @@
 
 package akka.stream
 
+import scala.language.implicitConversions
+
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -14,8 +16,6 @@ import akka.actor.ExtensionId
 import akka.annotation.DoNotInherit
 import akka.stream.impl.streamref.StreamRefResolverImpl
 import akka.stream.scaladsl.{ Sink, Source }
-
-import scala.language.implicitConversions
 
 /**
  * See full documentation on [[SinkRef]].

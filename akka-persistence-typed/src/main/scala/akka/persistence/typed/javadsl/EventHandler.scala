@@ -7,10 +7,10 @@ package akka.persistence.typed.javadsl
 import java.util.Objects
 import java.util.function.{ BiFunction, Predicate, Supplier, Function => JFunction }
 
+import scala.compat.java8.FunctionConverters._
+
 import akka.annotation.InternalApi
 import akka.util.OptionVal
-
-import scala.compat.java8.FunctionConverters._
 
 /**
  * FunctionalInterface for reacting on events having been persisted

@@ -4,13 +4,11 @@ Like `mapAsync` but @scala[`Future`] @java[`CompletionStage`] results are passed
 
 @ref[Asynchronous operators](../index.md#asynchronous-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mapAsyncUnordered }
+@apidoc[Source.mapAsyncUnordered](Source) { scala="#mapAsyncUnordered[T](parallelism:Int)(f:Out=&gt;scala.concurrent.Future[T]):FlowOps.this.Repr[T]" java="#mapAsyncUnordered(int,akka.japi.function.Function)" }
+@apidoc[Flow.mapAsyncUnordered](Flow) { scala="#mapAsyncUnordered[T](parallelism:Int)(f:Out=&gt;scala.concurrent.Future[T]):FlowOps.this.Repr[T]" java="#mapAsyncUnordered(int,akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 

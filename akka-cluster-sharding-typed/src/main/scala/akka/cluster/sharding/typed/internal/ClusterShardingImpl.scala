@@ -11,18 +11,16 @@ import java.util.concurrent.CompletionStage
 import java.util.concurrent.ConcurrentHashMap
 
 import scala.compat.java8.FutureConverters._
-
-import akka.util.JavaDurationConverters._
 import scala.concurrent.Future
 
 import akka.actor.ActorRefProvider
 import akka.actor.ExtendedActorSystem
 import akka.actor.InternalActorRef
-import akka.actor.typed.TypedActorContext
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
+import akka.actor.typed.TypedActorContext
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.actor.typed.internal.PoisonPill
 import akka.actor.typed.internal.PoisonPillInterceptor
@@ -43,6 +41,7 @@ import akka.japi.function.{ Function => JFunction }
 import akka.pattern.AskTimeoutException
 import akka.pattern.PromiseActorRef
 import akka.util.ByteString
+import akka.util.JavaDurationConverters._
 import akka.util.Timeout
 
 /**

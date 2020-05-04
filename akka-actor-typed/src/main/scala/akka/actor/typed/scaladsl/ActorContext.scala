@@ -4,17 +4,18 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.ClassicActorContextProvider
-import akka.actor.typed._
-import akka.annotation.DoNotInherit
-import akka.util.Timeout
-
 import scala.concurrent.{ ExecutionContextExecutor, Future }
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 import scala.util.Try
-import akka.annotation.InternalApi
+
 import org.slf4j.Logger
+
+import akka.actor.ClassicActorContextProvider
+import akka.actor.typed._
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.util.Timeout
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in

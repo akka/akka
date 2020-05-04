@@ -10,11 +10,11 @@ import java.net.InetAddress
 import java.net.UnknownHostException
 import java.util
 
+import scala.collection.{ immutable => im }
+
 import akka.actor.NoSerializationVerificationNeeded
 import akka.io.IpVersionSelector
 import akka.routing.ConsistentHashingRouter.ConsistentHashable
-
-import scala.collection.{ immutable => im }
 import akka.util.ccompat.JavaConverters._
 
 /**
@@ -30,7 +30,7 @@ object DnsProtocol {
 
   sealed trait RequestType
   final case class Ip(ipv4: Boolean = true, ipv6: Boolean = true) extends RequestType
-  final case object Srv extends RequestType
+  case object Srv extends RequestType
 
   /**
    * Java API

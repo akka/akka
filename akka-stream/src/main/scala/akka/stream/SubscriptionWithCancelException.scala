@@ -4,10 +4,11 @@
 
 package akka.stream
 
-import akka.annotation.DoNotInherit
+import scala.util.control.NoStackTrace
+
 import org.reactivestreams.Subscription
 
-import scala.util.control.NoStackTrace
+import akka.annotation.DoNotInherit
 
 /**
  * Extension of Subscription that allows to pass a cause when a subscription is cancelled.

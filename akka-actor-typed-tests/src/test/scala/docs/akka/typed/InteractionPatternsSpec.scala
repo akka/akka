@@ -82,11 +82,19 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
       val context = new {
         def self = probe.ref
       }
+
       // #request-response-send
       cookieFabric ! CookieFabric.Request("give me cookies", context.self)
       // #request-response-send
 
       probe.receiveMessage()
+
+      Behaviors.setup[Nothing] { context =>
+        // #ignore-reply
+        cookieFabric ! CookieFabric.Request("don't send cookies back", context.system.ignoreRef)
+        // #ignore-reply
+        Behaviors.empty
+      }
     }
 
     "contain a sample for adapted response" in {
@@ -410,6 +418,8 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
     // keep this out of the sample as it uses the testkit spawn
     val cookieFabric = spawn(CookieFabric())
 
+    val theSystem = testKit.system
+
     // #standalone-ask
 
     import akka.actor.typed.scaladsl.AskPattern._
@@ -418,6 +428,8 @@ class InteractionPatternsSpec extends ScalaTestWithActorTestKit with AnyWordSpec
     // asking someone requires a timeout if the timeout hits without response
     // the ask is failed with a TimeoutException
     implicit val timeout: Timeout = 3.seconds
+    // implicit ActorSystem in scope
+    implicit val system: ActorSystem[_] = theSystem
 
     val result: Future[CookieFabric.Reply] = cookieFabric.ask(ref => CookieFabric.GiveMeCookies(3, ref))
 

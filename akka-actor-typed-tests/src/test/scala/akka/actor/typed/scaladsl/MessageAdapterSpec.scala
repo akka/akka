@@ -4,20 +4,19 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.UnhandledMessage
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.event.Level
+
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.Props
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.eventstream.EventStream
-import com.typesafe.config.ConfigFactory
-import org.slf4j.event.Level
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString("""
@@ -151,8 +150,7 @@ class MessageAdapterSpec
           Behaviors.same
       })
 
-      val unhandledProbe = createTestProbe[UnhandledMessage]()
-      system.eventStream ! EventStream.Subscribe(unhandledProbe.ref)
+      val unhandledProbe = createUnhandledMessageProbe()
       val probe = TestProbe[Wrapped]()
 
       val snitch = Behaviors.setup[Wrapped] { context =>

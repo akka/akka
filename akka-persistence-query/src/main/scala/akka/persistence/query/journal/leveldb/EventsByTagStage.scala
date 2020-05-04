@@ -4,6 +4,8 @@
 
 package akka.persistence.query.journal.leveldb
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.NotUsed
 import akka.actor.ActorRef
 import akka.annotation.InternalApi
@@ -14,19 +16,17 @@ import akka.persistence.journal.leveldb.LeveldbJournal
 import akka.persistence.journal.leveldb.LeveldbJournal.ReplayTaggedMessages
 import akka.persistence.journal.leveldb.LeveldbJournal.ReplayedTaggedMessage
 import akka.persistence.journal.leveldb.LeveldbJournal.TaggedEventAppended
-import akka.persistence.query.journal.leveldb.EventsByTagStage.Continue
 import akka.persistence.query.EventEnvelope
 import akka.persistence.query.Sequence
+import akka.persistence.query.journal.leveldb.EventsByTagStage.Continue
+import akka.stream.Attributes
 import akka.stream.Materializer
+import akka.stream.Outlet
+import akka.stream.SourceShape
 import akka.stream.stage.GraphStage
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.OutHandler
 import akka.stream.stage.TimerGraphStageLogicWithLogging
-import akka.stream.Attributes
-import akka.stream.Outlet
-import akka.stream.SourceShape
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

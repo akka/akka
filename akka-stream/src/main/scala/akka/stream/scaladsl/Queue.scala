@@ -7,14 +7,14 @@ package akka.stream.scaladsl
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
+import scala.compat.java8.FutureConverters._
+import scala.compat.java8.OptionConverters._
 import scala.concurrent.Future
 
 import akka.Done
-import akka.stream.QueueOfferResult
-import scala.compat.java8.FutureConverters._
-import scala.compat.java8.OptionConverters._
-
 import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.stream.QueueOfferResult
 
 /**
  * This trait allows to have a queue as a data source for some stream.
@@ -145,9 +145,8 @@ object SinkQueueWithCancel {
    */
   @InternalApi private[akka] def asJava[T](queue: SinkQueueWithCancel[T]): akka.stream.javadsl.SinkQueueWithCancel[T] =
     new akka.stream.javadsl.SinkQueueWithCancel[T] {
-      import akka.dispatch.ExecutionContexts.{ sameThreadExecutionContext => same }
       override def pull(): CompletionStage[Optional[T]] =
-        queue.pull().map(_.asJava)(same).toJava
+        queue.pull().map(_.asJava)(ExecutionContexts.parasitic).toJava
       override def cancel(): Unit = queue.cancel()
     }
 }

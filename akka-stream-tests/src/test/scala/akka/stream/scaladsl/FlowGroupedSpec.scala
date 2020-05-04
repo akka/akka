@@ -6,10 +6,10 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom.{ current => random }
 
+import scala.collection.immutable
+
 import akka.stream.testkit.ScriptedTest
 import akka.stream.testkit.StreamSpec
-
-import scala.collection.immutable
 
 class FlowGroupedSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

@@ -4,18 +4,19 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.{ ActorRef, PostStop, Props }
-import akka.actor.testkit.typed.scaladsl.TestProbe
-import com.typesafe.config.ConfigFactory
 import scala.concurrent.TimeoutException
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.util.{ Failure, Success }
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.wordspec.AnyWordSpecLike
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.{ ActorRef, PostStop, Props }
 
 object ActorContextAskSpec {
   val config = ConfigFactory.parseString("""

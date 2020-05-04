@@ -4,15 +4,17 @@
 
 package akka.routing
 
+import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import akka.actor.{ Actor, Props }
-import akka.pattern.ask
-import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TestLatch }
 import akka.actor.ActorSystem
 import akka.actor.Status
-import java.util.concurrent.TimeoutException
+import akka.pattern.ask
+import akka.testkit.{ AkkaSpec, DefaultTimeout, ImplicitSender, TestLatch }
 import akka.testkit.TestProbe
 
 object ScatterGatherFirstCompletedSpec {

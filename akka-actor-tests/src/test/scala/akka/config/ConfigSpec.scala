@@ -6,15 +6,16 @@ package akka.config
 
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.scalatest.Assertions
+
 import akka.actor.ActorSystem
+import akka.actor.ExtendedActorSystem
 import akka.event.DefaultLoggingFilter
 import akka.event.Logging.DefaultLogger
 import akka.testkit.AkkaSpec
-import com.typesafe.config.ConfigFactory
-import org.scalatest.Assertions
-import scala.concurrent.duration._
-
-import akka.actor.ExtendedActorSystem
 
 class ConfigSpec extends AkkaSpec(ConfigFactory.defaultReference(ActorSystem.findClassLoader())) with Assertions {
 

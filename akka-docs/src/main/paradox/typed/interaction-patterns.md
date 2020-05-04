@@ -76,7 +76,7 @@ Java
 :  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #request-response-protocol }
 
 
-The sender would use its own @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`], which it can access through @scala[`ActorContext.self`]@java[`ActorContext.getSelf()`], for the `respondTo`. 
+The sender would use its own @scala[`ActorRef[Response]`]@java[`ActorRef<Response>`], which it can access through @scala[`ActorContext.self`]@java[`ActorContext.getSelf()`], for the `replyTo`. 
 
 Scala
 :  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #request-response-send }
@@ -192,7 +192,10 @@ The response adapting function is running in the receiving actor and can safely 
 
 Sometimes you need to interact with actors from the outside of the actor system, this can be done with fire-and-forget as described above or through another version of `ask` that returns a @scala[`Future[Response]`]@java[`CompletionStage<Response>`] that is either completed with a successful response or failed with a `TimeoutException` if there was no response within the specified timeout.
  
-To do this we use @scala[`ActorRef.ask` (or the symbolic `ActorRef.?`) implicitly provided by `akka.actor.typed.scaladsl.AskPattern`]@java[`akka.actor.typed.javadsl.AskPattern.ask`] to send a message to an actor and get a @scala[`Future[Response]`]@java[`CompletionState[Response]`] back.
+@scala[To do this we use `ask` (or the symbolic `?`) implicitly added to `ActorRef` by `akka.actor.typed.scaladsl.AskPattern._`
+to send a message to an actor and get a `Future[Response]` back. `ask` takes implicit `Timeout` and `ActorSystem` parameters.]
+@java[To do this we use `akka.actor.typed.javadsl.AskPattern.ask` to send a message to an actor and get a 
+`CompletionState[Response]` back.]
 
 **Example:**
 
@@ -224,6 +227,32 @@ Java
  * It is easy to accidentally close over and unsafely mutable state with the callbacks on the returned @scala[`Future`]@java[`CompletionStage`] as those will be executed on a different thread
  * There can only be a single response to one `ask` (see @ref:[per session child Actor](#per-session-child-actor))
  * When `ask` times out, the receiving actor does not know and may still process it to completion, or even start processing it after the fact
+
+## Ignoring replies
+
+In some situations an actor has a response for a particular request message but you are not interested in the response. In this case you can pass @scala[`system.ignoreRef`]@java[`system.ignoreRef()`] turning the request-response into a fire-and-forget.
+
+@scala[`system.ignoreRef`]@java[`system.ignoreRef()`], as the name indicates, returns an `ActorRef` that ignores any message sent to it.
+
+With the same protocol as the @ref[request response](#request-response) above, if the sender would prefer to ignore the reply it could pass @scala[`system.ignoreRef`]@java[`system.ignoreRef()`] for the `replyTo`, which it can access through @scala[`ActorContext.system.ignoreRef`]@java[`ActorContext.getSystem().ignoreRef()`]. 
+
+Scala
+:  @@snip [InteractionPatternsSpec.scala](/akka-actor-typed-tests/src/test/scala/docs/akka/typed/InteractionPatternsSpec.scala) { #ignore-reply }
+
+Java
+:  @@snip [InteractionPatternsTest.java](/akka-actor-typed-tests/src/test/java/jdocs/akka/typed/InteractionPatternsTest.java) { #ignore-reply }
+
+**Useful when:**
+
+  * Sending a message for which the protocol defines a reply, but you are not interested in getting the reply
+
+**Problems:**
+
+The returned `ActorRef` ignores all messages sent to it, therefore it should be used carefully.
+ 
+ * Passing it around inadvertently as if it was a normal `ActorRef` may result in broken actor-to-actor interactions.
+ * Using it when performing an `ask` from outside the Actor System will cause the @scala[`Future`]@java[`CompletionStage`] returned by the `ask` to timeout since it will never complete.
+ * Finally, it's legal to `watch` it, but since it's of a special kind, it never terminates and therefore you will never receive a `Terminated` signal from it.
 
 ## Send Future result to self
 

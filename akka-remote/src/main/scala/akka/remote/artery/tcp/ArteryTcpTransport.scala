@@ -72,8 +72,8 @@ private[remote] class ArteryTcpTransport(
     _provider: RemoteActorRefProvider,
     tlsEnabled: Boolean)
     extends ArteryTransport(_system, _provider) {
-  import ArteryTransport._
   import ArteryTcpTransport._
+  import ArteryTransport._
 
   override type LifeCycle = NotUsed
 
@@ -273,7 +273,7 @@ private[remote] class ArteryTcpTransport(
                   s"Failed to bind TCP to [$bindHost:$bindPort] due to: " +
                   e.getMessage,
                   e))
-          }(ExecutionContexts.sameThreadExecutionContext)
+          }(ExecutionContexts.parasitic)
 
         // only on initial startup, when ActorSystem is starting
         val b = Await.result(binding, settings.Bind.BindTimeout)

@@ -4,9 +4,10 @@
 
 package akka.persistence.japi.snapshot
 
+import com.typesafe.config.Config
+
 import akka.persistence.CapabilityFlag
 import akka.persistence.snapshot.SnapshotStoreSpec
-import com.typesafe.config.Config
 
 /**
  * JAVA API
@@ -20,5 +21,5 @@ import com.typesafe.config.Config
  * @see [[akka.persistence.snapshot.SnapshotStoreSpec]]
  */
 class JavaSnapshotStoreSpec(config: Config) extends SnapshotStoreSpec(config) {
-  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on
+  override protected def supportsSerialization: CapabilityFlag = CapabilityFlag.on()
 }

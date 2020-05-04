@@ -4,8 +4,25 @@
 
 package akka.remote.transport
 
+import java.util.concurrent.TimeUnit
+import java.util.concurrent.atomic.AtomicReference
+
+import scala.annotation.tailrec
+import scala.collection.immutable.Queue
+import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration._
+import scala.math.min
+import scala.util.{ Failure, Success }
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+
 import akka.actor._
+import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
+import akka.dispatch.ExecutionContexts
+import akka.dispatch.sysmsg.{ Unwatch, Watch }
 import akka.pattern.{ ask, pipe, PromiseActorRef }
+import akka.remote.RARP
 import akka.remote.transport.ActorTransportAdapter.AssociateUnderlying
 import akka.remote.transport.AkkaPduCodec.Associate
 import akka.remote.transport.AssociationHandle.{
@@ -19,20 +36,6 @@ import akka.remote.transport.ThrottlerManager.{ Checkin, Handle, Listener, Liste
 import akka.remote.transport.ThrottlerTransportAdapter._
 import akka.remote.transport.Transport._
 import akka.util.{ ByteString, Timeout }
-import java.util.concurrent.TimeUnit
-import java.util.concurrent.atomic.AtomicReference
-
-import scala.annotation.tailrec
-import scala.collection.immutable.Queue
-import scala.concurrent.{ Future, Promise }
-import scala.concurrent.duration._
-import scala.math.min
-import scala.util.{ Failure, Success }
-import scala.util.control.NonFatal
-import akka.dispatch.sysmsg.{ Unwatch, Watch }
-import akka.dispatch.{ RequiresMessageQueue, UnboundedMessageQueueSemantics }
-import akka.remote.RARP
-import com.github.ghik.silencer.silent
 
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")
 class ThrottlerProvider extends TransportAdapterProvider {
@@ -361,7 +364,7 @@ private[transport] class ThrottlerManager(wrappedTransport: Transport)
       ref.result.future.transform({
         case Terminated(t) if t.path == target.path => SetThrottleAck
         case SetThrottleAck                         => { internalTarget.sendSystemMessage(Unwatch(target, ref)); SetThrottleAck }
-      }, t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ref.internalCallingThreadExecutionContext)
+      }, t => { internalTarget.sendSystemMessage(Unwatch(target, ref)); t })(ExecutionContexts.parasitic)
     }
   }
 

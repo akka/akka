@@ -6,23 +6,24 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.atomic.AtomicBoolean
 
-import akka.stream._
-import akka.stream.stage.GraphStage
-import akka.stream.stage.GraphStageLogic
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.TestPublisher
-import akka.stream.testkit.TestSubscriber
-import akka.testkit.DefaultTimeout
-import akka.testkit.TestProbe
-import akka.Done
-import akka.NotUsed
-import org.scalatest.concurrent.ScalaFutures
-
 import scala.collection.immutable.Seq
 import scala.concurrent.Future
 import scala.concurrent.Promise
+
+import org.scalatest.concurrent.ScalaFutures
+
+import akka.Done
+import akka.NotUsed
+import akka.stream._
+import akka.stream.stage.GraphStage
+import akka.stream.stage.GraphStageLogic
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.TestPublisher
+import akka.stream.testkit.TestSubscriber
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.DefaultTimeout
+import akka.testkit.TestProbe
 
 class LazySourceSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 

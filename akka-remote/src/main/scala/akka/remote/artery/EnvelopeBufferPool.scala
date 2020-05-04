@@ -6,13 +6,13 @@ package akka.remote.artery
 
 import java.nio.{ ByteBuffer, ByteOrder }
 
+import org.agrona.concurrent.{ ManyToManyConcurrentArrayQueue, UnsafeBuffer }
+
 import akka.actor.ActorRef
 import akka.io.DirectByteBufferPool
 import akka.remote.artery.compress.{ CompressionTable, InboundCompressions, NoInboundCompressions }
 import akka.serialization.Serialization
 import akka.util.{ OptionVal, Unsafe }
-
-import org.agrona.concurrent.{ ManyToManyConcurrentArrayQueue, UnsafeBuffer }
 
 /**
  * INTERNAL API

@@ -5,7 +5,6 @@
 package akka.remote.artery
 package aeron
 
-import akka.util.PrettyDuration.PrettyPrintableDuration
 import scala.annotation.tailrec
 import scala.concurrent.Future
 import scala.concurrent.Promise
@@ -14,6 +13,12 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NoStackTrace
+
+import io.aeron.Aeron
+import io.aeron.Publication
+import org.agrona.concurrent.UnsafeBuffer
+import org.agrona.hints.ThreadHints
+
 import akka.Done
 import akka.stream.Attributes
 import akka.stream.Inlet
@@ -22,10 +27,7 @@ import akka.stream.stage.AsyncCallback
 import akka.stream.stage.GraphStageLogic
 import akka.stream.stage.GraphStageWithMaterializedValue
 import akka.stream.stage.InHandler
-import io.aeron.Aeron
-import io.aeron.Publication
-import org.agrona.concurrent.UnsafeBuffer
-import org.agrona.hints.ThreadHints
+import akka.util.PrettyDuration.PrettyPrintableDuration
 
 /**
  * INTERNAL API

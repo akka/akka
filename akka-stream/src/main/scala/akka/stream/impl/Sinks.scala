@@ -6,26 +6,6 @@ package akka.stream.impl
 
 import java.util.function.BinaryOperator
 
-import akka.NotUsed
-import akka.annotation.DoNotInherit
-import akka.annotation.InternalApi
-import akka.dispatch.ExecutionContexts
-import akka.event.Logging
-import akka.stream.ActorAttributes.StreamSubscriptionTimeout
-import akka.stream.Attributes.InputBuffer
-import akka.stream._
-import akka.stream.impl.QueueSink.Output
-import akka.stream.impl.QueueSink.Pull
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl.StreamLayout.AtomicModule
-import akka.stream.scaladsl.Sink
-import akka.stream.scaladsl.SinkQueueWithCancel
-import akka.stream.scaladsl.Source
-import akka.stream.stage._
-import akka.util.ccompat._
-import org.reactivestreams.Publisher
-import org.reactivestreams.Subscriber
-
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.immutable
 import scala.collection.mutable
@@ -35,6 +15,27 @@ import scala.util.Failure
 import scala.util.Success
 import scala.util.Try
 import scala.util.control.NonFatal
+
+import org.reactivestreams.Publisher
+import org.reactivestreams.Subscriber
+
+import akka.NotUsed
+import akka.annotation.DoNotInherit
+import akka.annotation.InternalApi
+import akka.dispatch.ExecutionContexts
+import akka.event.Logging
+import akka.stream._
+import akka.stream.ActorAttributes.StreamSubscriptionTimeout
+import akka.stream.Attributes.InputBuffer
+import akka.stream.impl.QueueSink.Output
+import akka.stream.impl.QueueSink.Pull
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.StreamLayout.AtomicModule
+import akka.stream.scaladsl.Sink
+import akka.stream.scaladsl.SinkQueueWithCancel
+import akka.stream.scaladsl.Source
+import akka.stream.stage._
+import akka.util.ccompat._
 
 /**
  * INTERNAL API
@@ -391,14 +392,14 @@ import scala.util.control.NonFatal
 
       // SinkQueueWithCancel impl
       override def pull(): Future[Option[T]] = {
-        val p = Promise[Option[T]]
+        val p = Promise[Option[T]]()
         callback
           .invokeWithFeedback(Pull(p))
           .failed
           .foreach {
             case NonFatal(e) => p.tryFailure(e)
             case _           => ()
-          }(akka.dispatch.ExecutionContexts.sameThreadExecutionContext)
+          }(akka.dispatch.ExecutionContexts.parasitic)
         p.future
       }
       override def cancel(): Unit = {
@@ -572,7 +573,7 @@ import scala.util.control.NonFatal
               failStage(e)
           }
         try {
-          sinkFactory(element).onComplete(cb.invoke)(ExecutionContexts.sameThreadExecutionContext)
+          sinkFactory(element).onComplete(cb.invoke)(ExecutionContexts.parasitic)
         } catch {
           case NonFatal(e) =>
             promise.failure(e)

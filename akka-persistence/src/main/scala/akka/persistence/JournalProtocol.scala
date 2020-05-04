@@ -4,9 +4,9 @@
 
 package akka.persistence
 
-import akka.actor._
-
 import scala.collection.immutable
+
+import akka.actor._
 
 /**
  * INTERNAL API.
@@ -55,8 +55,9 @@ private[persistence] object JournalProtocol {
    * before all subsequent [[WriteMessageFailure]] replies.
    *
    * @param cause failure cause.
+   * @param writeCount the number of atomic writes that failed.
    */
-  final case class WriteMessagesFailed(cause: Throwable) extends Response
+  final case class WriteMessagesFailed(cause: Throwable, writeCount: Int) extends Response
 
   /**
    * Reply message to a successful [[WriteMessages]] request. For each contained [[PersistentRepr]] message

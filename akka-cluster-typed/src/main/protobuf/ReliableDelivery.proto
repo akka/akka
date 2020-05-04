@@ -1,0 +1,74 @@
+/*
+ * Copyright (C) 2020 Lightbend Inc. <https://www.lightbend.com>
+ */
+
+syntax = "proto2";
+
+package akka.cluster.typed.delivery;
+
+option java_package = "akka.cluster.typed.internal.protobuf";
+option optimize_for = SPEED;
+import "ContainerFormats.proto";
+
+// ConsumerController
+message SequencedMessage {
+  required string producerId = 1;
+  required int64 seqNr = 2;
+  required bool first = 3;
+  required bool ack = 4;
+  required string producerControllerRef = 5;
+  required Payload message = 6;
+}
+
+// ProducerController
+message RegisterConsumer {
+  required string consumerControllerRef = 1;
+}
+
+// ProducerController
+message Request {
+  required int64 confirmedSeqNr = 1;
+  required int64 requestUpToSeqNr = 2;
+  required bool supportResend = 3;
+  required bool viaTimeout = 4;
+}
+
+// ProducerController
+message Resend {
+  required int64 fromSeqNr = 1;
+}
+
+// ProducerController
+message Ack {
+  required int64 confirmedSeqNr = 1;
+}
+
+// DurableProducerQueue
+message State {
+  required int64 currentSeqNr = 1;
+  required int64 highestConfirmedSeqNr = 2;
+  repeated Confirmed confirmed = 3;
+  repeated MessageSent unconfirmed = 4;
+}
+
+// DurableProducerQueue
+message Confirmed {
+  required int64 seqNr = 1;
+  required string qualifier = 2;
+  required int64 timestamp = 3;
+}
+
+// DurableProducerQueue
+message MessageSent {
+  required int64 seqNr = 1;
+  required string qualifier = 2;
+  required bool ack = 3;
+  required int64 timestamp = 4;
+  required Payload message = 5;
+}
+
+// DurableProducerQueue
+message Cleanup {
+  repeated string qualifiers = 1;
+}
+

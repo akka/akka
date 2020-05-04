@@ -4,13 +4,13 @@
 
 package akka.cluster.sharding.external.scaladsl
 
+import scala.concurrent.Future
+
 import akka.Done
 import akka.actor.Address
 import akka.annotation.ApiMayChange
 import akka.cluster.sharding.ShardRegion.ShardId
 import akka.cluster.sharding.external.ShardLocations
-
-import scala.concurrent.Future
 
 /**
  * API May Change

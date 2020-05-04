@@ -4,10 +4,11 @@
 
 package akka.pattern
 
+import scala.concurrent.Future
+
+import akka.actor.Status
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
-import scala.concurrent.Future
-import akka.actor.Status
 
 class PipeToSpec extends AkkaSpec {
 

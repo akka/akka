@@ -4,14 +4,16 @@
 
 package akka.pattern
 
-import language.implicitConversions
-import scala.concurrent.{ ExecutionContext, Future }
-import scala.util.{ Failure, Success }
-import akka.actor.{ Actor, ActorRef, Status }
-import akka.actor.ActorSelection
 import java.util.concurrent.CompletionStage
 import java.util.function.BiConsumer
 
+import scala.concurrent.{ ExecutionContext, Future }
+import scala.util.{ Failure, Success }
+
+import language.implicitConversions
+
+import akka.actor.{ Actor, ActorRef, Status }
+import akka.actor.ActorSelection
 import akka.util.unused
 
 trait PipeToSupport {

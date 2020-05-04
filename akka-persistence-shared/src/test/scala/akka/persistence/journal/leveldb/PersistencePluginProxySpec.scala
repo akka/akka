@@ -4,11 +4,12 @@
 
 package akka.persistence.journal.leveldb
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.persistence._
 import akka.persistence.journal.PersistencePluginProxy
 import akka.testkit.{ AkkaSpec, TestProbe }
-import com.typesafe.config.ConfigFactory
 
 object PersistencePluginProxySpec {
   lazy val config =

@@ -9,18 +9,19 @@ import java.time.Duration
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
+import com.github.ghik.silencer.silent
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
-import akka.actor.typed.RecipientRef
 import akka.actor.typed.Props
+import akka.actor.typed.RecipientRef
 import akka.actor.typed.internal.InternalRecipientRef
 import akka.annotation.DoNotInherit
 import akka.annotation.InternalApi
 import akka.cluster.sharding.ShardCoordinator.ShardAllocationStrategy
 import akka.cluster.sharding.typed.internal.EntityTypeKeyImpl
 import akka.japi.function.{ Function => JFunction }
-import com.github.ghik.silencer.silent
 
 @FunctionalInterface
 trait EntityFactory[M] {

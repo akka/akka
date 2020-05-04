@@ -4,8 +4,8 @@
 
 package akka.persistence.typed.internal
 
-import scala.util.control.NonFatal
 import scala.concurrent.duration._
+import scala.util.control.NonFatal
 
 import akka.actor.typed.{ Behavior, Signal }
 import akka.actor.typed.internal.PoisonPill
@@ -13,18 +13,19 @@ import akka.actor.typed.internal.UnstashException
 import akka.actor.typed.scaladsl.{ AbstractBehavior, ActorContext, Behaviors, LoggerOps }
 import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.event.Logging
-import akka.persistence.JournalProtocol._
 import akka.persistence._
+import akka.persistence.JournalProtocol._
 import akka.persistence.typed.EmptyEventSeq
 import akka.persistence.typed.EventsSeq
-import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.RecoveryCompleted
+import akka.persistence.typed.RecoveryFailed
 import akka.persistence.typed.SingleEventSeq
+import akka.persistence.typed.internal.EventSourcedBehaviorImpl.GetState
 import akka.persistence.typed.internal.ReplayingEvents.ReplayingState
 import akka.persistence.typed.internal.Running.WithSeqNrAccessible
 import akka.util.OptionVal
-import akka.util.unused
 import akka.util.PrettyDuration._
+import akka.util.unused
 
 /***
  * INTERNAL API
@@ -87,11 +88,12 @@ private[akka] final class ReplayingEvents[C, E, S](
 
   override def onMessage(msg: InternalProtocol): Behavior[InternalProtocol] = {
     msg match {
-      case JournalResponse(r)      => onJournalResponse(r)
-      case SnapshotterResponse(r)  => onSnapshotterResponse(r)
-      case RecoveryTickEvent(snap) => onRecoveryTick(snap)
-      case cmd: IncomingCommand[C] => onCommand(cmd)
-      case RecoveryPermitGranted   => Behaviors.unhandled // should not happen, we already have the permit
+      case JournalResponse(r)          => onJournalResponse(r)
+      case SnapshotterResponse(r)      => onSnapshotterResponse(r)
+      case RecoveryTickEvent(snap)     => onRecoveryTick(snap)
+      case cmd: IncomingCommand[C]     => onCommand(cmd)
+      case get: GetState[S @unchecked] => stashInternal(get)
+      case RecoveryPermitGranted       => Behaviors.unhandled // should not happen, we already have the permit
     }
   }
 
@@ -162,7 +164,6 @@ private[akka] final class ReplayingEvents[C, E, S](
       Behaviors.unhandled
     } else {
       stashInternal(cmd)
-      Behaviors.same
     }
   }
 

@@ -4,13 +4,10 @@ Defers creation and materialization of a `Sink` until there is a first element.
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #lazySink }
+@apidoc[Sink.lazySink](Sink$) { scala="#lazySink[T,M](create:()=&gt;akka.stream.scaladsl.Sink[T,M]):akka.stream.scaladsl.Sink[T,scala.concurrent.Future[M]]" java="#lazySink(akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 

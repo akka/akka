@@ -70,8 +70,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
     "alsoToGraph",
     "orElseGraph",
     "divertToGraph",
-    "zipWithGraph",
-  )
+    "zipWithGraph")
 
   // FIXME document these methods as well
   val pendingTestCases = Map(
@@ -98,14 +97,8 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "fromGraph",
       "actorSubscriber",
       "foldAsync",
-      "newOnCompleteStage",
-    ),
-    "Compression" -> Seq(
-      "inflate",
-      "gunzip",
-    )
-
-  )
+      "newOnCompleteStage"),
+    "Compression" -> Seq("inflate", "gunzip"))
 
   val ignore =
     Set("equals", "hashCode", "notify", "notifyAll", "wait", "toString", "getClass") ++
@@ -230,7 +223,10 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       "# Operators\n\n" +
       tables +
       "\n\n@@@ index\n\n" +
-      groupedDefs.map { case (_, method, md) => s"* [${methodToShow(method)}]($md)" }.mkString("\n") + "\n\n@@@\n"
+      groupedDefs
+        .sortBy { case (_, method, _) => method.toLowerCase }
+        .map { case (_, method, md) => s"* [$method]($md)" }
+        .mkString("\n") + "\n\n@@@\n"
 
     if (!file.exists || IO.read(file) != content) IO.write(file, content)
     Seq(file)
@@ -251,7 +247,7 @@ object StreamOperatorsIndexGenerator extends AutoPlugin {
       // This forces the short description to be on a single line. We could make this smarter,
       // but 'forcing' the short description to be really short seems nice as well.
       val description = lines(2)
-        .replaceAll("]\\(", "](" + file.getAbsolutePath.replaceFirst(".*/([^/]+/).*", "$1"))
+        .replaceAll("ref:?\\[(.*?)\\]\\(", "ref[$1](" + file.getAbsolutePath.replaceFirst(".*/([^/]+/).*", "$1"))
       require(!description.isEmpty, s"description in $file must be non-empty, single-line description at the 3rd line")
       val categoryLink = lines(4)
       require(

@@ -7,10 +7,11 @@ package akka.util
 import java.util
 import java.util.concurrent.TimeUnit
 
-import akka.remote.artery.LruBoundedCache
+import scala.util.Random
+
 import org.openjdk.jmh.annotations.{ Param, _ }
 
-import scala.util.Random
+import akka.remote.artery.LruBoundedCache
 
 @State(Scope.Benchmark)
 @Measurement(timeUnit = TimeUnit.MICROSECONDS)

@@ -7,8 +7,8 @@ package akka.actor
 import java.util.concurrent.{ CountDownLatch, TimeUnit }
 
 import scala.concurrent.Await
-import scala.concurrent.duration.Duration
 import scala.concurrent.duration._
+import scala.concurrent.duration.Duration
 
 object BenchmarkActors {
 
@@ -48,7 +48,7 @@ object BenchmarkActors {
   }
 
   class EchoSender(messagesPerPair: Int, latch: CountDownLatch, batchSize: Int) extends Actor {
-    private val echo = context.actorOf(Props[Echo].withDispatcher(context.props.dispatcher), "echo")
+    private val echo = context.actorOf(Props[Echo]().withDispatcher(context.props.dispatcher), "echo")
 
     private var left = messagesPerPair / 2
     private var batch = 0

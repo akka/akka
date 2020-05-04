@@ -4,18 +4,19 @@
 
 package akka.cluster.ddata
 
+import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.ActorRef
+import akka.actor.ActorSystem
 import akka.cluster.Cluster
+import akka.cluster.MemberStatus
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-import akka.actor.ActorSystem
-import akka.actor.ActorRef
-import scala.concurrent.Await
-import akka.cluster.MemberStatus
 import akka.util.ccompat._
 
 @ccompatUsedUntil213
@@ -46,7 +47,7 @@ class DurablePruningSpec extends MultiNodeSpec(DurablePruningSpec) with STMultiN
   override def initialParticipants = roles.size
 
   val cluster = Cluster(system)
-  implicit val selfUniqueAddress = DistributedData(system).selfUniqueAddress
+  implicit val selfUniqueAddress: SelfUniqueAddress = DistributedData(system).selfUniqueAddress
   val maxPruningDissemination = 3.seconds
 
   def startReplicator(sys: ActorSystem): ActorRef =

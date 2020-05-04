@@ -5,8 +5,8 @@
 package akka.stream.impl
 
 import akka.annotation.InternalApi
-import akka.stream.Attributes._
 import akka.stream._
+import akka.stream.Attributes._
 
 /**
  * INTERNAL API

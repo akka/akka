@@ -6,28 +6,29 @@ package akka.remote.artery
 
 import java.util.concurrent.TimeUnit
 
-import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration._
 import scala.util.control.NonFatal
+
 import akka.Done
 import akka.actor.{ EmptyLocalActorRef, _ }
 import akka.event.Logging
 import akka.pattern.PromiseActorRef
+import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRefProvider, UniqueAddress }
 import akka.remote.artery.Decoder.{
   AdvertiseActorRefsCompressionTable,
   AdvertiseClassManifestsCompressionTable,
   InboundCompressionAccess,
   InboundCompressionAccessImpl
 }
+import akka.remote.artery.OutboundHandshake.HandshakeReq
 import akka.remote.artery.SystemMessageDelivery.SystemMessageEnvelope
-import akka.remote.artery.compress.CompressionProtocol._
 import akka.remote.artery.compress._
-import akka.remote.{ MessageSerializer, OversizedPayloadException, RemoteActorRefProvider, UniqueAddress }
+import akka.remote.artery.compress.CompressionProtocol._
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.stream._
 import akka.stream.stage._
 import akka.util.{ unused, OptionVal, Unsafe }
-import akka.remote.artery.OutboundHandshake.HandshakeReq
 
 /**
  * INTERNAL API
@@ -304,7 +305,7 @@ private[remote] object Decoder {
      * External call from ChangeInboundCompression materialized value
      */
     override def currentCompressionOriginUids: Future[Set[Long]] = {
-      val p = Promise[Set[Long]]
+      val p = Promise[Set[Long]]()
       currentCompressionOriginUidsCb.invoke(p)
       p.future
     }

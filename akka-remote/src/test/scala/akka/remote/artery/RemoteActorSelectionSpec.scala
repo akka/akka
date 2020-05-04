@@ -4,6 +4,8 @@
 
 package akka.remote.artery
 
+import scala.concurrent.duration._
+
 import akka.actor.{
   Actor,
   ActorIdentity,
@@ -17,8 +19,6 @@ import akka.actor.{
   Terminated
 }
 import akka.testkit.{ ImplicitSender, TestActors }
-
-import scala.concurrent.duration._
 import akka.testkit.JavaSerializable
 
 object RemoteActorSelectionSpec {

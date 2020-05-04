@@ -12,14 +12,16 @@ import scala.collection.immutable
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.Duration
 import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+
 import akka.actor.dungeon.ChildrenContainer
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.dispatch.{ Envelope, MessageDispatcher }
 import akka.dispatch.sysmsg._
 import akka.event.Logging.{ Debug, Error, LogEvent }
 import akka.japi.Procedure
 import akka.util.{ unused, Reflect }
-import akka.annotation.{ InternalApi, InternalStableApi }
-import com.github.ghik.silencer.silent
 
 /**
  * The actor context - the view of the actor cell from the actor.

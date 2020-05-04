@@ -5,27 +5,26 @@
 package akka.pattern
 
 import java.util.Optional
+import java.util.concurrent.{ Callable, CompletionStage, CopyOnWriteArrayList }
 import java.util.concurrent.atomic.{ AtomicBoolean, AtomicInteger, AtomicLong }
+import java.util.function.BiFunction
 import java.util.function.Consumer
+
+import scala.compat.java8.FutureConverters
+import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
+import scala.concurrent.TimeoutException
+import scala.concurrent.duration._
+import scala.util.{ Failure, Success, Try }
+import scala.util.control.NoStackTrace
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
 
 import akka.AkkaException
 import akka.actor.Scheduler
+import akka.dispatch.ExecutionContexts.parasitic
 import akka.util.JavaDurationConverters._
 import akka.util.Unsafe
-
-import scala.util.control.NoStackTrace
-import java.util.concurrent.{ Callable, CompletionStage, CopyOnWriteArrayList }
-import java.util.function.BiFunction
-
-import scala.concurrent.{ Await, ExecutionContext, Future, Promise }
-import scala.concurrent.duration._
-import scala.concurrent.TimeoutException
-import scala.util.control.NonFatal
-import scala.util.{ Failure, Success, Try }
-import akka.dispatch.ExecutionContexts.sameThreadExecutionContext
-import com.github.ghik.silencer.silent
-
-import scala.compat.java8.FutureConverters
 
 /**
  * Companion object providing factory methods for Circuit Breaker which runs callbacks in caller's thread
@@ -49,7 +48,7 @@ object CircuitBreaker {
       maxFailures: Int,
       callTimeout: FiniteDuration,
       resetTimeout: FiniteDuration): CircuitBreaker =
-    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(sameThreadExecutionContext)
+    new CircuitBreaker(scheduler, maxFailures, callTimeout, resetTimeout)(parasitic)
 
   /**
    * Java API: Create a new CircuitBreaker.
@@ -751,8 +750,6 @@ class CircuitBreaker(
         val start = System.nanoTime()
         val p = Promise[T]()
 
-        implicit val ec = sameThreadExecutionContext
-
         p.future.onComplete { fResult =>
           if (defineFailureFn(fResult)) {
             callFails()
@@ -760,24 +757,24 @@ class CircuitBreaker(
             notifyCallSuccessListeners(start)
             callSucceeds()
           }
-        }
+        }(parasitic)
 
         val timeout = scheduler.scheduleOnce(callTimeout) {
           if (p.tryFailure(timeoutEx)) {
             notifyCallTimeoutListeners(start)
           }
-        }
+        }(parasitic)
 
         materialize(body).onComplete {
           case Success(result) =>
             p.trySuccess(result)
-            timeout.cancel
+            timeout.cancel()
           case Failure(ex) =>
             if (p.tryFailure(ex)) {
               notifyCallFailureListeners(start)
             }
-            timeout.cancel
-        }
+            timeout.cancel()
+        }(parasitic)
         p.future
       }
     }

@@ -8,15 +8,16 @@ import java.util.concurrent.atomic.AtomicBoolean
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpec
+
 import akka.ConfigurationException
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.testkit.TestKit.awaitCond
 import akka.testkit.TestKit.shutdownActorSystem
 import akka.util.unused
-import com.typesafe.config.ConfigFactory
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpec
 
 class FailingDowningProvider(@unused system: ActorSystem) extends DowningProvider {
   override val downRemovalMargin: FiniteDuration = 20.seconds

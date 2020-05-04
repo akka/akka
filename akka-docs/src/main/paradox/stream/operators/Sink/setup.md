@@ -10,12 +10,9 @@ The `setup` operator has been deprecated, use @ref:[fromMaterializer](./fromMate
 
 @@@
 
-@@@ div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #setup }
-@@@
+@apidoc[Sink.setup](Sink$) { scala="#setup[T,M](factory:(akka.stream.ActorMaterializer,akka.stream.Attributes)=&gt;akka.stream.scaladsl.Sink[T,M]):akka.stream.scaladsl.Sink[T,scala.concurrent.Future[M]]" java="#setup(java.util.function.BiFunction)" }
 
 ## Description
 

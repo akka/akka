@@ -4,18 +4,19 @@
 
 package akka.remote.classic
 
-import akka.actor.{ ActorIdentity, Identify, _ }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.AssociationHandle
-import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
-import akka.remote.{ RARP, RemotingMultiNodeSpec }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ ActorIdentity, Identify, _ }
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.AssociationHandle
+import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
+import akka.testkit._
 
 object Ticket15109Spec extends MultiNodeConfig {
   val first = role("first")
@@ -73,7 +74,7 @@ abstract class Ticket15109Spec extends RemotingMultiNodeSpec(Ticket15109Spec) {
       var subject: ActorRef = system.deadLetters
 
       runOn(second) {
-        system.actorOf(Props[Subject], "subject")
+        system.actorOf(Props[Subject](), "subject")
       }
 
       enterBarrier("actors-started")

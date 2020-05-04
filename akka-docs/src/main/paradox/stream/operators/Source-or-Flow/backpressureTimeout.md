@@ -4,11 +4,11 @@ If the time between the emission of an element and the following downstream dema
 
 @ref[Time aware operators](../index.md#time-aware-operators)
 
-@@@ div { .group-scala }
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #backpressureTimeout }
-@@@
+@apidoc[Source.backpressureTimeout](Source) { scala="#backpressureTimeout(timeout:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#backpressureTimeout(java.time.Duration)" }
+@apidoc[Flow.backpressureTimeout](Flow) { scala="#backpressureTimeout(timeout:scala.concurrent.duration.FiniteDuration):FlowOps.this.Repr[Out]" java="#backpressureTimeout(java.time.Duration)" }
+
 
 
 ## Description

@@ -35,7 +35,9 @@ class SampleLease(settings: LeaseSettings) extends Lease(settings) {
 
 object LeaseDocSpec {
 
-  val config = ConfigFactory.parseString("""
+  def config() =
+    ConfigFactory.parseString("""
+      jdocs-lease.lease-class = "jdocs.akka.coordination.lease.LeaseDocTest$SampleLease"
       #lease-config
       akka.actor.provider = cluster
       docs-lease {
@@ -62,7 +64,7 @@ class LeaseDocSpec extends AkkaSpec(LeaseDocSpec.config) {
   import LeaseDocSpec._
 
   "A docs lease" should {
-    "be loadable" in {
+    "scala lease be loadable from scala" in {
 
       //#lease-usage
       val lease = LeaseProvider(system).getLease("<name of the lease>", "docs-lease", "owner")
@@ -82,6 +84,16 @@ class LeaseDocSpec extends AkkaSpec(LeaseDocSpec.config) {
       // remove compiler warnings
       blackhole(acquired, stillAcquired, released, owner)
 
+    }
+
+    "java lease be loadable from scala" in {
+      val lease = LeaseProvider(system).getLease("<name of the lease>", "jdocs-lease", "owner")
+      val acquired: Future[Boolean] = lease.acquire()
+      val stillAcquired: Boolean = lease.checkLease()
+      val released: Future[Boolean] = lease.release()
+      lease.acquire(leaseLostReason => doSomethingImportant(leaseLostReason))
+
+      blackhole(acquired, stillAcquired, released)
     }
   }
 

@@ -4,25 +4,26 @@
 
 package akka.stream.scaladsl
 
-import akka.stream._
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
-import akka.testkit.DefaultTimeout
+import scala.concurrent.{ Await, Future }
+import scala.concurrent.duration._
+
 import com.github.ghik.silencer.silent
 import org.reactivestreams.Publisher
 import org.scalatest.concurrent.ScalaFutures
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
+import akka.Done
+import akka.stream._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
+import akka.testkit.DefaultTimeout
 
-@silent("deprecated")
 class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
 
   import GraphDSL.Implicits._
 
   "A Sink" must {
     "be composable without importing modules" in {
-      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
+      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int]())
       val sink = Sink.fromGraph(GraphDSL.create() { implicit b =>
         val bcast = b.add(Broadcast[Int](3))
         for (i <- 0 to 2) bcast.out(i).filter(_ == i) ~> Sink.fromSubscriber(probes(i))
@@ -39,7 +40,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "be composable with importing 1 module" in {
-      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
+      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int]())
       val sink = Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0))) { implicit b => s0 =>
         val bcast = b.add(Broadcast[Int](3))
         bcast.out(0) ~> Flow[Int].filter(_ == 0) ~> s0.in
@@ -57,7 +58,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "be composable with importing 2 modules" in {
-      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
+      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int]())
       val sink =
         Sink.fromGraph(GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)))(List(_, _)) {
           implicit b => (s0, s1) =>
@@ -78,7 +79,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     }
 
     "be composable with importing 3 modules" in {
-      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int])
+      val probes = Array.fill(3)(TestSubscriber.manualProbe[Int]())
       val sink = Sink.fromGraph(
         GraphDSL.create(Sink.fromSubscriber(probes(0)), Sink.fromSubscriber(probes(1)), Sink.fromSubscriber(probes(2)))(
           List(_, _, _)) { implicit b => (s0, s1, s2) =>
@@ -120,7 +121,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       }
       probes.foreach { p =>
         p.expectNextN(List(1, 2))
-        p.expectComplete
+        p.expectComplete()
       }
     }
 
@@ -144,7 +145,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       }
       probes.foreach { p =>
         p.expectNextN(List(1, 2))
-        p.expectComplete
+        p.expectComplete()
       }
     }
 
@@ -153,7 +154,9 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val s: Sink[Int, Future[Int]] = Sink.head[Int].async.addAttributes(none).named("name")
 
       s.traversalBuilder.attributes.filtered[Name] shouldEqual List(Name("name"), Name("headSink"))
-      s.traversalBuilder.attributes.getFirst[AsyncBoundary.type] shouldEqual (Some(AsyncBoundary))
+      @silent("deprecated")
+      val res = s.traversalBuilder.attributes.getFirst[Attributes.AsyncBoundary.type]
+      res shouldEqual (Some(AsyncBoundary))
     }
 
     "given one attribute of a class should correctly get it as first attribute with default value" in {
@@ -174,7 +177,9 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async
 
-      s.traversalBuilder.attributes.getFirst[Name](Name("default")) shouldEqual Name("default")
+      @silent("deprecated")
+      val res = s.traversalBuilder.attributes.getFirst[Name](Name("default"))
+      res shouldEqual Name("default")
     }
 
     "given no attributes of a class when getting last attribute with default value should get default value" in {
@@ -187,8 +192,9 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
     "given multiple attributes of a class when getting first attribute with default value should get first attribute" in {
       import Attributes._
       val s: Sink[Int, Future[Int]] = Sink.head[Int].withAttributes(none).async.named("name").named("another_name")
-
-      s.traversalBuilder.attributes.getFirst[Name](Name("default")) shouldEqual Name("name")
+      @silent("deprecated")
+      val res = s.traversalBuilder.attributes.getFirst[Name](Name("default"))
+      res shouldEqual Name("name")
     }
 
     "given multiple attributes of a class when getting last attribute with default value should get last attribute" in {
@@ -206,6 +212,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
   "The ignore sink" should {
 
     "fail its materialized value on abrupt materializer termination" in {
+      @silent("deprecated")
       val mat = ActorMaterializer()
 
       val matVal = Source.maybe[Int].runWith(Sink.ignore)(mat)
@@ -222,6 +229,7 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val source = Source(1 to 10)
       val result = source.runWith(Sink.reduce[Int]((a, b) => a + b))
       result.map(println)(system.dispatcher)
+      // will print
       // 55
       //#reduce-operator-example
       assert(result.futureValue == (1 to 10).sum)
@@ -235,11 +243,28 @@ class SinkSpec extends StreamSpec with DefaultTimeout with ScalaFutures {
       val result = source.runWith(Sink.seq[Int])
       val seq = result.futureValue
       seq.foreach(println)
+      // will print
       // 1
       // 2
       // 3
       // #seq-operator-example
       assert(seq == Vector(1, 2, 3))
+    }
+  }
+
+  "The foreach sink" must {
+    "illustrate println" in {
+      // #foreach
+      val printlnSink: Sink[Any, Future[Done]] = Sink.foreach(println)
+      val f = Source(1 to 4).runWith(printlnSink)
+      val done = Await.result(f, 100.millis)
+      // will print
+      // 1
+      // 2
+      // 3
+      // 4
+      // #foreach
+      done shouldBe Done
     }
   }
 

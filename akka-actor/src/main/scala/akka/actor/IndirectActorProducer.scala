@@ -4,11 +4,12 @@
 
 package akka.actor
 
-import akka.japi.Creator
-import akka.util.Reflect
+import scala.collection.immutable
+
 import com.github.ghik.silencer.silent
 
-import scala.collection.immutable
+import akka.japi.Creator
+import akka.util.Reflect
 
 /**
  * This interface defines a class of actor creation strategies deviating from

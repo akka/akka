@@ -6,12 +6,13 @@ package akka.cluster.sharding
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorRef, Props }
 import akka.cluster.Cluster
 import akka.cluster.sharding.InactiveEntityPassivationSpec.Entity.GotIt
 import akka.testkit.{ AkkaSpec, TestProbe }
-import com.typesafe.config.ConfigFactory
-import com.typesafe.config.Config
 
 object InactiveEntityPassivationSpec {
 

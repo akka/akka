@@ -4,11 +4,11 @@
 
 package akka.persistence
 
-import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
-import akka.persistence.serialization.Message
 import scala.collection.immutable
 
+import akka.actor.{ ActorRef, NoSerializationVerificationNeeded }
 import akka.annotation.DoNotInherit
+import akka.persistence.serialization.Message
 import akka.util.HashCode
 
 /**
@@ -230,6 +230,10 @@ private[persistence] final case class PersistentImpl(
       manifest == other.manifest && deleted == other.deleted &&
       sender == other.sender && writerUuid == other.writerUuid // timestamp not included in equals for backwards compatibility
     case _ => false
+  }
+
+  override def toString: String = {
+    s"PersistentRepr($persistenceId,$sequenceNr,$writerUuid,$timestamp)"
   }
 
 }

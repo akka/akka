@@ -6,6 +6,7 @@ package jdocs.stream.operators;
 
 // #imports
 // #range-imports
+import akka.Done;
 import akka.NotUsed;
 import akka.actor.ActorSystem;
 import akka.actor.testkit.typed.javadsl.ManualTime;
@@ -81,7 +82,17 @@ public class SourceDocExamples {
     // #actor-ref
 
     int bufferSize = 100;
-    Source<Object, ActorRef> source = Source.actorRef(bufferSize, OverflowStrategy.dropHead());
+    Source<Object, ActorRef> source =
+        Source.actorRef(
+            elem -> {
+              // complete stream immediately if we send it Done
+              if (elem == Done.done()) return Optional.of(CompletionStrategy.immediately());
+              else return Optional.empty();
+            },
+            // never fail the stream because of a message
+            elem -> Optional.empty(),
+            bufferSize,
+            OverflowStrategy.dropHead());
 
     ActorRef actorRef = source.to(Sink.foreach(System.out::println)).run(system);
     actorRef.tell("hello", ActorRef.noSender());

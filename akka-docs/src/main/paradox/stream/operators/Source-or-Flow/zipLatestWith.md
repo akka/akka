@@ -4,13 +4,11 @@ Combines elements from multiple sources through a `combine` function and passes 
 
 @ref[Fan-in operators](../index.md#fan-in-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #zipLatestWith }
+@apidoc[Source.zipLatestWith](Source) { scala="#zipLatestWith[Out2,Out3](that:akka.stream.Graph[akka.stream.SourceShape[Out2],_])(combine:(Out,Out2)=&gt;Out3):FlowOps.this.Repr[Out3]" java="#zipLatestWith(akka.stream.Graph,akka.japi.function.Function2)" }
+@apidoc[Flow.zipLatestWith](Flow) { scala="#zipLatestWith[Out2,Out3](that:akka.stream.Graph[akka.stream.SourceShape[Out2],_])(combine:(Out,Out2)=&gt;Out3):FlowOps.this.Repr[Out3]" java="#zipLatestWith(akka.stream.Graph,akka.japi.function.Function2)" }
 
-@@@
 
 ## Description
 

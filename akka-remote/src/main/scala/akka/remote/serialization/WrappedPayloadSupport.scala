@@ -6,9 +6,9 @@ package akka.remote.serialization
 
 import akka.actor.ExtendedActorSystem
 import akka.event.Logging
+import akka.protobufv3.internal.ByteString
 import akka.remote.ContainerFormats
 import akka.serialization.{ SerializationExtension, Serializers }
-import akka.protobufv3.internal.ByteString
 import akka.serialization.DisabledJavaSerializer
 
 /**

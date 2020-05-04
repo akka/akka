@@ -30,7 +30,7 @@ object Protobuf {
     importPath := None,
     // this keeps intellij happy for files that use the shaded protobuf
     Compile / unmanagedJars ++= Seq(
-        baseDirectory.value / ".." / "akka-protobuf-v3" / "target" / s"akka-protobuf-v3-assembly-${version.value}.jar"),
+        baseDirectory.value / ".." / "akka-protobuf-v3" / "target" / s"scala-${scalaBinaryVersion.value}" / s"akka-protobuf-v3-assembly-${version.value}.jar"),
     protoc := "protoc",
     protocVersion := "3.10.0",
     generate := {

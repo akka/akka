@@ -5,10 +5,11 @@
 package akka.persistence.typed.scaladsl
 
 import scala.collection.{ immutable => im }
-import akka.annotation.DoNotInherit
-import akka.persistence.typed.internal.SideEffect
-import akka.persistence.typed.internal._
+
 import akka.actor.typed.ActorRef
+import akka.annotation.DoNotInherit
+import akka.persistence.typed.internal._
+import akka.persistence.typed.internal.SideEffect
 
 /**
  * Factory methods for creating [[Effect]] directives - how an event sourced actor reacts on a command.

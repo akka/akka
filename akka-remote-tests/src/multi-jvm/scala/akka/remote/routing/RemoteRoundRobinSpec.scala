@@ -4,18 +4,19 @@
 
 package akka.remote.routing
 
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Actor, ActorRef, Address, PoisonPill, Props }
 import akka.pattern.ask
 import akka.remote.RemotingMultiNodeSpec
 import akka.remote.testkit.MultiNodeConfig
 import akka.routing._
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.collection.immutable
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.language.postfixOps
 
 class RemoteRoundRobinConfig(artery: Boolean) extends MultiNodeConfig {
 
@@ -91,7 +92,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
 
       runOn(fourth) {
         enterBarrier("start")
-        val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]), "service-hello")
+        val actor = system.actorOf(RoundRobinPool(nrOfInstances = 0).props(Props[SomeActor]()), "service-hello")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
         val connectionCount = 3
@@ -136,7 +137,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
         enterBarrier("start")
         val actor =
           system.actorOf(
-            RoundRobinPool(nrOfInstances = 1, resizer = Some(new TestResizer)).props(Props[SomeActor]),
+            RoundRobinPool(nrOfInstances = 1, resizer = Some(new TestResizer)).props(Props[SomeActor]()),
             "service-hello2")
         actor.isInstanceOf[RoutedActorRef] should ===(true)
 
@@ -173,7 +174,7 @@ class RemoteRoundRobinSpec(multiNodeConfig: RemoteRoundRobinConfig)
     "send messages with actor selection to remote paths" in {
 
       runOn(first, second, third) {
-        system.actorOf(Props[SomeActor], name = "target-" + myself.name)
+        system.actorOf(Props[SomeActor](), name = "target-" + myself.name)
         enterBarrier("start", "end")
       }
 

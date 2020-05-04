@@ -4,13 +4,11 @@ Take up to *n* elements from the stream (less than *n* only if the upstream comp
 
 @ref[Nesting and flattening operators](../index.md#nesting-and-flattening-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #prefixAndTail }
+@apidoc[Source.prefixAndTail](Source) { scala="#prefixAndTail[U&gt;:Out](n:Int):FlowOps.this.Repr[(scala.collection.immutable.Seq[Out],akka.stream.scaladsl.Source[U,akka.NotUsed])]" java="#prefixAndTail(int)" }
+@apidoc[Flow.prefixAndTail](Flow) { scala="#prefixAndTail[U&gt;:Out](n:Int):FlowOps.this.Repr[(scala.collection.immutable.Seq[Out],akka.stream.scaladsl.Source[U,akka.NotUsed])]" java="#prefixAndTail(int)" }
 
-@@@
 
 ## Description
 

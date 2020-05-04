@@ -8,6 +8,7 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.Future
 import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -19,9 +20,9 @@ import akka.actor.ExtensionId
 import akka.actor.ExtensionIdProvider
 import akka.actor.Props
 import akka.cluster.TestLeaseActor.{ Acquire, Create, Release }
-import akka.event.Logging
 import akka.coordination.lease.LeaseSettings
 import akka.coordination.lease.scaladsl.Lease
+import akka.event.Logging
 import akka.pattern.ask
 import akka.testkit.JavaSerializable
 import akka.util.Timeout
@@ -35,7 +36,7 @@ object TestLeaseActor {
   final case class Release(owner: String) extends LeaseRequest
   final case class Create(leaseName: String, ownerName: String) extends JavaSerializable
 
-  final case object GetRequests extends JavaSerializable
+  case object GetRequests extends JavaSerializable
   final case class LeaseRequests(requests: List[LeaseRequest]) extends JavaSerializable
   final case class ActionRequest(request: LeaseRequest, result: Any) extends JavaSerializable // boolean of Failure
 }
@@ -102,7 +103,7 @@ class TestLeaseActorClient(settings: LeaseSettings, system: ExtendedActorSystem)
   log.info("lease created {}", settings)
   leaseActor ! Create(settings.leaseName, settings.ownerName)
 
-  private implicit val timeout = Timeout(100.seconds)
+  private implicit val timeout: Timeout = Timeout(100.seconds)
 
   override def acquire(): Future[Boolean] = {
     (leaseActor ? Acquire(settings.ownerName)).mapTo[Boolean]

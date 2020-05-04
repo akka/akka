@@ -4,14 +4,16 @@
 
 package akka.actor
 
+import java.util.UUID.{ randomUUID => newUuid }
+import java.util.concurrent.atomic._
+
+import scala.concurrent.Await
+
 import org.scalatest.BeforeAndAfterEach
 
 import akka.actor.Actor._
-import akka.testkit._
-import java.util.concurrent.atomic._
-import scala.concurrent.Await
 import akka.pattern.ask
-import java.util.UUID.{ randomUUID => newUuid }
+import akka.testkit._
 
 object ActorLifeCycleSpec {
 

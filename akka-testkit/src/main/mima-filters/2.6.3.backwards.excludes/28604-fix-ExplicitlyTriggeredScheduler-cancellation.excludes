@@ -1,0 +1,5 @@
+# #28604 changes in the akka.testkit.ExplicitlyTriggeredScheduler internal implementation.
+# Removal of the `time` field from the internal Item case class in ExplicitlyTriggeredScheduler.
+ProblemFilters.exclude[MissingClassProblem]("akka.testkit.ExplicitlyTriggeredScheduler$Item$")
+ProblemFilters.exclude[MissingTypesProblem]("akka.testkit.ExplicitlyTriggeredScheduler$Item")
+ProblemFilters.exclude[DirectMissingMethodProblem]("akka.testkit.ExplicitlyTriggeredScheduler#Item.*")

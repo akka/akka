@@ -6,16 +6,16 @@ package akka.cluster.sharding
 
 import java.util.concurrent.atomic.AtomicInteger
 
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.util.Success
+import scala.util.control.NoStackTrace
+
 import akka.actor.{ Actor, ActorLogging, PoisonPill, Props }
 import akka.cluster.TestLeaseExt
 import akka.cluster.sharding.ShardRegion.ShardInitialized
 import akka.coordination.lease.LeaseUsageSettings
 import akka.testkit.{ AkkaSpec, ImplicitSender, TestProbe }
-
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.util.Success
-import scala.util.control.NoStackTrace
 
 object ShardSpec {
   val config =

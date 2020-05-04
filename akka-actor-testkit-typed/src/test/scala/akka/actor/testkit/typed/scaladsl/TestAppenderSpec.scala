@@ -8,9 +8,10 @@ import java.util.concurrent.atomic.AtomicInteger
 
 import scala.concurrent.Future
 
-import akka.actor.testkit.typed.TestException
-import org.slf4j.LoggerFactory
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.LoggerFactory
+
+import akka.actor.testkit.typed.TestException
 
 class TestAppenderSpec
     extends ScalaTestWithActorTestKit(

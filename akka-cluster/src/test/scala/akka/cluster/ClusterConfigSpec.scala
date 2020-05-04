@@ -4,16 +4,17 @@
 
 package akka.cluster
 
-import language.postfixOps
 import scala.concurrent.duration._
-import com.typesafe.config.ConfigFactory
-import akka.testkit.AkkaSpec
-import akka.dispatch.Dispatchers
-import akka.remote.PhiAccrualFailureDetector
-import akka.util.Helpers.ConfigOps
-import akka.actor.Address
 
 import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
+import akka.actor.Address
+import akka.dispatch.Dispatchers
+import akka.remote.PhiAccrualFailureDetector
+import akka.testkit.AkkaSpec
+import akka.util.Helpers.ConfigOps
 
 @silent
 class ClusterConfigSpec extends AkkaSpec {

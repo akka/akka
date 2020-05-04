@@ -4,9 +4,9 @@
 
 package akka.coordination.lease.scaladsl
 
-import akka.coordination.lease.LeaseSettings
-
 import scala.concurrent.Future
+
+import akka.coordination.lease.LeaseSettings
 
 abstract class Lease(val settings: LeaseSettings) {
 

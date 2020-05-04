@@ -60,10 +60,32 @@ copied over to a maven server. If you have access, the Jenkins job at
 https://jenkins.akka.io:8498/job/akka-publish-wip/ can be used to publish
 a snapshot to https://repo.akka.io/snapshots from any branch.
 
+## Releasing only updated docs
+
+It is possible to release a revised documentation to the already existing release.
+
+1. Create a new branch from a release tag. If a revised documentation is for the `v2.6.4` release, then the name of the new branch should be `docs/v2.6.4`.
+1. Add and commit `version.sbt` file that pins the version to the one that is being revised. Also set `isSnapshot` to `false` for the stable documentation links. For example:
+    ```scala
+    ThisBuild / version := "2.6.4"
+    ThisBuild / isSnapshot := false
+    ```
+1. Make all of the required changes to the documentation.
+1. Build documentation locally with:
+    ```sh
+    sbt akka-docs/paradoxBrowse
+    ```
+1. If the generated documentation looks good, send it to Gustav:
+    ```sh
+    sbt akka-docs/publishRsync
+    ```
+1. Do not forget to push the new branch back to GitHub.
+
 ## Release steps
 
-* Do a `project/scripts/release <version>` dry run
-* If all goes well, `project/scripts/release --real-run <version>`
+* Tag the release: `git tag -am "Version 2.6.x" v2.6.x`
+* Do a `project/scripts/release` dry run
+* If all goes well, `project/scripts/release --real-run`
 * Log into sonatype, 'close' the staging repo.
 * Test the artifacts by adding `resolvers += "Staging Repo" at "https://oss.sonatype.org/content/repositories/comtypesafe-xxxx"` to a test project
 * If all is well, 'release' the staging repo.
@@ -71,14 +93,14 @@ a snapshot to https://repo.akka.io/snapshots from any branch.
 ## Announcing
 
 * Prepare milestone on github:
- * go to the [Milestones tab](https://github.com/akka/akka/milestones)
- * move all open issues so that this milestone contains completed work only
- * close that milestone
- * create a new milestone for next patch version
+  * go to the [Milestones tab](https://github.com/akka/akka/milestones)
+  * move all open issues so that this milestone contains completed work only
+  * close that milestone
+  * create a new milestone for next patch version
 
 * In case of a new minor release:
- * update the branch descriptions at CONTRIBUTING.md#branches-summary
- * write blog post for akka.io and lightbend.com
+  * update the branch descriptions at CONTRIBUTING.md#branches-summary
+  * write blog post for akka.io and lightbend.com
 
 * Create an announcement as a PR against akka/akka.github.com .
   * credits can be generated with `scripts/authors.scala v2.3.5 v2.3.6`
@@ -91,9 +113,9 @@ Now wait until all artifacts have been properly propagated. Then:
 * Change the symbolic links from 'current': `ssh akkarepo@gustav.akka.io ./update-akka-current-version.sh <x.y.z>`
 
 * Publish the release announcement
-* Tweet about it
-* Post about it on Discuss
-* Post about it on Gitter
+  * Tweet about it
+  * Post about it on Discuss
+  * Post about it on Gitter
 
 ## Update references
 

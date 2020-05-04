@@ -9,12 +9,14 @@ import scala.util.Failure
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
 
+import com.github.ghik.silencer.silent
+
 import akka.ConfigurationException
 import akka.Done
+import akka.actor._
 import akka.actor.SystemGuardian.RegisterTerminationHook
 import akka.actor.SystemGuardian.TerminationHook
 import akka.actor.SystemGuardian.TerminationHookDone
-import akka.actor._
 import akka.annotation.InternalApi
 import akka.dispatch.RequiresMessageQueue
 import akka.dispatch.UnboundedMessageQueueSemantics
@@ -36,7 +38,6 @@ import akka.serialization.Serialization
 import akka.util.ErrorMessages
 import akka.util.OptionVal
 import akka.util.unused
-import com.github.ghik.silencer.silent
 
 /**
  * INTERNAL API
@@ -187,6 +188,7 @@ private[akka] class RemoteActorRefProvider(
 
   override def rootPath: ActorPath = local.rootPath
   override def deadLetters: InternalActorRef = local.deadLetters
+  override def ignoreRef: ActorRef = local.ignoreRef
 
   // these are only available after init()
   override def rootGuardian: InternalActorRef = local.rootGuardian
@@ -371,9 +373,6 @@ private[akka] class RemoteActorRefProvider(
     if (systemService) local.actorOf(system, props, supervisor, path, systemService, deploy, lookupDeploy, async)
     else {
 
-      if (!system.dispatchers.hasDispatcher(props.dispatcher))
-        throw new ConfigurationException(s"Dispatcher [${props.dispatcher}] not configured for path $path")
-
       /*
        * This needs to deal with “mangled” paths, which are created by remote
        * deployment, also in this method. The scheme is the following:
@@ -524,6 +523,9 @@ private[akka] class RemoteActorRefProvider(
    * public `resolveActorRef(path: String)`.
    */
   private[akka] def internalResolveActorRef(path: String): ActorRef = path match {
+
+    case p if IgnoreActorRef.isIgnoreRefPath(p) => this.ignoreRef
+
     case ActorPathExtractor(address, elems) =>
       if (hasAddress(address)) local.resolveActorRef(rootGuardian, elems)
       else {
@@ -542,6 +544,7 @@ private[akka] class RemoteActorRefProvider(
             new EmptyLocalActorRef(this, rootPath, eventStream)
         }
       }
+
     case _ =>
       log.debug("Resolve (deserialization) of unknown (invalid) path [{}], using deadLetters.", path)
       deadLetters
