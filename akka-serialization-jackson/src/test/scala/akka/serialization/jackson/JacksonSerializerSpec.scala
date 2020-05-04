@@ -520,6 +520,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       def check(msg: AnyRef, compressed: Boolean): Unit = {
         val bytes = serializeToBinary(msg, sys)
         JacksonSerializer.isLZ4(bytes) should ===(compressed)
+        bytes.length should be < compressLargerThan.toInt
         checkSerialization(msg, sys)
       }
       check(SimpleCommand("0" * (compressLargerThan + 1).toInt), true)
