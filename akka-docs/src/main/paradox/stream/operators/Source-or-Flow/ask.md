@@ -6,6 +6,7 @@ Use the "Ask Pattern" to send a request-reply message to the target `ref` actor 
 
 ## Signature
 
+@apidoc[Source.ask](Source) {scala="#ask[S](ref:akka.actor.ActorRef)(implicittimeout:akka.util.Timeout,implicittag:scala.reflect.ClassTag[S]):FlowOps.this.Repr[S]" java="#ask(akka.actor.ActorRef,java.lang.Class,akka.util.Timeout)" }
 @apidoc[Flow.ask](Flow$) { scala="#ask%5BS](ref:akka.actor.ActorRef)(implicittimeout:akka.util.Timeout,implicittag:scala.reflect.ClassTag%5BS]):FlowOps.this.Repr%5BS]" java="#ask(akka.actor.ActorRef,java.lang.Class,akka.util.Timeout)" }
 
 ## Description
