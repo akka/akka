@@ -77,7 +77,7 @@ RunnableGraph
 
 
 It is possible to attach a `Flow` to a `Source` resulting in a composite source, and it is also possible to prepend
-a `Flow` to a `Sink` to get a new sink. After a stream is properly terminated by having both a source and a sink,
+a `Flow` to a `Sink` to get a new sink. After a stream is properly constructed by having both a source and a sink,
 it will be represented by the `RunnableGraph` type, indicating that it is ready to be executed.
 
 It is important to remember that even after constructing the `RunnableGraph` by connecting all the source, sink and
