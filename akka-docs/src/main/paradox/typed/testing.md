@@ -8,7 +8,7 @@ To use Actor TestKit add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-actor-testkit-typed_$scala.binary_version$
+  artifact=akka-actor-testkit-typed_$scala.binary.version$
   version=$akka.version$
   scope=test
 }
@@ -19,7 +19,7 @@ We recommend using Akka TestKit with ScalaTest:
 
 @@dependency[sbt,Maven,Gradle] {
   group=org.scalatest
-  artifact=scalatest_$scala.binary_version$
+  artifact=scalatest_$scala.binary.version$
   version=$scalatest.version$
   scope=test
 }

@@ -9,7 +9,7 @@ when used in a clustered application:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-cluster-typed_$scala.binary_version$"
+  artifact="akka-cluster-typed_$scala.binary.version$"
   version="$akka.version$"
 }
 

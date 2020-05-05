@@ -11,7 +11,7 @@ To use Akka Persistence, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-persistence-typed_$scala.binary_version$
+  artifact=akka-persistence-typed_$scala.binary.version$
   version=$akka.version$
 }
 

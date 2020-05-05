@@ -19,7 +19,7 @@ To use reliable delivery, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
+  artifact=akka-actor-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -249,7 +249,7 @@ To use reliable delivery with Cluster Sharding, add the following module to your
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-sharding-typed_$scala.binary_version$
+  artifact=akka-cluster-sharding-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -355,7 +355,7 @@ When using the `EventSourcedProducerQueue` the following dependency is needed:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-persistence-typed_$scala.binary_version$
+  artifact=akka-persistence-typed_$scala.binary.version$
   version=$akka.version$
 } 
 

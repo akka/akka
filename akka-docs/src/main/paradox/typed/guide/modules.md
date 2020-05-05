@@ -36,7 +36,7 @@ This page does not list all available modules, but overviews the main functional
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-actor-typed_$scala.binary_version$
+  artifact=akka-actor-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -61,7 +61,7 @@ Challenges that actors solve include the following:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-remote_$scala.binary_version$
+  artifact=akka-remote_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -84,7 +84,7 @@ Challenges Remoting solves include the following:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
+  artifact=akka-cluster-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -107,7 +107,7 @@ Challenges the Cluster module solves include the following:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-sharding-typed_$scala.binary_version$
+  artifact=akka-cluster-sharding-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -126,7 +126,7 @@ Challenges that Sharding solves include the following:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-singleton_$scala.binary_version$
+  artifact=akka-cluster-singleton_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -147,7 +147,7 @@ The Singleton module can be used to solve these challenges:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-persistence-typed_$scala.binary_version$
+  artifact=akka-persistence-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -169,7 +169,7 @@ Persistence tackles the following challenges:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
+  artifact=akka-cluster-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -188,7 +188,7 @@ Distributed Data is intended to solve the following challenges:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-stream-typed_$scala.binary_version$
+  artifact=akka-stream-typed_$scala.binary.version$
   version=$akka.version$
 }
 

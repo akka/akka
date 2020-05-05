@@ -12,7 +12,7 @@ via the SLF4J backend, such as Logback configuration.
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-actor-typed_$scala.binary_version$"
+  artifact="akka-actor-typed_$scala.binary.version$"
   version="$akka.version$"
 }
 

@@ -103,7 +103,7 @@ The TCK is usable from Java as well as Scala projects. To test your implementati
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-persistence-tck_$scala.binary_version$"
+  artifact="akka-persistence-tck_$scala.binary.version$"
   version="$akka.version$"
 }
 
