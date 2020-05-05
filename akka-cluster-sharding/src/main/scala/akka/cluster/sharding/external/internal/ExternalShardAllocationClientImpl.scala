@@ -36,6 +36,7 @@ import akka.dispatch.MessageDispatcher
 import akka.event.Logging
 import akka.pattern.ask
 import akka.util.JavaDurationConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.util.PrettyDuration._
 import akka.util.Timeout
 
@@ -92,4 +93,21 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
   }
 
   override def getShardLocations(): CompletionStage[ShardLocations] = shardLocations().toJava
+
+  override def updateShardLocations(locations: Map[ShardId, Address]): Future[Done] = {
+    log.debug("updateShardLocations {} for {}", locations, Key)
+    (replicator ? Update(Key, LWWMap.empty[ShardId, String], WriteLocal, None) { existing =>
+      locations.foldLeft(existing) {
+        case (acc, (shardId, address)) => acc.put(self, shardId, address.toString)
+      }
+    }).flatMap {
+      case UpdateSuccess(_, _) => Future.successful(Done)
+      case UpdateTimeout =>
+        Future.failed(new ClientTimeoutException(s"Unable to update shard location after ${timeout.duration.pretty}"))
+    }
+  }
+
+  override def setShardLocations(locations: java.util.Map[ShardId, Address]): CompletionStage[Done] = {
+    updateShardLocations(locations.asScala.toMap).toJava
+  }
 }
