@@ -21,6 +21,7 @@ import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
 import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
 import com.fasterxml.jackson.dataformat.cbor.CBORFactory
+import net.jpountz.lz4.LZ4FrameOutputStream.FLG
 import net.jpountz.lz4.{ LZ4FrameInputStream, LZ4FrameOutputStream }
 
 import akka.actor.ExtendedActorSystem
@@ -472,7 +473,7 @@ import akka.util.Helpers.toRootLowerCase
     val bos = new ByteArrayOutputStream(BufferSize)
     val zip = compressionAlgorithm match {
       case Compression.GZip(_) => new GZIPOutputStream(bos)
-      case _                   => new LZ4FrameOutputStream(bos)
+      case _                   => new LZ4FrameOutputStream(bos, LZ4FrameOutputStream.BLOCKSIZE.SIZE_64KB)
     }
     try zip.write(bytes)
     finally zip.close()
