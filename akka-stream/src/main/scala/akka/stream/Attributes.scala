@@ -440,7 +440,7 @@ object Attributes {
     CancellationStrategy.AfterDelay(delay, strategy)
 
   /**
-   * Nested materialization cancellation strategy provides a way to configure the cancellation behavior of stages that materialize a nested flow at some stage.
+   * Nested materialization cancellation strategy provides a way to configure the cancellation behavior of stages that materialize a nested flow.
    *
    * When cancelled before materializing their nested flows, these stages can either immediately cancel (default behaviour) without materializing the nested flow
    * or wait for the nested flow to materialize and then propagate the cancellation signal through it.
