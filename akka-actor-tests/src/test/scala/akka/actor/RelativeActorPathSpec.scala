@@ -19,6 +19,9 @@ class RelativeActorPathSpec extends AnyWordSpec with Matchers {
     "match single name" in {
       elements("foo") should ===(List("foo"))
     }
+    "match empty" in {
+      elements("") should ===(List())
+    }
     "match path separated names" in {
       elements("foo/bar/baz") should ===(List("foo", "bar", "baz"))
     }

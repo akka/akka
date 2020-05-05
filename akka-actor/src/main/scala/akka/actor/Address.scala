@@ -132,7 +132,8 @@ private[akka] trait PathUtils {
       val from = s.lastIndexOf('/', pos - 1)
       val sub = s.substring(from + 1, pos)
       val l =
-        if ((fragment ne null) && acc.isEmpty) sub + "#" + fragment :: acc
+        if (sub.isEmpty) acc
+        else if ((fragment ne null) && acc.isEmpty) sub + "#" + fragment :: acc
         else sub :: acc
       if (from == -1) l else rec(from, l)
     }
@@ -204,7 +205,7 @@ object ActorPathExtractor extends PathUtils {
       val uri = new URI(addr)
       uri.getRawPath match {
         case null => None
-        case path => AddressFromURIString.unapply(uri).map((_, split(path, uri.getRawFragment).drop(1)))
+        case path => AddressFromURIString.unapply(uri).map((_, split(path, uri.getRawFragment)))
       }
     } catch {
       case _: URISyntaxException => None
