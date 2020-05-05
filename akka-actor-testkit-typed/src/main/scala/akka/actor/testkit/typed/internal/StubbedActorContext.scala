@@ -87,17 +87,25 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     throw new UnsupportedOperationException(
       "No classic ActorContext available with the stubbed actor context, to spawn materializers and run streams you will need a real actor")
 
-  override def children: Iterable[ActorRef[Nothing]] = _children.values.map(_.context.self)
+  override def children: Iterable[ActorRef[Nothing]] = {
+    checkCurrentActorThread("children")
+    _children.values.map(_.context.self)
+  }
   def childrenNames: Iterable[String] = _children.keys
 
-  override def child(name: String): Option[ActorRef[Nothing]] = _children.get(name).map(_.context.self)
+  override def child(name: String): Option[ActorRef[Nothing]] = {
+    checkCurrentActorThread("child")
+    _children.get(name).map(_.context.self)
+  }
 
   override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
+    checkCurrentActorThread("spawnAnonymous")
     val btk = new BehaviorTestKitImpl[U]((path / childName.next()).withUid(rnd().nextInt()), behavior)
     _children += btk.context.self.path.name -> btk
     btk.context.self
   }
-  override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] =
+  override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
+    checkCurrentActorThread("spawn")
     _children.get(name) match {
       case Some(_) => throw classic.InvalidActorNameException(s"actor name $name is already taken")
       case None =>
@@ -105,12 +113,14 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
         _children += name -> btk
         btk.context.self
     }
+  }
 
   /**
    * Do not actually stop the child inbox, only simulate the liveness check.
    * Removal is asynchronous, explicit removeInbox is needed from outside afterwards.
    */
   override def stop[U](child: ActorRef[U]): Unit = {
+    checkCurrentActorThread("stop")
     if (child.path.parent != self.path)
       throw new IllegalArgumentException(
         "Only direct children of an actor can be stopped through the actor context, " +
@@ -120,11 +130,21 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
       _children -= child.path.name
     }
   }
-  override def watch[U](other: ActorRef[U]): Unit = ()
-  override def watchWith[U](other: ActorRef[U], message: T): Unit = ()
-  override def unwatch[U](other: ActorRef[U]): Unit = ()
-  override def setReceiveTimeout(d: FiniteDuration, message: T): Unit = ()
-  override def cancelReceiveTimeout(): Unit = ()
+  override def watch[U](other: ActorRef[U]): Unit = {
+    checkCurrentActorThread("watch")
+  }
+  override def watchWith[U](other: ActorRef[U], message: T): Unit = {
+    checkCurrentActorThread("watchWith")
+  }
+  override def unwatch[U](other: ActorRef[U]): Unit = {
+    checkCurrentActorThread("unwatch")
+  }
+  override def setReceiveTimeout(d: FiniteDuration, message: T): Unit = {
+    checkCurrentActorThread("setReceiveTimeout")
+  }
+  override def cancelReceiveTimeout(): Unit = {
+    checkCurrentActorThread("cancelReceiveTimeout")
+  }
 
   override def scheduleOnce[U](delay: FiniteDuration, target: ActorRef[U], message: U): classic.Cancellable =
     new classic.Cancellable {
@@ -186,11 +206,20 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
 
   override def toString: String = s"Inbox($self)"
 
-  override def log: Logger = logger
+  override def log: Logger = {
+    checkCurrentActorThread("log")
+    logger
+  }
 
-  override def setLoggerName(name: String): Unit = () // nop as we don't track logger
+  override def setLoggerName(name: String): Unit = {
+    // nop as we don't track logger
+    checkCurrentActorThread("setLoggerName")
+  }
 
-  override def setLoggerName(clazz: Class[_]): Unit = () // nop as we don't track logger
+  override def setLoggerName(clazz: Class[_]): Unit = {
+    // nop as we don't track logger
+    checkCurrentActorThread("setLoggerName")
+  }
 
   /**
    * The log entries logged through context.log.{debug, info, warn, error} are captured and can be inspected through

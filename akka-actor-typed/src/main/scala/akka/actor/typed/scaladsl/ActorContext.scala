@@ -337,4 +337,19 @@ trait ActorContext[T] extends TypedActorContext[T] with ClassicActorContextProvi
   @InternalApi
   private[akka] def clearMdc(): Unit
 
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def setCurrentActorThread(): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def clearCurrentActorThread(): Unit
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def checkCurrentActorThread(operationName: String): Unit
+
 }

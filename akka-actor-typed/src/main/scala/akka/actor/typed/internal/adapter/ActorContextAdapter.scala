@@ -58,13 +58,26 @@ private[akka] object ActorContextAdapter {
   final override val self = ActorRefAdapter(classicContext.self)
   final override val system = ActorSystemAdapter(classicContext.system)
   private[akka] def classicActorContext = classicContext
-  override def children: Iterable[ActorRef[Nothing]] = classicContext.children.map(ActorRefAdapter(_))
-  override def child(name: String): Option[ActorRef[Nothing]] = classicContext.child(name).map(ActorRefAdapter(_))
-  override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] =
+  override def children: Iterable[ActorRef[Nothing]] = {
+    checkCurrentActorThread("children")
+    classicContext.children.map(ActorRefAdapter(_))
+  }
+  override def child(name: String): Option[ActorRef[Nothing]] = {
+    checkCurrentActorThread("child")
+    classicContext.child(name).map(ActorRefAdapter(_))
+  }
+  override def spawnAnonymous[U](behavior: Behavior[U], props: Props = Props.empty): ActorRef[U] = {
+    checkCurrentActorThread("spawnAnonymous")
     ActorRefFactoryAdapter.spawnAnonymous(classicContext, behavior, props, rethrowTypedFailure = true)
-  override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] =
+  }
+
+  override def spawn[U](behavior: Behavior[U], name: String, props: Props = Props.empty): ActorRef[U] = {
+    checkCurrentActorThread("spawn")
     ActorRefFactoryAdapter.spawn(classicContext, behavior, name, props, rethrowTypedFailure = true)
-  override def stop[U](child: ActorRef[U]): Unit =
+  }
+
+  override def stop[U](child: ActorRef[U]): Unit = {
+    checkCurrentActorThread("stop")
     if (child.path.parent == self.path) { // only if a direct child
       toClassic(child) match {
         case f: akka.actor.FunctionRef =>
@@ -90,16 +103,29 @@ private[akka] object ActorContextAdapter {
         s"but [$child] is not a child of [$self]. Stopping other actors has to be expressed as " +
         "an explicit stop message that the actor accepts.")
     }
+  }
 
-  override def watch[U](other: ActorRef[U]): Unit = { classicContext.watch(toClassic(other)) }
-  override def watchWith[U](other: ActorRef[U], msg: T): Unit = { classicContext.watchWith(toClassic(other), msg) }
-  override def unwatch[U](other: ActorRef[U]): Unit = { classicContext.unwatch(toClassic(other)) }
+  override def watch[U](other: ActorRef[U]): Unit = {
+    checkCurrentActorThread("watch")
+    classicContext.watch(toClassic(other))
+  }
+  override def watchWith[U](other: ActorRef[U], msg: T): Unit = {
+    checkCurrentActorThread("watchWith")
+    classicContext.watchWith(toClassic(other), msg)
+  }
+  override def unwatch[U](other: ActorRef[U]): Unit = {
+    checkCurrentActorThread("unwatch")
+    classicContext.unwatch(toClassic(other))
+  }
   var receiveTimeoutMsg: T = null.asInstanceOf[T]
   override def setReceiveTimeout(d: FiniteDuration, msg: T): Unit = {
+    checkCurrentActorThread("setReceiveTimeout")
     receiveTimeoutMsg = msg
     classicContext.setReceiveTimeout(d)
   }
   override def cancelReceiveTimeout(): Unit = {
+    checkCurrentActorThread("cancelReceiveTimeout")
+
     receiveTimeoutMsg = null.asInstanceOf[T]
     classicContext.setReceiveTimeout(Duration.Undefined)
   }

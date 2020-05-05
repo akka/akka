@@ -95,10 +95,16 @@ import akka.util.Timeout
   private var _messageAdapters: List[(Class[_], Any => T)] = Nil
   private var _timer: OptionVal[TimerSchedulerImpl[T]] = OptionVal.None
 
+  // _currentActorThread is on purpose not volatile. Used from `checkCurrentActorThread`.
+  // It will always see the right value when accessed from the right thread.
+  // Possible that it would NOT detect illegal access sometimes but that's ok.
+  private var _currentActorThread: OptionVal[Thread] = OptionVal.None
+
   // context-shared timer needed to allow for nested timer usage
   def timer: TimerSchedulerImpl[T] = _timer match {
     case OptionVal.Some(timer) => timer
     case OptionVal.None =>
+      checkCurrentActorThread("timer")
       val timer = new TimerSchedulerImpl[T](this)
       _timer = OptionVal.Some(timer)
       timer
@@ -152,6 +158,7 @@ import akka.util.Timeout
   }
 
   override def log: Logger = {
+    checkCurrentActorThread("log")
     val logging = loggingContext()
     ActorMdc.setMdc(logging)
     logging.logger
@@ -160,6 +167,7 @@ import akka.util.Timeout
   override def getLog: Logger = log
 
   override def setLoggerName(name: String): Unit = {
+    checkCurrentActorThread("setLoggerName")
     _logging = OptionVal.Some(loggingContext().withLogger(LoggerFactory.getLogger(name)))
   }
 
@@ -247,6 +255,7 @@ import akka.util.Timeout
     internalMessageAdapter(messageClass, f.apply)
 
   private def internalMessageAdapter[U](messageClass: Class[U], f: U => T): ActorRef[U] = {
+    checkCurrentActorThread("messageAdapter")
     // replace existing adapter for same class, only one per class is supported to avoid unbounded growth
     // in case "same" adapter is added repeatedly
     val boxedMessageClass = BoxedType(messageClass).asInstanceOf[Class[U]]
@@ -268,4 +277,44 @@ import akka.util.Timeout
    * INTERNAL API
    */
   @InternalApi private[akka] def messageAdapters: List[(Class[_], Any => T)] = _messageAdapters
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def setCurrentActorThread(): Unit = {
+    _currentActorThread match {
+      case OptionVal.None =>
+        _currentActorThread = OptionVal.Some(Thread.currentThread())
+      case OptionVal.Some(t) =>
+        throw new IllegalStateException(
+          s"Invalid access by thread from the outside of $self. " +
+          s"Current message is processed by $t, but also accessed from from ${Thread.currentThread()}.")
+    }
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def clearCurrentActorThread(): Unit = {
+    _currentActorThread = OptionVal.None
+  }
+
+  /**
+   * INTERNAL API
+   */
+  @InternalApi private[akka] def checkCurrentActorThread(operationName: String): Unit = {
+    val callerThread = Thread.currentThread()
+    _currentActorThread match {
+      case OptionVal.Some(t) =>
+        if (callerThread ne t) {
+          throw new UnsupportedOperationException(
+            s"Unsupported access to [$operationName] from the outside of $self. " +
+            s"Current message is processed by $t, but [$operationName] was called from $callerThread.")
+        }
+      case OptionVal.None =>
+        throw new UnsupportedOperationException(
+          s"Unsupported access to [$operationName] from the outside of $self. " +
+          s"No message is currently processed by the actor, but [$operationName] was called from $callerThread.")
+    }
+  }
 }
