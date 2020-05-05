@@ -36,6 +36,7 @@ import akka.dispatch.MessageDispatcher
 import akka.event.Logging
 import akka.pattern.ask
 import akka.util.JavaDurationConverters._
+import akka.util.ccompat.JavaConverters._
 import akka.util.PrettyDuration._
 import akka.util.Timeout
 
@@ -107,7 +108,6 @@ final private[external] class ExternalShardAllocationClientImpl(system: ActorSys
   }
 
   override def setShardLocations(locations: java.util.Map[ShardId, Address]): CompletionStage[Done] = {
-    import scala.collection.JavaConverters._
     updateShardLocations(locations.asScala.toMap).toJava
   }
 }
