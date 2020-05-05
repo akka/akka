@@ -4,7 +4,7 @@
 
 package akka.actor.typed
 
-import akka.actor.testkit.typed.scaladsl.{ LoggingTestKit, ScalaTestWithActorTestKit }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, LoggingTestKit, ScalaTestWithActorTestKit }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -26,17 +26,59 @@ class LocalActorRefProviderLogMessagesSpec
 
   "An LocalActorRefProvider" must {
 
-    "logs on dedicated 'serialization' logger when an ActorRef can't be deserialized" in {
+    "logs on dedicated 'serialization' logger of unknown path" in {
+      val provider = system.asInstanceOf[ActorSystemAdapter[_]].provider
+
+      LoggingTestKit
+        .debug("of unknown (invalid) path [dummy/path]")
+        .withLoggerName("akka.actor.LocalActorRefProvider.Deserialization")
+        .expect {
+          provider.resolveActorRef("dummy/path")
+        }
+    }
+
+    "logs on dedicated 'serialization' logger when path doesn't match existing actor" in {
       val provider = system.asInstanceOf[ActorSystemAdapter[_]].provider
       val invalidPath = provider.rootPath / "user" / "invalid"
 
       LoggingTestKit
-        .debug("Resolve (deserialization)")
+        .debug("Resolve (deserialization) of path [user/invalid] doesn't match an active actor.")
         .withLoggerName("akka.actor.LocalActorRefProvider.Deserialization")
         .expect {
           provider.resolveActorRef(invalidPath)
         }
-
     }
+
+    "logs on dedicated 'serialization' logger when of foreign path" in {
+
+      val otherSystem = ActorTestKit("otherSystem").system.asInstanceOf[ActorSystemAdapter[_]]
+      val invalidPath = otherSystem.provider.rootPath / "user" / "foo"
+
+      val provider = system.asInstanceOf[ActorSystemAdapter[_]].provider
+      try {
+        LoggingTestKit
+          .debug("Resolve (deserialization) of foreign path [akka://otherSystem/user/foo]")
+          .withLoggerName("akka.actor.LocalActorRefProvider.Deserialization")
+          .expect {
+            provider.resolveActorRef(invalidPath)
+          }
+      } finally {
+        ActorTestKit.shutdown(otherSystem)
+      }
+    }
+
+    // "logs on dedicated 'serialization' logger for empty paths" in {
+
+    //   val provider = system.asInstanceOf[ActorSystemAdapter[_]].provider
+    //   val invalidPath = provider.rootPath
+
+    //   LoggingTestKit
+    //     .debug("Resolve (deserialization) of empty path")
+    //     .withLoggerName("akka.actor.LocalActorRefProvider.Deserialization")
+    //     .expect {
+    //       provider.resolveActorRef(invalidPath.toString)
+    //     }
+    // }
+
   }
 }
