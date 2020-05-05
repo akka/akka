@@ -413,6 +413,39 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       verify(byteString.copyToArray(_, 2, 3))(0, 0, 2)
       verify(byteString.copyToArray(_, 3, 3))(0, 0, 0)
     }
+    // 2.13 overloads with specific return types
+    "map" in {
+      ByteString1.empty.map(b => b + 1) should ===(ByteString.empty)
+      ByteString1.fromString("a").map(b => b + 1) should ===(ByteString.fromString("b"))
+    }
+    "concat" in {
+      (ByteString1.fromString("a") ++ Iterator.single('b'.toByte)) should === (ByteString.fromString("ab"))
+    }
+    "appended" in {
+      (ByteString1.empty :+ ('a'.toByte)) should === (ByteString.fromString("a"))
+      (ByteString1.fromString("a") :+ 'b'.toByte) should === (ByteString.fromString("ab"))
+    }
+    /* did not exist in 2.12 so can't be in this test
+    "appendedAll" in {
+      (ByteString1.empty :++ Iterator.single('a'.toByte)) should === (ByteString.fromString("a"))
+      (ByteString1.fromString("a") :++ (Iterator.single('b'.toByte))) should === (ByteString.fromString("ab"))
+      (ByteString1.fromString("a") :++ (Iterator('b'.toByte, 'c'.toByte))) should === (ByteString.fromString("abc"))
+    }
+    */
+    "prepended" in {
+      ('a'.toByte +: ByteString1.empty) should === (ByteString.fromString("a"))
+      ('b'.toByte +: ByteString1.fromString("a")) should === (ByteString.fromString("ba"))
+    }
+    "prependedAll" in {
+      // can't be === because returns iterator in 2.12
+      (Iterator.single('a'.toByte) ++: ByteString1.empty) should equal (ByteString.fromString("a"))
+      (Iterator.single('b'.toByte) ++: ByteString1.fromString("a")) should equal (ByteString.fromString("ba"))
+      (Iterator('b'.toByte, 'c'.toByte) ++: ByteString1.fromString("a")) should equal (ByteString.fromString("bca"))
+    }
+    "flatMap" in {
+      ByteString1.empty.flatMap(b => ByteString(b + 1)) should ===(ByteString.empty)
+      ByteString1.fromString("ab").flatMap(b => ByteString(b)) should === (ByteString.fromString("ab"))
+    }
   }
   "ByteString1C" must {
     "drop" in {
@@ -476,6 +509,33 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       verify(byteString.copyToArray(_, 1, 3))(0, 1, 2)
       verify(byteString.copyToArray(_, 2, 3))(0, 0, 1)
       verify(byteString.copyToArray(_, 3, 3))(0, 0, 0)
+    }
+    // 2.13 overloads with specific return types
+    "map" in {
+      ByteString1C.fromString("a").map(b => b + 1) should ===(ByteString.fromString("b"))
+    }
+    "concat" in {
+      (ByteString1C.fromString("a") ++ Iterator.single('b'.toByte)) should === (ByteString.fromString("ab"))
+    }
+    "appended" in {
+      (ByteString1C.fromString("a") :+ 'b'.toByte) should === (ByteString.fromString("ab"))
+    }
+    /* did not exist in 2.12 so can't be in this test
+    "appendedAll" in {
+      (ByteString1C.fromString("a") :++ Iterator.single('b'.toByte)) should === (ByteString.fromString("ab"))
+      (ByteString1C.fromString("a") :++ Iterator('b'.toByte, 'c'.toByte)) should === (ByteString.fromString("abc"))
+    }
+    */
+    "prepended" in {
+      ('b'.toByte +: ByteString1C.fromString("a")) should === (ByteString.fromString("ba"))
+    }
+    "prependedAll" in {
+      // can't be === because returns iterator in 2.12
+      (Iterator.single('b'.toByte) ++: ByteString1C.fromString("a")) should equal (ByteString.fromString("ba"))
+      (Iterator('b'.toByte, 'c'.toByte) ++: ByteString1C.fromString("a")) should equal (ByteString.fromString("bca"))
+    }
+    "flatMap" in {
+      ByteString1C.fromString("ab").flatMap(b => ByteString(b)) should === (ByteString.fromString("ab"))
     }
   }
   "ByteStrings" must {
@@ -727,6 +787,31 @@ class ByteStringSpec extends AnyWordSpec with Matchers with Checkers {
       verify(byteString.copyToArray(_, 1, 3))(0, 1, 2)
       verify(byteString.copyToArray(_, 2, 3))(0, 0, 1)
       verify(byteString.copyToArray(_, 3, 3))(0, 0, 0)
+    }
+    // 2.13 overloads with specific return types
+    "map" in {
+      (ByteString("a") ++ ByteString("b")).map(b => b + 1) should ===(ByteString("bc"))
+    }
+    "concat" in {
+      ByteString("a") ++ ByteString("b") ++ (Iterator.single('c'.toByte)) should === (ByteString("abc"))
+    }
+    "appended" in {
+      (ByteString("a") ++ ByteString("b")) :+ ('c'.toByte) should ===(ByteString("abc"))
+    }
+    /* did not exist in 2.12 so can't be in this test
+    "appendedAll" in {
+      ((ByteString("a") ++ ByteString("b")) :++ Iterator.single('c'.toByte)) should === (ByteString("abc"))
+      ((ByteString("a") ++ ByteString("b")) :++ Iterator('c'.toByte, 'd'.toByte)) should === (ByteString("abcd"))
+    } */
+    "prepended" in {
+      ('c'.toByte +: (ByteString("a") ++ ByteString("b"))) should === (ByteString.fromString("cab"))
+    }
+    "prependedAll" in {
+      (Iterator.single('c'.toByte) ++: (ByteString("a") ++ ByteString("b"))) should === (ByteString("cab"))
+      (Iterator('c'.toByte, 'd'.toByte) ++: (ByteString("a") ++ ByteString("b"))) should === (ByteString("cdab"))
+    }
+    "flatMap" in {
+      (ByteString("a") ++ ByteString("b")).flatMap(b => ByteString(b)) should === (ByteString.fromString("ab"))
     }
   }
 

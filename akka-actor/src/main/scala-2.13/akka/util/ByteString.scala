@@ -936,10 +936,87 @@ sealed abstract class ByteString
 
   /**
    * map method that will automatically cast Int back into Byte.
+   * Avoid using in performance critical logic, not very performant.
    */
   final def mapI(f: Byte => Int): ByteString = map(f.andThen(_.toByte))
 
-  def map[A](f: Byte => Byte): ByteString = fromSpecific(super.map(f))
+  // the following methods are overloads to return a more specific type since 2.13
+  // Note that since IndexedSeqOps expects a generic collection type we have to override
+  // not only the usual 2.13 suspects but also the symbolic aliases
+
+  /**
+   * Avoid using in performance critical logic, not very performant.
+   */
+  final def map[A](f: Byte => Byte): ByteString =
+    fromSpecific(iterator.map(f))
+
+  /**
+   * Prefer concatenating bytestrings if performance is important.
+   */
+  final def concat(suffix: IterableOnce[Byte]): ByteString =
+    this.concat(fromSpecific(suffix.iterator))
+
+  /**
+   * Prefer concatenating bytestrings if performance is important.
+   */
+  // symbolic alias for `concat`
+  @inline final def ++ (suffix: IterableOnce[Byte]): ByteString = concat(suffix)
+
+  /**
+   * Avoid using in performance critical logic, not very performant.
+   */
+  final def appended(byte: Byte): ByteString =
+    this ++ ByteString(byte)
+
+  /**
+   * Avoid using in performance critical logic, not very performant.
+   */
+  // symbolic alias for `appended`
+  @inline final def :+(byte: Byte): ByteString = appended(byte)
+
+  /**
+   * Prefer appending bytestrings if performance is important.
+   */
+  final def appendedAll(suffix: IterableOnce[Byte]): ByteString =
+    concat(suffix)
+
+  /**
+   * Avoid using in performance critical logic, not very performant.
+   */
+  // symbolic alias for `appendedAll`
+  @inline final def :++(prefix: IterableOnce[Byte]): ByteString = appendedAll(prefix)
+
+
+  /**
+   * Avoid using in performance critical logic, not very performant.
+   */
+  final def prepended(byte: Byte): ByteString =
+    ByteString(byte) ++ this
+
+  /**
+   * Avoid using in performance critical logic, not very performant.
+   */
+  // symbolic alias for `appended`
+  @inline final def +:(byte: Byte): ByteString = prepended(byte)
+
+  /**
+   * Avoid using in performance critical logic, not very performant.
+   */
+  final def prependedAll(prefix: IterableOnce[Byte]): ByteString =
+    fromSpecific(prefix.iterator ++ iterator)
+
+  /**
+   * Avoid using in performance critical logic, not very performant.
+   */
+  // symbolic alias for `prependedAll`
+  @inline final def ++:(prefix: IterableOnce[Byte]): ByteString = prependedAll(prefix)
+
+  /**
+   * Avoid using in performance critical logic, not very performant.
+   */
+  final def flatMap(f: Byte => IterableOnce[Byte]): ByteString =
+    fromSpecific(iterator.flatMap(f))
+
 }
 
 object CompactByteString {
