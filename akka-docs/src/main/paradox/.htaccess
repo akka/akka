@@ -31,7 +31,6 @@ RedirectMatch 301 ^(.*)/additional/rolling-deploys\.html$ $1/additional/rolling-
 RedirectMatch 301 ^(.*)/additional/index\.html$ $1/project/index.html
 RedirectMatch 301 ^(.*)/howto\.html$ https://doc.akka.io/docs/akka/2.5/howto.html
 RedirectMatch 301 ^(.*)/common/duration\.html$ https://doc.akka.io/docs/akka/2.5/common/duration.html
-RedirectMatch 301 ^(.*)/futures\.html$ https://doc.akka.io/docs/akka/2.5/futures.html
 RedirectMatch 301 ^(.*)/java8-compat\.html$ https://doc.akka.io/docs/akka/2.5/java8-compat.html
 
 RedirectMatch 301 ^(.*)/common/cluster\.html$ $1/typed/cluster-concepts.html

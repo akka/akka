@@ -55,11 +55,12 @@ import static akka.pattern.Patterns.after;
 import java.util.Arrays;
 // #imports7
 
-// #imports8
+// #imports-retry
 
+import static akka.actor.typed.javadsl.Adapter.*;
 import static akka.pattern.Patterns.retry;
 
-// #imports8
+// #imports-retry
 
 // #imports-ask
 import static akka.pattern.Patterns.ask;
@@ -721,12 +722,16 @@ public class FutureDocTest extends AbstractJavaTest {
 
   @Test
   public void useRetry() throws Exception {
+    final akka.actor.typed.ActorSystem<Void> system = toTyped(this.system);
 
     // #retry
-    final ExecutionContext ec = system.dispatcher();
+    final akka.actor.Scheduler scheduler = toClassic(system.scheduler());
+    final ExecutionContext ec = system.executionContext();
+
     Callable<CompletionStage<String>> attempt = () -> CompletableFuture.completedFuture("test");
+
     CompletionStage<String> retriedFuture =
-        retry(attempt, 3, java.time.Duration.ofMillis(200), system.scheduler(), ec);
+        retry(attempt, 3, java.time.Duration.ofMillis(200), scheduler, ec);
     // #retry
 
     retriedFuture.toCompletableFuture().get(2, SECONDS);
