@@ -268,11 +268,9 @@ For the full documentation of this feature and for new projects see @ref:[Limita
 
 ## Learn More about CRDTs
 
- * [Eventually Consistent Data Structures](https://vimeo.com/43903960)
-talk by Sean Cribbs
  * [Strong Eventual Consistency and Conflict-free Replicated Data Types (video)](https://www.youtube.com/watch?v=oyUHd894w18&amp;feature=youtu.be)
 talk by Mark Shapiro
- * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
+ * [A comprehensive study of Convergent and Commutative Replicated Data Types](https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.
 
 ## Configuration

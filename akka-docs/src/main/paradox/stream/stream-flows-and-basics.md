@@ -190,7 +190,7 @@ of absence of a value we recommend using @scala[`scala.Option` or `scala.util.Ei
 
 ## Back-pressure explained
 
-Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the [Reactive Streams](http://reactive-streams.org/)
+Akka Streams implement an asynchronous non-blocking back-pressure protocol standardised by the [Reactive Streams](https://www.reactive-streams.org/)
 specification, which Akka is a founding member of.
 
 The user of the library does not have to write any explicit back-pressure handling code — it is built in

@@ -1,6 +1,6 @@
 # Overview of Akka libraries and modules
 
-Before delving into some best practices for writing actors, it will be helpful to preview the most commonly used Akka libraries. This will help you start thinking about the functionality you want to use in your system. All core Akka functionality is available as Open Source Software (OSS). Lightbend sponsors Akka development but can also help you with [commercial offerings ](https://www.lightbend.com/platform/subscription) such as training, consulting, support, and [Enterprise Suite](https://www.lightbend.com/platform/production) &#8212; a comprehensive set of tools for managing Akka systems.
+Before delving into some best practices for writing actors, it will be helpful to preview the most commonly used Akka libraries. This will help you start thinking about the functionality you want to use in your system. All core Akka functionality is available as Open Source Software (OSS). Lightbend sponsors Akka development but can also help you with [commercial offerings ](https://www.lightbend.com/lightbend-subscription) such as training, consulting, support, and [Enterprise capabilities](https://www.lightbend.com/why-lightbend#enterprise-capabilities) &#8212; a comprehensive set of tools for managing Akka systems.
 
 The following capabilities are included with Akka OSS and are introduced later on this page:
 
@@ -14,7 +14,7 @@ The following capabilities are included with Akka OSS and are introduced later o
 * @ref:[Streams](#streams)
 * @ref:[HTTP](#http)
 
-With a [Lightbend Platform Subscription](https://www.lightbend.com/platform/subscription), you can use [Akka Enhancements](https://doc.akka.io/docs/akka-enhancements/current/) that includes:
+With a [Lightbend Platform Subscription](https://www.lightbend.com/lightbend-subscription), you can use [Akka Enhancements](https://doc.akka.io/docs/akka-enhancements/current/) that includes:
 
 [Akka Resilience Enhancements](https://doc.akka.io/docs/akka-enhancements/current/akka-resilience-enhancements.html):
 
@@ -160,7 +160,7 @@ cluster for example) or alternate views (like reports).
 Persistence tackles the following challenges:
 
 * How to restore the state of an entity/actor when system restarts or crashes.
-* How to implement a [CQRS system](https://msdn.microsoft.com/en-us/library/jj591573.aspx).
+* How to implement a [CQRS system](https://docs.microsoft.com/en-us/previous-versions/msp-n-p/jj591573(v=pandp.10)?redirectedfrom=MSDN).
 * How to ensure reliable delivery of messages in face of network errors and system crashes.
 * How to introspect domain events that have led an entity to its current state.
 * How to leverage [Event Sourcing](https://martinfowler.com/eaaDev/EventSourcing.html) in your application to support long-running processes while the project continues to evolve.
@@ -198,7 +198,7 @@ process a potentially large, or infinite, stream of sequential events and proper
 faster processing stages do not overwhelm slower ones in the chain or graph. Streams provide a higher-level
 abstraction on top of actors that simplifies writing such processing networks, handling all the fine details in the
 background and providing a safe, typed, composable programming model. Streams is also an implementation
-of the [Reactive Streams standard](http://www.reactive-streams.org) which enables integration with all third
+of the [Reactive Streams standard](https://www.reactive-streams.org) which enables integration with all third
 party implementations of that standard.
 
 Streams solve the following challenges:
@@ -210,7 +210,7 @@ Streams solve the following challenges:
 
 ### HTTP
 
-[Akka HTTP](https://doc.akka.io/docs/akka-http/current) is a separate module from Akka.
+[Akka HTTP](https://doc.akka.io/docs/akka-http/current/) is a separate module from Akka.
 
 The de facto standard for providing APIs remotely, internal or external, is [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol). Akka provides a library to construct or consume such HTTP services by giving a set of tools to create HTTP services (and serve them) and a client that can be
 used to consume other services. These tools are particularly suited to streaming in and out a large set of data or real-time events by leveraging the underlying model of Akka Streams.

@@ -53,7 +53,7 @@ There are 3 supported patterns, which are described in the following sections:
 This pattern implements point-to-point reliable delivery between a single producer actor sending messages and a single consumer actor
 receiving the messages.
 
-Messages are sent from the producer to @apidoc[ProducerController] and via @apidoc[ConsumerController] actors, which
+Messages are sent from the producer to @apidoc[ProducerController$] and via @apidoc[ConsumerController$] actors, which
 handle the delivery and confirmation of the processing in the destination consumer actor.
 
 ![delivery-p2p-1.png](./images/delivery-p2p-1.png)
@@ -156,7 +156,7 @@ One important property is that the order of the messages should not matter, beca
 message is routed randomly to one of the workers with demand. In other words, two subsequent
 messages may be routed to two different workers and processed independent of each other.
 
-Messages are sent from the producer to @apidoc[WorkPullingProducerController] and via @apidoc[ConsumerController]
+Messages are sent from the producer to @apidoc[WorkPullingProducerController$] and via @apidoc[ConsumerController$]
 actors, which handle the delivery and confirmation of the processing in the destination worker (consumer) actor.
 
 ![delivery-work-pulling-1.png](./images/delivery-work-pulling-1.png)
@@ -266,7 +266,7 @@ and sending from another producer (different node)
 
 ![delivery-work-sharding-3.png](./images/delivery-sharding-3.png)
 
-The @apidoc[ShardingProducerController] should be used together with @apidoc[ShardingConsumerController].
+The @apidoc[ShardingProducerController$] should be used together with @apidoc[ShardingConsumerController$].
 
 A producer can send messages via a `ShardingProducerController` to any `ShardingConsumerController`
 identified by an `entityId`. A single `ShardingProducerController` per `ActorSystem` (node) can be
@@ -344,7 +344,7 @@ some of these may already have been processed by the previous consumer.
 
 Until sent messages have been confirmed the producer side keeps them in memory to be able to
 resend them. If the JVM of the producer side crashes those unconfirmed messages are lost.
-To make sure the messages can be delivered also in that scenario a @apidoc[DurableProducerQueue] can be used.
+To make sure the messages can be delivered also in that scenario a @apidoc[DurableProducerQueue$] can be used.
 Then the unconfirmed messages are stored in a durable way so that they can be redelivered when the producer
 is started again. An implementation of the `DurableProducerQueue` is provided by @apidoc[EventSourcedProducerQueue]
 in `akka-persistence-typed`.

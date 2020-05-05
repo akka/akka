@@ -534,7 +534,7 @@ akka.cluster.distributed-data.prefer-oldest = on
 
 ### Delta-CRDT
 
-[Delta State Replicated Data Types](http://arxiv.org/abs/1603.01529)
+[Delta State Replicated Data Types](https://arxiv.org/abs/1603.01529)
 are supported. A delta-CRDT is a way to reduce the need for sending the full state
 for updates. For example adding element `'c'` and `'d'` to set `{'a', 'b'}` would
 result in sending the delta `{'c', 'd'}` and merge that with the state on the
@@ -665,7 +665,7 @@ All entries can be made durable by specifying:
 akka.cluster.distributed-data.durable.keys = ["*"]
 ```
 
-@scala[[LMDB](https://symas.com/products/lightning-memory-mapped-database/)]@java[[LMDB](https://github.com/lmdbjava/lmdbjava/)] is the default storage implementation. It is
+@scala[[LMDB](https://symas.com/lmdb/technical/)]@java[[LMDB](https://github.com/lmdbjava/lmdbjava/)] is the default storage implementation. It is
 possible to replace that with another implementation by implementing the actor protocol described in
 `akka.cluster.ddata.DurableStore` and defining the `akka.cluster.distributed-data.durable.store-actor-class`
 property for the new implementation.
@@ -761,11 +761,9 @@ API documentation of the `Replicator` for details.
 
 ## Learn More about CRDTs
 
- * [Eventually Consistent Data Structures](https://vimeo.com/43903960)
-talk by Sean Cribbs
  * [Strong Eventual Consistency and Conflict-free Replicated Data Types (video)](https://www.youtube.com/watch?v=oyUHd894w18&amp;feature=youtu.be)
 talk by Mark Shapiro
- * [A comprehensive study of Convergent and Commutative Replicated Data Types](http://hal.upmc.fr/file/index/docid/555588/filename/techreport.pdf)
+ * [A comprehensive study of Convergent and Commutative Replicated Data Types](https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf)
 paper by Mark Shapiro et. al.
 
 ## Configuration

@@ -257,7 +257,7 @@ Java
 <a id="round-robin-router"></a>
 ### RoundRobinPool and RoundRobinGroup
 
-Routes in a [round-robin](http://en.wikipedia.org/wiki/Round-robin) fashion to its routees.
+Routes in a [round-robin](https://en.wikipedia.org/wiki/Round-robin) fashion to its routees.
 
 RoundRobinPool defined in configuration:
 
@@ -598,7 +598,7 @@ Java
 
 ### ConsistentHashingPool and ConsistentHashingGroup
 
-The ConsistentHashingPool uses [consistent hashing](http://en.wikipedia.org/wiki/Consistent_hashing)
+The ConsistentHashingPool uses [consistent hashing](https://en.wikipedia.org/wiki/Consistent_hashing)
 to select a routee based on the sent message. This 
 [article](http://www.tom-e-white.com/2007/11/consistent-hashing.html) gives good 
 insight into how consistent hashing is implemented.

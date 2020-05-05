@@ -93,7 +93,7 @@ To maintain isolation, actors should communicate with immutable objects only. `B
 immutable container for bytes. It is used by Akka's I/O system as an efficient, immutable alternative
 the traditional byte containers used for I/O on the JVM, such as @scala[`Array[Byte]`]@java[`byte[]`] and `ByteBuffer`.
 
-`ByteString` is a [rope-like](http://en.wikipedia.org/wiki/Rope_\(computer_science\)) data structure that is immutable
+`ByteString` is a [rope-like](https://en.wikipedia.org/wiki/Rope_\(computer_science\)) data structure that is immutable
 and provides fast concatenation and slicing operations (perfect for I/O). When two `ByteString`s are concatenated
 together they are both stored within the resulting `ByteString` instead of copying both to a new @scala[`Array`]@java[array]. Operations
 such as `drop` and `take` return `ByteString`s that still reference the original @scala[`Array`]@java[array], but just change the

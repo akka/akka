@@ -105,7 +105,7 @@ An optional parameter `preferLocalRoutees` can be used for this strategy. Router
 
 ### Consistent Hashing
  
-Uses [consistent hashing](http://en.wikipedia.org/wiki/Consistent_hashing) to select a routee based
+Uses [consistent hashing](https://en.wikipedia.org/wiki/Consistent_hashing) to select a routee based
 on the sent message. This [article](http://www.tom-e-white.com/2007/11/consistent-hashing.html) 
 gives good insight into how consistent hashing is implemented.
 
