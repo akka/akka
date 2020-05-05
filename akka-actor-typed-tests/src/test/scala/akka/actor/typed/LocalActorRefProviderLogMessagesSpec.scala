@@ -4,7 +4,7 @@
 
 package akka.actor.typed
 
-import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, LoggingTestKit, ScalaTestWithActorTestKit }
+import akka.actor.testkit.typed.scaladsl.{ ActorTestKit, LogCapturing, LoggingTestKit, ScalaTestWithActorTestKit }
 import akka.actor.typed.internal.adapter.ActorSystemAdapter
 import org.scalatest.wordspec.AnyWordSpecLike
 
@@ -22,7 +22,8 @@ object LocalActorRefProviderLogMessagesSpec {
 
 class LocalActorRefProviderLogMessagesSpec
     extends ScalaTestWithActorTestKit(LocalActorRefProviderLogMessagesSpec.config)
-    with AnyWordSpecLike {
+    with AnyWordSpecLike
+    with LogCapturing {
 
   "An LocalActorRefProvider" must {
 
