@@ -3,7 +3,7 @@ project.description: Share data between nodes and perform updates without coordi
 ---
 # Distributed Data
 
-For the Akka Classic documentation of this feature see @ref:[Classic Distributed Data](../distributed-data.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Distributed Data](../distributed-data.md).
 
 ## Module info
 

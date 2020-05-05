@@ -3,7 +3,7 @@ project.description: Reliable delivery and flow control of messages between acto
 ---
 # Reliable delivery
 
-For the Akka Classic documentation of this feature see @ref:[Classic At-Least-Once Delivery](../persistence.md#at-least-once-delivery).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic At-Least-Once Delivery](../persistence.md#at-least-once-delivery).
 
 @@@ warning
 

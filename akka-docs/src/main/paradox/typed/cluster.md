@@ -13,7 +13,7 @@ For specific documentation topics see:
 * @ref:[Rolling Updates](../additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](../additional/operations.md)
 
-For the Akka Classic documentation of this feature see @ref:[Classic Cluster](../cluster-usage.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Cluster](../cluster-usage.md).
 
 You have to enable @ref:[serialization](../serialization.md)  to send messages between ActorSystems (nodes) in the Cluster.
 @ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our

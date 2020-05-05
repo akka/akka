@@ -1,6 +1,6 @@
 # Multi-DC Cluster
 
-For the Akka Classic documentation of this feature see @ref:[Classic Multi-DC Cluster](../cluster-dc.md)
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Multi-DC Cluster](../cluster-dc.md)
 
 This chapter describes how @ref[Akka Cluster](cluster.md) can be used across
 multiple data centers, availability zones or regions.
