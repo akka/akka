@@ -9,25 +9,26 @@ import java.security.SecureRandom
 import java.security.cert.CertificateException
 import java.util.concurrent.TimeoutException
 
-import akka.NotUsed
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Random
 
+import javax.net.ssl._
+
+import akka.NotUsed
 import akka.pattern.{ after => later }
 import akka.stream._
 import akka.stream.TLSProtocol._
+import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.scaladsl._
 import akka.stream.stage._
 import akka.stream.testkit._
 import akka.stream.testkit.scaladsl.StreamTestKit._
 import akka.testkit.TestDuration
-import akka.util.{ ByteString, JavaVersion }
-import javax.net.ssl._
-import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.testkit.WithLogCapturing
+import akka.util.{ ByteString, JavaVersion }
 
 object TlsSpec {
 
@@ -97,11 +98,9 @@ object TlsSpec {
 }
 
 class TlsSpec extends StreamSpec(TlsSpec.configOverrides) with WithLogCapturing {
-  import TlsSpec._
-
-  import system.dispatcher
-
   import GraphDSL.Implicits._
+  import TlsSpec._
+  import system.dispatcher
 
   "SslTls" must {
 

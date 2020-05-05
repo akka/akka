@@ -7,12 +7,14 @@ package akka.actor.dungeon
 import java.util.Optional
 
 import scala.annotation.tailrec
-import scala.util.control.NonFatal
 import scala.collection.immutable
+import scala.util.control.NonFatal
+
+import com.github.ghik.silencer.silent
+
 import akka.actor._
 import akka.serialization.{ Serialization, SerializationExtension, Serializers }
 import akka.util.{ Helpers, Unsafe }
-import com.github.ghik.silencer.silent
 
 private[akka] object Children {
   val GetNobody = () => Nobody

@@ -4,13 +4,14 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import com.github.ghik.silencer.silent
+import org.scalacheck.Gen
+import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+
+import akka.pattern.pipe
 import akka.stream.{ ActorMaterializer, ActorMaterializerSettings }
 import akka.stream.testkit._
-import org.scalacheck.Gen
-import akka.pattern.pipe
-import com.github.ghik.silencer.silent
-import org.scalatestplus.scalacheck.ScalaCheckPropertyChecks
+import akka.stream.testkit.scaladsl.StreamTestKit._
 
 @silent
 class FlowSlidingSpec extends StreamSpec with ScalaCheckPropertyChecks {

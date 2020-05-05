@@ -4,15 +4,16 @@
 
 package akka.cluster.client.protobuf
 
-import akka.util.ccompat.JavaConverters._
-import akka.actor.ExtendedActorSystem
-import akka.serialization.BaseSerializer
-import akka.serialization.SerializerWithStringManifest
-import akka.cluster.client.ClusterReceptionist
-import akka.cluster.client.protobuf.msg.{ ClusterClientMessages => cm }
 import java.io.NotSerializableException
 
 import com.github.ghik.silencer.silent
+
+import akka.actor.ExtendedActorSystem
+import akka.cluster.client.ClusterReceptionist
+import akka.cluster.client.protobuf.msg.{ ClusterClientMessages => cm }
+import akka.serialization.BaseSerializer
+import akka.serialization.SerializerWithStringManifest
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API: Serializer of ClusterClient messages.

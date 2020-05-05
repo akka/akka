@@ -4,12 +4,12 @@
 
 package akka.stream
 
+import scala.annotation.varargs
+import scala.collection.immutable
+
 import javax.net.ssl._
 
 import akka.util.ByteString
-
-import scala.annotation.varargs
-import scala.collection.immutable
 
 /**
  * Many protocols are asymmetric and distinguish between the client and the

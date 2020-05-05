@@ -4,24 +4,24 @@
 
 package akka.persistence.testkit.javadsl
 
-import akka.actor.ActorSystem
-import akka.persistence.testkit.scaladsl.{ PersistenceTestKit => ScalaTestKit }
-import akka.util.JavaDurationConverters._
-import akka.util.ccompat.JavaConverters._
 import java.time.Duration
 import java.util.{ List => JList }
 import java.util.{ function => jf }
 
+import akka.actor.ActorSystem
 import akka.annotation.ApiMayChange
 import akka.persistence.testkit.{ EventStorage, ExpectedFailure, ExpectedRejection, JournalOperation }
+import akka.persistence.testkit.scaladsl.{ PersistenceTestKit => ScalaTestKit }
+import akka.util.JavaDurationConverters._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * Class for testing persisted events in persistent actors.
  */
 @ApiMayChange
-class PersistenceTestKit(system: ActorSystem) {
+class PersistenceTestKit(scalaTestkit: ScalaTestKit) {
 
-  private val scalaTestkit = new ScalaTestKit(system)
+  def this(system: ActorSystem) = this(new ScalaTestKit(system))
 
   /**
    * Check that nothing has been saved in the storage.

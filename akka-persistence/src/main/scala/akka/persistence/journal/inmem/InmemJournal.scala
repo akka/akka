@@ -8,15 +8,17 @@ import scala.collection.immutable
 import scala.concurrent.Future
 import scala.util.Try
 import scala.util.control.NonFatal
-import akka.annotation.ApiMayChange
-import akka.annotation.InternalApi
-import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
-import akka.persistence.PersistentRepr
-import akka.persistence.AtomicWrite
-import akka.serialization.SerializationExtension
-import akka.serialization.Serializers
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
+
+import akka.annotation.ApiMayChange
+import akka.annotation.InternalApi
+import akka.persistence.AtomicWrite
+import akka.persistence.PersistentRepr
+import akka.persistence.journal.{ AsyncWriteJournal, Tagged }
+import akka.serialization.SerializationExtension
+import akka.serialization.Serializers
 
 /**
  * The InmemJournal publishes writes and deletes to the `eventStream`, which tests may use to

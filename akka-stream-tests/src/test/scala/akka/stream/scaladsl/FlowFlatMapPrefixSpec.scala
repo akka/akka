@@ -4,9 +4,7 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.Utils.TE
-import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
-import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.{ Done, NotUsed }
 import akka.stream.{
   AbruptStageTerminationException,
   AbruptTerminationException,
@@ -14,7 +12,9 @@ import akka.stream.{
   NeverMaterializedException,
   SubscriptionWithCancelException
 }
-import akka.{ Done, NotUsed }
+import akka.stream.testkit.{ StreamSpec, TestPublisher, TestSubscriber }
+import akka.stream.testkit.Utils.TE
+import akka.stream.testkit.scaladsl.StreamTestKit.assertAllStagesStopped
 
 class FlowFlatMapPrefixSpec extends StreamSpec {
   def src10(i: Int = 0) = Source(i until (i + 10))
@@ -36,7 +36,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           Flow[Int].mapMaterializedValue(_ => prefix)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
-        .run
+        .run()
 
       prefixF.futureValue should ===(0 until 2)
       suffixF.futureValue should ===(2 until 10)
@@ -48,7 +48,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           Flow[Int].mapMaterializedValue(_ => prefix)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
-        .run
+        .run()
 
       prefixF.futureValue should ===(0 until 10)
       suffixF.futureValue should be(empty)
@@ -60,7 +60,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           Flow[Int].mapMaterializedValue(_ => prefix)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
-        .run
+        .run()
 
       prefixF.futureValue should ===(0 until 10)
       suffixF.futureValue should be(empty)
@@ -73,7 +73,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
         }(Keep.right)
         .take(10)
         .toMat(Sink.seq)(Keep.both)
-        .run
+        .run()
 
       prefixF.futureValue should ===(0 until 10)
       suffixF.futureValue should ===(10 until 20)
@@ -85,7 +85,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           throw TE(s"I hate mondays! (${prefix.size})")
         }(Keep.right)
         .to(Sink.ignore)
-        .run
+        .run()
 
       val ex = suffixF.failed.futureValue
       ex.getCause should not be null
@@ -101,7 +101,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           }
         }(Keep.right)
         .toMat(Sink.ignore)(Keep.both)
-        .run
+        .run()
       prefixF.futureValue should ===(0 until 10)
       val ex = suffixF.failed.futureValue
       ex should ===(TE("don't like 15 either!"))
@@ -182,7 +182,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           Flow[Int].mapMaterializedValue(_ => prefix).filter(_ => false)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
-        .run
+        .run()
 
       prefixF.futureValue should ===(0 until 4)
       suffixF.futureValue should be(empty)
@@ -198,7 +198,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           Flow[Int].mapMaterializedValue(_ => prefix).take(0)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
-        .run
+        .run()
 
       prefixF.futureValue should ===(0 until 4)
       suffixF.futureValue should be(empty)
@@ -210,7 +210,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           Flow[Int].mapMaterializedValue(_ => prefix).take(0).concat(Source(11 to 12))
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
-        .run
+        .run()
 
       prefixF.futureValue should ===(0 until 4)
       suffixF.futureValue should ===(11 :: 12 :: Nil)
@@ -222,7 +222,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
           Flow[Int].mapMaterializedValue(_ => throw TE(s"boom-bada-bang (${prefix.size})"))
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
-        .run
+        .run()
 
       prefixF.failed.futureValue should be(a[NeverMaterializedException])
       prefixF.failed.futureValue.getCause should ===(TE("boom-bada-bang (4)"))
@@ -239,7 +239,7 @@ class FlowFlatMapPrefixSpec extends StreamSpec {
             }(Keep.both)
         }(Keep.right)
         .toMat(Sink.seq)(Keep.both)
-        .run
+        .run()
 
       suffixF.futureValue should be(empty)
       val (prefix, suffix) = prefixAndTailF.futureValue

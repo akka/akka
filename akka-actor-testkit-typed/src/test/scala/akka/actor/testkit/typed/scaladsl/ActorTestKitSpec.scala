@@ -4,19 +4,20 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.Done
-import akka.actor.Dropped
-import akka.actor.UnhandledMessage
-import akka.actor.typed.eventstream.EventStream
-import akka.actor.testkit.typed.internal.ActorTestKitGuardian
-import akka.actor.typed.ActorSystem
-
 import scala.concurrent.Promise
-import akka.actor.typed.scaladsl.Behaviors
+
 import com.typesafe.config.ConfigFactory
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.{ AnyWordSpec, AnyWordSpecLike }
+
+import akka.Done
+import akka.actor.Dropped
+import akka.actor.UnhandledMessage
+import akka.actor.testkit.typed.internal.ActorTestKitGuardian
+import akka.actor.typed.ActorSystem
+import akka.actor.typed.eventstream.EventStream
+import akka.actor.typed.scaladsl.Behaviors
 
 class ActorTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 

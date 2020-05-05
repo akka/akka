@@ -3,13 +3,14 @@
  */
 
 package akka.util
-import scala.util.control.NonFatal
 import java.lang.reflect.Constructor
-import scala.collection.immutable
-import java.lang.reflect.Type
-import scala.annotation.tailrec
 import java.lang.reflect.ParameterizedType
+import java.lang.reflect.Type
+
+import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.util.Try
+import scala.util.control.NonFatal
 
 /**
  * Collection of internal reflection utilities which may or may not be

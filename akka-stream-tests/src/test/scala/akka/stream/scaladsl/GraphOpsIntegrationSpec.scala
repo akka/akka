@@ -4,14 +4,14 @@
 
 package akka.stream.scaladsl
 
+import scala.collection.immutable
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import akka.NotUsed
 import akka.stream._
 import akka.stream.testkit._
-
-import scala.collection.immutable
-import scala.concurrent.duration._
-import scala.concurrent.Await
-import scala.concurrent.Future
 
 object GraphOpsIntegrationSpec {
   import GraphDSL.Implicits._
@@ -156,7 +156,7 @@ class GraphOpsIntegrationSpec extends StreamSpec("""
 
     "be able to run plain flow" in {
       val p = Source(List(1, 2, 3)).runWith(Sink.asPublisher(false))
-      val s = TestSubscriber.manualProbe[Int]
+      val s = TestSubscriber.manualProbe[Int]()
       val flow = Flow[Int].map(_ * 2)
       RunnableGraph
         .fromGraph(GraphDSL.create() { implicit builder =>

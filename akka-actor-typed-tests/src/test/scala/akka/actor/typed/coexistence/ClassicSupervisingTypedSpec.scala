@@ -3,6 +3,11 @@
  */
 
 package akka.actor.typed.coexistence
+import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.{ actor => u }
 import akka.actor.Actor
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -10,10 +15,6 @@ import akka.actor.typed._
 import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.testkit.TestProbe
-import akka.{ actor => u }
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ProbedBehavior {
   def behavior(probe: u.ActorRef): Behavior[String] = {

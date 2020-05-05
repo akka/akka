@@ -4,12 +4,13 @@
 
 package akka.stream.io.compression
 
-import akka.actor.ActorSystem
-import akka.testkit.TestKit
-import akka.util.ByteString
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.Suite
 import org.scalatest.matchers.should.Matchers
+
+import akka.actor.ActorSystem
+import akka.testkit.TestKit
+import akka.util.ByteString
 
 trait CodecSpecSupport extends Matchers with BeforeAndAfterAll { self: Suite =>
 

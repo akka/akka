@@ -5,9 +5,11 @@
 package akka.stream.impl
 
 import scala.util.Random
-import akka.stream.impl.ResizableMultiReaderRingBuffer._
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.stream.impl.ResizableMultiReaderRingBuffer._
 
 class ResizableMultiReaderRingBufferSpec extends AnyWordSpec with Matchers {
 

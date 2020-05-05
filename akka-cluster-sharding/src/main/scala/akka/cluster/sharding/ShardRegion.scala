@@ -6,24 +6,24 @@ package akka.cluster.sharding
 
 import java.net.URLEncoder
 
-import akka.Done
-import akka.actor._
-import akka.annotation.InternalApi
-import akka.cluster.ClusterEvent._
-import akka.cluster.ClusterSettings.DataCenter
-import akka.cluster.sharding.Shard.ShardStats
-import akka.cluster.{ Cluster, ClusterSettings, Member, MemberStatus }
-import akka.event.Logging
-import akka.pattern.{ ask, pipe }
-import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
-
 import scala.annotation.tailrec
 import scala.collection.immutable
-import scala.concurrent.duration._
 import scala.concurrent.{ Future, Promise }
+import scala.concurrent.duration._
 import scala.reflect.ClassTag
 import scala.runtime.AbstractFunction1
 import scala.util.{ Failure, Success }
+
+import akka.Done
+import akka.actor._
+import akka.annotation.InternalApi
+import akka.cluster.{ Cluster, ClusterSettings, Member, MemberStatus }
+import akka.cluster.ClusterEvent._
+import akka.cluster.ClusterSettings.DataCenter
+import akka.cluster.sharding.Shard.ShardStats
+import akka.event.Logging
+import akka.pattern.{ ask, pipe }
+import akka.util.{ MessageBufferMap, PrettyDuration, Timeout }
 
 /**
  * @see [[ClusterSharding$ ClusterSharding extension]]
@@ -223,6 +223,7 @@ object ShardRegion {
   /**
    * Send this message to the `ShardRegion` actor to request for [[CurrentRegions]],
    * which contains the addresses of all registered regions.
+   *
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    */
@@ -281,6 +282,7 @@ object ShardRegion {
    * Send this message to the `ShardRegion` actor to request for [[ShardRegionStats]],
    * which contains statistics about the currently running sharded entities in the
    * entire region.
+   *
    * Intended for testing purpose to see when cluster sharding is "ready" or to monitor
    * the state of the shard regions.
    *

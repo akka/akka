@@ -4,6 +4,11 @@
 
 package akka.cluster.sharding
 
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor._
 import akka.cluster.Cluster
 import akka.cluster.ddata.{ Replicator, ReplicatorSettings }
@@ -14,12 +19,8 @@ import akka.pattern.BackoffOpts
 import akka.persistence.{ Persistence, PersistentActor }
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.remote.testconductor.RoleName
-import akka.testkit.TestEvent.Mute
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
-import scala.language.postfixOps
+import akka.testkit.TestEvent.Mute
 
 object ClusterShardingSpec {
   //#counter-actor
@@ -90,7 +91,7 @@ object ClusterShardingSpec {
 
   //#supervisor
   class CounterSupervisor extends Actor {
-    val counter = context.actorOf(Props[Counter], "theCounter")
+    val counter = context.actorOf(Props[Counter](), "theCounter")
 
     override val supervisorStrategy = OneForOneStrategy() {
       case _: IllegalArgumentException     => SupervisorStrategy.Resume
@@ -348,7 +349,7 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
       // start the Persistence extension
       Persistence(system)
       runOn(controller) {
-        system.actorOf(Props[SharedLeveldbStore], "store")
+        system.actorOf(Props[SharedLeveldbStore](), "store")
       }
       enterBarrier("peristence-started")
 
@@ -619,7 +620,7 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
       //#counter-start
       val counterRegion: ActorRef = ClusterSharding(system).start(
         typeName = "Counter",
-        entityProps = Props[Counter],
+        entityProps = Props[Counter](),
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
@@ -628,7 +629,7 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
 
       ClusterSharding(system).start(
         typeName = "AnotherCounter",
-        entityProps = Props[AnotherCounter],
+        entityProps = Props[AnotherCounter](),
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
@@ -636,7 +637,7 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
       //#counter-supervisor-start
       ClusterSharding(system).start(
         typeName = "SupervisedCounter",
-        entityProps = Props[CounterSupervisor],
+        entityProps = Props[CounterSupervisor](),
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)
@@ -678,7 +679,7 @@ abstract class ClusterShardingSpec(multiNodeConfig: ClusterShardingSpecConfig)
     runOn(first) {
       val counterRegionViaStart: ActorRef = ClusterSharding(system).start(
         typeName = "ApiTest",
-        entityProps = Props[Counter],
+        entityProps = Props[Counter](),
         settings = ClusterShardingSettings(system),
         extractEntityId = extractEntityId,
         extractShardId = extractShardId)

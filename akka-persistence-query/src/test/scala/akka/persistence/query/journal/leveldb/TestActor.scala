@@ -4,8 +4,8 @@
 
 package akka.persistence.query.journal.leveldb
 
-import akka.persistence.PersistentActor
 import akka.actor.Props
+import akka.persistence.PersistentActor
 
 object TestActor {
   def props(persistenceId: String): Props =

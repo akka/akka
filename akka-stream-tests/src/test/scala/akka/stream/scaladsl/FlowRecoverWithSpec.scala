@@ -4,15 +4,16 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.stage.{ GraphStage, GraphStageLogic }
-import akka.stream.testkit.StreamSpec
-import akka.stream.testkit.scaladsl.TestSink
-import akka.stream._
-import akka.stream.testkit.Utils._
-import akka.stream.testkit.scaladsl.StreamTestKit._
+import scala.util.control.NoStackTrace
+
 import com.github.ghik.silencer.silent
 
-import scala.util.control.NoStackTrace
+import akka.stream._
+import akka.stream.stage.{ GraphStage, GraphStageLogic }
+import akka.stream.testkit.StreamSpec
+import akka.stream.testkit.Utils._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.stream.testkit.scaladsl.TestSink
 
 @silent // tests deprecated APIs
 class FlowRecoverWithSpec extends StreamSpec {

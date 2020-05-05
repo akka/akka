@@ -6,13 +6,14 @@ package akka.persistence.typed.delivery
 
 import java.util.UUID
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.delivery.ConsumerController
 import akka.actor.typed.delivery.ProducerController
 import akka.persistence.typed.PersistenceId
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object ReliableDeliveryWithEventSourcedProducerQueueSpec {
   def conf: Config =

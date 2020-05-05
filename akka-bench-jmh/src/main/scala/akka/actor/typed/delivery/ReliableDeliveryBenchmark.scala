@@ -12,6 +12,9 @@ import scala.concurrent.duration._
 import scala.util.Failure
 import scala.util.Success
 
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -20,8 +23,6 @@ import akka.actor.typed.delivery.ProducerController.MessageWithConfirmation
 import akka.actor.typed.receptionist.ServiceKey
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.actor.typed.scaladsl.Behaviors
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations._
 
 object Producer {
   trait Command

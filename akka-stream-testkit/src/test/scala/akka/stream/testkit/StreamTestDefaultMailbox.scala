@@ -4,15 +4,16 @@
 
 package akka.stream.testkit
 
-import akka.dispatch.ProducesMessageQueue
-import akka.dispatch.UnboundedMailbox
-import akka.dispatch.MessageQueue
 import com.typesafe.config.Config
-import akka.actor.ActorSystem
-import akka.dispatch.MailboxType
+
+import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorRefWithCell
-import akka.actor.Actor
+import akka.actor.ActorSystem
+import akka.dispatch.MailboxType
+import akka.dispatch.MessageQueue
+import akka.dispatch.ProducesMessageQueue
+import akka.dispatch.UnboundedMailbox
 import akka.stream.impl.MaterializerGuardian
 
 /**
@@ -29,7 +30,7 @@ private[akka] final case class StreamTestDefaultMailbox()
   final override def create(owner: Option[ActorRef], system: Option[ActorSystem]): MessageQueue = {
     owner match {
       case Some(r: ActorRefWithCell) =>
-        val actorClass = r.underlying.props.actorClass
+        val actorClass = r.underlying.props.actorClass()
         assert(
           actorClass != classOf[Actor],
           s"Don't use anonymous actor classes, actor class for $r was [${actorClass.getName}]")

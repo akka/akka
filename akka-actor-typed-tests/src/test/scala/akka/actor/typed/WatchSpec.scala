@@ -4,20 +4,21 @@
 
 package akka.actor.typed
 
-import akka.Done
-import akka.actor.typed.scaladsl.Behaviors
-import akka.actor.typed.scaladsl.AbstractBehavior
-import akka.actor.typed.scaladsl.adapter._
-import akka.actor.testkit.typed.scaladsl.TestProbe
 import scala.concurrent._
 import scala.concurrent.duration._
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.Done
+import akka.actor
 import akka.actor.testkit.typed.TestException
+import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import org.scalatest.wordspec.AnyWordSpecLike
-import akka.actor
+import akka.actor.testkit.typed.scaladsl.TestProbe
+import akka.actor.typed.scaladsl.AbstractBehavior
+import akka.actor.typed.scaladsl.Behaviors
+import akka.actor.typed.scaladsl.adapter._
 
 object WatchSpec {
 

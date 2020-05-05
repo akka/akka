@@ -6,26 +6,27 @@ package akka.cluster.typed
 
 import java.util.concurrent.ConcurrentHashMap
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.language.implicitConversions
+
+import org.scalatest.Suite
+import org.scalatest.matchers.should.Matchers
+
+import akka.actor.{ Address, Scheduler }
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
 import akka.actor.typed.Props
 import akka.actor.typed.SpawnProtocol
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.AskPattern._
-import akka.actor.{ Address, Scheduler }
+import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.{ ClusterEvent, MemberStatus }
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.{ MultiNodeSpec, STMultiNodeSpec }
 import akka.testkit.WatchedByCoroner
 import akka.util.Timeout
-import org.scalatest.Suite
-import org.scalatest.matchers.should.Matchers
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.language.implicitConversions
 
 trait MultiNodeTypedClusterSpec extends Suite with STMultiNodeSpec with WatchedByCoroner with Matchers {
   self: MultiNodeSpec =>

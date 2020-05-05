@@ -4,14 +4,15 @@
 
 package akka.persistence
 
+import scala.collection.immutable
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
 import akka.actor._
 import akka.event.Logging
 import akka.persistence.EventAdapterSpec.{ Tagged, UserDataChanged }
 import akka.persistence.journal.{ EventAdapter, EventSeq, SingleEventSeq }
 import akka.testkit.ImplicitSender
-import com.typesafe.config.{ Config, ConfigFactory }
-
-import scala.collection.immutable
 
 object EventAdapterSpec {
 

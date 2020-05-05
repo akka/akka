@@ -1,49 +1,38 @@
 # Testing
 
-## Dependency
+## Module info
 
-To use Akka Persistence and Actor TestKit, add the module to your project:
+To use Akka Persistence TestKit, add the module to your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group1=com.typesafe.akka
   artifact1=akka-persistence-typed_$scala.binary_version$
   version1=$akka.version$
   group2=com.typesafe.akka
-  artifact2=akka-actor-testkit-typed_$scala.binary_version$
+  artifact2=akka-persistence-testkit_$scala.binary_version$
   version2=$akka.version$
   scope2=test
 }
 
+@@project-info{ projectId="akka-persistence-testkit" }
+
 ## Unit testing
 
-Unit testing of `EventSourcedBehavior` can be done with the @ref:[ActorTestKit](testing-async.md)
-in the same way as other behaviors.
+**Note!** The `EventSourcedBehaviorTestKit` is a new feature, api may have changes breaking source compatibility in future versions.
 
-@ref:[Synchronous behavior testing](testing-sync.md) for `EventSourcedBehavior` is not supported yet, but
-tracked in @github[issue #23712](#23712).
+Unit testing of `EventSourcedBehavior` can be done with the @apidoc[EventSourcedBehaviorTestKit]. It supports running
+one command at a time and you can assert that the synchronously returned result is as expected. The result contains the
+events emitted by the command and the new state after applying the events. It also has support for verifying the reply
+to a command.
 
-You need to configure a journal, and the in-memory journal is sufficient for unit testing. To enable the
-in-memory journal you need to pass the following configuration to the @scala[`ScalaTestWithActorTestKit`]@java[`TestKitJunitResource`].
-
-Scala
-:  @@snip [AccountExampleDocSpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleDocSpec.scala) { #inmem-config }
-
-Java
-:  @@snip [AccountExampleDocTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleDocTest.java) { #inmem-config } 
-
-The `test-serialization = on` configuration of the `InmemJournal` will verify that persisted events can be serialized and deserialized.
-
-Optionally you can also configure a snapshot store. To enable the file based snapshot store you need to pass the
-following configuration to the @scala[`ScalaTestWithActorTestKit`]@java[`TestKitJunitResource`].
+You need to configure the `ActorSystem` with the `EventSourcedBehaviorTestKit.config`. The configuration enables
+the in-memory journal and snapshot storage.
 
 Scala
-:  @@snip [AccountExampleDocSpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleDocSpec.scala) { #snapshot-store-config }
+:  @@snip [AccountExampleDocSpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleDocSpec.scala) { #testkit }
 
 Java
-:  @@snip [AccountExampleDocTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleDocTest.java) { #snapshot-store-config }
-
-Then you can `spawn` the `EventSourcedBehavior` and verify the outcome of sending commands to the actor using
-the facilities of the @ref:[ActorTestKit](testing-async.md).
+:  @@snip [AccountExampleDocTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleDocTest.java) { #testkit } 
 
 A full test for the `AccountEntity`, which is shown in the @ref:[Persistence Style Guide](persistence-style.md), may look like this:
 
@@ -53,21 +42,19 @@ Scala
 Java
 :  @@snip [AccountExampleDocTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleDocTest.java) { #test }  
 
-Note that each test case is using a different `PersistenceId` to not interfere with each other.
+Serialization of commands, events and state are verified automatically. The serialization checks can be
+customized with the `SerializationSettings` when creating the `EventSourcedBehaviorTestKit`. By default,
+the serialization roundtrip is checked but the equality of the result of the serialization is not checked.
+`equals` must be implemented @scala[(or using `case class`)] in the commands, events and state if `verifyEquality`
+is enabled.
 
-The @apidoc[akka.persistence.journal.inmem.InmemJournal$] publishes `Write` and `Delete` operations to the
-`eventStream`, which makes it possible to verify that the expected events have been emitted and stored by the
-`EventSourcedBehavior`. You can subscribe to to the `eventStream` with a `TestProbe` like this:
-
-Scala
-:  @@snip [AccountExampleDocSpec.scala](/akka-cluster-sharding-typed/src/test/scala/docs/akka/cluster/sharding/typed/AccountExampleDocSpec.scala) { #test-events }
-
-Java
-:  @@snip [AccountExampleDocTest.java](/akka-cluster-sharding-typed/src/test/java/jdocs/akka/cluster/sharding/typed/AccountExampleDocTest.java) { #test-events }
+To test recovery the `restart` method of the `EventSourcedBehaviorTestKit` can be used. It will restart the
+behavior, which will then recover from stored snapshot and events from previous commands. It's also possible
+to populate the storage with events or simulate failures by using the underlying @apidoc[PersistenceTestKit].
 
 ## Persistence TestKit
 
-**Note!** The testkit is a new feature, api may have changes breaking source compatibility in future versions.
+**Note!** The `PersistenceTestKit` is a new feature, api may have changes breaking source compatibility in future versions.
 
 Persistence testkit allows to check events saved in a storage, emulate storage operations and exceptions.
 To use the testkit you need to add the following dependency in your project:
@@ -187,8 +174,10 @@ to the @ref:[reference configuration](../general/configuration-reference.md#conf
 
 ## Integration testing
 
-The in-memory journal and file based snapshot store can be used also for integration style testing of a single
-`ActorSystem`, for example when using Cluster Sharding with a single Cluster node.
+`EventSourcedBehavior` actors can be tested with the @ref:[ActorTestKit](testing-async.md) together with
+other actors. The in-memory journal and snapshot storage from the @ref:[Persistence TestKit](#persistence-testkit)
+can be used also for integration style testing of a single `ActorSystem`, for example when using Cluster Sharding
+with a single Cluster node.
 
 For tests that involve more than one Cluster node you have to use another journal and snapshot store.
 While it's possible to use the @ref:[Persistence Plugin Proxy](../persistence-plugins.md#persistence-plugin-proxy)

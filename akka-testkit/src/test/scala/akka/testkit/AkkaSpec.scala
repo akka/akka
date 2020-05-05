@@ -4,11 +4,10 @@
 
 package akka.testkit
 
-import akka.actor.ActorSystem
-import akka.dispatch.Dispatchers
-import akka.event.Logging
-import akka.event.LoggingAdapter
-import akka.testkit.TestEvent._
+import scala.concurrent.Future
+import scala.concurrent.duration._
+import scala.language.postfixOps
+
 import com.typesafe.config.Config
 import com.typesafe.config.ConfigFactory
 import org.scalactic.CanEqual
@@ -20,9 +19,11 @@ import org.scalatest.time.Millis
 import org.scalatest.time.Span
 import org.scalatest.wordspec.AnyWordSpecLike
 
-import scala.concurrent.Future
-import scala.concurrent.duration._
-import scala.language.postfixOps
+import akka.actor.ActorSystem
+import akka.dispatch.Dispatchers
+import akka.event.Logging
+import akka.event.LoggingAdapter
+import akka.testkit.TestEvent._
 
 object AkkaSpec {
   val testConf: Config = ConfigFactory.parseString("""

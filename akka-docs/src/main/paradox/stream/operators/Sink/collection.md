@@ -4,11 +4,10 @@
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #collection }
+@apidoc[Sink.collection](Sink$) { scala="#collection[T,That](implicitcbf:akka.util.ccompat.Factory[T,Thatwithscala.collection.immutable.Iterable[_]]):akka.stream.scaladsl.Sink[T,scala.concurrent.Future[That]]" }
+
 
 ## Description
 

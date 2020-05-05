@@ -4,16 +4,16 @@
 
 package akka.stream.javadsl
 
-import akka.japi.{ function, Pair, Util }
-import akka.stream._
-import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
-import akka.util.ConstantFun
-
-import scala.annotation.unchecked.uncheckedVariance
-import akka.util.ccompat.JavaConverters._
 import java.util.concurrent.CompletionStage
 
+import scala.annotation.unchecked.uncheckedVariance
 import scala.compat.java8.FutureConverters._
+
+import akka.event.{ LogMarker, LoggingAdapter, MarkerLoggingAdapter }
+import akka.japi.{ function, Pair, Util }
+import akka.stream._
+import akka.util.ConstantFun
+import akka.util.ccompat.JavaConverters._
 
 object FlowWithContext {
 

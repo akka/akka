@@ -6,19 +6,20 @@ package akka.io.dns.internal
 
 import java.net.{ Inet6Address, InetAddress }
 
-import akka.actor.Status.Failure
+import scala.collection.{ immutable => im }
+import scala.concurrent.duration._
+
+import com.typesafe.config.{ Config, ConfigFactory, ConfigValueFactory }
+
 import akka.actor.{ ActorRef, ExtendedActorSystem, Props }
+import akka.actor.Status.Failure
 import akka.io.SimpleDnsCache
+import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
 import akka.io.dns.CachePolicy.Ttl
 import akka.io.dns.DnsProtocol._
 import akka.io.dns.internal.AsyncDnsResolver.ResolveFailedException
 import akka.io.dns.internal.DnsClient.{ Answer, Question4, Question6, SrvQuestion }
-import akka.io.dns.{ AAAARecord, ARecord, DnsSettings, SRVRecord }
 import akka.testkit.{ AkkaSpec, TestProbe, WithLogCapturing }
-import com.typesafe.config.{ Config, ConfigFactory, ConfigValueFactory }
-
-import scala.collection.{ immutable => im }
-import scala.concurrent.duration._
 
 class AsyncDnsResolverSpec extends AkkaSpec("""
     akka.loglevel = DEBUG

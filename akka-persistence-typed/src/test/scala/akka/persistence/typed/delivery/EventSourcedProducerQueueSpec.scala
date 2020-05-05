@@ -6,10 +6,14 @@ package akka.persistence.typed.delivery
 
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.concurrent.duration._
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl._
-import akka.actor.typed.eventstream.EventStream
 import akka.actor.typed.delivery.DurableProducerQueue.Confirmed
 import akka.actor.typed.delivery.DurableProducerQueue.LoadState
 import akka.actor.typed.delivery.DurableProducerQueue.MessageSent
@@ -18,11 +22,9 @@ import akka.actor.typed.delivery.DurableProducerQueue.State
 import akka.actor.typed.delivery.DurableProducerQueue.StoreMessageConfirmed
 import akka.actor.typed.delivery.DurableProducerQueue.StoreMessageSent
 import akka.actor.typed.delivery.DurableProducerQueue.StoreMessageSentAck
+import akka.actor.typed.eventstream.EventStream
 import akka.persistence.journal.inmem.InmemJournal
 import akka.persistence.typed.PersistenceId
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedProducerQueueSpec {
   def conf: Config =

@@ -4,13 +4,10 @@ Start with current value `zero` and then apply the current and next value to the
 
 @ref[Simple operators](../index.md#simple-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #fold }
-
-@@@
+@apidoc[Source.fold](Source) { scala="#fold[T](zero:T)(f:(T,Out)=&gt;T):FlowOps.this.Repr[T]" java="#fold(java.lang.Object,akka.japi.function.Function2)" }
+@apidoc[Flow.fold](Flow) { scala="#fold[T](zero:T)(f:(T,Out)=&gt;T):FlowOps.this.Repr[T]" java="#fold(java.lang.Object,akka.japi.function.Function2)" }
 
 ## Description
 

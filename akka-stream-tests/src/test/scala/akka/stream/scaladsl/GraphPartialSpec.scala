@@ -4,12 +4,12 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.StreamSpec
-import akka.stream.ClosedShape
-import akka.stream.FlowShape
-
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import akka.stream.ClosedShape
+import akka.stream.FlowShape
+import akka.stream.testkit.StreamSpec
 
 class GraphPartialSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

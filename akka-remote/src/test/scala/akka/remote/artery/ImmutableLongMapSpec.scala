@@ -4,10 +4,12 @@
 
 package akka.remote.artery
 
-import akka.util.OptionVal
 import scala.util.Random
+
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.util.OptionVal
 
 class ImmutableLongMapSpec extends AnyWordSpec with Matchers {
 

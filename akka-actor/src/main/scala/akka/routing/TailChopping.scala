@@ -7,18 +7,19 @@ package akka.routing
 import java.util.concurrent.atomic.AtomicInteger
 
 import scala.collection.immutable
+import scala.concurrent.{ ExecutionContext, Promise }
+import scala.concurrent.duration._
+import scala.util.Random
+
+import com.typesafe.config.Config
+
 import akka.actor._
 import akka.dispatch.Dispatchers
-import com.typesafe.config.Config
 import akka.japi.Util.immutableSeq
-import scala.concurrent.{ ExecutionContext, Promise }
 import akka.pattern.{ ask, pipe, AskTimeoutException }
-import scala.concurrent.duration._
+import akka.util.Helpers.ConfigOps
 import akka.util.JavaDurationConverters._
 import akka.util.Timeout
-import akka.util.Helpers.ConfigOps
-
-import scala.util.Random
 
 /**
  * As each message is sent to the router, the routees are randomly ordered. The message is sent to the

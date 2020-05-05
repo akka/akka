@@ -6,9 +6,12 @@ package akka.remote.artery
 
 import java.net.InetAddress
 
-import akka.util.ccompat.JavaConverters._
-
 import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+
 import akka.NotUsed
 import akka.japi.Util.immutableSeq
 import akka.stream.ActorMaterializerSettings
@@ -16,9 +19,7 @@ import akka.util.Helpers.ConfigOps
 import akka.util.Helpers.Requiring
 import akka.util.Helpers.toRootLowerCase
 import akka.util.WildcardIndex
-import com.github.ghik.silencer.silent
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
+import akka.util.ccompat.JavaConverters._
 
 /** INTERNAL API */
 private[akka] final class ArterySettings private (config: Config) {

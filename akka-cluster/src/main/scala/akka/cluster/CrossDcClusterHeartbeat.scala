@@ -4,18 +4,18 @@
 
 package akka.cluster
 
+import scala.collection.SortedSet
+import scala.collection.immutable
+
 import akka.actor.{ Actor, ActorSelection, Address, NoSerializationVerificationNeeded }
 import akka.annotation.InternalApi
 import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterSettings.DataCenter
+import akka.event.ActorWithLogClass
+import akka.event.Logging
 import akka.remote.FailureDetectorRegistry
 import akka.util.ConstantFun
 import akka.util.ccompat._
-import scala.collection.SortedSet
-import scala.collection.immutable
-
-import akka.event.ActorWithLogClass
-import akka.event.Logging
 
 /**
  * INTERNAL API
@@ -42,8 +42,8 @@ private[cluster] class CrossDcHeartbeatSender extends Actor {
   val cluster = Cluster(context.system)
 
   val verboseHeartbeat = cluster.settings.Debug.VerboseHeartbeatLogging
-  import cluster.settings._
   import cluster.{ scheduler, selfAddress, selfDataCenter, selfUniqueAddress }
+  import cluster.settings._
   import context.dispatcher
 
   private val clusterLogger =

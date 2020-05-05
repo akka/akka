@@ -8,6 +8,7 @@ import sbt._
 import sbt.Keys._
 import java.io.File
 import sbtwhitesource.WhiteSourcePlugin.autoImport.whitesourceIgnore
+import com.lightbend.sbt.publishrsync.PublishRsyncPlugin.autoImport.publishRsyncHost
 
 object Publish extends AutoPlugin {
 
@@ -18,6 +19,7 @@ object Publish extends AutoPlugin {
   override lazy val projectSettings = Seq(
     pomExtra := akkaPomExtra,
     publishTo := Some(akkaPublishTo.value),
+    publishRsyncHost := "akkarepo@gustav.akka.io",
     credentials ++= akkaCredentials,
     organizationName := "Lightbend Inc.",
     organizationHomepage := Some(url("https://www.lightbend.com")),
@@ -60,28 +62,4 @@ object NoPublish extends AutoPlugin {
 
   override def projectSettings =
     Seq(skip in publish := true, sources in (Compile, doc) := Seq.empty, whitesourceIgnore := true)
-}
-
-object DeployRsync extends AutoPlugin {
-  import scala.sys.process._
-  import sbt.complete.DefaultParsers._
-
-  override def requires = plugins.JvmPlugin
-
-  trait Keys {
-    val deployRsyncArtifacts = taskKey[Seq[(File, String)]]("File or directory and a path to deploy to")
-    val deployRsync = inputKey[Unit]("Deploy using rsync")
-  }
-
-  object autoImport extends Keys
-  import autoImport._
-
-  override def projectSettings = Seq(
-    deployRsyncArtifacts := List(),
-    deployRsync := {
-      val (_, host) = (Space ~ StringBasic).parsed
-      deployRsyncArtifacts.value.foreach {
-        case (from, to) => s"rsync -rvz $from/ $host:$to" !
-      }
-    })
 }

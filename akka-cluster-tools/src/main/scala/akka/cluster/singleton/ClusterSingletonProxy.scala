@@ -4,25 +4,25 @@
 
 package akka.cluster.singleton
 
-import akka.actor._
-import akka.cluster.{ Cluster, Member, MemberStatus }
-
 import scala.collection.immutable
-import akka.cluster.ClusterEvent._
-import akka.cluster.ClusterEvent.MemberRemoved
-import akka.cluster.ClusterEvent.MemberUp
+import scala.concurrent.duration._
+
+import com.typesafe.config.Config
+
+import akka.actor._
+import akka.actor.NoSerializationVerificationNeeded
 import akka.actor.RootActorPath
+import akka.cluster.{ Cluster, Member, MemberStatus }
+import akka.cluster.ClusterEvent._
 import akka.cluster.ClusterEvent.CurrentClusterState
 import akka.cluster.ClusterEvent.MemberExited
-
-import scala.concurrent.duration._
-import com.typesafe.config.Config
-import akka.actor.NoSerializationVerificationNeeded
-import akka.event.Logging
-import akka.util.MessageBuffer
+import akka.cluster.ClusterEvent.MemberRemoved
+import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterSettings
 import akka.cluster.ClusterSettings.DataCenter
 import akka.dispatch.Dispatchers
+import akka.event.Logging
+import akka.util.MessageBuffer
 
 object ClusterSingletonProxySettings {
 

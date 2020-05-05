@@ -4,13 +4,13 @@
 
 package akka.pattern
 
-import akka.actor.Scheduler
-
-import language.postfixOps
-import akka.testkit.AkkaSpec
-
 import scala.concurrent.{ Await, ExecutionContextExecutor, Future }
 import scala.concurrent.duration._
+
+import language.postfixOps
+
+import akka.actor.Scheduler
+import akka.testkit.AkkaSpec
 
 class RetrySpec extends AkkaSpec with RetrySupport {
   implicit val ec: ExecutionContextExecutor = system.dispatcher
@@ -59,7 +59,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
         } else Future.successful(5)
       }
 
-      val retried = retry(() => attempt, 10, 100 milliseconds)
+      val retried = retry(() => attempt(), 10, 100 milliseconds)
 
       within(3 seconds) {
         Await.result(retried, remaining) should ===(5)
@@ -76,7 +76,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
         } else Future.successful(5)
       }
 
-      val retried = retry(() => attempt, 5, 100 milliseconds)
+      val retried = retry(() => attempt(), 5, 100 milliseconds)
 
       within(3 seconds) {
         intercept[IllegalStateException] { Await.result(retried, remaining) }.getMessage should ===("6")
@@ -94,7 +94,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
         } else Future.successful(5)
       }
 
-      val retried = retry(() => attempt, 5, attempted => {
+      val retried = retry(() => attempt(), 5, attempted => {
         attemptedCount = attempted
         Some(100.milliseconds * attempted)
       })
@@ -114,7 +114,7 @@ class RetrySpec extends AkkaSpec with RetrySupport {
         } else Future.successful(1)
       }
       val start = System.currentTimeMillis()
-      val retried = retry(() => attempt, 999)
+      val retried = retry(() => attempt(), 999)
 
       within(1 seconds) {
         intercept[IllegalStateException] {

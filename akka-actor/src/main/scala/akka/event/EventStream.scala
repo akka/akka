@@ -4,14 +4,15 @@
 
 package akka.event
 
-import akka.actor.{ ActorRef, ActorSystem }
-import akka.event.Logging.simpleName
-import akka.util.Subclassification
 import java.util.concurrent.atomic.AtomicReference
+
+import scala.annotation.tailrec
 
 import com.github.ghik.silencer.silent
 
-import scala.annotation.tailrec
+import akka.actor.{ ActorRef, ActorSystem }
+import akka.event.Logging.simpleName
+import akka.util.Subclassification
 
 /**
  * An Akka EventStream is a pub-sub stream of events both system and user generated,

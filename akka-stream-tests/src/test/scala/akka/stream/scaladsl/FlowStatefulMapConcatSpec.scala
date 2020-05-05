@@ -4,12 +4,12 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit._
-import akka.stream.testkit.scaladsl.TestSink
+import scala.util.control.NoStackTrace
+
 import akka.stream.ActorAttributes
 import akka.stream.Supervision
-
-import scala.util.control.NoStackTrace
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.TestSink
 
 class FlowStatefulMapConcatSpec extends StreamSpec("""
     akka.stream.materializer.initial-input-buffer-size = 2

@@ -4,10 +4,11 @@
 
 package akka.pattern.extended
 
+import scala.concurrent.duration._
+
 import akka.actor._
 import akka.testkit.AkkaSpec
 import akka.util.Timeout
-import scala.concurrent.duration._
 
 object ExplicitAskSpec {
   case class Request(respondTo: ActorRef)

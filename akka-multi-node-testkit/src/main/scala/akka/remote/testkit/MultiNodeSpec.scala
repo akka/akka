@@ -4,27 +4,27 @@
 
 package akka.remote.testkit
 
-import language.implicitConversions
 import java.net.{ InetAddress, InetSocketAddress }
 
-import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
-
-import scala.concurrent.{ Await, Awaitable }
-import scala.util.control.NonFatal
 import scala.collection.immutable
-import akka.actor._
-import akka.util.Timeout
-import akka.remote.testconductor.{ TestConductor, TestConductorExt }
-import akka.testkit._
-import akka.testkit.TestKit
-import akka.testkit.TestEvent._
-
+import scala.concurrent.{ Await, Awaitable }
 import scala.concurrent.duration._
-import akka.remote.testconductor.RoleName
+import scala.util.control.NonFatal
+
+import com.typesafe.config.{ Config, ConfigFactory, ConfigObject }
+import language.implicitConversions
+import org.jboss.netty.channel.ChannelException
+
+import akka.actor._
 import akka.actor.RootActorPath
 import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.RemoteTransportException
-import org.jboss.netty.channel.ChannelException
+import akka.remote.testconductor.{ TestConductor, TestConductorExt }
+import akka.remote.testconductor.RoleName
+import akka.testkit._
+import akka.testkit.TestEvent._
+import akka.testkit.TestKit
+import akka.util.Timeout
 import akka.util.ccompat._
 
 /**

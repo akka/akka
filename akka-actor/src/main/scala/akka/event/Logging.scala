@@ -7,22 +7,23 @@ package akka.event
 import java.util.concurrent.TimeoutException
 import java.util.concurrent.atomic.AtomicInteger
 
-import akka.actor.ActorSystem.Settings
-import akka.actor._
-import akka.annotation.{ DoNotInherit, InternalApi }
-import akka.dispatch.RequiresMessageQueue
-import akka.event.Logging._
-import akka.util.unused
-import akka.util.{ Helpers, ReentrantGuard }
-import akka.{ AkkaException, ConfigurationException }
-import com.github.ghik.silencer.silent
-
 import scala.annotation.implicitNotFound
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.language.existentials
 import scala.util.control.{ NoStackTrace, NonFatal }
+
+import com.github.ghik.silencer.silent
+
+import akka.{ AkkaException, ConfigurationException }
+import akka.actor._
+import akka.actor.ActorSystem.Settings
+import akka.annotation.{ DoNotInherit, InternalApi }
+import akka.dispatch.RequiresMessageQueue
+import akka.event.Logging._
+import akka.util.{ Helpers, ReentrantGuard }
 import akka.util.Timeout
+import akka.util.unused
 
 /**
  * This trait brings log level handling to the EventStream: it reads the log

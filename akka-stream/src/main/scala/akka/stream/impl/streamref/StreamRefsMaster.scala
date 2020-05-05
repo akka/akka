@@ -4,8 +4,8 @@
 
 package akka.stream.impl.streamref
 
-import akka.actor.ClassicActorSystemProvider
 import akka.actor.{ ActorSystem, ExtendedActorSystem, Extension, ExtensionId, ExtensionIdProvider }
+import akka.actor.ClassicActorSystemProvider
 import akka.annotation.InternalApi
 import akka.stream.impl.SeqActorName
 

@@ -4,15 +4,15 @@
 
 package akka.util
 
-import annotation.tailrec
-
-import java.util.concurrent.{ ConcurrentHashMap, ConcurrentSkipListSet }
 import java.util.Comparator
+import java.util.concurrent.{ ConcurrentHashMap, ConcurrentSkipListSet }
 
 import scala.collection.JavaConverters.collectionAsScalaIterableConverter
-import akka.util.ccompat.JavaConverters._
 
+import annotation.tailrec
 import com.github.ghik.silencer.silent
+
+import akka.util.ccompat.JavaConverters._
 
 /**
  * An implementation of a ConcurrentMultiMap

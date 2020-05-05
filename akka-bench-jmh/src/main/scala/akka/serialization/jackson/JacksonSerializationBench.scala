@@ -4,22 +4,23 @@
 
 package akka.serialization.jackson
 
+import java.time.{ Duration => JDuration }
 import java.time.Instant
 import java.time.LocalDateTime
-import java.time.{ Duration => JDuration }
 import java.util
 import java.util.concurrent.TimeUnit
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
 import akka.actor._
 import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.serialization.SerializerWithStringManifest
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations._
 
 object JacksonSerializationBench {
   trait TestMessage

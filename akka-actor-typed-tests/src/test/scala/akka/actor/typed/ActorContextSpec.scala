@@ -4,6 +4,11 @@
 
 package akka.actor.typed
 
+import scala.concurrent.duration._
+import scala.reflect.ClassTag
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.InvalidMessageException
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -11,10 +16,6 @@ import akka.actor.testkit.typed.scaladsl.LoggingTestKit
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.testkit.typed.scaladsl.TestProbe
 import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.wordspec.AnyWordSpecLike
-
-import scala.concurrent.duration._
-import scala.reflect.ClassTag
 
 object ActorSpecMessages {
 
@@ -520,7 +521,7 @@ abstract class ActorContextSpec extends ScalaTestWithActorTestKit with AnyWordSp
 
     "return the right context info" in {
       type Info = (ActorSystem[Nothing], ActorRef[String])
-      val probe = TestProbe[Info]
+      val probe = TestProbe[Info]()
       val actor = spawn(
         Behaviors
           .receivePartial[String] {

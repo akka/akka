@@ -4,13 +4,11 @@ Pass incoming elements to a function that return a @scala[`Future`] @java[`Compl
 
 @ref[Asynchronous operators](../index.md#asynchronous-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #mapAsync }
+@apidoc[Source.mapAsync](Source) { scala="#mapAsync[T](parallelism:Int)(f:Out=&gt;scala.concurrent.Future[T]):FlowOps.this.Repr[T]" java="#mapAsync(int,akka.japi.function.Function)" }
+@apidoc[Flow.mapAsync](Flow) { scala="#mapAsync[T](parallelism:Int)(f:Out=&gt;scala.concurrent.Future[T]):FlowOps.this.Repr[T]" java="#mapAsync(int,akka.japi.function.Function)" }
 
-@@@
 
 ## Description
 

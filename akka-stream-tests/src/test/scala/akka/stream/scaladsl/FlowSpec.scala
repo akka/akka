@@ -6,21 +6,22 @@ package akka.stream.scaladsl
 
 import java.util.concurrent.ThreadLocalRandom
 
-import akka.NotUsed
-import akka.actor._
-import akka.stream.impl._
-import akka.stream.testkit.scaladsl.StreamTestKit._
-import akka.stream.testkit._
-import akka.stream._
-import akka.testkit.TestDuration
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
-import org.reactivestreams.{ Publisher, Subscriber }
-
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
 import scala.util.control.NoStackTrace
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+import org.reactivestreams.{ Publisher, Subscriber }
+
+import akka.NotUsed
+import akka.actor._
+import akka.stream._
+import akka.stream.impl._
+import akka.stream.testkit._
+import akka.stream.testkit.scaladsl.StreamTestKit._
+import akka.testkit.TestDuration
 
 object FlowSpec {
   class Fruit extends Serializable

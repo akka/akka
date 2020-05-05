@@ -6,6 +6,8 @@ package akka.cluster.singleton
 
 import scala.concurrent.duration._
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
@@ -17,7 +19,6 @@ import akka.cluster.MemberStatus
 import akka.cluster.singleton.ClusterSingletonLeavingSpeedSpec.TheSingleton
 import akka.testkit.AkkaSpec
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 
 object ClusterSingletonLeavingSpeedSpec {
 

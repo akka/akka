@@ -8,18 +8,19 @@ import java.nio.file.Files
 import java.nio.file.Path
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import org.openjdk.jmh.annotations._
+import org.openjdk.jmh.annotations.BenchmarkMode
+import org.openjdk.jmh.annotations.Scope
+import org.openjdk.jmh.annotations.State
+
 import akka.actor.ActorSystem
 import akka.stream.IOResult
 import akka.stream.scaladsl._
 import akka.util.ByteString
-import org.openjdk.jmh.annotations.BenchmarkMode
-import org.openjdk.jmh.annotations.Scope
-import org.openjdk.jmh.annotations.State
-import org.openjdk.jmh.annotations._
-
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @BenchmarkMode(Array(Mode.AverageTime))

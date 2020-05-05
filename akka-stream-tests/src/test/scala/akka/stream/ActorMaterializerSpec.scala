@@ -4,25 +4,26 @@
 
 package akka.stream
 
-import akka.Done
-import akka.actor.ExtendedActorSystem
-import akka.actor.Extension
-import akka.actor.ExtensionId
-import akka.actor.ExtensionIdProvider
-import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
-import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
-import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
-import akka.stream.scaladsl.{ Sink, Source }
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.testkit.TestKit
-import akka.testkit.{ ImplicitSender, TestProbe }
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
-
 import scala.concurrent.Await
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.{ Failure, Try }
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
+import akka.Done
+import akka.actor.{ Actor, ActorSystem, PoisonPill, Props }
+import akka.actor.ExtendedActorSystem
+import akka.actor.Extension
+import akka.actor.ExtensionId
+import akka.actor.ExtensionIdProvider
+import akka.stream.ActorMaterializerSpec.ActorWithMaterializer
+import akka.stream.impl.{ PhasedFusingActorMaterializer, StreamSupervisor }
+import akka.stream.scaladsl.{ Sink, Source }
+import akka.stream.testkit.{ StreamSpec, TestPublisher }
+import akka.testkit.{ ImplicitSender, TestProbe }
+import akka.testkit.TestKit
 
 object IndirectMaterializerCreation extends ExtensionId[IndirectMaterializerCreation] with ExtensionIdProvider {
   def createExtension(system: ExtendedActorSystem): IndirectMaterializerCreation =

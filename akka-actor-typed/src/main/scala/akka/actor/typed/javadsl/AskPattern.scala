@@ -8,12 +8,12 @@ package javadsl
 import java.time.Duration
 import java.util.concurrent.CompletionStage
 
+import scala.compat.java8.FutureConverters._
+
 import akka.actor.typed.Scheduler
 import akka.actor.typed.scaladsl.AskPattern._
 import akka.japi.function.{ Function => JFunction }
 import akka.util.JavaDurationConverters._
-
-import scala.compat.java8.FutureConverters._
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.

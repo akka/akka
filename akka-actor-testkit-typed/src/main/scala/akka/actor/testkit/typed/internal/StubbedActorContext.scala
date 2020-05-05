@@ -4,24 +4,25 @@
 
 package akka.actor.testkit.typed.internal
 
-import akka.actor.typed._
-import akka.actor.typed.internal._
-import akka.actor.testkit.typed.CapturedLogEvent
-import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.{ ActorPath, InvalidMessageException }
-import akka.annotation.InternalApi
-import akka.util.Helpers
-import akka.{ actor => classic }
 import java.util.concurrent.ThreadLocalRandom.{ current => rnd }
 
 import scala.collection.immutable.TreeMap
 import scala.concurrent.ExecutionContextExecutor
 import scala.concurrent.duration.FiniteDuration
 
-import akka.actor.ActorRefProvider
 import org.slf4j.Logger
 import org.slf4j.helpers.MessageFormatter
 import org.slf4j.helpers.SubstituteLoggerFactory
+
+import akka.{ actor => classic }
+import akka.actor.{ ActorPath, InvalidMessageException }
+import akka.actor.ActorRefProvider
+import akka.actor.testkit.typed.CapturedLogEvent
+import akka.actor.testkit.typed.scaladsl.TestInbox
+import akka.actor.typed._
+import akka.actor.typed.internal._
+import akka.annotation.InternalApi
+import akka.util.Helpers
 
 /**
  * INTERNAL API
@@ -147,7 +148,7 @@ private[akka] final class FunctionRef[-T](override val path: ActorPath, send: (T
     new FunctionRef[U](p, (message, _) => {
       val m = f(message);
       if (m != null) {
-        selfInbox.ref ! m; i.selfInbox.ref ! message
+        selfInbox.ref ! m; i.selfInbox().ref ! message
       }
     })
   }

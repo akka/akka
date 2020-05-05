@@ -10,6 +10,8 @@ import scala.concurrent.Promise
 import scala.concurrent.duration._
 import scala.util.Success
 
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -25,7 +27,6 @@ import akka.cluster.TestLeaseExt
 import akka.testkit.AkkaSpec
 import akka.testkit.TestException
 import akka.testkit.TestProbe
-import com.typesafe.config.ConfigFactory
 
 class ImportantSingleton(lifeCycleProbe: ActorRef) extends Actor with ActorLogging {
 
@@ -121,7 +122,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
       } // allow singleton manager to create the lease
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
       singletonProbe.expectNoMessage(shortDuration)
-      val nextResponse = Promise[Boolean]
+      val nextResponse = Promise[Boolean]()
       testLease.setNextAcquireResult(nextResponse.future)
       testLease.initialPromise.complete(Success(false))
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
@@ -155,7 +156,7 @@ class ClusterSingletonLeaseSpec extends AkkaSpec(ConfigFactory.parseString("""
       } // allow singleton manager to create the lease
       testLease.probe.expectMsg(AcquireReq(leaseOwner))
       singletonProbe.expectNoMessage(shortDuration)
-      val nextResponse = Promise[Boolean]
+      val nextResponse = Promise[Boolean]()
       testLease.setNextAcquireResult(nextResponse.future)
       testLease.initialPromise.failure(TestException("no lease for you"))
       testLease.probe.expectMsg(AcquireReq(leaseOwner))

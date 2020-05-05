@@ -4,6 +4,10 @@
 
 package akka.cluster.sharding.external
 
+import scala.collection.immutable
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorLogging
 import akka.actor.ActorRef
@@ -25,10 +29,6 @@ import akka.cluster.sharding.ShardRegion.ShardId
 import akka.event.Logging
 import akka.pattern.AskTimeoutException
 import akka.util.Timeout
-
-import scala.collection.immutable
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 object ExternalShardAllocationStrategy {
 
@@ -91,8 +91,9 @@ class ExternalShardAllocationStrategy(systemProvider: ClassicActorSystemProvider
   private val system = systemProvider.classicSystem
 
   import ExternalShardAllocationStrategy._
-  import akka.pattern.ask
   import system.dispatcher
+
+  import akka.pattern.ask
 
   private val log = Logging(system, classOf[ExternalShardAllocationStrategy])
 

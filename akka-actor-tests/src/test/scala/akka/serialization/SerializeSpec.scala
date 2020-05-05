@@ -4,26 +4,24 @@
 
 package akka.serialization
 
-import language.postfixOps
-
-import akka.testkit.{ AkkaSpec, EventFilter }
-import akka.actor._
 import java.io._
+import java.nio.ByteBuffer
+import java.nio.ByteOrder
 
 import scala.concurrent.Await
-
-import akka.util.{ unused, Timeout }
 import scala.concurrent.duration._
 
-import com.typesafe.config._
-import akka.pattern.ask
-import java.nio.ByteOrder
-import java.nio.ByteBuffer
-
-import akka.actor.dungeon.SerializationCheckFailedException
-import com.github.ghik.silencer.silent
-import test.akka.serialization.NoVerification
 import SerializationTests._
+import com.github.ghik.silencer.silent
+import com.typesafe.config._
+import language.postfixOps
+import test.akka.serialization.NoVerification
+
+import akka.actor._
+import akka.actor.dungeon.SerializationCheckFailedException
+import akka.pattern.ask
+import akka.testkit.{ AkkaSpec, EventFilter }
+import akka.util.{ unused, Timeout }
 import akka.util.ByteString
 
 object SerializationTests {
@@ -284,7 +282,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   }
 
   "verify creators" in {
-    val a = system.actorOf(Props[FooActor])
+    val a = system.actorOf(Props[FooActor]())
     system.stop(a)
 
     val b = system.actorOf(Props(new FooAbstractActor))
@@ -307,7 +305,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   }
 
   "verify messages" in {
-    val a = system.actorOf(Props[FooActor])
+    val a = system.actorOf(Props[FooActor]())
     Await.result(a ? "pigdog", timeout.duration) should ===("pigdog")
 
     EventFilter[SerializationCheckFailedException](
@@ -319,7 +317,7 @@ class VerifySerializabilitySpec extends AkkaSpec(SerializationTests.verifySerial
   }
 
   "not verify akka messages" in {
-    val a = system.actorOf(Props[FooActor])
+    val a = system.actorOf(Props[FooActor]())
     EventFilter.warning(start = "ok", occurrences = 1).intercept {
       // ActorSystem is not possible to serialize, but ok since it starts with "akka."
       val message = system

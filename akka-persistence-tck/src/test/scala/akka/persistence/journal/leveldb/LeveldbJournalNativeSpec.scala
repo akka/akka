@@ -4,8 +4,8 @@
 
 package akka.persistence.journal.leveldb
 
-import akka.persistence.journal.JournalSpec
 import akka.persistence.{ PersistenceSpec, PluginCleanup }
+import akka.persistence.journal.JournalSpec
 
 class LeveldbJournalNativeSpec
     extends JournalSpec(

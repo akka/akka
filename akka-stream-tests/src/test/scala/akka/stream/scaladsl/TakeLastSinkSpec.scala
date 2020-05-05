@@ -4,12 +4,13 @@
 
 package akka.stream.scaladsl
 
-import akka.stream.testkit.{ StreamSpec, TestPublisher }
-import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
-import com.github.ghik.silencer.silent
-
 import scala.collection.immutable
 import scala.concurrent.{ Await, Future }
+
+import com.github.ghik.silencer.silent
+
+import akka.stream.{ AbruptTerminationException, ActorMaterializer, ActorMaterializerSettings }
+import akka.stream.testkit.{ StreamSpec, TestPublisher }
 
 @silent
 class TakeLastSinkSpec extends StreamSpec {

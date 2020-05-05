@@ -4,6 +4,13 @@
 
 package akka.remote.testconductor
 
+import java.net.InetSocketAddress
+import java.util.concurrent.Executors
+
+import scala.util.control.NonFatal
+
+import org.jboss.netty.bootstrap.{ ClientBootstrap, ServerBootstrap }
+import org.jboss.netty.buffer.ChannelBuffer
 import org.jboss.netty.channel.{
   Channel,
   ChannelPipeline,
@@ -11,20 +18,14 @@ import org.jboss.netty.channel.{
   ChannelUpstreamHandler,
   DefaultChannelPipeline
 }
+import org.jboss.netty.channel.ChannelHandlerContext
 import org.jboss.netty.channel.socket.nio.{ NioClientSocketChannelFactory, NioServerSocketChannelFactory }
-import org.jboss.netty.bootstrap.{ ClientBootstrap, ServerBootstrap }
 import org.jboss.netty.handler.codec.frame.{ LengthFieldBasedFrameDecoder, LengthFieldPrepender }
-import java.net.InetSocketAddress
-import java.util.concurrent.Executors
-
-import scala.util.control.NonFatal
+import org.jboss.netty.handler.codec.oneone.{ OneToOneDecoder, OneToOneEncoder }
 
 import akka.event.Logging
-import akka.util.Helpers
-import org.jboss.netty.handler.codec.oneone.{ OneToOneDecoder, OneToOneEncoder }
-import org.jboss.netty.channel.ChannelHandlerContext
 import akka.protobufv3.internal.Message
-import org.jboss.netty.buffer.ChannelBuffer
+import akka.util.Helpers
 
 /**
  * INTERNAL API.

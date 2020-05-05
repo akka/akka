@@ -4,24 +4,24 @@
 
 package akka.actor
 
-import language.postfixOps
 import java.io.Closeable
 import java.util.concurrent._
-import atomic.{ AtomicInteger, AtomicReference }
+import java.util.concurrent.ThreadLocalRandom
 
 import scala.concurrent.{ Await, ExecutionContext, Future }
 import scala.concurrent.duration._
-import java.util.concurrent.ThreadLocalRandom
-
 import scala.util.Try
+import scala.util.control.NoStackTrace
 import scala.util.control.NonFatal
-import org.scalatest.BeforeAndAfterEach
+
+import atomic.{ AtomicInteger, AtomicReference }
+import com.github.ghik.silencer.silent
 import com.typesafe.config.{ Config, ConfigFactory }
+import language.postfixOps
+import org.scalatest.BeforeAndAfterEach
+
 import akka.pattern.ask
 import akka.testkit._
-import com.github.ghik.silencer.silent
-
-import scala.util.control.NoStackTrace
 
 object SchedulerSpec {
   val testConfRevolver =
@@ -330,7 +330,7 @@ trait SchedulerSpec extends BeforeAndAfterEach with DefaultTimeout with Implicit
               case Crash => throw new Exception("CRASH")
             }
 
-            override def postRestart(reason: Throwable) = restartLatch.open
+            override def postRestart(reason: Throwable) = restartLatch.open()
           })
           val actor = Await.result((supervisor ? props).mapTo[ActorRef], timeout.duration)
 

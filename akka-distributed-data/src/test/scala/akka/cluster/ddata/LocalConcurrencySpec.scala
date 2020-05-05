@@ -4,16 +4,17 @@
 
 package akka.cluster.ddata
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Props
 import akka.actor.Stash
 import akka.testkit.ImplicitSender
 import akka.testkit.TestKit
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object LocalConcurrencySpec {
 
@@ -64,8 +65,8 @@ class LocalConcurrencySpec(_system: ActorSystem)
   "Updates from same node" must {
 
     "be possible to do from two actors" in {
-      val updater1 = system.actorOf(Props[Updater], "updater1")
-      val updater2 = system.actorOf(Props[Updater], "updater2")
+      val updater1 = system.actorOf(Props[Updater](), "updater1")
+      val updater2 = system.actorOf(Props[Updater](), "updater2")
 
       val numMessages = 100
       for (n <- 1 to numMessages) {

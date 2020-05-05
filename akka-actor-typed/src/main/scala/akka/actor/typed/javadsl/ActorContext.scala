@@ -5,16 +5,16 @@
 package akka.actor.typed.javadsl
 
 import java.time.Duration
-
-import akka.annotation.DoNotInherit
-import akka.actor.ClassicActorContextProvider
-import akka.actor.typed._
 import java.util.Optional
 import java.util.concurrent.CompletionStage
 
+import scala.concurrent.ExecutionContextExecutor
+
 import org.slf4j.Logger
 
-import scala.concurrent.ExecutionContextExecutor
+import akka.actor.ClassicActorContextProvider
+import akka.actor.typed._
+import akka.annotation.DoNotInherit
 
 /**
  * An Actor is given by the combination of a [[Behavior]] and a context in

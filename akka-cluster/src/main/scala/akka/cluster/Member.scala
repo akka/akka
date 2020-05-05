@@ -4,13 +4,14 @@
 
 package akka.cluster
 
-import akka.actor.Address
+import scala.runtime.AbstractFunction2
+
 import MemberStatus._
-import akka.annotation.InternalApi
-import akka.cluster.ClusterSettings.DataCenter
 import com.github.ghik.silencer.silent
 
-import scala.runtime.AbstractFunction2
+import akka.actor.Address
+import akka.annotation.InternalApi
+import akka.cluster.ClusterSettings.DataCenter
 
 /**
  * Represents the address, current status, and roles of a cluster member node.

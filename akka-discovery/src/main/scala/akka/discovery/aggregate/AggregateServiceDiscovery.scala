@@ -4,20 +4,21 @@
 
 package akka.discovery.aggregate
 
-import akka.actor.ExtendedActorSystem
-import akka.annotation.InternalApi
-import akka.discovery.ServiceDiscovery.Resolved
-import akka.discovery.aggregate.AggregateServiceDiscovery.Methods
-import akka.discovery.{ Discovery, Lookup, ServiceDiscovery }
-import akka.event.Logging
-import akka.util.Helpers.Requiring
-import com.typesafe.config.Config
-
-import akka.util.ccompat.JavaConverters._
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
 import scala.util.control.NonFatal
+
+import com.typesafe.config.Config
+
+import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
+import akka.discovery.{ Discovery, Lookup, ServiceDiscovery }
+import akka.discovery.ServiceDiscovery.Resolved
+import akka.discovery.aggregate.AggregateServiceDiscovery.Methods
 import akka.dispatch.MessageDispatcher
+import akka.event.Logging
+import akka.util.Helpers.Requiring
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API
