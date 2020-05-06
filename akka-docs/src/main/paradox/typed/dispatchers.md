@@ -3,7 +3,7 @@ project.description: Akka dispatchers and how to choose the right ones.
 ---
 # Dispatchers
 
-For the Akka Classic documentation of this feature see @ref:[Classic Dispatchers](../dispatchers.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Dispatchers](../dispatchers.md).
 
 ## Dependency
 

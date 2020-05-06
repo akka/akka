@@ -1,6 +1,6 @@
 # Testing
 
-For the Akka Classic documentation of this feature see @ref:[Classic Testing](../testing.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Testing](../testing.md).
 
 ## Module info
 

@@ -3,7 +3,7 @@ project.description: The Actor model, managing internal state and changing behav
 ---
 # Introduction to Actors
 
-For the Akka Classic documentation of this feature see @ref:[Classic Actors](../actors.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Actors](../actors.md).
 
 ## Module info
 
