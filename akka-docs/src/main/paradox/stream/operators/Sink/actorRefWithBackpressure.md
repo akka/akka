@@ -4,6 +4,10 @@ Send the elements from the stream to an `ActorRef` which must then acknowledge r
 
 @ref[Sink operators](../index.md#sink-operators)
 
+## Signature
+
+@apidoc[Sink.actorRefWithBackpressure](Sink$) { scala="#actorRefWithBackpressure[T](ref:akka.actor.ActorRef,onInitMessage:Any,ackMessage:Any,onCompleteMessage:Any,onFailureMessage:Throwable=&gt;Any):akka.stream.scaladsl.Sink[T,akka.NotUsed]" java="#actorRefWithBackpressure(akka.actor.ActorRef,java.lang.Object,java.lang.Object,java.lang.Object,akka.japi.function.Function)" }
+
 ## Description
 
 Send the elements from the stream to an `ActorRef` which must then acknowledge reception after completing a message,
