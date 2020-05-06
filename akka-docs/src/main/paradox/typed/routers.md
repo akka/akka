@@ -73,7 +73,7 @@ Java
 
 ## Routing strategies
 
-There are three different strategies for selecting what routee a message is forwarded to that can be selected
+There are three different strategies for selecting which routee a message is forwarded to that can be selected
 from the router before spawning it:
 
 Scala
