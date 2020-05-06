@@ -6,7 +6,7 @@ To use Persistence Query, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-persistence-query_$scala.binary_version$
+  artifact=akka-persistence-query_$scala.binary.version$
   version=$akka.version$
 }
 

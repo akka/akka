@@ -9,7 +9,7 @@ page describes how to use mailboxes with `akka-actor-typed`, which has dependenc
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-actor-typed_$scala.binary_version$"
+  artifact="akka-actor-typed_$scala.binary.version$"
   version="$akka.version$"
 }
 

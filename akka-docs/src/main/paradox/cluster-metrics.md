@@ -6,7 +6,7 @@ To use Cluster Metrics Extension, you must add the following dependency in your 
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-metrics_$scala.binary_version$
+  artifact=akka-cluster-metrics_$scala.binary.version$
   version=$akka.version$
 }
 

@@ -9,7 +9,7 @@ To use Akka Distributed Data, you must add the following dependency in your proj
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-distributed-data_$scala.binary_version$"
+  artifact="akka-distributed-data_$scala.binary.version$"
   version="$akka.version$"
 }
 

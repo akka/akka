@@ -8,7 +8,7 @@ To use Cluster Singleton, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
+  artifact=akka-cluster-typed_$scala.binary.version$
   version=$akka.version$
 }
 

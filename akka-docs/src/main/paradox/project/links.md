@@ -57,7 +57,7 @@ Define the library dependencies with the timestamp as version. For example:
 
 @@@vars
 ```
-libraryDependencies += "com.typesafe.akka" % "akka-remote_$scala.binary_version$" % "2.5-20170510-230859"
+libraryDependencies += "com.typesafe.akka" % "akka-remote_$scala.binary.version$" % "2.5-20170510-230859"
 ```
 @@@
 
@@ -83,7 +83,7 @@ Define the library dependencies with the timestamp as version. For example:
 <dependencies>
   <dependency>
     <groupId>com.typesafe.akka</groupId>
-    <artifactId>akka-remote_$scala.binary_version$</artifactId>
+    <artifactId>akka-remote_$scala.binary.version$</artifactId>
     <version>2.5-20170510-230859</version>
   </dependency>
 </dependencies>

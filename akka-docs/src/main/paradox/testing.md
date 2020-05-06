@@ -9,7 +9,7 @@ To use Akka Testkit, you must add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-testkit_$scala.binary_version$"
+  artifact="akka-testkit_$scala.binary.version$"
   version="$akka.version$"
   scope="test"
 }

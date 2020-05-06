@@ -6,7 +6,7 @@ This documentation page touches upon @ref[Akka Persistence](persistence.md), so 
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-persistence_$scala.binary_version$"
+  artifact="akka-persistence_$scala.binary.version$"
   version="$akka.version$"
 }
 
