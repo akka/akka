@@ -23,25 +23,29 @@ object EventSourcedBehaviorIdempotenceCacheSpec {
     """)
 
   sealed trait Command
-  case class SideEffect(override val idempotencyKey: String, override val replyTo: ActorRef[IdempotenceReply])
+  case class SideEffect(
+      override val idempotencyKey: String,
+      override val replyTo: ActorRef[IdempotenceReply[AllGood.type, Int]])
       extends Command
-      with IdempotentCommand
+      with IdempotentCommand[AllGood.type, Int]
 
   object NoSideEffect {
-    case class WriteAlways(override val idempotencyKey: String, override val replyTo: ActorRef[IdempotenceReply])
+    case class WriteAlways(
+        override val idempotencyKey: String,
+        override val replyTo: ActorRef[IdempotenceReply[AllGood.type, Int]])
         extends Command
-        with IdempotentCommand
+        with IdempotentCommand[AllGood.type, Int]
 
     case class WriteOnlyWithPersist(
         override val idempotencyKey: String,
-        override val replyTo: ActorRef[IdempotenceReply])
+        override val replyTo: ActorRef[IdempotenceReply[AllGood.type, Int]])
         extends Command
-        with IdempotentCommand {
+        with IdempotentCommand[AllGood.type, Int] {
       override val writeConfig: IdempotenceKeyWriteConfig = OnlyWriteIdempotenceKeyWithPersist
     }
   }
 
-  case object AllGood extends IdempotenceReply
+  case object AllGood
 
   def idempotentState(
       persistenceId: PersistenceId,
@@ -54,11 +58,11 @@ object EventSourcedBehaviorIdempotenceCacheSpec {
         commandHandler = (_, command) => {
           command match {
             case SideEffect(_, replyTo) =>
-              Effect.persist(1).thenReply(replyTo)(_ => AllGood)
+              Effect.persist(1).thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
             case NoSideEffect.WriteAlways(_, replyTo) =>
-              Effect.none[Int, Int].thenReply(replyTo)(_ => AllGood)
+              Effect.none[Int, Int].thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
             case NoSideEffect.WriteOnlyWithPersist(_, replyTo) =>
-              Effect.none[Int, Int].thenReply(replyTo)(_ => AllGood)
+              Effect.none[Int, Int].thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
           }
         },
         eventHandler = (state, event) => {
@@ -87,7 +91,7 @@ class EventSourcedBehaviorIdempotenceCacheSpec
       val checksProbe = createTestProbe[String]()
       val writesProbe = createTestProbe[String]()
 
-      val probe = TestProbe[IdempotenceReply]
+      val probe = TestProbe[IdempotenceReply[AllGood.type, Int]]
 
       val persistenceId = nextPid
       val idempotenceKey = UUID.randomUUID().toString
@@ -107,7 +111,7 @@ class EventSourcedBehaviorIdempotenceCacheSpec
       val checksProbe = createTestProbe[String]()
       val writesProbe = createTestProbe[String]()
 
-      val probe = TestProbe[IdempotenceReply]
+      val probe = TestProbe[IdempotenceReply[AllGood.type, Int]]
 
       val persistenceId = nextPid
       val idempotenceKey = UUID.randomUUID().toString

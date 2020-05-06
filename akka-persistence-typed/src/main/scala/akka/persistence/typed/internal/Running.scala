@@ -151,13 +151,13 @@ private[akka] object Running {
 
     def onCommand(state: RunningState[S], cmd: C): Behavior[InternalProtocol] = {
       cmd match {
-        case ic: IdempotentCommand =>
+        case ic: IdempotentCommand[_, S] =>
           if (state.checkIdempotenceKeyCache(ic.idempotencyKey, setup.idempotenceKeyCacheSize)) {
-            ic.replyTo ! IdempotenceFailure
+            ic.replyTo ! IdempotenceFailure(state.state)
             Behaviors.same
           } else {
             internalCheckIdempotencyKeyExists(ic.idempotencyKey)
-            new CheckingIdempotenceKey(state, ic.asInstanceOf[C with IdempotentCommand], ic.idempotencyKey) // TODO can we avoid the cast?
+            new CheckingIdempotenceKey(state, ic.asInstanceOf[C with IdempotentCommand[Any, S]], ic.idempotencyKey) // TODO can we avoid the cast?
           }
         case _ =>
           val effect = setup.commandHandler(state.state, cmd)
@@ -199,7 +199,7 @@ private[akka] object Running {
           val eventAdapterManifest = setup.eventAdapter.manifest(event)
 
           val idempotencyKey = msg match {
-            case ic: IdempotentCommand =>
+            case ic: IdempotentCommand[_, _] =>
               Some(ic.idempotencyKey)
             case _ =>
               None
@@ -230,7 +230,7 @@ private[akka] object Running {
             val eventsToPersist = events.map(evt => (adaptEvent(evt), setup.eventAdapter.manifest(evt)))
 
             val idempotencyKey = msg match {
-              case ic: IdempotentCommand =>
+              case ic: IdempotentCommand[_, _] =>
                 Some(ic.idempotencyKey)
               case _ =>
                 None
@@ -517,7 +517,7 @@ private[akka] object Running {
 
   // --------------------------
 
-  @InternalApi private[akka] class CheckingIdempotenceKey[IC <: C with IdempotentCommand](
+  @InternalApi private[akka] class CheckingIdempotenceKey[IC <: C with IdempotentCommand[_, S]](
       state: RunningState[S],
       pendingCommand: IC,
       idempotencyKey: String)
@@ -581,7 +581,7 @@ private[akka] object Running {
             CheckIdempotencyKeyExistsSucceeded(idempotencyKey, exists = true),
             catchAndLog = false)
 
-          pendingCommand.replyTo ! IdempotenceFailure
+          pendingCommand.replyTo ! IdempotenceFailure(state.state)
           val newState = state.addIdempotenceKeyToCache(idempotencyKey, setup.idempotenceKeyCacheSize)
           tryUnstashOne(new HandlingCommands(newState))
         case IdempotencyCheckFailure(cause) =>
@@ -598,7 +598,7 @@ private[akka] object Running {
 
   // --------------------------
 
-  @InternalApi private[akka] class WritingIdempotenceKey[IC <: C with IdempotentCommand](
+  @InternalApi private[akka] class WritingIdempotenceKey[IC <: C with IdempotentCommand[_, S]](
       state: RunningState[S],
       pendingCommand: IC,
       idempotencyKey: String)
