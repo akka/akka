@@ -414,7 +414,7 @@ Examples: ./akka-cluster localhost 9999 is-available
 ```
 
 To be able to use the script you must enable remote monitoring and management when starting the JVMs of the cluster nodes,
-as described in [Monitoring and Management Using JMX Technology](http://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html).
+as described in [Monitoring and Management Using JMX Technology](https://docs.oracle.com/javase/8/docs/technotes/guides/management/agent.html).
 Make sure you understand the security implications of enabling remote monitoring and management.
 
 <a id="cluster-configuration"></a>

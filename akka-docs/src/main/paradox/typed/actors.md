@@ -23,7 +23,7 @@ imports when working in Scala, or viceversa. See @ref:[IDE Tips](../additional/i
 
 ## Akka Actors
 
-The [Actor Model](http://en.wikipedia.org/wiki/Actor_model) provides a higher level of abstraction for writing concurrent
+The [Actor Model](https://en.wikipedia.org/wiki/Actor_model) provides a higher level of abstraction for writing concurrent
 and distributed systems. It alleviates the developer from having to deal with
 explicit locking and thread management, making it easier to write correct
 concurrent and parallel systems. Actors were defined in the 1973 paper by Carl

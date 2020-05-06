@@ -14,7 +14,7 @@ When starting clusters on cloud systems such as Kubernetes, AWS, Google Cloud, A
 you may want to automate the discovery of nodes for the cluster joining process, using your cloud providers,
 cluster orchestrator, or other form of service discovery (such as managed DNS).
 
-The open source Akka Management library includes the [Cluster Bootstrap](https://doc.akka.io/docs/akka-management/current/bootstrap/index.html)
+The open source Akka Management library includes the @extref:[Cluster Bootstrap](akka-management:bootstrap/index.html)
 module which handles just that. Please refer to its documentation for more details.
 
 @@@ note
@@ -32,13 +32,13 @@ See @ref:[Rolling Updates, Cluster Shutdown and Coordinated Shutdown](../additio
 
 There are several management tools for the cluster. 
 Complete information on running and managing Akka applications can be found in 
-the [Akka Management](https://doc.akka.io/docs/akka-management/current/) project documentation.
+the @exref:[Akka Management](akka-management:) project documentation.
 
 <a id="cluster-http"></a>
 ### HTTP
 
 Information and management of the cluster is available with a HTTP API.
-See documentation of [Akka Management](http://developer.lightbend.com/docs/akka-management/current/).
+See documentation of @extref:[Akka Management](akka-management:).
 
 <a id="cluster-jmx"></a>
 ### JMX
@@ -60,6 +60,6 @@ Member nodes are identified by their address, in format *`akka://actor-system-na
 ## Monitoring and Observability
 
 Aside from log monitoring and the monitoring provided by your APM or platform provider, [Lightbend Telemetry](https://developer.lightbend.com/docs/telemetry/current/instrumentations/akka/akka.html),
-available through a [Lightbend Platform Subscription](https://www.lightbend.com/lightbend-platform-subscription),
+available through a [Lightbend Subscription](https://www.lightbend.com/lightbend-subscription),
 can provide additional insights in the run-time characteristics of your application, including metrics, events,
 and distributed tracing for Akka Actors, Cluster, HTTP, and more.

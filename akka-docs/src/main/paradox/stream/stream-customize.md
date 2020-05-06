@@ -516,7 +516,7 @@ allow nicer syntax. The short answer is that Scala 2 does not support this in a 
 that it is impossible to abstract over the kind of stream that is being extended because `Source`, `Flow`
 and `SubFlow` differ in the number and kind of their type parameters. While it would be possible to write
 an implicit class that enriches them generically, this class would require explicit instantiation with all type
-parameters due to [SI-2712](https://issues.scala-lang.org/browse/SI-2712). For a partial workaround that unifies
+parameters due to [SI-2712](https://github.com/scala/bug/issues/2712). For a partial workaround that unifies
 extensions to `Source` and `Flow` see [this sketch by R. Kuhn](https://gist.github.com/rkuhn/2870fcee4937dda2cad5).
 
 A lot simpler is the task of adding an extension method to `Source` as shown below:

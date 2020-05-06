@@ -5,8 +5,8 @@ of how to run.
 
 ## Quickstart
 
-@scala[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala)]
-@java[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-java)]
+@scala[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-scala/)]
+@java[[Quickstart Guide](https://developer.lightbend.com/guides/akka-quickstart-java/)]
  
 The *Quickstart* guide walks you through example code that introduces how to define actor systems, actors, and
 messages as well as how to use the test module and logging.

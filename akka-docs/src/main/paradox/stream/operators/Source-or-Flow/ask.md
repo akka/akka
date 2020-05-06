@@ -16,7 +16,7 @@ If any of the asks times out it will fail the stream with a @apidoc[AskTimeoutEx
 
 The @java[`mapTo` class]@scala[`S` generic] parameter is used to cast the responses from the actor to the expected outgoing flow type.
 
-Similar to the plain ask pattern, the target actor is allowed to reply with @apidoc[akka.actor.Status].
+Similar to the plain ask pattern, the target actor is allowed to reply with @apidoc[akka.actor.Status$].
 An @apidoc[akka.actor.Status.Failure] will cause the operator to fail with the cause carried in the `Failure` message.
 
 Adheres to the @apidoc[ActorAttributes.SupervisionStrategy] attribute.
