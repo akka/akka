@@ -191,8 +191,7 @@ class JacksonSerializationBench {
   private var serializerName: String = _
 
   @silent("immutable val")
-//  @Param(Array("off", "gzip", "lz4"))
-  @Param(Array("lz4"))
+  @Param(Array("off", "gzip", "lz4"))
   private var compression: String = _
 
   @Setup(Level.Trial)
@@ -250,39 +249,39 @@ class JacksonSerializationBench {
 
   }
 
-//  @Benchmark
-//  def small(): Small = {
-//    serializeDeserialize(smallMsg1)
-//  }
-//
-//  @Benchmark
-//  def medium(): Medium = {
-//    serializeDeserialize(mediumMsg1)
-//  }
+  @Benchmark
+  def small(): Small = {
+    serializeDeserialize(smallMsg1)
+  }
+
+  @Benchmark
+  def medium(): Medium = {
+    serializeDeserialize(mediumMsg1)
+  }
 
   @Benchmark
   def large(): Large = {
     serializeDeserialize(largeMsg)
   }
 
-//  @Benchmark
-//  def jSmall(): JSmall = {
-//    serializeDeserialize(jSmallMsg1)
-//  }
-//
-//  @Benchmark
-//  def jMedium(): JMedium = {
-//    serializeDeserialize(jMediumMsg1)
-//  }
-//
-//  @Benchmark
-//  def jLarge(): JLarge = {
-//    serializeDeserialize(jLargeMsg)
-//  }
-//
-//  @Benchmark
-//  def timeMessage(): TimeMessage = {
-//    serializeDeserialize(timeMsg)
-//  }
+  @Benchmark
+  def jSmall(): JSmall = {
+    serializeDeserialize(jSmallMsg1)
+  }
+
+  @Benchmark
+  def jMedium(): JMedium = {
+    serializeDeserialize(jMediumMsg1)
+  }
+
+  @Benchmark
+  def jLarge(): JLarge = {
+    serializeDeserialize(jLargeMsg)
+  }
+
+  @Benchmark
+  def timeMessage(): TimeMessage = {
+    serializeDeserialize(timeMsg)
+  }
 
 }

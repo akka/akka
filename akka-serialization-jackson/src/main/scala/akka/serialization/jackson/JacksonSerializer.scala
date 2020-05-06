@@ -4,24 +4,24 @@
 
 package akka.serialization.jackson
 
-import java.io.{ByteArrayInputStream, ByteArrayOutputStream, NotSerializableException}
+import java.io.{ ByteArrayInputStream, ByteArrayOutputStream, NotSerializableException }
 import java.nio.ByteBuffer
-import java.util.zip.{GZIPInputStream, GZIPOutputStream}
+import java.util.zip.{ GZIPInputStream, GZIPOutputStream }
+
+import scala.annotation.tailrec
+import scala.util.{ Failure, Success }
+import scala.util.control.NonFatal
+
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
+import com.fasterxml.jackson.dataformat.cbor.CBORFactory
+import net.jpountz.lz4.LZ4Factory
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
-import akka.event.{LogMarker, Logging}
-import akka.serialization.{BaseSerializer, SerializationExtension, SerializerWithStringManifest}
+import akka.event.{ LogMarker, Logging }
+import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.util.Helpers.toRootLowerCase
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
-import com.fasterxml.jackson.databind.util.ByteBufferBackedOutputStream
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory
-import net.jpountz.lz4.{LZ4Factory, LZ4FrameOutputStream}
-
-import scala.annotation.tailrec
-import scala.util.control.NonFatal
-import scala.util.{Failure, Success}
 
 /**
  * INTERNAL API
@@ -82,14 +82,49 @@ import scala.util.{Failure, Success}
     (bytes(1) == (GZIPInputStream.GZIP_MAGIC >> 8).toByte)
   }
 
-  def isLZ4(bytes: Array[Byte]): Boolean = {
-    val MAGIC = 0x184D2204 // Just LZ4FrameOutputStream.MAGIC
-    (bytes != null) && (bytes.length >= 4) &&
-    (bytes(0) == MAGIC.toByte) &&
-    (bytes(1) == (MAGIC >> 8).toByte) &&
-    (bytes(2) == (MAGIC >> 16).toByte) &&
-    (bytes(3) == (MAGIC >> 24).toByte)
+  case class LZ4Meta(offset: Int, length: Int) {
+    import LZ4Meta._
+
+    def putInto(buffer: ByteBuffer): Unit = {
+      buffer.put(LZ4_MAGIC.toByte)
+      buffer.put((LZ4_MAGIC >> 8).toByte)
+      buffer.putInt(length)
+    }
+
   }
+
+  object LZ4Meta {
+    val LZ4_MAGIC = 0x6df6 // The last 2 bytes of `printf akka | sha512sum`
+
+    def apply(bytes: Array[Byte]): LZ4Meta = {
+      LZ4Meta(6, bytes.length)
+    }
+
+    def get(buffer: ByteBuffer): Option[LZ4Meta] = {
+      try {
+        val data = new Array[Byte](2)
+        buffer.get(data)
+        if (data(0) != LZ4_MAGIC.toByte ||
+            data(1) != (LZ4_MAGIC >> 8).toByte) {
+          return None
+        }
+        val length = buffer.getInt()
+        Some(LZ4Meta(6, length))
+      } catch {
+        case _: java.nio.BufferUnderflowException => None
+      }
+    }
+
+    def get(bytes: Array[Byte]): Option[LZ4Meta] = {
+      get(ByteBuffer.wrap(bytes))
+    }
+
+  }
+
+  def isLZ4(bytes: Array[Byte]): Boolean = {
+    LZ4Meta.get(bytes).isDefined
+  }
+
 }
 
 /**
@@ -136,7 +171,7 @@ import scala.util.{Failure, Success}
     val bindingName: String,
     val objectMapper: ObjectMapper)
     extends SerializerWithStringManifest {
-  import JacksonSerializer.{GadgetClassBlacklist, isGZipped}
+  import JacksonSerializer._
 
   // TODO issue #27107: it should be possible to implement ByteBufferSerializer as well, using Jackson's
   //      ByteBufferBackedOutputStream/ByteBufferBackedInputStream
@@ -456,8 +491,13 @@ import scala.util.{Failure, Success}
   private lazy val lz4Decompressor = lz4Factory.safeDecompressor()
 
   def compress(bytes: Array[Byte]): Array[Byte] = {
+    compress(ByteBuffer.wrap(bytes))
+  }
+
+  def compress(input: ByteBuffer): Array[Byte] = {
+    val bytes = input.array()
     compressionAlgorithm match {
-      case Compression.Off => bytes
+      case Compression.Off                                            => bytes
       case Compression.GZip(largerThan) if bytes.length <= largerThan => bytes
       case Compression.GZip(_) =>
         val bos = new ByteArrayOutputStream(BufferSize)
@@ -465,41 +505,16 @@ import scala.util.{Failure, Success}
         try zip.write(bytes)
         finally zip.close()
         bos.toByteArray
-      //      case Compression.LZ4(largerThan) if bytes.length <= largerThan => bytes
-      case Compression.LZ4(_) =>
-        lz4Compressor.compress(bytes)
-    }
-  }
-
-  def compress(input: ByteBuffer): ByteBuffer = {
-    @inline def shouldCompress: Boolean = compressionAlgorithm match {
-      case Compression.Off              => false
-      case Compression.GZip(largerThan) => input.array().length > largerThan
-      case Compression.LZ4(largerThan)  => input.array().length > largerThan
-    }
-    if (!shouldCompress) return input
-
-    val outBuffer = ByteBuffer.allocate(input.array().length)
-    val bos = new ByteBufferBackedOutputStream(outBuffer)
-    val zip = compressionAlgorithm match {
-      case Compression.GZip(_) => {
-        new GZIPOutputStream(bos)
-      }
-      case _ => {
-        new LZ4FrameOutputStream(bos)
+      case Compression.LZ4(largerThan) if bytes.length <= largerThan => bytes
+      case Compression.LZ4(_) => {
+        val compressed = lz4Compressor.compress(bytes)
+        val meta = LZ4Meta(bytes)
+        val buffer = ByteBuffer.allocate(compressed.length + meta.offset)
+        meta.putInto(buffer)
+        buffer.put(compressed)
+        buffer.array()
       }
     }
-    try zip.write(input.array())
-    finally zip.close()
-    outBuffer.flip()
-    outBuffer
-  }
-
-  def compressWithFrame(bytes: Array[Byte]): Array[Byte] = {
-    val outBuffer = compress(ByteBuffer.wrap(bytes))
-    val b = new Array[Byte](outBuffer.limit())
-    outBuffer.get(b)
-    b
   }
 
   def decompress(bytes: Array[Byte]): Array[Byte] = {
@@ -519,14 +534,15 @@ import scala.util.{Failure, Success}
       try readChunk()
       finally in.close()
       out.toByteArray
-      //    } else if (isLZ4(bytes)) {
-    } else if (compressionAlgorithm.isInstanceOf[Compression.LZ4]) {
-      val decompressedLength = 10 * 1024 // FIXME we need to include length meta data
-      lz4Decompressor.decompress(bytes, decompressedLength)
     } else {
-      bytes
+      LZ4Meta.get(bytes) match {
+        case Some(meta) => {
+          val srcLen = bytes.length - meta.offset
+          lz4Decompressor.decompress(bytes, meta.offset, srcLen, meta.length)
+        }
+        case None => bytes
+      }
     }
-
   }
 
 }
