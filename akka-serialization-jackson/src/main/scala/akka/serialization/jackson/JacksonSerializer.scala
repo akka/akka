@@ -4,30 +4,24 @@
 
 package akka.serialization.jackson
 
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
-import java.io.NotSerializableException
-import java.util.zip.GZIPInputStream
-import java.util.zip.GZIPOutputStream
-
-import scala.annotation.tailrec
-import scala.util.Failure
-import scala.util.Success
-import scala.util.control.NonFatal
-
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
-import com.fasterxml.jackson.dataformat.cbor.CBORFactory
-import net.jpountz.lz4.LZ4Factory
+import java.io.{ByteArrayInputStream, ByteArrayOutputStream, NotSerializableException}
+import java.nio.ByteBuffer
+import java.util.zip.{GZIPInputStream, GZIPOutputStream}
 
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
-import akka.event.LogMarker
-import akka.event.Logging
-import akka.serialization.BaseSerializer
-import akka.serialization.SerializationExtension
-import akka.serialization.SerializerWithStringManifest
+import akka.event.{LogMarker, Logging}
+import akka.serialization.{BaseSerializer, SerializationExtension, SerializerWithStringManifest}
 import akka.util.Helpers.toRootLowerCase
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.jsontype.impl.SubTypeValidator
+import com.fasterxml.jackson.databind.util.ByteBufferBackedOutputStream
+import com.fasterxml.jackson.dataformat.cbor.CBORFactory
+import net.jpountz.lz4.{LZ4Factory, LZ4FrameOutputStream}
+
+import scala.annotation.tailrec
+import scala.util.control.NonFatal
+import scala.util.{Failure, Success}
 
 /**
  * INTERNAL API
@@ -142,8 +136,7 @@ import akka.util.Helpers.toRootLowerCase
     val bindingName: String,
     val objectMapper: ObjectMapper)
     extends SerializerWithStringManifest {
-  import JacksonSerializer.GadgetClassBlacklist
-  import JacksonSerializer.isGZipped
+  import JacksonSerializer.{GadgetClassBlacklist, isGZipped}
 
   // TODO issue #27107: it should be possible to implement ByteBufferSerializer as well, using Jackson's
   //      ByteBufferBackedOutputStream/ByteBufferBackedInputStream
@@ -464,7 +457,7 @@ import akka.util.Helpers.toRootLowerCase
 
   def compress(bytes: Array[Byte]): Array[Byte] = {
     compressionAlgorithm match {
-      case Compression.Off                                            => bytes
+      case Compression.Off => bytes
       case Compression.GZip(largerThan) if bytes.length <= largerThan => bytes
       case Compression.GZip(_) =>
         val bos = new ByteArrayOutputStream(BufferSize)
@@ -472,11 +465,41 @@ import akka.util.Helpers.toRootLowerCase
         try zip.write(bytes)
         finally zip.close()
         bos.toByteArray
-//      case Compression.LZ4(largerThan) if bytes.length <= largerThan => bytes
+      //      case Compression.LZ4(largerThan) if bytes.length <= largerThan => bytes
       case Compression.LZ4(_) =>
         lz4Compressor.compress(bytes)
     }
+  }
 
+  def compress(input: ByteBuffer): ByteBuffer = {
+    @inline def shouldCompress: Boolean = compressionAlgorithm match {
+      case Compression.Off              => false
+      case Compression.GZip(largerThan) => input.array().length > largerThan
+      case Compression.LZ4(largerThan)  => input.array().length > largerThan
+    }
+    if (!shouldCompress) return input
+
+    val outBuffer = ByteBuffer.allocate(input.array().length)
+    val bos = new ByteBufferBackedOutputStream(outBuffer)
+    val zip = compressionAlgorithm match {
+      case Compression.GZip(_) => {
+        new GZIPOutputStream(bos)
+      }
+      case _ => {
+        new LZ4FrameOutputStream(bos)
+      }
+    }
+    try zip.write(input.array())
+    finally zip.close()
+    outBuffer.flip()
+    outBuffer
+  }
+
+  def compressWithFrame(bytes: Array[Byte]): Array[Byte] = {
+    val outBuffer = compress(ByteBuffer.wrap(bytes))
+    val b = new Array[Byte](outBuffer.limit())
+    outBuffer.get(b)
+    b
   }
 
   def decompress(bytes: Array[Byte]): Array[Byte] = {
