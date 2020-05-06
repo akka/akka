@@ -12,9 +12,9 @@ import java.nio.file.Paths
 import java.security.GeneralSecurityException
 import java.security.KeyStore
 import java.security.SecureRandom
+import java.util.concurrent.atomic.AtomicReference
 
 import scala.util.Try
-
 import com.typesafe.config.Config
 import javax.net.ssl.KeyManager
 import javax.net.ssl.KeyManagerFactory
@@ -23,7 +23,6 @@ import javax.net.ssl.SSLEngine
 import javax.net.ssl.SSLSession
 import javax.net.ssl.TrustManager
 import javax.net.ssl.TrustManagerFactory
-
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.setup.Setup
@@ -34,6 +33,8 @@ import akka.event.MarkerLoggingAdapter
 import akka.japi.Util.immutableSeq
 import akka.stream.TLSRole
 import akka.util.ccompat._
+
+import scala.concurrent.duration._
 
 @ccompatUsedUntil213
 trait SSLEngineProvider {
@@ -84,19 +85,37 @@ class ConfigSSLEngineProvider(protected val config: Config, protected val log: M
   val SSLRequireMutualAuthentication: Boolean = config.getBoolean("require-mutual-authentication")
   val HostnameVerification: Boolean = config.getBoolean("hostname-verification")
 
-  private lazy val sslContext: SSLContext = {
-    // log hostname verification warning once
-    if (HostnameVerification)
-      log.debug("TLS/SSL hostname verification is enabled.")
-    else
-      log.info(
-        LogMarker.Security,
-        "TLS/SSL hostname verification is disabled. See Akka reference documentation for more information.")
+  private val SSLContextCacheTime: FiniteDuration = config.getDuration("ssl-context-cache-ttl").toMillis.millis
 
-    constructContext()
+  // log hostname verification warning once
+  if (HostnameVerification)
+    log.debug("TLS/SSL hostname verification is enabled.")
+  else
+    log.info(
+      LogMarker.Security,
+      "TLS/SSL hostname verification is disabled. See Akka reference documentation for more information.")
+
+  private def sslContext: SSLContext = getFromCache
+
+  private val contextRef = new AtomicReference[Option[CachedSSLContext]](None)
+
+  private case class CachedSSLContext(cached: SSLContext, expires: Deadline)
+
+  private def getFromCache: SSLContext = {
+    contextRef.get() match {
+      case Some(CachedSSLContext(oldContext, expired)) if expired.isOverdue() =>
+        val context = constructContext()
+        contextRef.set(Some(CachedSSLContext(context, SSLContextCacheTime.fromNow)))
+        context
+      case Some(CachedSSLContext(cached, _)) => cached
+      case None =>
+        val context = constructContext()
+        contextRef.set(Some(CachedSSLContext(context, SSLContextCacheTime.fromNow)))
+        context
+    }
   }
 
-  private def constructContext(): SSLContext = {
+  private def constructContext(): SSLContext = synchronized {
     try {
       val rng = createSecureRandom()
       val ctx = SSLContext.getInstance(SSLProtocol)
