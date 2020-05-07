@@ -73,7 +73,7 @@ Java
 
 ## Routing strategies
 
-There are two different strategies for selecting what routee a message is forwarded to that can be selected
+There are three different strategies for selecting which routee a message is forwarded to that can be selected
 from the router before spawning it:
 
 Scala
@@ -111,6 +111,11 @@ gives good insight into how consistent hashing is implemented.
 
 Currently you have to define hashMapping of the router to map incoming messages to their consistent
 hash key. This makes the decision transparent for the sender.
+
+Consistent hashing makes messages with the same hash routee to the same routee as long as the set of routees stays the same.
+When the set of routees changes, consistent hashing tries to make sure, but does not guarantee, that messages with the same hash are routed to the same routee.
+
+See also @ref[Akka Cluster Sharding](cluster-sharding.md) which provides stable routing and rebalancing of the routee actors.
 
 ## Routers and performance
 
