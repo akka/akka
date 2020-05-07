@@ -2783,13 +2783,15 @@ trait FlowOps[+Out, +Mat] {
    *
    *   '''Cancels when''' downstream cancels
    */
-  def zipLatestWith[Out2, Out3](that: Graph[SourceShape[Out2], _])(combine: (Out, Out2) => Out3): Repr[Out3] =
-    via(zipLatestWithGraph(that)(combine))
+  def zipLatestWith[Out2, Out3](
+      that: Graph[SourceShape[Out2], _])(combine: (Out, Out2) => Out3, eagerComplete: Boolean = false): Repr[Out3] =
+    via(zipLatestWithGraph(that)(combine, eagerComplete))
 
   protected def zipLatestWithGraph[Out2, Out3, M](that: Graph[SourceShape[Out2], M])(
-      combine: (Out, Out2) => Out3): Graph[FlowShape[Out @uncheckedVariance, Out3], M] =
+      combine: (Out, Out2) => Out3,
+      eagerComplete: Boolean = false): Graph[FlowShape[Out @uncheckedVariance, Out3], M] =
     GraphDSL.createGraph(that) { implicit b => r =>
-      val zip = b.add(ZipLatestWith[Out, Out2, Out3](combine))
+      val zip = b.add(ZipLatestWith[Out, Out2, Out3](combine, eagerComplete))
       r ~> zip.in1
       FlowShape(zip.in0, zip.out)
     }
