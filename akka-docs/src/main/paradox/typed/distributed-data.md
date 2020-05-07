@@ -270,8 +270,8 @@ better safety for small clusters.
 #### Consistency and response types
 
 When using `ReadLocal`, you will never receive a `GetFailure` response, since the local replica is always available to
-local readers. `WriteLocal` however may still reply with `UpdateFailure` messages when the `modify` function
-throws an exception, or if storing failed when using @ref:[durable storage](#durable-storage).
+local readers. `WriteLocal` however may still reply with `UpdateFailure` messages if the `modify` function
+throws an exception, or if it fails to persist to @ref:[durable storage](#durable-storage).
 
 #### Examples
 
