@@ -388,16 +388,13 @@ private[remote] class Decoder(
         val tickDelay = 1.seconds
         scheduleWithFixedDelay(Tick, tickDelay, tickDelay)
 
-        if (settings.Advanced.Compression.Enabled) {
-          settings.Advanced.Compression.ActorRefs.AdvertisementInterval match {
-            case d: FiniteDuration => scheduleWithFixedDelay(AdvertiseActorRefsCompressionTable, d, d)
-            case _                 => // not advertising actor ref compressions
-          }
-          settings.Advanced.Compression.Manifests.AdvertisementInterval match {
-            case d: FiniteDuration =>
-              scheduleWithFixedDelay(AdvertiseClassManifestsCompressionTable, d, d)
-            case _ => // not advertising class manifest compressions
-          }
+        if (settings.Advanced.Compression.ActorRefs.Enabled) {
+          val d = settings.Advanced.Compression.ActorRefs.AdvertisementInterval
+          scheduleWithFixedDelay(AdvertiseActorRefsCompressionTable, d, d)
+        }
+        if (settings.Advanced.Compression.Manifests.Enabled) {
+          val d = settings.Advanced.Compression.Manifests.AdvertisementInterval
+          scheduleWithFixedDelay(AdvertiseClassManifestsCompressionTable, d, d)
         }
       }
       override def onPush(): Unit =
