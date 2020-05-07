@@ -378,11 +378,11 @@ the `jackson-json` binding the default configuration is:
 @@snip [reference.conf](/akka-serialization-jackson/src/main/resources/reference.conf) { #compression }
 
 Supported compression algorithms are: gzip, lz4. Use 'off' to disable compression.
+Gzip is generally slower than lz4.
 Messages larger than the `compress-larger-than` property are compressed.
 
 Compression can be disabled by setting the `algorithm` property to `off`. It will still be able to decompress
 payloads that were compressed when serialized, e.g. if this configuration is changed.
-Note that this setting does not apply to LZ4. LZ4 will always compress any payload size.
 
 For the `jackson-cbor` and custom bindings other than `jackson-json` compression is by default disabled,
 but can be enabled in the same way as the configuration shown above but replacing `jackson-json` with

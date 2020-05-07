@@ -526,7 +526,7 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       check(SimpleCommand("0" * (compressLargerThan + 1).toInt), true)
     }
 
-    "compress small payload with lz4" in withSystem("""
+    "not compress small payload with lz4" in withSystem("""
         akka.serialization.jackson.jackson-json.compression {
           algorithm = lz4
           compress-larger-than = 32 KiB

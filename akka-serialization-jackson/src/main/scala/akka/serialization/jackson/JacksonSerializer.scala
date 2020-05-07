@@ -22,6 +22,7 @@ import akka.annotation.InternalApi
 import akka.event.{ LogMarker, Logging }
 import akka.serialization.{ BaseSerializer, SerializationExtension, SerializerWithStringManifest }
 import akka.util.Helpers.toRootLowerCase
+import akka.util.OptionVal
 
 /**
  * INTERNAL API
@@ -82,40 +83,41 @@ import akka.util.Helpers.toRootLowerCase
     (bytes(1) == (GZIPInputStream.GZIP_MAGIC >> 8).toByte)
   }
 
-  case class LZ4Meta(offset: Int, length: Int) {
+  final case class LZ4Meta(offset: Int, length: Int) {
     import LZ4Meta._
 
     def putInto(buffer: ByteBuffer): Unit = {
-      buffer.put(LZ4_MAGIC.toByte)
-      buffer.put((LZ4_MAGIC >> 8).toByte)
+      buffer.putInt(LZ4_MAGIC)
       buffer.putInt(length)
+    }
+
+    def prependTo(bytes: Array[Byte]): Array[Byte] = {
+      val buffer = ByteBuffer.allocate(bytes.length + offset)
+      putInto(buffer)
+      buffer.put(bytes)
+      buffer.array()
     }
 
   }
 
   object LZ4Meta {
-    val LZ4_MAGIC = 0x6df6 // The last 2 bytes of `printf akka | sha512sum`
+    val LZ4_MAGIC = 0x87d96df6 // The last 4 bytes of `printf akka | sha512sum`
 
     def apply(bytes: Array[Byte]): LZ4Meta = {
-      LZ4Meta(6, bytes.length)
+      LZ4Meta(8, bytes.length)
     }
 
-    def get(buffer: ByteBuffer): Option[LZ4Meta] = {
-      try {
-        val data = new Array[Byte](2)
-        buffer.get(data)
-        if (data(0) != LZ4_MAGIC.toByte ||
-            data(1) != (LZ4_MAGIC >> 8).toByte) {
-          return None
-        }
-        val length = buffer.getInt()
-        Some(LZ4Meta(6, length))
-      } catch {
-        case _: java.nio.BufferUnderflowException => None
+    def get(buffer: ByteBuffer): OptionVal[LZ4Meta] = {
+      if (buffer.remaining() < 4) {
+        OptionVal.None
+      } else if (buffer.getInt() != LZ4_MAGIC) {
+        OptionVal.None
+      } else {
+        OptionVal.Some(LZ4Meta(8, buffer.getInt()))
       }
     }
 
-    def get(bytes: Array[Byte]): Option[LZ4Meta] = {
+    def get(bytes: Array[Byte]): OptionVal[LZ4Meta] = {
       get(ByteBuffer.wrap(bytes))
     }
 
@@ -154,7 +156,6 @@ import akka.util.Helpers.toRootLowerCase
   object Off extends Algoritm
   final case class GZip(largerThan: Long) extends Algoritm
   final case class LZ4(largerThan: Long) extends Algoritm
-  // TODO add LZ4, issue #27066
 }
 
 /**
@@ -250,6 +251,10 @@ import akka.util.Helpers.toRootLowerCase
 
   // doesn't have to be volatile, doesn't matter if check is run more than once
   private var serializationBindingsCheckedOk = false
+
+  private lazy val lz4Factory = LZ4Factory.fastestInstance()
+  private lazy val lz4Compressor = lz4Factory.fastCompressor()
+  private lazy val lz4Decompressor = lz4Factory.safeDecompressor()
 
   override val identifier: Int = BaseSerializer.identifierFromConfig(bindingName, system)
 
@@ -486,16 +491,7 @@ import akka.util.Helpers.toRootLowerCase
     (fromVersion, manifestClassName)
   }
 
-  private lazy val lz4Factory = LZ4Factory.fastestInstance()
-  private lazy val lz4Compressor = lz4Factory.fastCompressor()
-  private lazy val lz4Decompressor = lz4Factory.safeDecompressor()
-
   def compress(bytes: Array[Byte]): Array[Byte] = {
-    compress(ByteBuffer.wrap(bytes))
-  }
-
-  def compress(input: ByteBuffer): Array[Byte] = {
-    val bytes = input.array()
     compressionAlgorithm match {
       case Compression.Off                                            => bytes
       case Compression.GZip(largerThan) if bytes.length <= largerThan => bytes
@@ -507,20 +503,16 @@ import akka.util.Helpers.toRootLowerCase
         bos.toByteArray
       case Compression.LZ4(largerThan) if bytes.length <= largerThan => bytes
       case Compression.LZ4(_) => {
-        val compressed = lz4Compressor.compress(bytes)
         val meta = LZ4Meta(bytes)
-        val buffer = ByteBuffer.allocate(compressed.length + meta.offset)
-        meta.putInto(buffer)
-        buffer.put(compressed)
-        buffer.array()
+        val compressed = lz4Compressor.compress(bytes)
+        meta.prependTo(compressed)
       }
     }
   }
 
   def decompress(bytes: Array[Byte]): Array[Byte] = {
     if (isGZipped(bytes)) {
-      val bais = new ByteArrayInputStream(bytes)
-      val in = new GZIPInputStream(bais)
+      val in = new GZIPInputStream(new ByteArrayInputStream(bytes))
       val out = new ByteArrayOutputStream()
       val buffer = new Array[Byte](BufferSize)
 
@@ -536,11 +528,10 @@ import akka.util.Helpers.toRootLowerCase
       out.toByteArray
     } else {
       LZ4Meta.get(bytes) match {
-        case Some(meta) => {
+        case OptionVal.None => bytes
+        case OptionVal.Some(meta) =>
           val srcLen = bytes.length - meta.offset
           lz4Decompressor.decompress(bytes, meta.offset, srcLen, meta.length)
-        }
-        case None => bytes
       }
     }
   }

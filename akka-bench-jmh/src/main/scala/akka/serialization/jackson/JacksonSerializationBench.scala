@@ -187,7 +187,7 @@ class JacksonSerializationBench {
   var serialization: Serialization = _
 
   @silent("immutable val") // JMH updates this via reflection
-  @Param(Array("jackson-json")) // "java"
+  @Param(Array("jackson-json", "jackson-cbor")) // "java"
   private var serializerName: String = _
 
   @silent("immutable val")
