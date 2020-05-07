@@ -8,6 +8,10 @@ import java.util.concurrent.CompletionStage
 
 import scala.compat.java8.FutureConverters
 import scala.concurrent.ExecutionContextExecutor
+
+import org.slf4j.{ Logger, LoggerFactory }
+
+import akka.{ actor => classic }
 import akka.Done
 import akka.actor
 import akka.actor.{ ActorRefProvider, Address, ExtendedActorSystem, InvalidMessageException }
@@ -29,8 +33,6 @@ import akka.actor.typed.internal.PropsImpl.DispatcherSameAsParent
 import akka.actor.typed.internal.SystemMessage
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.InternalApi
-import akka.{ actor => classic }
-import org.slf4j.{ Logger, LoggerFactory }
 
 /**
  * INTERNAL API. Lightweight wrapper for presenting a classic ActorSystem to a Behavior (via the context).

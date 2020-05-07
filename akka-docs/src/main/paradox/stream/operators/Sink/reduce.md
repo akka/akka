@@ -4,13 +4,10 @@ Apply a reduction function on the incoming elements and pass the result to the n
 
 @ref[Sink operators](../index.md#sink-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Sink.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Sink.scala) { #reduce }
+@apidoc[Sink.reduce](Sink$) { scala="#reduce[T](f:(T,T)=&gt;T):akka.stream.scaladsl.Sink[T,scala.concurrent.Future[T]]" java="#reduce(akka.japi.function.Function2)" }
 
-@@@
 
 ## Description
 

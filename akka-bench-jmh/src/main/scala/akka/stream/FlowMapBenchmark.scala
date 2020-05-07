@@ -4,18 +4,21 @@
 
 package akka.stream
 
+import java.util.concurrent.Semaphore
 import java.util.concurrent.TimeUnit
+
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.Success
+
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.remote.artery.BenchTestSource
-import akka.stream.scaladsl._
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations._
-import java.util.concurrent.Semaphore
-import scala.util.Success
 import akka.stream.impl.fusing.GraphStages
-import scala.concurrent.Await
-import scala.concurrent.duration._
+import akka.stream.scaladsl._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.SECONDS)
@@ -48,7 +51,7 @@ class FlowMapBenchmark {
         }
       }""".stripMargin).withFallback(ConfigFactory.load())
 
-  implicit val system = ActorSystem("test", config)
+  implicit val system: ActorSystem = ActorSystem("test", config)
 
   @Param(Array("true", "false"))
   var UseGraphStageIdentity = false

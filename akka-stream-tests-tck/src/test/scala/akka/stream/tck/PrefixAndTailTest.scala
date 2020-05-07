@@ -6,9 +6,11 @@ package akka.stream.tck
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import org.reactivestreams.Publisher
+
 import akka.stream.scaladsl.Sink
 import akka.stream.scaladsl.Source
-import org.reactivestreams.Publisher
 
 class PrefixAndTailTest extends AkkaPublisherVerification[Int] {
 

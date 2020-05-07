@@ -4,6 +4,8 @@
 
 package akka.actor.typed.delivery.internal
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
@@ -18,8 +20,8 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.LoggerOps
 import akka.actor.typed.scaladsl.StashBuffer
 import akka.actor.typed.scaladsl.TimerScheduler
-import akka.util.ConstantFun.scalaIdentityFunction
 import akka.annotation.InternalApi
+import akka.util.ConstantFun.scalaIdentityFunction
 
 /**
  * INTERNAL API
@@ -73,7 +75,7 @@ import akka.annotation.InternalApi
   /** For commands defined in public ConsumerController */
   trait UnsealedInternalCommand extends InternalCommand
 
-  private final case object Retry extends InternalCommand
+  private case object Retry extends InternalCommand
 
   private final case class ConsumerTerminated(consumer: ActorRef[_]) extends InternalCommand
 
@@ -128,8 +130,9 @@ import akka.annotation.InternalApi
                     context.watchWith(s.deliverTo, ConsumerTerminated(s.deliverTo))
 
                     flightRecorder.consumerStarted(context.self.path)
+                    val retryTimer = new RetryTimer(timers, settings.resendIntervalMin, settings.resendIntervalMax)
                     val activeBehavior =
-                      new ConsumerControllerImpl[A](context, timers, stashBuffer, settings)
+                      new ConsumerControllerImpl[A](context, retryTimer, stashBuffer, settings)
                         .active(initialState(context, s, registering, stopping))
                     context.log.debug("Received Start, unstash [{}] messages.", stashBuffer.size)
                     stashBuffer.unstash(activeBehavior, 1, scalaIdentityFunction)
@@ -171,7 +174,7 @@ import akka.annotation.InternalApi
 
               }
 
-              timers.startTimerWithFixedDelay(Retry, Retry, settings.resendInterval)
+              timers.startTimerWithFixedDelay(Retry, Retry, settings.resendIntervalMin)
               waitForStart(None, stopping = false)
             }
           }
@@ -207,11 +210,47 @@ import akka.annotation.InternalApi
     if (ref.path.address.hasGlobalScope)
       throw new IllegalArgumentException(s"Consumer [$ref] should be local.")
   }
+
+  private class RetryTimer(
+      timers: TimerScheduler[ConsumerControllerImpl.InternalCommand],
+      val minBackoff: FiniteDuration,
+      maxBackoff: FiniteDuration) {
+    private var _interval = minBackoff
+
+    def interval(): FiniteDuration =
+      _interval
+
+    def start(): Unit = {
+      _interval = minBackoff
+      timers.startTimerWithFixedDelay(Retry, _interval)
+    }
+
+    def scheduleNext(): Unit = {
+      val newInterval =
+        if (_interval eq maxBackoff)
+          maxBackoff
+        else
+          maxBackoff.min(_interval * 1.5) match {
+            case f: FiniteDuration => f
+            case _                 => maxBackoff
+          }
+      if (newInterval != _interval) {
+        _interval = newInterval
+        timers.startTimerWithFixedDelay(Retry, _interval)
+      }
+    }
+
+    def reset(): Unit = {
+      if (_interval ne minBackoff)
+        start()
+    }
+
+  }
 }
 
 private class ConsumerControllerImpl[A](
     context: ActorContext[ConsumerControllerImpl.InternalCommand],
-    timers: TimerScheduler[ConsumerControllerImpl.InternalCommand],
+    retryTimer: ConsumerControllerImpl.RetryTimer,
     stashBuffer: StashBuffer[ConsumerControllerImpl.InternalCommand],
     settings: ConsumerController.Settings) {
 
@@ -228,7 +267,9 @@ private class ConsumerControllerImpl[A](
 
   private val flightRecorder = ActorFlightRecorder(context.system).delivery
 
-  startRetryTimer()
+  private val traceEnabled = context.log.isTraceEnabled
+
+  retryTimer.start()
 
   private def resendLost = !settings.onlyFlowControl
 
@@ -243,9 +284,10 @@ private class ConsumerControllerImpl[A](
           val expectedSeqNr = s.receivedSeqNr + 1
 
           flightRecorder.consumerReceived(pid, seqNr)
+          retryTimer.reset()
 
           if (s.isProducerChanged(seqMsg)) {
-            if (seqMsg.first)
+            if (seqMsg.first && traceEnabled)
               context.log.trace("Received first SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
             receiveChangedProducer(s, seqMsg)
           } else if (s.registering.isDefined) {
@@ -254,7 +296,8 @@ private class ConsumerControllerImpl[A](
               seqNr)
             stashBuffer.unstash(Behaviors.same, 1, scalaIdentityFunction)
           } else if (s.isNextExpected(seqMsg)) {
-            context.log.trace("Received SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
+            if (traceEnabled)
+              context.log.trace("Received SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
             deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
           } else if (seqNr > expectedSeqNr) {
             flightRecorder.consumerMissing(pid, expectedSeqNr, seqNr)
@@ -266,6 +309,7 @@ private class ConsumerControllerImpl[A](
             if (resendLost) {
               seqMsg.producerController ! Resend(fromSeqNr = expectedSeqNr)
               stashBuffer.clear()
+              retryTimer.start()
               resending(s)
             } else {
               deliver(s.copy(receivedSeqNr = seqNr), seqMsg)
@@ -333,6 +377,7 @@ private class ConsumerControllerImpl[A](
       // request resend of all unconfirmed, and mark first
       seqMsg.producerController ! Resend(0)
       stashBuffer.clear()
+      retryTimer.start()
       resending(s)
     } else {
       context.log.warnN(
@@ -374,7 +419,7 @@ private class ConsumerControllerImpl[A](
           val seqNr = seqMsg.seqNr
 
           if (s.isProducerChanged(seqMsg)) {
-            if (seqMsg.first)
+            if (seqMsg.first && traceEnabled)
               context.log.trace("Received first SequencedMessage seqNr [{}], delivering to consumer.", seqNr)
             receiveChangedProducer(s, seqMsg)
           } else if (s.registering.isDefined) {
@@ -441,7 +486,11 @@ private class ConsumerControllerImpl[A](
       .receiveMessage[InternalCommand] {
         case Confirmed =>
           val seqNr = seqMsg.seqNr
-          context.log.trace("Received Confirmed seqNr [{}] from consumer, stashed size [{}].", seqNr, stashBuffer.size)
+          if (traceEnabled)
+            context.log.trace(
+              "Received Confirmed seqNr [{}] from consumer, stashed size [{}].",
+              seqNr,
+              stashBuffer.size)
 
           val newRequestedSeqNr =
             if (seqMsg.first) {
@@ -462,11 +511,12 @@ private class ConsumerControllerImpl[A](
                 seqNr,
                 newRequestedSeqNr)
               s.producerController ! Request(confirmedSeqNr = seqNr, newRequestedSeqNr, resendLost, viaTimeout = false)
-              startRetryTimer() // reset interval since Request was just sent
+              retryTimer.start() // reset interval since Request was just sent
               newRequestedSeqNr
             } else {
               if (seqMsg.ack) {
-                context.log.trace("Sending Ack seqNr [{}].", seqNr)
+                if (traceEnabled)
+                  context.log.trace("Sending Ack seqNr [{}].", seqNr)
                 s.producerController ! Ack(confirmedSeqNr = seqNr)
               }
               s.requestedSeqNr
@@ -486,19 +536,20 @@ private class ConsumerControllerImpl[A](
           }
 
         case msg: SequencedMessage[A] =>
-          flightRecorder.consumerReceivedPreviousInProgress(seqMsg.producerId, seqMsg.seqNr, stashBuffer.size + 1)
-          if (msg.seqNr == seqMsg.seqNr && msg.producerController == seqMsg.producerController) {
-            flightRecorder.consumerDuplicate(msg.producerId, seqMsg.seqNr + 1, msg.seqNr)
+          flightRecorder.consumerReceivedPreviousInProgress(msg.producerId, msg.seqNr, stashBuffer.size + 1)
+          val expectedSeqNr = seqMsg.seqNr + stashBuffer.size + 1
+          if (msg.seqNr < expectedSeqNr && msg.producerController == seqMsg.producerController) {
+            flightRecorder.consumerDuplicate(msg.producerId, expectedSeqNr, msg.seqNr)
             context.log.debug("Received duplicate SequencedMessage seqNr [{}].", msg.seqNr)
           } else if (stashBuffer.isFull) {
             // possible that the stash is full if ProducerController resends unconfirmed (duplicates)
             // dropping them since they can be resent
-            flightRecorder.consumerStashFull(seqMsg.producerId, seqMsg.seqNr)
+            flightRecorder.consumerStashFull(msg.producerId, msg.seqNr)
             context.log.debug(
               "Received SequencedMessage seqNr [{}], discarding message because stash is full.",
               msg.seqNr)
           } else {
-            if (context.log.isTraceEnabled())
+            if (traceEnabled)
               context.log.traceN(
                 "Received SequencedMessage seqNr [{}], stashing while waiting for consumer to confirm [{}], stashed size [{}].",
                 msg.seqNr,
@@ -509,7 +560,8 @@ private class ConsumerControllerImpl[A](
           Behaviors.same
 
         case Retry =>
-          receiveRetry(s, () => waitingForConfirmation(retryRequest(s), seqMsg))
+          // no retries when waitingForConfirmation, will be performed from (idle) active
+          Behaviors.same
 
         case start: Start[A] =>
           start.deliverTo ! Delivery(seqMsg.message, context.self, seqMsg.producerId, seqMsg.seqNr)
@@ -533,6 +585,9 @@ private class ConsumerControllerImpl[A](
   }
 
   private def receiveRetry(s: State[A], nextBehavior: () => Behavior[InternalCommand]): Behavior[InternalCommand] = {
+    retryTimer.scheduleNext()
+    if (retryTimer.interval() != retryTimer.minBackoff)
+      context.log.debug("Schedule next retry in [{} ms]", retryTimer.interval().toMillis)
     s.registering match {
       case None => nextBehavior()
       case Some(reg) =>
@@ -565,6 +620,7 @@ private class ConsumerControllerImpl[A](
         "Register to new ProducerController [{}], previous was [{}].",
         reg.producerController,
         s.producerController)
+      retryTimer.start()
       reg.producerController ! ProducerController.RegisterConsumer(context.self)
       nextBehavior(s.copy(registering = Some(reg.producerController)))
     } else {
@@ -593,25 +649,17 @@ private class ConsumerControllerImpl[A](
     Behaviors.unhandled
   }
 
-  private def startRetryTimer(): Unit = {
-    timers.startTimerWithFixedDelay(Retry, Retry, settings.resendInterval)
-  }
-
   // in case the Request or the SequencedMessage triggering the Request is lost
   private def retryRequest(s: State[A]): State[A] = {
     if (s.producerController == context.system.deadLetters) {
       s
     } else {
-      // TODO #28720 Maybe try to adjust the retry frequency. Maybe some exponential backoff and less need for it when
-      //      SequenceMessage are arriving. On the other hand it might be too much overhead to reschedule of each
-      //      incoming SequenceMessage.
       val newRequestedSeqNr = if (resendLost) s.requestedSeqNr else s.receivedSeqNr + flowControlWindow / 2
       flightRecorder.consumerSentRequest(s.producerId, newRequestedSeqNr)
       context.log.debug(
         "Retry sending Request with confirmedSeqNr [{}], requestUpToSeqNr [{}].",
         s.confirmedSeqNr,
         newRequestedSeqNr)
-      // TODO #28720 maybe watch the producer to avoid sending retry Request to dead producer
       s.producerController ! Request(s.confirmedSeqNr, newRequestedSeqNr, resendLost, viaTimeout = true)
       s.copy(requestedSeqNr = newRequestedSeqNr)
     }

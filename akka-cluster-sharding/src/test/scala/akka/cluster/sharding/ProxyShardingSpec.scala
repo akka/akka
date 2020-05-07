@@ -6,10 +6,11 @@ package akka.cluster.sharding
 
 import scala.concurrent.Await
 import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.ActorRef
 import akka.testkit.AkkaSpec
 import akka.testkit.TestActors
-import scala.concurrent.duration.FiniteDuration
 
 object ProxyShardingSpec {
   val config = """

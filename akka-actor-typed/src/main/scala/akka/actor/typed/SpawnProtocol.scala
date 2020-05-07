@@ -5,6 +5,7 @@
 package akka.actor.typed
 
 import scala.annotation.tailrec
+
 import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.DoNotInherit
 

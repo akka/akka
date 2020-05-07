@@ -4,16 +4,17 @@
 
 package akka.remote.classic.transport
 
-import akka.actor.Address
-import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload }
-import akka.remote.transport.TestTransport._
-import akka.remote.transport.Transport._
-import akka.remote.transport.{ AssociationHandle, TestTransport }
-import akka.testkit._
-import akka.util.ByteString
 import scala.concurrent._
 
 import com.github.ghik.silencer.silent
+
+import akka.actor.Address
+import akka.remote.transport.{ AssociationHandle, TestTransport }
+import akka.remote.transport.AssociationHandle.{ ActorHandleEventListener, Disassociated, InboundPayload }
+import akka.remote.transport.TestTransport._
+import akka.remote.transport.Transport._
+import akka.testkit._
+import akka.util.ByteString
 
 @silent("deprecated")
 class TestTransportSpec extends AkkaSpec with DefaultTimeout with ImplicitSender {

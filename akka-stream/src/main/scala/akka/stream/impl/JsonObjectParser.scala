@@ -4,11 +4,11 @@
 
 package akka.stream.impl
 
+import scala.annotation.switch
+
 import akka.annotation.InternalApi
 import akka.stream.scaladsl.Framing.FramingException
 import akka.util.ByteString
-
-import scala.annotation.switch
 
 /**
  * INTERNAL API: Use [[akka.stream.scaladsl.JsonFraming]] instead.

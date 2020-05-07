@@ -4,19 +4,22 @@
 
 package akka.actor.typed.delivery
 
+import scala.concurrent.duration._
+
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import akka.actor.typed.delivery.ConsumerController.DeliverThenStop
 import akka.actor.typed.delivery.internal.ConsumerControllerImpl
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
-import org.scalatest.wordspec.AnyWordSpecLike
 
-class ConsumerControllerSpec
-    extends ScalaTestWithActorTestKit("""
-  akka.reliable-delivery.consumer-controller.flow-control-window = 20
-  """)
-    with AnyWordSpecLike
-    with LogCapturing {
+class ConsumerControllerSpec extends ScalaTestWithActorTestKit("""
+  akka.reliable-delivery.consumer-controller {
+    flow-control-window = 20
+    resend-interval-min = 1s
+  }
+  """) with AnyWordSpecLike with LogCapturing {
   import TestConsumer.sequencedMessage
 
   private var idCount = 0
@@ -61,6 +64,7 @@ class ConsumerControllerSpec
       val producerControllerProbe2 = createTestProbe[ProducerControllerImpl.InternalCommand]()
       consumerController ! ConsumerController.RegisterToProducerController(producerControllerProbe2.ref)
       producerControllerProbe2.expectMessage(ProducerController.RegisterConsumer(consumerController))
+      consumerProbe.receiveMessage().confirmTo ! ConsumerController.Confirmed
       // expected resend
       producerControllerProbe2.expectMessage(ProducerController.RegisterConsumer(consumerController))
 
@@ -79,13 +83,11 @@ class ConsumerControllerSpec
       val consumerProbe = createTestProbe[ConsumerController.Delivery[TestConsumer.Job]]()
       consumerController ! ConsumerController.Start(consumerProbe.ref)
 
-      consumerProbe.expectMessageType[ConsumerController.Delivery[TestConsumer.Job]]
-
       producerControllerProbe.expectMessage(ProducerControllerImpl.Request(0, 20, true, false))
-      producerControllerProbe.expectMessage(ProducerControllerImpl.Request(0, 20, true, true))
-
       consumerController ! ConsumerController.Confirmed
       producerControllerProbe.expectMessage(ProducerControllerImpl.Request(1, 20, true, false))
+
+      producerControllerProbe.expectMessage(ProducerControllerImpl.Request(1, 20, true, true))
 
       testKit.stop(consumerController)
     }
@@ -184,13 +186,15 @@ class ConsumerControllerSpec
       consumerController ! sequencedMessage(producerId, 2, producerControllerProbe.ref)
       consumerProbe.expectMessageType[ConsumerController.Delivery[TestConsumer.Job]]
       consumerController ! ConsumerController.Confirmed
+      producerControllerProbe.expectMessage(ProducerControllerImpl.Request(2, 20, true, true))
 
       consumerController ! sequencedMessage(producerId, 3, producerControllerProbe.ref)
       consumerProbe.expectMessageType[ConsumerController.Delivery[TestConsumer.Job]].seqNr should ===(3)
-
-      producerControllerProbe.expectMessage(ProducerControllerImpl.Request(2, 20, true, true))
-
       consumerController ! ConsumerController.Confirmed
+      producerControllerProbe.expectMessage(ProducerControllerImpl.Request(3, 20, true, true))
+
+      // exponential back, so now it should be more than 1 sec
+      producerControllerProbe.expectNoMessage(1.1.second)
       producerControllerProbe.expectMessage(ProducerControllerImpl.Request(3, 20, true, true))
 
       testKit.stop(consumerController)

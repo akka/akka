@@ -4,9 +4,9 @@
 
 package akka.cluster
 
-import akka.annotation.InternalApi
-
 import scala.collection.immutable
+
+import akka.annotation.InternalApi
 import akka.util.ccompat._
 
 /**

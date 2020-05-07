@@ -4,20 +4,21 @@
 
 package akka.remote.transport
 
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.ThreadLocalRandom
+
+import scala.concurrent.{ Future, Promise }
+import scala.util.control.NoStackTrace
+
 import FailureInjectorTransportAdapter._
+import com.github.ghik.silencer.silent
+
 import akka.AkkaException
 import akka.actor.{ Address, ExtendedActorSystem }
 import akka.event.{ Logging, LoggingAdapter }
 import akka.remote.transport.AssociationHandle.{ HandleEvent, HandleEventListener }
 import akka.remote.transport.Transport._
 import akka.util.ByteString
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ThreadLocalRandom
-
-import com.github.ghik.silencer.silent
-
-import scala.concurrent.{ Future, Promise }
-import scala.util.control.NoStackTrace
 
 @SerialVersionUID(1L)
 @deprecated("Classic remoting is deprecated, use Artery", "2.6.0")

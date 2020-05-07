@@ -9,12 +9,12 @@ import java.io.NotSerializableException
 import akka.actor.ExtendedActorSystem
 import akka.actor.typed.ActorRefResolver
 import akka.actor.typed.internal.pubsub.TopicImpl
-import akka.annotation.InternalApi
-import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 import akka.actor.typed.scaladsl.adapter._
+import akka.annotation.InternalApi
 import akka.cluster.typed.internal.protobuf.ClusterMessages
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist.Entry
 import akka.remote.serialization.WrappedPayloadSupport
+import akka.serialization.{ BaseSerializer, SerializerWithStringManifest }
 
 /**
  * INTERNAL API

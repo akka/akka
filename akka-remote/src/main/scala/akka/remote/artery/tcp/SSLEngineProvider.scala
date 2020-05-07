@@ -15,6 +15,15 @@ import java.security.SecureRandom
 
 import scala.util.Try
 
+import com.typesafe.config.Config
+import javax.net.ssl.KeyManager
+import javax.net.ssl.KeyManagerFactory
+import javax.net.ssl.SSLContext
+import javax.net.ssl.SSLEngine
+import javax.net.ssl.SSLSession
+import javax.net.ssl.TrustManager
+import javax.net.ssl.TrustManagerFactory
+
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
 import akka.actor.setup.Setup
@@ -25,14 +34,6 @@ import akka.event.MarkerLoggingAdapter
 import akka.japi.Util.immutableSeq
 import akka.stream.TLSRole
 import akka.util.ccompat._
-import com.typesafe.config.Config
-import javax.net.ssl.KeyManager
-import javax.net.ssl.KeyManagerFactory
-import javax.net.ssl.SSLContext
-import javax.net.ssl.SSLEngine
-import javax.net.ssl.SSLSession
-import javax.net.ssl.TrustManager
-import javax.net.ssl.TrustManagerFactory
 
 @ccompatUsedUntil213
 trait SSLEngineProvider {

@@ -5,10 +5,11 @@
 package akka.cluster
 
 import scala.collection.immutable
+
+import akka.actor.Address
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import akka.actor.Address
 
 object JoinSeedNodeMultiJvmSpec extends MultiNodeConfig {
   val seed1 = role("seed1")

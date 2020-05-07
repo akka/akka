@@ -8,6 +8,7 @@ Defers creation and materialization of a `Flow` until there is a first element.
 
 @apidoc[Flow.lazyFlow](Flow$) { scala="#lazyFlow[I,O,M](create:()=&gt;akka.stream.scaladsl.Flow[I,O,M]):akka.stream.scaladsl.Flow[I,O,scala.concurrent.Future[M]]" java="#lazyFlow(akka.japi.function.Creator)" }
 
+
 ## Description
 
 Defers `Flow` creation and materialization until when the first element arrives at the `lazyFlow` from upstream. After

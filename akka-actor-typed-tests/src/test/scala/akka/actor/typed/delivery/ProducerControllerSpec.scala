@@ -6,11 +6,12 @@ package akka.actor.typed.delivery
 
 import scala.concurrent.duration._
 
+import ProducerController.MessageWithConfirmation
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.testkit.typed.scaladsl.LogCapturing
 import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import ProducerController.MessageWithConfirmation
 import akka.actor.typed.delivery.internal.ProducerControllerImpl
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class ProducerControllerSpec
     extends ScalaTestWithActorTestKit("""

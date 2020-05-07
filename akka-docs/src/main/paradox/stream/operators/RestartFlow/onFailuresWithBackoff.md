@@ -4,13 +4,10 @@ Wrap the given @apidoc[Flow] with a @apidoc[Flow] that will restart it when it f
 
 @ref[Error handling](../index.md#error-handling)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [RestartFlow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/RestartFlow.scala) { #onFailuresWithBackoff }
+@apidoc[RestartFlow.onFailuresWithBackoff](RestartFlow$) { scala="#onFailuresWithBackoff[In,Out](minBackoff:scala.concurrent.duration.FiniteDuration,maxBackoff:scala.concurrent.duration.FiniteDuration,randomFactor:Double,maxRestarts:Int)(flowFactory:()=&gt;akka.stream.scaladsl.Flow[In,Out,_]):akka.stream.scaladsl.Flow[In,Out,akka.NotUsed]" java="#onFailuresWithBackoff(java.time.Duration,java.time.Duration,double,int,akka.japi.function.Creator)" }
 
-@@@
 
 ## Description
 

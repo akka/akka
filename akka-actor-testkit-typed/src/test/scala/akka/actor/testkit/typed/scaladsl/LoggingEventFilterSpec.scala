@@ -4,9 +4,10 @@
 
 package akka.actor.testkit.typed.scaladsl
 
-import akka.actor.testkit.typed.LoggingEvent
-import org.slf4j.event.Level
 import org.scalatest.wordspec.AnyWordSpecLike
+import org.slf4j.event.Level
+
+import akka.actor.testkit.typed.LoggingEvent
 
 class LoggingTestKitSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 

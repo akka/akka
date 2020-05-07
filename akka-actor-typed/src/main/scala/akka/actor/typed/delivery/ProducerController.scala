@@ -11,6 +11,8 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration._
 import scala.reflect.ClassTag
 
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
 import akka.actor.typed.Behavior
@@ -20,7 +22,6 @@ import akka.actor.typed.scaladsl.Behaviors
 import akka.annotation.ApiMayChange
 import akka.annotation.InternalApi
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 /**
  * Point-to-point reliable delivery between a single producer actor sending messages and a single consumer

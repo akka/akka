@@ -4,12 +4,13 @@
 
 package akka.actor.typed.scaladsl
 
-import akka.actor.typed.Behavior
-import akka.actor.testkit.typed.internal.StubbedActorContext
-import akka.actor.testkit.typed.scaladsl.TestInbox
-import akka.actor.testkit.typed.scaladsl.LogCapturing
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpec
+
+import akka.actor.testkit.typed.internal.StubbedActorContext
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.TestInbox
+import akka.actor.typed.Behavior
 
 class StashBufferSpec extends AnyWordSpec with Matchers with LogCapturing {
 

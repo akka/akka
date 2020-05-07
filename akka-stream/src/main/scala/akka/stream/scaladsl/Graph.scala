@@ -6,22 +6,22 @@ package akka.stream.scaladsl
 
 import java.util.SplittableRandom
 
-import akka.NotUsed
-import akka.annotation.InternalApi
-import akka.stream._
-import akka.stream.impl.Stages.DefaultAttributes
-import akka.stream.impl._
-import akka.stream.impl.fusing.GraphStages
-import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
-import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
-import akka.util.ConstantFun
-
 import scala.annotation.tailrec
 import scala.annotation.unchecked.uncheckedVariance
 import scala.collection.{ immutable, mutable }
 import scala.concurrent.Promise
 import scala.util.control.{ NoStackTrace, NonFatal }
+
+import akka.NotUsed
+import akka.annotation.InternalApi
+import akka.stream._
 import akka.stream.ActorAttributes.SupervisionStrategy
+import akka.stream.impl._
+import akka.stream.impl.Stages.DefaultAttributes
+import akka.stream.impl.fusing.GraphStages
+import akka.stream.scaladsl.Partition.PartitionOutOfBoundsException
+import akka.stream.stage.{ GraphStage, GraphStageLogic, InHandler, OutHandler }
+import akka.util.ConstantFun
 
 /**
  * INTERNAL API

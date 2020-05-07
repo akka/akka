@@ -60,15 +60,15 @@ private[akka] trait ActorFlightRecorder extends Extension {
   def producerResentFirst(producerId: String, firstSeqNr: Long): Unit
   def producerResentFirstUnconfirmed(producerId: String, seqNr: Long): Unit
   def producerReceived(producerId: String, currentSeqNr: Long): Unit
-  def producerReceivedRequest(producerId: String, requestedSeqNr: Long): Unit
+  def producerReceivedRequest(producerId: String, requestedSeqNr: Long, confirmedSeqNr: Long): Unit
   def producerReceivedResend(producerId: String, fromSeqNr: Long): Unit
 
   def consumerCreated(path: ActorPath): Unit
   def consumerStarted(path: ActorPath): Unit
   def consumerReceived(producerId: String, seqNr: Long): Unit
   def consumerReceivedPreviousInProgress(producerId: String, seqNr: Long, stashed: Int): Unit
-  def consumerDuplicate(pid: String, expectedSeqNr: Long, seqNr: Long): Unit
-  def consumerMissing(pid: String, expectedSeqNr: Long, seqNr: Long): Unit
+  def consumerDuplicate(producerId: String, expectedSeqNr: Long, seqNr: Long): Unit
+  def consumerMissing(producerId: String, expectedSeqNr: Long, seqNr: Long): Unit
   def consumerReceivedResend(seqNr: Long): Unit
   def consumerSentRequest(producerId: String, requestedSeqNr: Long): Unit
   def consumerChangedProducer(producerId: String): Unit
@@ -100,15 +100,15 @@ private[akka] case object NoOpActorFlightRecorder extends ActorFlightRecorder {
   override def producerResentFirst(producerId: String, firstSeqNr: Long): Unit = ()
   override def producerResentFirstUnconfirmed(producerId: String, seqNr: Long): Unit = ()
   override def producerReceived(producerId: String, currentSeqNr: Long): Unit = ()
-  override def producerReceivedRequest(producerId: String, requestedSeqNr: Long): Unit = ()
+  override def producerReceivedRequest(producerId: String, requestedSeqNr: Long, confirmedSeqNr: Long): Unit = ()
   override def producerReceivedResend(producerId: String, fromSeqNr: Long): Unit = ()
 
   override def consumerCreated(path: ActorPath): Unit = ()
   override def consumerStarted(path: ActorPath): Unit = ()
   override def consumerReceived(producerId: String, seqNr: Long): Unit = ()
   override def consumerReceivedPreviousInProgress(producerId: String, seqNr: Long, stashed: Int): Unit = ()
-  override def consumerDuplicate(pid: String, expectedSeqNr: Long, seqNr: Long): Unit = ()
-  override def consumerMissing(pid: String, expectedSeqNr: Long, seqNr: Long): Unit = ()
+  override def consumerDuplicate(producerId: String, expectedSeqNr: Long, seqNr: Long): Unit = ()
+  override def consumerMissing(producerId: String, expectedSeqNr: Long, seqNr: Long): Unit = ()
   override def consumerReceivedResend(seqNr: Long): Unit = ()
   override def consumerSentRequest(producerId: String, requestedSeqNr: Long): Unit = ()
   override def consumerChangedProducer(producerId: String): Unit = ()

@@ -6,18 +6,18 @@ package akka.actor.testkit.typed.internal
 
 import java.util
 
-import akka.actor.ActorPath
-import akka.actor.typed.{ ActorRef, Behavior, PostStop, Signal }
-import akka.annotation.InternalApi
-import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
-import akka.actor.testkit.typed.Effect._
-
 import scala.annotation.tailrec
-import akka.util.ccompat.JavaConverters._
 import scala.collection.immutable
 import scala.reflect.ClassTag
 import scala.util.control.Exception.Catcher
 import scala.util.control.NonFatal
+
+import akka.actor.ActorPath
+import akka.actor.testkit.typed.{ CapturedLogEvent, Effect }
+import akka.actor.testkit.typed.Effect._
+import akka.actor.typed.{ ActorRef, Behavior, PostStop, Signal }
+import akka.annotation.InternalApi
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API
@@ -128,7 +128,7 @@ private[akka] final class BehaviorTestKitImpl[T](_path: ActorPath, _initialBehav
     } catch handleException
   }
 
-  override def runOne(): Unit = run(selfInbox.receiveMessage())
+  override def runOne(): Unit = run(selfInbox().receiveMessage())
 
   override def signal(signal: Signal): Unit = {
     try {

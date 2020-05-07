@@ -4,21 +4,23 @@
 
 package akka.cluster
 
-import language.postfixOps
 import scala.collection.immutable
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
+import language.postfixOps
+
 import akka.actor.ActorSystem
 import akka.actor.ExtendedActorSystem
+import akka.actor.Props
+import akka.cluster.MultiNodeClusterSpec.EndActor
+import akka.remote.RARP
 import akka.remote.testconductor.RoleName
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import akka.actor.Props
-import akka.cluster.MultiNodeClusterSpec.EndActor
-import akka.remote.RARP
 import akka.util.ccompat._
 
 @ccompatUsedUntil213

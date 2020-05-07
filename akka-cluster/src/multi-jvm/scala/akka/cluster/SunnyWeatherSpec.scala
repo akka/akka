@@ -4,14 +4,17 @@
 
 package akka.cluster
 
+import java.util.concurrent.atomic.AtomicReference
+
+import scala.collection.immutable.SortedSet
+
 import com.typesafe.config.ConfigFactory
+
+import akka.actor.Actor
+import akka.actor.Props
 import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.testkit._
-import java.util.concurrent.atomic.AtomicReference
-import scala.collection.immutable.SortedSet
-import akka.actor.Props
-import akka.actor.Actor
 
 object SunnyWeatherMultiJvmSpec extends MultiNodeConfig {
   val first = role("first")
@@ -42,9 +45,8 @@ class SunnyWeatherMultiJvmNode5 extends SunnyWeatherSpec
 
 abstract class SunnyWeatherSpec extends MultiNodeSpec(SunnyWeatherMultiJvmSpec) with MultiNodeClusterSpec {
 
-  import SunnyWeatherMultiJvmSpec._
-
   import ClusterEvent._
+  import SunnyWeatherMultiJvmSpec._
 
   "A normal cluster" must {
     "be healthy" taggedAs LongRunningTest in {

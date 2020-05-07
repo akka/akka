@@ -4,13 +4,11 @@ Emits a specifiable number of elements from the original source, then from the p
 
 @ref[Fan-in operators](../index.md#fan-in-operators)
 
-@@@div { .group-scala }
-
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #interleave }
+@apidoc[Source.interleave](Source) { scala="#interleave[U&gt;:Out](that:akka.stream.Graph[akka.stream.SourceShape[U],_],segmentSize:Int,eagerClose:Boolean):FlowOps.this.Repr[U]" java="#interleave(akka.stream.Graph,int,boolean)" }
+@apidoc[Flow.interleave](Flow) { scala="#interleave[U&gt;:Out](that:akka.stream.Graph[akka.stream.SourceShape[U],_],segmentSize:Int,eagerClose:Boolean):FlowOps.this.Repr[U]" java="#interleave(akka.stream.Graph,int,boolean)" }
 
-@@@
 
 ## Description
 

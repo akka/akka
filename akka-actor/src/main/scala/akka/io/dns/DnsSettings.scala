@@ -8,21 +8,22 @@ import java.io.File
 import java.net.{ InetSocketAddress, URI }
 import java.util
 
+import scala.collection.immutable
+import scala.concurrent.duration.FiniteDuration
+import scala.util.{ Failure, Success, Try }
+
+import com.typesafe.config.{ Config, ConfigValueType }
+
 import akka.actor.ExtendedActorSystem
 import akka.annotation.InternalApi
+import akka.event.Logging
 import akka.io.dns.CachePolicy.{ CachePolicy, Forever, Never, Ttl }
 import akka.io.dns.internal.{ ResolvConf, ResolvConfParser }
 import akka.util.Helpers
 import akka.util.Helpers.Requiring
 import akka.util.JavaDurationConverters._
-import akka.util.ccompat.JavaConverters._
 import akka.util.ccompat._
-import com.typesafe.config.{ Config, ConfigValueType }
-import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
-import scala.util.{ Failure, Success, Try }
-
-import akka.event.Logging
+import akka.util.ccompat.JavaConverters._
 
 /** INTERNAL API */
 @InternalApi

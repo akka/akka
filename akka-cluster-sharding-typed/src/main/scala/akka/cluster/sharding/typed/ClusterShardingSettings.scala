@@ -5,6 +5,9 @@
 package akka.cluster.sharding.typed
 
 import scala.concurrent.duration.FiniteDuration
+
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
@@ -12,7 +15,6 @@ import akka.cluster.sharding.{ ClusterShardingSettings => ClassicShardingSetting
 import akka.cluster.singleton.{ ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings }
 import akka.cluster.typed.Cluster
 import akka.cluster.typed.ClusterSingletonManagerSettings
-import com.typesafe.config.Config
 import akka.util.JavaDurationConverters._
 
 object ClusterShardingSettings {
@@ -83,7 +85,9 @@ object ClusterShardingSettings {
         entityRecoveryConstantRateStrategyFrequency =
           settings.tuningParameters.entityRecoveryConstantRateStrategyFrequency,
         entityRecoveryConstantRateStrategyNumberOfEntities =
-          settings.tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities),
+          settings.tuningParameters.entityRecoveryConstantRateStrategyNumberOfEntities,
+        coordinatorStateWriteMajorityPlus = settings.tuningParameters.coordinatorStateWriteMajorityPlus,
+        coordinatorStateReadMajorityPlus = settings.tuningParameters.coordinatorStateReadMajorityPlus),
       new ClassicClusterSingletonManagerSettings(
         settings.coordinatorSingletonSettings.singletonName,
         settings.coordinatorSingletonSettings.role,
@@ -104,8 +108,8 @@ object ClusterShardingSettings {
       else
         throw new IllegalArgumentException("Not recognized StateStoreMode, only 'ddata' is supported.")
   }
-  final case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
-  final case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
+  case object StateStoreModePersistence extends StateStoreMode { override def name = "persistence" }
+  case object StateStoreModeDData extends StateStoreMode { override def name = "ddata" }
 
   // generated using kaze-class
   final class TuningParameters private (
@@ -125,9 +129,11 @@ object ClusterShardingSettings {
       val shardStartTimeout: FiniteDuration,
       val snapshotAfter: Int,
       val updatingStateTimeout: FiniteDuration,
-      val waitingForStateTimeout: FiniteDuration) {
+      val waitingForStateTimeout: FiniteDuration,
+      val coordinatorStateWriteMajorityPlus: Int,
+      val coordinatorStateReadMajorityPlus: Int) {
 
-    def this(classic: ClassicShardingSettings.TuningParameters) {
+    def this(classic: ClassicShardingSettings.TuningParameters) =
       this(
         bufferSize = classic.bufferSize,
         coordinatorFailureBackoff = classic.coordinatorFailureBackoff,
@@ -145,9 +151,9 @@ object ClusterShardingSettings {
         updatingStateTimeout = classic.updatingStateTimeout,
         entityRecoveryStrategy = classic.entityRecoveryStrategy,
         entityRecoveryConstantRateStrategyFrequency = classic.entityRecoveryConstantRateStrategyFrequency,
-        entityRecoveryConstantRateStrategyNumberOfEntities = classic.entityRecoveryConstantRateStrategyNumberOfEntities)
-
-    }
+        entityRecoveryConstantRateStrategyNumberOfEntities = classic.entityRecoveryConstantRateStrategyNumberOfEntities,
+        coordinatorStateWriteMajorityPlus = classic.coordinatorStateWriteMajorityPlus,
+        coordinatorStateReadMajorityPlus = classic.coordinatorStateReadMajorityPlus)
 
     require(
       entityRecoveryStrategy == "all" || entityRecoveryStrategy == "constant",
@@ -187,6 +193,10 @@ object ClusterShardingSettings {
     def withWaitingForStateTimeout(value: FiniteDuration): TuningParameters = copy(waitingForStateTimeout = value)
     def withWaitingForStateTimeout(value: java.time.Duration): TuningParameters =
       withWaitingForStateTimeout(value.asScala)
+    def withCoordinatorStateWriteMajorityPlus(value: Int): TuningParameters =
+      copy(coordinatorStateWriteMajorityPlus = value)
+    def withCoordinatorStateReadMajorityPlus(value: Int): TuningParameters =
+      copy(coordinatorStateReadMajorityPlus = value)
 
     private def copy(
         bufferSize: Int = bufferSize,
@@ -205,7 +215,9 @@ object ClusterShardingSettings {
         shardStartTimeout: FiniteDuration = shardStartTimeout,
         snapshotAfter: Int = snapshotAfter,
         updatingStateTimeout: FiniteDuration = updatingStateTimeout,
-        waitingForStateTimeout: FiniteDuration = waitingForStateTimeout): TuningParameters =
+        waitingForStateTimeout: FiniteDuration = waitingForStateTimeout,
+        coordinatorStateWriteMajorityPlus: Int = coordinatorStateWriteMajorityPlus,
+        coordinatorStateReadMajorityPlus: Int = coordinatorStateReadMajorityPlus): TuningParameters =
       new TuningParameters(
         bufferSize = bufferSize,
         coordinatorFailureBackoff = coordinatorFailureBackoff,
@@ -223,10 +235,12 @@ object ClusterShardingSettings {
         shardStartTimeout = shardStartTimeout,
         snapshotAfter = snapshotAfter,
         updatingStateTimeout = updatingStateTimeout,
-        waitingForStateTimeout = waitingForStateTimeout)
+        waitingForStateTimeout = waitingForStateTimeout,
+        coordinatorStateWriteMajorityPlus = coordinatorStateWriteMajorityPlus,
+        coordinatorStateReadMajorityPlus = coordinatorStateReadMajorityPlus)
 
     override def toString =
-      s"""TuningParameters($bufferSize,$coordinatorFailureBackoff,$entityRecoveryConstantRateStrategyFrequency,$entityRecoveryConstantRateStrategyNumberOfEntities,$entityRecoveryStrategy,$entityRestartBackoff,$handOffTimeout,$keepNrOfBatches,$leastShardAllocationMaxSimultaneousRebalance,$leastShardAllocationRebalanceThreshold,$rebalanceInterval,$retryInterval,$shardFailureBackoff,$shardStartTimeout,$snapshotAfter,$updatingStateTimeout,$waitingForStateTimeout)"""
+      s"""TuningParameters($bufferSize,$coordinatorFailureBackoff,$entityRecoveryConstantRateStrategyFrequency,$entityRecoveryConstantRateStrategyNumberOfEntities,$entityRecoveryStrategy,$entityRestartBackoff,$handOffTimeout,$keepNrOfBatches,$leastShardAllocationMaxSimultaneousRebalance,$leastShardAllocationRebalanceThreshold,$rebalanceInterval,$retryInterval,$shardFailureBackoff,$shardStartTimeout,$snapshotAfter,$updatingStateTimeout,$waitingForStateTimeout,$coordinatorStateReadMajorityPlus,$coordinatorStateReadMajorityPlus)"""
   }
 }
 

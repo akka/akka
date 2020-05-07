@@ -4,9 +4,10 @@
 
 package akka.stream.tck
 
+import org.reactivestreams.Processor
+
 import akka.stream._
 import akka.stream.scaladsl.Flow
-import org.reactivestreams.Processor
 
 class FusableProcessorTest extends AkkaIdentityProcessorVerification[Int] {
 

@@ -7,6 +7,10 @@ package akka.persistence.typed.scaladsl
 import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
 
+import com.typesafe.config.Config
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.Done
 import akka.actor.testkit.typed.scaladsl._
 import akka.actor.typed.ActorRef
@@ -15,9 +19,6 @@ import akka.actor.typed.scaladsl.ActorContext
 import akka.actor.typed.scaladsl.Behaviors
 import akka.persistence.typed.PersistenceId
 import akka.serialization.jackson.CborSerializable
-import com.typesafe.config.Config
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object EventSourcedBehaviorReplySpec {
   def conf: Config = ConfigFactory.parseString(s"""
@@ -87,7 +88,7 @@ class EventSourcedBehaviorReplySpec
 
     "persist an event thenReply" in {
       val c = spawn(counter(nextPid()))
-      val probe = TestProbe[Done]
+      val probe = TestProbe[Done]()
       c ! IncrementWithConfirmation(probe.ref)
       probe.expectMessage(Done)
 
@@ -99,17 +100,17 @@ class EventSourcedBehaviorReplySpec
 
     "persist an event thenReply later" in {
       val c = spawn(counter(nextPid()))
-      val probe = TestProbe[Done]
+      val probe = TestProbe[Done]()
       c ! IncrementReplyLater(probe.ref)
       probe.expectMessage(Done)
     }
 
     "reply to query command" in {
       val c = spawn(counter(nextPid()))
-      val updateProbe = TestProbe[Done]
+      val updateProbe = TestProbe[Done]()
       c ! IncrementWithConfirmation(updateProbe.ref)
 
-      val queryProbe = TestProbe[State]
+      val queryProbe = TestProbe[State]()
       c ! GetValue(queryProbe.ref)
       queryProbe.expectMessage(State(1, Vector(0)))
     }

@@ -8,21 +8,23 @@ import java.util.concurrent.atomic.AtomicReference
 
 import scala.concurrent.duration._
 
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
 import DurableProducerQueue.MessageSent
 import ProducerController.MessageWithConfirmation
-import akka.actor.typed.delivery.internal.ProducerControllerImpl
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.delivery.internal.ProducerControllerImpl
 
 class DurableProducerControllerSpec
     extends ScalaTestWithActorTestKit("""
   akka.reliable-delivery.consumer-controller.flow-control-window = 20
+  akka.reliable-delivery.consumer-controller.resend-interval-min = 1s
   """)
     with AnyWordSpecLike
     with LogCapturing {
-  import TestConsumer.sequencedMessage
   import DurableProducerQueue.NoQualifier
+  import TestConsumer.sequencedMessage
   import TestDurableProducerQueue.TestTimestamp
 
   private var idCount = 0

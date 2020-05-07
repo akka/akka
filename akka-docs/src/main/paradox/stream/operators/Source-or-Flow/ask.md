@@ -1,27 +1,29 @@
-# Flow.ask
+# ask
 
-Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+Use the "Ask Pattern" to send a request-reply message to the target `ref` actor (of the classic actors API).
 
-@ref[Asynchronous operators](../index.md#asynchronous-operators)
+@ref[Actor interop operators](../index.md#actor-interop-operators)
 
-@@@ div { .group-scala }
 ## Signature
 
-@@signature [Flow.scala](/akka-stream/src/main/scala/akka/stream/scaladsl/Flow.scala) { #ask }
-@@@
+@apidoc[Source.ask](Source) {scala="#ask[S](ref:akka.actor.ActorRef)(implicittimeout:akka.util.Timeout,implicittag:scala.reflect.ClassTag[S]):FlowOps.this.Repr[S]" java="#ask(akka.actor.ActorRef,java.lang.Class,akka.util.Timeout)" }
+@apidoc[Flow.ask](Flow$) { scala="#ask%5BS](ref:akka.actor.ActorRef)(implicittimeout:akka.util.Timeout,implicittag:scala.reflect.ClassTag%5BS]):FlowOps.this.Repr%5BS]" java="#ask(akka.actor.ActorRef,java.lang.Class,akka.util.Timeout)" }
 
 ## Description
 
-Use the `ask` pattern to send a request-reply message to the target `ref` actor.
+Use the @ref[Ask Pattern](../../../actors.md#ask-send-and-receive-future) to send a request-reply message to the target `ref` actor.
 If any of the asks times out it will fail the stream with a @apidoc[AskTimeoutException].
 
 The @java[`mapTo` class]@scala[`S` generic] parameter is used to cast the responses from the actor to the expected outgoing flow type.
 
-Similar to the plain ask pattern, the target actor is allowed to reply with `akka.util.Status`.
-An `akka.util.Status#Failure` will cause the operator to fail with the cause carried in the `Failure` message.
+Similar to the plain ask pattern, the target actor is allowed to reply with @apidoc[akka.actor.Status$].
+An @apidoc[akka.actor.Status.Failure] will cause the operator to fail with the cause carried in the `Failure` message.
 
-Adheres to the @scala[@scaladoc[`ActorAttributes.SupervisionStrategy`](akka.stream.ActorAttributes$$SupervisionStrategy)]
-@java[`ActorAttributes.SupervisionStrategy`] attribute.
+Adheres to the @apidoc[ActorAttributes.SupervisionStrategy] attribute.
+
+See also:
+
+* @ref[ActorFlow.ask](../ActorFlow/ask.md) for the `akka.actor.typed.ActorRef[_]` variant
 
 ## Reactive Streams semantics
 

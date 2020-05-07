@@ -4,30 +4,30 @@
 
 package akka.cluster.typed.internal.receptionist
 
+import scala.concurrent.duration._
+
+import akka.actor.Address
+import akka.actor.typed.{ ActorRef, Behavior }
 import akka.actor.typed.internal.receptionist.{ AbstractServiceKey, ReceptionistBehaviorProvider, ReceptionistMessages }
 import akka.actor.typed.receptionist.Receptionist.Command
 import akka.actor.typed.receptionist.ServiceKey
-import akka.actor.typed.scaladsl.adapter._
 import akka.actor.typed.scaladsl.{ ActorContext, Behaviors, LoggerOps }
-import akka.actor.typed.{ ActorRef, Behavior }
+import akka.actor.typed.scaladsl.adapter._
 import akka.annotation.InternalApi
-import akka.cluster.ClusterEvent.MemberRemoved
-import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.{ Cluster, ClusterEvent, UniqueAddress }
-import akka.remote.AddressUidExtension
-import akka.util.TypedMultiMap
-
-import scala.concurrent.duration._
-import akka.actor.Address
 import akka.cluster.ClusterEvent.ClusterDomainEvent
 import akka.cluster.ClusterEvent.ClusterShuttingDown
 import akka.cluster.ClusterEvent.MemberJoined
+import akka.cluster.ClusterEvent.MemberRemoved
 import akka.cluster.ClusterEvent.MemberUp
 import akka.cluster.ClusterEvent.MemberWeaklyUp
 import akka.cluster.ClusterEvent.ReachabilityEvent
 import akka.cluster.ClusterEvent.ReachableMember
 import akka.cluster.ClusterEvent.UnreachableMember
+import akka.cluster.ddata.{ ORMultiMap, ORMultiMapKey, Replicator }
 import akka.cluster.ddata.SelfUniqueAddress
+import akka.remote.AddressUidExtension
+import akka.util.TypedMultiMap
 
 // just to provide a log class
 /** INTERNAL API */
@@ -106,7 +106,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
           tombstones.foldLeft(tombstones) {
             case (acc, (actorRef, entries)) =>
               val entriesToKeep = entries.filter {
-                case (_, deadline) => deadline.hasTimeLeft
+                case (_, deadline) => deadline.hasTimeLeft()
               }
               if (entriesToKeep.size == entries.size) acc
               else if (entriesToKeep.isEmpty) acc - actorRef
@@ -184,7 +184,7 @@ private[typed] object ClusterReceptionist extends ReceptionistBehaviorProvider {
     val cluster = Cluster(classicSystem)
     // don't use DistributedData.selfUniqueAddress here, because that will initialize extension, which
     // isn't used otherwise by the ClusterReceptionist
-    implicit val selfNodeAddress = SelfUniqueAddress(cluster.selfUniqueAddress)
+    implicit val selfNodeAddress: SelfUniqueAddress = SelfUniqueAddress(cluster.selfUniqueAddress)
 
     val replicator = ctx.actorOf(Replicator.props(settings.replicatorSettings), "replicator")
 

@@ -30,15 +30,15 @@ and membership state transitions.
 
 ### Gossip
 
-The cluster membership used in Akka is based on Amazon's [Dynamo](http://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf) system and
-particularly the approach taken in Basho's' [Riak](http://basho.com/technology/architecture/) distributed database.
-Cluster membership is communicated using a [Gossip Protocol](http://en.wikipedia.org/wiki/Gossip_protocol), where the current
+The cluster membership used in Akka is based on Amazon's [Dynamo](https://www.allthingsdistributed.com/files/amazon-dynamo-sosp2007.pdf) system and
+particularly the approach taken in Basho's' [Riak](https://riak.com/technology/architecture/) distributed database.
+Cluster membership is communicated using a [Gossip Protocol](https://en.wikipedia.org/wiki/Gossip_protocol), where the current
 state of the cluster is gossiped randomly through the cluster, with preference to
 members that have not seen the latest version.
 
 #### Vector Clocks
 
-[Vector clocks](http://en.wikipedia.org/wiki/Vector_clock) are a type of data structure and algorithm for generating a partial
+[Vector clocks](https://en.wikipedia.org/wiki/Vector_clock) are a type of data structure and algorithm for generating a partial
 ordering of events in a distributed system and detecting causality violations.
 
 We use vector clocks to reconcile and merge differences in cluster state
@@ -175,5 +175,5 @@ The periodic nature of the gossip has a nice batching effect of state changes,
 e.g. joining several nodes quickly after each other to one node will result in only
 one state change to be spread to other members in the cluster.
 
-The gossip messages are serialized with [protobuf](https://code.google.com/p/protobuf/) and also gzipped to reduce payload
+The gossip messages are serialized with [protobuf](https://github.com/protocolbuffers/protobuf) and also gzipped to reduce payload
 size.

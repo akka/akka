@@ -16,12 +16,12 @@ private[akka] object SubstreamCancelStrategies {
   /**
    * INTERNAL API
    */
-  private[akka] final case object Propagate extends SubstreamCancelStrategy
+  private[akka] case object Propagate extends SubstreamCancelStrategy
 
   /**
    * INTERNAL API
    */
-  private[akka] final case object Drain extends SubstreamCancelStrategy
+  private[akka] case object Drain extends SubstreamCancelStrategy
 }
 
 object SubstreamCancelStrategy {

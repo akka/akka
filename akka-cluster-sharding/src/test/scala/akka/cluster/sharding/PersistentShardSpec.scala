@@ -4,13 +4,14 @@
 
 package akka.cluster.sharding
 
+import com.typesafe.config.ConfigFactory
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.{ Actor, PoisonPill, Props }
 import akka.cluster.sharding.PersistentShardSpec.EntityActor
 import akka.cluster.sharding.Shard.{ GetShardStats, ShardStats }
 import akka.cluster.sharding.ShardRegion.{ StartEntity, StartEntityAck }
 import akka.testkit.{ AkkaSpec, ImplicitSender }
-import com.typesafe.config.ConfigFactory
-import org.scalatest.wordspec.AnyWordSpecLike
 
 object PersistentShardSpec {
   class EntityActor extends Actor {

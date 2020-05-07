@@ -4,35 +4,37 @@
 
 package akka.cluster.ddata.protobuf
 
-import scala.concurrent.duration._
+import java.io.NotSerializableException
 import java.util.concurrent.TimeUnit
-import akka.util.ccompat.JavaConverters._
+import java.util.concurrent.atomic.AtomicInteger
+
+import scala.annotation.tailrec
 import scala.collection.immutable
+import scala.concurrent.duration._
 import scala.concurrent.duration.Duration
+import scala.concurrent.duration.FiniteDuration
+
+import akka.actor.Address
 import akka.actor.ExtendedActorSystem
+import akka.annotation.InternalApi
 import akka.cluster.Member
 import akka.cluster.UniqueAddress
+import akka.cluster.ddata.DurableStore.DurableDataEnvelope
+import akka.cluster.ddata.Key.KeyR
 import akka.cluster.ddata.PruningState
+import akka.cluster.ddata.PruningState.PruningPerformed
 import akka.cluster.ddata.ReplicatedData
 import akka.cluster.ddata.Replicator._
 import akka.cluster.ddata.Replicator.Internal._
+import akka.cluster.ddata.VersionVector
 import akka.cluster.ddata.protobuf.msg.{ ReplicatorMessages => dm }
+import akka.protobufv3.internal.ByteString
+import akka.serialization.BaseSerializer
 import akka.serialization.Serialization
 import akka.serialization.SerializerWithStringManifest
-import akka.serialization.BaseSerializer
 import akka.util.{ ByteString => AkkaByteString }
-import akka.protobufv3.internal.ByteString
-import akka.cluster.ddata.Key.KeyR
-import java.util.concurrent.atomic.AtomicInteger
-import scala.annotation.tailrec
-import scala.concurrent.duration.FiniteDuration
-import akka.cluster.ddata.DurableStore.DurableDataEnvelope
-import java.io.NotSerializableException
-import akka.actor.Address
-import akka.cluster.ddata.VersionVector
-import akka.annotation.InternalApi
-import akka.cluster.ddata.PruningState.PruningPerformed
 import akka.util.ccompat._
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API
@@ -338,21 +340,27 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
   }
 
   private def getToProto(get: Get[_]): dm.Get = {
-    val consistencyValue = get.consistency match {
-      case ReadLocal       => 1
-      case ReadFrom(n, _)  => n
-      case _: ReadMajority => 0
-      case _: ReadAll      => -1
-    }
-
     val timoutInMillis = get.consistency.timeout.toMillis
     require(timoutInMillis <= 0XFFFFFFFFL, "Timeouts must fit in a 32-bit unsigned int")
 
-    val b = dm.Get
-      .newBuilder()
-      .setKey(otherMessageToProto(get.key))
-      .setConsistency(consistencyValue)
-      .setTimeout(timoutInMillis.toInt)
+    val b = dm.Get.newBuilder().setKey(otherMessageToProto(get.key)).setTimeout(timoutInMillis.toInt)
+
+    get.consistency match {
+      case ReadLocal      => b.setConsistency(1)
+      case ReadFrom(n, _) => b.setConsistency(n)
+      case ReadMajority(_, minCap) =>
+        b.setConsistency(0)
+        if (minCap != 0)
+          b.setConsistencyMinCap(minCap)
+      case ReadMajorityPlus(_, additional, minCap) =>
+        b.setConsistency(0)
+        if (minCap != 0)
+          b.setConsistencyMinCap(minCap)
+        if (additional != 0)
+          b.setConsistencyAdditional(additional)
+      case _: ReadAll =>
+        b.setConsistency(-1)
+    }
 
     get.request.foreach(o => b.setRequest(otherMessageToProto(o)))
     b.build()
@@ -367,8 +375,13 @@ class ReplicatorMessageSerializer(val system: ExtendedActorSystem)
     val timeout =
       if (get.getTimeout < 0) Duration(Int.MaxValue.toLong + (get.getTimeout - Int.MaxValue), TimeUnit.MILLISECONDS)
       else Duration(get.getTimeout.toLong, TimeUnit.MILLISECONDS)
+    def minCap = if (get.hasConsistencyMinCap) get.getConsistencyMinCap else 0
     val consistency = get.getConsistency match {
-      case 0  => ReadMajority(timeout)
+      case 0 =>
+        if (get.hasConsistencyAdditional)
+          ReadMajorityPlus(timeout, get.getConsistencyAdditional, minCap)
+        else
+          ReadMajority(timeout, minCap)
       case -1 => ReadAll(timeout)
       case 1  => ReadLocal
       case n  => ReadFrom(n, timeout)

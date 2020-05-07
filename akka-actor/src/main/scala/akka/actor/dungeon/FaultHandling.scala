@@ -4,20 +4,20 @@
 
 package akka.actor.dungeon
 
+import scala.collection.immutable
+import scala.concurrent.duration.Duration
+import scala.util.control.Exception._
+import scala.util.control.NonFatal
+
+import akka.actor.{ Actor, ActorCell, ActorInterruptedException, ActorRef, InternalActorRef }
+import akka.actor.ActorRefScope
 import akka.actor.PostRestartException
 import akka.actor.PreRestartException
-import akka.actor.{ Actor, ActorCell, ActorInterruptedException, ActorRef, InternalActorRef }
 import akka.dispatch._
 import akka.dispatch.sysmsg._
 import akka.event.Logging
 import akka.event.Logging.Debug
 import akka.event.Logging.Error
-
-import scala.collection.immutable
-import scala.concurrent.duration.Duration
-import scala.util.control.Exception._
-import scala.util.control.NonFatal
-import akka.actor.ActorRefScope
 
 private[akka] trait FaultHandling { this: ActorCell =>
 

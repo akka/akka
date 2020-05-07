@@ -4,6 +4,13 @@
 
 package akka.cluster.typed
 
+import scala.concurrent.duration._
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
+import com.typesafe.config.Config
+
+import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
+import akka.actor.typed.ExtensionSetup
 import akka.annotation.{ DoNotInherit, InternalApi }
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.singleton.{
@@ -11,13 +18,7 @@ import akka.cluster.singleton.{
   ClusterSingletonManagerSettings => ClassicClusterSingletonManagerSettings
 }
 import akka.cluster.typed.internal.AdaptedClusterSingletonImpl
-import akka.actor.typed.{ ActorRef, ActorSystem, Behavior, Extension, ExtensionId, Props }
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
-import scala.concurrent.duration._
-import scala.concurrent.duration.{ Duration, FiniteDuration }
-
-import akka.actor.typed.ExtensionSetup
 
 object ClusterSingletonSettings {
   def apply(system: ActorSystem[_]): ClusterSingletonSettings =

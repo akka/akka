@@ -4,13 +4,13 @@
 
 package akka.pattern
 
-import akka.actor._
-import akka.dispatch.ExecutionContexts
-import akka.util.Timeout
-import akka.dispatch.sysmsg.{ Unwatch, Watch }
-
 import scala.concurrent.Future
 import scala.concurrent.duration.FiniteDuration
+
+import akka.actor._
+import akka.dispatch.ExecutionContexts
+import akka.dispatch.sysmsg.{ Unwatch, Watch }
+import akka.util.Timeout
 
 trait GracefulStopSupport {
 

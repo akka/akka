@@ -87,7 +87,7 @@ mailbox would interact with the third point, or even what it would mean to
 decide upon the “successfully” part of point five.
 
 Along those same lines goes the reasoning in [Nobody Needs Reliable
-Messaging](http://www.infoq.com/articles/no-reliable-messaging). The only meaningful way for a sender to know whether an
+Messaging](https://www.infoq.com/articles/no-reliable-messaging/). The only meaningful way for a sender to know whether an
 interaction was successful is by receiving a business-level acknowledgement
 message, which is not something Akka could make up on its own (neither are we
 writing a “do what I mean” framework nor would you want us to).
@@ -96,7 +96,7 @@ Akka embraces distributed computing and makes the fallibility of communication
 explicit through message passing, therefore it does not try to lie and emulate
 a leaky abstraction. This is a model that has been used with great success in
 Erlang and requires the users to design their applications around it. You can
-read more about this approach in the [Erlang documentation](http://www.erlang.org/faq/academic.html) (section 10.9 and
+read more about this approach in the [Erlang documentation](https://erlang.org/faq/academic.html) (section 10.9 and
 10.10), Akka follows it closely.
 
 Another angle on this issue is that by providing only basic guarantees those

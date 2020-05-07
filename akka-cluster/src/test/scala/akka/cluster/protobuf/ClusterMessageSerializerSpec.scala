@@ -4,16 +4,16 @@
 
 package akka.cluster.protobuf
 
-import akka.cluster._
+import collection.immutable.SortedSet
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.{ Address, ExtendedActorSystem }
+import akka.cluster._
 import akka.cluster.InternalClusterAction.CompatibleConfig
 import akka.cluster.routing.{ ClusterRouterPool, ClusterRouterPoolSettings }
 import akka.routing.RoundRobinPool
-
-import collection.immutable.SortedSet
 import akka.testkit.AkkaSpec
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
 
 @silent
 class ClusterMessageSerializerSpec extends AkkaSpec("akka.actor.provider = cluster") {

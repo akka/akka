@@ -5,12 +5,13 @@
 package akka.coordination.lease.scaladsl
 
 import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.ExtendedActorSystem
 import akka.coordination.lease.LeaseSettings
 import akka.testkit.{ AkkaSpec, EventFilter }
-import com.typesafe.config.ConfigFactory
-
-import scala.concurrent.duration._
 
 object LeaseProviderSpec {
   class LeaseA(settings: LeaseSettings) extends Lease(settings) {

@@ -6,15 +6,15 @@ package akka.cluster
 
 import java.util.concurrent.ThreadLocalRandom
 
-import scala.collection.immutable
+import scala.annotation.tailrec
 import scala.collection.SortedSet
+import scala.collection.immutable
+import scala.util.Random
+
+import akka.annotation.InternalApi
 import akka.cluster.ClusterSettings.DataCenter
 import akka.cluster.MemberStatus._
-import akka.annotation.InternalApi
 import akka.util.ccompat._
-
-import scala.annotation.tailrec
-import scala.util.Random
 
 /**
  * INTERNAL API

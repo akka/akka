@@ -7,19 +7,20 @@ package akka.stream
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
 import akka.NotUsed
 import akka.actor.ActorSystem
 import akka.remote.artery.BenchTestSource
 import akka.remote.artery.FixedSizePartitionHub
 import akka.remote.artery.LatchSink
-import akka.stream.scaladsl.PartitionHub
 import akka.stream.scaladsl._
+import akka.stream.scaladsl.PartitionHub
 import akka.stream.testkit.scaladsl.StreamTestKit
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations._
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
 
 object PartitionHubBenchmark {
   final val OperationsPerInvocation = 100000
@@ -40,7 +41,7 @@ class PartitionHubBenchmark {
     }
     """)
 
-  implicit val system = ActorSystem("PartitionHubBenchmark", config)
+  implicit val system: ActorSystem = ActorSystem("PartitionHubBenchmark", config)
 
   @Param(Array("2", "5", "10", "20", "30"))
   var NumberOfStreams = 0

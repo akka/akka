@@ -7,6 +7,14 @@ package aeron
 
 import java.io.File
 
+import scala.concurrent.Await
+import scala.concurrent.duration._
+import scala.util.control.NoStackTrace
+
+import io.aeron.Aeron
+import io.aeron.driver.MediaDriver
+import org.agrona.IoUtil
+
 import akka.actor.ExtendedActorSystem
 import akka.remote.artery.aeron.AeronSink.GaveUpMessageException
 import akka.stream.scaladsl.Sink
@@ -14,13 +22,6 @@ import akka.stream.scaladsl.Source
 import akka.testkit.AkkaSpec
 import akka.testkit.ImplicitSender
 import akka.testkit.SocketUtil
-import io.aeron.Aeron
-import io.aeron.driver.MediaDriver
-import org.agrona.IoUtil
-
-import scala.concurrent.Await
-import scala.concurrent.duration._
-import scala.util.control.NoStackTrace
 
 class AeronSinkSpec extends AkkaSpec("""
     akka.stream.materializer.debug.fuzzing-mode = on

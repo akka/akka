@@ -5,8 +5,8 @@
 package akka.stream.typed.scaladsl
 
 import akka.actor.typed._
-import akka.stream.scaladsl._
 import akka.stream.{ CompletionStrategy, OverflowStrategy }
+import akka.stream.scaladsl._
 
 /**
  * Collection of Sources aimed at integrating with typed Actors.

@@ -10,6 +10,15 @@ import java.nio.ByteOrder
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.TimeUnit
 
+import scala.annotation.tailrec
+import scala.concurrent.Await
+import scala.concurrent.Future
+import scala.concurrent.duration._
+
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+import org.openjdk.jmh.annotations._
+
 import akka.Done
 import akka.NotUsed
 import akka.actor._
@@ -22,14 +31,6 @@ import akka.serialization.SerializationExtension
 import akka.stream.SystemMaterializer
 import akka.stream.scaladsl._
 import akka.util.OptionVal
-import com.github.ghik.silencer.silent
-import com.typesafe.config.ConfigFactory
-import org.openjdk.jmh.annotations._
-
-import scala.annotation.tailrec
-import scala.concurrent.Await
-import scala.concurrent.Future
-import scala.concurrent.duration._
 
 @State(Scope.Benchmark)
 @OutputTimeUnit(TimeUnit.MILLISECONDS)

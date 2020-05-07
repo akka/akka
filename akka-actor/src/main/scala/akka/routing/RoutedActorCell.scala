@@ -4,6 +4,9 @@
 
 package akka.routing
 
+import scala.collection.immutable
+import scala.concurrent.duration._
+
 import akka.actor.Actor
 import akka.actor.ActorCell
 import akka.actor.ActorInitializationException
@@ -17,9 +20,6 @@ import akka.actor.SupervisorStrategy
 import akka.actor.Terminated
 import akka.dispatch.Envelope
 import akka.dispatch.MessageDispatcher
-
-import scala.collection.immutable
-import scala.concurrent.duration._
 import akka.util.ccompat._
 
 /**

@@ -4,16 +4,17 @@
 
 package akka.cluster.typed.internal.receptionist
 
+import scala.concurrent.duration._
+import scala.concurrent.duration.{ FiniteDuration, MILLISECONDS }
+
+import com.typesafe.config.Config
+
 import akka.actor.typed.ActorSystem
 import akka.annotation.InternalApi
 import akka.cluster.ddata.Replicator
 import akka.cluster.ddata.Replicator.WriteConsistency
-import akka.util.Helpers.toRootLowerCase
-import com.typesafe.config.Config
-import scala.concurrent.duration._
-import scala.concurrent.duration.{ FiniteDuration, MILLISECONDS }
-
 import akka.cluster.ddata.ReplicatorSettings
+import akka.util.Helpers.toRootLowerCase
 
 /**
  * Internal API

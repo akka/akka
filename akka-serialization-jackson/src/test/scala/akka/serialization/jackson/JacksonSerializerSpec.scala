@@ -4,6 +4,7 @@
 
 package akka.serialization.jackson
 
+import java.nio.charset.StandardCharsets
 import java.time.Duration
 import java.time.Instant
 import java.time.LocalDateTime
@@ -15,8 +16,35 @@ import java.util.UUID
 import java.util.logging.FileHandler
 
 import scala.collection.immutable
-import scala.concurrent.duration.FiniteDuration
 import scala.concurrent.duration._
+import scala.concurrent.duration.FiniteDuration
+
+import com.fasterxml.jackson.annotation.JsonSubTypes
+import com.fasterxml.jackson.annotation.JsonTypeInfo
+import com.fasterxml.jackson.core.JsonFactory
+import com.fasterxml.jackson.core.JsonGenerator
+import com.fasterxml.jackson.core.JsonParser
+import com.fasterxml.jackson.core.StreamReadFeature
+import com.fasterxml.jackson.core.StreamWriteFeature
+import com.fasterxml.jackson.core.`type`.TypeReference
+import com.fasterxml.jackson.databind.DeserializationFeature
+import com.fasterxml.jackson.databind.JsonNode
+import com.fasterxml.jackson.databind.MapperFeature
+import com.fasterxml.jackson.databind.Module
+import com.fasterxml.jackson.databind.ObjectMapper
+import com.fasterxml.jackson.databind.SerializationFeature
+import com.fasterxml.jackson.databind.exc.InvalidTypeIdException
+import com.fasterxml.jackson.databind.json.JsonMapper
+import com.fasterxml.jackson.databind.node.IntNode
+import com.fasterxml.jackson.databind.node.ObjectNode
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
+import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
+import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ActorRef
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -29,31 +57,6 @@ import akka.serialization.Serialization
 import akka.serialization.SerializationExtension
 import akka.testkit.TestActors
 import akka.testkit.TestKit
-import com.fasterxml.jackson.annotation.JsonSubTypes
-import com.fasterxml.jackson.annotation.JsonTypeInfo
-import com.fasterxml.jackson.core.JsonFactory
-import com.fasterxml.jackson.databind.MapperFeature
-import com.fasterxml.jackson.databind.DeserializationFeature
-import com.fasterxml.jackson.databind.JsonNode
-import com.fasterxml.jackson.databind.Module
-import com.fasterxml.jackson.databind.ObjectMapper
-import com.fasterxml.jackson.databind.SerializationFeature
-import com.fasterxml.jackson.databind.exc.InvalidTypeIdException
-import com.fasterxml.jackson.databind.node.IntNode
-import com.fasterxml.jackson.databind.node.ObjectNode
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule
-import com.typesafe.config.ConfigFactory
-import org.scalatest.BeforeAndAfterAll
-import org.scalatest.matchers.should.Matchers
-import org.scalatest.wordspec.AnyWordSpecLike
-import com.fasterxml.jackson.core.JsonParser
-import com.fasterxml.jackson.core.JsonGenerator
-import com.fasterxml.jackson.core.StreamReadFeature
-import com.fasterxml.jackson.core.StreamWriteFeature
-import com.fasterxml.jackson.core.`type`.TypeReference
-import com.fasterxml.jackson.databind.json.JsonMapper
-import com.fasterxml.jackson.module.scala.JsonScalaEnumeration
-import com.github.ghik.silencer.silent
 
 object ScalaTestMessages {
   trait TestMessage
@@ -569,6 +572,17 @@ class JacksonJsonSerializerSpec extends JacksonSerializerSpec("jackson-json") {
       """)(sys => checkSerialization(Elephant("Dumbo", 1), sys))
       }
     }
+
+    // issue #28918
+    "cbor compatibility for reading json" in {
+      val msg = SimpleCommand("abc")
+      val jsonSerializer = serializerFor(msg)
+      jsonSerializer.identifier should ===(31)
+      val manifest = jsonSerializer.manifest(msg)
+      val bytes = jsonSerializer.toBinary(msg)
+      val deserialized = serialization().deserialize(bytes, 32, manifest).get
+      deserialized should be(msg)
+    }
   }
 }
 
@@ -626,6 +640,20 @@ abstract class JacksonSerializerSpec(serializerName: String)
     val manifest = serializer.manifest(obj)
     val serializerId = serializer.identifier
     val blob = serializeToBinary(obj)
+
+    // Issue #28918, check that CBOR format is used (not JSON).
+    if (blob.length > 0) {
+      serializer match {
+        case _: JacksonJsonSerializer =>
+          if (!JacksonSerializer.isGZipped(blob))
+            new String(blob.take(1), StandardCharsets.UTF_8) should ===("{")
+        case _: JacksonCborSerializer =>
+          new String(blob.take(1), StandardCharsets.UTF_8) should !==("{")
+        case _ =>
+          throw new IllegalArgumentException(s"Unexpected serializer $serializer")
+      }
+    }
+
     val deserialized = deserializeFromBinary(blob, serializerId, manifest, sys)
     deserialized should ===(obj)
   }

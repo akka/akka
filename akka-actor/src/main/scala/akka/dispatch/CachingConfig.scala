@@ -7,9 +7,9 @@ package akka.dispatch
 import java.util
 import java.util.concurrent.{ ConcurrentHashMap, TimeUnit }
 
-import com.typesafe.config._
-
 import scala.util.{ Failure, Success, Try }
+
+import com.typesafe.config._
 
 /**
  * INTERNAL API

@@ -4,18 +4,19 @@
 
 package akka.remote.classic
 
-import akka.actor.{ ActorIdentity, Identify, _ }
-import akka.remote.testconductor.RoleName
-import akka.remote.testkit.MultiNodeConfig
-import akka.remote.transport.AssociationHandle
-import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
-import akka.remote.{ RARP, RemotingMultiNodeSpec }
-import akka.testkit._
-import com.typesafe.config.ConfigFactory
 import scala.concurrent.Await
 import scala.concurrent.duration._
 
 import com.github.ghik.silencer.silent
+import com.typesafe.config.ConfigFactory
+
+import akka.actor.{ ActorIdentity, Identify, _ }
+import akka.remote.{ RARP, RemotingMultiNodeSpec }
+import akka.remote.testconductor.RoleName
+import akka.remote.testkit.MultiNodeConfig
+import akka.remote.transport.AssociationHandle
+import akka.remote.transport.ThrottlerTransportAdapter.ForceDisassociateExplicitly
+import akka.testkit._
 
 object RemoteGatePiercingSpec extends MultiNodeConfig {
   val first = role("first")
@@ -62,7 +63,7 @@ abstract class RemoteGatePiercingSpec extends RemotingMultiNodeSpec(RemoteGatePi
   "RemoteGatePiercing" must {
 
     "allow restarted node to pass through gate" taggedAs LongRunningTest in {
-      system.actorOf(Props[Subject], "subject")
+      system.actorOf(Props[Subject](), "subject")
       enterBarrier("actors-started")
 
       runOn(first) {

@@ -6,12 +6,12 @@ package akka.actor.typed.internal.adapter
 
 import java.time.Duration
 
+import scala.concurrent.ExecutionContext
+import scala.concurrent.duration.FiniteDuration
+
 import akka.actor.Cancellable
 import akka.actor.typed.Scheduler
 import akka.annotation.InternalApi
-
-import scala.concurrent.ExecutionContext
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * INTERNAL API

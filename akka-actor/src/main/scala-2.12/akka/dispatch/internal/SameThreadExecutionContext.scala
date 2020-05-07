@@ -4,10 +4,10 @@
 
 package akka.dispatch.internal
 
+import scala.concurrent.ExecutionContext
+
 import akka.annotation.InternalApi
 import akka.dispatch.BatchingExecutor
-
-import scala.concurrent.ExecutionContext
 
 /**
  * Factory to create same thread ec. Not intended to be called from any other site than to create [[akka.dispatch.ExecutionContexts#parasitic]]

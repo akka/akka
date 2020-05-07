@@ -4,15 +4,18 @@
 
 package akka.persistence
 
+import java.util.UUID
 import java.util.concurrent.atomic.AtomicInteger
+
 import scala.reflect.ClassTag
-import akka.actor._
-import akka.testkit._
+
 import com.typesafe.config._
 import org.scalatest._
-import java.util.UUID
 import org.scalatest.matchers.should.Matchers
 import org.scalatest.wordspec.AnyWordSpecLike
+
+import akka.actor._
+import akka.testkit._
 
 abstract class PluginSpec(val config: Config)
     extends TestKitBase

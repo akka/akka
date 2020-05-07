@@ -4,8 +4,12 @@
 
 package akka.remote
 
+import java.util.concurrent.ConcurrentHashMap
+
 import scala.annotation.tailrec
+import scala.collection.immutable
 import scala.util.control.NonFatal
+
 import akka.actor.{
   Actor,
   ActorPath,
@@ -19,22 +23,19 @@ import akka.actor.{
   Props,
   VirtualPathContainer
 }
-import akka.event.{ AddressTerminatedTopic, LogMarker, MarkerLoggingAdapter }
-import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
-import akka.actor.ActorRefWithCell
+import akka.actor.ActorIdentity
 import akka.actor.ActorRefScope
-import akka.util.Switch
+import akka.actor.ActorRefWithCell
 import akka.actor.ActorSelectionMessage
-import akka.actor.SelectParent
+import akka.actor.EmptyLocalActorRef
+import akka.actor.Identify
 import akka.actor.SelectChildName
 import akka.actor.SelectChildPattern
-import akka.actor.Identify
-import akka.actor.ActorIdentity
-import akka.actor.EmptyLocalActorRef
-import java.util.concurrent.ConcurrentHashMap
-
-import scala.collection.immutable
+import akka.actor.SelectParent
+import akka.dispatch.sysmsg.{ DeathWatchNotification, SystemMessage, Watch }
 import akka.dispatch.sysmsg.Unwatch
+import akka.event.{ AddressTerminatedTopic, LogMarker, MarkerLoggingAdapter }
+import akka.util.Switch
 
 /**
  * INTERNAL API
@@ -169,13 +170,13 @@ private[akka] class RemoteSystemDaemon(
               doCreateActor(message, props, deploy, path, supervisor)
             else {
               val ex =
-                new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass, remoteDeploymentWhitelist)
+                new NotWhitelistedClassRemoteDeploymentAttemptException(props.actorClass(), remoteDeploymentWhitelist)
               log.error(
                 LogMarker.Security,
                 ex,
                 "Received command to create remote Actor, but class [{}] is not white-listed! " +
                 "Target path: [{}]",
-                props.actorClass,
+                props.actorClass(),
                 path)
             }
           case DaemonMsgCreate(props, deploy, path, supervisor) =>

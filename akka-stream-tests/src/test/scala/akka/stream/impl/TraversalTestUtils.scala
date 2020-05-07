@@ -5,8 +5,8 @@
 package akka.stream.impl
 
 import akka.NotUsed
-import akka.stream.impl.StreamLayout.AtomicModule
 import akka.stream._
+import akka.stream.impl.StreamLayout.AtomicModule
 
 object TraversalTestUtils {
 

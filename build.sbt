@@ -1,4 +1,4 @@
-import akka.{ AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ParadoxSupport, ScalafixIgnoreFilePlugin }
+import akka.{AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ParadoxSupport, ScalafixIgnoreFilePlugin}
 
 enablePlugins(
   UnidocRoot,
@@ -11,13 +11,18 @@ enablePlugins(
 disablePlugins(MimaPlugin)
 addCommandAlias(
   name = "fixall",
-  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;test:compile;reload")
+  value = ";scalafixEnable;compile:scalafix;test:scalafix;multi-jvm:scalafix;scalafmtAll;test:compile;multi-jvm:compile;reload")
+
+addCommandAlias(
+  name = "sortImports",
+  value = ";scalafixEnable;compile:scalafix SortImports;test:scalafix SortImports;multi-jvm:scalafix SortImports;" +
+    "CompileJdk9:scalafix SortImports;TestJdk9:scalafix SortImports;scalafmtAll;test:compile;multi-jvm:compile;reload")
 
 import akka.AkkaBuild._
-import akka.{ AkkaBuild, Dependencies, GitHub, OSGi, Protobuf, SigarLoader, VersionGenerator }
+import akka.{AkkaBuild, Dependencies, OSGi, Protobuf, SigarLoader, VersionGenerator}
 import com.typesafe.sbt.SbtMultiJvm.MultiJvmKeys.MultiJvm
 import com.typesafe.tools.mima.plugin.MimaPlugin
-import sbt.Keys.{ initialCommands, parallelExecution }
+import sbt.Keys.{initialCommands, parallelExecution}
 import spray.boilerplate.BoilerplatePlugin
 
 initialize := {
@@ -75,7 +80,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
 
 lazy val root = Project(id = "akka", base = file("."))
   .aggregate(aggregatedProjects: _*)
-  .enablePlugins(DeployRsync)
+  .enablePlugins(PublishRsyncPlugin)
   .settings(rootSettings: _*)
   .settings(unidocRootIgnoreProjects := Seq(remoteTests, benchJmh, protobuf, protobufV3, akkaScalaNightly, docs))
   .settings(unmanagedSources in (Compile, headerCreate) := (baseDirectory.value / "project").**("*.scala").get)
@@ -204,7 +209,7 @@ lazy val docs = akkaModule("akka-docs")
   .settings(javacOptions += "-parameters") // for Jackson
   .enablePlugins(
     AkkaParadoxPlugin,
-    DeployRsync,
+    PublishRsyncPlugin,
     NoPublish,
     ParadoxBrowse,
     ScaladocNoVerificationOfDiagrams,
@@ -276,6 +281,7 @@ lazy val persistenceTestkit = akkaModule("akka-persistence-testkit")
   .dependsOn(
     persistenceTyped % "compile->compile;provided->provided;test->test",
     testkit % "compile->compile;test->test",
+    actorTestkitTyped,
     persistenceTck % "test")
   .settings(Dependencies.persistenceTestKit)
   .settings(AutomaticModuleName.settings("akka.persistence.testkit"))
@@ -292,11 +298,11 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
   .enablePlugins(ScaladocNoVerificationOfDiagrams)
   .disablePlugins(MimaPlugin)
   .settings(
-    libraryDependencies += Dependencies.Compile.protobufRuntime,
+    libraryDependencies += Dependencies.Compile.Provided.protobufRuntime,
     assemblyShadeRules in assembly := Seq(
         ShadeRule
           .rename("com.google.protobuf.**" -> "akka.protobufv3.internal.@1")
-          .inLibrary(Dependencies.Compile.protobufRuntime)),
+          .inLibrary(Dependencies.Compile.Provided.protobufRuntime)),
     assemblyOption in assembly := (assemblyOption in assembly).value.copy(includeScala = false, includeBin = false),
     autoScalaLibrary := false, // do not include scala dependency in pom
     exportJars := true, // in dependent projects, use assembled and shaded jar
@@ -445,8 +451,10 @@ lazy val clusterShardingTyped = akkaModule("akka-cluster-sharding-typed")
     actorTestkitTyped % "test->test",
     actorTypedTests % "test->test",
     persistenceTyped % "test->test",
+    persistenceTestkit % "test->test",
     remote % "compile->CompileJdk9;test->test",
     remoteTests % "test->test",
+    remoteTests % "test->test;multi-jvm->multi-jvm",
     jackson % "test->test")
   .settings(javacOptions += "-parameters") // for Jackson
   .settings(AutomaticModuleName.settings("akka.cluster.sharding.typed"))

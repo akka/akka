@@ -10,6 +10,8 @@ import scala.compat.java8.OptionConverters._
 import scala.concurrent.duration.FiniteDuration
 import scala.reflect.ClassTag
 
+import com.typesafe.config.Config
+
 import akka.Done
 import akka.actor.typed.ActorRef
 import akka.actor.typed.ActorSystem
@@ -22,7 +24,6 @@ import akka.annotation.ApiMayChange
 import akka.cluster.sharding.typed.ShardingEnvelope
 import akka.cluster.sharding.typed.delivery.internal.ShardingProducerControllerImpl
 import akka.util.JavaDurationConverters._
-import com.typesafe.config.Config
 
 /**
  * Reliable delivery between a producer actor sending messages to sharded consumer

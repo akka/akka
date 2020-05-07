@@ -3,16 +3,17 @@
  */
 
 package akka.cluster.sharding
-import akka.actor.Props
-import akka.cluster.{ Cluster, MemberStatus, TestLease, TestLeaseExt }
-import akka.testkit.TestActors.EchoActor
-import akka.testkit.{ AkkaSpec, ImplicitSender }
-import com.typesafe.config.{ Config, ConfigFactory }
-
 import scala.concurrent.Future
 import scala.concurrent.duration._
 import scala.util.Success
 import scala.util.control.NoStackTrace
+
+import com.typesafe.config.{ Config, ConfigFactory }
+
+import akka.actor.Props
+import akka.cluster.{ Cluster, MemberStatus, TestLease, TestLeaseExt }
+import akka.testkit.{ AkkaSpec, ImplicitSender }
+import akka.testkit.TestActors.EchoActor
 
 object ClusterShardingLeaseSpec {
   val config = ConfigFactory.parseString("""
@@ -76,7 +77,7 @@ class ClusterShardingLeaseSpec(config: Config, rememberEntities: Boolean)
     }
     ClusterSharding(system).start(
       typeName = typeName,
-      entityProps = Props[EchoActor],
+      entityProps = Props[EchoActor](),
       settings = ClusterShardingSettings(system).withRememberEntities(rememberEntities),
       extractEntityId = extractEntityId,
       extractShardId = extractShardId)

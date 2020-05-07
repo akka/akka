@@ -77,7 +77,7 @@ It is possible to release a revised documentation to the already existing releas
     ```
 1. If the generated documentation looks good, send it to Gustav:
     ```sh
-    sbt "akka-docs/deployRsync akkarepo@gustav.akka.io"
+    sbt akka-docs/publishRsync
     ```
 1. Do not forget to push the new branch back to GitHub.
 

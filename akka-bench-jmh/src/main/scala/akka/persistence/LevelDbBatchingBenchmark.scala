@@ -6,14 +6,17 @@ package akka.persistence
 
 import java.io.File
 import java.util.concurrent.TimeUnit
+
 import scala.concurrent.Await
 import scala.concurrent.duration._
+
+import org.apache.commons.io.FileUtils
+import org.openjdk.jmh.annotations._
+
 import akka.actor._
 import akka.persistence.journal.AsyncWriteTarget._
 import akka.persistence.journal.leveldb.{ SharedLeveldbJournal, SharedLeveldbStore }
 import akka.testkit.TestProbe
-import org.apache.commons.io.FileUtils
-import org.openjdk.jmh.annotations._
 
 /*
   # OS:   OSX 10.9.3
@@ -52,7 +55,7 @@ class LevelDbBatchingBenchmark {
     SharedLeveldbJournal.setStore(store, sys)
 
     probe = TestProbe()(sys)
-    store = sys.actorOf(Props[SharedLeveldbStore], "store")
+    store = sys.actorOf(Props[SharedLeveldbStore](), "store")
   }
 
   @TearDown(Level.Trial)

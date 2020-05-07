@@ -4,13 +4,13 @@
 
 package akka.stream.scaladsl
 
-import java.util.{ concurrent => juc }
+import java.util.{concurrent => juc}
+
+import scala.annotation.unchecked.uncheckedVariance
 
 import akka.NotUsed
 import akka.stream.impl.JavaFlowAndRsConverters
 import akka.stream.scaladsl
-
-import scala.annotation.unchecked.uncheckedVariance
 
 /**
  * For use only with `JDK 9+`.

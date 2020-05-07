@@ -6,6 +6,7 @@ package akka
 
 import sbt._
 import Keys._
+import scala.language.implicitConversions
 
 object Dependencies {
   import DependencyHelpers._
@@ -20,7 +21,7 @@ object Dependencies {
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
   val agronaVersion = "1.4.1"
   val nettyVersion = "3.10.6.Final"
-  val jacksonVersion = "2.10.3"
+  val jacksonVersion = "2.10.4"
   val protobufJavaVersion = "3.10.0"
   val logbackVersion = "1.2.3"
 
@@ -68,7 +69,7 @@ object Dependencies {
     val reactiveStreams = "org.reactivestreams" % "reactive-streams" % reactiveStreamsVersion // CC0
 
     // ssl-config
-    val sslConfigCore = Def.setting { "com.typesafe" %% "ssl-config-core" % sslConfigVersion } // ApacheV2
+    val sslConfigCore = "com.typesafe" %% "ssl-config-core" % sslConfigVersion // ApacheV2
 
     val lmdb = "org.lmdbjava" % "lmdbjava" % "0.7.0" // ApacheV2, OpenLDAP Public License
 
@@ -90,8 +91,6 @@ object Dependencies {
     val jacksonScala = "com.fasterxml.jackson.module" %% "jackson-module-scala" % jacksonVersion // ApacheV2
     val jacksonParameterNames = "com.fasterxml.jackson.module" % "jackson-module-parameter-names" % jacksonVersion // ApacheV2
     val jacksonCbor = "com.fasterxml.jackson.dataformat" % "jackson-dataformat-cbor" % jacksonVersion // ApacheV2
-
-    val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion
 
     val logback = "ch.qos.logback" % "logback-classic" % logbackVersion // EPL 1.0
 
@@ -129,8 +128,8 @@ object Dependencies {
       val dockerClient = "com.spotify" % "docker-client" % "8.16.0" % "test" // ApacheV2
 
       // metrics, measurements, perf testing
-      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.5" % "test" // ApacheV2
-      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.5" % "test" // ApacheV2
+      val metrics = "io.dropwizard.metrics" % "metrics-core" % "4.1.7" % "test" // ApacheV2
+      val metricsJvm = "io.dropwizard.metrics" % "metrics-jvm" % "4.1.7" % "test" // ApacheV2
       val latencyUtils = "org.latencyutils" % "LatencyUtils" % "2.0.3" % "test" // Free BSD
       val hdrHistogram = "org.hdrhistogram" % "HdrHistogram" % "2.1.12" % "test" // CC0
       val metricsAll = Seq(metrics, metricsJvm, latencyUtils, hdrHistogram)
@@ -160,6 +159,8 @@ object Dependencies {
       val scalatest = "org.scalatest" %% "scalatest" % scalaTestVersion % "optional;provided;test" // ApacheV2
 
       val logback = Compile.logback % "optional;provided;test" // EPL 1.0
+
+      val protobufRuntime = "com.google.protobuf" % "protobuf-java" % protobufJavaVersion % "optional;provided"
 
     }
 
@@ -242,7 +243,7 @@ object Dependencies {
         Provided.levelDB,
         Provided.levelDBNative)
 
-  val persistenceTestKit = l ++= Seq(Test.scalatest)
+  val persistenceTestKit = l ++= Seq(Test.scalatest, Test.logback)
 
   val persistenceShared = l ++= Seq(Provided.levelDB, Provided.levelDBNative)
 
@@ -274,7 +275,7 @@ object Dependencies {
 
   // akka stream
 
-  lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore.value, Test.scalatest)
+  lazy val stream = l ++= Seq[sbt.ModuleID](reactiveStreams, sslConfigCore, Test.scalatest)
 
   lazy val streamTestkit = l ++= Seq(Test.scalatest, Test.scalacheck, Test.junit)
 

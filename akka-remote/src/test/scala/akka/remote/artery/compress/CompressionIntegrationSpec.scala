@@ -4,16 +4,17 @@
 
 package akka.remote.artery.compress
 
+import scala.concurrent.duration._
+
 import com.typesafe.config.ConfigFactory
-import akka.actor._
-import akka.remote.artery.compress.CompressionProtocol.Events
-import akka.testkit._
 import com.typesafe.config.ConfigFactory
 
-import scala.concurrent.duration._
+import akka.actor._
 import akka.actor.ExtendedActorSystem
-import akka.serialization.SerializerWithStringManifest
 import akka.remote.artery.ArteryMultiNodeSpec
+import akka.remote.artery.compress.CompressionProtocol.Events
+import akka.serialization.SerializerWithStringManifest
+import akka.testkit._
 
 object CompressionIntegrationSpec {
 

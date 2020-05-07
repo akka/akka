@@ -4,11 +4,11 @@
 
 package akka.stream.scaladsl
 
+import scala.concurrent.duration.FiniteDuration
+
 import akka.NotUsed
 import akka.stream.{ Attributes, Inlet, SinkShape }
 import akka.stream.stage.{ GraphStage, InHandler }
-
-import scala.concurrent.duration.FiniteDuration
 
 /**
  * A RestartSink wraps a [[Sink]] that gets restarted when it completes or fails.

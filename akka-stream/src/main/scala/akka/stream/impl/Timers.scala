@@ -6,13 +6,13 @@ package akka.stream.impl
 
 import java.util.concurrent.{ TimeUnit, TimeoutException }
 
+import scala.concurrent.duration.{ Duration, FiniteDuration }
+
 import akka.annotation.InternalApi
 import akka.stream._
 import akka.stream.impl.Stages.DefaultAttributes
 import akka.stream.impl.fusing.GraphStages.SimpleLinearGraphStage
 import akka.stream.stage._
-
-import scala.concurrent.duration.{ Duration, FiniteDuration }
 
 /**
  * INTERNAL API

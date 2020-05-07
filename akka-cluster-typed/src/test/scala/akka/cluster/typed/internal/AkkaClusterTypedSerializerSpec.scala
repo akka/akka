@@ -4,14 +4,15 @@
 
 package akka.cluster.typed.internal
 
+import org.scalatest.wordspec.AnyWordSpecLike
+
 import akka.actor.ExtendedActorSystem
+import akka.actor.testkit.typed.scaladsl.LogCapturing
+import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
+import akka.actor.typed.scaladsl.Behaviors
 import akka.actor.typed.scaladsl.adapter._
 import akka.cluster.typed.internal.receptionist.ClusterReceptionist
 import akka.serialization.SerializationExtension
-import akka.actor.testkit.typed.scaladsl.ScalaTestWithActorTestKit
-import akka.actor.testkit.typed.scaladsl.LogCapturing
-import akka.actor.typed.scaladsl.Behaviors
-import org.scalatest.wordspec.AnyWordSpecLike
 
 class AkkaClusterTypedSerializerSpec extends ScalaTestWithActorTestKit with AnyWordSpecLike with LogCapturing {
 

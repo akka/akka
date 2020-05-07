@@ -6,6 +6,9 @@ package akka.cluster
 
 import scala.collection.immutable
 import scala.concurrent.duration._
+
+import com.typesafe.config.ConfigFactory
+
 import akka.actor.Actor
 import akka.actor.ActorSystem
 import akka.actor.Address
@@ -17,7 +20,6 @@ import akka.remote.testkit.MultiNodeConfig
 import akka.remote.testkit.MultiNodeSpec
 import akka.remote.transport.ThrottlerTransportAdapter.Direction
 import akka.testkit._
-import com.typesafe.config.ConfigFactory
 import akka.util.ccompat._
 
 @ccompatUsedUntil213

@@ -13,7 +13,7 @@ For specific documentation topics see:
 * @ref:[Rolling Updates](../additional/rolling-updates.md)
 * @ref:[Operating, Managing, Observability](../additional/operations.md)
 
-For the Akka Classic documentation of this feature see @ref:[Classic Cluster](../cluster-usage.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Cluster](../cluster-usage.md).
 
 You have to enable @ref:[serialization](../serialization.md)  to send messages between ActorSystems (nodes) in the Cluster.
 @ref:[Serialization with Jackson](../serialization-jackson.md) is a good choice in many cases, and our
@@ -25,7 +25,7 @@ To use Akka Cluster add the following dependency in your project:
 
 @@dependency[sbt,Maven,Gradle] {
   group=com.typesafe.akka
-  artifact=akka-cluster-typed_$scala.binary_version$
+  artifact=akka-cluster-typed_$scala.binary.version$
   version=$akka.version$
 }
 
@@ -283,8 +283,8 @@ been removed from the Cluster. Removal of crashed (unreachable) nodes is perform
 
 A production solution for downing is provided by
 [Split Brain Resolver](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html),
-which is part of the [Lightbend Platform](http://www.lightbend.com/platform).
-If you don’t have a Lightbend Platform Subscription, you should still carefully read the 
+which is part of the [Akka Platform](https://www.lightbend.com/akka-platform).
+If you don’t have a Lightbend Subscription, you should still carefully read the 
 [documentation](https://doc.akka.io/docs/akka-enhancements/current/split-brain-resolver.html)
 of the Split Brain Resolver and make sure that the solution you are using handles the concerns and scenarios
 described there.
