@@ -67,19 +67,5 @@ class LocalActorRefProviderLogMessagesSpec
         ActorTestKit.shutdown(otherSystem)
       }
     }
-
-    // "logs on dedicated 'serialization' logger for empty paths" in {
-
-    //   val provider = system.asInstanceOf[ActorSystemAdapter[_]].provider
-    //   val invalidPath = provider.rootPath
-
-    //   LoggingTestKit
-    //     .debug("Resolve (deserialization) of empty path")
-    //     .withLoggerName("akka.actor.LocalActorRefProvider.Deserialization")
-    //     .expect {
-    //       provider.resolveActorRef(invalidPath.toString)
-    //     }
-    // }
-
   }
 }
