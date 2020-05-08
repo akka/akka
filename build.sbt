@@ -68,6 +68,7 @@ lazy val aggregatedProjects: Seq[ProjectReference] = List[ProjectReference](
   persistenceTestkit,
   protobuf,
   protobufV3,
+  pki,
   remote,
   remoteTests,
   slf4j,
@@ -313,6 +314,10 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
     fullClasspath in assembly := (managedClasspath in Runtime).value, // otherwise, there's a cyclic dependency between packageBin and assembly
     test in assembly := {}, // assembly runs tests for unknown reason which introduces another cyclic dependency to packageBin via exportedJars
     description := "Akka Protobuf V3 is a shaded version of the protobuf runtime. Original POM: https://github.com/protocolbuffers/protobuf/blob/v3.9.0/java/pom.xml")
+
+lazy val pki =
+  akkaModule("akka-pki")
+    .settings(Dependencies.pki)
 
 lazy val remote =
   akkaModule("akka-remote")
