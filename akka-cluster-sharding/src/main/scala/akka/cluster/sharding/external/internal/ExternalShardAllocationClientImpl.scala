@@ -36,9 +36,9 @@ import akka.dispatch.MessageDispatcher
 import akka.event.Logging
 import akka.pattern.ask
 import akka.util.JavaDurationConverters._
-import akka.util.ccompat.JavaConverters._
 import akka.util.PrettyDuration._
 import akka.util.Timeout
+import akka.util.ccompat.JavaConverters._
 
 /**
  * INTERNAL API
