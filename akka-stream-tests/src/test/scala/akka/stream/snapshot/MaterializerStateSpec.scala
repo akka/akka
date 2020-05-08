@@ -12,7 +12,6 @@ import akka.stream.Materializer
 import akka.stream.scaladsl.{ Flow, GraphDSL, Keep, Merge, Partition, Sink, Source, Tcp }
 import akka.stream.testkit.StreamSpec
 import akka.stream.testkit.scaladsl.TestSink
-import akka.util.ByteString
 import javax.net.ssl.SSLContext
 
 class MaterializerStateSpec extends StreamSpec {
@@ -52,7 +51,7 @@ class MaterializerStateSpec extends StreamSpec {
 
     "snapshot a running stream that includes a TLSActor" in {
       Source
-        .maybe[ByteString]
+        .never
         .via(Tcp().outgoingConnectionWithTls(InetSocketAddress.createUnresolved("akka.io", 443), () => {
           val engine = SSLContext.getDefault.createSSLEngine("akka.io", 443)
           engine.setUseClientMode(true)
