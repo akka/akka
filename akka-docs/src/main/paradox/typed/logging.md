@@ -3,7 +3,7 @@ project.description: Logging options with Akka.
 ---
 # Logging
 
-For the Akka Classic documentation of this feature see @ref:[Classic Logging](../logging.md).
+You are viewing the documentation for the new actor APIs, to view the Akka Classic documentation, see @ref:[Classic Logging](../logging.md).
 
 ## Dependency
 
@@ -12,7 +12,7 @@ via the SLF4J backend, such as Logback configuration.
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-actor-typed_$scala.binary_version$"
+  artifact="akka-actor-typed_$scala.binary.version$"
   version="$akka.version$"
 }
 

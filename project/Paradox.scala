@@ -33,7 +33,7 @@ object Paradox {
         "javadoc.akka.http.base_url" -> "https://doc.akka.io/japi/akka-http/current",
         "javadoc.akka.http.link_style" -> "frames",
         "scala.version" -> scalaVersion.value,
-        "scala.binary_version" -> scalaBinaryVersion.value,
+        "scala.binary.version" -> scalaBinaryVersion.value,
         "akka.version" -> version.value,
         "scalatest.version" -> Dependencies.scalaTestVersion,
         "sigar_loader.version" -> "1.6.6-rev002",

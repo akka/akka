@@ -35,7 +35,7 @@ See @ref:[Migration hints](#migrating-from-akka-management-discovery-before-1-0-
 
 @@dependency[sbt,Gradle,Maven] {
   group="com.typesafe.akka"
-  artifact="akka-discovery_$scala.binary_version$"
+  artifact="akka-discovery_$scala.binary.version$"
   version="$akka.version$"
 }
 

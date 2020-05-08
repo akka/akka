@@ -29,7 +29,7 @@ UID.
  
 ## Member States
 
-The cluster membership state is a specialized [CRDT](http://hal.upmc.fr/docs/00/55/55/88/PDF/techreport.pdf), which means that it has a monotonic
+The cluster membership state is a specialized [CRDT](https://hal.inria.fr/file/index/docid/555588/filename/techreport.pdf), which means that it has a monotonic
 merge function. When concurrent changes occur on different nodes the updates can always be
 merged and converge to the same end result.
 

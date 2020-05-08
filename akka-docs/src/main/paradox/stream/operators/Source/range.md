@@ -8,7 +8,7 @@ Emit each integer in a range, with an option to take bigger steps than 1.
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-stream_$scala.binary_version$"
+  artifact="akka-stream_$scala.binary.version$"
   version="$akka.version$"
 }
 

@@ -28,7 +28,7 @@ efficiently and with bounded resource usage—no more OutOfMemoryErrors. In orde
 to achieve this our streams need to be able to limit the buffering that they
 employ, they need to be able to slow down producers if the consumers cannot
 keep up. This feature is called back-pressure and is at the core of the
-[Reactive Streams](http://reactive-streams.org/) initiative of which Akka is a
+[Reactive Streams](https://www.reactive-streams.org/) initiative of which Akka is a
 founding member. For you this means that the hard problem of propagating and
 reacting to back-pressure has been incorporated in the design of Akka Streams
 already, so you have one less thing to worry about; it also means that Akka

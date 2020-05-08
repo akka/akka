@@ -17,9 +17,9 @@ import akka.actor.typed.RecipientRef
 import akka.actor.typed.Scheduler
 import akka.actor.typed.internal.{ adapter => adapt }
 import akka.actor.typed.internal.InternalRecipientRef
-import akka.annotation.InternalApi
+import akka.annotation.{ InternalApi, InternalStableApi }
 import akka.pattern.PromiseActorRef
-import akka.util.Timeout
+import akka.util.{ unused, Timeout }
 
 /**
  * The ask-pattern implements the initiator side of a request–reply protocol.
@@ -146,14 +146,19 @@ object AskPattern {
     val ref: ActorRef[U] = _ref
     val future: Future[U] = _future
     val promiseRef: PromiseActorRef = _promiseRef
+
+    @InternalStableApi
+    private[akka] def ask[T](target: InternalRecipientRef[T], message: T, @unused timeout: Timeout): Future[U] = {
+      target ! message
+      future
+    }
   }
 
   private def askClassic[T, U](target: InternalRecipientRef[T], timeout: Timeout, f: ActorRef[U] => T): Future[U] = {
     val p = new PromiseRef[U](target, timeout)
     val m = f(p.ref)
     if (p.promiseRef ne null) p.promiseRef.messageClassName = m.getClass.getName
-    target ! m
-    p.future
+    p.ask(target, m, timeout)
   }
 
   /**

@@ -9,7 +9,7 @@ To use Jackson Serialization, you must add the following dependency in your proj
 
 @@dependency[sbt,Maven,Gradle] {
   group="com.typesafe.akka"
-  artifact="akka-serialization-jackson_$scala.binary_version$"
+  artifact="akka-serialization-jackson_$scala.binary.version$"
   version="$akka.version$"
 }
 

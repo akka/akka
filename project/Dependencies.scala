@@ -21,8 +21,8 @@ object Dependencies {
   // https://github.com/real-logic/aeron/blob/1.x.y/build.gradle
   val agronaVersion = "1.4.1"
   val nettyVersion = "3.10.6.Final"
-  val jacksonVersion = "2.11.0"
-  val protobufJavaVersion = "3.10.0"
+  val jacksonVersion = "2.10.4"
+  val protobufJavaVersion = "3.11.4"
   val logbackVersion = "1.2.3"
 
   val scala212Version = "2.12.11"
