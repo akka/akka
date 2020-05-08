@@ -761,7 +761,7 @@ private[akka] class ClusterShardingGuardian extends Actor {
               if (settings.stateStoreMode == ClusterShardingSettings.StateStoreModePersistence)
                 ClusterShardingSettings.RememberEntitiesStoreEventsourced
               // FIXME move to setting
-              else context.system.settings.config.getString("akka.cluster.sharding.remember-entities-provider")
+              else context.system.settings.config.getString("akka.cluster.sharding.remember-entities-store")
             Some(rememberEntitiesProvider match {
               case ClusterShardingSettings.RememberEntitiesStoreDData =>
                 new DDataRememberEntitiesProvider(typeName, settings, majorityMinCap, rep)
