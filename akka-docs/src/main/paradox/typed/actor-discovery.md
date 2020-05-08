@@ -36,7 +36,7 @@ registered to the same key.
 The registry is dynamic. New actors can be registered during the lifecycle of the system. Entries are removed when 
 registered actors are stopped, manually deregistered or the node they live on is removed from the @ref:[Cluster](cluster.md). 
 To facilitate this dynamic aspect you can also subscribe to changes with the `Receptionist.Subscribe` message. It will send 
-`Listing` messages to the subscriber when entries for a key are changed.
+`Listing` messages to the subscriber, first with the set of entries upon subscription, then whenever the entries for a key are changed.
 
 These imports are used in the following example:
 
