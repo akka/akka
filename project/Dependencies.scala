@@ -83,7 +83,7 @@ object Dependencies {
     // Added explicitly for when artery tcp is used
     val agrona = "org.agrona" % "agrona" % agronaVersion // ApacheV2
 
-    val asnOne = "com.hierynomus" % "asn-one" % "0.4.0"
+    val asnOne = "com.hierynomus" % "asn-one" % "0.4.0" // ApacheV2
 
     val jacksonCore = "com.fasterxml.jackson.core" % "jackson-core" % jacksonVersion // ApacheV2
     val jacksonAnnotations = "com.fasterxml.jackson.core" % "jackson-annotations" % jacksonVersion // ApacheV2

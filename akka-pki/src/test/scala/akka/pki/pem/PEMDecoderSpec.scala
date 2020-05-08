@@ -35,38 +35,57 @@ class PEMDecoderSpec extends AnyWordSpec with Matchers with EitherValues {
 
   "The PEM decoder" should {
     "decode a real world certificate" in {
-      PEMDecoder.decode(cert).right.value.label should ===("CERTIFICATE")
+      PEMDecoder.decode(cert).label should ===("CERTIFICATE")
     }
 
     "decode data with no spaces" in {
-      val result = PEMDecoder.decode("-----BEGIN FOO-----" + Base64.getEncoder.encodeToString("abc".getBytes()) + "-----END FOO-----")
-      val data = result.right.value
-      data.label should ===("FOO")
-      new String(data.bytes) should ===("abc")
+      val result = PEMDecoder.decode(
+        "-----BEGIN FOO-----" + Base64.getEncoder.encodeToString("abc".getBytes()) + "-----END FOO-----")
+      result.label should ===("FOO")
+      new String(result.bytes) should ===("abc")
     }
 
     "decode data with lots of spaces" in {
-      val result = PEMDecoder.decode("\n \t \r -----BEGIN FOO-----\n" +
-        Base64.getEncoder.encodeToString("abc".getBytes()).flatMap(c => c + "\n\r  \t\n") + "-----END FOO-----\n \t \r ")
-      val data = result.right.value
-      data.label should ===("FOO")
-      new String(data.bytes) should ===("abc")
+      val result = PEMDecoder.decode(
+        "\n \t \r -----BEGIN FOO-----\n" +
+        Base64.getEncoder.encodeToString("abc".getBytes()).flatMap(c => s"$c\n\r  \t\n") + "-----END FOO-----\n \t \r ")
+      result.label should ===("FOO")
+      new String(result.bytes) should ===("abc")
     }
 
     "decode data with two padding characters" in {
       // A 4 byte input results in a 6 character output with 2 padding characters
-      val result = PEMDecoder.decode("-----BEGIN FOO-----" + Base64.getEncoder.encodeToString("abcd".getBytes()) + "-----END FOO-----")
-      val data = result.right.value
-      data.label should ===("FOO")
-      new String(data.bytes) should ===("abcd")
+      val result = PEMDecoder.decode(
+        "-----BEGIN FOO-----" + Base64.getEncoder.encodeToString("abcd".getBytes()) + "-----END FOO-----")
+      result.label should ===("FOO")
+      new String(result.bytes) should ===("abcd")
     }
 
     "decode data with one padding character" in {
       // A 5 byte input results in a 7 character output with 1 padding character1
-      val result = PEMDecoder.decode("-----BEGIN FOO-----" + Base64.getEncoder.encodeToString("abcde".getBytes()) + "-----END FOO-----")
-      val data = result.right.value
-      data.label should ===("FOO")
-      new String(data.bytes) should ===("abcde")
+      val result = PEMDecoder.decode(
+        "-----BEGIN FOO-----" + Base64.getEncoder.encodeToString("abcde".getBytes()) + "-----END FOO-----")
+      result.label should ===("FOO")
+      new String(result.bytes) should ===("abcde")
+    }
+
+    "fail decode when the format is wrong (not MIME BASE64, lines too long)" in {
+      val input = """-----BEGIN CERTIFICATE-----
+        |MIIDCzCCAfOgAwIBAgIQfEHPfR1p1xuW9TQlfxAugjANBgkqhkiG9w0BAQsFADAviZjk2OTk1ODFjZjgw
+        |HhcNMTkxMDExMTMyODUzWhcNMjQxMDA5MTQyODUzWjAvMS0wKwYDVQQDEyQwZDIwhLOsmNYKHdmWg37Jib5o
+        |-----END CERTIFICATE-----""".stripMargin
+
+      assertThrows[PEMLoadingException] {
+        PEMDecoder.decode(input)
+      }
+    }
+
+    "fail decode when the format is wrong (not PEM, invalid per/post-EB)" in {
+      val input = cert.replace("BEGIN", "BGN").replace("END ", "GLGLGL ")
+
+      assertThrows[PEMLoadingException] {
+        PEMDecoder.decode(input)
+      }
     }
 
   }

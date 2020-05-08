@@ -317,7 +317,11 @@ lazy val protobufV3 = akkaModule("akka-protobuf-v3")
 
 lazy val pki =
   akkaModule("akka-pki")
+    .dependsOn(actor) // this dependency only exists for "@ApiMayChange"
     .settings(Dependencies.pki)
+    .settings(
+      // The akka-pki artifact was added in Akka 2.6.2, no MiMa checks yet.
+      mimaPreviousArtifacts := Set.empty)
 
 lazy val remote =
   akkaModule("akka-remote")

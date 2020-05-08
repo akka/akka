@@ -4,9 +4,7 @@
 
 package akka.pki.pem
 
-import java.io.File
 import java.math.BigInteger
-import java.nio.file.Files
 import java.security.KeyFactory
 import java.security.PrivateKey
 import java.security.spec.PKCS8EncodedKeySpec
@@ -14,33 +12,36 @@ import java.security.spec.RSAMultiPrimePrivateCrtKeySpec
 import java.security.spec.RSAOtherPrimeInfo
 import java.security.spec.RSAPrivateCrtKeySpec
 
-import akka.pki.pem.PEMDecoder.PEMData
+import akka.annotation.ApiMayChange
+import akka.pki.pem.PEMDecoder.DERData
 import com.hierynomus.asn1.ASN1InputStream
 import com.hierynomus.asn1.encodingrules.der.DERDecoder
 import com.hierynomus.asn1.types.constructed.ASN1Sequence
 import com.hierynomus.asn1.types.primitive.ASN1Integer
 
-object PEMPrivateKeyLoader {
+class PEMLoadingException(message: String, cause: Throwable) extends RuntimeException(message, cause) {
+  def this(msg: String) = this(msg, null)
+}
 
-  def load(keyFile: String): Either[String, PrivateKey] = {
-    val pemData = new String(Files.readAllBytes(new File(keyFile).toPath))
+object DERPrivateKeyLoader {
 
-    // Decode from PEM into binary
-    PEMDecoder.decode(pemData) match {
-      case Left(error) =>
-        Left(error)
-      case Right(PEMData("RSA PRIVATE KEY", bytes)) =>
-        Right(loadPkcs1PrivateKey(bytes))
-      case Right(PEMData("PRIVATE KEY", bytes)) =>
-        Right(loadPkcs8PrivateKey(bytes))
-      case Right(PEMData(unknown, _)) =>
-        Left(s"Don't know how to read a private key from PEM data with label [$unknown]")
+  /**
+   * Converts the DER payload in [[PEMDecoder.DERData]] into a [[java.security.PrivateKey]]. The received DER
+   * data must be a valid PKCS#1 (identified in PEM as "RSA PRIVATE KEY") or non-ecrypted PKCS#8 (identified
+   * in PEM as "PRIVATE KEY").
+   */
+  @ApiMayChange
+  def load(derData: DERData): PrivateKey = {
+    derData.label match {
+      case "RSA PRIVATE KEY" =>
+        loadPkcs1PrivateKey(derData.bytes)
+      case "PRIVATE KEY" =>
+        loadPkcs8PrivateKey(derData.bytes)
+      case unknown =>
+        throw new PEMLoadingException(s"Don't know how to read a private key from PEM data with label [$unknown]")
     }
   }
 
-  /**
-    * Yay for rolling our own crypto because the JDK doesn't understand the formats that EVERY SINGLE OTHER PLATFORM DOES.
-    */
   private def loadPkcs1PrivateKey(bytes: Array[Byte]) = {
     val derInputStream = new ASN1InputStream(new DERDecoder, bytes)
     // Here's the specification: https://tools.ietf.org/html/rfc3447#appendix-A.1.2
@@ -59,7 +60,14 @@ object PEMPrivateKeyLoader {
     val coefficient = getInteger(sequence, 8, "coefficient")
 
     val keySpec = if (version == 0) {
-      new RSAPrivateCrtKeySpec(modulus, publicExponent, privateExponent, prime1, prime2, exponent1, exponent2,
+      new RSAPrivateCrtKeySpec(
+        modulus,
+        publicExponent,
+        privateExponent,
+        prime1,
+        prime2,
+        exponent1,
+        exponent2,
         coefficient)
     } else {
       // Does anyone even use multi-primes? Who knows, maybe this code will never be used. Anyway, I guess it will work,
@@ -73,8 +81,16 @@ object PEMPrivateKeyLoader {
         val coefficient = getInteger(seq, 2, s"$name.coefficient")
         new RSAOtherPrimeInfo(prime, exponent, coefficient)
       }).toArray
-      new RSAMultiPrimePrivateCrtKeySpec(modulus, publicExponent, privateExponent, prime1, prime2, exponent1, exponent2,
-        coefficient, otherPrimeInfos)
+      new RSAMultiPrimePrivateCrtKeySpec(
+        modulus,
+        publicExponent,
+        privateExponent,
+        prime1,
+        prime2,
+        exponent1,
+        exponent2,
+        coefficient,
+        otherPrimeInfos)
     }
 
     val keyFactory = KeyFactory.getInstance("RSA")
@@ -102,6 +118,5 @@ object PEMPrivateKeyLoader {
     val keyFactory = KeyFactory.getInstance("RSA")
     keyFactory.generatePrivate(keySpec)
   }
-
 
 }
