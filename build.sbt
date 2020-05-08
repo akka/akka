@@ -1,4 +1,4 @@
-import akka.{AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ParadoxSupport, ScalafixIgnoreFilePlugin}
+import akka.{AutomaticModuleName, CopyrightHeaderForBuild, Paradox, ScalafixIgnoreFilePlugin}
 
 enablePlugins(
   UnidocRoot,
@@ -205,7 +205,6 @@ lazy val docs = akkaModule("akka-docs")
     persistenceTestkit % "compile->compile;test->test")
   .settings(Dependencies.docs)
   .settings(Paradox.settings)
-  .settings(ParadoxSupport.paradoxWithCustomDirectives)
   .settings(javacOptions += "-parameters") // for Jackson
   .enablePlugins(
     AkkaParadoxPlugin,
