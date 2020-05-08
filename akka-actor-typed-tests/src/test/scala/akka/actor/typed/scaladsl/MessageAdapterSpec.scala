@@ -6,7 +6,6 @@ package akka.actor.typed.scaladsl
 
 import com.typesafe.config.ConfigFactory
 import org.scalatest.wordspec.AnyWordSpecLike
-import org.slf4j.event.Level
 
 import akka.actor.testkit.typed.TestException
 import akka.actor.testkit.typed.scaladsl.LogCapturing
@@ -17,6 +16,7 @@ import akka.actor.typed.ActorRef
 import akka.actor.typed.Behavior
 import akka.actor.typed.PostStop
 import akka.actor.typed.Props
+import akka.actor.typed.internal.AdaptMessage
 
 object MessageAdapterSpec {
   val config = ConfigFactory.parseString("""
@@ -271,12 +271,14 @@ class MessageAdapterSpec
 
   }
 
-  "log wrapped message of DeadLetter" in {
+  "redirect to DeadLetter after termination" in {
     case class Ping(sender: ActorRef[Pong])
     case class Pong(greeting: String)
     case class PingReply(response: Pong)
 
     val pingProbe = createTestProbe[Ping]()
+
+    val deadLetterProbe = testKit.createDeadLetterProbe()
 
     val snitch = Behaviors.setup[PingReply] { context =>
       val replyTo = context.messageAdapter[Pong](PingReply)
@@ -287,13 +289,13 @@ class MessageAdapterSpec
 
     createTestProbe().expectTerminated(ref)
 
-    LoggingTestKit.empty
-      .withLogLevel(Level.INFO)
-      .withMessageRegex("Pong.*wrapped in.*AdaptMessage.*dead letters encountered")
-      .expect {
-        pingProbe.receiveMessage().sender ! Pong("hi")
-      }
-
+    pingProbe.receiveMessage().sender ! Pong("hi")
+    val deadLetter = deadLetterProbe.receiveMessage()
+    deadLetter.message match {
+      case AdaptMessage(Pong("hi"), _) => // passed through the FunctionRef
+      case Pong("hi")                  => // FunctionRef stopped
+      case unexpected                  => fail(s"Unexpected message [$unexpected], expected Pong or AdaptMessage(Pong)")
+    }
   }
 
 }
