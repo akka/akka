@@ -118,7 +118,7 @@ abstract class ClusterShardingCustomShardAllocationSpec(multiNodeConfig: Cluster
   s"Cluster sharding ($mode) with custom allocation strategy" must {
 
     "use specified region" in within(30.seconds) {
-      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = Seq(first, second))
+      startPersistenceIfNeeded(startOn = first, setStoreOn = Seq(first, second))
 
       join(first, first)
 

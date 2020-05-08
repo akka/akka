@@ -117,7 +117,7 @@ abstract class ClusterShardingFailureSpec(multiNodeConfig: ClusterShardingFailur
   s"Cluster sharding ($mode) with flaky journal/network" must {
 
     "join cluster" in within(20.seconds) {
-      startPersistenceIfNotDdataMode(startOn = controller, setStoreOn = Seq(first, second))
+      startPersistenceIfNeeded(startOn = controller, setStoreOn = Seq(first, second))
 
       join(first, first)
       join(second, first)
@@ -139,11 +139,11 @@ abstract class ClusterShardingFailureSpec(multiNodeConfig: ClusterShardingFailur
 
     "recover after journal/network failure" in within(20.seconds) {
       runOn(controller) {
-        if (isDdataMode)
-          testConductor.blackhole(first, second, Direction.Both).await
-        else {
+        if (persistenceIsNeeded) {
           testConductor.blackhole(controller, first, Direction.Both).await
           testConductor.blackhole(controller, second, Direction.Both).await
+        } else {
+          testConductor.blackhole(first, second, Direction.Both).await
         }
       }
       enterBarrier("journal-blackholed")
@@ -159,11 +159,11 @@ abstract class ClusterShardingFailureSpec(multiNodeConfig: ClusterShardingFailur
       enterBarrier("first-delayed")
 
       runOn(controller) {
-        if (isDdataMode)
-          testConductor.passThrough(first, second, Direction.Both).await
-        else {
+        if (persistenceIsNeeded) {
           testConductor.passThrough(controller, first, Direction.Both).await
           testConductor.passThrough(controller, second, Direction.Both).await
+        } else {
+          testConductor.passThrough(first, second, Direction.Both).await
         }
       }
       enterBarrier("journal-ok")

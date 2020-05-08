@@ -86,7 +86,7 @@ abstract class ClusterShardingLeavingSpec(multiNodeConfig: ClusterShardingLeavin
   s"Cluster sharding ($mode) with leaving member" must {
 
     "join cluster" in within(20.seconds) {
-      startPersistenceIfNotDdataMode(startOn = first, setStoreOn = roles)
+      startPersistenceIfNeeded(startOn = first, setStoreOn = roles)
 
       join(first, first, onJoinedRunOnFrom = startSharding())
       join(second, first, onJoinedRunOnFrom = startSharding())
