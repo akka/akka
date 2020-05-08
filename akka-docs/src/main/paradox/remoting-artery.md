@@ -283,17 +283,30 @@ Next the actual SSL/TLS parameters have to be configured:
 akka.remote.artery {
   transport = tls-tcp
 
-  ssl.config-ssl-engine {
-    key-store = "/example/path/to/mykeystore.jks"
-    trust-store = "/example/path/to/mytruststore.jks"
+  ssl {
+    ssl-engine-provider = akka.remote.artery.tcp.ConfigSSLEngineProvider
 
-    key-store-password = ${SSL_KEY_STORE_PASSWORD}
-    key-password = ${SSL_KEY_PASSWORD}
-    trust-store-password = ${SSL_TRUST_STORE_PASSWORD}
+    config-ssl-engine {
+      key-store = "/example/path/to/mykeystore.jks"
+      trust-store = "/example/path/to/mytruststore.jks"
+  
+      key-store-password = ${SSL_KEY_STORE_PASSWORD}
+      key-password = ${SSL_KEY_PASSWORD}
+      trust-store-password = ${SSL_TRUST_STORE_PASSWORD}
+  
+      protocol = "TLSv1.2"
+  
+      enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
 
-    protocol = "TLSv1.2"
+      # Use "" or "SecureRandom" to let the JVM decide a provider. 
+      # Use "SHA1PRNG" or "NativePRNG" to use either one of those implemnentations.
+      random-number-generator = ""
 
-    enabled-algorithms = [TLS_DHE_RSA_WITH_AES_128_GCM_SHA256]
+      require-mutual-authentication = on
+      hostname-verification = off
+
+      ssl-context-cache-ttl = 10d
+    }
   }
 }
 ```
@@ -322,7 +335,7 @@ as well as the [Oracle documentation on creating KeyStore and TrustStores](https
 are both great resources to research when setting up security on the JVM. Please consult those resources when troubleshooting
 and configuring SSL.
 
-Mutual authentication between TLS peers is enabled by default. Mutual authentication means that the the passive side
+Mutual authentication between TLS peers is enabled by default. Mutual authentication means that the passive side
 (the TLS server side) of a connection will also request and verify a certificate from the connecting peer.
 Without this mode only the client side is requesting and verifying certificates. While Akka is a peer-to-peer
 technology, each connection between nodes starts out from one side (the "client") towards the other (the "server").
@@ -336,10 +349,21 @@ When enabled it will verify that the destination hostname matches the hostname i
 
 In deployments where hostnames are dynamic and not known up front it can make sense to leave the hostname verification off.
 
+Certain key providers emit keys and certificates with close-in time expiration. Rotating the certificates in a 
+mutual TLS setup will narrow the window an attacker has to connect to an Akka Cluster. In case the attacker 
+successfully connected to the cluster, forcing a peer SSL re-handshake will kick the attacker out. If your 
+deployment setup can rotate keys and certificates providing new key stores and trust stores configure  
+`akka.remote.artery.ssl.config-ssl-engine.ssl-context-cache-ttl` to a value in the order of minutes (e.g. `10 min`). 
+Note that Akka will not re-negotiate existing connections and only new connections will use the rotated keys. 
+
+You may provide your own implementation of a `SSLEngineProvider` setting the FQCN in 
+`akka.remote.artery.ssl.config-ssl-engine.ssl-engine-provider`. You only need to make sure it implements 
+`akka.remote.artery.tcp.SSLEngineProvider` and has a public constructor with an `ActorSystem` parameter. 
+
 You have a few choices how to set up certificates and hostname verification:
 
 * Have a single set of keys and a single certificate for all nodes and *disable* hostname checking
-    * The single set of keys and the single certificate is distributed to all nodes. The certificate can
+    * The single set of keys and the single certificate are distributed to all nodes. The certificate can
       be self-signed as it is distributed both as a certificate for authentication but also as the trusted certificate.
     * If the keys/certificate are lost, someone else can connect to your cluster.
     * Adding nodes to the cluster is simple as the key material can be deployed / distributed to the new node.
@@ -358,7 +382,7 @@ You have a few choices how to set up certificates and hostname verification:
     * If a certificate is stolen, it can only be used to connect to the cluster from a node reachable via a hostname
       that is trusted in the certificate. It would require tampering with DNS to allow other nodes to get access to
       the cluster (however, tampering DNS might be easier in an internal setting than on internet scale).
-* Have a CA and then keys/certificates, one for each node, and *enable*  host name checking.
+* Have a CA for whole cluster, one key/certificate pair for each node, and *enable* host name checking.
     * Basically like internet HTTPS but that you only trust the internal CA and then issue certificates for each new node.
     * Needs a PKI, the CA certificate is trusted on all nodes, the individual certificates are used for authentication.
     * Only the CA certificate and the key/certificate for a node is distributed.
