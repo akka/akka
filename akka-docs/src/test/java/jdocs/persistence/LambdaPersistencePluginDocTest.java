@@ -23,6 +23,7 @@ import java.util.List;
 
 import org.junit.runner.RunWith;
 import org.scalatestplus.junit.JUnitRunner;
+import scala.Function2;
 import scala.concurrent.Future;
 import java.util.function.Consumer;
 import org.iq80.leveldb.util.FileUtils;
@@ -131,12 +132,22 @@ public class LambdaPersistencePluginDocTest {
     }
 
       @Override
+      public Future<Object> asyncReadHighestIdempotencyKeySequenceNr(String persistenceId) {
+          return null;
+      }
+
+      @Override
+      public Future<BoxedUnit> asyncReadIdempotencyKeys(String persistenceId, long toSequenceNr, long max, Function2<String, Object, BoxedUnit> readCallback) {
+          return null;
+      }
+
+      @Override
       public Future<Object> asyncCheckIdempotencyKeyExists(String persistenceId, String key) {
           return null;
       }
 
       @Override
-      public Future<BoxedUnit> asyncWriteIdempotencyKey(String persistenceId, String key) {
+      public Future<BoxedUnit> asyncWriteIdempotencyKey(String persistenceId, String key, long sequenceNr, long highestEventSequenceNr) {
           return null;
       }
   }

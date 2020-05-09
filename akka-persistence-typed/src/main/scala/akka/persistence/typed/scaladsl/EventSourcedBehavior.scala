@@ -19,6 +19,7 @@ import akka.persistence.typed.PersistenceId
 import akka.persistence.typed.SnapshotAdapter
 import akka.persistence.typed.SnapshotSelectionCriteria
 import akka.persistence.typed.internal._
+import scala.collection.immutable
 
 object EventSourcedBehavior {
 
@@ -127,13 +128,31 @@ object EventSourcedBehavior {
       }
 
     extractConcreteBehavior(context.currentBehavior) match {
-      case w: Running.WithSeqNrAccessible => w.currentIdempotencyKeySequenceNumber
+      case w: Running.WithSeqNrAccessible =>
+        w.currentIdempotencyKeySequenceNumber
       case s =>
         throw new IllegalStateException(
           s"Cannot extract the lastIdempotencyKeySequenceNumber in state ${s.getClass.getName}")
     }
   }
 
+  /**
+   * Idempotency key cache content, can only be called from inside the handlers of an `EventSourcedBehavior`
+   */
+  def idempotencyKeyCacheContent(context: ActorContext[_]): immutable.Seq[String] = {
+    @tailrec
+    def extractConcreteBehavior(beh: Behavior[_]): Behavior[_] =
+      beh match {
+        case interceptor: InterceptorImpl[_, _] => extractConcreteBehavior(interceptor.nestedBehavior)
+        case concrete                           => concrete
+      }
+
+    extractConcreteBehavior(context.currentBehavior) match {
+      case w: Running.WithIdempotencyKeyCacheAccessible => w.idempotencyKeyCacheContent
+      case s =>
+        throw new IllegalStateException(s"Cannot extract the idempotencyKeyCacheContent in state ${s.getClass.getName}")
+    }
+  }
 }
 
 /**

@@ -207,14 +207,11 @@ object InmemJournal {
     keys.get(pid).map(_.lastKey).getOrElse(0)
   }
 
-  def readKeys(pid: String, toSeqNr: Long, max: Long): immutable.Seq[(String, Long)] = {
+  def readKeys(pid: String, toSeqNr: Long, max: Long): Seq[(String, Long)] = {
     val fromSeqNr = toSeqNr - max
     keys.get(pid) match {
       case Some(keys) =>
-        keys
-          .filterKeys(seqNr => fromSeqNr <= seqNr && seqNr <= toSeqNr)
-          .map { case (seqNr, key) => (key, seqNr) }
-          .to[immutable.Seq]
+        keys.filterKeys(seqNr => fromSeqNr < seqNr && seqNr <= toSeqNr).map { case (seqNr, key) => (key, seqNr) }.toSeq
       case None =>
         Nil
     }

@@ -46,7 +46,7 @@ object EventSourcedBehaviorIdempotenceSpec {
       override val writeConfig: IdempotenceKeyWriteConfig = OnlyWriteIdempotenceKeyWithPersist
     }
   }
-  private case class CurrentIdempotencyKey(replyTo: ActorRef[Long]) extends Command
+  private case class CurrentIdempotencyKeySeqNr(replyTo: ActorRef[Long]) extends Command
 
   private case object AllGood
 
@@ -67,7 +67,7 @@ object EventSourcedBehaviorIdempotenceSpec {
                 Effect.none[Int, Int].thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
               case NoSideEffect.WriteOnlyWithPersist(_, replyTo) =>
                 Effect.none[Int, Int].thenReply(replyTo)(_ => IdempotenceSuccess(AllGood))
-              case CurrentIdempotencyKey(replyTo) =>
+              case CurrentIdempotencyKeySeqNr(replyTo) =>
                 Effect
                   .none[Int, Int]
                   .thenReply(replyTo)(_ => EventSourcedBehavior.lastIdempotencyKeySequenceNumber(ctx))
@@ -227,7 +227,7 @@ class EventSourcedBehaviorIdempotenceSpec
       tell(UUID.randomUUID().toString)
 
       val idempotencyKeyProbe = TestProbe[Long]
-      c ! CurrentIdempotencyKey(idempotencyKeyProbe.ref)
+      c ! CurrentIdempotencyKeySeqNr(idempotencyKeyProbe.ref)
       idempotencyKeyProbe.expectMessage(0L)
     }
   }

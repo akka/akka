@@ -28,6 +28,7 @@ import akka.util.PrettyDuration._
 import akka.util.unused
 
 import scala.collection.immutable.SortedMap
+import scala.collection.mutable
 
 /***
  * INTERNAL API
@@ -159,14 +160,28 @@ private[akka] final class ReplayingEvents[C, E, S](
           onRecoveryFailure(cause, Some(response))
 
         case RestoredIdempotencyKey(key, sequenceNr) =>
-          state = state.copy(
-            idempotenceKeyCache = state.idempotenceKeyCache.updated(sequenceNr, key),
-            idempotencyKeySeqNr = sequenceNr)
-          this
+          if (state.idempotenceKeyCache.size == setup.idempotenceKeyCacheSize) {
+            onRecoveryFailure(
+              new IllegalArgumentException(
+                s"Journal attempted to restore too many idempotence keys, " +
+                s"key [$key], " +
+                s"sequenceNr [$sequenceNr]"),
+              Some(response))
+          } else {
+            state = state.copy(
+              idempotenceKeyCache = state.idempotenceKeyCache.updated(sequenceNr, key),
+              idempotencyKeySeqNr = sequenceNr)
+            this
+          }
 
         case RestoreIdempotencySuccess(highestSequenceNr) =>
           state = state.copy(idempotencyKeySeqNr = highestSequenceNr, idempotencyRestoreDone = true)
-          setup.log.debug("Idempotence restore successful, recovered until sequenceNr: [{}]", highestSequenceNr)
+          setup.log.debug(
+            "Idempotence restore successful, " +
+            "recovered until sequenceNr: [{}], " +
+            "total restored idempotency keys [{}]",
+            highestSequenceNr,
+            state.idempotenceKeyCache.size)
 
           if (state.readyForRunning) {
             onRecoveryCompleted(state)
@@ -313,7 +328,13 @@ private[akka] final class ReplayingEvents[C, E, S](
               state.state,
               state.receivedPoisonPill,
               state.idempotencyKeySeqNr,
-              state.idempotenceKeyCache.values.toVector))
+              if (setup.idempotenceKeyCacheSize == 0) {
+                Running.NoCache
+              } else {
+                Running.LRUCache(
+                  mutable.LinkedHashSet.empty[String] ++ state.idempotenceKeyCache.values,
+                  setup.idempotenceKeyCacheSize)
+              }))
 
         tryUnstashOne(running)
       }
